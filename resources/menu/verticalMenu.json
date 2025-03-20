@@ -1,0 +1,62 @@
+{
+  "menu": [
+    {
+      "url": "/",
+      "icon": "menu-icon tf-icons ti ti-chart-pie-2",
+      "name": "Dashboard",
+      "slug": "dashboard-analytics"
+    },
+    {
+      "url": "admin/teams",
+      "name": "Teams",
+      "icon": "menu-icon tf-icons ti ti-users-group",
+      "slug": "teams.teams"
+    },
+    {
+      "url": "admin/drivers",
+      "name": "Drivers",
+      "icon": "menu-icon tf-icons ti  ti-steering-wheel",
+      "slug": "drivers"
+    },
+    {
+      "menuHeader": "Users & Settings"
+    },
+    {
+      "name": "Settings",
+      "icon": "menu-icon tf-icons ti ti-adjustments",
+      "slug": "settings",
+      "submenu": [
+        {
+          "url": "admin/settings",
+          "icon": "menu-icon tf-icons ti ti-chart-pie-2",
+          "name": "General",
+          "slug": "settings.general"
+        },
+        {
+          "url": "admin/settings/vehicles",
+          "name": "Vehicles",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.vehicles"
+        },
+        {
+          "url": "admin/settings/geofences",
+          "name": "Geo-fence",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.geofences"
+        }
+      ]
+    },
+    {
+      "url": "admin/users",
+      "name": "Users",
+      "icon": "menu-icon tf-icons ti ti-users",
+      "slug": "user.users"
+    },
+    {
+      "url": "admin/roles",
+      "name": "Roles & Permissions",
+      "icon": "menu-icon tf-icons ti ti-shield-lock",
+      "slug": "role.roles"
+    }
+  ]
+}

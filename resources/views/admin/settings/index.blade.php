@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Teams'))
+@section('title', __('General Settings'))
 
 <!-- Vendor Styles -->
 @section('vendor-style')

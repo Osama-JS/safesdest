@@ -6,99 +6,165 @@
 
 // Datatable (jquery)
 $(function () {
-  function loadData(vehicle = '', type = '') {
+  function loadData(vehicle = '', type = '', lodeType = true, loadAll = true, loadSize = true) {
     $.ajax({
       url: baseUrl + 'admin/settings/vehicles/data',
       type: 'GET',
       data: { vehicle: vehicle, type: type },
       success: function (response) {
         console.log(response);
-        var vehicles = response.data.vehicles.map((vehicle, index) => {
-          return `<tr>
-                    <td>${index + 1}</td>
-                    <td>${vehicle.name} - ${vehicle.en_name}</td>
-                    <td>${vehicle.types}</td>
-                    <td>
-                      <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${vehicle.id}" data-name="${vehicle.name}"  data-enname="${vehicle.en_name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>
-                      <button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${vehicle.id}" data-name="${vehicle.name}"><i class="ti ti-trash"></i></button>
-                    </td>
-                  </tr>`;
-        });
-        $('#vehicle-table').html(vehicles);
 
-        var types = response.data.types.map((type, index) => {
-          return `<tr>
-                    <td>${index + 1}</td>
-                    <td>${type.vehicle}</td>
-                    <td>${type.name} - ${type.en_name}</td>
-                    <td>${type.sizes}</td>
-                    <td>
-                      <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${type.id}" data-name="${type.name}"  data-enname="${type.en_name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>
-                      <button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${type.id}" data-name="${type.name}"><i class="ti ti-trash"></i></button>
-                    </td>
-                  </tr>`;
-        });
-        $('#types-table').html(types);
+        if (loadAll) {
+          var vehicles = response.data.vehicles
+            .map(
+              (vehicle, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${vehicle.name} - ${vehicle.en_name}</td>
+            <td>${vehicle.types}</td>
+            <td>
+              <button class="btn btn-sm btn-icon edit-v-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${vehicle.id}" data-name="${vehicle.name}"  data-enname="${vehicle.en_name}"
+                data-bs-toggle="modal" data-bs-target="#largeModal">
+                <i class="ti ti-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-icon delete-v-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${vehicle.id}" data-name="${vehicle.name}">
+                <i class="ti ti-trash"></i>
+              </button>
+            </td>
+          </tr>`
+            )
+            .join('');
+          $('#vehicle-table').html(vehicles);
 
-        var sizes = response.data.sizes.map((size, index) => {
-          return `<tr>
-                    <td>${index + 1}</td>
-                    <td>${size.vehicle}</td>
-                    <td>${size.type}</td>
-                    <td>${size.name}</td>
-                    <td>
-                      <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${size.id}" data-name="${size.name}"  data-enname="${size.en_name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>
-                      <button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${size.id}" data-name="${size.name}"><i class="ti ti-trash"></i></button>
-                    </td>
-                  </tr>`;
-        });
-        $('#sizes-table').html(sizes);
+          var types = response.data.types
+            .map(
+              (type, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${type.vehicle}</td>
+            <td>${type.name} - ${type.en_name}</td>
+            <td>${type.sizes}</td>
+            <td>
+              <button class="btn btn-sm btn-icon edit-t-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${type.id}" data-name="${type.name}" data-enname="${type.en_name}"
+                data-bs-toggle="modal" data-bs-target="#largeModal">
+                <i class="ti ti-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-icon delete-t-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${type.id}" data-name="${type.name}">
+                <i class="ti ti-trash"></i>
+              </button>
+            </td>
+          </tr>`
+            )
+            .join('');
+          $('#types-table').html(types);
 
-        var vehicle_options = ` <option value="">-- select vehicle</option>`;
-        vehicle_options += response.data.vehicles.map((option, index) => {
-          return `<option value="${option.id}">${option.name} - ${option.en_name}</option>`;
-        });
-        $('.vehicle-type-vehicle').html(vehicle_options);
+          var sizes = response.data.sizes
+            .map(
+              (size, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${size.vehicle}</td>
+            <td>${size.type}</td>
+            <td>${size.name}</td>
+            <td>
+              <button class="btn btn-sm btn-icon edit-s-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${size.id}" data-name="${size.name}" data-enname="${size.en_name}"
+                data-bs-toggle="modal" data-bs-target="#largeModal">
+                <i class="ti ti-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-icon delete-s-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${size.id}" data-name="${size.name}">
+                <i class="ti ti-trash"></i>
+              </button>
+            </td>
+          </tr>`
+            )
+            .join('');
+          $('#sizes-table').html(sizes);
+        }
+        // توليد القوائم المنسدلة
+        var vehicle_options = ` <option value="">-- Select vehicle --</option>`;
+        vehicle_options += response.data.vehicles
+          .map(
+            option => `
+          <option value="${option.id}">${option.name} - ${option.en_name}</option>
+        `
+          )
+          .join('');
+        if (lodeType) {
+          $('.vehicle-type-vehicle').html(vehicle_options);
+        }
 
-        var vehicle_type_options = ` <option value="">-- select vehicle type</option>`;
-        vehicle_type_options += response.data.types.map((option, index) => {
-          return `<option value="${option.id}">${option.vehicle} - ${option.name} - ${option.en_name}  </option>`;
-        });
-        $('.vehicle-sizes-vehicle').html(vehicle_type_options);
+        var vehicle_type_options = ` <option value="">-- select vehicle type --</option>`;
+        vehicle_type_options += response.data.types
+          .map(
+            option => `
+          <option value="${option.id}"> ${option.name} - ${option.en_name}</option>
+        `
+          )
+          .join('');
+
+        if (loadSize) {
+          $('.vehicle-sizes-vehicle').html(vehicle_type_options);
+        }
+
+        var vehicle_sizes_options = ` <option value="">-- select vehicle Size --</option>`;
+        vehicle_sizes_options += response.data.sizes
+          .map(
+            size => `
+          <option value="${size.id}"> ${size.name}</option>
+        `
+          )
+          .join('');
+
+        if (loadSize) {
+          $('#size-vehicle').html(vehicle_type_options);
+        }
       }
     });
   }
 
   loadData();
 
-  $(document).on('change', '.vehicle-type-vehicle', function () {
+  $(document).on('change', '#type-vehicle-flitter', function () {
     var vehicle = $(this).val();
-    loadData(vehicle);
-    $(this).val(vehicle);
+    console.log(vehicle);
+    loadData(vehicle, '', false);
   });
+
+  $(document).on('change', '#vehicle-size-vehicle', function () {
+    var vehicle = $(this).val();
+    console.log(vehicle);
+    loadData(vehicle, '', false, false);
+  });
+
+  $(document).on('change', '#size-vehicle-flitter', function () {
+    var vehicle = $(this).val();
+    console.log(vehicle);
+    loadData(vehicle, '', false, false);
+  });
+
+  $(document).on('change', '#size-type-flitter', function () {
+    var vehicle = $(this).val();
+    console.log(vehicle);
+    loadData(vehicle, vehicle, false, true, false);
+  });
+
   document.addEventListener('formSubmitted', function (event) {
     loadData();
   });
 
-  $(document).on('click', '.edit-record', function () {
-    var teamId = $(this).data('id');
-    var teamName = $(this).data('name');
+  $(document).on('click', '.edit-v-record', function () {
+    var Id = $(this).data('id');
+    var name = $(this).data('name');
+    var en_name = $(this).data('enname');
 
-    $('#submitModal').modal('show');
-
-    $('#modelTitle').html(`Edit Team: <span class="bg-info text-white px-2 rounded">${teamName}</span>`);
-
-    $('.form_submit').attr('action', `${baseUrl}admin/teams/edit`);
-
-    // get data
-    $.get(`${baseUrl}admin/teams/edit/${teamId}`, function (data) {
-      $('#team_id').val(data.id);
-      $('#team-name').val(data.name);
-      $('#team-address').val(data.address);
-      $('#team-location_update').val(data.location_update_interval);
-      $('#team-commission-type').val(data.team_commission_type);
-      $('#team-commission').val(data.team_commission_value);
-      $('#team-note').val(data.note);
-    });
+    $('#vehicle-name').val(name);
+    $('#vehicle-en-name').val(en_name);
+    $('#vehicle-id').val(Id);
   });
 });

@@ -1,15 +1,13 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Teams'))
+@section('title', __('Vehicles'))
 
 <!-- Vendor Styles -->
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 @endsection
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
 <!-- Page Scripts -->
@@ -52,22 +50,23 @@
                     <div class="tab-pane fade show active" id="navs-pills-top-home" role="tabpanel">
                         <form action="{{ route('settings.vehicles.store') }}" method="post" class="form_submit">
                             @csrf
-                            <input type="hidden" name="id" class="vehicle-id">
+                            <input type="hidden" name="id" id="vehicle-id">
                             <div class="row">
+                                <input type="hidden" name="id" id="vehicle-id">
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="vehicle-name">* {{ __('name') }}</label>
-                                        <input type="text" name="name" id="vehicle-name" class="form-control"
+                                        <input type="text" name="v_name" id="vehicle-name" class="form-control"
                                             placeholder="vehicle name">
-                                        <span class="name-error text-danger text-error"></span>
+                                        <span class="v_name-error text-danger text-error"></span>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="vehicle-en-name">* {{ __('English name') }}</label>
-                                        <input type="text" name="en_name" id="vehicle-en-name" class="form-control"
+                                        <input type="text" name="v_en_name" id="vehicle-en-name" class="form-control"
                                             placeholder="vehicle name">
-                                        <span class="en_name-error text-danger text-error"></span>
+                                        <span class="v_en_name-error text-danger text-error"></span>
                                     </div>
                                 </div>
                             </div>
@@ -136,7 +135,7 @@
                                     <label for="type-vehicle-flitter">{{ __('Flitter by vehicle') }}</label>
                                     <select name="flitter-vehicle" id="type-vehicle-flitter"
                                         class="form-select w-auto vehicle-type-vehicle">
-                                        <option value="">-- {{ __('select vehicle') }}</option>
+                                        <option value="">-- {{ __('all vehicle') }}</option>
                                     </select>
                                 </div>
                             </div>

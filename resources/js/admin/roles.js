@@ -97,7 +97,7 @@ $(function () {
             return full['id'] == 1
               ? ''
               : '<div class="d-flex align-items-center gap-50">' +
-                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
+                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-users=${full['users']} data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
                   `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button> </div>`;
           }
         }
@@ -191,8 +191,12 @@ $(function () {
     var role_id = $(this).data('id'),
       role_name = $(this).data('name'),
       role_guard = $(this).data('guard'),
+      role_users = $(this).data('users'),
       dtrModal = $('.dtr-bs-modal.show');
 
+    if (role_users > 0) {
+      $('#check-guard').hide();
+    }
     if (dtrModal.length) {
       dtrModal.modal('hide');
     }
@@ -253,6 +257,8 @@ $(function () {
     $('.text-error').html('');
     $('#role_id').val('');
     $('#modelTitle').html('Add New Role');
+    $('#check-guard').show();
+    getPermissions('web');
     $('.form_submit').attr('action', `${baseUrl}admin/roles`);
   });
 
@@ -263,8 +269,6 @@ $(function () {
     }
 
     $.get(url, function (response) {
-      console.log(response);
-
       if (response.permissions.length > 0) {
         var permissionsHtml = '';
         var tabContentHtml = '';
@@ -359,7 +363,7 @@ $(function () {
 
   getPermissions('web');
 
-  $(document).on('change', '#add-role-guard', function (e) {
+  $(document).on('change', '#role-guard', function (e) {
     getPermissions($(this).val());
   });
 });

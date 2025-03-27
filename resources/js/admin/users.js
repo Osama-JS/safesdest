@@ -163,7 +163,7 @@ $(function () {
                   '<a href="' +
                   userView +
                   '" class="dropdown-item">View</a>' +
-                  '<a href="javascript:;" class="dropdown-item">Suspend</a>' +
+                  `<a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">change status</a>` +
                   '</div>' +
                   '</div>';
           }
@@ -255,4 +255,141 @@ $(function () {
       $('#user-role').val(data.role_id);
     });
   });
+
+  $(document).on('click', '.status-record', function () {
+    var id = $(this).data('id');
+    var name = $(this).data('name');
+    var status = $(this).data('status');
+
+    // استخدام SweetAlert لعرض النموذج
+    Swal.fire({
+      title: `Change User: ${name} Status`,
+      icon: 'info',
+      html: `
+            <form class="add-new-user pt-0 form_status" method="POST" action="${baseUrl + 'admin/users/status'}">
+                <input type="hidden" value="${id}" name="id">
+                <select class="form-select" name="status">
+                    <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+                    <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                </select>
+            </form>
+        `,
+      showCloseButton: true,
+      showCancelButton: true,
+      focusConfirm: false,
+      confirmButtonText: 'Confirm!',
+      confirmButtonAriaLabel: 'Thumbs up, great!',
+      cancelButtonText: 'Cancel',
+      cancelButtonAriaLabel: 'Thumbs down',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      },
+      buttonsStyling: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        // AJAX request for form submission
+        var formData = $('.form_status').serialize(); // استخدام البيانات من النموذج في SweetAlert
+
+        $.ajax({
+          url: $('.form_status').attr('action'),
+          type: 'POST',
+          data: formData,
+          success: function (response) {
+            Swal.fire({
+              icon: response.type,
+              title: response.message,
+              showConfirmButton: false,
+              timer: 1500
+            });
+            if (response.status == 1) {
+              // إذا كان يوجد جدول بيانات يتم تحديثه
+              if (dt_user) {
+                dt_user.draw();
+              }
+            }
+          },
+          error: function (xhr, status, error) {
+            // معالجة الخطأ في حال وجود مشكلة في إرسال البيانات
+            Swal.fire({
+              icon: 'error',
+              title: 'Something went wrong!',
+              text: 'Please try again later.'
+            });
+          }
+        });
+      }
+    });
+  });
+
+  $('#select-template').on('change', function () {
+    var templateId = $(this).val();
+
+    // تنظيف الحقول الإضافية السابقة
+    $('#additional-form').html('');
+
+    if (templateId) {
+      // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
+      $.ajax({
+        url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
+        type: 'GET',
+        data: { id: templateId },
+        success: function (response) {
+          // توليد الحقول في #additional-form
+          console.log(response.fields);
+
+          generateFields(response.fields);
+        },
+        error: function () {
+          console.log('Error loading template fields.');
+        }
+      });
+    }
+  });
+
+  function generateFields(fields) {
+    fields.forEach(field => {
+      var inputField = '';
+
+      switch (field.type) {
+        case 'string':
+          inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+          break;
+        case 'number':
+          inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+          break;
+        case 'email':
+          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+          break;
+        case 'date':
+          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" required=${field.required}>`;
+          break;
+        case 'textarea':
+          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}></textarea>`;
+          break;
+        case 'select':
+          inputField = `<select name="additional_fields[${field.name}]" class="form-select" required=${field.required}>
+          ${(() => {
+            try {
+              const options = JSON.parse(field.value || '[]'); // إذا كانت فارغة، استخدم مصفوفة فارغة
+              return options.map(option => `<option value="${option.value}">${option.name}</option>`).join('');
+            } catch (error) {
+              console.error('Error parsing options:', error);
+              return '';
+            }
+          })()}
+        </select>`;
+
+          break;
+      }
+
+      $('#additional-form').append(`
+            <div class="mb-3 col-md-6">
+                <label class="form-label">${field.required ? '*' : ''} ${field.name}</label>
+                ${inputField}
+            </div>
+        `);
+    });
+  }
 });

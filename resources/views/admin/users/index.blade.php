@@ -164,16 +164,15 @@
                                         <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
                                             data-bs-target="#navs-justified-home" aria-controls="navs-justified-home"
                                             aria-selected="true"><span class="d-none d-sm-block"><i
-                                                    class="tf-icons ti ti-home ti-sm me-1_5"></i> {{ __('General') }}
+                                                    class="tf-icons ti ti-grid-dots ti-sm me-1_5"></i> {{ __('Main') }}
                                         </button>
                                     </li>
                                     <li class="nav-item">
                                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
                                             data-bs-target="#navs-justified-profile" aria-controls="navs-justified-profile"
                                             aria-selected="false"><span class="d-none d-sm-block"><i
-                                                    class="tf-icons ti ti-user ti-sm me-1_5"></i>
-                                                {{ __('Template') }}</span><i
-                                                class="ti ti-user ti-sm d-sm-none"></i></button>
+                                                    class="tf-icons ti ti-file-plus ti-sm me-1_5"></i>
+                                                {{ __('Additional ') }}</span></button>
                                     </li>
                                 </ul>
                                 <div class="tab-content">
@@ -265,12 +264,18 @@
 
                                     </div>
                                     <div class="tab-pane fade" id="navs-justified-profile" role="tabpanel">
-                                        <p>
-                                            {{ __('Donut dragée jelly pie halvah. Danish gingerbread bonbon cookie wafer candy oat cake ice cream. Gummies halvah tootsie roll muffin biscuit icing dessert gingerbread. Pastry ice cream cheesecake fruitcake.') }}
-                                        </p>
-                                        <p class="mb-0">
-                                            {{ __('Jelly-o jelly beans icing pastry cake cake lemon drops. Muffin muffin pie tiramisu halvah cotton candy liquorice caramels.') }}
-                                        </p>
+                                        <div class="form-group">
+                                            <label for="select-template">Select Template</label>
+                                            <select name="template" id="select-template" class="form-select w-auto">
+                                                <option value="">-- Select Template</option>
+                                                @foreach ($templates as $key)
+                                                    <option value="{{ $key->id }}">{{ $key->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div id="additional-form" class="row mt-4">
+
+                                        </div>
                                     </div>
 
                                 </div>

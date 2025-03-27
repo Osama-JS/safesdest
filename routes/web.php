@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Controllers\admin\DashboardController;
+use App\Http\Controllers\admin\DriversController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\dashboard\Analytics;
 use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TeamsController;
 use App\Http\Controllers\admin\UsersController;
@@ -10,6 +11,9 @@ use App\Http\Controllers\laravel_example\UserManagement;
 use App\Http\Controllers\admin\settings\SettingsController;
 use App\Http\Controllers\admin\settings\VehiclesController;
 use App\Http\Controllers\admin\settings\GeofencesController;
+use App\Http\Controllers\admin\settings\PricingController;
+use App\Http\Controllers\admin\settings\PricingTemplateController;
+use App\Http\Controllers\admin\settings\TemplateController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
 
@@ -36,12 +40,13 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('/laravel/user-management', [UserManagement::class, 'UserManagement'])
         ->name('laravel-example-user-management');
 
-      Route::get('/', [UsersController::class, 'index'])->name('user.dashboard');
 
+      Route::get('/', [DashboardController::class, 'index'])->name('user.dashboard');
 
       Route::get('/users', [UsersController::class, 'index'])->name('user.users');
       Route::get('/users/data', [UsersController::class, 'getData'])->name('user.data');
       Route::post('/users', [UsersController::class, 'store'])->name('user.create');
+      Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
 
       Route::get('/roles', [RolesController::class, 'index'])->name('role.roles');
       Route::post('/roles', [RolesController::class, 'store'])->name('role.create');
@@ -62,8 +67,36 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
 
         Route::get('/geofences', [GeofencesController::class, 'index'])->name('settings.geofences');
+        Route::get('/geofences/data', [GeofencesController::class, 'getData'])->name('settings.geofences.data');
         Route::post('/geofences', [GeofencesController::class, 'store'])->name('settings.geofences.store');
+        Route::get('/geofences/edit/{id}', [GeofencesController::class, 'edit'])->name('settings.geofences.show');
+        Route::post('/geofences/delete/{id}', [GeofencesController::class, 'destroy'])->name('settings.geofences.delete');
+
+
+
+        Route::get('/pricing', [PricingController::class, 'index'])->name('settings.pricing');
+        Route::get('/pricing/data', [PricingController::class, 'getData'])->name('settings.pricing.data');
+        Route::post('/pricing', [PricingController::class, 'store'])->name('settings.pricing.store');
+        Route::get('/pricing/edit/{id}', [PricingController::class, 'edit'])->name('settings.pricing.show');
+        Route::post('/pricing/status/{id}', [PricingController::class, 'change_state'])->name('settings.pricing.status');
+        Route::post('/pricing/edit', [PricingController::class, 'update'])->name('settings.pricing.edit');
+        Route::post('/pricing/delete/{id}', [PricingController::class, 'destroy'])->name('settings.pricing.delete');
+
+        Route::get('/templates', [TemplateController::class, 'index'])->name('settings.templates');
+        Route::get('/templates/data', [TemplateController::class, 'getData'])->name('settings.templates.data');
+        Route::get('/templates/fields', [TemplateController::class, 'getFields'])->name('settings.templates.fields');
+        Route::post('/templates', [TemplateController::class, 'store'])->name('settings.templates.store');
+        Route::get('/templates/edit/{id}', [TemplateController::class, 'edit'])->name('settings.templates.edit');
+        Route::post('/templates/update/', [TemplateController::class, 'update'])->name('settings.templates.update');
+
+        Route::get('/templates/pricing/data/{id}', [PricingTemplateController::class, 'getData'])->name('settings.templates.pricing.data');
       });
+
+      Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
+      Route::post('/drivers', [DriversController::class, 'store'])->name('drivers.create');
+      Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');
+
+
       Route::get('/teams', [TeamsController::class, 'index'])->name('teams.teams');
       Route::post('/teams', [TeamsController::class, 'store'])->name('teams.store');
       Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.show');

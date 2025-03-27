@@ -55,7 +55,7 @@ $('.form_submit').on('submit', function (e) {
 
             document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
 
-            showBlockAlert('success', data.message, 2000);
+            showBlockAlert('success', data.success, 1700);
           } else if (data.status === 2) {
             // إبقاء استخدام SweetAlert2 لحالة الخطأ هنا فقط
             showAlert('error', data.error, 10000, true);
@@ -66,7 +66,7 @@ $('.form_submit').on('submit', function (e) {
     error: function (jqXHR, textStatus, errorThrown) {
       $this.unblock({
         onUnblock: function () {
-          showBlockAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
+          showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
         }
       });
     }

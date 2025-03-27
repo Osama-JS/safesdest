@@ -4,10 +4,13 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\Form_Template;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Models\mongo\mUsers;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -20,6 +23,7 @@ class UsersController extends Controller
     $activeCount = $users->where('status', 'active')->count();
     $inactiveCount =  $users->where('status', 'inactive')->count();
     $pendingCount =  $users->where('status', 'pending')->count();
+    $templates = Form_Template::all();
 
     $roles = Role::where('guard_name', 'web')->get();
     return view('admin.users.index', [
@@ -27,7 +31,8 @@ class UsersController extends Controller
       'active' => $activeCount,
       'inactive' => $inactiveCount,
       'pending' => $pendingCount,
-      'roles' => $roles
+      'roles' => $roles,
+      'templates' => $templates
     ]);
   }
 
@@ -111,39 +116,90 @@ class UsersController extends Controller
     }
   }
 
-  public function store(Request $req)
+  public function chang_status(Request $req)
   {
 
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:users,id',
+      'status' => 'required',
+
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+    }
+
+    try {
+      $done = User::find($req->id)->update(['status' => $req->status]);
+
+      if (!$done) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change user Status']);
+      }
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'user Status changed']);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
+
+
+  public function store(Request $req)
+  {
     $validator = Validator::make($req->all(), [
       'name' => 'required',
       'email' => 'required|unique:users,email',
       'phone' => 'required|unique:users,phone',
       'password' => 'required|same:confirm-password',
-      'role' => 'required|exists:roles,id'
+      'role' => 'required|exists:roles,id',
+      'template' => 'nullable|exists:form_templates,id' // التحقق من صحة معرف القالب
     ]);
+
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
     }
+
     DB::beginTransaction();
     try {
       $password = Hash::make($req->password);
+
+
+      $additionalFields = collect($req->all())->filter(function ($value, $key) {
+        return Str::startsWith($key, 'additional_fields');
+      })->toArray();
+
+
+
+      // التأكد من أن الحقول هي مصفوفة
+      if (!is_array($additionalFields) || empty($additionalFields)) {
+        return response()->json(['status' => 0, 'error' => 'Invalid additional fields data']);
+      }
+
+      // dd($additionalFields['additional_fields']);
+      $additionalData = mUsers::create([
+        'fields' => $additionalFields['additional_fields'] // تخزين الحقول كما هي
+      ]);
+
+      // إنشاء المستخدم في MySQL
       $user = User::create([
         'name' => $req->name,
         'email' => $req->email,
-        'phone' =>   $req->phone,
-        'phone_code' =>  $req->phone_code,
+        'phone' => $req->phone,
+        'phone_code' => $req->phone_code,
         'password' => $password,
-        'role_id' =>  $req->role
+        'role_id' => $req->role,
+        'form_template_id' => $req->template, // حفظ معرف القالب
+        'additional_data_id' => $additionalData->_id // حفظ معرف MongoDB في جدول users
       ]);
+
       if (!$user) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'error to create user']);
+        return response()->json(['status' => 2, 'error' => 'Error creating user']);
       }
-      $roles = Role::find($req->role);
-      $user->assignRole($roles->name);
+
+      // تعيين الدور
+      $role = Role::find($req->role);
+      $user->assignRole($role->name);
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'user created']);
+      return response()->json(['status' => 1, 'success' => 'User created']);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

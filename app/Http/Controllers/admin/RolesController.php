@@ -67,6 +67,7 @@ class RolesController extends Controller
         $nestedData['fake_id'] = ++$ids;
         $nestedData['name'] = $user->name;
         $nestedData['guard'] = $user->guard_name;
+        $nestedData['users'] = User::where('role_id', $user->id)->count();
         $nestedData['created_at'] = $user->created_at;
 
         $data[] = $nestedData;

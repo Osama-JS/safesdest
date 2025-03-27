@@ -26,12 +26,11 @@ class VehiclesController extends Controller
     if ($req->has('vehicle') && !empty($req->vehicle)) {
       $types->where('vehicle_id', $req->vehicle);
     }
-    $types = $types->get();
+
     $sizes = Vehicle_Size::with('type.vehicle');
     if ($req->has('type') && !empty($req->type)) {
       $sizes->where('vehicle_type_id', $req->type);
     }
-    $sizes = $sizes->get();
     $data = [];
     $data['vehicles'] = $vehicles->map(function ($item) {
       return [
@@ -42,7 +41,7 @@ class VehiclesController extends Controller
       ];
     });
 
-    $data['types'] = Vehicle_Type::with('vehicle')->get()->map(function ($item) {
+    $data['types'] = $types->get()->map(function ($item) {
       return [
         'id' => $item->id,
         'name' => $item->name,
@@ -52,7 +51,7 @@ class VehiclesController extends Controller
       ];
     });
 
-    $data['sizes'] = Vehicle_Size::with('type.vehicle')->get()->map(function ($item) {
+    $data['sizes'] = $sizes->get()->map(function ($item) {
       return [
         'id' => $item->id,
         'name' => $item->name,
@@ -66,8 +65,8 @@ class VehiclesController extends Controller
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:vehicles,name',
-      'en_name' => 'required|unique:vehicles,en_name',
+      'v_name' => 'required|unique:vehicles,name,' .  ($req->id ?? 0),
+      'v_en_name' => 'required|unique:vehicles,en_name,' .  ($req->id ?? 0),
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -79,13 +78,13 @@ class VehiclesController extends Controller
           return response()->json(['status' => 2, 'error' => __('Vehicle not found')]);
         }
         $done = Vehicle::where('id', $req->id)->update([
-          'name' => $req->name,
-          'en_name' => $req->en_name,
+          'name' => $req->v_name,
+          'en_name' => $req->v_en_name,
         ]);
       } else {
         $done = Vehicle::create([
-          'name' => $req->name,
-          'en_name' => $req->en_name,
+          'name' => $req->v_name,
+          'en_name' => $req->v_en_name,
         ]);
       }
       if (!$done) {

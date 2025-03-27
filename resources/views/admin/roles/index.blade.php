@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Users'))
+@section('title', __('Roles'))
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss'])
@@ -8,13 +8,11 @@
         .permissions-container {
             max-height: 400px;
             overflow-y: auto;
-            background: #f8f9fa;
             border-radius: 5px;
         }
 
         .permissions-container .form-check {
             margin-bottom: 5px;
-            background: white;
             border-radius: 4px;
         }
 
@@ -25,7 +23,6 @@
 
         .nav-pills .nav-link.active {
             background-color: #007bff;
-            color: white;
         }
     </style>
 @endsection
@@ -92,7 +89,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-6">
+                                <div class="mb-6" id="check-guard">
                                     <label class="form-label" for="role-guard">* {{ __('guard') }}</label>
                                     <select name="guard" id="role-guard" class="form-select ">
                                         <option value="web">{{ __('Administrator') }}</option>
@@ -128,7 +125,6 @@
                                                 aria-selected="false">{{ __('Messages') }}</button>
                                         </li>
                                     </ul>
-
                                     <div class="tab-content permissions-container" id="permissions_container">
                                     </div>
                                 </div>

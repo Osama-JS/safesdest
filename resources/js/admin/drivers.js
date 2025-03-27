@@ -24,17 +24,18 @@ $(function () {
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/users/data'
+        url: baseUrl + 'admin/drivers/data'
       },
       columns: [
         // columns according to JSON
         { data: '' },
         { data: 'id' },
+        { data: 'username' },
         { data: 'name' },
         { data: 'email' },
         { data: 'phone' },
-        { data: 'role' },
         { data: 'status' },
+        { data: 'created_at' },
         { data: 'action' }
       ],
       rowCallback: function (row, data) {
@@ -191,7 +192,15 @@ $(function () {
         }
       },
       // Buttons
-      buttons: [],
+      buttons: [
+        `<label class='me-2'>
+          <select id='roleFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+            <option>all status</option>
+            <option value='driver'>Driver</option>
+            <option value='customer'>Customer</option>
+          </select>
+        </label>`
+      ],
       // For responsive popup
       responsive: {
         details: {
@@ -228,6 +237,15 @@ $(function () {
     });
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
   }
+
+  $('.dataTables_filter').hide();
+
+  $('.dataTables_filter').parent().append(`
+    <label class="me-2">
+      <input id="search_input" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
+
+    </label>
+  `);
 
   document.addEventListener('formSubmitted', function (event) {
     if (dt_user) {
@@ -392,4 +410,67 @@ $(function () {
         `);
     });
   }
+
+  function loadData(vehicle = '', type = '', lode = true, lodeType = false, loadSize = false) {
+    $.ajax({
+      url: baseUrl + 'admin/settings/vehicles/data',
+      type: 'GET',
+      data: { vehicle: vehicle, type: type },
+      success: function (response) {
+        console.log(response.data.sizes);
+        var vehicle_options = ` <option value="">-- Select vehicle </option>`;
+        vehicle_options += response.data.vehicles
+          .map(
+            option => `
+          <option value="${option.id}">${option.name} - ${option.en_name}</option>
+        `
+          )
+          .join('');
+        if (lode) {
+          $('#vehicle-vehicle').html(vehicle_options);
+        }
+
+        var vehicle_type_options = ` <option value="">-- select vehicle type </option>`;
+        vehicle_type_options += response.data.types
+          .map(
+            option => `
+          <option value="${option.id}"> ${option.name} - ${option.en_name}</option>
+        `
+          )
+          .join('');
+
+        if (lodeType) {
+          $('#vehicle-type').html(vehicle_type_options);
+        }
+
+        var vehicle_sizes_options = ` <option value="">-- select vehicle Size </option>`;
+        vehicle_sizes_options += response.data.sizes
+          .map(
+            size => `
+          <option value="${size.id}"> ${size.name}</option>
+        `
+          )
+          .join('');
+
+        if (loadSize) {
+          console.log('seize');
+
+          $('#vehicle-size').html(vehicle_type_options);
+        }
+      }
+    });
+  }
+  loadData();
+
+  $(document).on('change', '#vehicle-vehicle', function () {
+    var vehicle = $(this).val();
+    $('#vehicle-size').html('<option value="">-- select vehicle Size </option>');
+    $('#vehicle-type').html('<option value="">-- select vehicle type </option>');
+    loadData(vehicle, '', false, true, false);
+  });
+  $(document).on('change', '#vehicle-type', function () {
+    var type = $(this).val();
+    $('#vehicle-size').html('<option value="">-- select vehicle Size </option>');
+    loadData('', type, false, false, true);
+  });
 });

@@ -4,7 +4,7 @@
       "url": "/",
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
-      "slug": "dashboard-analytics"
+      "slug": "dashboard"
     },
     {
       "url": "admin/teams",
@@ -16,7 +16,7 @@
       "url": "admin/drivers",
       "name": "Drivers",
       "icon": "menu-icon tf-icons ti  ti-steering-wheel",
-      "slug": "drivers"
+      "slug": "drivers.drivers"
     },
     {
       "menuHeader": "Users & Settings"
@@ -43,6 +43,18 @@
           "name": "Geo-fence",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.geofences"
+        },
+        {
+          "url": "admin/settings/pricing",
+          "name": "Pricing",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.pricing"
+        },
+        {
+          "url": "admin/settings/templates",
+          "name": "Templates",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.templates"
         }
       ]
     },

@@ -207,5 +207,15 @@
   "General": "عام",
   "User Role": "دور المستخدم",
   "Confirm Password": "تأكيد كلمة المرور",
-  "Password": "كلمة المرور"
+  "Password": "كلمة المرور",
+  "Geo-fence": "السياج الجغرافي",
+  "It allows you to categorize Manager and simplifies the process of task assignment by letting you create virtual boundaries.": "يسمح لك بتصنيف المدير ويبسط عملية تعيين المهام من خلال السماح لك بإنشاء حدود افتراضية.",
+  "Add New Geo-fence": "إضافة سياج جغرافي جديد",
+  "🔍 Search Team": "🔍 بحث عن فريق",
+  "Marker Circle & Polygon": "دائرة العلامة والمضلع",
+  "Add Geo-fence": "إضافة سياج جغرافي",
+  "Name": "الاسم",
+  "Enter name": "أدخل الاسم",
+  "Description": "الوصف",
+  "Enter description": "أدخل الوصف"
 }

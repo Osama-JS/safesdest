@@ -335,10 +335,10 @@ $(function () {
         if (nextRow.length === 0) {
           row.after(`
                   <tr class="select-values-table connected-row">
-                      <td colspan="8">
-                          <div class="p-2 border rounded bg-light shadow-sm">
+                      <td colspan="4">
+                          <div class="p-2 border rounded shadow-sm">
                               <h6 class="text-primary">🔗 قيم الاختيار</h6>
-                              <table class="table table-bordered">
+                              <table class="table ">
                                   <thead>
                                       <tr>
                                           <th>القيمة</th>
@@ -348,7 +348,8 @@ $(function () {
                                   </thead>
                                   <tbody class="select-values-body"></tbody>
                               </table>
-                              <button type="button" class="btn btn-sm btn-primary add-select-value">➕ إضافة قيمة</button>
+                              <button type="button" class="btn btn-sm btn-icon text-primary add-select-value"> <i
+                                                    class="ti ti-plus me-0 me-sm-1 ti-xs"></i></button>
                           </div>
                       </td>
                   </tr>
@@ -366,7 +367,8 @@ $(function () {
           <tr>
               <td><input type="text" class="form-control select-value-input" placeholder="أدخل القيمة"></td>
               <td><input type="text" class="form-control select-name-input" placeholder="أدخل الاسم الظاهر"></td>
-              <td><button type="button" class="btn btn-sm btn-danger remove-select-value">❌</button></td>
+              <td><button type="button" class="btn btn-sm btn-icon text-danger remove-select-value"><i
+                                                                        class="ti ti-trash"></i></button></td>
           </tr>`;
       tableBody.append(newRow);
     });
@@ -416,6 +418,7 @@ $(function () {
         templateData.fields.push({
           id: $(this).data('id') || null,
           name: $(this).find('.field-name-input').val(),
+          label: $(this).find('.field-label-input').val(),
           type: type,
           required: $(this).find('.field-required-select').val(),
           value: type === 'select' ? JSON.stringify(selectValues) : $(this).find('.field-value-input').val(),
@@ -445,4 +448,84 @@ $(function () {
       });
     });
   });
+
+  document.getElementById('pricing_method_select').addEventListener('change', function () {
+    let methodId = this.value;
+    let customizePricingDiv = document.getElementById('customize_pricing');
+    customizePricingDiv.innerHTML = ''; // Clear existing content
+
+    if (methodId) {
+      let html = '';
+      if (methodId == 1) {
+        // Example: Distance-based pricing
+        html = `
+                <label class="form-label">Define Distance-Based Pricing</label>
+                <div class="row mb-3" id="distance_pricing">
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" name="from_val[]" placeholder="From (km)">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" name="to_val[]" placeholder="To (km)">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" name="price[]" placeholder="Price per km">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-success" onclick="addDistancePricing()">Add More</button>
+            `;
+      } else if (methodId == 2) {
+        // Example: Point-to-Point pricing
+        html = `
+                <label class="form-label">Define Point-to-Point Pricing</label>
+                <div class="row mb-3" id="point_pricing">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="from_point[]" placeholder="From Location">
+                    </div>
+                    <div class="col-md-5">
+                        <input type="text" class="form-control" name="to_point[]" placeholder="To Location">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" name="price[]" placeholder="Price">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-success" onclick="addPointPricing()">Add More</button>
+            `;
+      }
+      customizePricingDiv.innerHTML = html;
+    }
+  });
+
+  function addDistancePricing() {
+    let div = document.createElement('div');
+    div.classList.add('row', 'mb-3');
+    div.innerHTML = `
+        <div class="col-md-4">
+            <input type="number" class="form-control" name="from_val[]" placeholder="From (km)">
+        </div>
+        <div class="col-md-4">
+            <input type="number" class="form-control" name="to_val[]" placeholder="To (km)">
+        </div>
+        <div class="col-md-4">
+            <input type="number" class="form-control" name="price[]" placeholder="Price per km">
+        </div>
+    `;
+    document.getElementById('distance_pricing').appendChild(div);
+  }
+
+  function addPointPricing() {
+    let div = document.createElement('div');
+    div.classList.add('row', 'mb-3');
+    div.innerHTML = `
+        <div class="col-md-5">
+            <input type="text" class="form-control" name="from_point[]" placeholder="From Location">
+        </div>
+        <div class="col-md-5">
+            <input type="text" class="form-control" name="to_point[]" placeholder="To Location">
+        </div>
+        <div class="col-md-2">
+            <input type="number" class="form-control" name="price[]" placeholder="Price">
+        </div>
+    `;
+    document.getElementById('point_pricing').appendChild(div);
+  }
 });

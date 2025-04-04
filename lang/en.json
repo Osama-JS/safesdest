@@ -56,6 +56,10 @@
   "Driver": "Driver",
   "Customer": "Customer",
   "permissions": "permissions",
+  "Roles": "Roles",
+  "Role Name": "Role Name",
+  "Guard": "Guard",
+  "Permissions": "Permissions",
   "Home": "Home",
   "Profile": "Profile",
   "Messages": "Messages",
@@ -218,5 +222,8 @@
   "Enter name": "Enter name",
   "Description": "Description",
   "Enter description": "Enter description",
-  "Teams": "Teams"
+  "Teams": "Teams",
+  "Vehicles Selections": "Vehicles Selections",
+  "Select Template": "Select Template",
+  "-- Select Template": "-- Select Template"
 }

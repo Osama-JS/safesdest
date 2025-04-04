@@ -66,12 +66,47 @@ $('.form_submit').on('submit', function (e) {
     error: function (jqXHR, textStatus, errorThrown) {
       $this.unblock({
         onUnblock: function () {
+          console.log(errorThrown);
           showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
         }
       });
     }
   });
 });
+
+export function deleteRecord(name, url) {
+  Swal.fire({
+    title: `Delete ${name} ?`,
+    text: 'You will not be able to undo this action!',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    customClass: {
+      confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+      cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+    },
+    buttonsStyling: false
+  }).then(result => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: url,
+        type: 'DELETE',
+
+        success: function (response) {
+          if (response.status === 1) {
+            showAlert('success', response.success, 10000, true);
+            document.dispatchEvent(new CustomEvent('deletedSuccess'));
+          } else {
+            showAlert('error', response.error, 10000, true);
+          }
+        },
+        error: function () {
+          showAlert('error', 'Field to delete the Recode', 10000, true);
+        }
+      });
+    }
+  });
+}
 
 // دالة لإظهار التنبيه باستخدام block عند فك الحظر
 function showBlockAlert(type, message, timer = 700) {
@@ -95,7 +130,7 @@ function showBlockAlert(type, message, timer = 700) {
     $('.form_submit').unblock();
   }, 2000);
 }
-function showAlert(icon, title, timer, showConfirmButton = false) {
+export function showAlert(icon, title, timer, showConfirmButton = false) {
   toastr.options = {
     closeButton: true,
     progressBar: true,
@@ -140,4 +175,74 @@ function resetImage(imgElement) {
   if (imgElement) {
     $(imgElement).attr('src', $(imgElement).attr('data-image'));
   }
+}
+
+$('#select-template').on('change', function () {
+  var templateId = $(this).val();
+
+  // تنظيف الحقول الإضافية السابقة
+  $('#additional-form').html('');
+
+  if (templateId) {
+    // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
+    $.ajax({
+      url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
+      type: 'GET',
+      data: { id: templateId },
+      success: function (response) {
+        // توليد الحقول في #additional-form
+        console.log(response.fields);
+
+        generateFields(response.fields);
+      },
+      error: function () {
+        console.log('Error loading template fields.');
+      }
+    });
+  }
+});
+
+function generateFields(fields) {
+  fields.forEach(field => {
+    var inputField = '';
+
+    switch (field.type) {
+      case 'string':
+        inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        break;
+      case 'number':
+        inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        break;
+      case 'email':
+        inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        break;
+      case 'date':
+        inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" required=${field.required}>`;
+        break;
+      case 'textarea':
+        inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}></textarea>`;
+        break;
+      case 'select':
+        inputField = `<select name="additional_fields[${field.name}]" class="form-select" required=${field.required}>
+        ${(() => {
+          try {
+            const options = JSON.parse(field.value || '[]'); // إذا كانت فارغة، استخدم مصفوفة فارغة
+            return options.map(option => `<option value="${option.value}">${option.name}</option>`).join('');
+          } catch (error) {
+            console.error('Error parsing options:', error);
+            return '';
+          }
+        })()}
+      </select>`;
+
+        break;
+    }
+
+    $('#additional-form').append(`
+          <div class="mb-3 col-md-6">
+              <label class="form-label">${field.required ? '*' : ''} ${field.name}</label>
+              ${inputField}
+          </div>
+      `);
+  });
 }

@@ -3,10 +3,18 @@
  */
 
 'use strict';
+import { deleteRecord } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   console.log(typeof Lang);
+
+  // ajax setup
+  $.ajaxSetup({
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+  });
 
   function loadTeams(page = 1, search = '') {
     $.ajax({
@@ -22,15 +30,13 @@ $(function () {
           return;
         }
 
-        console.log(response.data.data);
-
         response.data.data.forEach(team => {
           // For Avatar badge
 
           let driversHtml = team.drivers
             .slice(0, 5) // عرض أول 5 سائقين فقط
             .map(driver => {
-              console.log(driver); // تحقق من البيانات
+              // تحقق من البيانات
               var stateNum = Math.floor(Math.random() * 6);
               var states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];
               var $state = states[stateNum],
@@ -69,7 +75,7 @@ $(function () {
                           <h5>${team.name}</h5>
                           <div class="d-flex align-items-center gap-50">
                               <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${team.id}" data-name="${team.name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>
-                              <button class='btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect' data-id="">
+                              <button class='btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect' data-id="${team.id}" data-name="${team.name}">
                                   <i class='ti ti-trash'></i>
                               </button>
                               <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
@@ -123,12 +129,17 @@ $(function () {
   });
 
   loadTeams();
-
   document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+
     loadTeams();
     setTimeout(() => {
       $('#submitModal').modal('hide');
     }, 2000);
+  });
+
+  document.addEventListener('deletedSuccess', function (event) {
+    loadTeams();
   });
 
   $(document).on('click', '.edit-record', function () {
@@ -138,8 +149,6 @@ $(function () {
     $('#submitModal').modal('show');
 
     $('#modelTitle').html(`Edit Team: <span class="bg-info text-white px-2 rounded">${teamName}</span>`);
-
-    $('.form_submit').attr('action', `${baseUrl}admin/teams/edit`);
 
     // get data
     $.get(`${baseUrl}admin/teams/edit/${teamId}`, function (data) {
@@ -152,11 +161,16 @@ $(function () {
       $('#team-note').val(data.note);
     });
   });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/teams/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
+  });
+
   $('#submitModal').on('hidden.bs.modal', function () {
     $(this).find('form')[0].reset();
     $('.text-error').html('');
     $('#team_id').val('');
     $('#modelTitle').html('Add New Team');
-    $('.form_submit').attr('action', `${baseUrl}admin/teams/`);
   });
 });

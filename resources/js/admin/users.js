@@ -3,13 +3,24 @@
  */
 
 'use strict';
+import { deleteRecord, showAlert } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
-  var dt_user_table = $('.datatables-users'),
+  var dt_data_table = $('.datatables-users'),
     userView = baseUrl + 'app/user/view/account',
-    offCanvasForm = $('#largeModal');
+    offCanvasForm = $('#submitModal');
+  var select2 = $('.select2');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select teams',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
 
   // ajax setup
   $.ajaxSetup({
@@ -19,8 +30,8 @@ $(function () {
   });
 
   // Users datatable
-  if (dt_user_table.length) {
-    var dt_user = dt_user_table.DataTable({
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
@@ -35,6 +46,7 @@ $(function () {
         { data: 'phone' },
         { data: 'role' },
         { data: 'status' },
+        { data: 'reset' },
         { data: 'action' }
       ],
       rowCallback: function (row, data) {
@@ -119,6 +131,8 @@ $(function () {
         {
           // User phone
           targets: 5,
+          searchable: false,
+          orderable: false,
           render: function (data, type, full, meta) {
             var $role = full['role'];
 
@@ -128,6 +142,8 @@ $(function () {
         {
           // status
           targets: 6,
+          searchable: false,
+          orderable: false,
           className: 'text-center',
           render: function (data, type, full, meta) {
             var $status = full['status'];
@@ -147,6 +163,26 @@ $(function () {
           }
         },
         {
+          targets: 7,
+          searchable: false,
+          orderable: false,
+
+          render: function (data, type, full, meta) {
+            var html = `<label class="switch switch-success">
+              <input type="checkbox" class="switch-input edit_status" data-id="${full['id']}" ${full['reset_password'] == 1 ? 'checked' : ''} />
+              <span class="switch-toggle-slider">
+                <span class="switch-on">
+                  <i class="ti ti-check"></i>
+                </span>
+                <span class="switch-off">
+                  <i class="ti ti-x"></i>
+                </span>
+              </span>
+            </label>`;
+            return full['id'] === 1 ? '' : html;
+          }
+        },
+        {
           // Actions
           targets: -1,
           title: 'Actions',
@@ -156,8 +192,8 @@ $(function () {
             return full['id'] === 1
               ? ''
               : '<div class="d-flex align-items-center gap-50">' +
-                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
-                  `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}"><i class="ti ti-trash"></i></button>` +
+                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#submitModal"><i class="ti ti-edit"></i></button>` +
+                  `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button>` +
                   '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>' +
                   '<div class="dropdown-menu dropdown-menu-end m-0">' +
                   '<a href="' +
@@ -226,13 +262,46 @@ $(function () {
         }
       }
     });
-    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
   document.addEventListener('formSubmitted', function (event) {
-    if (dt_user) {
-      dt_user.draw();
+    let id = $('#user_id').val();
+    $('.form_submit').trigger('reset');
+    $('#user-teams').val([]).trigger('change');
+    $('#additional-form').html('');
+    $('#select-template').val('');
+    if (id) {
+      setTimeout(() => {
+        $('#submitModal').modal('hide');
+      }, 2000);
     }
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
+
+  document.addEventListener('deletedSuccess', function (event) {
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
+
+  $(document).on('change', '.edit_status', function () {
+    var Id = $(this).data('id');
+    $.ajax({
+      url: `${baseUrl}admin/users/reset-password/${Id}`,
+      type: 'post',
+
+      success: function (response) {
+        if (response.status != 1) {
+          showAlert('error', data.error, 10000, true);
+        }
+      },
+      error: function () {
+        showAlert('Error!', 'Failed Request', 'error');
+      }
+    });
   });
 
   $(document).on('click', '.edit-record', function () {
@@ -243,17 +312,23 @@ $(function () {
       dtrModal.modal('hide');
     }
 
-    $('#modelTitle').html('Edit User');
-
-    // get data
-    $.get(`${baseUrl}user-list\/${user_id}\/edit`, function (data) {
+    $.get(`${baseUrl}admin/users/edit/${user_id}`, function (data) {
+      console.log(data.teamsIds);
       $('.text-error').html('');
       $('#user_id').val(data.id);
       $('#user-fullname').val(data.name);
       $('#user-email').val(data.email);
       $('#user-phone').val(data.phone);
+      $('#phone-code').val(data.phone_code);
       $('#user-role').val(data.role_id);
+      $('#user-teams').val(data.teamsIds).trigger('change');
+      $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
+  });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/users/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   $(document).on('click', '.status-record', function () {
@@ -305,8 +380,8 @@ $(function () {
             });
             if (response.status == 1) {
               // إذا كان يوجد جدول بيانات يتم تحديثه
-              if (dt_user) {
-                dt_user.draw();
+              if (dt_data) {
+                dt_data.draw();
               }
             }
           },
@@ -323,73 +398,12 @@ $(function () {
     });
   });
 
-  $('#select-template').on('change', function () {
-    var templateId = $(this).val();
-
-    // تنظيف الحقول الإضافية السابقة
+  $('#submitModal').on('hidden.bs.modal', function () {
+    $(this).find('form')[0].reset();
+    $('.text-error').html('');
+    $('#modelTitle').html('Add New User');
     $('#additional-form').html('');
-
-    if (templateId) {
-      // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
-      $.ajax({
-        url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
-        type: 'GET',
-        data: { id: templateId },
-        success: function (response) {
-          // توليد الحقول في #additional-form
-          console.log(response.fields);
-
-          generateFields(response.fields);
-        },
-        error: function () {
-          console.log('Error loading template fields.');
-        }
-      });
-    }
+    $('#select-template').val('');
+    $('#user-teams').val([]).trigger('change');
   });
-
-  function generateFields(fields) {
-    fields.forEach(field => {
-      var inputField = '';
-
-      switch (field.type) {
-        case 'string':
-          inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'number':
-          inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'email':
-          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'date':
-          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" required=${field.required}>`;
-          break;
-        case 'textarea':
-          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}></textarea>`;
-          break;
-        case 'select':
-          inputField = `<select name="additional_fields[${field.name}]" class="form-select" required=${field.required}>
-          ${(() => {
-            try {
-              const options = JSON.parse(field.value || '[]'); // إذا كانت فارغة، استخدم مصفوفة فارغة
-              return options.map(option => `<option value="${option.value}">${option.name}</option>`).join('');
-            } catch (error) {
-              console.error('Error parsing options:', error);
-              return '';
-            }
-          })()}
-        </select>`;
-
-          break;
-      }
-
-      $('#additional-form').append(`
-            <div class="mb-3 col-md-6">
-                <label class="form-label">${field.required ? '*' : ''} ${field.name}</label>
-                ${inputField}
-            </div>
-        `);
-    });
-  }
 });

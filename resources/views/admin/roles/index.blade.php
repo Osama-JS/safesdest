@@ -34,7 +34,7 @@
 @section('page-script')
     @vite(['resources/js/admin/roles.js'])
     @vite(['resources/js/ajax.js'])
-    @vite(['resources/js/model.js'])
+
 @endsection
 
 @section('content')
@@ -44,13 +44,13 @@
             <h5 class="card-title mb-2">{{ __('Roles & Permissions') }}</h5>
             <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p>
             <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
-                data-bs-target="#largeModal">
+                data-bs-target="#formModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Add New Role') }}</span>
             </button>
         </div>
         <div class="card-datatable table-responsive">
-            <table class="datatables-users table">
+            <table class="datatables-data table">
                 <thead class="border-top">
                     <tr>
                         <th></th>
@@ -65,11 +65,11 @@
 
     </div>
 
-    <div class="modal fade " id="largeModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal fade " id="formModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modelTitle">{{ __('add new role') }}</h5>
+                    <h5 class="modal-title" id="modelTitle">{{ __('Add New Role') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('role.create') }}">
@@ -81,16 +81,16 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-6">
-                                    <label class="form-label" for="role-name">* {{ __('role') }}</label>
+                                    <label class="form-label" for="role-name">* {{ __('Role') }}</label>
                                     <input type="text" name="name" class="form-control" id="role-name"
-                                        placeholder="{{ __('role name') }}" aria-label="{{ __('role name') }}" />
+                                        placeholder="{{ __('Role Name') }}" aria-label="{{ __('Role Name') }}" />
                                     <span class="name-error text-danger text-error"></span>
 
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-6" id="check-guard">
-                                    <label class="form-label" for="role-guard">* {{ __('guard') }}</label>
+                                    <label class="form-label" for="role-guard">* {{ __('Guard') }}</label>
                                     <select name="guard" id="role-guard" class="form-select ">
                                         <option value="web">{{ __('Administrator') }}</option>
                                         <option value="driver">{{ __('Driver') }}</option>
@@ -102,7 +102,7 @@
                             </div>
 
                             <div class="col-xl-12">
-                                <h6 class="text-muted">* {{ __('permissions') }}</h6>
+                                <h6 class="text-muted">* {{ __('Permissions') }}</h6>
                                 <span class="permissions-error text-danger text-error"></span>
                                 <div class="nav-align-left mb-6">
                                     <ul class="nav nav-pills me-4" role="tablist" id="permissions_types">

@@ -44,7 +44,9 @@
   "Locations": "المواقع",
   "Roles & Permissions": "الأدوار والصلاحيات",
   "Roles": "الأدوار",
-  "Permission": "الإذن",
+  "Role Name": "اسم الدور",
+  "Guard": "الحارس",
+  "Permissions": "الصلاحيات",
   "Users": "المستخدمين",
   "Users & Settings": "الإعدادات & المستخدمين",
   "List": "القائمة",
@@ -217,5 +219,8 @@
   "Name": "الاسم",
   "Enter name": "أدخل الاسم",
   "Description": "الوصف",
-  "Enter description": "أدخل الوصف"
+  "Enter description": "أدخل الوصف",
+  "Vehicles Selections": "اختيار المركبات",
+  "Select Template": "اختر القالب",
+  "-- Select Template": "-- اختر القالب"
 }

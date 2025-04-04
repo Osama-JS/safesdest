@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class mUsers extends Model
 {
-  protected $connection = 'mongodb';
+  protected $connection = 'pgsql';
   protected $collection = 'users';
-  protected $fillable = ['fields'];
+  protected $guarded = [];
 }

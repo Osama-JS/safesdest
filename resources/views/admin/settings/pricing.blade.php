@@ -39,7 +39,7 @@
                         <th>{{ __('Method') }}</th>
                         <th>{{ __('Description') }}</th>
                         <th>{{ __('Status') }}</th>
-                        <th>{{ __('Created At') }}</th>
+                        <th>{{ __('Calculating Distance') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>

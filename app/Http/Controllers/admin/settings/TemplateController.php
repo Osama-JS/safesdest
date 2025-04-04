@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use App\Http\Controllers\Controller;
 use App\Models\Form_Field;
+use App\Models\Pricing;
+use App\Models\Pricing_Method;
 use App\Models\Vehicle;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\Console\Command\DumpCompletionCommand;
@@ -128,10 +130,11 @@ class TemplateController extends Controller
   {
     $data = Form_Template::with('fields', 'pricing_templates')->find($id);
     $vehicle = Vehicle::all();
+    $methods = Pricing_Method::where('status', 1)->get();
     if (!$data) {
       return redirect()->back();
     }
-    return view('admin.settings.templates.edit', compact('data', 'vehicle'));
+    return view('admin.settings.templates.edit', compact('data', 'vehicle', 'methods'));
   }
 
 

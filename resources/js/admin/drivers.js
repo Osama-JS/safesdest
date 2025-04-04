@@ -38,11 +38,6 @@ $(function () {
         { data: 'created_at' },
         { data: 'action' }
       ],
-      rowCallback: function (row, data) {
-        if (data.id === 1) {
-          $(row).addClass('table-light');
-        }
-      },
       columnDefs: [
         {
           // For Responsive
@@ -103,6 +98,15 @@ $(function () {
           // User email
           targets: 3,
           render: function (data, type, full, meta) {
+            var username = full['username'];
+
+            return '<span class="user-email">' + username + '</span>';
+          }
+        },
+        {
+          // User email
+          targets: 4,
+          render: function (data, type, full, meta) {
             var $email = full['email'];
 
             return '<span class="user-email">' + $email + '</span>';
@@ -110,7 +114,7 @@ $(function () {
         },
         {
           // User phone
-          targets: 4,
+          targets: 5,
           render: function (data, type, full, meta) {
             var $phone = full['phone'];
 
@@ -119,16 +123,16 @@ $(function () {
         },
         {
           // User phone
-          targets: 5,
+          targets: 6,
           render: function (data, type, full, meta) {
             var $role = full['role'];
 
-            return '<span class="user-role alert alert-info">' + $role + '</span>';
+            return '<span>' + '</span>';
           }
         },
         {
           // status
-          targets: 6,
+          targets: 7,
           className: 'text-center',
           render: function (data, type, full, meta) {
             var $status = full['status'];
@@ -147,6 +151,7 @@ $(function () {
             return html;
           }
         },
+
         {
           // Actions
           targets: -1,
@@ -154,19 +159,19 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
-            return full['id'] === 1
-              ? ''
-              : '<div class="d-flex align-items-center gap-50">' +
-                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
-                  `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}"><i class="ti ti-trash"></i></button>` +
-                  '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>' +
-                  '<div class="dropdown-menu dropdown-menu-end m-0">' +
-                  '<a href="' +
-                  userView +
-                  '" class="dropdown-item">View</a>' +
-                  `<a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">change status</a>` +
-                  '</div>' +
-                  '</div>';
+            return (
+              '<div class="d-flex align-items-center gap-50">' +
+              `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
+              `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}"><i class="ti ti-trash"></i></button>` +
+              '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>' +
+              '<div class="dropdown-menu dropdown-menu-end m-0">' +
+              '<a href="' +
+              userView +
+              '" class="dropdown-item">View</a>' +
+              `<a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">change status</a>` +
+              '</div>' +
+              '</div>'
+            );
           }
         }
       ],
@@ -417,7 +422,6 @@ $(function () {
       type: 'GET',
       data: { vehicle: vehicle, type: type },
       success: function (response) {
-        console.log(response.data.sizes);
         var vehicle_options = ` <option value="">-- Select vehicle </option>`;
         vehicle_options += response.data.vehicles
           .map(
@@ -430,7 +434,7 @@ $(function () {
           $('#vehicle-vehicle').html(vehicle_options);
         }
 
-        var vehicle_type_options = ` <option value="">-- select vehicle type </option>`;
+        var vehicle_type_options = ` <option value="">-- select vehicle types </option>`;
         vehicle_type_options += response.data.types
           .map(
             option => `
@@ -454,8 +458,8 @@ $(function () {
 
         if (loadSize) {
           console.log('seize');
-
-          $('#vehicle-size').html(vehicle_type_options);
+          console.log(response.data.sizes);
+          $('#vehicle-size').html(vehicle_sizes_options);
         }
       }
     });

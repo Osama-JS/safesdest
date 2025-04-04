@@ -1,0 +1,9 @@
+.image-input {
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.image-input:hover {
+  transform: scale(1.01);
+  border: 1px solid #0000002f;
+}

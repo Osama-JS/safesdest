@@ -83,7 +83,7 @@ class DriversController extends Controller
         $nestedData['id'] = $user->id;
         $nestedData['fake_id'] = ++$ids;
         $nestedData['name'] = $user->name;
-        $nestedData['username'] = $user->name;
+        $nestedData['username'] = $user->username;
         $nestedData['email'] = $user->email;
         $nestedData['phone'] = $user->phone_code . $user->phone;
         $nestedData['tags'] = $user->phone_code . $user->phone;
@@ -142,11 +142,12 @@ class DriversController extends Controller
       $user = Driver::create([
         'name' => $req->name,
         'username' => $req->username,
+        'status' => 'pending',
         'email' => $req->email,
         'phone' => $req->phone,
         'phone_code' => $req->phone_code,
         'password' => $password,
-        'role_id' => $req->role,
+        'role_id' => 1,
         'team_id' => $req->team,
         'vehicle_size_id' => $req->vehicle,
         'address' => $req->address,

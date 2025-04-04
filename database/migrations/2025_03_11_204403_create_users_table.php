@@ -29,7 +29,7 @@ return new class extends Migration
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('set null');
       $table->unsignedBigInteger('role_id');
       $table->foreign('role_id')->references('id')->on('roles')->onDelete('restrict');
-
+      $table->softDeletes();
       $table->timestamps();
     });
 

@@ -7,6 +7,7 @@
 
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 
+    @vite(['resources/css/app.css'])
 @endsection
 
 <!-- Vendor Scripts -->
@@ -20,7 +21,8 @@
 @section('page-script')
     @vite(['resources/js/admin/drivers.js'])
     @vite(['resources/js/ajax.js'])
-    @vite(['resources/js/model.js'])
+    @vite(['resources/js/ajax.js'])
+    @vite(['resources/js/spical.js'])
 @endsection
 
 @section('content')
@@ -134,13 +136,12 @@
                     <tr>
                         <th></th>
                         <th>#</th>
-                        <th>{{ __('username') }}</th>
                         <th>{{ __('name') }}</th>
+                        <th>{{ __('username') }}</th>
                         <th>{{ __('Email') }}</th>
                         <th>{{ __('Phone') }}</th>
                         <th>{{ __('tags') }}</th>
                         <th>{{ __('Status') }}</th>
-                        <th>{{ __('Registration Date') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -182,10 +183,15 @@
                                         <div class="row">
                                             <div class="col-md-3">
                                                 <div class="mb-6">
-                                                    <label class="form-label" for="driver-image">*
-                                                        {{ __('Photo') }}</label>
-                                                    <input type="file" class="form-control" id="driver-image"
-                                                        name="image" />
+                                                    <img src="{{ url(asset('assets/img/person.png')) }}"
+                                                        data-image="{{ url(asset('assets/img/person.png')) }}"
+                                                        alt="" id="image"
+                                                        style="width: 100%;    height: 222px;
+                                                        object-fit: cover;"
+                                                        class="rounded driver-image image-input">
+
+                                                    <input type="file" class="form-control driver-input-image"
+                                                        id="driver-image" name="image" style="display: none" />
                                                     <span class="image-error text-danger text-error"></span>
 
                                                 </div>
@@ -275,7 +281,8 @@
                                                             <select id="driver-role" class="form-select" name="team">
                                                                 <option value="">-- {{ __('Select Team') }}</option>
                                                                 @foreach ($teams as $key)
-                                                                    <option value="$key->id">{{ $key->name }}</option>
+                                                                    <option value="{{ $key->id }}">
+                                                                        {{ $key->name }}</option>
                                                                 @endforeach
                                                             </select>
                                                             <span class="team-error text-danger text-error"></span>
@@ -288,7 +295,8 @@
                                                             <select id="driver-role" class="form-select" name="role">
                                                                 <option value="">-- {{ __('Select Role') }}</option>
                                                                 @foreach ($roles as $key)
-                                                                    <option value="$key->id">{{ $key->name }}</option>
+                                                                    <option value="{{ $key->id }}">
+                                                                        {{ $key->name }}</option>
                                                                 @endforeach
                                                             </select>
                                                             <span class="role-error text-danger text-error"></span>
@@ -339,7 +347,8 @@
 
 
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>Vehicles Selections</strong></div>
+                                            <div class="divider-text"><strong>{{ __('Vehicles Selections') }}</strong>
+                                            </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-4">
@@ -381,9 +390,9 @@
                                     </div>
                                     <div class="tab-pane fade" id="navs-justified-profile" role="tabpanel">
                                         <div class="form-group">
-                                            <label for="select-template">Select Template</label>
+                                            <label for="select-template">{{ __('Select Template') }}</label>
                                             <select name="template" id="select-template" class="form-select w-auto">
-                                                <option value="">-- Select Template</option>
+                                                <option value="">{{ __('-- Select Template') }}</option>
                                                 @foreach ($templates as $key)
                                                     <option value="{{ $key->id }}">{{ $key->name }}</option>
                                                 @endforeach

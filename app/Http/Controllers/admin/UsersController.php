@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
 use App\Models\mongo\mUsers;
+use App\Models\Teams;
+use App\Models\User_Teams;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\JsonResponse;
+
 
 class UsersController extends Controller
 {
@@ -24,14 +28,17 @@ class UsersController extends Controller
     $inactiveCount =  $users->where('status', 'inactive')->count();
     $pendingCount =  $users->where('status', 'pending')->count();
     $templates = Form_Template::all();
-
     $roles = Role::where('guard_name', 'web')->get();
+    $teams_ids = User_Teams::select('team_id')->get();
+    $teams = Teams::all();
+
     return view('admin.users.index', [
       'totalUser' => $userCount,
       'active' => $activeCount,
       'inactive' => $inactiveCount,
       'pending' => $pendingCount,
       'roles' => $roles,
+      'teams' => $teams,
       'templates' => $templates
     ]);
   }
@@ -45,6 +52,7 @@ class UsersController extends Controller
       4 => 'phone',
       5 => 'role',
       6 => 'status',
+      6 => 'reset',
     ];
 
     $search = [];
@@ -69,6 +77,7 @@ class UsersController extends Controller
       $users = User::where('id', 'LIKE', "%{$search}%")
         ->orWhere('name', 'LIKE', "%{$search}%")
         ->orWhere('email', 'LIKE', "%{$search}%")
+        ->orWhere('phone', 'LIKE', "%{$search}%")
         ->offset($start)
         ->limit($limit)
         ->orderBy($order, $dir)
@@ -77,6 +86,7 @@ class UsersController extends Controller
       $totalFiltered = User::where('id', 'LIKE', "%{$search}%")
         ->orWhere('name', 'LIKE', "%{$search}%")
         ->orWhere('email', 'LIKE', "%{$search}%")
+        ->orWhere('phone', 'LIKE', "%{$search}%")
         ->count();
     }
 
@@ -94,6 +104,8 @@ class UsersController extends Controller
         $nestedData['phone'] = $user->phone_code . $user->phone;
         $nestedData['role'] = $user->role->name;
         $nestedData['status'] = $user->status;
+        $nestedData['reset_password'] = $user->reset_password;
+
 
         $data[] = $nestedData;
       }
@@ -141,14 +153,40 @@ class UsersController extends Controller
   }
 
 
+  public function resetPass(Request $req)
+  {
+    $find = User::findOrFail($req->id);
+    if (!$find) {
+      return response()->json(['status' => 2, 'error' => __('User not found')]);
+    }
+    $status = $find->reset_password == 1 ? 0 : 1;
+    $done = User::find($req->id)->update([
+      'reset_password' => $status
+    ]);
+    if (!$done) {
+      return response()->json(['status' => 2, 'error' => __('Error to change reset password  status')]);
+    }
+    return response()->json(['status' => 1, 'success' => $status]);
+  }
+
+  public function edit($id): JsonResponse
+  {
+    $data = User::findOrFail($id);
+    $data->teamsIds = $data->teams()->pluck('team_id');
+
+    return response()->json($data);
+  }
+
+
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
       'name' => 'required',
-      'email' => 'required|unique:users,email',
-      'phone' => 'required|unique:users,phone',
-      'password' => 'required|same:confirm-password',
+      'email' => 'required|unique:users,email,' .  ($req->id ?? 0),
+      'phone' => 'required|unique:users,phone,' .  ($req->id ?? 0),
+      'password' => 'required_without:id|same:confirm-password',
       'role' => 'required|exists:roles,id',
+      'teams' => 'nullable|array',
       'template' => 'nullable|exists:form_templates,id' // التحقق من صحة معرف القالب
     ]);
 
@@ -158,7 +196,6 @@ class UsersController extends Controller
 
     DB::beginTransaction();
     try {
-      $password = Hash::make($req->password);
 
 
       $additionalFields = collect($req->all())->filter(function ($value, $key) {
@@ -167,27 +204,63 @@ class UsersController extends Controller
 
 
 
-      // التأكد من أن الحقول هي مصفوفة
-      if (!is_array($additionalFields) || empty($additionalFields)) {
+      // // التأكد من أن الحقول هي مصفوفة
+      if (!is_array($additionalFields['additional_fields']) || empty($additionalFields['additional_fields'])) {
         return response()->json(['status' => 0, 'error' => 'Invalid additional fields data']);
       }
 
       // dd($additionalFields['additional_fields']);
-      $additionalData = mUsers::create([
-        'fields' => $additionalFields['additional_fields'] // تخزين الحقول كما هي
-      ]);
+      $additionalData = mUsers::create($additionalFields['additional_fields']);
 
-      // إنشاء المستخدم في MySQL
-      $user = User::create([
-        'name' => $req->name,
-        'email' => $req->email,
-        'phone' => $req->phone,
-        'phone_code' => $req->phone_code,
-        'password' => $password,
-        'role_id' => $req->role,
-        'form_template_id' => $req->template, // حفظ معرف القالب
-        'additional_data_id' => $additionalData->_id // حفظ معرف MongoDB في جدول users
-      ]);
+      // dd($additionalFields['additional_fields']);
+
+      // dd($req);
+      if (isset($req->id) && !empty($req->id)) {
+        $user = User::findOrFail($req->id);
+        $password = $req->filled('password') ?  Hash::make($req->password) : $user->password;
+
+        $user->update([
+          'name' => $req->name,
+          'email' => $req->email,
+          'phone' => $req->phone,
+          'phone_code' => $req->phone_code,
+          'password' => $password,
+          'role_id' => $req->role,
+          'form_template_id' => $req->template ?? null, // حفظ معرف القالب
+          'additional_data_id' => $additionalData->_id ?? null // حفظ معرف MongoDB في جدول users
+        ]);
+        $user->teams()->delete();
+        $teams = [];
+        for ($i = 0; $i < count($req->teams); $i++) {
+          if (isset($req->teams[$i])) {
+            $teams[$i]['team_id'] = $req->teams[$i];
+          }
+        }
+        $done = $user->teams()->createMany($teams);
+      } else {
+        $password = Hash::make($req->password);
+        $user = User::create([
+          'name' => $req->name,
+          'email' => $req->email,
+          'phone' => $req->phone,
+          'phone_code' => $req->phone_code,
+          'password' => $password,
+          'role_id' => $req->role,
+          'form_template_id' => $req->template ?? null, // حفظ معرف القالب
+          'additional_data_id' => $additionalData->_id ?? null // حفظ معرف MongoDB في جدول users
+        ]);
+        $teams = [];
+        for ($i = 0; $i < count($req->teams); $i++) {
+          if (isset($req->teams[$i])) {
+            $teams[$i]['team_id'] = $req->teams[$i];
+          }
+        }
+        $done = $user->teams()->createMany($teams);
+        if (!$done) {
+          DB::rollback();
+          return response()->json(['status' => 2, 'error' => 'Error creating user']);
+        }
+      }
 
       if (!$user) {
         DB::rollBack();
@@ -199,7 +272,36 @@ class UsersController extends Controller
       $user->assignRole($role->name);
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'User created']);
+      return response()->json(['status' => 1, 'success' => 'User saved']);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function destroy(Request $req)
+  {
+    DB::beginTransaction();
+
+    if ($req->id === 1) {
+      return response()->json(['status' => 2, 'error' => 'this User can not be deleted']);
+    }
+    try {
+      $find = User::findOrFail($req->id);
+      if (!$find) {
+        return response()->json(['status' => 2, 'error' => 'Can not find the selected user']);
+      }
+      if ($find->teams->count() !== 0) {
+        return response()->json(['status' => 2, 'error' => 'The selected User has teams to mange. you can not delete hem right now']);
+      }
+
+      $done = User::where('id', $req->id)->delete();
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => 'Error to delete User']);
+      }
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('User deleted')]);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

@@ -118,7 +118,8 @@ return [
       'username' => env('DB_USERNAME_MONGO', 'root'),
       'password' => env('DB_PASSWORD_MONGO', 'Osama1998'),
       'options'  => [
-        'database' => env('DB_AUTH_DATABASE', 'safedest_db'), // قاعدة بيانات المصادقة
+        'authSource' => env('DB_AUTH_DATABASE', 'safedest_db'),
+        'authMechanism' => 'SCRAM-SHA-256' // قاعدة بيانات المصادقة
       ],
     ],
 

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Http\Controllers\pages\UserTeams;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
   use Notifiable;
   use TwoFactorAuthenticatable;
   use HasRoles;
+  use SoftDeletes;
 
 
   protected $fillable = [
@@ -32,7 +34,7 @@ class User extends Authenticatable
     'password',
     'phone',
     'phone_code',
-    'status',
+    'status',  // ['active', 'inactive', 'deleted', 'pending']
     'reset_password',
     'last_login',
     'additional_data',
@@ -40,6 +42,7 @@ class User extends Authenticatable
     'role_id'
   ];
 
+  protected $dates = ['deleted_at'];
 
   protected $hidden = [
     'password',
@@ -69,7 +72,7 @@ class User extends Authenticatable
 
   public function teams()
   {
-    return $this->hasMany(UserTeams::class, 'user_id');
+    return $this->hasMany(User_Teams::class, 'user_id');
   }
 
   protected $guard_name = 'web';

@@ -20,7 +20,7 @@ return new class extends Migration
       $table->string('image')->nullable();
       $table->string('username')->unique();
       $table->string('password');
-      $table->enum('status', ['verified', 'active', 'blocked', 'pending']);
+      $table->enum('status', ['verified', 'active', 'blocked', 'pending'])->default('pending');
       $table->text('address');
       $table->boolean('online')->default(1);
       $table->decimal('longitude', 10, 2)->nullable();
@@ -35,7 +35,7 @@ return new class extends Migration
       $table->foreign('team_id')->references('id')->on('teams')->onDelete('set null');
       $table->unsignedBigInteger('vehicle_size_id');
       $table->foreign('vehicle_size_id')->references('id')->on('vehicle_sizes')->onDelete('restrict');
-      $table->unsignedBigInteger('role_id');
+      $table->unsignedBigInteger('role_id')->nullable();
       $table->foreign('role_id')->references('id')->on('roles')->onDelete('restrict');
       $table->timestamps();
     });

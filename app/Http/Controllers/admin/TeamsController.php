@@ -27,7 +27,8 @@ class TeamsController extends Controller
     if ($request->has('search') && !empty($request->search)) {
       $search = $request->search;
       $query->where(function ($q) use ($search) {
-        $q->where('name', 'ILIKE', '%' . $search . '%');
+        $q->where('name', 'ILIKE', '%' . $search . '%')
+          ->orwhere('id', 'ILIKE', '%' . $search . '%');
       });
     }
     $query->orderBy('id', 'DESC');
@@ -35,7 +36,7 @@ class TeamsController extends Controller
     $count = $query->count();
 
     // الإرجاع مع Pagination
-    $products = $query->paginate(10); // 20 منتج لكل صفحة
+    $products = $query->paginate(9); // 20 منتج لكل صفحة
 
     return response()->json(['data' => $products, 'count' => $count]);
   }
@@ -43,7 +44,8 @@ class TeamsController extends Controller
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:teams,name',
+      'id' => 'nullable|exists:teams,id',
+      'name' => 'required|unique:teams,name,' .  ($req->id ?? 0),
       'address' => 'required',
       'commission_type' => 'nullable|in:fixed,rate,subscription',
       'commission' => 'required_with:commission_type|min:0',
@@ -54,21 +56,34 @@ class TeamsController extends Controller
     }
     DB::beginTransaction();
     try {
-      $done = Teams::create([
-        'name' => $req->name,
-        'address' => $req->address,
-        'team_commission_type' =>   $req->commission_type,
-        'team_commission_value' =>  $req->commission,
-        'location_update_interval' => $req->location_update ?? 30,
-        'note' =>  $req->note
-      ]);
+      if (isset($req->id) && !empty($req->id)) {
+        $done = Teams::find($req->id)->update([
+          'name' => $req->name,
+          'address' => $req->address,
+          'team_commission_type' =>   $req->commission_type,
+          'team_commission_value' =>  $req->commission,
+          'location_update_interval' => $req->location_update,
+          'note' =>  $req->note
+        ]);
+      } else {
+
+        $done = Teams::create([
+          'name' => $req->name,
+          'address' => $req->address,
+          'team_commission_type' =>   $req->commission_type,
+          'team_commission_value' =>  $req->commission,
+          'location_update_interval' => $req->location_update ?? 30,
+          'note' =>  $req->note
+        ]);
+      }
+
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => __('error to create team')]);
+        return response()->json(['status' => 2, 'error' => __('error to save team')]);
       }
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => __('teams created')]);
+      return response()->json(['status' => 1, 'success' => __('teams saved')]);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
@@ -81,41 +96,6 @@ class TeamsController extends Controller
     return response()->json($team);
   }
 
-  public function update(Request $req)
-  {
-    $validator = Validator::make($req->all(), [
-      'id' => 'required|exists:teams,id',
-      'name' => 'required|unique:teams,name,' . $req->id,
-      'address' => 'required',
-      'commission_type' => 'nullable|in:fixed,rate,subscription',
-      'commission' => 'required_with:commission_type|min:0',
-    ]);
-    if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
-    }
-
-    DB::beginTransaction();
-    try {
-      $done = Teams::find($req->id)->update([
-        'name' => $req->name,
-        'address' => $req->address,
-        'team_commission_type' =>   $req->commission_type,
-        'team_commission_value' =>  $req->commission,
-        'location_update_interval' => $req->location_update,
-        'note' =>  $req->note
-      ]);
-      if (!$done) {
-        DB::rollBack();
-        return response()->json(['status' => 2, 'error' => __('error to update team')]);
-      }
-
-      DB::commit();
-      return response()->json(['status' => 1, 'success' => __('teams updated')]);
-    } catch (Exception $ex) {
-      DB::rollBack();
-      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
-    }
-  }
 
   public function destroy(Request $req)
   {

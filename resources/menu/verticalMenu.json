@@ -45,6 +45,12 @@
           "slug": "settings.geofences"
         },
         {
+          "url": "admin/settings/routes",
+          "name": "Routes",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.routes"
+        },
+        {
           "url": "admin/settings/pricing",
           "name": "Pricing",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",

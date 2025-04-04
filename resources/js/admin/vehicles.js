@@ -3,9 +3,16 @@
  */
 
 'use strict';
+import { deleteRecord } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
+  // ajax setup
+  $.ajaxSetup({
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+  });
   function loadData(vehicle = '', type = '', lodeType = true, loadAll = true, loadSize = true) {
     $.ajax({
       url: baseUrl + 'admin/settings/vehicles/data',
@@ -48,8 +55,7 @@ $(function () {
             <td>${type.sizes}</td>
             <td>
               <button class="btn btn-sm btn-icon edit-t-record btn-text-secondary rounded-pill waves-effect"
-                data-id="${type.id}" data-name="${type.name}" data-enname="${type.en_name}"
-                data-bs-toggle="modal" data-bs-target="#largeModal">
+                data-id="${type.id}" data-name="${type.name}" data-enname="${type.en_name}" data-vehicle="${type.vehicle_id}">
                 <i class="ti ti-edit"></i>
               </button>
               <button class="btn btn-sm btn-icon delete-t-record btn-text-secondary rounded-pill waves-effect"
@@ -62,6 +68,7 @@ $(function () {
             .join('');
           $('#types-table').html(types);
 
+          console.log(response.data.sizes);
           var sizes = response.data.sizes
             .map(
               (size, index) => `
@@ -72,8 +79,7 @@ $(function () {
             <td>${size.name}</td>
             <td>
               <button class="btn btn-sm btn-icon edit-s-record btn-text-secondary rounded-pill waves-effect"
-                data-id="${size.id}" data-name="${size.name}" data-enname="${size.en_name}"
-                data-bs-toggle="modal" data-bs-target="#largeModal">
+                data-id="${size.id}" data-name="${size.name}" data-type="${size.type_id}" data-vehicle="${size.vehicle_id}" >
                 <i class="ti ti-edit"></i>
               </button>
               <button class="btn btn-sm btn-icon delete-s-record btn-text-secondary rounded-pill waves-effect"
@@ -166,5 +172,46 @@ $(function () {
     $('#vehicle-name').val(name);
     $('#vehicle-en-name').val(en_name);
     $('#vehicle-id').val(Id);
+  });
+
+  $(document).on('click', '.edit-t-record', function () {
+    var Id = $(this).data('id');
+    var name = $(this).data('name');
+    var en_name = $(this).data('enname');
+    var vehicle = $(this).data('vehicle');
+
+    $('#vehicle-type-name').val(name);
+    $('#vehicle-type-en-name').val(en_name);
+    $('#vehicle-type-vehicle').val(vehicle);
+    $('#vehicle-type-id').val(Id);
+  });
+
+  $(document).on('click', '.edit-s-record', function () {
+    var Id = $(this).data('id');
+    var name = $(this).data('name');
+    var vehicle = $(this).data('vehicle');
+    var type = $(this).data('type');
+
+    console.log(vehicle);
+
+    $('#vehicle-size-name').val(name);
+    $('#vehicle-size-type').val(type);
+    $('#vehicle-size-vehicle').val(vehicle);
+    $('#vehicle-size-id').val(Id);
+  });
+
+  $(document).on('click', '.delete-v-record', function () {
+    let url = baseUrl + 'admin/settings/vehicles/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
+  });
+
+  $(document).on('click', '.delete-t-record', function () {
+    let url = baseUrl + 'admin/settings/vehicles/type/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
+  });
+
+  $(document).on('click', '.delete-s-record', function () {
+    let url = baseUrl + 'admin/settings/vehicles/size/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 });

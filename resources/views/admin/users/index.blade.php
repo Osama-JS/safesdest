@@ -5,14 +5,14 @@
 <!-- Vendor Styles -->
 @section('vendor-style')
 
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss'])
 
 @endsection
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
 
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/select2/select2.js'])
 
 @endsection
 
@@ -123,7 +123,7 @@
         <div class="card-header border-bottom">
             <h5 class="card-title mb-0">{{ __('Users') }}</h5>
             <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
-                data-bs-target="#largeModal">
+                data-bs-target="#submitModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Add New User') }}</span>
             </button>
@@ -133,12 +133,13 @@
                 <thead class="border-top">
                     <tr>
                         <th></th>
-                        <th>{{ __('Id') }}</th>
+                        <th>{{ __('#') }}</th>
                         <th>{{ __('User') }}</th>
                         <th>{{ __('Email') }}</th>
                         <th>{{ __('Phone') }}</th>
                         <th>{{ __('Role') }}</th>
                         <th>{{ __('Status') }}</th>
+                        <th>{{ __('Reset Password') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -147,7 +148,7 @@
 
     </div>
 
-    <div class="modal fade " id="largeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade " id="submitModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -204,7 +205,7 @@
                                                     <label class="form-label" for="user-phone">*
                                                         {{ __('Phone') }}</label>
                                                     <div class="input-group">
-                                                        <select id="country-code" name="phone_code" class="form-select"
+                                                        <select id="phone-code" name="phone_code" class="form-select"
                                                             required style="max-width: 120px;">
                                                             <option value="+966">🇸🇦 +966</option>
                                                             <option value="+971">🇦🇪 +971</option>
@@ -260,7 +261,23 @@
                                                     <span class="role-error text-danger text-error"></span>
                                                 </div>
                                             </div>
+                                            <div class="col-md-6">
+                                                <div class="  mb-6">
+                                                    <label class="form-label"
+                                                        for="user-teams">{{ __('Teams') }}</label>
+                                                    <select name="teams[]" id="user-teams" class="select2 form-select"
+                                                        multiple>
+                                                        <option value=""></option>
+                                                        @foreach ($teams as $key)
+                                                            <option value="{{ $key->id }}">{{ $key->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <span class="teams-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
                                         </div>
+
 
                                     </div>
                                     <div class="tab-pane fade" id="navs-justified-profile" role="tabpanel">

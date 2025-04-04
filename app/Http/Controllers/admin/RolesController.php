@@ -22,74 +22,44 @@ class RolesController extends Controller
 
   public function getData(Request $request)
   {
-    $columns = [
-      1 => 'id',
-      2 => 'name',
-      3 => 'created_at',
-    ];
-
-    $search = [];
+    $columns = ['id', 'name', 'created_at'];
 
     $totalData = Role::count();
-
-    $totalFiltered = $totalData;
-
-    $limit = $request->input('length');
     $start = $request->input('start');
-    $order = $columns[$request->input('order.0.column')];
-    $dir = $request->input('order.0.dir');
+    $limit = $request->input('length');
+    $order = $columns[$request->input('order.0.column', 0)] ?? 'id';
+    $dir = $request->input('order.0.dir', 'asc');
 
-    if (empty($request->input('guard'))) {
-      $users = Role::offset($start)
-        ->limit($limit)
-        ->orderBy($order, $dir)
-        ->get();
-    } else {
-      $search = $request->input('guard');
+    $query = Role::query();
 
-      $users = Role::where('guard_name', $search)
-        ->offset($start)
-        ->limit($limit)
-        ->orderBy($order, $dir)
-        ->get();
-
-      $totalFiltered = Role::where('guard_name', $search)->count();
+    if ($request->has('guard') && !empty($request->guard)) {
+      $query->where('guard_name', $request->input('guard'));
     }
 
-    $data = [];
+    $totalFiltered = $query->count();
 
-    if (!empty($users)) {
-      // providing a dummy id instead of database ids
-      $ids = $start;
+    $users = $query->offset($start)->limit($limit)->orderBy($order, $dir)->get();
 
-      foreach ($users as $user) {
-        $nestedData['id'] = $user->id;
-        $nestedData['fake_id'] = ++$ids;
-        $nestedData['name'] = $user->name;
-        $nestedData['guard'] = $user->guard_name;
-        $nestedData['users'] = User::where('role_id', $user->id)->count();
-        $nestedData['created_at'] = $user->created_at;
+    $data = $users->map(function ($user, $index) use ($start) {
+      return [
+        'id' => $user->id,
+        'fake_id' => $start + $index + 1,
+        'name' => $user->name,
+        'guard' => $user->guard_name,
+        'users' => User::where('role_id', $user->id)->count(),
+        'created_at' => $user->created_at,
+      ];
+    });
 
-        $data[] = $nestedData;
-      }
-    }
-
-    if ($data) {
-      return response()->json([
-        'draw' => intval($request->input('draw')),
-        'recordsTotal' => intval($totalData),
-        'recordsFiltered' => intval($totalFiltered),
-        'code' => 200,
-        'data' => $data,
-      ]);
-    } else {
-      return response()->json([
-        'message' => 'Internal Server Error',
-        'code' => 500,
-        'data' => [],
-      ]);
-    }
+    return response()->json([
+      'draw' => intval($request->input('draw')),
+      'recordsTotal' => $totalData,
+      'recordsFiltered' => $totalFiltered,
+      'code' => 200,
+      'data' => $data,
+    ]);
   }
+
 
   public function getPermissions(Request $request, $guard): JsonResponse
   {
@@ -111,7 +81,7 @@ class RolesController extends Controller
   {
 
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:roles,name',
+      'name' => 'required|unique:roles,name,' .  ($req->id ?? 0),
       'guard' => 'required|in:web,driver,customer',
       'permissions' => 'required|array',
     ]);
@@ -121,13 +91,22 @@ class RolesController extends Controller
 
     DB::beginTransaction();
     try {
-      $role = Role::create([
-        'name' => $req->name,
-        'guard_name' => $req->guard,
-      ]);
+      if (isset($req->id) && !empty($req->id)) {
+        $role = Role::findOrFail($req->id);
+
+        $role->update([
+          'name' => $req->name,
+          'guard_name' => $req->guard,
+        ]);
+      } else {
+        $role = Role::create([
+          'name' => $req->name,
+          'guard_name' => $req->guard,
+        ]);
+      }
       if (!$role) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to create Role']);
+        return response()->json(['status' => 2, 'error' => 'Error to Save Role']);
       }
       $permissions = Permission::whereIn('id', $req->permissions)
         ->where('guard_name', $req->guard)
@@ -135,7 +114,7 @@ class RolesController extends Controller
         ->toArray();
       $role->syncPermissions($permissions);
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'Role Created']);
+      return response()->json(['status' => 1, 'success' => 'Role Saved']);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

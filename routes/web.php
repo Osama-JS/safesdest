@@ -13,6 +13,7 @@ use App\Http\Controllers\admin\settings\VehiclesController;
 use App\Http\Controllers\admin\settings\GeofencesController;
 use App\Http\Controllers\admin\settings\PricingController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
+use App\Http\Controllers\admin\settings\RoutesController;
 use App\Http\Controllers\admin\settings\TemplateController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
@@ -46,7 +47,12 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('/users', [UsersController::class, 'index'])->name('user.users');
       Route::get('/users/data', [UsersController::class, 'getData'])->name('user.data');
       Route::post('/users', [UsersController::class, 'store'])->name('user.create');
+      Route::post('/users/reset-password/{id}', [UsersController::class, 'resetPass'])->name('user.reset');
       Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
+      Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('user.show');
+      Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
+
+
 
       Route::get('/roles', [RolesController::class, 'index'])->name('role.roles');
       Route::post('/roles', [RolesController::class, 'store'])->name('role.create');
@@ -64,6 +70,9 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::post('/vehicles/type', [VehiclesController::class, 'store_type'])->name('settings.vehicles.store.type');
         Route::post('/vehicles/size', [VehiclesController::class, 'store_size'])->name('settings.vehicles.store.size');
         Route::get('/vehicles/data', [VehiclesController::class, 'getData'])->name('settings.vehicles.data');
+        Route::delete('/vehicles/delete/{id}', [VehiclesController::class, 'destroy'])->name('settings.vehicles.delete');
+        Route::delete('/vehicles/type/delete/{id}', [VehiclesController::class, 'destroy_type'])->name('settings.vehicles.delete.type');
+        Route::delete('/vehicles/size/delete/{id}', [VehiclesController::class, 'destroy_size'])->name('settings.vehicles.delete.size');
 
 
         Route::get('/geofences', [GeofencesController::class, 'index'])->name('settings.geofences');
@@ -72,6 +81,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::get('/geofences/edit/{id}', [GeofencesController::class, 'edit'])->name('settings.geofences.show');
         Route::post('/geofences/delete/{id}', [GeofencesController::class, 'destroy'])->name('settings.geofences.delete');
 
+        Route::get('/routes', [RoutesController::class, 'index'])->name('settings.routes');
 
 
         Route::get('/pricing', [PricingController::class, 'index'])->name('settings.pricing');
@@ -90,6 +100,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::post('/templates/update/', [TemplateController::class, 'update'])->name('settings.templates.update');
 
         Route::get('/templates/pricing/data/{id}', [PricingTemplateController::class, 'getData'])->name('settings.templates.pricing.data');
+        Route::get('/templates/pricing/methods', [PricingTemplateController::class, 'getPricingMethod'])->name('settings.templates.pricing.methods');
       });
 
       Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
@@ -102,7 +113,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.show');
       Route::post('/teams/edit', [TeamsController::class, 'update'])->name('teams.edit');
       Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
-      Route::post('/teams/delete', [TeamsController::class, 'destroy'])->name('teams.delete');
+      Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
     });
   });
 });

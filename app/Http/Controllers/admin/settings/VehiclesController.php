@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Models\Vehicle_Size;
 use App\Models\Vehicle_Type;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
@@ -46,6 +47,7 @@ class VehiclesController extends Controller
         'id' => $item->id,
         'name' => $item->name,
         'en_name' => $item->en_name,
+        'vehicle_id' => $item->vehicle_id,
         'vehicle' => $item->vehicle->name . '-' . $item->vehicle->en_name,
         'sizes' => $item->sizes->count(),
       ];
@@ -55,6 +57,8 @@ class VehiclesController extends Controller
       return [
         'id' => $item->id,
         'name' => $item->name,
+        'type_id' => $item->vehicle_type_id,
+        'vehicle_id' => $item->type->vehicle_id,
         'type' => $item->type->name . '-' . $item->type->en_name,
         'vehicle' => $item->type->vehicle->name . '-' . $item->type->vehicle->en_name,
       ];
@@ -168,6 +172,83 @@ class VehiclesController extends Controller
       }
       return response()->json(['status' => 1, 'success' => __('Vehicle type size saved')]);
     } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function destroy(Request $req)
+  {
+    DB::beginTransaction();
+
+    try {
+
+      $find = Vehicle::findOrFail($req->id);
+      if (!$find) {
+        return response()->json(['status' => 2, 'error' => 'Error to find selected Vehicle']);
+      }
+      if ($find->types->count() !== 0) {
+        return response()->json(['status' => 2, 'error' => 'you can not delete this Vehicle']);
+      }
+      $done = Vehicle::where('id', $req->id)->delete();
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => 'Error to delete Vehicle']);
+      }
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Vehicle deleted')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function destroy_type(Request $req)
+  {
+    DB::beginTransaction();
+
+    try {
+
+      $find = Vehicle_Type::findOrFail($req->id);
+      if (!$find) {
+        return response()->json(['status' => 2, 'error' => 'Error to find selected Vehicle Type']);
+      }
+      if ($find->sizes->count() !== 0) {
+        return response()->json(['status' => 2, 'error' => 'you can not delete this Vehicle Type']);
+      }
+      $done = Vehicle_Type::where('id', $req->id)->delete();
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => 'Error to delete Vehicle Type']);
+      }
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Vehicle Type deleted')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+  public function destroy_size(Request $req)
+  {
+    DB::beginTransaction();
+
+    try {
+
+      $find = Vehicle_Size::findOrFail($req->id);
+      if (!$find) {
+        return response()->json(['status' => 2, 'error' => 'Error to find selected Vehicle Size']);
+      }
+      if ($find->drivers->count() !== 0) {
+        return response()->json(['status' => 2, 'error' => 'you can not delete this Vehicle Size']);
+      }
+      $done = Vehicle_Size::where('id', $req->id)->delete();
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => 'Error to delete Vehicle Size']);
+      }
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Vehicle Size deleted')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }

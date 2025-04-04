@@ -33,6 +33,232 @@
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let pricingMethods = @json($methods); // تحميل طرق التسعير من قاعدة البيانات
+            let pricingContainer = document.getElementById("pricing-methods-container");
+            let addPricingMethodBtn = document.getElementById("add-pricing-method");
+
+            function updateMethodOptions() {
+                let selectedMethods = Array.from(document.querySelectorAll(".method-select")).map(select => select
+                    .value);
+                document.querySelectorAll(".method-select option").forEach(option => {
+                    if (option.value && selectedMethods.includes(option.value)) {
+                        option.hidden = true;
+                    } else {
+                        option.hidden = false;
+                    }
+                });
+            }
+
+            addPricingMethodBtn.addEventListener("click", function() {
+                let methodDiv = document.createElement("div");
+                methodDiv.classList.add("mb-3", "pricing-method");
+
+                let select = document.createElement("select");
+                select.classList.add("form-select", "method-select");
+                select.name = "pricing_methods[]";
+                select.required = true;
+
+                let defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.innerText = "Select a pricing method";
+                select.appendChild(defaultOption);
+
+                pricingMethods.forEach(method => {
+                    let option = document.createElement("option");
+                    option.value = method.id;
+                    option.innerText = method.name;
+                    select.appendChild(option);
+                });
+
+                let paramContainer = document.createElement("div");
+                paramContainer.classList.add("mt-2", "param-container");
+
+                let addParamBtn = document.createElement("button");
+                addParamBtn.type = "button";
+                addParamBtn.classList.add("btn", "btn-secondary", "mt-2");
+                addParamBtn.innerText = "+ Add Parameter";
+
+                addParamBtn.addEventListener("click", function() {
+                    let paramDiv = document.createElement("div");
+                    paramDiv.classList.add("row", "mb-2");
+                    paramDiv.innerHTML = `
+                      <div class="col-md-3">
+                          <input type="number" class="form-control" name="from_val[]" placeholder="From" required>
+                      </div>
+                      <div class="col-md-3">
+                          <input type="number" class="form-control" name="to_val[]" placeholder="To" required>
+                      </div>
+                      <div class="col-md-3">
+                          <input type="number" class="form-control" name="price[]" placeholder="Price" required>
+                      </div>
+                      <div class="col-md-3">
+                          <button type="button" class="btn btn-danger remove-param">X</button>
+                      </div>
+                  `;
+                    paramContainer.appendChild(paramDiv);
+                });
+
+                paramContainer.addEventListener("click", function(event) {
+                    if (event.target.classList.contains("remove-param")) {
+                        event.target.parentElement.parentElement.remove();
+                    }
+                });
+
+                let removeMethodBtn = document.createElement("button");
+                removeMethodBtn.type = "button";
+                removeMethodBtn.classList.add("btn", "btn-danger", "mt-2");
+                removeMethodBtn.innerText = "Remove Pricing Method";
+                removeMethodBtn.addEventListener("click", function() {
+                    methodDiv.remove();
+                    updateMethodOptions(); // تحديث القائمة بعد الحذف
+                });
+
+                select.addEventListener("change", updateMethodOptions);
+
+                methodDiv.appendChild(select);
+                methodDiv.appendChild(paramContainer);
+                methodDiv.appendChild(addParamBtn);
+                methodDiv.appendChild(removeMethodBtn);
+
+                pricingContainer.appendChild(methodDiv);
+
+                updateMethodOptions(); // تحديث القائمة عند الإضافة
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let pricingMethods = @json($methods); // تحميل طرق التسعير من قاعدة البيانات
+            let pricingContainer = document.getElementById("pricing-methods-container");
+            let addPricingMethodBtn = document.getElementById("add-pricing-method");
+
+            function updateMethodOptions() {
+                let selectedMethods = Array.from(document.querySelectorAll(".method-select")).map(select => select
+                    .value);
+                document.querySelectorAll(".method-select option").forEach(option => {
+                    if (option.value && selectedMethods.includes(option.value)) {
+                        option.hidden = true;
+                    } else {
+                        option.hidden = false;
+                    }
+                });
+
+                // تعطيل زر الإضافة إذا تم اختيار جميع الطرق
+                addPricingMethodBtn.disabled = (selectedMethods.length >= pricingMethods.length);
+            }
+
+            function checkIfPreviousIsSelected() {
+                let selects = document.querySelectorAll(".method-select");
+                let lastSelect = selects[selects.length - 1];
+
+                if (!lastSelect || lastSelect.value === "") {
+                    // addPricingMethodBtn.disabled = true;
+                } else {
+                    addPricingMethodBtn.disabled = false;
+                }
+            }
+
+            addPricingMethodBtn.addEventListener("click", function() {
+                let existingSelects = document.querySelectorAll(".method-select");
+
+                // التحقق مما إذا كان الحقل السابق قد تم تحديده قبل إضافة جديد
+                if (existingSelects.length > 0) {
+                    let lastSelect = existingSelects[existingSelects.length - 1];
+                    if (!lastSelect.value) {
+                        alert("Please select a pricing method before adding another one.");
+                        return ""; // منع إضافة عنصر جديد
+                    }
+                }
+
+                let methodDiv = document.createElement("div");
+                methodDiv.classList.add("mb-3", "pricing-method");
+
+                let select = document.createElement("select");
+                select.classList.add("form-select", "method-select");
+                select.name = "pricing_methods[]";
+                select.required = true;
+
+                let defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.innerText = "Select a pricing method";
+                select.appendChild(defaultOption);
+
+                pricingMethods.forEach(method => {
+                    let option = document.createElement("option");
+                    option.value = method.id;
+                    option.innerText = method.name;
+                    select.appendChild(option);
+                });
+
+                let paramContainer = document.createElement("div");
+                paramContainer.classList.add("mt-2", "param-container");
+
+                let addParamBtn = document.createElement("button");
+                addParamBtn.type = "button";
+                addParamBtn.classList.add("btn", "btn-secondary", "mt-2");
+                addParamBtn.innerText = "+ Add Parameter";
+
+                addParamBtn.addEventListener("click", function() {
+                    let paramDiv = document.createElement("div");
+                    paramDiv.classList.add("row", "mb-2");
+                    paramDiv.innerHTML = `
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" name="from_val[]" placeholder="From" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" name="to_val[]" placeholder="To" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" name="price[]" placeholder="Price" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-danger remove-param">X</button>
+                    </div>
+                `;
+                    paramContainer.appendChild(paramDiv);
+                });
+
+                paramContainer.addEventListener("click", function(event) {
+                    if (event.target.classList.contains("remove-param")) {
+                        event.target.parentElement.parentElement.remove();
+                    }
+                });
+
+                let removeMethodBtn = document.createElement("button");
+                removeMethodBtn.type = "button";
+                removeMethodBtn.classList.add("btn", "btn-danger", "mt-2");
+                removeMethodBtn.innerText = "Remove Pricing Method";
+                removeMethodBtn.addEventListener("click", function() {
+                    methodDiv.remove();
+                    updateMethodOptions();
+                    checkIfPreviousIsSelected();
+                });
+
+                select.addEventListener("change", function() {
+                    updateMethodOptions();
+                    checkIfPreviousIsSelected();
+                });
+
+                methodDiv.appendChild(select);
+                methodDiv.appendChild(paramContainer);
+                methodDiv.appendChild(addParamBtn);
+                methodDiv.appendChild(removeMethodBtn);
+
+                pricingContainer.appendChild(methodDiv);
+
+                updateMethodOptions();
+                checkIfPreviousIsSelected();
+            });
+
+            // تعطيل زر الإضافة مبدئيًا
+            checkIfPreviousIsSelected();
+        });
+    </script>
+
+
+
 @endsection
 
 @section('content')
@@ -377,46 +603,51 @@
 
                             <label class="form-label">Customize Pricing</label>
                             <div class="mb-3">
-                                <button id="add_field" type="button" class="btn "> <i
-                                        class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
-                                    {{ __('add pricing method') }} </button>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Discount Fare</label>
-                                <input type="number" class="form-control" value="0.00">
-                            </div>
-
-
-                        </div>
-                        <div class="mb-3">
-                            <div class="divider text-start">
-                                <div class="divider-text "><strong>Commission</strong></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label class="form-label">VAT Commission</label>
-                                    <input type="number" class="form-control" value="100.00">
+                                <div class="divider text-start">
+                                    <div class="divider-text"><strong>Pricing Methods</strong></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Service Tax Commission</label>
-                                    <input type="number" class="form-control" value="100.00">
+                                <div id="pricing-methods-container">
+                                    <button type="button" class="btn btn-primary mb-3" id="add-pricing-method">+ Add
+                                        Pricing Method</button>
                                 </div>
                             </div>
                         </div>
-
-
+                        <div class="col-md-3">
+                            <label class="form-label">Discount Fare</label>
+                            <input type="number" class="form-control" value="0.00">
+                        </div>
 
 
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
-
+                    <div class="mb-3">
+                        <div class="divider text-start">
+                            <div class="divider-text "><strong>Commission</strong></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">VAT Commission</label>
+                                <input type="number" class="form-control" value="100.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Service Tax Commission</label>
+                                <input type="number" class="form-control" value="100.00">
+                            </div>
+                        </div>
                     </div>
-                </form>
+
+
+
 
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+
+            </div>
+            </form>
+
         </div>
+    </div>
     </div>
 
 @endsection

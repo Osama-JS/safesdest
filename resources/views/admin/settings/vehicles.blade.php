@@ -4,10 +4,12 @@
 
 <!-- Vendor Styles -->
 @section('vendor-style')
+    @vite(['resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 @endsection
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
+    @vite(['resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
 <!-- Page Scripts -->
@@ -50,7 +52,6 @@
                     <div class="tab-pane fade show active" id="navs-pills-top-home" role="tabpanel">
                         <form action="{{ route('settings.vehicles.store') }}" method="post" class="form_submit">
                             @csrf
-                            <input type="hidden" name="id" id="vehicle-id">
                             <div class="row">
                                 <input type="hidden" name="id" id="vehicle-id">
                                 <div class="col-md-4">
@@ -94,9 +95,10 @@
                     <div class="tab-pane fade" id="navs-pills-top-profile" role="tabpanel">
                         <form action="{{ route('settings.vehicles.store.type') }}" method="post" class="form_submit">
                             @csrf
-                            <input type="hidden" name="id" class="vehicle-type-id">
 
                             <div class="row">
+                                <input type="hidden" name="id" id="vehicle-type-id">
+
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="vehicle-type-name">* {{ __('name') }}</label>
@@ -156,9 +158,10 @@
                     <div class="tab-pane fade" id="navs-pills-top-messages" role="tabpanel">
                         <form action="{{ route('settings.vehicles.store.size') }}" method="post" class="form_submit">
                             @csrf
-                            <input type="hidden" name="id" class="vehicle-size-id">
 
                             <div class="row">
+                                <input type="hidden" name="id" id="vehicle-size-id">
+
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="vehicle-size-name">* {{ __('size') }}</label>

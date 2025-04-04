@@ -11,6 +11,8 @@ class User_Teams extends Model
     'user_id',
     'team_id'
   ];
+
+  public $timestamps = false;
   public function team()
   {
     return $this->belongsTo(Team::class, 'team_id');

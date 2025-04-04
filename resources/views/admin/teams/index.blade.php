@@ -33,7 +33,7 @@
                 <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
                     data-bs-target="#submitModal">
                     <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
-                    <span class="d-none d-sm-inline-block"> Add New Role</span>
+                    <span class="d-none d-sm-inline-block"> Add New Team</span>
                 </button>
                 <input type="text" id="search-team" class="form-control " placeholder="🔍 Search Team">
 

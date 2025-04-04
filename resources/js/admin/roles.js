@@ -1,14 +1,15 @@
 /**
- * Page User List
+ * Page Roles
  */
 
 'use strict';
+import { showAlert } from '../ajax';
+import { deleteRecord } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
-  var dt_user_table = $('.datatables-users'),
-    offCanvasForm = $('#largeModal');
+  var dt_table = $('.datatables-data');
 
   // ajax setup
   $.ajaxSetup({
@@ -18,101 +19,54 @@ $(function () {
   });
 
   // Users datatable
-  if (dt_user_table.length) {
-    var dt_user = dt_user_table.DataTable({
+  if (dt_table.length) {
+    var dt_data = dt_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
         url: baseUrl + 'admin/roles/data',
-        data: function (d) {
-          d.guard = $('#roleFilter').val();
-        }
+        data: { guard: $('#roleFilter').val() }
       },
       columns: [
-        // columns according to JSON
         { data: '' },
-        { data: 'id' },
+        { data: 'id', render: (data, type, full) => `<span>${full.fake_id}</span>` },
         { data: 'name' },
-        { data: 'created_at' },
-        { data: 'action' }
-      ],
-      rowCallback: function (row, data) {
-        if (data.id === 1) {
-          $(row).addClass('table-light');
+        { data: 'created_at', render: data => `<span class="user-email">${data}</span>` },
+        {
+          data: 'action',
+          title: 'Actions',
+          searchable: false,
+          orderable: false,
+          render: (data, type, full) =>
+            full.id == 1
+              ? ''
+              : `<div class="d-flex align-items-center gap-50">
+              <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${full.id}" data-name="${full.name}" data-guard="${full.guard}"
+                data-users=${full.users} data-bs-toggle="modal" data-bs-target="#formModal">
+                <i class="ti ti-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect"
+                data-id="${full.id}" data-name="${full.name}">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>`
         }
-      },
+      ],
+      rowCallback: (row, data) => data.id === 1 && $(row).addClass('table-light'),
       columnDefs: [
         {
-          // For Responsive
           className: 'control',
           searchable: false,
           orderable: false,
           responsivePriority: 2,
           targets: 0,
-          render: function (data, type, full, meta) {
-            return '';
-          }
-        },
-        {
-          searchable: false,
-          orderable: false,
-          targets: 1,
-          render: function (data, type, full, meta) {
-            return `<span>${full.fake_id}</span>`;
-          }
-        },
-        {
-          // User full name
-          targets: 2,
-          responsivePriority: 4,
-          render: function (data, type, full, meta) {
-            var $name = full['name'];
-
-            // For Avatar badge
-            var stateNum = Math.floor(Math.random() * 6);
-            var states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];
-            var $state = states[stateNum],
-              $name = full['name'];
-
-            return $name;
-          }
-        },
-        {
-          // User email
-          targets: 3,
-          render: function (data, type, full, meta) {
-            var $date = full['created_at'];
-
-            return '<span class="user-email">' + $date + '</span>';
-          }
-        },
-
-        {
-          // Actions
-          targets: -1,
-          title: 'Actions',
-          searchable: false,
-          orderable: false,
-          render: function (data, type, full, meta) {
-            return full['id'] == 1
-              ? ''
-              : '<div class="d-flex align-items-center gap-50">' +
-                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-users=${full['users']} data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
-                  `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button> </div>`;
-          }
+          render: () => ''
         }
       ],
       order: [[2, 'desc']],
-      dom:
-        '<"row"' +
-        '<"col-md-2"<"ms-n2"l>>' +
-        '<"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-6 mb-md-0 mt-n6 mt-md-0"fB>>' +
-        '>t' +
-        '<"row"' +
-        '<"col-sm-12 col-md-6"i>' +
-        '<"col-sm-12 col-md-6"p>' +
-        '>',
-      lengthMenu: [7, 10, 20, 50, 70, 100], //for length of menu
+      dom: '<"row"<"col-md-2"l><"col-md-10 d-flex justify-content-end"fB>>t<"row"<"col-md-6"i><"col-md-6"p>>',
+      lengthMenu: [7, 10, 20, 50, 70, 100],
       language: {
         sLengthMenu: '_MENU_',
         search: '',
@@ -123,51 +77,43 @@ $(function () {
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
         }
       },
-      // Buttons
       buttons: [],
-      // For responsive popup
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
-            header: function (row) {
-              var data = row.data();
-              return 'Details of ' + data['name'];
-            }
+            header: row => 'Details of ' + row.data().name
           }),
           type: 'column',
-          renderer: function (api, rowIdx, columns) {
-            var data = $.map(columns, function (col, i) {
-              return col.title !== '' // ? Do not show row in modal popup if title is blank (for check box)
-                ? '<tr data-dt-row="' +
-                    col.rowIndex +
-                    '" data-dt-column="' +
-                    col.columnIndex +
-                    '">' +
-                    '<td>' +
-                    col.title +
-                    ':' +
-                    '</td> ' +
-                    '<td>' +
-                    col.data +
-                    '</td>' +
-                    '</tr>'
-                : '';
-            }).join('');
-
-            return data ? $('<table class="table"/><tbody />').append(data) : false;
+          renderer: (api, rowIdx, columns) => {
+            let data = columns
+              .filter(col => col.title)
+              .map(
+                col =>
+                  `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                <td>${col.title}:</td>
+                <td>${col.data}</td>
+              </tr>`
+              )
+              .join('');
+            return data ? $('<table class="table"/>').append('<tbody>' + data + '</tbody>') : false;
           }
         }
       }
     });
-    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
   document.addEventListener('formSubmitted', function (event) {
-    if (dt_user) {
-      dt_user.draw();
+    if (dt_data) {
+      dt_data.draw();
       setTimeout(() => {
-        $('#largeModal').modal('hide');
+        $('#formModal').modal('hide');
       }, 2000);
+    }
+  });
+  document.addEventListener('deletedSuccess', function (event) {
+    if (dt_data) {
+      dt_data.draw();
     }
   });
 
@@ -184,7 +130,7 @@ $(function () {
   `);
 
   $(document).on('change', '#roleFilter', function () {
-    dt_user.ajax.reload();
+    dt_data.ajax.reload();
   });
 
   $(document).on('click', '.edit-record', function () {
@@ -203,7 +149,6 @@ $(function () {
 
     $('#modelTitle').html(`Edit Role: <span class="bg-info text-white px-2 rounded">${role_name}</span>`);
 
-    $('.form_submit').attr('action', `${baseUrl}admin/roles/edit`);
     $('#role_id').val(role_id);
     $('#role-name').val(role_name);
     $('#role-guard').val(role_guard);
@@ -211,48 +156,7 @@ $(function () {
     getPermissions(role_guard, role_id);
   });
 
-  $(document).on('click', '.delete-record', function () {
-    var roleId = $(this).data('id');
-    var roleName = $(this).data('name');
-
-    Swal.fire({
-      title: `Delete ${roleName} ?`,
-      text: 'You will not be able to undo this action!',
-      icon: 'warning',
-      showCancelButton: false,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6',
-      confirmButtonText: 'Yes, Delete!'
-    }).then(result => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `${baseUrl}admin/roles/delete/${roleId}`,
-          type: 'DELETE',
-
-          success: function (response) {
-            if (response.status === 1) {
-              Swal.fire({
-                title: response.success,
-
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-              });
-
-              dt_user.draw();
-            } else {
-              Swal.fire('Error!', response.error, 'error');
-            }
-          },
-          error: function () {
-            Swal.fire('Error!', 'Field to delete the role', 'error');
-          }
-        });
-      }
-    });
-  });
-
-  $('#largeModal').on('hidden.bs.modal', function () {
+  $('#formModal').on('hidden.bs.modal', function () {
     $(this).find('form')[0].reset();
     $('.text-error').html('');
     $('#role_id').val('');
@@ -260,6 +164,11 @@ $(function () {
     $('#check-guard').show();
     getPermissions('web');
     $('.form_submit').attr('action', `${baseUrl}admin/roles`);
+  });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/roles/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   function getPermissions(guard, role_id = null) {
@@ -325,7 +234,7 @@ $(function () {
         $('#permissions_types').html(permissionsHtml);
         $('#permissions_container').html(tabContentHtml);
 
-        // ✅ تحديث أيقونات القفل عند تحميل الصفحة
+        //  تحديث أيقونات القفل عند تحميل الصفحة
         $('.perm-checkbox').each(function () {
           let icon = $(this).siblings('label').find('.lock-icon');
           if ($(this).prop('checked')) {
@@ -335,7 +244,7 @@ $(function () {
           }
         });
 
-        // ✅ عند النقر على أي صلاحية، غيّر شكل القفل
+        //  عند النقر على أي صلاحية، غيّر شكل القفل
         $(document).on('change', '.perm-checkbox', function () {
           let icon = $(this).siblings('label').find('.lock-icon');
           if ($(this).prop('checked')) {
@@ -345,7 +254,7 @@ $(function () {
           }
         });
 
-        // ✅ إضافة حدث "تحديد الكل"
+        //  إضافة حدث "تحديد الكل"
         $(document).on('change', '.select-all', function () {
           let groupClass = $(this).attr('id').replace('select-all-', '');
           let isChecked = $(this).prop('checked');
@@ -353,11 +262,12 @@ $(function () {
           $(`.${groupClass}`).prop('checked', isChecked).trigger('change'); // تحديث حالة الصلاحيات
         });
       } else {
-        $('#permissions_types').html('<p class="text-muted">لا توجد أذونات متاحة لهذا الدور.</p>');
+        $('#permissions_types').html('<p class="text-muted">There is no Permissions found!</p>');
         $('#permissions_container').html('');
       }
     }).fail(function () {
-      $('#permissions_types').html('<p class="text-danger">حدث خطأ أثناء جلب الأذونات.</p>');
+      showAlert('error', 'Error!! can not fiche any Permission', 10000, true);
+      $('#permissions_types').html('<p class="text-danger">Error!! can not fiche any Permission</p>');
     });
   }
 

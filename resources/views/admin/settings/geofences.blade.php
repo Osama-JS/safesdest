@@ -68,7 +68,7 @@
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/leaflet/leaflet.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite(['resources/assets/vendor/libs/leaflet/leaflet.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/select2/select2.js'])
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 
 
@@ -142,7 +142,7 @@
                                     @csrf
                                     <input type="hidden" id="geo-id" name="id">
 
-                                    <input type="text" id="geo-coordinates" name="coordinates">
+                                    <input type="hidden" id="geo-coordinates" name="coordinates">
                                     <span class="coordinates-error text-danger text-error"></span>
 
                                     <div class="form-group">

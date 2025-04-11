@@ -18,6 +18,7 @@ class Customer extends Authenticatable
     'email',
     'password',
     'phone',
+    'phone_code',
     'image',
     'status',
     'company_name',
@@ -38,8 +39,8 @@ class Customer extends Authenticatable
     return $this->belongsTo(Role::class, 'role_id');
   }
 
-  public function team()
+  public function tags()
   {
-    return $this->belongsTo(Teams::class, 'team_id');
+    return $this->hasMany(Tag_Customers::class, 'customer_id');
   }
 }

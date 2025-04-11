@@ -25,7 +25,9 @@ $(function () {
       serverSide: true,
       ajax: {
         url: baseUrl + 'admin/roles/data',
-        data: { guard: $('#roleFilter').val() }
+        data: function (d) {
+          d.type = $('#typeFilter').val();
+        }
       },
       columns: [
         { data: '' },
@@ -77,7 +79,15 @@ $(function () {
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
         }
       },
-      buttons: [],
+      buttons: [
+        ` <label class='me-2'>
+          <select id='typeFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+            <option value='web'>Administrator</option>
+            <option value='driver'>Driver</option>
+            <option value='customer'>Customer</option>
+          </select>
+        </label>`
+      ],
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
@@ -100,6 +110,10 @@ $(function () {
         }
       }
     });
+
+    $(document).on('change', '#typeFilter', function () {
+      dt_data.draw();
+    });
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
@@ -118,20 +132,6 @@ $(function () {
   });
 
   $('.dataTables_filter').hide();
-
-  $('.dataTables_filter').parent().append(`
-    <label class="me-2">
-      <select id="roleFilter" class="form-select d-inline-block w-auto ms-2 mt-5">
-        <option value="web">Administrator</option>
-        <option value="driver">Driver</option>
-        <option value="customer">Customer</option>
-      </select>
-    </label>
-  `);
-
-  $(document).on('change', '#roleFilter', function () {
-    dt_data.ajax.reload();
-  });
 
   $(document).on('click', '.edit-record', function () {
     var role_id = $(this).data('id'),
@@ -154,16 +154,6 @@ $(function () {
     $('#role-guard').val(role_guard);
 
     getPermissions(role_guard, role_id);
-  });
-
-  $('#formModal').on('hidden.bs.modal', function () {
-    $(this).find('form')[0].reset();
-    $('.text-error').html('');
-    $('#role_id').val('');
-    $('#modelTitle').html('Add New Role');
-    $('#check-guard').show();
-    getPermissions('web');
-    $('.form_submit').attr('action', `${baseUrl}admin/roles`);
   });
 
   $(document).on('click', '.delete-record', function () {
@@ -275,5 +265,15 @@ $(function () {
 
   $(document).on('change', '#role-guard', function (e) {
     getPermissions($(this).val());
+  });
+
+  $('#formModal').on('hidden.bs.modal', function () {
+    $(this).find('form')[0].reset();
+    $('.text-error').html('');
+    $('#role_id').val('');
+    $('#modelTitle').html('Add New Role');
+    $('#check-guard').show();
+    getPermissions('web');
+    $('.form_submit').attr('action', `${baseUrl}admin/roles`);
   });
 });

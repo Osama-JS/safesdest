@@ -115,8 +115,8 @@ return [
       'host'     => env('DB_HOST_MONGO', '127.0.0.1'),
       'port'     => env('DB_PORT_MONGO', 27017),
       'database' => env('DB_DATABASE_MONGO', 'safedest_db'),
-      'username' => env('DB_USERNAME_MONGO', 'root'),
-      'password' => env('DB_PASSWORD_MONGO', 'Osama1998'),
+      'username' => env('DB_USERNAME_MONGO', ''),
+      'password' => env('DB_PASSWORD_MONGO', ''),
       'options'  => [
         'authSource' => env('DB_AUTH_DATABASE', 'safedest_db'),
         'authMechanism' => 'SCRAM-SHA-256' // قاعدة بيانات المصادقة

@@ -1,13 +1,22 @@
-$('.form_submit').on('submit', function (e) {
+$(document).off('submit', '.form_submit').on('submit', '.form_submit', function (e) {
   e.preventDefault();
-
   const $this = $(this);
+
+  // منع التكرار إذا تم الضغط أكثر من مرة
+  if ($this.hasClass('submitting')) return;
+  $this.addClass('submitting');
+
   const contentElement = document.querySelector('#content');
   const contentResetElement = document.querySelector('.content_reset');
   const imgElement = document.querySelector('.reset_image');
-  const noReset = document.querySelector('.no-reset');
 
-  // إظهار رسالة "جاري المعالجة..." وبقاء الـ block حتى استجابة السيرفر
+  // إذا كان هناك محتوى CKEditor، احصل على البيانات
+  if (contentElement && CKEDITOR.instances['content']) {
+    const sec = CKEDITOR.instances['content'].getData();
+    $('#content').val(sec);
+  }
+
+  // عرض رسالة "جاري المعالجة..."
   $this.block({
     message:
       '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
@@ -20,12 +29,6 @@ $('.form_submit').on('submit', function (e) {
       opacity: 0.5
     }
   });
-
-  // إذا كان هناك محتوى CKEditor، احصل على البيانات
-  if (contentElement && CKEDITOR.instances['content']) {
-    const sec = CKEDITOR.instances['content'].getData();
-    $('#content').val(sec);
-  }
 
   // إرسال الطلب Ajax
   $.ajax({
@@ -40,24 +43,17 @@ $('.form_submit').on('submit', function (e) {
 
       $this.unblock({
         onUnblock: function () {
+          $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
+
           if (data.status === 0) {
             handleErrors(data.error);
             showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
           } else if (data.status === 1) {
-            const old_val = $('.no-reset').val();
-
-            if (!noReset) {
-              $this.trigger('reset');
-            }
-            $('.no-reset').val(old_val);
             resetCKEditor(contentElement, contentResetElement);
             resetImage(imgElement);
-
             document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
-
             showBlockAlert('success', data.success, 1700);
           } else if (data.status === 2) {
-            // إبقاء استخدام SweetAlert2 لحالة الخطأ هنا فقط
             showAlert('error', data.error, 10000, true);
           }
         }
@@ -66,6 +62,7 @@ $('.form_submit').on('submit', function (e) {
     error: function (jqXHR, textStatus, errorThrown) {
       $this.unblock({
         onUnblock: function () {
+          $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
           console.log(errorThrown);
           showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
         }
@@ -73,6 +70,7 @@ $('.form_submit').on('submit', function (e) {
     }
   });
 });
+
 
 export function deleteRecord(name, url) {
   Swal.fire({
@@ -107,6 +105,64 @@ export function deleteRecord(name, url) {
     }
   });
 }
+
+export function showFormModal(options) {
+  const {
+    title = 'Update Status',
+    icon = 'info',
+    fields = '',
+    url = '',
+    method = 'POST',
+    dataTable = null,
+    extraData = {},
+    confirmButtonText = 'Confirm!',
+    cancelButtonText = 'Cancel'
+  } = options;
+
+  Swal.fire({
+    title: title,
+    icon: icon,
+    html: `
+      <form id="universal-form" class="pt-0">
+        ${fields}
+      </form>
+    `,
+    showCloseButton: true,
+    showCancelButton: true,
+    focusConfirm: false,
+    confirmButtonText: confirmButtonText,
+    cancelButtonText: cancelButtonText,
+    customClass: {
+      confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+      cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+    },
+    buttonsStyling: false
+  }).then(result => {
+    if (result.isConfirmed) {
+      const formData = $('#universal-form').serializeArray();
+      // دمج البيانات الإضافية إذا كانت موجودة
+      for (const key in extraData) {
+        formData.push({ name: key, value: extraData[key] });
+      }
+
+      $.ajax({
+        url: url,
+        type: method,
+        data: $.param(formData),
+        success: function (response) {
+          showAlert(response.type, response.message, 10000, true);
+          if (response.status == 1 && dataTable) {
+            dataTable.draw();
+          }
+        },
+        error: function (xhr, status, error) {
+          showAlert('error', 'Something went wrong! : ' + error, 10000, true);
+        }
+      });
+    }
+  });
+}
+
 
 // دالة لإظهار التنبيه باستخدام block عند فك الحظر
 function showBlockAlert(type, message, timer = 700) {

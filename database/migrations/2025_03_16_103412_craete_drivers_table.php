@@ -37,6 +37,7 @@ return new class extends Migration
       $table->foreign('vehicle_size_id')->references('id')->on('vehicle_sizes')->onDelete('restrict');
       $table->unsignedBigInteger('role_id')->nullable();
       $table->foreign('role_id')->references('id')->on('roles')->onDelete('restrict');
+      $table->softDeletes();
       $table->timestamps();
     });
   }

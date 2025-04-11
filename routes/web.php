@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\admin\CustomersController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\DriversController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +15,10 @@ use App\Http\Controllers\admin\settings\GeofencesController;
 use App\Http\Controllers\admin\settings\PricingController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\settings\RoutesController;
+use App\Http\Controllers\admin\settings\TagsController;
 use App\Http\Controllers\admin\settings\TemplateController;
+use App\Http\Controllers\admin\WalletsController;
+use GuzzleHttp\Psr7\Request;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
 
@@ -75,11 +79,18 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::delete('/vehicles/size/delete/{id}', [VehiclesController::class, 'destroy_size'])->name('settings.vehicles.delete.size');
 
 
+        Route::get('/tags', [TagsController::class, 'index'])->name('settings.tags');
+        Route::get('/tags/data', [TagsController::class, 'getData'])->name('settings.tags.data');
+        Route::post('/tags', [TagsController::class, 'store'])->name('settings.tags.store');
+        Route::get('/tags/edit/{id}', [TagsController::class, 'edit'])->name('settings.tags.show');
+        Route::delete('/tags/delete/{id}', [TagsController::class, 'destroy'])->name('settings.tags.delete');
+
+
         Route::get('/geofences', [GeofencesController::class, 'index'])->name('settings.geofences');
         Route::get('/geofences/data', [GeofencesController::class, 'getData'])->name('settings.geofences.data');
         Route::post('/geofences', [GeofencesController::class, 'store'])->name('settings.geofences.store');
         Route::get('/geofences/edit/{id}', [GeofencesController::class, 'edit'])->name('settings.geofences.show');
-        Route::post('/geofences/delete/{id}', [GeofencesController::class, 'destroy'])->name('settings.geofences.delete');
+        Route::delete('/geofences/delete/{id}', [GeofencesController::class, 'destroy'])->name('settings.geofences.delete');
 
         Route::get('/routes', [RoutesController::class, 'index'])->name('settings.routes');
 
@@ -103,9 +114,25 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::get('/templates/pricing/methods', [PricingTemplateController::class, 'getPricingMethod'])->name('settings.templates.pricing.methods');
       });
 
+
+      Route::get('/customers', [CustomersController::class, 'index'])->name('customers.customers');
+      Route::post('/customers', [CustomersController::class, 'store'])->name('customers.create');
+      Route::get('/customers/data', [CustomersController::class, 'getData'])->name('customers.data');
+      Route::post('/customers/status', [CustomersController::class, 'chang_status'])->name('customers.status');
+      Route::get('/customers/edit/{id}', [CustomersController::class, 'edit'])->name('customers.show');
+      Route::delete('/customers/delete/{id}', [CustomersController::class, 'destroy'])->name('customers.delete');
+
+      Route::get('/wallets', [WalletsController::class, 'index'])->name('wallets.wallets');
+      Route::get('/wallets/data', [WalletsController::class, 'getData'])->name('wallets.data');
+
+
+
       Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
       Route::post('/drivers', [DriversController::class, 'store'])->name('drivers.create');
       Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');
+      Route::post('/drivers/status', [DriversController::class, 'chang_status'])->name('drivers.status');
+      Route::get('/drivers/edit/{id}', [DriversController::class, 'edit'])->name('drivers.show');
+      Route::delete('/drivers/delete/{id}', [DriversController::class, 'destroy'])->name('drivers.delete');
 
 
       Route::get('/teams', [TeamsController::class, 'index'])->name('teams.teams');

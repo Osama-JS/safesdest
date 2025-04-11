@@ -35,7 +35,18 @@ $(function () {
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/users/data'
+        url: baseUrl + 'admin/users/data',
+        dataSrc: function (json) {
+          $('#total').text(json.summary.total);
+          $('#total-active').text(json.summary.total_active);
+          $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
+          $('#total-inactive').text(json.summary.total_inactive);
+          $('#total-inactive + p').text(`(${((json.summary.total_inactive / json.summary.total) * 100).toFixed(1)})%`);
+          $('#total-pending').text(json.summary.total_pending);
+          $('#total-pending + p').text(`(${((json.summary.total_pending / json.summary.total) * 100).toFixed(1)})%`);
+
+          return json.data;
+        }
       },
       columns: [
         // columns according to JSON
@@ -219,7 +230,7 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search User',
+        searchPlaceholder: 'Search...',
         info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
@@ -260,6 +271,10 @@ $(function () {
             return data ? $('<table class="table"/><tbody />').append(data) : false;
           }
         }
+      },
+      initComplete: function () {
+        // استهدف input الخاص بالبحث واحذف الكلاسات
+        $('.dataTables_filter input').removeClass(' form-control-sm'); // عدّل حسب الكلاسات اللي تبغى تشيلها
       }
     });
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
@@ -378,6 +393,7 @@ $(function () {
               showConfirmButton: false,
               timer: 1500
             });
+
             if (response.status == 1) {
               // إذا كان يوجد جدول بيانات يتم تحديثه
               if (dt_data) {

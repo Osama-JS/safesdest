@@ -1,6 +1,7 @@
 function setupImagePreview(inputSelector, imgSelector) {
   const input = document.querySelector(inputSelector);
   const impBtn = document.querySelector(imgSelector);
+
   impBtn.addEventListener('click', function () {
     input.click();
   });
@@ -14,4 +15,4 @@ function setupImagePreview(inputSelector, imgSelector) {
 }
 
 // تطبيق الدالة على مدخلات الصور والأيقونات
-setupImagePreview('.driver-input-image', '.driver-image');
+setupImagePreview('.file-input-image', '.preview-image');

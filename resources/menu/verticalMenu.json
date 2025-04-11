@@ -7,16 +7,34 @@
       "slug": "dashboard"
     },
     {
-      "url": "admin/teams",
-      "name": "Teams",
-      "icon": "menu-icon tf-icons ti ti-users-group",
-      "slug": "teams.teams"
+      "url": "admin/customers",
+      "name": "Tasks",
+      "icon": "menu-icon tf-icons ti ti-truck-delivery",
+      "slug": "tasks.tasks"
+    },
+    {
+      "url": "admin/customers",
+      "name": "Customers",
+      "icon": "menu-icon tf-icons ti ti-user-circle",
+      "slug": "customers.customers"
     },
     {
       "url": "admin/drivers",
       "name": "Drivers",
       "icon": "menu-icon tf-icons ti  ti-steering-wheel",
       "slug": "drivers.drivers"
+    },
+    {
+      "url": "admin/teams",
+      "name": "Teams",
+      "icon": "menu-icon tf-icons ti ti-users-group",
+      "slug": "teams.teams"
+    },
+    {
+      "url": "admin/wallets",
+      "name": "Wallets",
+      "icon": "menu-icon tf-icons ti ti-wallet",
+      "slug": "wallets.wallets"
     },
     {
       "menuHeader": "Users & Settings"
@@ -37,6 +55,12 @@
           "name": "Vehicles",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.vehicles"
+        },
+        {
+          "url": "admin/settings/tags",
+          "name": "Tags",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.tags"
         },
         {
           "url": "admin/settings/geofences",

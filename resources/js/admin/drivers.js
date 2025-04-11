@@ -3,13 +3,12 @@
  */
 
 'use strict';
+import { deleteRecord, showAlert, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
-  // Variable declaration for table
-  var dt_user_table = $('.datatables-users'),
-    userView = baseUrl + 'app/user/view/account',
-    offCanvasForm = $('#largeModal');
+  var dt_data_table = $('.datatables-users'),
+    userView = baseUrl + 'app/user/view/account';
 
   // ajax setup
   $.ajaxSetup({
@@ -19,402 +18,334 @@ $(function () {
   });
 
   // Users datatable
-  if (dt_user_table.length) {
-    var dt_user = dt_user_table.DataTable({
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/drivers/data'
+        url: baseUrl + 'admin/drivers/data',
+        data: function (d) {
+          d.status = $('#statusFilter').val();
+          d.search = $('#searchFilter').val();
+        },
+        dataSrc: function (json) {
+          $('#total').text(json.summary.total);
+          $('#total-active').text(json.summary.total_active);
+          $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
+          $('#total-verified').text(json.summary.total_verified);
+          $('#total-verified + p').text(`(${((json.summary.total_verified / json.summary.total) * 100).toFixed(1)})%`);
+          $('#total-blocked').text(json.summary.total_blocked);
+          $('#total-blocked + p').text(`(${((json.summary.total_blocked / json.summary.total) * 100).toFixed(1)})%`);
+          return json.data;
+        }
       },
       columns: [
         // columns according to JSON
         { data: '' },
-        { data: 'id' },
-        { data: 'username' },
+        { data: 'fake_id' },
         { data: 'name' },
+        { data: 'username' },
         { data: 'email' },
         { data: 'phone' },
+        { data: 'role' },
+        { data: 'tags' },
         { data: 'status' },
         { data: 'created_at' },
-        { data: 'action' }
+        { data: null }
       ],
       columnDefs: [
         {
-          // For Responsive
+          targets: 0,
           className: 'control',
           searchable: false,
           orderable: false,
-          responsivePriority: 2,
-          targets: 0,
-          render: function (data, type, full, meta) {
+          responsivePriority: 1,
+          render: function () {
             return '';
           }
         },
         {
+          targets: 1,
           searchable: false,
           orderable: false,
-          targets: 1,
           render: function (data, type, full, meta) {
             return `<span>${full.fake_id}</span>`;
           }
         },
         {
-          // User full name
           targets: 2,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
-            var $name = full['name'];
+            var $name = full.name;
+            if (full.image === null) {
+              var initials = $name.match(/\b\w/g) || [];
+              initials = (initials.shift() || '') + (initials.pop() || '');
+              var colors = ['success', 'danger', 'warning', 'info', 'dark', 'primary'];
+              var color = colors[Math.floor(Math.random() * colors.length)];
+              var img = `<div class="avatar  bg-label-${color} rounded-circle">
+                      <span class="avatar-initial">${initials.toUpperCase()}</span>
+                    </div>`;
+            } else {
+              var img = `<div class="avatar  bg-label-${color} rounded-circle">
+                <img src="${full.image}"  class="rounded-circle  object-cover"/>
+            </div>`;
+            }
 
-            // For Avatar badge
-            var stateNum = Math.floor(Math.random() * 6);
-            var states = ['success', 'danger', 'warning', 'info', 'dark', 'primary', 'secondary'];
-            var $state = states[stateNum],
-              $name = full['name'],
-              $initials = $name.match(/\b\w/g) || [],
-              $output;
-            $initials = (($initials.shift() || '') + ($initials.pop() || '')).toUpperCase();
-            $output = '<span class="avatar-initial rounded-circle bg-label-' + $state + '">' + $initials + '</span>';
-
-            // Creates full output for row
-            var $row_output =
-              '<div class="d-flex justify-content-start align-items-center user-name">' +
-              '<div class="avatar-wrapper">' +
-              '<div class="avatar avatar-sm me-4">' +
-              $output +
-              '</div>' +
-              '</div>' +
-              '<div class="d-flex flex-column">' +
-              '<a href="' +
-              userView +
-              '" class="text-heading text-truncate"><span class="fw-medium">' +
-              $name +
-              '</span></a>' +
-              '</div>' +
-              '</div>';
-            return $row_output;
+            return `
+              <div class="d-flex align-items-center">
+                <div class="avatar-wrapper me-3">
+                  ${img}
+                </div>
+                <div class="d-flex flex-column">
+                  <span class="fw-medium">${$name}</span>
+                </div>
+              </div>`;
           }
         },
         {
-          // User email
           targets: 3,
           render: function (data, type, full, meta) {
-            var username = full['username'];
-
-            return '<span class="user-email">' + username + '</span>';
+            return `<span>${full.username}</span>`;
           }
         },
         {
-          // User email
           targets: 4,
           render: function (data, type, full, meta) {
-            var $email = full['email'];
-
-            return '<span class="user-email">' + $email + '</span>';
+            return `<span>${full.email}</span>`;
           }
         },
         {
-          // User phone
           targets: 5,
           render: function (data, type, full, meta) {
-            var $phone = full['phone'];
-
-            return '<span class="user-phone">' + $phone + '</span>';
+            return `<span>${full.phone}</span>`;
           }
         },
         {
-          // User phone
           targets: 6,
           render: function (data, type, full, meta) {
-            var $role = full['role'];
-
-            return '<span>' + '</span>';
+            return `<span>${full.role}</span>`;
           }
         },
         {
-          // status
           targets: 7,
+          render: function (data, type, full, meta) {
+            return `<span>${full.tags}</span>`;
+          }
+        },
+        {
+          targets: 8,
           className: 'text-center',
           render: function (data, type, full, meta) {
-            var $status = full['status'];
-            var html = '<span class="user-status">' + $status + '</span>';
-            switch ($status) {
+            let icon = '';
+            let status = full.status;
+
+            switch (status) {
               case 'active':
-                html += '<i class="ti fs-4 ti-shield-check text-success"></i>';
+                icon = '<i class="ti ti-shield-check text-success fs-5 ms-2"></i>';
                 break;
-              case 'inactive':
-                html += '<i class="ti fs-4 ti-shield-x text-danger"></i>';
+              case 'blocked':
+                icon = '<i class="ti ti-shield-x text-danger fs-5 ms-2"></i>';
                 break;
-              case 'pending':
-                html += '<i class="ti fs-4 ti-hourglass text-warning"></i>';
+              case 'verified':
+                icon = '<i class="ti ti-hourglass text-warning fs-5 ms-2"></i>';
                 break;
             }
-            return html;
+
+            return `<span class="bg-label-${status}">${status}</span> ${icon}`;
           }
         },
-
         {
-          // Actions
-          targets: -1,
+          targets: 9,
+          render: function (data, type, full, meta) {
+            return full.created_at;
+          }
+        },
+        {
+          targets: 10,
           title: 'Actions',
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
-            return (
-              '<div class="d-flex align-items-center gap-50">' +
-              `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
-              `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}"><i class="ti ti-trash"></i></button>` +
-              '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>' +
-              '<div class="dropdown-menu dropdown-menu-end m-0">' +
-              '<a href="' +
-              userView +
-              '" class="dropdown-item">View</a>' +
-              `<a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">change status</a>` +
-              '</div>' +
-              '</div>'
-            );
+            return `
+              <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
+                  <i class="ti ti-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.name}">
+                  <i class="ti ti-trash"></i>
+                </button>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a href="${userView}" class="dropdown-item">View</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
+                  </ul>
+                </div>
+              </div>`;
           }
         }
       ],
-      order: [[2, 'desc']],
+      order: [[1, 'desc']],
       dom:
         '<"row"' +
-        '<"col-md-2"<"ms-n2"l>>' +
-        '<"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-6 mb-md-0 mt-n6 mt-md-0"fB>>' +
+        '<"col-md-2"l>' +
+        '<"col-md-10 d-flex justify-content-end"fB>' +
         '>t' +
-        '<"row"' +
-        '<"col-sm-12 col-md-6"i>' +
-        '<"col-sm-12 col-md-6"p>' +
+        '<"row mt-3"' +
+        '<"col-md-6"i>' +
+        '<"col-md-6"p>' +
         '>',
-      lengthMenu: [7, 10, 20, 50, 70, 100], //for length of menu
+      lengthMenu: [10, 25, 50, 100], //for length of menu
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search User',
+        searchPlaceholder: 'Search...',
         info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
         paginate: {
-          next: '<i class="ti ti-chevron-right ti-sm"></i>',
-          previous: '<i class="ti ti-chevron-left ti-sm"></i>'
+          next: '<i class="ti ti-chevron-right"></i>',
+          previous: '<i class="ti ti-chevron-left"></i>'
         }
       },
-      // Buttons
       buttons: [
         `<label class='me-2'>
-          <select id='roleFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
-            <option>all status</option>
-            <option value='driver'>Driver</option>
-            <option value='customer'>Customer</option>
-          </select>
+        <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="verified">Unverified</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </label>`,
+        ` <label class="me-2">
+            <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
         </label>`
       ],
-      // For responsive popup
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data['name'];
+              return 'Details of ' + data.name;
             }
           }),
           type: 'column',
           renderer: function (api, rowIdx, columns) {
-            var data = $.map(columns, function (col, i) {
-              return col.title !== '' // ? Do not show row in modal popup if title is blank (for check box)
-                ? '<tr data-dt-row="' +
-                    col.rowIndex +
-                    '" data-dt-column="' +
-                    col.columnIndex +
-                    '">' +
-                    '<td>' +
-                    col.title +
-                    ':' +
-                    '</td> ' +
-                    '<td>' +
-                    col.data +
-                    '</td>' +
-                    '</tr>'
+            var data = $.map(columns, function (col) {
+              return col.title
+                ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                      <td>${col.title}:</td>
+                      <td>${col.data}</td>
+                   </tr>`
                 : '';
             }).join('');
-
-            return data ? $('<table class="table"/><tbody />').append(data) : false;
+            return $('<table class="table"/><tbody />').append(data);
           }
         }
       }
     });
-    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
+
+    $('#statusFilter').on('change', function () {
+      dt_data.draw();
+    });
+
+    $('#searchFilter').on('input', function () {
+      dt_data.draw();
+    });
+
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
   $('.dataTables_filter').hide();
 
-  $('.dataTables_filter').parent().append(`
-    <label class="me-2">
-      <input id="search_input" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
-
-    </label>
-  `);
-
   document.addEventListener('formSubmitted', function (event) {
-    if (dt_user) {
-      dt_user.draw();
+    let id = $('#customer_id').val();
+    $('.form_submit').trigger('reset');
+    $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
+    $('#additional-form').html('');
+    $('#select-template').val('');
+    if (id) {
+      setTimeout(() => {
+        $('#submitModal').modal('hide');
+      }, 2000);
+    }
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
+
+  document.addEventListener('deletedSuccess', function (event) {
+    if (dt_data) {
+      dt_data.draw();
     }
   });
 
   $(document).on('click', '.edit-record', function () {
-    var user_id = $(this).data('id'),
+    var data_id = $(this).data('id'),
       dtrModal = $('.dtr-bs-modal.show');
-
     if (dtrModal.length) {
       dtrModal.modal('hide');
     }
-
-    $('#modelTitle').html('Edit User');
-
-    // get data
-    $.get(`${baseUrl}user-list\/${user_id}\/edit`, function (data) {
+    $.get(`${baseUrl}admin/drivers/edit/${data_id}`, function (data) {
+      console.log(data.teamsIds);
       $('.text-error').html('');
-      $('#user_id').val(data.id);
-      $('#user-fullname').val(data.name);
-      $('#user-email').val(data.email);
-      $('#user-phone').val(data.phone);
-      $('#user-role').val(data.role_id);
+      $('#driver_id').val(data.id);
+      $('#driver-fullname').val(data.name);
+      $('#driver-username').val(data.username);
+      $('#driver-email').val(data.email);
+      $('#driver-phone').val(data.phone);
+      $('#phone-code').val(data.phone_code);
+      $('#driver-role').val(data.role_id);
+      $('#driver-team').val(data.time_id);
+      $('#driver-address').val(data.address);
+      $('#driver-commission-type').val(data.commission_type);
+      $('#driver-commission').val(data.commission);
+      if (data.img !== null) {
+        $('.preview-image').attr('src', data.img);
+      }
+      $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
+  });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/customers/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   $(document).on('click', '.status-record', function () {
-    var id = $(this).data('id');
-    var name = $(this).data('name');
-    var status = $(this).data('status');
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
 
-    // استخدام SweetAlert لعرض النموذج
-    Swal.fire({
-      title: `Change User: ${name} Status`,
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+      <select class="form-select" name="status">
+        <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+        <option value="verified" ${status === 'verified' ? 'selected' : ''}>Unverified</option>
+        <option value="blocked" ${status === 'blocked' ? 'selected' : ''}>Blocked</option>
+      </select>
+    `;
+
+    showFormModal({
+      title: `Change Driver: ${name} Status`,
       icon: 'info',
-      html: `
-            <form class="add-new-user pt-0 form_status" method="POST" action="${baseUrl + 'admin/users/status'}">
-                <input type="hidden" value="${id}" name="id">
-                <select class="form-select" name="status">
-                    <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
-                    <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
-                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                </select>
-            </form>
-        `,
-      showCloseButton: true,
-      showCancelButton: true,
-      focusConfirm: false,
-      confirmButtonText: 'Confirm!',
-      confirmButtonAriaLabel: 'Thumbs up, great!',
-      cancelButtonText: 'Cancel',
-      cancelButtonAriaLabel: 'Thumbs down',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        // AJAX request for form submission
-        var formData = $('.form_status').serialize(); // استخدام البيانات من النموذج في SweetAlert
-
-        $.ajax({
-          url: $('.form_status').attr('action'),
-          type: 'POST',
-          data: formData,
-          success: function (response) {
-            Swal.fire({
-              icon: response.type,
-              title: response.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-            if (response.status == 1) {
-              // إذا كان يوجد جدول بيانات يتم تحديثه
-              if (dt_user) {
-                dt_user.draw();
-              }
-            }
-          },
-          error: function (xhr, status, error) {
-            // معالجة الخطأ في حال وجود مشكلة في إرسال البيانات
-            Swal.fire({
-              icon: 'error',
-              title: 'Something went wrong!',
-              text: 'Please try again later.'
-            });
-          }
-        });
-      }
+      fields: fields,
+      url: `${baseUrl}admin/drivers/status`,
+      method: 'POST',
+      dataTable: dt_data
     });
   });
 
-  $('#select-template').on('change', function () {
-    var templateId = $(this).val();
+  $('#submitModal').on('hidden.bs.modal', function () {
+    $(this).find('form')[0].reset();
+    $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
 
-    // تنظيف الحقول الإضافية السابقة
+    $('.text-error').html('');
+    $('#driver_id').val('');
+    $('#modelTitle').html('Add New Driver');
     $('#additional-form').html('');
-
-    if (templateId) {
-      // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
-      $.ajax({
-        url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
-        type: 'GET',
-        data: { id: templateId },
-        success: function (response) {
-          // توليد الحقول في #additional-form
-          console.log(response.fields);
-
-          generateFields(response.fields);
-        },
-        error: function () {
-          console.log('Error loading template fields.');
-        }
-      });
-    }
+    $('#select-template').val('');
   });
-
-  function generateFields(fields) {
-    fields.forEach(field => {
-      var inputField = '';
-
-      switch (field.type) {
-        case 'string':
-          inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'number':
-          inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'email':
-          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
-          break;
-        case 'date':
-          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" required=${field.required}>`;
-          break;
-        case 'textarea':
-          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}></textarea>`;
-          break;
-        case 'select':
-          inputField = `<select name="additional_fields[${field.name}]" class="form-select" required=${field.required}>
-          ${(() => {
-            try {
-              const options = JSON.parse(field.value || '[]'); // إذا كانت فارغة، استخدم مصفوفة فارغة
-              return options.map(option => `<option value="${option.value}">${option.name}</option>`).join('');
-            } catch (error) {
-              console.error('Error parsing options:', error);
-              return '';
-            }
-          })()}
-        </select>`;
-
-          break;
-      }
-
-      $('#additional-form').append(`
-            <div class="mb-3 col-md-6">
-                <label class="form-label">${field.required ? '*' : ''} ${field.name}</label>
-                ${inputField}
-            </div>
-        `);
-    });
-  }
 
   function loadData(vehicle = '', type = '', lode = true, lodeType = false, loadSize = false) {
     $.ajax({

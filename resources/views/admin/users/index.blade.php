@@ -33,7 +33,7 @@
                         <div class="content-left">
                             <span class="text-heading">{{ __('Users') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ $totalUser }}</h4>
+                                <h4 class="mb-0 me-2" id="total">0</h4>
 
                             </div>
 
@@ -54,9 +54,8 @@
                         <div class="content-left">
                             <span class="text-heading">{{ __('Active Users') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ $active }}</h4>
-                                <p class="text-success mb-0">
-                                    ({{ $totalUser > 0 ? number_format(($active / $totalUser) * 100, 1) : 0 }}%)</p>
+                                <h4 class="mb-0 me-2" id="total-active">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
                             </div>
 
                         </div>
@@ -76,9 +75,8 @@
                         <div class="content-left">
                             <span class="text-heading">{{ __('Inactive Users') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ $inactive }}</h4>
-                                <p class="text-success mb-0">
-                                    ({{ $totalUser > 0 ? number_format(($inactive / $totalUser) * 100, 1) : 0 }}%)</p>
+                                <h4 class="mb-0 me-2" id="total-inactive">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
 
                                 </p>
                             </div>
@@ -100,9 +98,8 @@
                         <div class="content-left">
                             <span class="text-heading">{{ __('Pending Users') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ $pending }}</h4>
-                                <p class="text-success mb-0">
-                                    ({{ $totalUser > 0 ? number_format(($pending / $totalUser) * 100, 1) : 0 }}%)</p>
+                                <h4 class="mb-0 me-2" id="total-pending">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
 
                                 </p>
                             </div>
@@ -170,8 +167,9 @@
                                     </li>
                                     <li class="nav-item">
                                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                                            data-bs-target="#navs-justified-profile" aria-controls="navs-justified-profile"
-                                            aria-selected="false"><span class="d-none d-sm-block"><i
+                                            data-bs-target="#navs-justified-profile"
+                                            aria-controls="navs-justified-profile" aria-selected="false"><span
+                                                class="d-none d-sm-block"><i
                                                     class="tf-icons ti ti-file-plus ti-sm me-1_5"></i>
                                                 {{ __('Additional ') }}</span></button>
                                     </li>

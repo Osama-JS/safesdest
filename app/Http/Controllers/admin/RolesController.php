@@ -30,11 +30,16 @@ class RolesController extends Controller
     $order = $columns[$request->input('order.0.column', 0)] ?? 'id';
     $dir = $request->input('order.0.dir', 'asc');
 
+    $type = $request->input('type');
+
     $query = Role::query();
 
-    if ($request->has('guard') && !empty($request->guard)) {
-      $query->where('guard_name', $request->input('guard'));
+    if (!empty($type)) {
+
+      $query->where('guard_name', $type);
     }
+
+
 
     $totalFiltered = $query->count();
 
@@ -81,28 +86,32 @@ class RolesController extends Controller
   {
 
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:roles,name,' .  ($req->id ?? 0),
-      'guard' => 'required|in:web,driver,customer',
-      'permissions' => 'required|array',
+      'name'         => 'required|unique:roles,name,' .  ($req->id ?? 0),
+      'guard'        => 'required|in:web,driver,customer',
+      'permissions'  => 'required|array',
     ]);
+
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+      return response()->json([
+        'status' => 0,
+        'error'  => $validator->errors()
+      ]);
     }
 
     DB::beginTransaction();
     try {
-      if (isset($req->id) && !empty($req->id)) {
+
+      $data = [
+        'name' => $req->name,
+        'guard_name' => $req->guard,
+      ];
+
+      if ($req->filled('id')) {
         $role = Role::findOrFail($req->id);
 
-        $role->update([
-          'name' => $req->name,
-          'guard_name' => $req->guard,
-        ]);
+        $role->update([$data]);
       } else {
-        $role = Role::create([
-          'name' => $req->name,
-          'guard_name' => $req->guard,
-        ]);
+        $role = Role::create($data);
       }
       if (!$role) {
         DB::rollBack();
@@ -121,42 +130,6 @@ class RolesController extends Controller
     }
   }
 
-  public function update(Request $req)
-  {
-    $validator = Validator::make($req->all(), [
-      'id' => 'required|exists:roles,id|not_in:1',
-      'name' => 'required|unique:roles,name,' . $req->id,
-      'guard' => 'required|in:web,driver,customer',
-      'permissions' => 'required|array',
-    ]);
-
-    if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
-    }
-
-    DB::beginTransaction();
-    try {
-      $role = Role::findOrFail($req->id);
-
-      $role->update([
-        'name' => $req->name,
-        'guard_name' => $req->guard,
-      ]);
-
-      $permissions = Permission::whereIn('id', $req->permissions)
-        ->where('guard_name', $req->guard)
-        ->pluck('name')
-        ->toArray();
-
-      $role->syncPermissions($permissions);
-
-      DB::commit();
-      return response()->json(['status' => 1, 'success' => 'Role updated ']);
-    } catch (\Exception $ex) {
-      DB::rollBack();
-      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
-    }
-  }
 
   public function destroy(Request $req)
   {

@@ -138,11 +138,12 @@
                         <th>#</th>
                         <th>{{ __('name') }}</th>
                         <th>{{ __('username') }}</th>
-                        <th>{{ __('Email') }}</th>
-                        <th>{{ __('Phone') }}</th>
+                        <th>{{ __('email') }}</th>
+                        <th>{{ __('phone') }}</th>
+                        <th>{{ __('role') }}</th>
                         <th>{{ __('tags') }}</th>
-                        <th>{{ __('Status') }}</th>
-                        <th>{{ __('Actions') }}</th>
+                        <th>{{ __('status') }}</th>
+                        <th>{{ __('actions') }}</th>
                     </tr>
                 </thead>
             </table>
@@ -188,9 +189,9 @@
                                                         alt="" id="image"
                                                         style="width: 100%;    height: 222px;
                                                         object-fit: cover;"
-                                                        class="rounded driver-image image-input">
+                                                        class="rounded preview-image image-input">
 
-                                                    <input type="file" class="form-control driver-input-image"
+                                                    <input type="file" class="form-control file-input-image"
                                                         id="driver-image" name="image" style="display: none" />
                                                     <span class="image-error text-danger text-error"></span>
 
@@ -317,7 +318,6 @@
                                                             <label class="form-label" for="driver-commission-type">
                                                                 {{ __('Commission') }}</label>
                                                             <div class="input-group">
-
                                                                 <select name="commission_type" id="driver-commission-type"
                                                                     class="form-select">
                                                                     <option value="">

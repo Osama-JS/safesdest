@@ -19,8 +19,6 @@ $(function () {
       type: 'GET',
       data: { vehicle: vehicle, type: type },
       success: function (response) {
-        console.log(response);
-
         if (loadAll) {
           var vehicles = response.data.vehicles
             .map(
@@ -32,7 +30,7 @@ $(function () {
             <td>
               <button class="btn btn-sm btn-icon edit-v-record btn-text-secondary rounded-pill waves-effect"
                 data-id="${vehicle.id}" data-name="${vehicle.name}"  data-enname="${vehicle.en_name}"
-                data-bs-toggle="modal" data-bs-target="#largeModal">
+                >
                 <i class="ti ti-edit"></i>
               </button>
               <button class="btn btn-sm btn-icon delete-v-record btn-text-secondary rounded-pill waves-effect"
@@ -43,6 +41,12 @@ $(function () {
           </tr>`
             )
             .join('');
+
+          if (response.data.vehicles.length === 0) {
+            vehicles = `<tr>
+              <td colspan="4" class="text-center">No data available</td>
+            </tr>`;
+          }
           $('#vehicle-table').html(vehicles);
 
           var types = response.data.types
@@ -66,9 +70,14 @@ $(function () {
           </tr>`
             )
             .join('');
+
+          if (response.data.types.length === 0) {
+            types = `<tr>
+                <td colspan="5" class="text-center">No data available</td>
+              </tr>`;
+          }
           $('#types-table').html(types);
 
-          console.log(response.data.sizes);
           var sizes = response.data.sizes
             .map(
               (size, index) => `
@@ -90,6 +99,12 @@ $(function () {
           </tr>`
             )
             .join('');
+
+          if (response.data.sizes.length === 0) {
+            sizes = `<tr>
+                  <td colspan="5" class="text-center">No data available</td>
+                </tr>`;
+          }
           $('#sizes-table').html(sizes);
         }
         // توليد القوائم المنسدلة
@@ -138,29 +153,33 @@ $(function () {
 
   $(document).on('change', '#type-vehicle-flitter', function () {
     var vehicle = $(this).val();
-    console.log(vehicle);
     loadData(vehicle, '', false);
   });
 
   $(document).on('change', '#vehicle-size-vehicle', function () {
     var vehicle = $(this).val();
-    console.log(vehicle);
     loadData(vehicle, '', false, false);
   });
 
   $(document).on('change', '#size-vehicle-flitter', function () {
     var vehicle = $(this).val();
-    console.log(vehicle);
     loadData(vehicle, '', false, false);
   });
 
   $(document).on('change', '#size-type-flitter', function () {
     var vehicle = $(this).val();
-    console.log(vehicle);
     loadData(vehicle, vehicle, false, true, false);
   });
 
   document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+    $('#vehicle-id').val('');
+    $('#vehicle-type-id').val('');
+    $('#vehicle-size-id').val('');
+
+    loadData();
+  });
+  document.addEventListener('deletedSuccess', function (event) {
     loadData();
   });
 
@@ -191,8 +210,6 @@ $(function () {
     var name = $(this).data('name');
     var vehicle = $(this).data('vehicle');
     var type = $(this).data('type');
-
-    console.log(vehicle);
 
     $('#vehicle-size-name').val(name);
     $('#vehicle-size-type').val(type);

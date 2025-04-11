@@ -27,6 +27,7 @@ class UsersController extends Controller
     $activeCount = $users->where('status', 'active')->count();
     $inactiveCount =  $users->where('status', 'inactive')->count();
     $pendingCount =  $users->where('status', 'pending')->count();
+
     $templates = Form_Template::all();
     $roles = Role::where('guard_name', 'web')->get();
     $teams_ids = User_Teams::select('team_id')->get();
@@ -111,21 +112,20 @@ class UsersController extends Controller
       }
     }
 
-    if ($data) {
-      return response()->json([
-        'draw' => intval($request->input('draw')),
-        'recordsTotal' => intval($totalData),
-        'recordsFiltered' => intval($totalFiltered),
-        'code' => 200,
-        'data' => $data,
-      ]);
-    } else {
-      return response()->json([
-        'message' => 'Internal Server Error',
-        'code' => 500,
-        'data' => [],
-      ]);
-    }
+
+    return response()->json([
+      'draw' => intval($request->input('draw')),
+      'recordsTotal' => intval($totalData),
+      'recordsFiltered' => intval($totalFiltered),
+      'code' => 200,
+      'data' => $data,
+      'summary' => [
+        'total' => User::count(),
+        'total_active' => User::where('status', 'active')->count(),
+        'total_inactive' => User::where('status', 'inactive')->count(),
+        'total_pending' => User::where('status', 'pending')->count(),
+      ]
+    ]);
   }
 
   public function chang_status(Request $req)
@@ -181,85 +181,63 @@ class UsersController extends Controller
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'name' => 'required',
-      'email' => 'required|unique:users,email,' .  ($req->id ?? 0),
-      'phone' => 'required|unique:users,phone,' .  ($req->id ?? 0),
-      'password' => 'required_without:id|same:confirm-password',
-      'role' => 'required|exists:roles,id',
-      'teams' => 'nullable|array',
-      'template' => 'nullable|exists:form_templates,id' // التحقق من صحة معرف القالب
+      'name'        => 'required',
+      'email'       => 'required|unique:users,email,' .  ($req->id ?? 0),
+      'phone'       => 'required|unique:users,phone,' .  ($req->id ?? 0),
+      'password'    => 'required_without:id|same:confirm-password',
+      'role'        => 'required|exists:roles,id',
+      'teams'       => 'nullable|array',
+      'template'    => 'nullable|exists:form_templates,id'
     ]);
 
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+      return response()->json([
+        'status' => 0,
+        'error'  => $validator->errors()
+      ]);
     }
 
     DB::beginTransaction();
     try {
+      $data = [
+        'name'                => $req->name,
+        'email'               => $req->email,
+        'phone'               => $req->phone,
+        'phone_code'          => $req->phone_code,
+        'role_id'             => $req->role,
+        'form_template_id'    => $req->template ?? null,
+        'additional_data_id'  => $additionalData->_id ?? null
+      ];
 
-
-      $additionalFields = collect($req->all())->filter(function ($value, $key) {
-        return Str::startsWith($key, 'additional_fields');
-      })->toArray();
-
-
-
-      // // التأكد من أن الحقول هي مصفوفة
-      if (!is_array($additionalFields['additional_fields']) || empty($additionalFields['additional_fields'])) {
-        return response()->json(['status' => 0, 'error' => 'Invalid additional fields data']);
+      if ($req->filled('password')) {
+        $data['password'] = Hash::make($req->password);
       }
 
-      // dd($additionalFields['additional_fields']);
-      $additionalData = mUsers::create($additionalFields['additional_fields']);
+      if ($req->filled('password')) {
+        $data['form_template_id'] = $req->template;
+      }
 
-      // dd($additionalFields['additional_fields']);
 
-      // dd($req);
-      if (isset($req->id) && !empty($req->id)) {
+      if ($req->filled('id')) {
         $user = User::findOrFail($req->id);
-        $password = $req->filled('password') ?  Hash::make($req->password) : $user->password;
-
-        $user->update([
-          'name' => $req->name,
-          'email' => $req->email,
-          'phone' => $req->phone,
-          'phone_code' => $req->phone_code,
-          'password' => $password,
-          'role_id' => $req->role,
-          'form_template_id' => $req->template ?? null, // حفظ معرف القالب
-          'additional_data_id' => $additionalData->_id ?? null // حفظ معرف MongoDB في جدول users
-        ]);
-        $user->teams()->delete();
-        $teams = [];
-        for ($i = 0; $i < count($req->teams); $i++) {
-          if (isset($req->teams[$i])) {
-            $teams[$i]['team_id'] = $req->teams[$i];
-          }
+        if (!$user) {
+          return response()->json(['status' => 2, 'error' => 'Can not find the selected user']);
         }
+
+        $done =  $user->update($data);
+
+        $user->teams()->delete();
+        $teams = collect($req->teams)->filter()->map(function ($teamId) {
+          return ['team_id' => $teamId];
+        })->toArray();
         $done = $user->teams()->createMany($teams);
       } else {
-        $password = Hash::make($req->password);
-        $user = User::create([
-          'name' => $req->name,
-          'email' => $req->email,
-          'phone' => $req->phone,
-          'phone_code' => $req->phone_code,
-          'password' => $password,
-          'role_id' => $req->role,
-          'form_template_id' => $req->template ?? null, // حفظ معرف القالب
-          'additional_data_id' => $additionalData->_id ?? null // حفظ معرف MongoDB في جدول users
-        ]);
-        $teams = [];
-        for ($i = 0; $i < count($req->teams); $i++) {
-          if (isset($req->teams[$i])) {
-            $teams[$i]['team_id'] = $req->teams[$i];
-          }
-        }
+        $user = User::create($data);
+        $teams = collect($req->teams)->filter()->map(function ($teamId) {
+          return ['team_id' => $teamId];
+        })->toArray();
+
         $done = $user->teams()->createMany($teams);
-        if (!$done) {
-          DB::rollback();
-          return response()->json(['status' => 2, 'error' => 'Error creating user']);
-        }
       }
 
       if (!$user) {
@@ -267,7 +245,11 @@ class UsersController extends Controller
         return response()->json(['status' => 2, 'error' => 'Error creating user']);
       }
 
-      // تعيين الدور
+      if (!$done) {
+        DB::rollback();
+        return response()->json(['status' => 2, 'error' => 'Error Save user']);
+      }
+
       $role = Role::find($req->role);
       $user->assignRole($role->name);
 

@@ -25,7 +25,7 @@ $(function () {
         $('#teams-container').html('');
 
         if (response.data.data.length === 0) {
-          $('#teams-container').html("<p class='text-center'>No teams found.</p>");
+          $('#teams-container').html("<p class='text-center p-5 alert alert-info'>No teams found.</p>");
           $('#pagination').html('');
           return;
         }

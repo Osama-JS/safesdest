@@ -24,7 +24,6 @@
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Vehicles') }}</h5>
             <p>Add new roles with customized permissions as per your requirement. </p>
-
         </div>
     </div>
 

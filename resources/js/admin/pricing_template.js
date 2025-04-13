@@ -3,10 +3,14 @@
  */
 
 'use strict';
+import { deleteRecord, showAlert, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
-  var templateId = $('#template_id').val();
+  var dt_data_table = $('.datatables-pricing');
+  let fieldPricingIndex = 1;
+  let geofencePricingIndex = 0;
+
   // ajax setup
   $.ajaxSetup({
     headers: {
@@ -14,58 +18,364 @@ $(function () {
     }
   });
 
-  fetchPricingData();
-
-  function fetchPricingData() {
-    $.ajax({
-      url: baseUrl + 'admin/settings/templates/pricing/data/' + templateId,
-      type: 'GET',
-      dataType: 'json',
-      success: function (response) {
-        let tableBody = $('#pricing-table tbody');
-        tableBody.empty();
-
-        if (response.data.length > 0) {
-          $.each(response.data, function (index, item) {
-            let row = `<tr>
-                          <td>${item.role_name}</td>
-                          <td>${item.created_at}</td>
-                          <td>
-                              <button class="btn btn-sm btn-danger" onclick="deleteRow(${item.id})">Delete</button>
-                          </td>
-                      </tr>`;
-            tableBody.append(row);
-          });
-        } else {
-          tableBody.append('<tr><td colspan="3" class="text-center">No data available</td></tr>');
-        }
-      },
-      error: function () {
-        alert('حدث خطأ أثناء جلب البيانات.');
-      }
+  var select_tags = $('.select2-tags');
+  if (select_tags.length) {
+    var $this = select_tags;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select Tags',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
     });
   }
 
+  var select_customers = $('.select2-customers');
+  if (select_customers.length) {
+    var $this = select_customers;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select Customers',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: baseUrl + 'admin/settings/templates/pricing/data/' + templateId
+      },
+      columns: [{ data: '' }, { data: 'fake_id' }, { data: 'name' }, { data: 'created_at' }, { data: null }],
+      columnDefs: [
+        {
+          // For Responsive
+          className: 'control',
+          searchable: false,
+          orderable: false,
+          responsivePriority: 1,
+          targets: 0,
+          render: function (data, type, full, meta) {
+            return '';
+          }
+        },
+        {
+          searchable: false,
+          orderable: false,
+          targets: 1,
+          render: function (data, type, full, meta) {
+            return `<span>${full.fake_id}</span>`;
+          }
+        },
+        {
+          // User full name
+          targets: 2,
+          responsivePriority: 4,
+          render: function (data, type, full, meta) {
+            return full['name'];
+          }
+        },
+        {
+          targets: 3,
+          render: function (data, type, full, meta) {
+            return full['created_at'];
+          }
+        },
+
+        {
+          // Actions
+          targets: 4,
+          title: 'Actions',
+          searchable: false,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return (
+              '<div class="d-flex align-items-center gap-50">' +
+              `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
+              `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button> </div>`
+            );
+          }
+        }
+      ],
+      order: [[2, 'desc']],
+      dom:
+        '<"row"' +
+        '<"col-md-2"<"ms-n2"l>>' +
+        '<"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-6 mb-md-0 mt-n6 mt-md-0"fB>>' +
+        '>t' +
+        '<"row"' +
+        '<"col-sm-12 col-md-6"i>' +
+        '<"col-sm-12 col-md-6"p>' +
+        '>',
+      lengthMenu: [10, 20, 50, 100], //for length of menu
+      language: {
+        sLengthMenu: '_MENU_',
+        search: '',
+        searchPlaceholder: 'Search...',
+        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        paginate: {
+          next: '<i class="ti ti-chevron-right ti-sm"></i>',
+          previous: '<i class="ti ti-chevron-left ti-sm"></i>'
+        }
+      },
+      // Buttons
+      buttons: [],
+      // For responsive popup
+      responsive: {
+        details: {
+          display: $.fn.dataTable.Responsive.display.modal({
+            header: function (row) {
+              var data = row.data();
+              return 'Details of ' + data.name;
+            }
+          }),
+          type: 'column',
+          renderer: function (api, rowIdx, columns) {
+            var data = $.map(columns, function (col) {
+              return col.title
+                ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                      <td>${col.title}:</td>
+                      <td>${col.data}</td>
+                   </tr>`
+                : '';
+            }).join('');
+            return $('<table class="table"/><tbody />').append(data);
+          }
+        }
+      },
+      initComplete: function () {
+        $('.dataTables_filter input').removeClass(' form-control-sm'); // عدّل حسب الكلاسات اللي تبغى تشيلها
+      }
+    });
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
+  }
+
   document.addEventListener('formSubmitted', function (event) {
-    dt_user.draw();
+    dt_data.draw();
     setTimeout(() => {
       $('#submitModal').modal('hide');
     }, 2000);
   });
 
-  $(document).on('change', '#roleFilter', function () {
-    dt_user.ajax.reload();
+  document.addEventListener('deletedSuccess', function (event) {
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
+  $(document).on('click', '.edit-record', function () {
+    let id = $(this).data('id');
+    $.get(`${baseUrl}admin/settings/templates/pricing/edit/${id}`, function (data) {
+      $('.text-error').html(''); // تنظيف الأخطاء السابقة
+
+      // حقول ثابتة
+      $('#pricing_id').val(data.id);
+      $('input[name="rule_name"]').val(data.rule_name);
+      $('input[name="decimal_places"]').val(data.decimal_places);
+      $('input[name="base_fare"]').val(data.base_fare);
+      $('input[name="base_distance"]').val(data.base_distance);
+      $('input[name="base_waiting"]').val(data.base_waiting);
+      $('input[name="distance_fare"]').val(data.distance_fare);
+      $('input[name="waiting_fare"]').val(data.waiting_fare);
+      $('input[name="vat_commission"]').val(data.vat_commission);
+      $('input[name="service_commission"]').val(data.service_commission);
+      $('input[name="discount"]').val(data.discount);
+
+      // تحديد حالة checkboxes
+      $('#allCustomers').prop('checked', data.all_customers);
+      $('#useTags').prop('checked', data.use_tags);
+      $('#useCustomers').prop('checked', data.use_customers);
+
+      // تفعيل/تعطيل select حسب checkbox
+      $('#tagsSelect').prop('disabled', !data.use_tags).val(data.tags).trigger('change');
+      $('#customersSelect').prop('disabled', !data.use_customers).val(data.customers).trigger('change');
+
+      // تفعيل الميثودات
+      // تفريغ وتفعيل الـ methods
+      $('.toggle-method').prop('checked', false); // reset
+
+      if (Array.isArray(data.methods)) {
+        data.methods.forEach(methodId => {
+          // تفعيل الـ checkbox
+          const $checkbox = $(`#method_${methodId}`);
+          $checkbox.prop('checked', true);
+          const status = data.method_status.find(item => item.method_id === methodId);
+
+          // توليد الحاوية يدويًا لو مش موجودة
+          if (!$(`#params_${methodId}`).length) {
+            const block = `
+        <div class="method-parameters mb-3 p-3 border rounded" id="params_${methodId}">
+          <label><strong>Set Parameters for Method #${methodId}</strong></label>
+          <label class="switch switch-success">
+              <input type="checkbox" class="switch-input edit_status" data-id=${status.id} ${status.status == 1 ? 'checked' : ''} />
+              <span class="switch-toggle-slider">
+                <span class="switch-on">
+                  <i class="ti ti-check"></i>
+                </span>
+                <span class="switch-off">
+                  <i class="ti ti-x"></i>
+                </span>
+              </span>
+            </label>
+          <div class="parameter-rows" data-method="${methodId}"></div>
+        </div>
+      `;
+            $checkbox.closest('.form-check').after(block);
+          }
+
+          // تحميل الـ params الخاصة بهذا method
+          const container = $(`#params_${methodId} .parameter-rows`);
+          container.empty();
+
+          if (Array.isArray(data.params)) {
+            const flatParams = data.params.reduce((acc, val) => acc.concat(val), []);
+            const params = flatParams.filter(p => String(p.method_id) === String(methodId));
+
+            if (params.length) {
+              params.forEach((param, index) => {
+                const actionButton =
+                  index === 0
+                    ? `<button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>`
+                    : `<button type="button" class="btn btn-sm btn-icon text-danger remove-row"><i class="ti ti-trash"></i></button>`;
+                const row = `
+                  <div class="row g-2 parameter-row mt-2">
+                    <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
+                    <div class="col-md-3">
+                      <input type="number" name="params[${methodId}][${index}][from_val]" class="form-control" placeholder="From" value="${param.from_val}">
+                      <span class="params-${methodId}-${index}-from_val-error text-danger text-error"></span>
+                    </div>
+                    <div class="col-md-3">
+                      <input type="number" name="params[${methodId}][${index}][to_val]" class="form-control" placeholder="To" value="${param.to_val}">
+                      <span class="params-${methodId}-${index}-to_val-error text-danger text-error"></span>
+                    </div>
+                    <div class="col-md-3">
+                      <input type="number" name="params[${methodId}][${index}][price]" class="form-control" placeholder="Price" value="${param.price}">
+                      <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
+                    </div>
+                    <div class="col-md-3">
+                      ${actionButton}
+                    </div>
+                  </div>
+                `;
+
+                container.append(row);
+              });
+            }
+          }
+        });
+      }
+
+      ///////////////
+      $('#field-pricing-wrapper').html('');
+      if (Array.isArray(data.field_pricing)) {
+        data.field_pricing.forEach(item => {
+          $('#field-pricing-wrapper').append(`
+    <div class="row g-2 mb-2 field-pricing-row">
+      <div class="col-md-3">
+        <select name="field_pricing[${fieldPricingIndex}][field_id]" class="form-select field-select">
+          ${generateFieldOptions(item.field_id)}
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-field_id-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <select name="field_pricing[${fieldPricingIndex}][option]" class="form-select">
+          <option value="equal" ${item.option == 'equal' ? 'selected' : ''}>Equal</option>
+          <option value="not_equal" ${item.option == 'not_equal' ? 'selected' : ''}>Not Equal</option>
+          <option value="greater" ${item.option == 'greater' ? 'selected' : ''}>Greater Than</option>
+          <option value="less" ${item.option == 'less' ? 'selected' : ''}>Less Than</option>
+          <option value="greater_equal" ${item.option == 'greater_equal' ? 'selected' : ''}>Greater or Equal</option>
+          <option value="less_equal" ${item.option == 'less_equal' ? 'selected' : ''}>Less or Equal</option>
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-option-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <input type="text" name="field_pricing[${fieldPricingIndex}][value]" value=${item.value} class="form-control" placeholder="Value">
+        <span class="field_pricing-${fieldPricingIndex}-value-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <select name="field_pricing[${fieldPricingIndex}][type]" class="form-select">
+          <option value="fixed" ${item.type == 'fixed' ? 'selected' : ''}>Fixed</option>
+          <option value="percentage" ${item.type == 'percentage' ? 'selected' : ''}>Percentage</option>
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-type-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <input type="number" step="0.01" value=${item.amount} name="field_pricing[${fieldPricingIndex}][amount]" class="form-control">
+        <span class="field_pricing-${fieldPricingIndex}-amount-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="button" class="btn btn-sm btn-icon text-danger  remove-field-pricing"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  `);
+          fieldPricingIndex++;
+        });
+      }
+
+      // ✅ تعبئة الجيوفينس
+      $('#geofence-pricing-wrapper').html('');
+      if (Array.isArray(data.geofence_pricing)) {
+        data.geofence_pricing.forEach(item => {
+          $('#geofence-pricing-wrapper').append(`
+      <div class="row g-2 mb-2 geofence-pricing-row">
+        <div class="col-md-4">
+          <select name="geofence_pricing[${geofencePricingIndex}][geofence_id]" class="form-select geofence-select">
+            ${renderGeofenceOptions(item.geofence)}
+          </select>
+        <span class="geofence_pricing-${geofencePricingIndex}-geofence_id-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <select name="geofence_pricing[${geofencePricingIndex}][type]" class="form-select">
+            <option value="fixed" ${item.type == 'fixed' ? 'selected' : ''}>Fixed</option>
+            <option value="percentage" ${item.type == 'percentage' ? 'selected' : ''}>Percentage</option>
+          </select>
+        <span class="geofence_pricing-${geofencePricingIndex}-type-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <input type="number" step="0.01" value=${item.amount} name="geofence_pricing[${geofencePricingIndex}][amount]" class="form-control">
+        <span class="geofence_pricing-${geofencePricingIndex}-amount-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="button" class="btn btn-sm btn-icon text-danger remove-geofence-pricing"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    `);
+          geofencePricingIndex++;
+          updateGeofenceButtons();
+        });
+      }
+
+      // ✅ تفعيل checkbox الأحجام (sizes)
+      $('.size-checkbox').prop('checked', false);
+      if (Array.isArray(data.sizes)) {
+        data.sizes.forEach(id => {
+          $(`#size_${id}`).prop('checked', true);
+        });
+      }
+
+      // تغيير عنوان المودال
+      $('#modelTitle').html(`Edit Template: <span class="bg-info text-white px-2 rounded">${data.rule_name}</span>`);
+    });
   });
 
   $(document).on('change', '.edit_status', function () {
     var Id = $(this).data('id');
+    console.log(Id);
     $.ajax({
-      url: `${baseUrl}admin/settings/pricing/status/${Id}`,
+      url: `${baseUrl}admin/settings/templates/pricing/status/${Id}`,
       type: 'post',
 
       success: function (response) {
         if (response.status != 1) {
-          showAlert('error', data.error, 10000, true);
+          showAlert('error', response.error, 10000, true);
         }
       },
       error: function () {
@@ -74,98 +384,300 @@ $(function () {
     });
   });
 
-  $(document).on('click', '.edit-record', function () {
-    var Id = $(this).data('id');
-    var name = $(this).data('name');
-
-    $('#modelTitle').html(`Edit Method: <span class="bg-info text-white px-2 rounded">${name}</span>`);
-    // get data
-    $.get(`${baseUrl}admin/settings/pricing/edit/${Id}`, function (data) {
-      $('#submitModal').modal('show');
-
-      $('#pricing_id').val(data.id);
-      $('#pricing-name').val(data.name);
-      $('#pricing-description').val(data.description);
-      if (data.distance_calculation == true) {
-        $('#pricing-distance').attr('checked', true);
-      }
-    });
-  });
-
   $(document).on('click', '.delete-record', function () {
-    var Id = $(this).data('id');
-    var name = $(this).data('name');
-
-    Swal.fire({
-      title: `Delete ${name}?`,
-      text: 'You will not be able to undo this action!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `${baseUrl}admin/settings/pricing/delete/${Id}`,
-          type: 'post',
-
-          success: function (response) {
-            if (response.status === 1) {
-              Swal.fire({
-                title: response.success,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-              });
-
-              dt_user.draw();
-            } else {
-              Swal.fire('Error!', response.error, 'error');
-            }
-          },
-          error: function () {
-            Swal.fire('Error!', 'Failed to delete the method', 'error');
-          }
-        });
-      }
-    });
+    let url = baseUrl + 'admin/settings/templates/pricing/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
     document.querySelector('.form_submit').reset();
     $('.text-error').html('');
-    $('#pricing-distance').attr('checked', false);
-    $('#modelTitle').html('Add New Method');
+    $('#field-pricing-wrapper').html('');
+    $('.method-parameters').remove();
+    $('#geofence-pricing-wrapper').html('');
+    handleSelection('all');
+    tagsSelect.val('').trigger('change');
+    customersSelect.val('').trigger('change');
+    $('#modelTitle').html('Add New Pricing Role');
   });
 
-  function showAlert(icon, title, timer, showConfirmButton = false) {
-    toastr.options = {
-      closeButton: true,
-      progressBar: true,
-      timeOut: timer || 5000, // زمن الإغلاق التلقائي
-      extendedTimeOut: 5000,
-      positionClass: 'toast-top-center',
-      preventDuplicates: true,
-      showMethod: 'fadeIn', // تأثير عند الظهور
-      hideMethod: 'fadeOut', // تأثير عند الاختفاء
-      showEasing: 'swing',
-      hideEasing: 'linear'
-    };
+  const allCheckbox = $('#allCustomers');
+  const tagsCheckbox = $('#useTags');
+  const specificCheckbox = $('#useCustomers');
 
-    // تحديد نوع التوست حسب الأيقونة
-    let toastType =
-      icon === 'success' ? 'success' : icon === 'error' ? 'error' : icon === 'warning' ? 'warning' : 'info';
+  const tagsSelect = $('#tagsSelect');
+  const customersSelect = $('#customersSelect');
 
-    // عرض الإشعار
-    let $toast = toastr[toastType](title);
-
-    // إضافة تأثير tada بعد ظهور التوست
-    if ($toast) {
-      $toast.addClass('animate__animated animate__tada');
+  function handleSelection(selected) {
+    if (selected === 'all') {
+      allCheckbox.prop('checked', true);
+      tagsCheckbox.prop('checked', false);
+      specificCheckbox.prop('checked', false);
+      tagsSelect.prop('disabled', true);
+      customersSelect.prop('disabled', true);
+    } else if (selected === 'tags') {
+      allCheckbox.prop('checked', false);
+      tagsCheckbox.prop('checked', true);
+      specificCheckbox.prop('checked', false);
+      tagsSelect.prop('disabled', false);
+      customersSelect.prop('disabled', true);
+    } else if (selected === 'customers') {
+      allCheckbox.prop('checked', false);
+      tagsCheckbox.prop('checked', false);
+      specificCheckbox.prop('checked', true);
+      tagsSelect.prop('disabled', true);
+      customersSelect.prop('disabled', false);
     }
   }
+
+  $(document).on('change', '#allCustomers', function () {
+    handleSelection('all');
+  });
+
+  $(document).on('change', '#useTags', function () {
+    handleSelection('tags');
+  });
+
+  $(document).on('change', '#useCustomers', function () {
+    handleSelection('customers');
+  });
+
+  const methodParametersContainer = {};
+
+  $(document).on('change', '.toggle-method', function () {
+    const methodId = $(this).data('method-id');
+    const isChecked = $(this).is(':checked');
+    const target = `#params_${methodId}`;
+
+    if (isChecked) {
+      // إذا تم تحديد الطريقة، أنشئ الحقول وضعها تحت الزر
+      if (!methodParametersContainer[methodId]) {
+        methodParametersContainer[methodId] = `
+                <div class="method-parameters mb-3 p-3 border rounded" id="params_${methodId}">
+                    <label><strong>Set Parameters for Method #${methodId}</strong></label>
+                    <div class="parameter-rows" data-method="${methodId}">
+                        <div class="row g-2 parameter-row">
+                            <input type="hidden" name="params[${methodId}][0][method_id]" value="${methodId}">
+                            <div class="col-md-3">
+                                <input type="number" name="params[${methodId}][0][from_val]" class="form-control" placeholder="From">
+                                <span class="params-${methodId}-0-from_val-error text-danger text-error">jj</span>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="params[${methodId}][0][to_val]" class="form-control" placeholder="To">
+                                <span class="params-${methodId}-0-to_val-error text-danger text-error"></span>
+
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="params[${methodId}][0][price]" class="form-control" placeholder="Price" value="0.00">
+                                <span class="params-${methodId}-0-price-error text-danger text-error"></span>
+
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      // أضفها بعد checkbox المحدد
+      $(this).closest('.form-check').after(methodParametersContainer[methodId]);
+    } else {
+      // إذا ألغى التحديد، احذف العناصر من الـDOM
+      $(`#params_${methodId}`).remove();
+    }
+  });
+
+  $('.toggle-method').on('change', function () {
+    const methodId = $(this).data('method-id');
+    const paramContainer = $('#params_' + methodId);
+    if ($(this).is(':checked')) {
+      paramContainer.removeClass('d-none');
+    } else {
+      paramContainer.addClass('d-none');
+    }
+  });
+
+  $(document).on('click', '.add-row', function () {
+    const wrapper = $(this).closest('.parameter-rows');
+    const methodId = wrapper.data('method');
+    const index = wrapper.find('.parameter-row').length;
+
+    const row = `
+        <div class="row g-2 parameter-row mt-2">
+          <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
+          <div class="col-md-3">
+            <input type="number" name="params[${methodId}][${index}][from_val]" class="form-control" placeholder="From">
+            <span class="params-${methodId}-${index}-from_val-error text-danger text-error"></span>
+
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="params[${methodId}][${index}][to_val]" class="form-control" placeholder="To">
+            <span class="params-${methodId}-${index}-to_val-error text-danger text-error"></span>
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="params[${methodId}][${index}][price]" value="0.00" class="form-control" placeholder="Price">
+            <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-sm btn-icon  text-danger remove-row"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>
+      `;
+
+    wrapper.append(row);
+  });
+
+  $(document).on('click', '.remove-row', function () {
+    $(this).closest('.parameter-row').remove();
+  });
+
+  function generateFieldOptions(selected = null) {
+    const usedFieldIds = [];
+    return formFields
+      .filter(f => !usedFieldIds.includes(String(f.id)))
+      .map(f => `<option value="${f.id}" ${f.id == selected ? 'selected' : ''}>${f.label}</option>`)
+      .join('');
+  }
+
+  $(document).on('click', '.add-field-pricing', function () {
+    const options = generateFieldOptions();
+    const row = `
+    <div class="row g-2 mb-2 field-pricing-row">
+      <div class="col-md-3">
+        <select name="field_pricing[${fieldPricingIndex}][field_id]" class="form-select field-select">
+          ${options}
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-field_id-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <select name="field_pricing[${fieldPricingIndex}][option]" class="form-select">
+          <option value="equal">Equal</option>
+          <option value="not_equal">Not Equal</option>
+          <option value="greater">Greater Than</option>
+          <option value="less">Less Than</option>
+          <option value="greater_equal">Greater or Equal</option>
+          <option value="less_equal">Less or Equal</option>
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-option-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <input type="text" name="field_pricing[${fieldPricingIndex}][value]" class="form-control" placeholder="Value">
+        <span class="field_pricing-${fieldPricingIndex}-value-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <select name="field_pricing[${fieldPricingIndex}][type]" class="form-select">
+          <option value="fixed">Fixed</option>
+          <option value="percentage">Percentage</option>
+        </select>
+        <span class="field_pricing-${fieldPricingIndex}-type-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-2">
+        <input type="number" step="0.01" value="0.00" name="field_pricing[${fieldPricingIndex}][amount]" class="form-control">
+        <span class="field_pricing-${fieldPricingIndex}-amount-error text-danger text-error"></span>
+
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button type="button" class="btn btn-sm btn-icon text-danger  remove-field-pricing"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  `;
+    $('#field-pricing-wrapper').append(row);
+    fieldPricingIndex++;
+    $('.field-select').trigger('change'); // تحديث الخيارات
+  });
+
+  // تحديث الخيارات بمجرد تغيير أي حقل
+  $(document).on('change', '.field-select', function () {
+    $('.field-select').each(function () {
+      const selected = $(this).val();
+      const options = generateFieldOptions(selected);
+      $(this).html(options).val(selected);
+    });
+  });
+
+  // حذف صف وإعادة التحديث
+  $(document).on('click', '.remove-field-pricing', function () {
+    $(this).closest('.field-pricing-row').remove();
+    $('.field-select').trigger('change');
+  });
+
+  function getUsedGeofences() {
+    let used = [];
+    $('#geofence-pricing-wrapper select[name^="geofence_pricing"]').each(function () {
+      used.push($(this).val());
+    });
+    return used;
+  }
+
+  function renderGeofenceOptions(selected = null) {
+    const used = getUsedGeofences();
+    return geoFences
+      .filter(f => !used.includes(String(f.id)))
+      .map(f => `<option value="${f.id}" ${f.id == selected ? 'selected' : ''}>${f.name}</option>`)
+      .join('');
+  }
+
+  function updateGeofenceButtons() {
+    const available = geoFences.filter(f => !getUsedGeofences().includes(String(f.id)));
+    if (available.length === 0) {
+      $('.add-geofence-pricing').prop('disabled', true);
+
+      showAlert('warning', 'No more Geo-Fences available to select', 10000, true);
+    } else {
+      $('.add-geofence-pricing').prop('disabled', false);
+      $('#geofence-limit-alert').remove();
+    }
+  }
+
+  $(document).on('click', '.add-geofence-pricing', function () {
+    const options = renderGeofenceOptions();
+    if (!options) return;
+
+    const row = `
+      <div class="row g-2 mb-2 geofence-pricing-row">
+        <div class="col-md-4">
+          <select name="geofence_pricing[${geofencePricingIndex}][geofence_id]" class="form-select geofence-select">
+            ${options}
+          </select>
+        <span class="geofence_pricing-${geofencePricingIndex}-geofence_id-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <select name="geofence_pricing[${geofencePricingIndex}][type]" class="form-select">
+            <option value="fixed">Fixed</option>
+            <option value="percentage">Percentage</option>
+          </select>
+        <span class="geofence_pricing-${geofencePricingIndex}-type-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <input type="number" step="0.01" value="00" name="geofence_pricing[${geofencePricingIndex}][amount]" class="form-control">
+        <span class="geofence_pricing-${geofencePricingIndex}-amount-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="button" class="btn btn-sm btn-icon text-danger remove-geofence-pricing"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    `;
+
+    $('#geofence-pricing-wrapper').append(row);
+    geofencePricingIndex++;
+    updateGeofenceButtons();
+  });
+
+  $(document).on('click', '.remove-geofence-pricing', function () {
+    $(this).closest('.geofence-pricing-row').remove();
+    updateGeofenceButtons();
+  });
+
+  $(document).ready(function () {
+    updateGeofenceButtons();
+  });
 });

@@ -137,7 +137,6 @@
                         <th></th>
                         <th>#</th>
                         <th>{{ __('name') }}</th>
-
                         <th>{{ __('email') }}</th>
                         <th>{{ __('phone') }}</th>
                         <th>{{ __('role') }}</th>

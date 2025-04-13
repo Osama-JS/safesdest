@@ -12,6 +12,17 @@ $(function () {
     }
   });
 
+  var select2 = $('.select2');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select Teams',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+
   const verticalExample = document.getElementById('vertical-scroll');
   if (verticalExample) {
     new PerfectScrollbar(verticalExample, { wheelPropagation: false });
@@ -178,10 +189,14 @@ $(function () {
     loadGeofences();
     $('#geo-id').val('');
     $('.form_submit').trigger('reset');
+    $('#geo-teams').val([]).trigger('change');
+
     setTimeout(() => $('#submitModal').modal('hide'), 2000);
   });
 
-  document.addEventListener('deletedSuccess', loadGeofences);
+  document.addEventListener('deletedSuccess', function () {
+    loadGeofences();
+  });
 
   function convertToWKT(latlngs) {
     if (!latlngs.length) return '';
@@ -205,6 +220,7 @@ $(function () {
       $('#geo-id').val(data.id);
       $('#geo-name').val(data.name);
       $('#geo-description').val(data.description);
+      $('#geo-teams').val(data.teamsIds).trigger('change');
       $('#geo-coordinates').val(data.coordinates_wkt);
 
       drawnItems.clearLayers();
@@ -250,6 +266,8 @@ $(function () {
   $('#submitModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
     $('#modelTitle').html('Add Geo-fence');
+    $('#geo-teams').val([]).trigger('change');
+
     document.getElementById('geo-coordinates').value = '';
     drawnItems.clearLayers();
   });

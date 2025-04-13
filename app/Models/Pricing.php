@@ -22,4 +22,9 @@ class Pricing extends Model
   {
     return $this->belongsTo(Pricing_Method::class, 'pricing_method_id');
   }
+
+  public function parametars()
+  {
+    return $this->hasMany(Pricing_Parametar::class, 'pricing_id');
+  }
 }

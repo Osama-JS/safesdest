@@ -3,11 +3,12 @@
  */
 
 'use strict';
+import { deleteRecord, showAlert, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
-  var dt_user_table = $('.datatables-users'),
+  var dt_data_table = $('.datatables-users'),
     offCanvasForm = $('#largeModal');
 
   // ajax setup
@@ -18,8 +19,8 @@ $(function () {
   });
 
   // Users datatable
-  if (dt_user_table.length) {
-    var dt_user = dt_user_table.DataTable({
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
@@ -36,7 +37,7 @@ $(function () {
         { data: 'description' },
         { data: 'status' },
         { data: 'distance' },
-        { data: 'action' }
+        { data: null }
       ],
       columnDefs: [
         {
@@ -119,7 +120,7 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search User',
+        searchPlaceholder: 'Search...',
         info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
@@ -160,20 +161,27 @@ $(function () {
             return data ? $('<table class="table"/><tbody />').append(data) : false;
           }
         }
+      },
+      initComplete: function () {
+        // استهدف input الخاص بالبحث واحذف الكلاسات
+        $('.dataTables_filter input').removeClass(' form-control-sm'); // عدّل حسب الكلاسات اللي تبغى تشيلها
       }
     });
-    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
   document.addEventListener('formSubmitted', function (event) {
-    dt_user.draw();
+    $('.form_submit').trigger('reset');
+    dt_data.draw();
+
     setTimeout(() => {
       $('#submitModal').modal('hide');
     }, 2000);
   });
-
-  $(document).on('change', '#roleFilter', function () {
-    dt_user.ajax.reload();
+  document.addEventListener('deletedSuccess', function (event) {
+    if (dt_data) {
+      dt_data.draw();
+    }
   });
 
   $(document).on('change', '.edit_status', function () {
@@ -212,79 +220,14 @@ $(function () {
   });
 
   $(document).on('click', '.delete-record', function () {
-    var Id = $(this).data('id');
-    var name = $(this).data('name');
-
-    Swal.fire({
-      title: `Delete ${name}?`,
-      text: 'You will not be able to undo this action!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `${baseUrl}admin/settings/pricing/delete/${Id}`,
-          type: 'post',
-
-          success: function (response) {
-            if (response.status === 1) {
-              Swal.fire({
-                title: response.success,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-              });
-
-              dt_user.draw();
-            } else {
-              Swal.fire('Error!', response.error, 'error');
-            }
-          },
-          error: function () {
-            Swal.fire('Error!', 'Failed to delete the method', 'error');
-          }
-        });
-      }
-    });
+    let url = baseUrl + 'admin/settings/pricing/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
-    document.querySelector('.form_submit').reset();
+    $('.form_submit').reset();
     $('.text-error').html('');
     $('#pricing-distance').attr('checked', false);
     $('#modelTitle').html('Add New Method');
   });
-
-  function showAlert(icon, title, timer, showConfirmButton = false) {
-    toastr.options = {
-      closeButton: true,
-      progressBar: true,
-      timeOut: timer || 5000, // زمن الإغلاق التلقائي
-      extendedTimeOut: 5000,
-      positionClass: 'toast-top-center',
-      preventDuplicates: true,
-      showMethod: 'fadeIn', // تأثير عند الظهور
-      hideMethod: 'fadeOut', // تأثير عند الاختفاء
-      showEasing: 'swing',
-      hideEasing: 'linear'
-    };
-
-    // تحديد نوع التوست حسب الأيقونة
-    let toastType =
-      icon === 'success' ? 'success' : icon === 'error' ? 'error' : icon === 'warning' ? 'warning' : 'info';
-
-    // عرض الإشعار
-    let $toast = toastr[toastType](title);
-
-    // إضافة تأثير tada بعد ظهور التوست
-    if ($toast) {
-      $toast.addClass('animate__animated animate__tada');
-    }
-  }
 });

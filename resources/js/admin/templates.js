@@ -3,12 +3,12 @@
  */
 
 'use strict';
+import { deleteRecord, showAlert, handleErrors } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
-  var dt_user_table = $('.datatables-users'),
-    offCanvasForm = $('#largeModal');
+  var dt_data_table = $('.datatables-users');
 
   // ajax setup
   $.ajaxSetup({
@@ -18,24 +18,20 @@ $(function () {
   });
 
   // Users datatable
-  if (dt_user_table.length) {
-    var dt_user = dt_user_table.DataTable({
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/settings/templates/data',
-        data: function (d) {
-          d.guard = $('#roleFilter').val();
-        }
+        url: baseUrl + 'admin/settings/templates/data'
       },
       columns: [
-        // columns according to JSON
         { data: '' },
         { data: 'id' },
         { data: 'name' },
         { data: 'description' },
         { data: 'created_at' },
-        { data: 'action' }
+        { data: null }
       ],
       columnDefs: [
         {
@@ -98,7 +94,7 @@ $(function () {
         '<"col-sm-12 col-md-6"i>' +
         '<"col-sm-12 col-md-6"p>' +
         '>',
-      lengthMenu: [7, 10, 20, 50, 70, 100], //for length of menu
+      lengthMenu: [10, 20, 50, 100], //for length of menu
       language: {
         sLengthMenu: '_MENU_',
         search: '',
@@ -145,11 +141,11 @@ $(function () {
         }
       }
     });
-    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_user }));
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
   document.addEventListener('formSubmitted', function (event) {
-    dt_user.draw();
+    dt_data.draw();
     setTimeout(() => {
       $('#submitModal').modal('hide');
     }, 2000);
@@ -169,46 +165,8 @@ $(function () {
   });
 
   $(document).on('click', '.delete-record', function () {
-    var Id = $(this).data('id');
-    var name = $(this).data('name');
-
-    Swal.fire({
-      title: `Delete ${name}?`,
-      text: 'You will not be able to undo this action!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: `${baseUrl}admin/settings/pricing/delete/${Id}`,
-          type: 'post',
-
-          success: function (response) {
-            if (response.status === 1) {
-              Swal.fire({
-                title: response.success,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-              });
-
-              dt_user.draw();
-            } else {
-              Swal.fire('Error!', response.error, 'error');
-            }
-          },
-          error: function () {
-            Swal.fire('Error!', 'Failed to delete the method', 'error');
-          }
-        });
-      }
-    });
+    let url = baseUrl + 'admin/settings/template/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
@@ -218,47 +176,27 @@ $(function () {
     $('#modelTitle').html('Add New Method');
   });
 
-  function showAlert(icon, title, timer, showConfirmButton = false) {
-    toastr.options = {
-      closeButton: true,
-      progressBar: true,
-      timeOut: timer || 5000, // زمن الإغلاق التلقائي
-      extendedTimeOut: 5000,
-      positionClass: 'toast-top-center',
-      preventDuplicates: true,
-      showMethod: 'fadeIn', // تأثير عند الظهور
-      hideMethod: 'fadeOut', // تأثير عند الاختفاء
-      showEasing: 'swing',
-      hideEasing: 'linear'
-    };
-
-    // تحديد نوع التوست حسب الأيقونة
-    let toastType =
-      icon === 'success' ? 'success' : icon === 'error' ? 'error' : icon === 'warning' ? 'warning' : 'info';
-
-    // عرض الإشعار
-    let $toast = toastr[toastType](title);
-
-    // إضافة تأثير tada بعد ظهور التوست
-    if ($toast) {
-      $toast.addClass('animate__animated animate__tada');
-    }
-  }
-
   $(document).ready(function () {
     $('#add_field').click(function () {
       $('#fields_table').append(`
             <tr class="form-field-row">
             <td class="drag-handle" style="cursor: grab;">☰</td>
-
-                <td><input type="text" class="form-control field-name-input"></td>
-                <td><input type="text" class="form-control field-label-input"></td>
+                <td>
+                  <input type="text" class="form-control field-name-input">
+                  <span class="field-${fieldIndex}-name-error text-danger text-error"></span>
+                </td>
+                <td>
+                  <input type="text" class="form-control field-label-input">
+                  <span class="field-${fieldIndex}-label-error text-danger text-error"></span>
+                </td>
                 <td>
                     <select class="form-control field-manager">
                         <option value="hidden">Hidden</option>
                         <option value="read">Read Only</option>
                         <option value="write">Read & Write</option>
                     </select>
+                  <span class="field-${fieldIndex}-driver_can-error text-danger text-error"></span>
+
                 </td>
                 <td>
                     <select class="form-control field-customer-can-select">
@@ -266,6 +204,8 @@ $(function () {
                         <option value="read">Read Only</option>
                         <option value="write">Read & Write</option>
                     </select>
+                  <span class="field-${fieldIndex}-customer_can-error text-danger text-error"></span>
+
                 </td>
                 <td>
                     <select class="form-control field-type-select">
@@ -273,19 +213,28 @@ $(function () {
                         <option value="number">رقم</option>
                         <option value="email">بريد إلكتروني</option>
                         <option value="date">تاريخ</option>
+                        <option value="file">ملف</option>
                         <option value="select">اختيار</option>
                     </select>
+                  <span class="field-${fieldIndex}-type-error text-danger text-error"></span>
+
                 </td>
-                <td><input type="text" class="form-control field-value-input"></td>
+                <td>
+                  <input type="text" class="form-control field-value-input">
+                  <span class="field-${fieldIndex}-value-error text-danger text-error"></span>
+                </td>
                 <td>
                     <select class="form-control field-required-select">
-                        <option value="0">اختياري</option>
-                        <option value="1">إلزامي</option>
+                        <option value="0">NO</option>
+                        <option value="1">YES</option>
                     </select>
+                  <span class="field-${fieldIndex}-required-error text-danger text-error"></span>
+
                 </td>
                 <td><button class="btn btn-sm btn-icon text-danger remove-field"><i class="ti ti-trash"></i></button></td>
             </tr>
         `);
+      fieldIndex++;
     });
 
     let sortable = new Sortable(document.getElementById('fields_table'), {
@@ -435,7 +384,13 @@ $(function () {
         data: JSON.stringify(templateData),
         contentType: 'application/json',
         success: function (response) {
-          if (response.status == 2) {
+          $('span.text-error').text(''); // إعادة تعيين الأخطاء
+
+          if (response.status === 0) {
+            console.log(response.error);
+            handleErrors(response.error);
+            showAlert('error', response.message);
+          } else if (response.status == 2) {
             showAlert('error', response.error);
           } else {
             showAlert('success', response.success);

@@ -101,7 +101,9 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::get('/pricing/edit/{id}', [PricingController::class, 'edit'])->name('settings.pricing.show');
         Route::post('/pricing/status/{id}', [PricingController::class, 'change_state'])->name('settings.pricing.status');
         Route::post('/pricing/edit', [PricingController::class, 'update'])->name('settings.pricing.edit');
-        Route::post('/pricing/delete/{id}', [PricingController::class, 'destroy'])->name('settings.pricing.delete');
+        Route::delete('/pricing/delete/{id}', [PricingController::class, 'destroy'])->name('settings.pricing.delete');
+
+
 
         Route::get('/templates', [TemplateController::class, 'index'])->name('settings.templates');
         Route::get('/templates/data', [TemplateController::class, 'getData'])->name('settings.templates.data');
@@ -110,8 +112,12 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::get('/templates/edit/{id}', [TemplateController::class, 'edit'])->name('settings.templates.edit');
         Route::post('/templates/update/', [TemplateController::class, 'update'])->name('settings.templates.update');
 
+        Route::post('/template/pricing', [PricingTemplateController::class, 'store'])->name('settings.templates.pricing.store');
         Route::get('/templates/pricing/data/{id}', [PricingTemplateController::class, 'getData'])->name('settings.templates.pricing.data');
+        Route::get('/templates/pricing/edit/{id}', [PricingTemplateController::class, 'edit'])->name('settings.templates.pricing.edit');
+        Route::post('/templates/pricing/status/{id}', [PricingTemplateController::class, 'change_state'])->name('settings.templates.pricing.status');
         Route::get('/templates/pricing/methods', [PricingTemplateController::class, 'getPricingMethod'])->name('settings.templates.pricing.methods');
+        Route::delete('/templates/pricing/delete/{id}', [PricingTemplateController::class, 'destroy'])->name('settings.templates.pricing.delete');
       });
 
 

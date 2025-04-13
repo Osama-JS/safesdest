@@ -13,6 +13,8 @@ return new class extends Migration
   {
     Schema::create('pricing_geofences', function (Blueprint $table) {
       $table->id();
+      $table->enum('type', ['fixed', 'percentage']);
+      $table->decimal('amount', 10, 2);
       $table->unsignedBigInteger('pricing_template_id');
       $table->foreign('pricing_template_id')->references('id')->on('pricing_templates')->onDelete('cascade');
       $table->unsignedBigInteger('geofence_id');

@@ -162,7 +162,7 @@
 
                                     <div class="form-group mt-3 mb-5">
                                         <label for="geo-teams">{{ __('Teams') }}</label>
-                                        <select name="teams" id="geo-teams" class="select2 form-select" multiple>
+                                        <select name="teams[]" id="geo-teams" class="select2 form-select" multiple>
                                             <option value=""></option>
                                             @foreach ($data as $key)
                                                 <option value="{{ $key->id }}">{{ $key->name }}</option>

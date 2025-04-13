@@ -25,7 +25,7 @@ $(function () {
         $('#teams-container').html('');
 
         if (response.data.data.length === 0) {
-          $('#teams-container').html("<p class='text-center p-5 alert alert-info'>No teams found.</p>");
+          $('#teams-container').html("<p class='text-center p-5 alert alert-secondary'>No data available</p>");
           $('#pagination').html('');
           return;
         }
@@ -129,6 +129,7 @@ $(function () {
   });
 
   loadTeams();
+
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
 
@@ -168,7 +169,7 @@ $(function () {
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
-    $(this).find('form')[0].reset();
+    $('.form_submit').trigger('reset');
     $('.text-error').html('');
     $('#team_id').val('');
     $('#modelTitle').html('Add New Team');

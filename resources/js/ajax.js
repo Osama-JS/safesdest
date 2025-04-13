@@ -1,76 +1,79 @@
-$(document).off('submit', '.form_submit').on('submit', '.form_submit', function (e) {
-  e.preventDefault();
-  const $this = $(this);
+$(document)
+  .off('submit', '.form_submit')
+  .on('submit', '.form_submit', function (e) {
+    e.preventDefault();
+    const $this = $(this);
 
-  // منع التكرار إذا تم الضغط أكثر من مرة
-  if ($this.hasClass('submitting')) return;
-  $this.addClass('submitting');
+    // منع التكرار إذا تم الضغط أكثر من مرة
+    if ($this.hasClass('submitting')) return;
+    $this.addClass('submitting');
 
-  const contentElement = document.querySelector('#content');
-  const contentResetElement = document.querySelector('.content_reset');
-  const imgElement = document.querySelector('.reset_image');
+    const contentElement = document.querySelector('#content');
+    const contentResetElement = document.querySelector('.content_reset');
+    const imgElement = document.querySelector('.reset_image');
 
-  // إذا كان هناك محتوى CKEditor، احصل على البيانات
-  if (contentElement && CKEDITOR.instances['content']) {
-    const sec = CKEDITOR.instances['content'].getData();
-    $('#content').val(sec);
-  }
-
-  // عرض رسالة "جاري المعالجة..."
-  $this.block({
-    message:
-      '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
-    css: {
-      backgroundColor: 'transparent',
-      color: '#fff',
-      border: '0'
-    },
-    overlayCSS: {
-      opacity: 0.5
+    // إذا كان هناك محتوى CKEditor، احصل على البيانات
+    if (contentElement && CKEDITOR.instances['content']) {
+      const sec = CKEDITOR.instances['content'].getData();
+      $('#content').val(sec);
     }
-  });
 
-  // إرسال الطلب Ajax
-  $.ajax({
-    url: $this.attr('action'),
-    method: $this.attr('method'),
-    data: new FormData(this),
-    processData: false,
-    dataType: 'json',
-    contentType: false,
-    success: function (data) {
-      $('span.text-error').text(''); // إعادة تعيين الأخطاء
+    // عرض رسالة "جاري المعالجة..."
+    $this.block({
+      message:
+        '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
+      css: {
+        backgroundColor: 'transparent',
+        color: '#fff',
+        border: '0'
+      },
+      overlayCSS: {
+        opacity: 0.5
+      }
+    });
 
-      $this.unblock({
-        onUnblock: function () {
-          $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
+    // إرسال الطلب Ajax
+    $.ajax({
+      url: $this.attr('action'),
+      method: $this.attr('method'),
+      data: new FormData(this),
+      processData: false,
+      dataType: 'json',
+      contentType: false,
+      success: function (data) {
+        $('span.text-error').text(''); // إعادة تعيين الأخطاء
 
-          if (data.status === 0) {
-            handleErrors(data.error);
-            showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
-          } else if (data.status === 1) {
-            resetCKEditor(contentElement, contentResetElement);
-            resetImage(imgElement);
-            document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
-            showBlockAlert('success', data.success, 1700);
-          } else if (data.status === 2) {
-            showAlert('error', data.error, 10000, true);
+        $this.unblock({
+          onUnblock: function () {
+            $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
+
+            if (data.status === 0) {
+              console.log(data.error);
+              handleErrors(data.error);
+              showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
+            } else if (data.status === 1) {
+              resetCKEditor(contentElement, contentResetElement);
+              resetImage(imgElement);
+              document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
+              showBlockAlert('success', data.success, 1700);
+              showAlert('success', data.success, 5000, true);
+            } else if (data.status === 2) {
+              showAlert('error', data.error, 10000, true);
+            }
           }
-        }
-      });
-    },
-    error: function (jqXHR, textStatus, errorThrown) {
-      $this.unblock({
-        onUnblock: function () {
-          $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
-          console.log(errorThrown);
-          showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
-        }
-      });
-    }
+        });
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        $this.unblock({
+          onUnblock: function () {
+            $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
+            console.log(errorThrown);
+            showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
+          }
+        });
+      }
+    });
   });
-});
-
 
 export function deleteRecord(name, url) {
   Swal.fire({
@@ -163,7 +166,6 @@ export function showFormModal(options) {
   });
 }
 
-
 // دالة لإظهار التنبيه باستخدام block عند فك الحظر
 function showBlockAlert(type, message, timer = 700) {
   let bgColor = type === 'success' ? 'bg-success' : 'warning' ? 'bg-warning' : 'bg-danger';
@@ -213,9 +215,28 @@ export function showAlert(icon, title, timer, showConfirmButton = false) {
 }
 
 // دالة لمعالجة الأخطاء
-function handleErrors(errors, prefix = '') {
+export function handleErrors(errors, prefix = '') {
   $.each(errors, function (key, val) {
-    $('span.' + prefix + key + '-error').text(val[0]);
+    // التعامل مع الحقول بالشكل: fields.0.name
+    const fieldMatch = key.match(/^fields\.(\d+)\.(\w+)$/);
+    if (fieldMatch) {
+      const index = fieldMatch[1];
+      const field = fieldMatch[2];
+      const selector = 'span.field-' + index + '-' + field + '-error';
+      $(selector).text(val[0]);
+      return;
+    }
+
+    // التعامل مع params.2.0.price أو أي تركيبة مشابهة
+    const parts = key.split('.');
+    if (parts.length >= 3) {
+      const selector = 'span.' + prefix + parts.join('-') + '-error';
+      $(selector).text(val[0]);
+    } else {
+      // الحقول الثابتة مثل name, description
+      const selector = 'span.' + prefix + key + '-error';
+      $(selector).text(val[0]);
+    }
   });
 }
 

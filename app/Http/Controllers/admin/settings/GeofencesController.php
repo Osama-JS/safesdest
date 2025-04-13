@@ -28,6 +28,7 @@ class GeofencesController extends Controller
       $search = $request->search;
       $query->where(function ($q) use ($search) {
         $q->where('name', 'LIKE', '%' . $search . '%');
+        $q->where('description', 'LIKE', '%' . $search . '%');
       });
     }
     $query->orderBy('id', 'DESC')->get();
@@ -57,29 +58,41 @@ class GeofencesController extends Controller
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
     }
+
+    DB::beginTransaction();
     try {
-      if (isset($req->id) && !empty($req->id)) {
-        $find = Geofence::where('id', $req->id)->first();
+      $data = [
+        'name' => $req->name,
+        'description' => $req->description,
+        'coordinates' => DB::raw("ST_GeomFromText('{$req->coordinates}', 4326)")
+      ];
+
+      if ($req->filled('id')) {
+        $find = Geofence::findOrFail($req->id);
         if (!$find) {
-          return response()->json(['status' => 2, 'error' => __('Geo-Fence not found')]);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected Geo-Fence')]);
         }
-        $done = Geofence::where('id', $req->id)->update([
-          'name' => $req->name,
-          'description' => $req->description,
-          'coordinates' => DB::raw("ST_GeomFromText('{$req->coordinates}', 4326)")
-        ]);
+        $done = $find->update($data);
+        $find->teams()->delete();
+        $teams = collect($req->teams)->filter()->map(function ($teamId) {
+          return ['team_id' => $teamId];
+        })->toArray();
+        $done = $find->teams()->createMany($teams);
       } else {
-        $done = Geofence::create([
-          'name' => $req->name,
-          'description' => $req->description,
-          'coordinates' => DB::raw("ST_GeomFromText('{$req->coordinates}', 4326)")
-        ]);
+        $geo = Geofence::create($data);
+        $teams = collect($req->teams)->filter()->map(function ($teamId) {
+          return ['team_id' => $teamId];
+        })->toArray();
+        $done = $geo->teams()->createMany($teams);
       }
       if (!$done) {
+        DB::rollBack();
         return response()->json(['status' => 2, 'error' => __('error to save Geo-Fence')]);
       }
-      return response()->json(['status' => 1, 'success' => __('Geo-Fence saved')]);
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Geo-Fence saved successfully')]);
     } catch (Exception $ex) {
+      DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
@@ -87,6 +100,8 @@ class GeofencesController extends Controller
   public function edit($id): JsonResponse
   {
     $data = Geofence::findOrFail($id);
+    $data->teamsIds = $data->teams()->pluck('team_id');
+
     return response()->json($data);
   }
 

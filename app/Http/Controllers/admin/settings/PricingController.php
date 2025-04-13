@@ -92,28 +92,27 @@ class PricingController extends Controller
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
     }
+
     try {
-      if (isset($req->id) && !empty($req->id)) {
-        $find = Pricing_Method::where('id', $req->id)->first();
+      $data = [
+        'name'                  => $req->name,
+        'description'           => $req->description,
+        'distance_calculation'  => $req->distance ?? false,
+      ];
+      if ($req->filled('id')) {
+        $find = Pricing_Method::findOrFail($req->id);;
         if (!$find) {
-          return response()->json(['status' => 2, 'error' => __('Pricing Method not found')]);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected Pricing Method')]);
         }
-        $done = Pricing_Method::where('id', $req->id)->update([
-          'name' => $req->name,
-          'description' => $req->description,
-          'distance_calculation' => $req->distance ?? false,
-        ]);
+
+        $done = $find->update($data);
       } else {
-        $done = Pricing_Method::create([
-          'name' => $req->name,
-          'description' => $req->description,
-          'distance_calculation' => $req->distance ?? false,
-        ]);
+        $done = Pricing_Method::create($data);
       }
       if (!$done) {
         return response()->json(['status' => 2, 'error' => __('error to save Pricing Method')]);
       }
-      return response()->json(['status' => 1, 'success' => __('Pricing Method saved')]);
+      return response()->json(['status' => 1, 'success' => __('Pricing Method saved successfully')]);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }

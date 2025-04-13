@@ -21,4 +21,9 @@ class Geofence extends Model
   {
     return DB::selectOne("SELECT ST_AsText(?) AS coordinates", [$this->coordinates])->coordinates;
   }
+
+  public function teams()
+  {
+    return $this->hasMany(Geofence_Team::class, 'geofence_id');
+  }
 }

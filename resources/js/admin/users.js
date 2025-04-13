@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert } from '../ajax';
+import { deleteRecord, showAlert, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
@@ -347,70 +347,26 @@ $(function () {
   });
 
   $(document).on('click', '.status-record', function () {
-    var id = $(this).data('id');
-    var name = $(this).data('name');
-    var status = $(this).data('status');
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
 
-    // استخدام SweetAlert لعرض النموذج
-    Swal.fire({
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+      <select class="form-select" name="status">
+        <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+        <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
+        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+      </select>
+    `;
+
+    showFormModal({
       title: `Change User: ${name} Status`,
       icon: 'info',
-      html: `
-            <form class="add-new-user pt-0 form_status" method="POST" action="${baseUrl + 'admin/users/status'}">
-                <input type="hidden" value="${id}" name="id">
-                <select class="form-select" name="status">
-                    <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
-                    <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
-                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-                </select>
-            </form>
-        `,
-      showCloseButton: true,
-      showCancelButton: true,
-      focusConfirm: false,
-      confirmButtonText: 'Confirm!',
-      confirmButtonAriaLabel: 'Thumbs up, great!',
-      cancelButtonText: 'Cancel',
-      cancelButtonAriaLabel: 'Thumbs down',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        // AJAX request for form submission
-        var formData = $('.form_status').serialize(); // استخدام البيانات من النموذج في SweetAlert
-
-        $.ajax({
-          url: $('.form_status').attr('action'),
-          type: 'POST',
-          data: formData,
-          success: function (response) {
-            Swal.fire({
-              icon: response.type,
-              title: response.message,
-              showConfirmButton: false,
-              timer: 1500
-            });
-
-            if (response.status == 1) {
-              // إذا كان يوجد جدول بيانات يتم تحديثه
-              if (dt_data) {
-                dt_data.draw();
-              }
-            }
-          },
-          error: function (xhr, status, error) {
-            // معالجة الخطأ في حال وجود مشكلة في إرسال البيانات
-            Swal.fire({
-              icon: 'error',
-              title: 'Something went wrong!',
-              text: 'Please try again later.'
-            });
-          }
-        });
-      }
+      fields: fields,
+      url: `${baseUrl}admin/users/status`,
+      method: 'POST',
+      dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });
   });
 

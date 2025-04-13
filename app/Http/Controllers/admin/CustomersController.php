@@ -61,7 +61,6 @@ class CustomersController extends Controller
       });
     }
     if (!empty($statusFilter)) {
-
       $query->where('status', $statusFilter);
     }
 
@@ -223,12 +222,10 @@ class CustomersController extends Controller
           }
         }
 
-        $tags = [];
-        for ($i = 0; $i < count($req->tags); $i++) {
-          if (isset($req->tags[$i])) {
-            $tags[$i]['tag_id'] = $req->tags[$i];
-          }
-        }
+
+        $tags = collect($req->tags)->filter()->map(function ($tagId) {
+          return ['tag_id' => $tagId];
+        })->toArray();
         $done->tags()->createMany($tags);
 
         $done = (new WalletsController)->store('customer', $done->id, true);

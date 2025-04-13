@@ -1,9 +1,9 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Users'))
+@section('title', __('Templates'))
 
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss'])
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 
     <style>
         .sortable-ghost {
@@ -23,7 +23,7 @@
 @endsection
 
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/block-ui/block-ui.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
     @vite(['resources/assets/vendor/libs/sortablejs/sortable.js'])
 @endsection
 
@@ -34,231 +34,11 @@
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let pricingMethods = @json($methods); // تحميل طرق التسعير من قاعدة البيانات
-            let pricingContainer = document.getElementById("pricing-methods-container");
-            let addPricingMethodBtn = document.getElementById("add-pricing-method");
-
-            function updateMethodOptions() {
-                let selectedMethods = Array.from(document.querySelectorAll(".method-select")).map(select => select
-                    .value);
-                document.querySelectorAll(".method-select option").forEach(option => {
-                    if (option.value && selectedMethods.includes(option.value)) {
-                        option.hidden = true;
-                    } else {
-                        option.hidden = false;
-                    }
-                });
-            }
-
-            addPricingMethodBtn.addEventListener("click", function() {
-                let methodDiv = document.createElement("div");
-                methodDiv.classList.add("mb-3", "pricing-method");
-
-                let select = document.createElement("select");
-                select.classList.add("form-select", "method-select");
-                select.name = "pricing_methods[]";
-                select.required = true;
-
-                let defaultOption = document.createElement("option");
-                defaultOption.value = "";
-                defaultOption.innerText = "Select a pricing method";
-                select.appendChild(defaultOption);
-
-                pricingMethods.forEach(method => {
-                    let option = document.createElement("option");
-                    option.value = method.id;
-                    option.innerText = method.name;
-                    select.appendChild(option);
-                });
-
-                let paramContainer = document.createElement("div");
-                paramContainer.classList.add("mt-2", "param-container");
-
-                let addParamBtn = document.createElement("button");
-                addParamBtn.type = "button";
-                addParamBtn.classList.add("btn", "btn-secondary", "mt-2");
-                addParamBtn.innerText = "+ Add Parameter";
-
-                addParamBtn.addEventListener("click", function() {
-                    let paramDiv = document.createElement("div");
-                    paramDiv.classList.add("row", "mb-2");
-                    paramDiv.innerHTML = `
-                      <div class="col-md-3">
-                          <input type="number" class="form-control" name="from_val[]" placeholder="From" required>
-                      </div>
-                      <div class="col-md-3">
-                          <input type="number" class="form-control" name="to_val[]" placeholder="To" required>
-                      </div>
-                      <div class="col-md-3">
-                          <input type="number" class="form-control" name="price[]" placeholder="Price" required>
-                      </div>
-                      <div class="col-md-3">
-                          <button type="button" class="btn btn-danger remove-param">X</button>
-                      </div>
-                  `;
-                    paramContainer.appendChild(paramDiv);
-                });
-
-                paramContainer.addEventListener("click", function(event) {
-                    if (event.target.classList.contains("remove-param")) {
-                        event.target.parentElement.parentElement.remove();
-                    }
-                });
-
-                let removeMethodBtn = document.createElement("button");
-                removeMethodBtn.type = "button";
-                removeMethodBtn.classList.add("btn", "btn-danger", "mt-2");
-                removeMethodBtn.innerText = "Remove Pricing Method";
-                removeMethodBtn.addEventListener("click", function() {
-                    methodDiv.remove();
-                    updateMethodOptions(); // تحديث القائمة بعد الحذف
-                });
-
-                select.addEventListener("change", updateMethodOptions);
-
-                methodDiv.appendChild(select);
-                methodDiv.appendChild(paramContainer);
-                methodDiv.appendChild(addParamBtn);
-                methodDiv.appendChild(removeMethodBtn);
-
-                pricingContainer.appendChild(methodDiv);
-
-                updateMethodOptions(); // تحديث القائمة عند الإضافة
-            });
-        });
+        let fieldIndex = {{ $data->fields->count() }};
+        const formFields = @json($data->fields);
+        const templateId = {{ $data->id }};
+        const geoFences = @json($geofences);
     </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let pricingMethods = @json($methods); // تحميل طرق التسعير من قاعدة البيانات
-            let pricingContainer = document.getElementById("pricing-methods-container");
-            let addPricingMethodBtn = document.getElementById("add-pricing-method");
-
-            function updateMethodOptions() {
-                let selectedMethods = Array.from(document.querySelectorAll(".method-select")).map(select => select
-                    .value);
-                document.querySelectorAll(".method-select option").forEach(option => {
-                    if (option.value && selectedMethods.includes(option.value)) {
-                        option.hidden = true;
-                    } else {
-                        option.hidden = false;
-                    }
-                });
-
-                // تعطيل زر الإضافة إذا تم اختيار جميع الطرق
-                addPricingMethodBtn.disabled = (selectedMethods.length >= pricingMethods.length);
-            }
-
-            function checkIfPreviousIsSelected() {
-                let selects = document.querySelectorAll(".method-select");
-                let lastSelect = selects[selects.length - 1];
-
-                if (!lastSelect || lastSelect.value === "") {
-                    // addPricingMethodBtn.disabled = true;
-                } else {
-                    addPricingMethodBtn.disabled = false;
-                }
-            }
-
-            addPricingMethodBtn.addEventListener("click", function() {
-                let existingSelects = document.querySelectorAll(".method-select");
-
-                // التحقق مما إذا كان الحقل السابق قد تم تحديده قبل إضافة جديد
-                if (existingSelects.length > 0) {
-                    let lastSelect = existingSelects[existingSelects.length - 1];
-                    if (!lastSelect.value) {
-                        alert("Please select a pricing method before adding another one.");
-                        return ""; // منع إضافة عنصر جديد
-                    }
-                }
-
-                let methodDiv = document.createElement("div");
-                methodDiv.classList.add("mb-3", "pricing-method");
-
-                let select = document.createElement("select");
-                select.classList.add("form-select", "method-select");
-                select.name = "pricing_methods[]";
-                select.required = true;
-
-                let defaultOption = document.createElement("option");
-                defaultOption.value = "";
-                defaultOption.innerText = "Select a pricing method";
-                select.appendChild(defaultOption);
-
-                pricingMethods.forEach(method => {
-                    let option = document.createElement("option");
-                    option.value = method.id;
-                    option.innerText = method.name;
-                    select.appendChild(option);
-                });
-
-                let paramContainer = document.createElement("div");
-                paramContainer.classList.add("mt-2", "param-container");
-
-                let addParamBtn = document.createElement("button");
-                addParamBtn.type = "button";
-                addParamBtn.classList.add("btn", "btn-secondary", "mt-2");
-                addParamBtn.innerText = "+ Add Parameter";
-
-                addParamBtn.addEventListener("click", function() {
-                    let paramDiv = document.createElement("div");
-                    paramDiv.classList.add("row", "mb-2");
-                    paramDiv.innerHTML = `
-                    <div class="col-md-3">
-                        <input type="number" class="form-control" name="from_val[]" placeholder="From" required>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" class="form-control" name="to_val[]" placeholder="To" required>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" class="form-control" name="price[]" placeholder="Price" required>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="button" class="btn btn-danger remove-param">X</button>
-                    </div>
-                `;
-                    paramContainer.appendChild(paramDiv);
-                });
-
-                paramContainer.addEventListener("click", function(event) {
-                    if (event.target.classList.contains("remove-param")) {
-                        event.target.parentElement.parentElement.remove();
-                    }
-                });
-
-                let removeMethodBtn = document.createElement("button");
-                removeMethodBtn.type = "button";
-                removeMethodBtn.classList.add("btn", "btn-danger", "mt-2");
-                removeMethodBtn.innerText = "Remove Pricing Method";
-                removeMethodBtn.addEventListener("click", function() {
-                    methodDiv.remove();
-                    updateMethodOptions();
-                    checkIfPreviousIsSelected();
-                });
-
-                select.addEventListener("change", function() {
-                    updateMethodOptions();
-                    checkIfPreviousIsSelected();
-                });
-
-                methodDiv.appendChild(select);
-                methodDiv.appendChild(paramContainer);
-                methodDiv.appendChild(addParamBtn);
-                methodDiv.appendChild(removeMethodBtn);
-
-                pricingContainer.appendChild(methodDiv);
-
-                updateMethodOptions();
-                checkIfPreviousIsSelected();
-            });
-
-            // تعطيل زر الإضافة مبدئيًا
-            checkIfPreviousIsSelected();
-        });
-    </script>
-
-
-
 @endsection
 
 @section('content')
@@ -273,8 +53,8 @@
             <input type="hidden" class="form-control" id="template_id" value="{{ $data->id }}">
 
             <div class="mt-6 ">
-
-
+                <span class="id-error text-danger text-error"></span>
+                <span class="fields-error text-danger text-error"></span>
                 <table class="table mb-6">
                     <thead>
                         <tr>
@@ -290,7 +70,7 @@
                         </tr>
                     </thead>
                     <tbody id="fields_table">
-                        @foreach ($data->fields as $field)
+                        @foreach ($data->fields as $key => $field)
                             @php
                                 $fieldType = isset($field->type) ? $field->type : '';
                                 $selectValues =
@@ -301,19 +81,29 @@
 
                             <tr class="form-field-row" data-id="{{ $field->id }}">
                                 <td class="drag-handle" style="cursor: grab;">☰</td>
-                                <td><input type="text" class="form-control field-name-input" value="{{ $field->name }}">
-                                <td><input type="text" class="form-control field-label-input"
+                                <td>
+                                    <input type="text" class="form-control field-name-input" value="{{ $field->name }}">
+                                    <span class="field-{{ $key }}-name-error text-danger text-error"></span>
+
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control field-label-input"
                                         value="{{ $field->label }}">
+                                    <span class="field-{{ $key }}-label-error text-danger text-error"></span>
+
                                 </td>
                                 <td>
                                     <select class="form-control field-manager">
-                                        <option value="hidden" {{ $field->driver_can == 'hidden' ? 'selected' : '' }}>Hidden
+                                        <option value="hidden" {{ $field->driver_can == 'hidden' ? 'selected' : '' }}>
+                                            Hidden
                                         </option>
                                         <option value="read" {{ $field->driver_can == 'read' ? 'selected' : '' }}>Read
                                             Only</option>
                                         <option value="write" {{ $field->driver_can == 'write' ? 'selected' : '' }}>Read &
                                             Write</option>
                                     </select>
+                                    <span class="field-{{ $key }}-driver_can-error text-danger text-error"></span>
+
                                 </td>
                                 <td>
                                     <select class="form-control field-customer-can-select">
@@ -324,6 +114,9 @@
                                         <option value="write" {{ $field->customer_can == 'write' ? 'selected' : '' }}>Read
                                             & Write</option>
                                     </select>
+                                    <span
+                                        class="field-{{ $key }}-customer_can-error text-danger text-error"></span>
+
                                 </td>
                                 <td>
                                     <select class="form-control field-type-select">
@@ -332,19 +125,25 @@
                                         <option value="email" {{ $fieldType == 'email' ? 'selected' : '' }}>بريد إلكتروني
                                         </option>
                                         <option value="date" {{ $fieldType == 'date' ? 'selected' : '' }}>تاريخ</option>
+                                        <option value="file" {{ $fieldType == 'file' ? 'selected' : '' }}>ملف</option>
                                         <option value="select" {{ $fieldType == 'select' ? 'selected' : '' }}>اختيار
                                         </option>
                                     </select>
+                                    <span class="field-{{ $key }}-type-error text-danger text-error"></span>
+
                                 </td>
                                 <td>
                                     <input type="text" class="form-control field-value-input"
                                         value="{{ $fieldType == 'select' ? '' : $field->value }}">
+                                    <span class="field-{{ $key }}-value-error text-danger text-error"></span>
+
                                 </td>
                                 <td>
                                     <select class="form-control field-required-select">
-                                        <option value="0" {{ !$field->required ? 'selected' : '' }}>اختياري</option>
-                                        <option value="1" {{ $field->required ? 'selected' : '' }}>إلزامي</option>
+                                        <option value="0" {{ !$field->required ? 'selected' : '' }}>NO</option>
+                                        <option value="1" {{ $field->required ? 'selected' : '' }}>YES</option>
                                     </select>
+                                    <span class="field-{{ $key }}-required-error text-danger text-error"></span>
                                 </td>
                                 <td><button class="btn btn-sm btn-icon text-danger remove-field"><i
                                             class="ti ti-trash"></i></button>
@@ -428,17 +227,17 @@
                             <span class="d-none d-sm-inline-block"> {{ __('Add Pricing Module') }}</span>
                         </button>
                         <div class="card-datatable table-responsive">
-                            <table class="table table-striped" id="pricing-table">
-                                <thead>
+                            <table class="table  datatables-pricing">
+                                <thead class="border-top">
                                     <tr>
-                                        <th scope="col">Role name</th>
-                                        <th scope="col">Created at</th>
-                                        <th scope="col">Action</th>
+                                        <th></th> <!-- للعمود control -->
+                                        <th>#</th> <!-- للـ fake_id -->
+                                        <th>Role name</th>
+                                        <th>Created at</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
 
-                                </tbody>
 
                             </table>
                         </div>
@@ -457,52 +256,87 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST"
-                    action="{{ route('settings.pricing.store') }}">
+                    action="{{ route('settings.templates.pricing.store') }}">
                     @csrf
                     <div class="modal-body">
+                        <input type="hidden" name="form_id" value="{{ $data->id }}">
+                        <input type="hidden" name="id" id="pricing_id">
+                        <!-- Rule Name -->
                         <div class="mb-3">
-                            <label class="form-label">Rule Name</label>
-                            <input type="text" class="form-control" value="Dyana Open 4.5 Ton">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Set Decimal Places</label>
-                            <input type="number" class="form-control" value="2">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <label class="form-label">* {{ __('Rule Name') }}</label>
+                                    <input type="text" name="rule_name" class="form-control" placeholder="Role Name">
+                                    <span class="rule_name-error text-danger text-error"></span>
+
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">* {{ __('Set Decimal Places') }}</label>
+                                    <input type="number" name="decimal_places" class="form-control"
+                                        placeholder="Set Decimal Places For config the price" value="2">
+                                    <span class="decimal_places-error text-danger text-error"></span>
+                                </div>
+                            </div>
+
                         </div>
 
+
+
+                        <!-- Customers Selection -->
                         <div class="mb-3">
                             <div class="divider text-start">
                                 <div class="divider-text"><strong>Customers Selections</strong></div>
                             </div>
 
                             <div class="mb-4">
-                                <input type="checkbox" name="" id="" class="form-check-input" checked>
+                                <input type="checkbox" id="allCustomers" name="all_customers" value="true"
+                                    class="form-check-input" checked>
+                                <label for="allCustomers">Apply to All Customers</label>
+                                <span class="all_customers-error text-danger text-error"></span>
 
-                                <label for="">Apply to All Customers </label>
                             </div>
+
                             <div class="row">
+                                <!-- Tags -->
                                 <div class="col-md-6">
                                     <label for="">Use customers tags </label>
-                                    <input type="checkbox" name="" id="" class="form-check-input mb-2">
-                                    <select class="form-select">
-                                        <option>-Select tags-</option>
+                                    <input type="checkbox" id="useTags" name="use_tags" value="true"
+                                        class="form-check-input mb-2">
+                                    <select class="form-select select2-tags" name="tags[]" multiple id="tagsSelect"
+                                        disabled>
+                                        @foreach ($tags as $val)
+                                            <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                        @endforeach
                                     </select>
+                                    <span class="use_tags-error text-danger text-error"></span>
+                                    <span class="tags-error text-danger text-error"></span>
+
                                 </div>
+
+                                <!-- Specific Customers -->
                                 <div class="col-md-6">
                                     <label for="">Use Specific customers </label>
-                                    <input type="checkbox" name="" id="" class="form-check-input mb-2">
-                                    <select class="form-select">
-                                        <option>-Select Customers-</option>
+                                    <input type="checkbox" id="useCustomers" name="use_customers" value="true"
+                                        class="form-check-input mb-2">
+                                    <select class="form-select select2-customers" name="customers[]" multiple
+                                        id="customersSelect" disabled>
+                                        @foreach ($customers as $val)
+                                            <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                        @endforeach
                                     </select>
+                                    <span class="use_customers-error text-danger text-error"></span>
+                                    <span class="customers-error text-danger text-error"></span>
+
                                 </div>
                             </div>
-
                         </div>
 
-                        <div class="mb-3 ">
+                        <!-- Vehicle Sizes -->
+                        <div class="mb-3">
                             <div class="divider text-start">
                                 <div class="divider-text"><strong>Vehicles Selections</strong></div>
                             </div>
-
+                            <!-- vehicle tabs start -->
                             <div class="nav-align-top mb-6">
                                 <ul class="nav nav-tabs mb-4" role="tablist">
                                     @foreach ($vehicle as $key => $val)
@@ -541,7 +375,7 @@
                                                             @foreach ($type_val->sizes as $size)
                                                                 <div class="form-check mb-2">
                                                                     <input type="checkbox"
-                                                                        class="form-check-input size-checkbox "
+                                                                        class="form-check-input size-checkbox"
                                                                         id="size_{{ $size->id }}" name="sizes[]"
                                                                         value="{{ $size->id }}">
                                                                     <label class="form-check-label fw-bold"
@@ -556,98 +390,151 @@
                                             </div>
                                         </div>
                                     @endforeach
-
-
                                 </div>
+                                <span class="sizes-error text-danger text-error"></span>
+
                             </div>
                         </div>
 
-
+                        <!-- Pricing Inputs -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text "><strong>Pricing</strong></div>
+                                <div class="divider-text"><strong>Pricing</strong></div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Base Fare</label>
-                                    <input type="number" class="form-control" value="0.00">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label"> Base Duration</label>
-                                    <input type="number" class="form-control" value="0.00">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label"> Base Distance</label>
-                                    <input type="number" class="form-control" value="1.45">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label"> Base Waiting</label>
-                                    <input type="number" class="form-control" value="0.00">
-                                </div>
-                                <div class="col-md-3">
+                                    <input type="number" name="base_fare" class="form-control" placeholder="0.00" />
+                                    <span class="base_fare-error text-danger text-error"></span>
 
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Duration Fare</label>
-                                    <input type="number" class="form-control" value="0.00">
+                                <div class="col-md-4">
+                                    <label class="form-label">Base Distance</label>
+                                    <input type="number" name="base_distance" class="form-control" placeholder="km" />
+                                    <span class="base_distance-error text-danger text-error"></span>
+
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Base Waiting</label>
+                                    <input type="number" name="base_waiting" class="form-control"
+                                        placeholder="minuets" />
+                                    <span class="base_waiting-error text-danger text-error"></span>
+
+                                </div>
+                                <div class="col-md-4"></div>
+
+                                <div class="col-md-4">
                                     <label class="form-label">Distance Fare</label>
-                                    <input type="number" class="form-control" value="1.45">
+                                    <input type="number" name="distance_fare" min="0.00" class="form-control"
+                                        placeholder="0.00" />
+                                    <span class="distance_fare-error text-danger text-error"></span>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <label class="form-label">Waiting Fare</label>
-                                    <input type="number" class="form-control" value="0.00">
+                                    <input type="number" name="waiting_fare" min="0.00" class="form-control"
+                                        placeholder="0.00" />
+                                    <span class="waiting_fare-error text-danger text-error"></span>
+
                                 </div>
                             </div>
 
-                            <label class="form-label">Customize Pricing</label>
-                            <div class="mb-3">
-                                <div class="divider text-start">
-                                    <div class="divider-text"><strong>Pricing Methods</strong></div>
+
+                        </div>
+
+                        <!-- Customize Pricing -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>Pricing Methods</strong></div>
+                            </div>
+                            @foreach ($pricing_methods as $method)
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input toggle-method"
+                                        data-method-id="{{ $method->id }}" id="method_{{ $method->id }}"
+                                        name="methods[]" value="{{ $method->id }}">
+                                    <label class="form-check-label fw-bold" for="method_{{ $method->id }}">
+                                        {{ $method->name }}
+                                    </label>
                                 </div>
-                                <div id="pricing-methods-container">
-                                    <button type="button" class="btn btn-primary mb-3" id="add-pricing-method">+ Add
-                                        Pricing Method</button>
+                            @endforeach
+                            <span class="methods-error text-danger text-error"></span>
+                        </div>
+
+                        <!-- Dynamic Pricing (جافاسكربت يضيف الحقول داخلها) -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>Dynamic Pricing Based on Field Values</strong></div>
+                            </div>
+                            <div>
+                                <div class="row g-2 mb-2 field-pricing-row">
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-sm border add-field-pricing">
+                                            <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> add field
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="field-pricing-wrapper"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>Dynamic Pricing Based on Geo-fence </strong></div>
+                            </div>
+
+                            <button type="button" class="btn btn-sm border mb-2 add-geofence-pricing">
+                                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> add geofence
+                            </button>
+
+                            <div id="geofence-pricing-wrapper"></div>
+                        </div>
+
+
+                        <!-- Commission -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>Commission</strong></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">VAT Commission</label>
+                                    <input type="number" name="vat_commission" class="form-control" min="0.00"
+                                        placeholder="0.00">
+                                    <span class="vat_commission-error text-danger text-error"></span>
+
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Service Tax Commission</label>
+                                    <input type="number" name="service_commission" class="form-control" min="0.00"
+                                        placeholder="0.00">
+                                    <span class="service_commission-error text-danger text-error"></span>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Discount Fare</label>
-                            <input type="number" class="form-control" value="0.00">
-                        </div>
 
+                        <!-- Discount -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>Discount Fare</strong></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Discount percentage %</label>
+                                <input type="number" name="discount" class="form-control" min="0.00"
+                                    placeholder="0.00">
+                                <span class="discount-error text-danger text-error"></span>
+                            </div>
+                        </div>
 
                     </div>
-                    <div class="mb-3">
-                        <div class="divider text-start">
-                            <div class="divider-text "><strong>Commission</strong></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">VAT Commission</label>
-                                <input type="number" class="form-control" value="100.00">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Service Tax Commission</label>
-                                <input type="number" class="form-control" value="100.00">
-                            </div>
-                        </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
                     </div>
-
-
-
+                </form>
 
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
-
-            </div>
-            </form>
-
         </div>
     </div>
-    </div>
+
 
 @endsection

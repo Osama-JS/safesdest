@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\admin\settings;
 
 use Exception;
+use App\Models\Pricing;
+use App\Models\Vehicle;
+use App\Models\Form_Field;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
-use App\Http\Controllers\Controller;
-use App\Models\Form_Field;
-use App\Models\Pricing;
 use App\Models\Pricing_Method;
-use App\Models\Vehicle;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\Geofence;
+use App\Models\Tag;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\Console\Command\DumpCompletionCommand;
 
@@ -26,7 +30,7 @@ class TemplateController extends Controller
       1 => 'id',
       2 => 'name',
       3 => 'description',
-      5 => 'created_at',
+      4 => 'created_at',
     ];
 
     $search = [];
@@ -38,7 +42,7 @@ class TemplateController extends Controller
     $start = $request->input('start', 0);
     $orderColumnIndex = $request->input('order.0.column', 1);
     $order = $columns[$orderColumnIndex] ?? 'id';
-    $dir = $request->input('order.0.dir', 'asc');
+    $dir = $request->input('order.0.dir', 'desc');
 
     // تجهيز الاستعلام الرئيسي
     $query = Form_Template::query();
@@ -46,7 +50,8 @@ class TemplateController extends Controller
     if (!empty($request->input('search.value'))) {
       $search = $request->input('search.value');
       $query->where('id', 'LIKE', "%{$search}%")
-        ->orWhere('name', 'LIKE', "%{$search}%");
+        ->orWhere('name', 'LIKE', "%{$search}%")
+        ->orWhere('description', 'LIKE', "%{$search}%");
     }
 
     $totalFiltered = $query->count();
@@ -56,21 +61,21 @@ class TemplateController extends Controller
       ->orderBy($order, $dir)
       ->get();
 
+
     $data = [];
+    $fakeId = $start;
 
-    if (!empty($methods)) {
-      $ids = $start;
 
-      foreach ($methods as $method) {
-        $nestedData['id'] = $method->id;
-        $nestedData['fake_id'] = ++$ids;
-        $nestedData['name'] = $method->name;
-        $nestedData['description'] = $method->description ?? '-';
-        $nestedData['created_at'] = $method->created_at;
-
-        $data[] = $nestedData;
-      }
+    foreach ($methods as $method) {
+      $data[] = [
+        'id' => $method->id,
+        'fake_id' => ++$fakeId,
+        'name' => $method->name,
+        'description' => $method->description ?? '-',
+        'created_at' => $method->created_at->format('Y-m-d H:i'),
+      ];
     }
+
 
     return response()->json([
       'draw' => intval($request->input('draw')),
@@ -93,32 +98,32 @@ class TemplateController extends Controller
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:form_templates,name,' .  ($req->id ?? 0)
+      'name' => 'required|unique:form_templates,name,' .  ($req->id ?? 0),
+      'description' => 'nullable|string',
+
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
     }
     try {
-      if (isset($req->id) && !empty($req->id)) {
-        $find = Form_Template::where('id', $req->id)->first();
+      $data = [
+        'name'          => $req->name,
+        'description'   => $req->description,
+      ];
+      if ($req->filled('id')) {
+        $find = Form_Template::findOrFail($req->id);
         if (!$find) {
-          return response()->json(['status' => 2, 'error' => __('Template not found')]);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected Template')]);
         }
-        $done = Form_Template::where('id', $req->id)->update([
-          'name' => $req->name,
-          'description' => $req->description,
-        ]);
+        $done = $find->update($data);
       } else {
-        $done = Form_Template::create([
-          'name' => $req->name,
-          'description' => $req->description,
-        ]);
+        $done = Form_Template::create($data);
       }
 
       if (!$done) {
-        return response()->json(['status' => 2, 'error' => __('error to create Template')]);
+        return response()->json(['status' => 2, 'error' => __('Error: can not save the Template')]);
       }
-      return response()->json(['status' => 1, 'success' => __('Template Created')]);
+      return response()->json(['status' => 1, 'success' => __('Template Created successfully')]);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
@@ -131,32 +136,49 @@ class TemplateController extends Controller
     $data = Form_Template::with('fields', 'pricing_templates')->find($id);
     $vehicle = Vehicle::all();
     $methods = Pricing_Method::where('status', 1)->get();
+    $customers = Customer::all();
+    $tags = Tag::whereHas('customers')->get();
+    $pricing_methods = Pricing_Method::where('status', 1)->get();
+    $geofences = Geofence::all();
     if (!$data) {
       return redirect()->back();
     }
-    return view('admin.settings.templates.edit', compact('data', 'vehicle', 'methods'));
+    return view('admin.settings.templates.edit', compact('data', 'vehicle', 'methods', 'tags', 'customers', 'pricing_methods', 'geofences'));
   }
 
 
 
   public function update(Request $request)
   {
-    $template = Form_Template::find($request->id);
-    if (!$template) {
-      return response()->json(['status' => 2, 'error' => __('Template not found')]);
+    $validator = Validator::make($request->all(), [
+      'id' => 'required|exists:form_templates,id',
+      'fields' => 'required|array|min:1',
+      'fields.*.name' => 'required|string',
+      'fields.*.label' => 'required|string',
+      'fields.*.type' => 'required|in:string,number,email,date,select,file',
+      'fields.*.required' => 'required|boolean',
+      'fields.*.value' => 'nullable|string',
+      'fields.*.driver_can' => 'required|in:hidden,read,write',
+      'fields.*.customer_can' => 'required|in:hidden,read,write',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'message' => 'Validator Error', 'error' => $validator->errors()->toArray()]);
     }
 
-    // تحديث الحقول المرتبطة بالنموذج
-    $existingFieldIds = collect($request->fields)->pluck('id')->filter()->toArray();
 
-    // حذف الحقول غير الموجودة في الطلب
-    Form_Field::where('form_template_id', $request->id)->whereNotIn('id', $existingFieldIds)->delete();
+    DB::beginTransaction();
+    try {
+      // تحديث الحقول المرتبطة بالنموذج
+      $existingFieldIds = collect($request->fields)->pluck('id')->filter()->toArray();
 
-    $done = $request->fields;
-    // تحديث أو إضافة الحقول الجديدة
-    foreach ($request->fields as $field) {
-      if (isset($field['id'])) {
-        $done = Form_Field::where('id', $field['id'])->update([
+      // حذف الحقول غير الموجودة في الطلب
+      Form_Field::where('form_template_id', $request->id)->whereNotIn('id', $existingFieldIds)->delete();
+
+      $done = $request->fields;
+      // تحديث أو إضافة الحقول الجديدة
+      foreach ($request->fields as $field) {
+        $data = [
           'name' => $field['name'],
           'label' => $field['label'],
           'type' => $field['type'],
@@ -164,21 +186,24 @@ class TemplateController extends Controller
           'value' => $field['value'],
           'driver_can' => $field['driver_can'],
           'customer_can' => $field['customer_can'],
-        ]);
-      } else {
-        $done = Form_Field::create([
-          'form_template_id' => $request->id,
-          'name' => $field['name'],
-          'label' => $field['label'],
-          'type' => $field['type'],
-          'required' => $field['required'],
-          'value' => $field['value'],
-          'driver_can' => $field['driver_can'],
-          'customer_can' => $field['customer_can'],
-        ]);
+        ];
+        if (isset($field['id'])) {
+          $done = Form_Field::where('id', $field['id'])->update($data);
+        } else {
+          $data['form_template_id'] = $request->id;
+          $done = Form_Field::create($data);
+        }
+        if (!$done) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Error: can not save the Template fields')]);
+        }
       }
-    }
 
-    return response()->json(['status' => 1, 'success' => __('Template updated successfully'), 'data' =>  $done]);
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Template fields updated successfully'), 'data' =>  $done]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
   }
 }

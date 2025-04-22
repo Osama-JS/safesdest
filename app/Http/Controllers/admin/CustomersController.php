@@ -26,6 +26,13 @@ class CustomersController extends Controller
   }
 
 
+  public function getCustomers()
+  {
+    $data = Customer::select('id', 'name')->get();
+    return response()->json($data);
+  }
+
+
   public function getData(Request $request)
   {
     $columns = [

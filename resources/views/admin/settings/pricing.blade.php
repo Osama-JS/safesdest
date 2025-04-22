@@ -24,11 +24,7 @@
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Pricing Methods') }}</h5>
             <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p>
-            <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
-                data-bs-target="#submitModal">
-                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
-                <span class="d-none d-sm-inline-block"> {{ __('Add New Method') }}</span>
-            </button>
+
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-users table">
@@ -39,7 +35,6 @@
                         <th>{{ __('Method') }}</th>
                         <th>{{ __('Description') }}</th>
                         <th>{{ __('Status') }}</th>
-                        <th>{{ __('Calculating Distance') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -80,20 +75,7 @@
                                             <textarea name="description" id="pricing-description" class="form-control" cols="30" rows="3"></textarea>
                                             <span class="description-error text-danger text-error"></span>
                                         </div>
-
-                                        <div class="mb-4">
-
-                                            <input type="checkbox" name="distance" class="checkbox-control"
-                                                id="pricing-distance" />
-                                            <label class="form-label" for="pricing-distance">
-                                                {{ 'Calculating Distance' }}</label>
-                                            <span class="distance-error text-danger text-error"></span>
-                                        </div>
-
-
                                     </div>
-
-
                                 </div>
                             </div>
                         </div>

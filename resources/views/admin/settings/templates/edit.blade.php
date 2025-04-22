@@ -449,8 +449,8 @@
                             @foreach ($pricing_methods as $method)
                                 <div class="form-check mb-2">
                                     <input type="checkbox" class="form-check-input toggle-method"
-                                        data-method-id="{{ $method->id }}" id="method_{{ $method->id }}"
-                                        name="methods[]" value="{{ $method->id }}">
+                                        data-method-id="{{ $method->id }}" data-method-type="{{ $method->type }}"
+                                        id="method_{{ $method->id }}" name="methods[]" value="{{ $method->id }}">
                                     <label class="form-check-label fw-bold" for="method_{{ $method->id }}">
                                         {{ $method->name }}
                                     </label>

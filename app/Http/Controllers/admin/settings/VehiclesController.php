@@ -253,4 +253,14 @@ class VehiclesController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
+  public function getTypes($vehicleId)
+  {
+    return Vehicle_Type::where('vehicle_id', $vehicleId)->get();
+  }
+
+  public function getSizes($typeId)
+  {
+    return Vehicle_Size::where('vehicle_type_id', $typeId)->get();
+  }
 }

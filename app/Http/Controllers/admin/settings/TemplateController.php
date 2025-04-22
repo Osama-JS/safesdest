@@ -95,6 +95,17 @@ class TemplateController extends Controller
     return response()->json(['status' => 1, 'fields' => $data, 'success' => __('Template Created')]);
   }
 
+  public function getPricing(Request $req)
+  {
+    $fields = Form_Field::where('form_template_id', $req->id)->get();
+
+    $data = Pricing::where('pricing_template_id', $req->id)->where('status', 1)->get();
+    if ($fields->count() <= 0) {
+      return response()->json(['status' => 2, 'error' => __('no fields in this template')]);
+    }
+    return response()->json(['status' => 1, 'fields' => $fields, 'pricing' => $data, 'success' => __('Template Created')]);
+  }
+
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [

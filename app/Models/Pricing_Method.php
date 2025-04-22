@@ -11,6 +11,12 @@ class Pricing_Method extends Model
     'name',
     'description',
     'status',
-    'distance_calculation'
+    'type'
   ];
+
+
+  public function pricing()
+  {
+    return $this->hasMany(Pricing::class, "pricing_method_id");
+  }
 }

@@ -18,6 +18,7 @@ $(function () {
     }
   });
 
+  /* ====================== Configure Tags Selection  =============================== */
   var select_tags = $('.select2-tags');
   if (select_tags.length) {
     var $this = select_tags;
@@ -29,6 +30,7 @@ $(function () {
     });
   }
 
+  /* ====================== Configure Customers Selection  =============================== */
   var select_customers = $('.select2-customers');
   if (select_customers.length) {
     var $this = select_customers;
@@ -40,6 +42,7 @@ $(function () {
     });
   }
 
+  /* ====================== DataTable Configuration  =============================== */
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
       processing: true,
@@ -151,6 +154,7 @@ $(function () {
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
+  /* ====================== Form Submit Event Actions  =============================== */
   document.addEventListener('formSubmitted', function (event) {
     dt_data.draw();
     setTimeout(() => {
@@ -158,11 +162,14 @@ $(function () {
     }, 2000);
   });
 
+  /* ====================== Delete Record Event Actions  =============================== */
   document.addEventListener('deletedSuccess', function (event) {
     if (dt_data) {
       dt_data.draw();
     }
   });
+
+  /* ====================== Edit Action Button  =============================== */
   $(document).on('click', '.edit-record', function () {
     let id = $(this).data('id');
     $.get(`${baseUrl}admin/settings/templates/pricing/edit/${id}`, function (data) {
@@ -217,7 +224,7 @@ $(function () {
                 </span>
               </span>
             </label>
-          <div class="parameter-rows" data-method="${methodId}"></div>
+          <div class="parameter-rows" data-method="${methodId}" data-type="${status.type}"></div>
         </div>
       `;
             $checkbox.closest('.form-check').after(block);
@@ -237,17 +244,63 @@ $(function () {
                   index === 0
                     ? `<button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>`
                     : `<button type="button" class="btn btn-sm btn-icon text-danger remove-row"><i class="ti ti-trash"></i></button>`;
+                let fields = '';
+                if (status.type === 'distance') {
+                  fields = `
+                    <div class="col-md-3">
+                      <input type="number" name="params[${methodId}][0][from_val]" class="form-control from-input" value="${param.from_val}" placeholder="From">
+                    </div>
+                    <div class="col-md-3">
+                      <input type="number" name="params[${methodId}][0][to_val]" class="form-control to-input"  value="${param.to_val}" placeholder="To">
+                    </div>
+                  `;
+                } else if (status.type === 'points') {
+                  let points = [
+                    {
+                      id: '1',
+                      name: 'الرياض'
+                    },
+                    {
+                      id: '2',
+                      name: 'جدة'
+                    },
+                    {
+                      id: '3',
+                      name: 'l;m'
+                    }
+                  ];
+                  const optionsFrom = points
+                    .map(
+                      point =>
+                        `<option value="${point.id}" ${point.id == param.from_val ? 'selected' : ''} >${point.name}</option>`
+                    )
+                    .join('');
+
+                  const optionsTo = points
+                    .map(
+                      point =>
+                        `<option value="${point.id}"  ${point.id == param.to_val ? 'selected' : ''}>${point.name}</option>`
+                    )
+                    .join('');
+
+                  fields = `
+                    <div class="col-md-3">
+                      <select name="params[${methodId}][0][from_val]" class="form-select point-select from-input">
+                        <option value="">From Point</option>${optionsFrom}
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <select name="params[${methodId}][0][to_val]" class="form-select point-select to-input">
+                        <option value="">To Point</option>${optionsTo}
+                      </select>
+                    </div>
+                  `;
+                }
+
                 const row = `
                   <div class="row g-2 parameter-row mt-2">
                     <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
-                    <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${index}][from_val]" class="form-control" placeholder="From" value="${param.from_val}">
-                      <span class="params-${methodId}-${index}-from_val-error text-danger text-error"></span>
-                    </div>
-                    <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${index}][to_val]" class="form-control" placeholder="To" value="${param.to_val}">
-                      <span class="params-${methodId}-${index}-to_val-error text-danger text-error"></span>
-                    </div>
+                    ${fields}
                     <div class="col-md-3">
                       <input type="number" name="params[${methodId}][${index}][price]" class="form-control" placeholder="Price" value="${param.price}">
                       <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
@@ -366,6 +419,7 @@ $(function () {
     });
   });
 
+  /* ====================== Change Status Action Button  =============================== */
   $(document).on('change', '.edit_status', function () {
     var Id = $(this).data('id');
     console.log(Id);
@@ -383,15 +437,16 @@ $(function () {
       }
     });
   });
-
+  /* ====================== Delete Action Button  =============================== */
   $(document).on('click', '.delete-record', function () {
     let url = baseUrl + 'admin/settings/templates/pricing/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
   });
-
+  /* ====================== Close Modal Event Actions  =============================== */
   $('#submitModal').on('hidden.bs.modal', function () {
-    document.querySelector('.form_submit').reset();
+    $('.form_submit').trigger('reset');
     $('.text-error').html('');
+    $('#pricing_id').val('');
     $('#field-pricing-wrapper').html('');
     $('.method-parameters').remove();
     $('#geofence-pricing-wrapper').html('');
@@ -401,6 +456,7 @@ $(function () {
     $('#modelTitle').html('Add New Pricing Role');
   });
 
+  /* ====================== Pricing Role Owner Selector  =============================== */
   const allCheckbox = $('#allCustomers');
   const tagsCheckbox = $('#useTags');
   const specificCheckbox = $('#useCustomers');
@@ -442,53 +498,92 @@ $(function () {
     handleSelection('customers');
   });
 
+  /* ====================== Pricing Methods Selection  =============================== */
   const methodParametersContainer = {};
-
   $(document).on('change', '.toggle-method', function () {
     const methodId = $(this).data('method-id');
     const isChecked = $(this).is(':checked');
     const target = `#params_${methodId}`;
-
     if (isChecked) {
-      // إذا تم تحديد الطريقة، أنشئ الحقول وضعها تحت الزر
+      // If the method is selected, create the fields and place them under the button.
       if (!methodParametersContainer[methodId]) {
+        const methodType = $(this).data('method-type'); // type: distance OR points
+
+        let fields = renderMethodParameters(methodType, methodId);
         methodParametersContainer[methodId] = `
-                <div class="method-parameters mb-3 p-3 border rounded" id="params_${methodId}">
-                    <label><strong>Set Parameters for Method #${methodId}</strong></label>
-                    <div class="parameter-rows" data-method="${methodId}">
-                        <div class="row g-2 parameter-row">
-                            <input type="hidden" name="params[${methodId}][0][method_id]" value="${methodId}">
-                            <div class="col-md-3">
-                                <input type="number" name="params[${methodId}][0][from_val]" class="form-control" placeholder="From">
-                                <span class="params-${methodId}-0-from_val-error text-danger text-error">jj</span>
-                            </div>
-                            <div class="col-md-3">
-                                <input type="number" name="params[${methodId}][0][to_val]" class="form-control" placeholder="To">
-                                <span class="params-${methodId}-0-to_val-error text-danger text-error"></span>
-
-                            </div>
-                            <div class="col-md-3">
-                                <input type="number" name="params[${methodId}][0][price]" class="form-control" placeholder="Price" value="0.00">
-                                <span class="params-${methodId}-0-price-error text-danger text-error"></span>
-
-                            </div>
-                            <div class="col-md-3">
-                                <button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
+          <div class="method-parameters mb-3 p-3 border rounded" id="params_${methodId}">
+            <label><strong>Set Parameters for Method #${methodId}</strong></label>
+            <div class="parameter-rows" data-method="${methodId}" data-type="${methodType}">
+              <div class="row g-2 parameter-row">
+                <input type="hidden" name="params[${methodId}][0][method_id]" value="${methodId}">
+                ${fields}
+                <div class="col-md-3">
+                  <input type="number" name="params[${methodId}][0][price]" class="form-control" placeholder="Price" value="0.00">
                 </div>
-            `;
+                <div class="col-md-3">
+                  <button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
       }
 
-      // أضفها بعد checkbox المحدد
+      // Add it after the selected checkbox.
       $(this).closest('.form-check').after(methodParametersContainer[methodId]);
     } else {
-      // إذا ألغى التحديد، احذف العناصر من الـDOM
+      // If deselected, delete elements from the DOM.
       $(`#params_${methodId}`).remove();
     }
   });
 
+  function renderMethodParameters(type, methodId) {
+    let fields = '';
+
+    if (type === 'distance') {
+      fields = `
+        <div class="col-md-3">
+          <input type="number" name="params[${methodId}][0][from_val]" class="form-control from-input" placeholder="From">
+        </div>
+        <div class="col-md-3">
+          <input type="number" name="params[${methodId}][0][to_val]" class="form-control to-input" placeholder="To">
+        </div>
+      `;
+    } else if (type === 'points') {
+      let points = [
+        {
+          id: '1',
+          name: 'الرياض'
+        },
+        {
+          id: '2',
+          name: 'جدة'
+        },
+        {
+          id: '3',
+          name: 'l;m'
+        }
+      ];
+      const options = points.map(point => `<option value="${point.id}">${point.name}</option>`).join('');
+
+      fields = `
+        <div class="col-md-3">
+          <select name="params[${methodId}][0][from_val]" class="form-select point-select from-input">
+            <option value="">From Point</option>${options}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <select name="params[${methodId}][0][to_val]" class="form-select point-select to-input">
+            <option value="">To Point</option>${options}
+          </select>
+        </div>
+      `;
+    }
+
+    return fields;
+  }
+
+  // configure selected methods
   $('.toggle-method').on('change', function () {
     const methodId = $(this).data('method-id');
     const paramContainer = $('#params_' + methodId);
@@ -499,23 +594,72 @@ $(function () {
     }
   });
 
+  // Check fields to prevent duplication and anomalies.
+  $(document).on('change', '.from-input, .to-input', function () {
+    const row = $(this).closest('.parameter-row');
+    const fromInput = row.find('.from-input');
+    const toInput = row.find('.to-input');
+    const fromVal = fromInput.val();
+    const toVal = toInput.val();
+
+    // 1. تحقق من أن نفس القيمة غير مسموح بها في نفس الصف
+    if (fromVal && toVal && fromVal === toVal) {
+      showAlert('warning', 'The same value cannot be selected in the From and To fields.', 3000, true);
+      $(this).val('');
+      return;
+    }
+
+    const allRows = $('.parameter-row');
+    const currentIndex = allRows.index(row);
+    let isDuplicate = false;
+
+    allRows.each(function (index) {
+      if (index === currentIndex) return;
+
+      const otherFrom = $(this).find('.from-input').val();
+      const otherTo = $(this).find('.to-input').val();
+
+      // تطابق مباشر
+      const isExactMatch = fromVal === otherFrom && toVal === otherTo;
+
+      // تطابق تبادلي (للـ select فقط)
+      const isSelect = fromInput.is('select') && toInput.is('select');
+      const isReversedMatch = isSelect && fromVal === otherTo && toVal === otherFrom;
+
+      if (isExactMatch || isReversedMatch) {
+        isDuplicate = true;
+        return false; // توقف عند أول تطابق
+      }
+    });
+
+    if (isDuplicate) {
+      showAlert('warning', 'This From/To pair (or its reverse) is already used in another row.', 3000, true);
+      $(this).val('');
+      return;
+    }
+
+    // تحقق رقمي: from < to
+    const isNumeric = fromInput.attr('type') === 'number' && toInput.attr('type') === 'number';
+    if (isNumeric && fromVal && toVal && parseFloat(fromVal) >= parseFloat(toVal)) {
+      showAlert('warning', 'In numeric fields, the "From" value must be less than the "To" value.', 3000, true);
+      $(this).val('');
+      return;
+    }
+  });
+
+  // Add params action Button
   $(document).on('click', '.add-row', function () {
     const wrapper = $(this).closest('.parameter-rows');
     const methodId = wrapper.data('method');
+    const type = wrapper.data('type');
     const index = wrapper.find('.parameter-row').length;
+
+    let fields = renderMethodParameters(type, methodId);
 
     const row = `
         <div class="row g-2 parameter-row mt-2">
           <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
-          <div class="col-md-3">
-            <input type="number" name="params[${methodId}][${index}][from_val]" class="form-control" placeholder="From">
-            <span class="params-${methodId}-${index}-from_val-error text-danger text-error"></span>
-
-          </div>
-          <div class="col-md-3">
-            <input type="number" name="params[${methodId}][${index}][to_val]" class="form-control" placeholder="To">
-            <span class="params-${methodId}-${index}-to_val-error text-danger text-error"></span>
-          </div>
+          ${fields}
           <div class="col-md-3">
             <input type="number" name="params[${methodId}][${index}][price]" value="0.00" class="form-control" placeholder="Price">
             <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
@@ -529,10 +673,12 @@ $(function () {
     wrapper.append(row);
   });
 
+  // Remove Param Action Button
   $(document).on('click', '.remove-row', function () {
     $(this).closest('.parameter-row').remove();
   });
 
+  /* ====================== Configure the Pricing Fields Selector  =============================== */
   function generateFieldOptions(selected = null) {
     const usedFieldIds = [];
     return formFields
@@ -541,6 +687,7 @@ $(function () {
       .join('');
   }
 
+  // Add Pricing Field Action Button
   $(document).on('click', '.add-field-pricing', function () {
     const options = generateFieldOptions();
     const row = `
@@ -592,7 +739,7 @@ $(function () {
     $('.field-select').trigger('change'); // تحديث الخيارات
   });
 
-  // تحديث الخيارات بمجرد تغيير أي حقل
+  // Update options once you change any field.
   $(document).on('change', '.field-select', function () {
     $('.field-select').each(function () {
       const selected = $(this).val();
@@ -601,12 +748,13 @@ $(function () {
     });
   });
 
-  // حذف صف وإعادة التحديث
+  // Delete a row and re-refresh
   $(document).on('click', '.remove-field-pricing', function () {
     $(this).closest('.field-pricing-row').remove();
     $('.field-select').trigger('change');
   });
 
+  /* ====================== Configure the Pricing GeoFences Selector  =============================== */
   function getUsedGeofences() {
     let used = [];
     $('#geofence-pricing-wrapper select[name^="geofence_pricing"]').each(function () {
@@ -635,6 +783,7 @@ $(function () {
     }
   }
 
+  // Add Pricing GeoFence Action Button
   $(document).on('click', '.add-geofence-pricing', function () {
     const options = renderGeofenceOptions();
     if (!options) return;
@@ -672,12 +821,13 @@ $(function () {
     updateGeofenceButtons();
   });
 
+  // Remove Pricing GeoFence Action Button
   $(document).on('click', '.remove-geofence-pricing', function () {
     $(this).closest('.geofence-pricing-row').remove();
     updateGeofenceButtons();
   });
 
-  $(document).ready(function () {
-    updateGeofenceButtons();
-  });
+  // $(document).ready(function () {
+  //   updateGeofenceButtons();
+  // });
 });

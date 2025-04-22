@@ -166,7 +166,6 @@ export function showFormModal(options) {
   });
 }
 
-// دالة لإظهار التنبيه باستخدام block عند فك الحظر
 function showBlockAlert(type, message, timer = 700) {
   let bgColor = type === 'success' ? 'bg-success' : 'warning' ? 'bg-warning' : 'bg-danger';
 
@@ -214,8 +213,9 @@ export function showAlert(icon, title, timer, showConfirmButton = false) {
   }
 }
 
-// دالة لمعالجة الأخطاء
 export function handleErrors(errors, prefix = '') {
+  $('span.text-error').text(''); // إعادة تعيين الأخطاء
+
   $.each(errors, function (key, val) {
     // التعامل مع الحقول بالشكل: fields.0.name
     const fieldMatch = key.match(/^fields\.(\d+)\.(\w+)$/);
@@ -229,7 +229,7 @@ export function handleErrors(errors, prefix = '') {
 
     // التعامل مع params.2.0.price أو أي تركيبة مشابهة
     const parts = key.split('.');
-    if (parts.length >= 3) {
+    if (parts.length >= 2) {
       const selector = 'span.' + prefix + parts.join('-') + '-error';
       $(selector).text(val[0]);
     } else {
@@ -279,7 +279,7 @@ $('#select-template').on('change', function () {
   }
 });
 
-function generateFields(fields) {
+export function generateFields(fields) {
   fields.forEach(field => {
     var inputField = '';
 
@@ -317,8 +317,9 @@ function generateFields(fields) {
 
     $('#additional-form').append(`
           <div class="mb-3 col-md-6">
-              <label class="form-label">${field.required ? '*' : ''} ${field.name}</label>
+              <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
               ${inputField}
+              <span class="additional_fields-${field.name}-error text-danger text-error"></span>
           </div>
       `);
   });

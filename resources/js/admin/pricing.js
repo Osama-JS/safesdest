@@ -36,7 +36,6 @@ $(function () {
         { data: 'name' },
         { data: 'description' },
         { data: 'status' },
-        { data: 'distance' },
         { data: null }
       ],
       columnDefs: [
@@ -100,8 +99,7 @@ $(function () {
           render: function (data, type, full, meta) {
             return (
               '<div class="d-flex align-items-center gap-50">' +
-              `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` +
-              `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button> </div>`
+              `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-guard="${full['guard']}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>`
             );
           }
         }
@@ -178,11 +176,6 @@ $(function () {
       $('#submitModal').modal('hide');
     }, 2000);
   });
-  document.addEventListener('deletedSuccess', function (event) {
-    if (dt_data) {
-      dt_data.draw();
-    }
-  });
 
   $(document).on('change', '.edit_status', function () {
     var Id = $(this).data('id');
@@ -213,21 +206,12 @@ $(function () {
       $('#pricing_id').val(data.id);
       $('#pricing-name').val(data.name);
       $('#pricing-description').val(data.description);
-      if (data.distance_calculation == true) {
-        $('#pricing-distance').attr('checked', true);
-      }
     });
   });
 
-  $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/settings/pricing/delete/' + $(this).data('id');
-    deleteRecord($(this).data('name'), url);
-  });
-
   $('#submitModal').on('hidden.bs.modal', function () {
-    $('.form_submit').reset();
+    $('.form_submit').trigger('reset');
     $('.text-error').html('');
-    $('#pricing-distance').attr('checked', false);
-    $('#modelTitle').html('Add New Method');
+    $('#modelTitle').html('Edit Method');
   });
 });

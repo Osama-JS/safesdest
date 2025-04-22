@@ -58,7 +58,7 @@
                         <div class="mb-6">
                             <label for="login-email" class="form-label">Email</label>
                             <input type="text" class="form-control @error('email') is-invalid @enderror" id="login-email"
-                                name="email" placeholder="john@example.com" autofocus value="{{ old('email') }}">
+                                name="email" placeholder="john@example.com" autofocus value="admin@mail.com">
                             @error('email')
                                 <span class="invalid-feedback" role="alert">
                                     <span class="fw-medium">{{ $message }}</span>
@@ -69,7 +69,7 @@
                             <label class="form-label" for="login-password">Password</label>
                             <div class="input-group input-group-merge @error('password') is-invalid @enderror">
                                 <input type="password" id="login-password"
-                                    class="form-control @error('password') is-invalid @enderror" name="password"
+                                    class="form-control @error('password') is-invalid @enderror" name="password" value="admin@123"
                                     placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                     aria-describedby="password" />
                                 <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>

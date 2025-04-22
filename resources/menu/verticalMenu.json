@@ -7,7 +7,7 @@
       "slug": "dashboard"
     },
     {
-      "url": "admin/customers",
+      "url": "admin/tasks",
       "name": "Tasks",
       "icon": "menu-icon tf-icons ti ti-truck-delivery",
       "slug": "tasks.tasks"
@@ -67,6 +67,12 @@
           "name": "Geo-fence",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.geofences"
+        },
+        {
+          "url": "admin/settings/points",
+          "name": "Points",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "settings.points"
         },
         {
           "url": "admin/settings/routes",

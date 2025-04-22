@@ -24,7 +24,6 @@ class PricingController extends Controller
       1 => 'id',
       2 => 'name',
       3 => 'description',
-      5 => 'distance_calculation',
       6 => 'status',
     ];
 
@@ -66,7 +65,6 @@ class PricingController extends Controller
         $nestedData['fake_id'] = ++$ids;
         $nestedData['name'] = $method->name;
         $nestedData['description'] = $method->description;
-        $nestedData['distance'] = $method->distance_calculation;
         $nestedData['status'] = $method->status;
 
         $data[] = $nestedData;
@@ -86,8 +84,8 @@ class PricingController extends Controller
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'name' => 'required|unique:pricing_methods,name,' .  ($req->id ?? 0),
-      'distance' => 'nullable|date_equals:true',
+      'name' => 'required|unique:pricing_methods,name,' .  $req->id,
+      'description' => 'required|string',
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -97,18 +95,16 @@ class PricingController extends Controller
       $data = [
         'name'                  => $req->name,
         'description'           => $req->description,
-        'distance_calculation'  => $req->distance ?? false,
-      ];
-      if ($req->filled('id')) {
-        $find = Pricing_Method::findOrFail($req->id);;
-        if (!$find) {
-          return response()->json(['status' => 2, 'error' => __('Can not find the selected Pricing Method')]);
-        }
 
-        $done = $find->update($data);
-      } else {
-        $done = Pricing_Method::create($data);
+      ];
+
+      $find = Pricing_Method::findOrFail($req->id);;
+      if (!$find) {
+        return response()->json(['status' => 2, 'error' => __('Can not find the selected Pricing Method')]);
       }
+
+      $done = $find->update($data);
+
       if (!$done) {
         return response()->json(['status' => 2, 'error' => __('error to save Pricing Method')]);
       }
@@ -141,26 +137,5 @@ class PricingController extends Controller
       return response()->json(['status' => 2, 'error' => __('Error to change Pricing Method status')]);
     }
     return response()->json(['status' => 1, 'success' => $status]);
-  }
-
-
-
-  public function destroy(Request $req)
-  {
-    DB::beginTransaction();
-
-    try {
-
-      $done = Pricing_Method::where('id', $req->id)->delete();
-      if (!$done) {
-        DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Pricing Method']);
-      }
-      DB::commit();
-      return response()->json(['status' => 1, 'success' => __('Pricing Method deleted')]);
-    } catch (Exception $ex) {
-      DB::rollBack();
-      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
-    }
   }
 }

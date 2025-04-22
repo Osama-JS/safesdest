@@ -12,11 +12,13 @@ use App\Http\Controllers\laravel_example\UserManagement;
 use App\Http\Controllers\admin\settings\SettingsController;
 use App\Http\Controllers\admin\settings\VehiclesController;
 use App\Http\Controllers\admin\settings\GeofencesController;
+use App\Http\Controllers\admin\settings\PointsController;
 use App\Http\Controllers\admin\settings\PricingController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\settings\RoutesController;
 use App\Http\Controllers\admin\settings\TagsController;
 use App\Http\Controllers\admin\settings\TemplateController;
+use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\WalletsController;
 use GuzzleHttp\Psr7\Request;
 
@@ -77,7 +79,16 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::delete('/vehicles/delete/{id}', [VehiclesController::class, 'destroy'])->name('settings.vehicles.delete');
         Route::delete('/vehicles/type/delete/{id}', [VehiclesController::class, 'destroy_type'])->name('settings.vehicles.delete.type');
         Route::delete('/vehicles/size/delete/{id}', [VehiclesController::class, 'destroy_size'])->name('settings.vehicles.delete.size');
+        Route::get('/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
+        Route::get('/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
 
+
+        Route::get('/points', [PointsController::class, 'index'])->name('settings.points');
+        Route::get('/points/data', [PointsController::class, 'getData'])->name('settings.points.data');
+        Route::post('/points', [PointsController::class, 'store'])->name('settings.points.store');
+        Route::get('/points/edit/{id}', [PointsController::class, 'edit'])->name('settings.points.show');
+        Route::post('/points/status/{id}', [PointsController::class, 'change_state'])->name('settings.points.status');
+        Route::delete('/points/delete/{id}', [PointsController::class, 'destroy'])->name('settings.points.delete');
 
         Route::get('/tags', [TagsController::class, 'index'])->name('settings.tags');
         Route::get('/tags/data', [TagsController::class, 'getData'])->name('settings.tags.data');
@@ -108,6 +119,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
         Route::get('/templates', [TemplateController::class, 'index'])->name('settings.templates');
         Route::get('/templates/data', [TemplateController::class, 'getData'])->name('settings.templates.data');
         Route::get('/templates/fields', [TemplateController::class, 'getFields'])->name('settings.templates.fields');
+        Route::get('/templates/pricing', [TemplateController::class, 'getPricing'])->name('settings.templates.pricing');
         Route::post('/templates', [TemplateController::class, 'store'])->name('settings.templates.store');
         Route::get('/templates/edit/{id}', [TemplateController::class, 'edit'])->name('settings.templates.edit');
         Route::post('/templates/update/', [TemplateController::class, 'update'])->name('settings.templates.update');
@@ -122,6 +134,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
 
       Route::get('/customers', [CustomersController::class, 'index'])->name('customers.customers');
+      Route::get('/customers/get/customers', [CustomersController::class, 'getCustomers'])->name('customers.get');
       Route::post('/customers', [CustomersController::class, 'store'])->name('customers.create');
       Route::get('/customers/data', [CustomersController::class, 'getData'])->name('customers.data');
       Route::post('/customers/status', [CustomersController::class, 'chang_status'])->name('customers.status');
@@ -147,6 +160,10 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::post('/teams/edit', [TeamsController::class, 'update'])->name('teams.edit');
       Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
       Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
+
+      Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');
+      Route::post('tasks', [TasksController::class, 'store'])->name('tasks.create');
+      Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');
     });
   });
 });

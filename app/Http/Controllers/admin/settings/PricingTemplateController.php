@@ -114,6 +114,7 @@ class PricingTemplateController extends Controller
           'id' => $method->id,
           'method_id' => $method->pricing_method_id,
           'status' => $method->status,
+          'type' => $method->method->type
         ];
       }),
       'params' =>   $data->pricing_methods->map(fn($method) => $method->parametars->map(fn($param) => [

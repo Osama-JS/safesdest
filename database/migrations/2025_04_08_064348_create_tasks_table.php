@@ -25,6 +25,10 @@ return new class extends Migration
       $table->foreign('order_id')->references('id')->on('orders')->onDelete('restrict');
       $table->unsignedBigInteger('customer_id')->nullable();
       $table->foreign('customer_id')->references('id')->on('customers')->onDelete('restrict');
+      $table->unsignedBigInteger('user_id')->nullable();
+      $table->foreign('user_id')->references('id')->on('users')->onDelete('restrict');
+      $table->unsignedBigInteger('vehicle_size_id')->nullable();
+      $table->foreign('vehicle_size_id')->references('id')->on('vehicle_sizes')->onDelete('restrict');
       $table->unsignedBigInteger('driver_id')->nullable();
       $table->foreign('driver_id')->references('id')->on('drivers')->onDelete('restrict');
       $table->unsignedBigInteger('form_template_id')->nullable();

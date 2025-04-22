@@ -15,7 +15,7 @@ return new class extends Migration
       $table->id();
       $table->string('name')->unique();
       $table->text('description')->nullable();
-      $table->boolean('distance_calculation')->default(false);
+      $table->enum('type', ["distance", "points"]);
       $table->boolean('status')->default(false);
       $table->timestamps();
     });

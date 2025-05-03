@@ -6,12 +6,14 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Customer extends Authenticatable
 {
   use HasRoles;
   use HasFactory;
+  use SoftDeletes;
 
   protected $guard_name = 'customer';
   protected $table = 'customers';
@@ -30,6 +32,12 @@ class Customer extends Authenticatable
     'role_id',
     'team_id',
   ];
+
+  protected $casts = [
+    'additional_data' => 'array',
+  ];
+
+  protected $dates = ['deleted_at'];
 
   public function form_template()
   {

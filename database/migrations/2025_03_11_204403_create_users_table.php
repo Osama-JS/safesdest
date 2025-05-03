@@ -24,7 +24,7 @@ return new class extends Migration
       $table->enum('status', ['active', 'inactive', 'deleted', 'pending'])->default('inactive');
       $table->boolean('reset_password')->default(1);
       $table->timestamp('last_login')->nullable();
-      $table->string('additional_data')->nullable();
+      $table->jsonb('additional_data')->nullable();
       $table->unsignedBigInteger('form_template_id')->nullable();
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('set null');
       $table->unsignedBigInteger('role_id');

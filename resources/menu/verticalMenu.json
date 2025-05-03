@@ -75,14 +75,14 @@
           "slug": "settings.points"
         },
         {
-          "url": "admin/settings/routes",
-          "name": "Routes",
+          "url": "admin/settings/blockages",
+          "name": "Blockages",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.routes"
+          "slug": "settings.blockages"
         },
         {
           "url": "admin/settings/pricing",
-          "name": "Pricing",
+          "name": "Pricing Methods",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.pricing"
         },

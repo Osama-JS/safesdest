@@ -10,7 +10,9 @@ use App\Models\Form_Template;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Models\Form_Field;
 use App\Models\mongo\mUsers;
+use App\Models\Settings;
 use App\Models\Teams;
 use App\Models\User_Teams;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +34,8 @@ class UsersController extends Controller
     $roles = Role::where('guard_name', 'web')->get();
     $teams_ids = User_Teams::select('team_id')->get();
     $teams = Teams::all();
+    $user_template = Settings::where('key', 'user_template')->first();
+
 
     return view('admin.users.index', [
       'totalUser' => $userCount,
@@ -40,7 +44,8 @@ class UsersController extends Controller
       'pending' => $pendingCount,
       'roles' => $roles,
       'teams' => $teams,
-      'templates' => $templates
+      'templates' => $templates,
+      'user_template' => $user_template
     ]);
   }
 
@@ -173,6 +178,9 @@ class UsersController extends Controller
   {
     $data = User::findOrFail($id);
     $data->teamsIds = $data->teams()->pluck('team_id');
+    $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
+
+    $data->fields =  $fields;
 
     return response()->json($data);
   }
@@ -180,7 +188,8 @@ class UsersController extends Controller
 
   public function store(Request $req)
   {
-    $validator = Validator::make($req->all(), [
+
+    $rules = [
       'name'        => 'required',
       'email'       => 'required|unique:users,email,' .  ($req->id ?? 0),
       'phone'       => 'required|unique:users,phone,' .  ($req->id ?? 0),
@@ -188,7 +197,19 @@ class UsersController extends Controller
       'role'        => 'required|exists:roles,id',
       'teams'       => 'nullable|array',
       'template'    => 'nullable|exists:form_templates,id'
-    ]);
+    ];
+
+    if ($req->filled('template')) {
+      $fields = Form_Field::where('form_template_id', $req->template)->get();
+      foreach ($fields as $key) {
+        if ($key->required) {
+          $rules['additional_fields.' . $key->name] = 'required';
+        }
+      }
+    }
+
+
+    $validator = Validator::make($req->all(), $rules);
 
     if ($validator->fails()) {
       return response()->json([
@@ -196,6 +217,8 @@ class UsersController extends Controller
         'error'  => $validator->errors()
       ]);
     }
+
+
 
     DB::beginTransaction();
     try {
@@ -213,8 +236,26 @@ class UsersController extends Controller
         $data['password'] = Hash::make($req->password);
       }
 
-      if ($req->filled('password')) {
+
+
+      $structuredFields = [];
+
+      if ($req->filled('template')) {
         $data['form_template_id'] = $req->template;
+
+        $template = Form_Template::with('fields')->find($req->input('template'));
+
+        foreach ($template->fields as $field) {
+          $fieldName = $field->name;
+          if ($req->has("additional_fields.$fieldName")) {
+            $structuredFields[$fieldName] = [
+              'label' => $field->label,
+              'value' => $req->input("additional_fields.$fieldName"),
+              'type'  => $field->type,
+            ];
+          }
+        }
+        $data['additional_data'] = $structuredFields;
       }
 
 

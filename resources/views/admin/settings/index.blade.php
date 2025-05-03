@@ -16,16 +16,101 @@
 @section('page-script')
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
+    @vite(['resources/js/admin/settings.js'])
+
 @endsection
 
 @section('content')
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('General Settings') }}</h5>
+            <h5 class="card-title ">{{ __('Settings') }} | {{ __('General Settings') }}</h5>
             <p>Add new roles with customized permissions as per your requirement. </p>
         </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Templates') }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-9">
+                        <label for="customer-template" class="mb-2">{{ __('Default Customer Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="customer_template">
+                            @if (empty($settings['customer_template']['value']) || empty($templates))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['customer_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                            @if (!empty($settings['customer_template']['value']))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                        </select>
+                        <span class="customer-error text-danger"></span>
+                    </div>
+                    <div class="form-group mb-9">
+                        <label for="driver-template" class="mb-2">{{ __('Default Driver Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="driver_template" id="driver-template">
+                            @if (empty($settings['driver_template']['value']) || empty($templates))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['driver_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                            @if (!empty($settings['customer_template']['value']))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                        </select>
+                        <span class="driver-error text-danger"></span>
+                    </div>
 
+                    <div class="form-group mb-9">
+                        <label for="user-template" class="mb-2">{{ __('Default User Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="user_template" id="user-template">
+                            @if (empty($settings['user_template']['value']) || empty($templates))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['user_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                            @if (!empty($settings['customer_template']['value']))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                        </select>
+                        <span class="user-error text-danger"></span>
+                    </div>
+                    <div class="form-group mb-9">
+                        <label for="task-template" class="mb-2">{{ __('Default Task Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="task_template" id="task-template">
+                            @if (empty($settings['task_template']['value']) || empty($templates))
+                                <option value="">--- {{ __('Select Template') }}</option>
+                            @endif
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['task_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="task-error text-danger"></span>
+                    </div>
 
+                </div>
+            </div>
+        </div>
     </div>
 
 

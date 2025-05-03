@@ -14,13 +14,14 @@
 @section('vendor-script')
 
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
-
+    <script>
+        const templateId = {{ $customer_template->value }}
+    </script>
 @endsection
 
 <!-- Page Scripts -->
 @section('page-script')
     @vite(['resources/js/admin/customers.js'])
-    @vite(['resources/js/ajax.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
 @endsection
@@ -347,7 +348,9 @@
                                             <select name="template" id="select-template" class="form-select w-auto">
                                                 <option value="">{{ __('-- Select Template') }}</option>
                                                 @foreach ($templates as $key)
-                                                    <option value="{{ $key->id }}">{{ $key->name }}</option>
+                                                    <option value="{{ $key->id }}"
+                                                        {{ $customer_template->value == $key->id ? 'selected' : '' }}>
+                                                        {{ $key->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>

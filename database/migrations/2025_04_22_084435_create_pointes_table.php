@@ -20,6 +20,7 @@ return new class extends Migration
       $table->decimal('latitude', 10, 8);
       $table->decimal('longitude', 11, 8);
       $table->boolean('status')->default(1);
+      $table->boolean('privet')->default(0);
       $table->unsignedBigInteger('customer_id')->nullable();
       $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
       $table->timestamps();

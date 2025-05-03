@@ -3,14 +3,17 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal } from '../ajax';
+import { deleteRecord, showAlert, generateFields, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
   var dt_data_table = $('.datatables-users'),
-    userView = baseUrl + 'app/user/view/account',
-    offCanvasForm = $('#submitModal');
+    userView = baseUrl + 'app/user/view/account';
+
+  if (templateId != null) {
+    $('#select-template').val(templateId).trigger('change');
+  }
 
   var select2 = $('.select2');
   if (select2.length) {
@@ -264,18 +267,16 @@ $(function () {
   $('.dataTables_filter').hide();
 
   document.addEventListener('formSubmitted', function (event) {
-    let id = $('#customer_id').val();
     $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
     $('#additional-form').html('');
     $('#select-template').val('');
     $('#customer-tags').val([]).trigger('change');
 
-    if (id) {
-      setTimeout(() => {
-        $('#submitModal').modal('hide');
-      }, 2000);
-    }
+    setTimeout(() => {
+      $('#submitModal').modal('hide');
+    }, 2000);
+
     if (dt_data) {
       dt_data.draw();
     }
@@ -294,7 +295,8 @@ $(function () {
       dtrModal.modal('hide');
     }
     $.get(`${baseUrl}admin/customers/edit/${data_id}`, function (data) {
-      console.log(data.teamsIds);
+      $('.form_submit').trigger('reset');
+
       $('.text-error').html('');
       $('#customer_id').val(data.id);
       $('#customer-fullname').val(data.name);
@@ -308,6 +310,15 @@ $(function () {
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }
+      $('#additional-form').html('');
+      $('#select-template').val(data.form_template_id);
+
+      if (data.form_template_id === null) {
+        $('#select-template').val(templateId).trigger('change');
+      }
+
+      generateFields(data.fields, data.additional_data);
+
       $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
   });
@@ -342,9 +353,8 @@ $(function () {
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
-    $(this).find('form')[0].reset();
+    $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
-
     $('#customer-tags').val([]).trigger('change');
     $('.text-error').html('');
     $('#customer_id').val('');

@@ -7,6 +7,10 @@ use App\Models\Point;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\Pricing;
+use App\Models\Pricing_Method;
+use App\Models\Pricing_Parametar;
 use Illuminate\Support\Facades\Validator;
 
 class PointsController extends Controller
@@ -25,7 +29,6 @@ class PointsController extends Controller
       6 => 'status',
     ];
 
-    $search = [];
 
     $totalData = Point::count();
     $totalFiltered = $totalData;
@@ -36,13 +39,15 @@ class PointsController extends Controller
     $order = $columns[$orderColumnIndex] ?? 'id';
     $dir = $request->input('order.0.dir', 'asc');
 
+    $search = $request->input('search');
+
     // تجهيز الاستعلام الرئيسي
     $query = Point::query();
 
-    if (!empty($request->input('search.value'))) {
-      $search = $request->input('search.value');
+    if (!empty($search)) {
       $query->where('id', 'LIKE', "%{$search}%")
-        ->orWhere('name', 'LIKE', "%{$search}%");
+        ->orWhere('name', 'LIKE', "%{$search}%")
+        ->orWhere('address', 'LIKE', "%{$search}%");
     }
 
     $totalFiltered = $query->count(); // ✅ حساب العدد بعد البحث
@@ -77,6 +82,34 @@ class PointsController extends Controller
       'code' => 200,
       'data' => $data,
     ]);
+  }
+
+  public function getPoints(Request $request)
+  {
+    $customerIds = $request->input('customer_ids', []);
+
+    // النقاط العامة (بدون customer_id)
+    $generalPoints = Point::whereNull('customer_id')->get(['id', 'name']);
+
+    $response = [
+      'general' => $generalPoints,
+    ];
+
+    if (!empty($customerIds)) {
+      foreach ($customerIds as $customerId) {
+        $customer = Customer::find($customerId);
+        if (!$customer) continue;
+
+        $points = Point::where('customer_id', $customerId)->get(['id', 'name']);
+
+        $response['customer_' . $customerId] = [
+          'label' => 'نقاط العميل: ' . $customer->name,
+          'points' => $points,
+        ];
+      }
+    }
+
+    return response()->json($response);
   }
 
 
@@ -161,6 +194,12 @@ class PointsController extends Controller
 
     try {
       $find = Point::findOrFail($req->id);
+      $methods = Pricing_Method::where('type', 'points')->first();
+      $pricing = Pricing::where('pricing_method_id', $methods->id)->pluck('id');
+      $parametars = Pricing_Parametar::whereIn('pricing_id', $pricing)->where('from_val', $find->id)->orWhere('to_val', $find->id)->count();
+      if ($parametars > 0) {
+        return response()->json(['status' => 2, 'error' => 'Error to delete Point. its connect with pricing mater']);
+      }
       $done =  $find->delete();
       if (!$done) {
         DB::rollBack();

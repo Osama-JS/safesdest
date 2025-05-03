@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\admin;
 
 use Exception;
+use App\Models\Teams;
 use App\Models\Driver;
+use App\Models\Vehicle;
+use App\Models\Form_Field;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
-use App\Models\Teams;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\FunctionsController;
+use App\Models\Settings;
 
 class DriversController extends Controller
 {
@@ -20,8 +24,10 @@ class DriversController extends Controller
     $templates = Form_Template::all();
     $teams = Teams::all();
     $roles = Role::where('guard_name', 'driver')->get();
+    $vehicles = Vehicle::all();
+    $driver_template = Settings::where('key', 'driver_template')->first();
 
-    return view('admin.drivers.index', compact('templates', 'teams', 'roles'));
+    return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template'));
   }
 
   public function getData(Request $request)
@@ -88,7 +94,7 @@ class DriversController extends Controller
         'username' => $val->username,
         'email' => $val->email,
         'phone' => $val->phone,
-        'tags'       => "",
+        'tags'       => $val->tags->pluck('tag.name')->implode(', '),
         'role'       => $val->role->name ?? "",
         'created_at' => $val->created_at->format('Y-m-d H:i'),
         'status'     => $val->status,
@@ -106,6 +112,7 @@ class DriversController extends Controller
         'total' => Driver::count(),
         'total_active' => Driver::where('status', 'active')->count(),
         'total_verified' => Driver::where('status', 'verified')->count(),
+        'total_pending' => Driver::where('status', 'pending')->count(),
         'total_blocked' => Driver::where('status', 'blocked')->count(),
       ]
     ]);
@@ -138,26 +145,42 @@ class DriversController extends Controller
   {
     $data = Driver::findOrFail($id);
     $data->img = $data->image ? url($data->image) : null;
+    $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
+    $data->vehicle = $data->vehicle_size->type->vehicle_id;
+    $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
+
+    $data->fields =  $fields;
 
     return response()->json($data);
   }
 
   public function store(Request $req)
   {
-    $validator = Validator::make($req->all(), [
+    $rules = [
       'name' => 'required',
       'username' => 'required|unique:drivers,username,' . ($req->id ?? 0),
       'email' => 'required|unique:drivers,email,' . ($req->id ?? 0),
       'phone' => 'required|unique:drivers,phone,' . ($req->id ?? 0),
       'phone_code' => 'required',
-      'password' => 'required|same:confirm-password',
+      'password' => 'nullable|same:confirm-password',
       'team' => 'nullable|exists:teams,id',
       'role' => 'nullable|exists:roles,id',
       'address' => 'required|string',
       'commission_type' => 'nullable|in:fixed,rate,subscription',
       'commission' => 'required_with:commission_type|min:0',
       'vehicle' => 'required|exists:vehicle_sizes,id'
-    ]);
+    ];
+
+    if ($req->filled('template')) {
+      $fields = Form_Field::where('form_template_id', $req->template)->get();
+      foreach ($fields as $key) {
+        if ($key->required) {
+          $rules['additional_fields.' . $key->name] = 'required';
+        }
+      }
+    }
+
+    $validator = Validator::make($req->all(), $rules);
 
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -168,7 +191,7 @@ class DriversController extends Controller
       $data = [
         'name'            => $req->name,
         'email'           => $req->email,
-        'username'        => $req->usename,
+        'username'        => $req->username,
         'phone'           => $req->phone,
         'phone_code'      => $req->phone_code,
         'role_id'         => $req->role ?? null,
@@ -181,6 +204,26 @@ class DriversController extends Controller
 
       if ($req->filled('password')) {
         $data['password'] = Hash::make($req->password);
+      }
+
+      $structuredFields = [];
+
+      if ($req->filled('template')) {
+        $data['form_template_id'] = $req->template;
+
+        $template = Form_Template::with('fields')->find($req->input('template'));
+
+        foreach ($template->fields as $field) {
+          $fieldName = $field->name;
+          if ($req->has("additional_fields.$fieldName")) {
+            $structuredFields[$fieldName] = [
+              'label' => $field->label,
+              'value' => $req->input("additional_fields.$fieldName"),
+              'type'  => $field->type,
+            ];
+          }
+        }
+        $data['additional_data'] = $structuredFields;
       }
 
       $oldImage = null;

@@ -20,7 +20,7 @@ return new class extends Migration
       $table->string('image')->nullable();
       $table->string('username')->unique();
       $table->string('password');
-      $table->enum('status', ['verified', 'active', 'blocked', 'pending'])->default('pending');
+      $table->enum('status', ['verified', 'active', 'blocked', 'pending'])->default('verified');
       $table->text('address');
       $table->boolean('online')->default(1);
       $table->decimal('longitude', 10, 2)->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration
       $table->enum('commission_type', ['rate', 'fixed', 'subscription'])->nullable();
       $table->decimal('commission_value', 10, 2)->nullable();
       $table->integer('location_update_interval')->default(30);
-      $table->string('additional_data')->nullable();
+      $table->jsonb('additional_data')->nullable();
       $table->unsignedBigInteger('form_template_id')->nullable();
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('set null');
       $table->unsignedBigInteger('team_id')->nullable();

@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function (e) {
                 message: 'Please enter your password'
               },
               stringLength: {
-                min: 6,
+                min: 3,
                 message: 'Password must be more than 6 characters'
               }
             }

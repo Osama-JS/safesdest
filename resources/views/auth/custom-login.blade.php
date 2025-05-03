@@ -18,38 +18,53 @@
         .card-select {
             position: relative;
             width: 48%;
-            cursor: pointer;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 2px solid #ddd;
+            border: 2px solid transparent;
             transition: all 0.3s ease-in-out;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .card-select input {
             display: none;
         }
 
+
         .card-select label {
             display: block;
-            padding: 20px;
             text-align: center;
-            background-color: #f9f9f9;
+            gap: 16px;
+            padding: 20px;
+            background-color: #ffffff;
+            color: #333;
             transition: all 0.3s ease-in-out;
+            border-radius: 12px;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .card-select:hover label {
+            background-color: #f5f7fa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 86, 179, 0.1);
         }
 
         .card-select input:checked+label {
-            background-color: #007bff;
-            color: #fff;
-            border-color: #0056b3;
+            border: 2px solid #081a2e;
+            background-color: #ccdffc;
+            box-shadow: 0 0 0 4px rgba(0, 86, 179, 0.2);
         }
 
-        .card-select label:hover {
-            background-color: #f1f1f1;
-        }
 
         .card-title {
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
         }
     </style>
 @endsection
@@ -60,6 +75,7 @@
 
 @section('page-script')
     @vite(['resources/assets/js/pages-auth.js'])
+    @vite(['resources/js/auth.js'])
 @endsection
 
 @section('content')
@@ -90,7 +106,7 @@
                                 <div class="d-flex justify-content-between">
                                     <div class="card-select w-48 text-center">
                                         <input type="radio" id="customer" name="account_type" value="customer"
-                                            class="d-none" />
+                                            class="d-none" checked />
                                         <label for="customer" class="card p-4 shadow-sm border border-light rounded-3">
                                             <i class="fas fa-user fa-2x text-primary mb-3"></i>
                                             <span class="card-title">Customer</span>
@@ -107,13 +123,20 @@
                                 </div>
                             </div>
                             <div class="mb-6">
+                                <div id="driver-fields" style="display: none; margin-top: 10px;">
+                                    <label for="team" class="form-label">Team Code</label>
+                                    <input type="text" id="team" name="team_code" autocomplete="off"
+                                        class="form-control" placeholder="0189...">
+                                </div>
+                            </div>
+                            <div class="mb-6">
                                 <label for="login-email" class="form-label">Email</label>
                                 <input type="text" class="form-control @error('email') is-invalid @enderror"
-                                    id="login-email" name="email" placeholder="john@example.com" autofocus
-                                    value="{{ old('email') }}">
+                                    id="login-email" name="email" autocomplete="off" placeholder="john@example.com"
+                                    autofocus value="{{ old('email') }}">
                                 @error('email')
                                     <span class="invalid-feedback" role="alert">
-                                        <span class="fw-medium">{{ $message }}</span>
+                                        <span class="fw-medium">{!! $message !!}</span>
                                     </span>
                                 @enderror
                             </div>
@@ -122,6 +145,7 @@
                                 <div class="input-group input-group-merge @error('password') is-invalid @enderror">
                                     <input type="password" id="login-password"
                                         class="form-control @error('password') is-invalid @enderror" name="password"
+                                        autocomplete="off"
                                         placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
                                     <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
                                 </div>
@@ -154,12 +178,10 @@
 
                         <p class="text-center">
                             <span>New on our platform?</span>
-                            <a href="{{ url('auth/register-basic') }}">
+                            <a href="{{ route('auth.register') }}">
                                 <span>Create an account</span>
                             </a>
                         </p>
-
-
                     </div>
                 </div>
                 <!-- /Register -->

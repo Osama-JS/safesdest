@@ -71,7 +71,7 @@ class TemplateController extends Controller
         'id' => $method->id,
         'fake_id' => ++$fakeId,
         'name' => $method->name,
-        'description' => $method->description ?? '-',
+        'description' => $method->description ?? '',
         'created_at' => $method->created_at->format('Y-m-d H:i'),
       ];
     }

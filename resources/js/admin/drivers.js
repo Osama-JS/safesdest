@@ -3,12 +3,17 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal } from '../ajax';
+import { deleteRecord, showAlert, generateFields, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
   var dt_data_table = $('.datatables-users'),
     userView = baseUrl + 'app/user/view/account';
+  console.log(templateId);
+
+  if (templateId != null) {
+    $('#select-template').val(templateId).trigger('change');
+  }
 
   // ajax setup
   $.ajaxSetup({
@@ -34,6 +39,8 @@ $(function () {
           $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
           $('#total-verified').text(json.summary.total_verified);
           $('#total-verified + p').text(`(${((json.summary.total_verified / json.summary.total) * 100).toFixed(1)})%`);
+          $('#total-pending').text(json.summary.total_pending);
+          $('#total-pending + p').text(`(${((json.summary.total_pending / json.summary.total) * 100).toFixed(1)})%`);
           $('#total-blocked').text(json.summary.total_blocked);
           $('#total-blocked + p').text(`(${((json.summary.total_blocked / json.summary.total) * 100).toFixed(1)})%`);
           return json.data;
@@ -74,7 +81,7 @@ $(function () {
         },
         {
           targets: 2,
-          responsivePriority: 4,
+          responsivePriority: 2,
           render: function (data, type, full, meta) {
             var $name = full.name;
             if (full.image === null) {
@@ -129,7 +136,7 @@ $(function () {
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            return `<span>${full.tags}</span>`;
+            return `<span>${full.tags || ''}</span>`;
           }
         },
         {
@@ -147,7 +154,9 @@ $(function () {
                 icon = '<i class="ti ti-shield-x text-danger fs-5 ms-2"></i>';
                 break;
               case 'verified':
-                icon = '<i class="ti ti-hourglass text-warning fs-5 ms-2"></i>';
+                icon = '<i class="ti ti-hourglass text-secondary fs-5 ms-2"></i>';
+              case 'pending':
+                icon = '<i class="ti ti-user-search text-warning fs-5 ms-2"></i>';
                 break;
             }
 
@@ -213,6 +222,7 @@ $(function () {
         <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
           <option value="">All Status</option>
           <option value="active">Active</option>
+          <option value="pending">Pending</option>
           <option value="verified">Unverified</option>
           <option value="blocked">Blocked</option>
         </select>
@@ -259,7 +269,7 @@ $(function () {
   $('.dataTables_filter').hide();
 
   document.addEventListener('formSubmitted', function (event) {
-    let id = $('#customer_id').val();
+    let id = $('#driver_id').val();
     $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
     $('#additional-form').html('');
@@ -280,15 +290,18 @@ $(function () {
     }
   });
 
-  $(document).on('click', '.edit-record', function () {
+  $(document).on('click', '.edit-record', async function () {
     var data_id = $(this).data('id'),
       dtrModal = $('.dtr-bs-modal.show');
+
     if (dtrModal.length) {
       dtrModal.modal('hide');
     }
-    $.get(`${baseUrl}admin/drivers/edit/${data_id}`, function (data) {
-      console.log(data.teamsIds);
+
+    $.get(`${baseUrl}admin/drivers/edit/${data_id}`, async function (data) {
+      $('.form_submit').trigger('reset');
       $('.text-error').html('');
+
       $('#driver_id').val(data.id);
       $('#driver-fullname').val(data.name);
       $('#driver-username').val(data.username);
@@ -300,15 +313,39 @@ $(function () {
       $('#driver-address').val(data.address);
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);
+
+      $('.vehicle-select').val(data.vehicle).trigger('change');
+
+      await delay(300);
+      $('.vehicle-type-select').val(data.vehicle_type).trigger('change');
+
+      await delay(300);
+      $('.vehicle-size-select').val(data.vehicle_size_id).trigger('change');
+
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }
+
+      $('#additional-form').html('');
+      $('#select-template').val(data.form_template_id);
+
+      if (data.form_template_id === null) {
+        $('#select-template').val(templateId).trigger('change');
+      }
+
+      generateFields(data.fields, data.additional_data);
+
       $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
   });
 
+  // وظيفة تأخير باستخدام Promise
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/customers/delete/' + $(this).data('id');
+    let url = baseUrl + 'admin/drivers/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
   });
 
@@ -322,6 +359,7 @@ $(function () {
       <select class="form-select" name="status">
         <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
         <option value="verified" ${status === 'verified' ? 'selected' : ''}>Unverified</option>
+        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
         <option value="blocked" ${status === 'blocked' ? 'selected' : ''}>Blocked</option>
       </select>
     `;
@@ -337,75 +375,62 @@ $(function () {
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
-    $(this).find('form')[0].reset();
+    $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
 
     $('.text-error').html('');
     $('#driver_id').val('');
     $('#modelTitle').html('Add New Driver');
     $('#additional-form').html('');
-    $('#select-template').val('');
-  });
-
-  function loadData(vehicle = '', type = '', lode = true, lodeType = false, loadSize = false) {
-    $.ajax({
-      url: baseUrl + 'admin/settings/vehicles/data',
-      type: 'GET',
-      data: { vehicle: vehicle, type: type },
-      success: function (response) {
-        var vehicle_options = ` <option value="">-- Select vehicle </option>`;
-        vehicle_options += response.data.vehicles
-          .map(
-            option => `
-          <option value="${option.id}">${option.name} - ${option.en_name}</option>
-        `
-          )
-          .join('');
-        if (lode) {
-          $('#vehicle-vehicle').html(vehicle_options);
-        }
-
-        var vehicle_type_options = ` <option value="">-- select vehicle types </option>`;
-        vehicle_type_options += response.data.types
-          .map(
-            option => `
-          <option value="${option.id}"> ${option.name} - ${option.en_name}</option>
-        `
-          )
-          .join('');
-
-        if (lodeType) {
-          $('#vehicle-type').html(vehicle_type_options);
-        }
-
-        var vehicle_sizes_options = ` <option value="">-- select vehicle Size </option>`;
-        vehicle_sizes_options += response.data.sizes
-          .map(
-            size => `
-          <option value="${size.id}"> ${size.name}</option>
-        `
-          )
-          .join('');
-
-        if (loadSize) {
-          console.log('seize');
-          console.log(response.data.sizes);
-          $('#vehicle-size').html(vehicle_sizes_options);
-        }
-      }
-    });
-  }
-  loadData();
-
-  $(document).on('change', '#vehicle-vehicle', function () {
-    var vehicle = $(this).val();
-    $('#vehicle-size').html('<option value="">-- select vehicle Size </option>');
-    $('#vehicle-type').html('<option value="">-- select vehicle type </option>');
-    loadData(vehicle, '', false, true, false);
-  });
-  $(document).on('change', '#vehicle-type', function () {
-    var type = $(this).val();
-    $('#vehicle-size').html('<option value="">-- select vehicle Size </option>');
-    loadData('', type, false, false, true);
+    $('#select-template').val(templateId).trigger('change');
   });
 });
+/* ================  Select Vehicles Code   =============== */
+let vehicleIndex = 0;
+const selectedTypes = new Set();
+
+function createVehicleRow(index) {
+  return $('#vehicle-row-template').html().replaceAll('{index}', index);
+}
+
+function updateVehicleRowEvents($row) {
+  const $vehicleSelect = $row.find('.vehicle-select');
+  const $typeSelect = $row.find('.vehicle-type-select');
+  const $sizeSelect = $row.find('.vehicle-size-select');
+
+  $vehicleSelect.on('change', function () {
+    const vehicleId = $(this).val();
+    $typeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
+    $sizeSelect.prop('disabled', true).empty().append('<option>Select a vehicle size</option>');
+
+    if (vehicleId) {
+      $.get(`${baseUrl}chosen/vehicles/types/${vehicleId}`, function (types) {
+        $typeSelect.empty().append('<option value="">Select a vehicle type</option>');
+        types.forEach(type => {
+          $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
+        });
+        $typeSelect.prop('disabled', false);
+      });
+    }
+  });
+
+  $typeSelect.on('change', function () {
+    const typeId = $(this).val();
+    $sizeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
+
+    if (typeId) {
+      selectedTypes.add(typeId);
+      $.get(`${baseUrl}chosen/vehicles/sizes/${typeId}`, function (sizes) {
+        $sizeSelect.empty().append('<option value="">Select a vehicle size</option>');
+        sizes.forEach(size => {
+          $sizeSelect.append(`<option value="${size.id}">${size.name}</option>`);
+        });
+        $sizeSelect.prop('disabled', false);
+      });
+    }
+  });
+}
+
+const $newRow = $(createVehicleRow(vehicleIndex++));
+$('#vehicle-selection-container').append($newRow);
+updateVehicleRowEvents($newRow);

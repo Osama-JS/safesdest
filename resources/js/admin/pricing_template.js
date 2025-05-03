@@ -10,6 +10,8 @@ $(function () {
   var dt_data_table = $('.datatables-pricing');
   let fieldPricingIndex = 1;
   let geofencePricingIndex = 0;
+  let pricingParamsIndex = 0;
+  let pricingPoints = 0;
 
   // ajax setup
   $.ajaxSetup({
@@ -169,7 +171,84 @@ $(function () {
     }
   });
 
+  /* ====================== Get Points  =============================== */
+  let allPoints = []; // قائمة مسطحة بالنقاط لكل الاستخدامات العامة
+  let groupedOptionsHTML = ''; // HTML كامل يستخدم داخل كل select
+
+  function fetchPoints(customerIds = []) {
+    $.ajax({
+      url: `${baseUrl}admin/settings/points/get`,
+      type: 'POST',
+      data: {
+        customer_ids: customerIds,
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (data) {
+        allPoints = [];
+        groupedOptionsHTML = '';
+
+        // النقاط العامة
+        if (data.general && data.general.length > 0) {
+          groupedOptionsHTML += `<optgroup label="نقاط عامة">`;
+          data.general.forEach(point => {
+            groupedOptionsHTML += `<option value="${point.id}">${point.name}</option>`;
+            allPoints.push(point);
+          });
+          groupedOptionsHTML += `</optgroup>`;
+        }
+
+        // النقاط المرتبطة بالعملاء
+        Object.keys(data).forEach(key => {
+          if (key.startsWith('customer_')) {
+            const group = data[key];
+            if (group.points.length > 0) {
+              groupedOptionsHTML += `<optgroup label="${group.label}">`;
+              group.points.forEach(point => {
+                groupedOptionsHTML += `<option value="${point.id}">${point.name}</option>`;
+                allPoints.push(point);
+              });
+              groupedOptionsHTML += `</optgroup>`;
+            }
+          }
+        });
+
+        // تحديث كل الحقول select الحالية
+        $('.from-input.select-point, .to-input.select-point').each(function () {
+          const currentVal = $(this).val();
+          $(this).html(`<option value="">اختر نقطة</option>` + groupedOptionsHTML);
+
+          if ($(this).find(`option[value="${currentVal}"]`).length) {
+            $(this).val(currentVal);
+          } else {
+            $(this).val('');
+          }
+        });
+      }
+    });
+  }
+
+  // تحميل النقاط العامة افتراضيًا
+  fetchPoints();
+
+  // إعادة تحميل النقاط عند تغيير العملاء
+  $('#customersSelect').on('change', function () {
+    const customerIds = $(this).val();
+    fetchPoints(customerIds);
+  });
+
   /* ====================== Edit Action Button  =============================== */
+  function waitForSelect(selector) {
+    return new Promise(resolve => {
+      const interval = setInterval(() => {
+        const $el = $(selector);
+        if ($el.length) {
+          clearInterval(interval);
+          resolve($el);
+        }
+      }, 50);
+    });
+  }
+
   $(document).on('click', '.edit-record', function () {
     let id = $(this).data('id');
     $.get(`${baseUrl}admin/settings/templates/pricing/edit/${id}`, function (data) {
@@ -197,6 +276,7 @@ $(function () {
       $('#tagsSelect').prop('disabled', !data.use_tags).val(data.tags).trigger('change');
       $('#customersSelect').prop('disabled', !data.use_customers).val(data.customers).trigger('change');
 
+      fetchPoints(data.customers);
       // تفعيل الميثودات
       // تفريغ وتفعيل الـ methods
       $('.toggle-method').prop('checked', false); // reset
@@ -233,6 +313,8 @@ $(function () {
           // تحميل الـ params الخاصة بهذا method
           const container = $(`#params_${methodId} .parameter-rows`);
           container.empty();
+          pricingParamsIndex = 0;
+          pricingPoints = 0;
 
           if (Array.isArray(data.params)) {
             const flatParams = data.params.reduce((acc, val) => acc.concat(val), []);
@@ -248,53 +330,52 @@ $(function () {
                 if (status.type === 'distance') {
                   fields = `
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][0][from_val]" class="form-control from-input" value="${param.from_val}" placeholder="From">
+                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]"  class="form-control from-input" value="${param.from_val}" placeholder="From">
+                      <span class="params-${methodId}-${pricingParamsIndex}-from_val-error text-danger text-error"></span>
+
                     </div>
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][0][to_val]" class="form-control to-input"  value="${param.to_val}" placeholder="To">
+                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][to_val]" class="form-control to-input"  value="${param.to_val}" placeholder="To">
+                      <span class="params-${methodId}-${pricingParamsIndex}-to_val-error text-danger text-error"></span>
+
                     </div>
                   `;
+                  pricingParamsIndex++;
                 } else if (status.type === 'points') {
-                  let points = [
-                    {
-                      id: '1',
-                      name: 'الرياض'
-                    },
-                    {
-                      id: '2',
-                      name: 'جدة'
-                    },
-                    {
-                      id: '3',
-                      name: 'l;m'
-                    }
-                  ];
-                  const optionsFrom = points
-                    .map(
-                      point =>
-                        `<option value="${point.id}" ${point.id == param.from_val ? 'selected' : ''} >${point.name}</option>`
-                    )
-                    .join('');
-
-                  const optionsTo = points
-                    .map(
-                      point =>
-                        `<option value="${point.id}"  ${point.id == param.to_val ? 'selected' : ''}>${point.name}</option>`
-                    )
-                    .join('');
-
+                  console.log(groupedOptionsHTML);
                   fields = `
                     <div class="col-md-3">
-                      <select name="params[${methodId}][0][from_val]" class="form-select point-select from-input">
-                        <option value="">From Point</option>${optionsFrom}
+                      <select name="params[${methodId}][${pricingPoints}][from_val]" class="form-select point-select from-input">
+                        <option value="">From Point</option>${groupedOptionsHTML}
                       </select>
+                      <span class="params-${methodId}-${pricingPoints}-from_val-error text-danger text-error"></span>
+
                     </div>
                     <div class="col-md-3">
-                      <select name="params[${methodId}][0][to_val]" class="form-select point-select to-input">
-                        <option value="">To Point</option>${optionsTo}
+                      <select name="params[${methodId}][${pricingPoints}][to_val]" class="form-select point-select to-input">
+                        <option value="">To Point</option>${groupedOptionsHTML}
                       </select>
+                      <span class="params-${methodId}-${pricingPoints}-to_val-error text-danger text-error"></span>
+
                     </div>
                   `;
+                  waitForSelect(`select[name="params[${methodId}][${pricingPoints}][from_val]"]`).then($select => {
+                    if ($select.find(`option[value="${param.from_val}"]`).length === 0) {
+                      $select.append(new Option(param.from_val, param.from_val));
+                    }
+                    $select.val(param.from_val).trigger('change');
+                  });
+
+                  waitForSelect(`select[name="params[${methodId}][${pricingPoints}][to_val]"]`).then($select => {
+                    if ($select.find(`option[value="${param.to_val}"]`).length === 0) {
+                      $select.append(new Option(param.to_val, param.to_val));
+                    }
+                    $select.val(param.to_val).trigger('change');
+                  });
+
+                  console.log(param.from_val);
+                  console.log(param.to_val);
+                  pricingPoints++;
                 }
 
                 const row = `
@@ -302,7 +383,7 @@ $(function () {
                     <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
                     ${fields}
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${index}][price]" class="form-control" placeholder="Price" value="${param.price}">
+                      <input type="number" name="params[${methodId}][${index}][price]" step="any" class="form-control" placeholder="Price" value="${param.price}">
                       <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
                     </div>
                     <div class="col-md-3">
@@ -543,41 +624,35 @@ $(function () {
     if (type === 'distance') {
       fields = `
         <div class="col-md-3">
-          <input type="number" name="params[${methodId}][0][from_val]" class="form-control from-input" placeholder="From">
+          <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]" class="form-control from-input" placeholder="From">
+            <span class="params-${methodId}-${pricingParamsIndex}-from_val-error text-danger text-error"></span>
+
         </div>
         <div class="col-md-3">
-          <input type="number" name="params[${methodId}][0][to_val]" class="form-control to-input" placeholder="To">
+          <input type="number" name="params[${methodId}][${pricingParamsIndex}][to_val]" class="form-control to-input" placeholder="To">
+            <span class="params-${methodId}-${pricingParamsIndex}-to_val-error text-danger text-error"></span>
+
         </div>
       `;
+      pricingParamsIndex++;
     } else if (type === 'points') {
-      let points = [
-        {
-          id: '1',
-          name: 'الرياض'
-        },
-        {
-          id: '2',
-          name: 'جدة'
-        },
-        {
-          id: '3',
-          name: 'l;m'
-        }
-      ];
-      const options = points.map(point => `<option value="${point.id}">${point.name}</option>`).join('');
-
       fields = `
         <div class="col-md-3">
-          <select name="params[${methodId}][0][from_val]" class="form-select point-select from-input">
-            <option value="">From Point</option>${options}
+          <select name="params[${methodId}][${pricingPoints}][from_val]" class="form-select select-point from-input">
+            <option value="">From Point</option>${groupedOptionsHTML}
           </select>
+          <span class="params-${methodId}-${pricingPoints}-from_val-error text-danger text-error"></span>
+
         </div>
         <div class="col-md-3">
-          <select name="params[${methodId}][0][to_val]" class="form-select point-select to-input">
-            <option value="">To Point</option>${options}
+          <select name="params[${methodId}][${pricingPoints}][to_val]" class="form-select select-point to-input">
+            <option value="">To Point</option>${groupedOptionsHTML}
           </select>
+          <span class="params-${methodId}-${pricingPoints}-to_val-error text-danger text-error"></span>
+
         </div>
       `;
+      pricingPoints++;
     }
 
     return fields;
@@ -602,46 +677,45 @@ $(function () {
     const fromVal = fromInput.val();
     const toVal = toInput.val();
 
-    // 1. تحقق من أن نفس القيمة غير مسموح بها في نفس الصف
-    if (fromVal && toVal && fromVal === toVal) {
-      showAlert('warning', 'The same value cannot be selected in the From and To fields.', 3000, true);
+    if (!fromVal || !toVal) return;
+
+    // نفس القيم داخل نفس الصف
+    if (fromVal === toVal) {
+      showAlert('warning', 'لا يمكن اختيار نفس النقطة في من وإلى.', 3000, true);
       $(this).val('');
       return;
     }
 
+    // تكرار أو انعكاس في صفوف أخرى
     const allRows = $('.parameter-row');
     const currentIndex = allRows.index(row);
     let isDuplicate = false;
 
     allRows.each(function (index) {
       if (index === currentIndex) return;
-
       const otherFrom = $(this).find('.from-input').val();
       const otherTo = $(this).find('.to-input').val();
 
-      // تطابق مباشر
       const isExactMatch = fromVal === otherFrom && toVal === otherTo;
-
-      // تطابق تبادلي (للـ select فقط)
-      const isSelect = fromInput.is('select') && toInput.is('select');
-      const isReversedMatch = isSelect && fromVal === otherTo && toVal === otherFrom;
+      const isReversedMatch =
+        fromInput.is('select') && toInput.is('select') && fromVal === otherTo && toVal === otherFrom;
 
       if (isExactMatch || isReversedMatch) {
         isDuplicate = true;
-        return false; // توقف عند أول تطابق
+        return false;
       }
     });
 
     if (isDuplicate) {
-      showAlert('warning', 'This From/To pair (or its reverse) is already used in another row.', 3000, true);
+      showAlert('warning', 'هذه النقطة أو عكسها مستخدمة مسبقًا في صف آخر.', 3000, true);
       $(this).val('');
       return;
     }
 
-    // تحقق رقمي: from < to
-    const isNumeric = fromInput.attr('type') === 'number' && toInput.attr('type') === 'number';
-    if (isNumeric && fromVal && toVal && parseFloat(fromVal) >= parseFloat(toVal)) {
-      showAlert('warning', 'In numeric fields, the "From" value must be less than the "To" value.', 3000, true);
+    // تحقق رقمي (من < إلى)
+    const isNumeric = fromInput.is('[type="number"]') && toInput.is('[type="number"]');
+    if (isNumeric && parseFloat(fromVal) >= parseFloat(toVal)) {
+      showAlert('warning', 'في الحقول الرقمية يجب أن تكون من أقل من إلى.', 3000, true);
       $(this).val('');
       return;
     }

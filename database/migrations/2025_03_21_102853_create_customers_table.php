@@ -22,7 +22,7 @@ return new class extends Migration
       $table->enum('status', ['active', 'verified', 'blocked'])->default('verified');
       $table->string('company_name')->nullable();
       $table->string('company_address')->nullable();
-      $table->string('additional_data')->nullable();
+      $table->jsonb('additional_data')->nullable();
       $table->unsignedBigInteger('form_template_id')->nullable();
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('set null');
       $table->unsignedBigInteger('role_id')->nullable();

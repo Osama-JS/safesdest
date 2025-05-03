@@ -103,7 +103,11 @@ class TeamsController extends Controller
 
     try {
 
-      $done = Teams::where('id', $req->id)->delete();
+      $team = Teams::findOrFail($req->id);
+      if ($team->drivers->count() > 0) {
+        return response()->json(['status' => 2, 'error' => 'You cannot delete this team because it has associated drivers']);
+      }
+      $done = $team->delete();
       if (!$done) {
         DB::rollBack();
         return response()->json(['status' => 2, 'error' => 'Error to delete team']);

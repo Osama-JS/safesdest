@@ -3,11 +3,15 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors } from '../ajax';
+import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../ajax';
+import { initializeMap, onMapReady } from '../mapbox-helper';
 
 $(function () {
   let pointIndex = 0;
-
+  if (templateId != null) {
+    console.log(templateId);
+    $('#select-template').val(templateId).trigger('change');
+  }
   /* ===========  MapBox  accessToken   ===========*/
   mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
 
@@ -29,12 +33,8 @@ $(function () {
   });
 
   /* ===========  PreviewMap Code   ===========*/
-  const previewMap = new mapboxgl.Map({
-    container: `preview-map`,
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [46.6753, 24.7136],
-    zoom: 10
-  });
+
+  initializeMap('preview-map', [39.85791, 21.3891], 10, () => {});
 
   let pickupMarker = null;
   let deliveryMarker = null;
@@ -43,19 +43,66 @@ $(function () {
   let pickupCoords = null;
   let deliveryCoords = null;
 
-  // Call this function after specifying the coordinates of the two points.
+  // 🚧 البيانات الثابتة للنقاط والخطوط المغلقة
+  const blockedPoints = [
+    { lat: 24.774265, lng: 46.738586 },
+    { lat: 24.798524, lng: 46.675214 },
+    { lat: 24.761234, lng: 46.69 }
+  ];
+
+  const blockedLines = [
+    {
+      coordinates: [
+        [46.73, 24.774],
+        [46.74, 24.778]
+      ]
+    }
+  ];
+
+  // 🔍 دالة للتحقق هل نقطة قرب نقطة مغلقة
+  function isNearPoint(coord, point, threshold = 0.003) {
+    return Math.abs(coord[0] - point.lng) < threshold && Math.abs(coord[1] - point.lat) < threshold;
+  }
+
+  // 🔍 دالة للتحقق هل مسار يقطع خط مغلق (تقريبياً)
+  function isNearLine(coord, line, threshold = 0.002) {
+    for (let i = 0; i < line.coordinates.length - 1; i++) {
+      const [x1, y1] = line.coordinates[i];
+      const [x2, y2] = line.coordinates[i + 1];
+
+      const minX = Math.min(x1, x2) - threshold;
+      const maxX = Math.max(x1, x2) + threshold;
+      const minY = Math.min(y1, y2) - threshold;
+      const maxY = Math.max(y1, y2) + threshold;
+
+      if (coord[0] >= minX && coord[0] <= maxX && coord[1] >= minY && coord[1] <= maxY) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 🔍 تحقق شامل
+  function isRouteBlocked(route) {
+    return route.geometry.coordinates.some(
+      coord =>
+        blockedPoints.some(point => isNearPoint(coord, point)) || blockedLines.some(line => isNearLine(coord, line))
+    );
+  }
+
+  // 🧠 تحديث وعرض المسار
   async function updatePreviewRoute(pickupCoords, deliveryCoords) {
     console.log('updatePreviewRoute', pickupCoords, deliveryCoords);
 
-    // 🧹 Clean out old items
     if (pickupMarker) pickupMarker.remove();
     if (deliveryMarker) deliveryMarker.remove();
     if (previewMap.getLayer('route-line')) previewMap.removeLayer('route-line');
     if (previewMap.getSource('route')) previewMap.removeSource('route');
     if (previewMap.getLayer('blocked-roads')) previewMap.removeLayer('blocked-roads');
     if (previewMap.getSource('blocked-roads')) previewMap.removeSource('blocked-roads');
+    if (previewMap.getLayer('blocked-lines')) previewMap.removeLayer('blocked-lines');
+    if (previewMap.getSource('blocked-lines')) previewMap.removeSource('blocked-lines');
 
-    // 📍 Apply markers
     pickupMarker = new mapboxgl.Marker({ color: 'green' })
       .setLngLat(pickupCoords)
       .setPopup(new mapboxgl.Popup().setText('Pickup Point'))
@@ -66,24 +113,6 @@ $(function () {
       .setPopup(new mapboxgl.Popup().setText('Delivery Point'))
       .addTo(previewMap);
 
-    // 🚫 Coordinates for closed roads (examples - you can edit)
-    const blockedAreas = [
-      { lat: 24.774265, lng: 46.738586 },
-      { lat: 24.798524, lng: 46.675214 },
-      { lat: 24.761234, lng: 46.69 }
-    ];
-
-    // 🔁 Comparison function
-    function isNear(coord1, coord2, threshold = 0.003) {
-      return Math.abs(coord1[0] - coord2.lng) < threshold && Math.abs(coord1[1] - coord2.lat) < threshold;
-    }
-
-    // 🔍 Track check
-    function isRouteBlocked(route) {
-      return route.geometry.coordinates.some(coord => blockedAreas.some(block => isNear(coord, block)));
-    }
-
-    // 🧠 Fetch path
     async function fetchRouteWithRetry(pickup, delivery) {
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.join(',')};${delivery.join(',')}?geometries=geojson&steps=true&overview=full&access_token=${mapboxgl.accessToken}`;
       const res = await fetch(url);
@@ -95,14 +124,13 @@ $(function () {
 
       const route = data.routes[0];
       if (isRouteBlocked(route)) {
-        console.warn('🚫 المسار يمر بطريق مغلق!');
+        console.warn('🚫 المسار يمر بمكان مغلق!');
         throw new Error('Route blocked');
       }
 
       return route;
     }
 
-    // 🔄 Trying to find a valid path
     let finalRoute = null;
     let attempts = 0;
 
@@ -112,15 +140,13 @@ $(function () {
       } catch (e) {
         attempts++;
         if (attempts === 3) {
-          alert('لا يمكن العثور على مسار بدون المرور بطرق مغلقة 🚧');
+          alert('🚫 لا يمكن العثور على مسار صالح بدون المرور بمكان مغلق');
           return;
         }
       }
     }
 
-    // 📌 Make sure the pattern is ready and then add the layers.
     function addLayers() {
-      // ➕ Add path
       previewMap.addSource('route', {
         type: 'geojson',
         data: {
@@ -133,20 +159,14 @@ $(function () {
         id: 'route-line',
         type: 'line',
         source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#007cbf',
-          'line-width': 4
-        }
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#007cbf', 'line-width': 4 }
       });
 
-      // 🟥 Show closed roads
+      // ➕ نقاط مغلقة
       const blockedGeojson = {
         type: 'FeatureCollection',
-        features: blockedAreas.map(block => ({
+        features: blockedPoints.map(block => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
@@ -155,34 +175,54 @@ $(function () {
         }))
       };
 
-      previewMap.addSource('blocked-roads', {
-        type: 'geojson',
-        data: blockedGeojson
-      });
+      previewMap.addSource('blocked-roads', { type: 'geojson', data: blockedGeojson });
 
       previewMap.addLayer({
         id: 'blocked-roads',
         type: 'circle',
         source: 'blocked-roads',
         paint: {
-          'circle-radius': 9,
+          'circle-radius': 8,
           'circle-color': '#ff0000',
           'circle-stroke-width': 2,
           'circle-stroke-color': '#ffffff'
         }
       });
 
-      // 🔍 Zoom in view
+      // ➕ خطوط مغلقة
+      const blockedLinesGeojson = {
+        type: 'FeatureCollection',
+        features: blockedLines.map(line => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: line.coordinates
+          }
+        }))
+      };
+
+      previewMap.addSource('blocked-lines', { type: 'geojson', data: blockedLinesGeojson });
+
+      previewMap.addLayer({
+        id: 'blocked-lines',
+        type: 'line',
+        source: 'blocked-lines',
+        paint: {
+          'line-color': '#ff0000',
+          'line-width': 3,
+          'line-dasharray': [2, 2]
+        }
+      });
+
+      // زوم تلقائي
       const bounds = new mapboxgl.LngLatBounds();
       finalRoute.geometry.coordinates.forEach(coord => bounds.extend(coord));
       previewMap.fitBounds(bounds, { padding: 50 });
 
-      // 📏 Distance
       const distanceKm = (finalRoute.distance / 1000).toFixed(2);
       document.getElementById('distance-info').textContent = `📍 Distance: ${distanceKm} km`;
     }
 
-    // Make sure the pattern is loaded
     if (!previewMap.isStyleLoaded()) {
       previewMap.once('styledata', addLayers);
     } else {
@@ -196,12 +236,7 @@ $(function () {
 
   /* ===========  Set pickup and delivery Points Map   ===========*/
   function setupMapboxLocationHandlers(prefix) {
-    const map = new mapboxgl.Map({
-      container: `${prefix}-map`,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [46.6753, 24.7136],
-      zoom: 10
-    });
+    initializeMap(`${prefix}-map`, [39.85791, 21.3891], 10, () => {});
 
     let marker;
     let selectedCoords = null;
@@ -391,61 +426,358 @@ $(function () {
 
   /* ================  Form Template Code   =============== */
 
-  $('#task-select-template').on('change', function () {
-    $.ajax({
-      url: baseUrl + 'admin/settings/templates/pricing',
-      type: 'GET',
-      data: { id: $(this).val() },
-      success: function (response) {
-        generateFields(response.fields);
-      },
-      error: function () {
-        console.log('Error loading template fields.');
-      }
-    });
-  });
-
   /* ==========================  Form Tabs Code  ========================== */
   $('#go-to-step2').on('click', function () {
     const formData = $('#task-form').serialize();
-
+    $('#task-form').block({
+      message:
+        '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
+      css: {
+        backgroundColor: 'transparent',
+        color: '#fff',
+        border: '0'
+      },
+      overlayCSS: {
+        opacity: 0.5
+      }
+    });
     $.ajax({
       url: baseUrl + 'admin/tasks/validate-step1',
       method: 'POST',
       data: formData,
 
       success: function (data) {
-        if (data.status == 0) {
-          showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
-          console.log(data.error);
-          handleErrors(data.error);
-        } else if (data.status == 1) {
-          const select = $('#pricing-method-select');
-          select.empty();
-          // قسم للديناميكي
-          select.append('<optgroup label="Dynamic Methods">');
-          $.each(data.data, function (index, method) {
-            select.append(
-              `<option value="${method.id}" data-distance="${method.distance_calculation}">${method.name}</option>`
-            );
-          });
-          select.append('</optgroup>');
-          $('span.text-error').text('');
-          new bootstrap.Tab(document.querySelector('#tab-step2')).show();
-        } else {
-          showAlert('error', data.error, 10000, true);
-        }
+        $('span.text-error').text(''); // إعادة تعيين الأخطاء
+
+        $('#task-form').unblock({
+          onUnblock: function () {
+            if (data.status == 0) {
+              showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+              console.log(data.error);
+              handleErrors(data.error);
+              showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
+            } else if (data.status == 1) {
+              const select = $('#pricing-method-select');
+              select.empty();
+              // قسم للديناميكي
+              select.append(`<option value="" data-distance="">--- Select Pricing Method</option>`);
+
+              select.append('<optgroup label="Dynamic Pricing">');
+
+              $.each(data.data, function (index, method) {
+                select.append(`<option value="${method.id}" data-distance="${method.type}">${method.name}</option>`);
+              });
+              select.append('</optgroup>');
+              select.append('<optgroup label="Manual pricing">');
+              select.append(`<option value="0" data-distance="manual">Place your offer</option>`);
+              select.append('</optgroup>');
+
+              $('span.text-error').text('');
+              // تنفيذ دالة الإعداد بعد نجاح الطلب
+              $('#params-select-wrapper').remove();
+              setupMethodSelection(data.data);
+              new bootstrap.Tab(document.querySelector('#tab-step2')).show();
+            } else {
+              showAlert('error', data.error, 10000, true);
+            }
+            console.log(data.data);
+          }
+        });
       },
       error: function (xhr) {
-        const errors = xhr.responseJSON.errors;
-        $('.text-error').text('');
+        $('#task-form').unblock({
+          onUnblock: function () {
+            const errors = xhr.responseJSON.errors;
+            $('.text-error').text('');
 
-        for (const field in errors) {
-          $(`.${field}-error`).text(errors[field][0]);
-        }
+            for (const field in errors) {
+              $(`.${field}-error`).text(errors[field][0]);
+            }
 
-        showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+            showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+          }
+        });
       }
     });
   });
+
+  function setupMethodSelection(methods) {
+    const methodsMap = {};
+
+    methods.forEach(method => {
+      methodsMap[method.id] = method;
+    });
+
+    // حدث تغيير اختيار الميثود
+    $('#pricing-method-select')
+      .off('change')
+      .on('change', function () {
+        const selectedId = $(this).val();
+        const selectedMethod = methodsMap[selectedId];
+
+        $('#params-select-wrapper').remove(); // إزالة أي اختيار سابق
+
+        if (selectedMethod && selectedMethod.type === 'points' && selectedMethod.params.length > 0) {
+          let selectHTML = `
+          <div id="params-select-wrapper" class="mt-3">
+
+            <select class="form-select" name="params_select" id="params-select">
+              <option value="">-- Choose the path --</option>`;
+
+          selectedMethod.params.forEach((param, index) => {
+            selectHTML += `
+            <option value="${param.param}"
+              data-from-lat="${param.from_point.latitude}"
+              data-from-lng="${param.from_point.longitude}"
+              data-to-lat="${param.to_point.latitude}"
+              data-to-lng="${param.to_point.longitude}">
+              من ${param.from_point.name} إلى ${param.to_point.name} - السعر: ${parseFloat(param.price).toFixed(0)} ريال
+            </option>`;
+          });
+
+          selectHTML += `</select>
+            <span class="params_select-error text-danger text-error"></span>
+
+
+          </div>`;
+
+          $('#pricing-method-select').after(selectHTML);
+          $('#delivery-map-section').hide();
+          $('#pickup-map-section').hide();
+        } else {
+          $('#delivery-map-section').show();
+          $('#pickup-map-section').show();
+
+          $('#pickup-latitude').val('');
+          $('#pickup-longitude').val('');
+          $('#delivery-latitude').val('');
+          $('#delivery-longitude').val('');
+        }
+      });
+
+    // حدث تغيير اختيار param لتحديث الإحداثيات
+    $(document)
+      .off('change', '#params-select')
+      .on('change', '#params-select', function () {
+        const selectedOption = $(this).find('option:selected');
+
+        $('#pickup-latitude').val(selectedOption.data('from-lat'));
+        $('#pickup-longitude').val(selectedOption.data('from-lng'));
+        $('#delivery-latitude').val(selectedOption.data('to-lat'));
+        $('#delivery-longitude').val(selectedOption.data('to-lng'));
+      });
+  }
+
+  $('#go-to-step3').on('click', function () {
+    const formData = $('#task-form').serialize();
+    $('#task-form').block({
+      message:
+        '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
+      css: {
+        backgroundColor: 'transparent',
+        color: '#fff',
+        border: '0'
+      },
+      overlayCSS: {
+        opacity: 0.5
+      }
+    });
+    $.ajax({
+      url: baseUrl + 'admin/tasks/validate-step2',
+      method: 'POST',
+      data: formData,
+
+      success: function (data) {
+        $('span.text-error').text(''); // إعادة تعيين الأخطاء
+
+        $('#task-form').unblock({
+          onUnblock: function () {
+            if (data.status == 0) {
+              showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+              console.log(data.error);
+              handleErrors(data.error);
+              showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
+            } else if (data.status == 1) {
+              console.log(data.data);
+              renderPricingDetails(data.data);
+              handlePricingResponse(data.data.drivers);
+
+              new bootstrap.Tab(document.querySelector('#tab-step3')).show();
+            } else {
+              showAlert('error', data.error, 10000, true);
+            }
+          }
+        });
+      },
+      error: function (xhr) {
+        $('#task-form').unblock({
+          onUnblock: function () {
+            const errors = xhr.responseJSON.errors;
+            $('.text-error').text('');
+
+            for (const field in errors) {
+              $(`.${field}-error`).text(errors[field][0]);
+            }
+            showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+          }
+        });
+      }
+    });
+  });
+});
+
+function renderPricingDetails(data) {
+  console.log(data);
+  let html = `
+    <div class="card p-4 shadow-sm rounded-3" style="font-family: Arial, sans-serif;">
+      <h2 class="mb-4 text-center">تفاصيل التسعير</h2>
+  `;
+
+  if (data.pricing_role) {
+    html += `<div class="mb-2"><strong>Pricing Role:</strong> ${data.pricing_role}</div>`;
+  }
+
+  if (data.pricing_method) {
+    html += `<div class="mb-2"><strong>Pricing Method:</strong> ${data.pricing_method}</div>`;
+  }
+
+  if (data.distance) {
+    html += `<div class="mb-2"><strong>Total distance:</strong> ${parseFloat(data.distance).toFixed(2)} كم</div>`;
+  }
+
+  if (data.distance_price_kilo) {
+    html += `<div class="mb-2"><strong>Price per kilo:</strong> ${parseFloat(data.distance_price_kilo).toFixed(2)} ريال</div>`;
+  }
+
+  if (data.distance_price) {
+    html += `<div class="mb-2"><strong>Distance Total price:</strong> ${parseFloat(data.distance_price).toFixed(2)} ريال</div>`;
+  }
+
+  if (data.vat_commission) {
+    html += `<div class="mb-2"><strong>VAT commission:</strong> ${parseFloat(data.vat_commission).toFixed(2)} %</div>`;
+  }
+
+  if (data.service_tax_commission) {
+    html += `<div class="mb-2"><strong>Service tax commission:</strong> ${parseFloat(data.service_tax_commission).toFixed(2)} %</div>`;
+  }
+
+  if (data.discount_percentage) {
+    html += `<div class="mb-2"><strong>Discount Percentage:</strong> ${parseFloat(data.discount_percentage).toFixed(2)} %</div>`;
+  }
+
+  if (data.points) {
+    html += `<div class="mb-2"><strong>Points:</strong> ${data.points}</div>`;
+  }
+  if (data.vehicles) {
+    html += `<div class="mb-2 alert alert-info"><strong>Nte:</strong> ${data.vehicles}</div>`;
+  }
+
+  if (Array.isArray(data.fields) && data.fields.length > 0) {
+    html += `
+      <div class="mb-3"><strong>Fields:</strong><ul class="list-group">
+    `;
+    data.fields.forEach(field => {
+      html += `
+        <li class="list-group-item">
+          <strong>${field.name || ''}:</strong> ${field.value || ''} (زيادة: ${parseFloat(field.increase || 0).toFixed(2)} ريال)
+        </li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  if (data.manual) {
+    html += `<div class="mb-2">
+      <h4>Place your offer</h4>
+      <div class="mb-3 row">
+        <div class="col-md-6">
+          <label for="min-price">* Min Price</label>
+          <input type="number" name="min_price" id="min-price"  class="form-control" step="any" value="0.00" >
+          <span class="min_price-error text-danger text-error"></span>
+        </div>
+         <div class="col-md-6">
+          <label for="max-price">* Max Price</label>
+          <input type="number" name="max_price" id="max-price"  class="form-control" step="any" value="0.00" >
+          <span class="max_price-error text-danger text-error"></span>
+        </div>
+      </div>
+      <div class="mb-3">
+          <label for="not-price">Note</label>
+          <textarea name="note_price" id="not-price" class="form-control"></textarea>
+          <span class="note_price-error text-danger text-error"></span>
+      </div>
+    </div>`;
+  }
+
+  if (Array.isArray(data.geo_fence) && data.geo_fence.length > 0) {
+    html += `
+      <div class="mb-3"><strong>Geo Fence:</strong><ul class="list-group">
+    `;
+    data.geo_fence.forEach(g => {
+      html += `
+        <li class="list-group-item">
+          <strong>${g.name || ''}</strong> (زيادة: ${parseFloat(g.increase || 0).toFixed(2)} ريال)
+        </li>`;
+    });
+    html += `</ul></div>`;
+  }
+
+  html += `<hr>`;
+
+  if (data.total_price) {
+    html += `
+      <div class="text-center">
+        <h3>الإجمالي النهائي: ${parseFloat(data.total_price).toFixed(2)} ريال</h3>
+      </div>
+    `;
+    $('#assign-section').show();
+    $('#total-price').attr('placeholder', data.total_price);
+  }
+
+  html += `</div>`;
+  document.getElementById('taskFinalDetails').innerHTML = html;
+}
+
+// تهيئة جميع select2 الموجودين
+var select2 = $('.select2');
+if (select2.length) {
+  select2.each(function () {
+    var $this = $(this);
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select driver',
+      dropdownParent: $this.parent(),
+      closeOnSelect: true // يفضل جعله true لتجربة المستخدم أفضل
+    });
+  });
+}
+
+// دالة التعامل مع البيانات الراجعة من السيرفر
+function handlePricingResponse(response) {
+  const drivers = response; // استخرج قائمة السائقين
+
+  const select = $('#task-driver-select');
+  select.empty();
+  select.append('<option value="">Select Driver</option>');
+
+  drivers.forEach(driver => {
+    select.append(`<option value="${driver.id}">${driver.name}</option>`);
+  });
+
+  // تأكد أن select2 تعمل بشكل صحيح
+  select.trigger('change');
+}
+
+$('#task-driver-select').parent().hide(); // اخفائها بدايةً
+
+$('#driver-automatically').on('change', function () {
+  if (this.checked) {
+    $('#task-driver-select').parent().hide();
+    $('#task-driver-select').val('').trigger('change');
+  }
+});
+
+$('#driver-manual').on('change', function () {
+  if (this.checked) {
+    $('#task-driver-select').parent().show();
+  }
 });

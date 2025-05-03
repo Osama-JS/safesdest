@@ -35,6 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
    */
   public function boot(): void
   {
+
     // Fortify::createUsersUsing(CreateNewUser::class);
     Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
     Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
@@ -48,6 +49,7 @@ class FortifyServiceProvider extends ServiceProvider
       switch ($guard) {
         case 'driver':
           $user = Driver::where('email', $email)->first();
+
           break;
         case 'customer':
           $user = Customer::where('email', $email)->first();
@@ -57,9 +59,16 @@ class FortifyServiceProvider extends ServiceProvider
           break;
       }
 
+
       if (!$user || !Hash::check($password, $user->password)) {
         throw ValidationException::withMessages([
           'email' => ['These credentials do not match our records.']
+        ]);
+      }
+
+      if ($user->status === 'verified') {
+        throw ValidationException::withMessages([
+          'email' => ['Your email is not verified. <a href="' . route('verify.manual', ['email' => $user->email]) . '">Click here to verify</a>']
         ]);
       }
 
@@ -75,8 +84,26 @@ class FortifyServiceProvider extends ServiceProvider
         ]);
       }
 
+      if ($guard == 'customer') {
+        Auth::guard('web')->logout();
+        Auth::guard('driver')->logout();
+        Auth::guard('customer')->login($user);
+        session(['guard' => 'customer']);
+      } elseif ($guard == 'driver') {
+        Auth::guard('customer')->logout();
+        Auth::guard('web')->logout();
+        Auth::guard('driver')->login($user);
+        session(['guard' => 'driver']);
+      } else {
+        Auth::guard('customer')->logout();
+        Auth::guard('driver')->logout();
+        Auth::guard('web')->login($user);
+        session(['guard' => 'web']);
+      }
+
       return $user;
     });
+
 
     RateLimiter::for('login', function (Request $request) {
       $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());

@@ -44,14 +44,15 @@
 
     @if (!isset($menuHorizontal))
         <!-- Search -->
-        <div class="navbar-nav align-items-center">
+        {{-- <div class="navbar-nav align-items-center">
             <div class="nav-item navbar-search-wrapper mb-0">
                 <a class="nav-item nav-link search-toggler d-flex align-items-center px-0" href="javascript:void(0);">
                     <i class="ti ti-search ti-md me-2 me-lg-4 ti-lg"></i>
                     <span class="d-none d-md-inline-block text-muted fw-normal">Search (Ctrl+/)</span>
                 </a>
             </div>
-        </div>
+        </div> --}}
+        @yield('navbar-custom-nav')
         <!-- /Search -->
     @endif
 
@@ -557,14 +558,14 @@
                 @if (Auth::check())
                     <li>
                         <div class="d-grid px-2 pt-2 pb-1">
-                            <a class="btn btn-sm btn-danger d-flex" href="{{ route('logout') }}"
+                            <a class="btn btn-sm btn-danger d-flex" href="{{ route('custom.logout') }}"
                                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                 <small class="align-middle">Logout</small>
                                 <i class="ti ti-logout ms-2 ti-14px"></i>
                             </a>
                         </div>
                     </li>
-                    <form method="POST" id="logout-form" action="{{ route('logout') }}">
+                    <form method="POST" id="logout-form" action="{{ route('custom.logout') }}">
                         @csrf
                     </form>
                 @else
@@ -585,12 +586,12 @@
 </div>
 
 <!-- Search Small Screens -->
-<div class="navbar-search-wrapper search-input-wrapper {{ isset($menuHorizontal) ? $containerNav : '' }} d-none">
+{{-- <div class="navbar-search-wrapper search-input-wrapper {{ isset($menuHorizontal) ? $containerNav : '' }} d-none">
     <input type="text"
         class="form-control search-input {{ isset($menuHorizontal) ? '' : $containerNav }} border-0"
         placeholder="Search..." aria-label="Search...">
     <i class="ti ti-x search-toggler cursor-pointer"></i>
-</div>
+</div> --}}
 <!--/ Search Small Screens -->
 @if (isset($navbarDetached) && $navbarDetached == '')
     </div>

@@ -66,7 +66,7 @@ class TagsController extends Controller
         'fake_id'    => ++$fakeId,
         'name'       => $val->name,
         'slug'       => $val->slug,
-        'description'      => $val->description,
+        'description'      => $val->description ?? '',
         'drivers'    => $val->drivers->count(),
         'customers'  => $val->customers->count(),
       ];
@@ -132,11 +132,11 @@ class TagsController extends Controller
     try {
 
       $find = Tag::findOrFail($req->id);
-      if (!$find) {
+      if ($find->drivers->count() > 0 || $find->customers->count() > 0 || $find->pricing->count() > 0) {
         return response()->json(['status' => 2, 'error' => 'Error to find selected Vehicle']);
       }
 
-      $done = Tag::where('id', $req->id)->delete();
+      $done = $find->delete();
       if (!$done) {
         DB::rollBack();
         return response()->json(['status' => 2, 'error' => 'Error to delete Vehicle']);

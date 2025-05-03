@@ -42,6 +42,10 @@ class User extends Authenticatable
     'role_id'
   ];
 
+  protected $casts = [
+    'additional_data' => 'array',
+  ];
+
   protected $dates = ['deleted_at'];
 
   protected $hidden = [

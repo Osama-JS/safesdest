@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal } from '../ajax';
+import { deleteRecord, showAlert, generateFields, showFormModal } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
@@ -11,6 +11,9 @@ $(function () {
   var dt_data_table = $('.datatables-users'),
     userView = baseUrl + 'app/user/view/account',
     offCanvasForm = $('#submitModal');
+  if (templateId != null) {
+    $('#select-template').val(templateId).trigger('change');
+  }
   var select2 = $('.select2');
   if (select2.length) {
     var $this = select2;
@@ -281,16 +284,15 @@ $(function () {
   }
 
   document.addEventListener('formSubmitted', function (event) {
-    let id = $('#user_id').val();
     $('.form_submit').trigger('reset');
     $('#user-teams').val([]).trigger('change');
     $('#additional-form').html('');
     $('#select-template').val('');
-    if (id) {
-      setTimeout(() => {
-        $('#submitModal').modal('hide');
-      }, 2000);
-    }
+
+    setTimeout(() => {
+      $('#submitModal').modal('hide');
+    }, 2000);
+
     if (dt_data) {
       dt_data.draw();
     }
@@ -337,6 +339,15 @@ $(function () {
       $('#phone-code').val(data.phone_code);
       $('#user-role').val(data.role_id);
       $('#user-teams').val(data.teamsIds).trigger('change');
+
+      $('#additional-form').html('');
+      $('#select-template').val(data.form_template_id);
+
+      if (data.form_template_id === null) {
+        $('#select-template').val(templateId).trigger('change');
+      }
+
+      generateFields(data.fields, data.additional_data);
       $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
   });

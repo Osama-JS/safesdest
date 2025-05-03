@@ -69,7 +69,8 @@
                             <label class="form-label" for="login-password">Password</label>
                             <div class="input-group input-group-merge @error('password') is-invalid @enderror">
                                 <input type="password" id="login-password"
-                                    class="form-control @error('password') is-invalid @enderror" name="password" value="admin@123"
+                                    class="form-control @error('password') is-invalid @enderror" name="password"
+                                    value="admin@123"
                                     placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                     aria-describedby="password" />
                                 <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
@@ -96,6 +97,8 @@
                                 @endif
                             </div>
                         </div>
+
+
                         <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
                     </form>
 

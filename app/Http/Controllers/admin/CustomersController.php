@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
+use App\Models\Form_Field;
+use App\Models\Settings;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -21,8 +23,9 @@ class CustomersController extends Controller
     $templates = Form_Template::all();
     $tags = Tag::all();
     $roles = Role::where('guard_name', 'customer')->get();
+    $customer_template = Settings::where('key', 'customer_template')->first();
 
-    return view('admin.customers.index', compact('templates', 'roles', 'tags'));
+    return view('admin.customers.index', compact('templates', 'roles', 'tags', 'customer_template'));
   }
 
 
@@ -143,14 +146,16 @@ class CustomersController extends Controller
     $data = Customer::findOrFail($id);
     $data->img = $data->image ? url($data->image) : null;
     $data->tagsIds = $data->tags()->pluck('tag_id');
+    $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
+    $data->fields =  $fields;
 
     return response()->json($data);
   }
 
   public function store(Request $req)
   {
-    $validator = Validator::make($req->all(), [
+    $rules = [
       'name'           => 'required|string|max:255',
       'email'          => 'required|email|unique:customers,email,' . ($req->id ?? 0),
       'phone'          => 'required|unique:customers,phone,' . ($req->id ?? 0),
@@ -161,7 +166,18 @@ class CustomersController extends Controller
       'c_name'         => 'nullable|string|max:255',
       'c_address'      => 'nullable|string|max:255',
       'tags'           => 'nullable|array',
-    ]);
+    ];
+
+    if ($req->filled('template')) {
+      $fields = Form_Field::where('form_template_id', $req->template)->get();
+      foreach ($fields as $key) {
+        if ($key->required) {
+          $rules['additional_fields.' . $key->name] = 'required';
+        }
+      }
+    }
+
+    $validator = Validator::make($req->all(), $rules);
 
     if ($validator->fails()) {
       return response()->json([
@@ -187,6 +203,26 @@ class CustomersController extends Controller
         $data['password'] = Hash::make($req->password);
       }
 
+      $structuredFields = [];
+
+      if ($req->filled('template')) {
+        $data['form_template_id'] = $req->template;
+
+        $template = Form_Template::with('fields')->find($req->input('template'));
+
+        foreach ($template->fields as $field) {
+          $fieldName = $field->name;
+          if ($req->has("additional_fields.$fieldName")) {
+            $structuredFields[$fieldName] = [
+              'label' => $field->label,
+              'value' => $req->input("additional_fields.$fieldName"),
+              'type'  => $field->type,
+            ];
+          }
+        }
+        $data['additional_data'] = $structuredFields;
+      }
+
       $oldImage = null;
 
       if ($req->filled('id')) {
@@ -206,14 +242,16 @@ class CustomersController extends Controller
           $find->syncRoles($req->role);
         }
 
-        $find->tags()->delete();
-        $tags = [];
-        for ($i = 0; $i < count($req->tags); $i++) {
-          if (isset($req->tags[$i])) {
-            $tags[$i]['tag_id'] = $req->tags[$i];
+        if ($req->filled('tags')) {
+          $find->tags()->delete();
+          $tags = [];
+          for ($i = 0; $i < count($req->tags); $i++) {
+            if (isset($req->tags[$i])) {
+              $tags[$i]['tag_id'] = $req->tags[$i];
+            }
           }
+          $done = $find->tags()->createMany($tags);
         }
-        $done = $find->tags()->createMany($tags);
       } else {
 
         if ($req->hasFile('image')) {
@@ -228,8 +266,6 @@ class CustomersController extends Controller
             $done->assignRole($role->name);
           }
         }
-
-
         $tags = collect($req->tags)->filter()->map(function ($tagId) {
           return ['tag_id' => $tagId];
         })->toArray();
@@ -237,7 +273,6 @@ class CustomersController extends Controller
 
         $done = (new WalletsController)->store('customer', $done->id, true);
       }
-
 
       if (!$done) {
         DB::rollBack();

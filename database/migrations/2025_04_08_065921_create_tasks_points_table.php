@@ -17,9 +17,12 @@ return new class extends Migration
       $table->integer('sequence')->default(0);
       $table->string('contact_name');
       $table->string('contact_phone');
+      $table->string('contact_emil')->nullable();
       $table->string('address');
       $table->decimal('latitude', 10, 8);
       $table->decimal('longitude', 11, 8);
+      $table->text('note')->nullable();
+      $table->string('image')->nullable();
       $table->dateTime('scheduled_time')->nullable();
       $table->unsignedBigInteger('task_id');
       $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');

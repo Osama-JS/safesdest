@@ -21,4 +21,9 @@ class Tag extends Model
   {
     return $this->hasMany(Tag_Customers::class, 'tag_id');
   }
+
+  public function pricing()
+  {
+    return $this->hasMany(Tag_Pricing::class, 'tag_id');
+  }
 }

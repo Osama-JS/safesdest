@@ -48,7 +48,7 @@ $(function () {
 
               // إذا كانت الصورة موجودة
               if (driver.image) {
-                $output = `<img src="${driver.image}" alt="${$name}" class="avatar-initial rounded-circle driver-avatar" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;" data-bs-toggle="tooltip" title="${$name}">`;
+                $output = `<img src="${baseUrl + driver.image}" alt="${$name}" class="avatar-initial rounded-circle driver-avatar" style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;" data-bs-toggle="tooltip" title="${$name}">`;
               } else {
                 // إذا كانت الصورة غير موجودة
                 $output = `<span class="avatar-initial rounded-circle bg-label-${$state} driver-avatar" style="width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; cursor: pointer;" data-bs-toggle="tooltip" title="${$name}">${$initials}</span>`;

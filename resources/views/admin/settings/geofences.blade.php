@@ -78,7 +78,6 @@
 @section('page-script')
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/admin/geofences.js'])
-    {{-- @vite(['resources/assets/js/maps-leaflet.js']) --}}
 
 @endsection
 

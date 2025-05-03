@@ -14,8 +14,10 @@ return new class extends Migration
     Schema::create('orders', function (Blueprint $table) {
       $table->id();
       $table->enum('status', ['in progress', 'running', 'completed', 'canceled'])->default('in progress');
-      $table->unsignedBigInteger('customer_id');
+      $table->unsignedBigInteger('customer_id')->nullable();
       $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+      $table->unsignedBigInteger('user_id')->nullable();
+      $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
       $table->timestamps();
     });
   }

@@ -1,8 +1,8 @@
 @php
-use Illuminate\Support\Facades\Route;
-$configData = Helper::appClasses();
-$customizerHidden = 'customizer-hide';
-$configData = Helper::appClasses();
+    use Illuminate\Support\Facades\Route;
+    $configData = Helper::appClasses();
+    $customizerHidden = 'customizer-hide';
+    $configData = Helper::appClasses();
 @endphp
 
 @extends('layouts/blankLayout')
@@ -10,65 +10,63 @@ $configData = Helper::appClasses();
 @section('title', 'Forgot Password')
 
 @section('page-style')
-<!-- Page -->
-@vite('resources/assets/vendor/scss/pages/page-auth.scss')
+    <!-- Page -->
+    @vite('resources/assets/vendor/scss/pages/page-auth.scss')
 @endsection
 
 @section('content')
-<div class="authentication-wrapper authentication-cover">
-  <!-- Logo -->
-  <a href="{{url('/')}}" class="app-brand auth-cover-brand">
-    <span class="app-brand-logo demo">@include('_partials.macros',['height'=>20,'withbg' => "fill: #fff;"])</span>
-    <span class="app-brand-text demo text-heading fw-bold">{{ config('variables.templateName') }}</span>
-  </a>
-  <!-- /Logo -->
-  <div class="authentication-inner row m-0">
+    <div class="container-xxl">
+        <div class="authentication-wrapper authentication-basic container-p-y">
+            <div class="authentication-inner py-6">
+                <!-- Forgot Password -->
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Logo -->
+                        <div class="app-brand justify-content-center mb-6">
+                            <a href="{{ url('/') }}" class="app-brand-link">
+                                <span class="app-brand-logo demo">@include('_partials.macros', ['height' => 20, 'withbg' => 'fill: #fff;'])</span>
+                                <span
+                                    class="app-brand-text demo text-heading fw-bold">{{ config('variables.templateName') }}</span>
+                            </a>
+                        </div>
+                        <!-- /Logo -->
+                        <h4 class="mb-1">Forgot Password? 🔒</h4>
+                        <p class="mb-6">Enter your email and we'll send you instructions to reset your password</p>
+                        <form method="POST" action="{{ route('password.reset.request') }}">
+                            @csrf
+                            <div class="form-group mb-4">
+                                <label for="type">Account Type</label>
+                                <select name="type" required class="form-select ">
+                                    <option value="customer">Customer</option>
+                                    <option value="driver">Driver</option>
+                                </select>
+                            </div>
 
-    <!-- /Left Text -->
-    <div class="d-none d-lg-flex col-lg-8 p-0">
-      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
-        <img src="{{ asset('assets/img/illustrations/auth-forgot-password-illustration-'.$configData['style'].'.png') }}" alt="auth-forgot-password-cover" class="my-5 auth-illustration d-lg-block d-none" data-app-light-img="illustrations/auth-forgot-password-illustration-light.png" data-app-dark-img="illustrations/auth-forgot-password-illustration-dark.png">
+                            <div class="form-group">
+                                <label for="email"> Your Email</label>
+                                <input type="email" name="email" placeholder="john@example.com" class="form-control"
+                                    required>
 
-        <img src="{{ asset('assets/img/illustrations/bg-shape-image-'.$configData['style'].'.png') }}" alt="auth-forgot-password-cover" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png">
-      </div>
-    </div>
-    <!-- /Left Text -->
+                            </div>
 
-    <!-- Forgot Password -->
-    <div class="d-flex col-12 col-lg-4 align-items-center authentication-bg p-sm-12 p-6">
-      <div class="w-px-400 mx-auto mt-12 mt-5">
-        <h4 class="mb-1">Forgot Password? 🔒</h4>
-        <p class="mb-6">Enter your email and we'll send you instructions to reset your password</p>
-
-        @if (session('status'))
-          <div class="mb-1 text-success">
-            {{ session('status') }}
-          </div>
-        @endif
-        <form id="formAuthentication" class="mb-6" action="{{ route('password.email') }}" method="POST">
-          @csrf
-          <div class="mb-6">
-            <label for="email" class="form-label">Email</label>
-            <input type="text" class="form-control @error('email') is-invalid @enderror" id="email" name="email" placeholder="john@example.com" autofocus>
-            @error('email')
-              <span class="invalid-feedback" role="alert">
-                <span class="fw-medium">{{ $message }}</span>
-              </span>
-            @enderror
-          </div>
-          <button type="submit" class="btn btn-primary d-grid w-100">Send Reset Link</button>
-        </form>
-        <div class="text-center">
-          @if (Route::has('login'))
-          <a href="{{ route('login') }}" class="d-flex align-items-center justify-content-center">
-            <i class="ti ti-chevron-left scaleX-n1-rtl me-1_5"></i>
-            Back to login
-          </a>
-          @endif
+                            <button type="submit" class="btn btn-primary w-100 my-6">Send Reset Link</button>
+                        </form>
+                        @if (session('status'))
+                            <p class="text-success">{{ session('status') }}</p>
+                        @endif
+                        @error('email')
+                            <p class="alert alert-danger">{{ $message }}</p>
+                        @enderror
+                        <div class="text-center">
+                            <a href="{{ url('login') }}" class="d-flex justify-content-center">
+                                <i class="ti ti-chevron-left scaleX-n1-rtl me-1_5"></i>
+                                Back to login
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <!-- /Forgot Password -->
+            </div>
         </div>
-      </div>
     </div>
-    <!-- /Forgot Password -->
-  </div>
-</div>
 @endsection

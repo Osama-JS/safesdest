@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
 class Driver extends Authenticatable
 {
   use HasRoles;
-
+  use SoftDeletes;
   protected $guard_name = 'driver';
 
   protected $table = 'drivers';
@@ -35,9 +36,23 @@ class Driver extends Authenticatable
     'vehicle_size_id',
     'role_id'
   ];
+  protected $casts = [
+    'additional_data' => 'array',
+  ];
+
+  protected $dates = ['deleted_at'];
 
   public function team()
   {
     return $this->belongsTo(Teams::class, 'team_id');
+  }
+  public function tags()
+  {
+    return $this->hasMany(Tag_Drivers::class, 'driver_id');
+  }
+
+  public function vehicle_size()
+  {
+    return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
   }
 }

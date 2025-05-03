@@ -166,7 +166,7 @@ export function showFormModal(options) {
   });
 }
 
-function showBlockAlert(type, message, timer = 700) {
+export function showBlockAlert(type, message, timer = 700) {
   let bgColor = type === 'success' ? 'bg-success' : 'warning' ? 'bg-warning' : 'bg-danger';
 
   $('.form_submit').block({
@@ -254,73 +254,82 @@ function resetImage(imgElement) {
   }
 }
 
-$('#select-template').on('change', function () {
-  var templateId = $(this).val();
+$('#select-template')
+  .off('change')
+  .on('change', function () {
+    var templateId = $(this).val();
 
-  // تنظيف الحقول الإضافية السابقة
-  $('#additional-form').html('');
+    // تنظيف الحقول الإضافية السابقة
+    $('#additional-form').html('');
 
-  if (templateId) {
-    // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
-    $.ajax({
-      url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
-      type: 'GET',
-      data: { id: templateId },
-      success: function (response) {
-        // توليد الحقول في #additional-form
-        console.log(response.fields);
+    if (templateId) {
+      // استرجاع الحقول الخاصة بالقالب المحدد عبر AJAX
+      $.ajax({
+        url: baseUrl + 'admin/settings/templates/fields', // تأكد من المسار الصحيح
+        type: 'GET',
+        data: { id: templateId },
+        success: function (response) {
+          generateFields(response.fields);
+        },
+        error: function () {
+          console.log('Error loading template fields.');
+        }
+      });
+    }
+  });
 
-        generateFields(response.fields);
-      },
-      error: function () {
-        console.log('Error loading template fields.');
-      }
-    });
-  }
-});
-
-export function generateFields(fields) {
+export function generateFields(fields, storedData = {}) {
   fields.forEach(field => {
     var inputField = '';
+    const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المخزنة إذا وجدت
 
     switch (field.type) {
       case 'string':
-        inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
         break;
       case 'number':
-        inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        inputField = `<input type="number" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
         break;
       case 'email':
-        inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}>`;
+        inputField = `<input type="email" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
         break;
       case 'date':
-        inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" required=${field.required}>`;
+        inputField = `<input type="date" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" ${field.required ? 'required' : ''}>`;
         break;
       case 'textarea':
-        inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" required=${field.required}></textarea>`;
+        inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>${storedValue}</textarea>`;
+        break;
+      case 'file':
+        inputField = `<input type="file" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" ${field.required ? 'required' : ''}>`;
         break;
       case 'select':
-        inputField = `<select name="additional_fields[${field.name}]" class="form-select" required=${field.required}>
-        ${(() => {
-          try {
-            const options = JSON.parse(field.value || '[]'); // إذا كانت فارغة، استخدم مصفوفة فارغة
-            return options.map(option => `<option value="${option.value}">${option.name}</option>`).join('');
-          } catch (error) {
-            console.error('Error parsing options:', error);
-            return '';
-          }
-        })()}
-      </select>`;
-
+        inputField = `<select name="additional_fields[${field.name}]" class="form-select" ${field.required ? 'required' : ''}>
+          ${(() => {
+            try {
+              const options = JSON.parse(field.value || '[]');
+              return options
+                .map(
+                  option =>
+                    `<option value="${option.value}" ${storedValue === option.value ? 'selected' : ''}>
+                  ${option.name}
+                </option>`
+                )
+                .join('');
+            } catch (error) {
+              console.error('Error parsing options:', error);
+              return '';
+            }
+          })()}
+        </select>`;
         break;
     }
 
     $('#additional-form').append(`
-          <div class="mb-3 col-md-6">
-              <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
-              ${inputField}
-              <span class="additional_fields-${field.name}-error text-danger text-error"></span>
-          </div>
-      `);
+      <div class="mb-3 col-md-6">
+        <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
+        ${inputField}
+        <span class="additional_fields-${field.name}-error text-danger text-error"></span>
+      </div>
+    `);
   });
 }

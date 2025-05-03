@@ -15,12 +15,46 @@
 
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 
+    <script>
+        const templateId = {{ $driver_template->value }}
+    </script>
+    <script type="text/template" id="vehicle-row-template">
+      <div class="row vehicle-row mb-3 " data-index="{index}">
+        <div class="col-md-4">
+          <label class="form-label">* Vehicle</label>
+          <select class="form-select vehicle-select" name="vehicles[{index}][vehicle]">
+            <option value="">Select a vehicle</option>
+            @foreach ($vehicles as $vehicle)
+              <option value="{{ $vehicle->id }}">{{ $vehicle->name }}</option>
+            @endforeach
+          </select>
+
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">* Vehicle Type</label>
+          <select class="form-select vehicle-type-select" name="vehicles[{index}][vehicle_type]" disabled>
+            <option value="">Select a vehicle type</option>
+          </select>
+
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">* Vehicle Size</label>
+          <select class="form-select vehicle-size-select" name="vehicle" disabled>
+            <option value="">Select a vehicle size</option>
+          </select>
+          <span class="vehicle-error text-danger text-error"></span>
+
+        </div>
+
+
+      </div>
+    </script>
 @endsection
 
 <!-- Page Scripts -->
 @section('page-script')
     @vite(['resources/js/admin/drivers.js'])
-    @vite(['resources/js/ajax.js'])
+
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
 @endsection
@@ -35,7 +69,7 @@
                         <div class="content-left">
                             <span class="text-heading">{{ __('Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2"></h4>
+                                <h4 class="mb-0 me-2" id="total"></h4>
 
                             </div>
 
@@ -49,14 +83,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+        <div class="col-sm-6 col-xl-2">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <span class="text-heading">{{ __('Active Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2"></h4>
+                                <h4 class="mb-0 me-2" id="total-active"></h4>
                                 <p class="text-success mb-0">
                                 </p>
                             </div>
@@ -71,14 +105,39 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
+
+        <div class="col-sm-6 col-xl-2">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text-heading">{{ __('Inactive Drivers') }}</span>
+                            <span class="text-heading">{{ __('Pending Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2"></h4>
+                                <h4 class="mb-0 me-2" id="total-pending"></h4>
+                                <p class="text-success mb-0">
+                                </p>
+
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-2">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Blocked Drivers') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total-blocked"></h4>
                                 <p class="text-success mb-0">
                                 </p>
 
@@ -100,9 +159,9 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text-heading">{{ __('Pending Drivers') }}</span>
+                            <span class="text-heading">{{ __('Unverified Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2"></h4>
+                                <h4 class="mb-0 me-2" id="total-verified"></h4>
                                 <p class="text-success mb-0">
                                 </p>
 
@@ -111,8 +170,8 @@
 
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-warning">
-                                <i class="ti ti-user-search ti-26px"></i>
+                            <span class="avatar-initial rounded bg-label-secondary">
+                                <i class="ti ti-hourglass ti-26px"></i>
                             </span>
                         </div>
                     </div>
@@ -125,7 +184,7 @@
         <div class="card-header border-bottom">
             <h5 class="card-title mb-0">{{ __('Drivers') }}</h5>
             <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
-                data-bs-target="#largeModal">
+                data-bs-target="#submitModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Add New Driver') }}</span>
             </button>
@@ -143,6 +202,8 @@
                         <th>{{ __('role') }}</th>
                         <th>{{ __('tags') }}</th>
                         <th>{{ __('status') }}</th>
+                        <th>{{ __('created at') }}</th>
+
                         <th>{{ __('actions') }}</th>
                     </tr>
                 </thead>
@@ -151,7 +212,7 @@
 
     </div>
 
-    <div class="modal fade " id="largeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade " id="submitModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -164,23 +225,25 @@
                             <div class="nav-align-top  mb-6">
                                 <ul class="nav nav-tabs " role="tablist">
                                     <li class="nav-item">
-                                        <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
-                                            data-bs-target="#navs-justified-home" aria-controls="navs-justified-home"
-                                            aria-selected="true"><span class="d-none d-sm-block"><i
+                                        <button type="button" class="nav-link active" role="tab"
+                                            data-bs-toggle="tab" data-bs-target="#navs-justified-home"
+                                            aria-controls="navs-justified-home" aria-selected="true"><span
+                                                class="d-none d-sm-block"><i
                                                     class="tf-icons ti ti-grid-dots ti-sm me-1_5"></i> {{ __('Main') }}
                                         </button>
                                     </li>
                                     <li class="nav-item">
                                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                                            data-bs-target="#navs-justified-profile" aria-controls="navs-justified-profile"
-                                            aria-selected="false"><span class="d-none d-sm-block"><i
+                                            data-bs-target="#navs-justified-profile"
+                                            aria-controls="navs-justified-profile" aria-selected="false"><span
+                                                class="d-none d-sm-block"><i
                                                     class="tf-icons ti ti-file-plus ti-sm me-1_5"></i>
                                                 {{ __('Additional ') }}</span></button>
                                     </li>
                                 </ul>
                                 <div class="tab-content">
                                     <div class="tab-pane fade show active" id="navs-justified-home" role="tabpanel">
-                                        <input type="hidden" name="id" id="user_id">
+                                        <input type="hidden" name="id" id="driver_id">
                                         <div class="row">
                                             <div class="col-md-3">
                                                 <div class="mb-6">
@@ -346,44 +409,16 @@
                                         </div>
 
 
-                                        <div class="divider text-start">
-                                            <div class="divider-text"><strong>{{ __('Vehicles Selections') }}</strong>
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="form-group  ">
-                                                    <label for="vehicle-vehicle">{{ __('vehicle') }}</label>
-                                                    <select name="flitter-vehicle" id="vehicle-vehicle"
-                                                        class="form-select w-auto ">
-                                                        <option value="">-- {{ __('select vehicle') }}</option>
-                                                    </select>
 
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <div class="form-group  ">
-                                                    <label for="vehicle-type">
-                                                        {{ __('vehicle type') }}</label>
-                                                    <select name="flitter-type" id="vehicle-type"
-                                                        class="form-select w-auto ">
-                                                        <option value="">-- {{ __('select vehicle type') }}</option>
-                                                    </select>
+                                        <div class="mb-3">
+                                            <div class="divider text-start">
+                                                <div class="divider-text"><strong>{{ __('Vehicle Selection') }}</strong>
                                                 </div>
                                             </div>
 
-                                            <div class="col-md-4">
-                                                <div class="form-group  ">
-                                                    <label for="vehicle-size">
-                                                        {{ __('vehicle Size') }}</label>
-                                                    <select name="vehicle" id="vehicle-size" class="form-select w-auto ">
-                                                        <option value="">-- {{ __('select vehicle Size') }}</option>
-                                                    </select>
-                                                    <span class="vehicle-error text-danger text-error"></span>
-
-                                                </div>
+                                            <div id="vehicle-selection-container">
+                                                <!-- سيتم توليد السطور ديناميكيًا هنا -->
                                             </div>
-
                                         </div>
 
 
@@ -394,7 +429,9 @@
                                             <select name="template" id="select-template" class="form-select w-auto">
                                                 <option value="">{{ __('-- Select Template') }}</option>
                                                 @foreach ($templates as $key)
-                                                    <option value="{{ $key->id }}">{{ $key->name }}</option>
+                                                    <option value="{{ $key->id }}"
+                                                        {{ $driver_template->value == $key->id ? 'selected' : '' }}>
+                                                        {{ $key->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>

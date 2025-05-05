@@ -14,6 +14,10 @@ class PermissionsSeeder extends Seeder
   {
     $types = [
       [
+        'name' =>  'Customers Permissions',
+        'slug' => 'customers_permissions',
+      ],
+      [
         'name' =>  'Admins Permissions',
         'slug' => 'admins_permissions',
       ],
@@ -27,42 +31,88 @@ class PermissionsSeeder extends Seeder
       ]
     ];
     $permissions = [
+
       [
-        'name' => 'create_admin',
-        'd_name' => 'Create Admin',
-        'slug' => 'admins_permissions'
+        'name' => 'view_customers',
+        'd_name' => 'View Customers',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'update_admin',
-        'd_name' => 'Update Admin',
-        'slug' => 'admins_permissions'
+        'name' => 'save_customers',
+        'd_name' => 'Create & Edit Customers',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'delete_admin',
-        'd_name' => 'Delete Admin',
-        'slug' => 'admins_permissions'
+        'name' => 'status_customers',
+        'd_name' => 'Edit Customers Status',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'view_admin',
-        'd_name' => 'View Admin',
-        'slug' => 'admins_permissions'
+        'name' => 'delete_customers',
+        'd_name' => 'Delete Customers',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'create_role',
-        'd_name' => 'Create Role',
-        'slug' => 'roles_permissions'
+        'name' => 'profile_customers',
+        'd_name' => 'View Customer Profile',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'update_role',
-        'd_name' => 'Update Role',
-        'slug' => 'roles_permissions'
+        'name' => 'wallet_customers',
+        'd_name' => 'View Customer Wallet',
+        'slug' => 'customers_permissions'
       ],
       [
-        'name' => 'delete_role',
-        'd_name' => 'Delete Role',
-        'slug' => 'roles_permissions'
+        'name' => 'task_customers',
+        'd_name' => 'Create Tasks for Customers',
+        'slug' => 'customers_permissions'
+      ],
+      [
+        'name' => 'mange_customers',
+        'd_name' => 'Mange All Customers',
+        'slug' => 'customers_permissions'
       ],
 
+      [
+        'name' => 'view_admins',
+        'd_name' => 'View Admins',
+        'slug' => 'admins_permissions'
+      ],
+      [
+        'name' => 'save_admins',
+        'd_name' => 'Create & Edit Admins',
+        'slug' => 'admins_permissions'
+      ],
+      [
+        'name' => 'status_admins',
+        'd_name' => 'Edit Admins Status',
+        'slug' => 'admins_permissions'
+      ],
+      [
+        'name' => 'delete_admins',
+        'd_name' => 'Delete Admins',
+        'slug' => 'admins_permissions'
+      ],
+      [
+        'name' => 'profile_admin',
+        'd_name' => 'View Admin Profile',
+        'slug' => 'admins_permissions'
+      ],
+      [
+        'name' => 'view_roles',
+        'd_name' => 'View Roles',
+        'slug' => 'roles_permissions'
+      ],
+      [
+        'name' => 'save_roles',
+        'd_name' => 'Create & Update Roles',
+        'slug' => 'roles_permissions'
+      ],
+      [
+        'name' => 'delete_roles',
+        'd_name' => 'Delete Roles',
+        'slug' => 'roles_permissions'
+      ],
 
     ];
 

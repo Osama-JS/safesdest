@@ -265,8 +265,8 @@
                                                 <div class="  mb-6">
                                                     <label class="form-label"
                                                         for="user-teams">{{ __('Teams') }}</label>
-                                                    <select name="teams[]" id="user-teams" class="select2 form-select"
-                                                        multiple>
+                                                    <select name="teams[]" id="user-teams"
+                                                        class="select-teams form-select" multiple>
                                                         <option value=""></option>
                                                         @foreach ($teams as $key)
                                                             <option value="{{ $key->id }}">{{ $key->name }}
@@ -274,6 +274,23 @@
                                                         @endforeach
                                                     </select>
                                                     <span class="teams-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="  mb-6">
+                                                    <label class="form-label"
+                                                        for="user-customers">{{ __('Customers') }}</label>
+                                                    <select name="customers[]" id="user-customers"
+                                                        class="select-customers form-select" multiple>
+                                                        <option value=""></option>
+                                                        @foreach ($customers as $key)
+                                                            <option value="{{ $key->id }}">{{ $key->name }}
+                                                                ({{ $key->users->count() }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <span class="customers-error text-danger text-error"></span>
                                                 </div>
                                             </div>
                                         </div>

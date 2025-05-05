@@ -85,11 +85,48 @@ class TaskPricingService
     if ($request->filled('params_select')) {
       $rules['params_select'] = 'required|exists:pricing_parametars,id';
     }
+
     if ($request->filled('template')) {
       $fields = Form_Field::where('form_template_id', $request->template)->get();
+
       foreach ($fields as $field) {
-        if ($field->required) {
-          $rules['additional_fields.' . $field->name] = 'required';
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        if (!$request->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        // إضافة قواعد بناءً على نوع الحقل
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            break;
+
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }

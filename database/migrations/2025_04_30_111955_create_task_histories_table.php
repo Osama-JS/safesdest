@@ -17,6 +17,7 @@ return new class extends Migration
       $table->text('description')->nullable();
       $table->string('file_path')->nullable();
       $table->string('file_type')->nullable();
+      $table->string('ip')->nullable();
       $table->unsignedBigInteger('task_id');
       $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
       $table->unsignedBigInteger('driver_id')->nullable();

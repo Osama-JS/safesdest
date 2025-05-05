@@ -13,7 +13,7 @@ return new class extends Migration
   {
     Schema::create('tasks', function (Blueprint $table) {
       $table->id();
-      $table->enum('status', ['pending_payment', 'payment_failed', 'advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled'])->default('in_progress');
+      $table->enum('status', ['advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled'])->default('in_progress');
       $table->enum('pricing_type', ['dynamic', 'manual'])->default('dynamic');
       $table->decimal('total_price', 10, 2)->default(0);
       $table->decimal('commission', 10, 2)->default(0);
@@ -22,6 +22,7 @@ return new class extends Migration
       $table->decimal('payment_pending_amount', 10, 2)->nullable();
       $table->jsonb('additional_data')->nullable();
       $table->jsonb('pricing_history')->nullable();
+
       $table->unsignedBigInteger('order_id')->nullable();
       $table->foreign('order_id')->references('id')->on('orders')->onDelete('restrict');
       $table->unsignedBigInteger('customer_id')->nullable();
@@ -36,6 +37,7 @@ return new class extends Migration
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('restrict');
       $table->unsignedBigInteger('pricing_id')->nullable();
       $table->foreign('pricing_id')->references('id')->on('pricing_templates')->onDelete('restrict');
+
       $table->unsignedBigInteger('payment_id')->nullable();
 
       $table->timestamps();

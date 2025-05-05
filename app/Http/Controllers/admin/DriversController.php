@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
 use App\Models\Settings;
+use App\Helpers\FileHelper;
+use App\Models\Task;
 
 class DriversController extends Controller
 {
@@ -154,28 +156,59 @@ class DriversController extends Controller
     return response()->json($data);
   }
 
+
   public function store(Request $req)
   {
     $rules = [
-      'name' => 'required',
-      'username' => 'required|unique:drivers,username,' . ($req->id ?? 0),
-      'email' => 'required|unique:drivers,email,' . ($req->id ?? 0),
-      'phone' => 'required|unique:drivers,phone,' . ($req->id ?? 0),
-      'phone_code' => 'required',
-      'password' => 'nullable|same:confirm-password',
-      'team' => 'nullable|exists:teams,id',
-      'role' => 'nullable|exists:roles,id',
-      'address' => 'required|string',
+      'name'            => 'required|string|max:255',
+      'email'           => 'required|email|unique:drivers,email,' . ($req->id ?? 0),
+      'phone'           => 'required|unique:drivers,phone,' . ($req->id ?? 0),
+      'phone_code'      => 'required|string',
+      'username'        => 'required|unique:drivers,username,' . ($req->id ?? 0),
+      'password'        => 'nullable|same:confirm-password',
+      'address'         => 'required|string|max:255',
+      'vehicle'         => 'required|exists:vehicle_sizes,id',
+      'role'            => 'nullable|exists:roles,id',
+      'team'            => 'nullable|exists:teams,id',
       'commission_type' => 'nullable|in:fixed,rate,subscription',
-      'commission' => 'required_with:commission_type|min:0',
-      'vehicle' => 'required|exists:vehicle_sizes,id'
+      'commission'      => 'required_with:commission_type|min:0',
+      'image'           => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
     ];
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        if (!$req->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:10240';
+            break;
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120';
+            break;
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
@@ -183,23 +216,28 @@ class DriversController extends Controller
     $validator = Validator::make($req->all(), $rules);
 
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+      return response()->json([
+        'status' => 0,
+        'error'  => $validator->errors()
+      ]);
     }
 
     DB::beginTransaction();
+    $filesToDelete = [];
+
     try {
       $data = [
         'name'            => $req->name,
         'email'           => $req->email,
-        'username'        => $req->username,
         'phone'           => $req->phone,
         'phone_code'      => $req->phone_code,
-        'role_id'         => $req->role ?? null,
-        'team_id'    => $req->team ?? null,
+        'username'        => $req->username,
+        'address'         => $req->address,
         'vehicle_size_id' => $req->vehicle,
-        'address' => $req->address,
+        'role_id'         => $req->role ?? null,
+        'team_id'         => $req->team ?? null,
         'commission_type' => $req->commission_type,
-        'commission' => $req->commission,
+        'commission'      => $req->commission,
       ];
 
       if ($req->filled('password')) {
@@ -207,22 +245,58 @@ class DriversController extends Controller
       }
 
       $structuredFields = [];
+      $oldAdditionalData = [];
+
+      if ($req->filled('id')) {
+        $existing = Driver::find($req->id);
+        if ($existing) {
+          $oldAdditionalData = $existing->additional_data ?? [];
+
+          if ($existing->form_template_id && $existing->form_template_id != $req->template) {
+            foreach ($oldAdditionalData as $field) {
+              if (in_array($field['type'], ['file', 'image'])) {
+                $filesToDelete[] = $field['value'];
+              }
+            }
+          }
+        }
+      }
 
       if ($req->filled('template')) {
         $data['form_template_id'] = $req->template;
-
         $template = Form_Template::with('fields')->find($req->input('template'));
 
         foreach ($template->fields as $field) {
           $fieldName = $field->name;
-          if ($req->has("additional_fields.$fieldName")) {
-            $structuredFields[$fieldName] = [
-              'label' => $field->label,
-              'value' => $req->input("additional_fields.$fieldName"),
-              'type'  => $field->type,
-            ];
+          $fieldType = $field->type;
+
+          if (in_array($fieldType, ['file', 'image'])) {
+            if ($req->hasFile("additional_fields.$fieldName")) {
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+              }
+
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'drivers/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'type'  => $fieldType,
+              ];
+            } elseif (isset($oldAdditionalData[$fieldName])) {
+              $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+            }
+          } else {
+            if ($req->has("additional_fields.$fieldName")) {
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $req->input("additional_fields.$fieldName"),
+                'type'  => $fieldType,
+              ];
+            }
           }
         }
+
         $data['additional_data'] = $structuredFields;
       }
 
@@ -233,10 +307,11 @@ class DriversController extends Controller
         if (!$find) {
           return response()->json(['status' => 2, 'error' => 'Can not find the selected Driver']);
         }
+
         $oldImage = $find->image;
 
         if ($req->hasFile('image')) {
-          $data['image'] = (new FunctionsController)->convert($req->image, 'customers');
+          $data['image'] = (new FunctionsController)->convert($req->image, 'drivers');
         }
 
         $done = $find->update($data);
@@ -246,8 +321,9 @@ class DriversController extends Controller
         }
       } else {
         if ($req->hasFile('image')) {
-          $data['image'] = (new FunctionsController)->convert($req->image, 'customers');
+          $data['image'] = (new FunctionsController)->convert($req->image, 'drivers');
         }
+
         $done = Driver::create($data);
 
         if ($req->role) {
@@ -256,7 +332,8 @@ class DriversController extends Controller
             $done->assignRole($role->name);
           }
         }
-        $done = (new WalletsController)->store('driver', $done->id, true);
+
+        (new WalletsController)->store('driver', $done->id, true);
       }
 
       if (!$done) {
@@ -265,22 +342,32 @@ class DriversController extends Controller
           unlink($data['image']);
         }
         return response()->json(['status' => 2, 'error' => 'Error: can not save the Driver']);
-      } else {
-        if ($oldImage && $req->hasFile('image')) {
-          unlink($oldImage);
-        }
       }
 
       DB::commit();
+
+      foreach ($filesToDelete as $file) {
+        FileHelper::deleteFileIfExists($file);
+      }
+
+      if ($oldImage && $req->hasFile('image')) {
+        unlink($oldImage);
+      }
+
       return response()->json([
         'status'  => 1,
-        'success' => 'Customer saved successfully',
+        'success' => 'Driver saved successfully',
       ]);
-    } catch (Exception $ex) {
+    } catch (\Exception $ex) {
       DB::rollBack();
-      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+      return response()->json([
+        'status' => 2,
+        'error'  => $ex->getMessage()
+      ]);
     }
   }
+
+
 
   public function destroy(Request $req)
   {
@@ -303,5 +390,72 @@ class DriversController extends Controller
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
+  }
+
+
+  public function show(Request $req)
+  {
+    $data = Driver::findOrFail($req->id);
+    return view('admin.drivers.show', compact('data'));
+  }
+
+  public function getCustomerTasks(Request $request)
+  {
+    $columns = [
+      2 => 'task_id',
+      3 => 'status',
+      4 => 'price',
+      8 => 'created_at'
+    ];
+
+    $totalData = Task::where('driver_id', $request->driver)->count();
+    $totalFiltered = $totalData;
+
+    $limit  = $request->input('length');
+    $start  = $request->input('start');
+    $order  = $columns[$request->input('order.0.column')] ?? 'id';
+    $dir    = $request->input('order.0.dir') ?? 'desc';
+
+    $search = $request->input('search');
+    $statusFilter = $request->input('status');
+
+    $query = Task::where('driver_id', $request->driver);
+
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'LIKE', "%{$search}%")
+          ->orWhere('id', 'LIKE', "%{$search}%");
+      });
+    }
+    if (!empty($statusFilter)) {
+      $query->where('status', $statusFilter);
+    }
+
+    $totalFiltered = $query->count();
+
+
+    $items = $query
+      ->offset($start)
+      ->limit($limit)
+      ->orderBy($order, $dir)
+      ->get();
+
+    $data = [];
+    foreach ($items as $item) {
+      $data[] = [
+        'task_id'    => $item->id,
+        'status'     => $item->status,
+        'price'       => $item->name,
+        'created_at' => $item->created_at->format('Y-m-d H:i'),
+      ];
+    }
+
+    return response()->json([
+      'draw'            => intval($request->input('draw')),
+      'recordsTotal'    => $totalData,
+      'recordsFiltered' => $totalFiltered,
+      'code'            => 200,
+      'data'            => $data,
+    ]);
   }
 }

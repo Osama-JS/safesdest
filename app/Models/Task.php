@@ -94,4 +94,9 @@ class Task extends Model
   {
     return $this->hasOne(Task_Points::class, 'task_id')->where('type', 'delivery');
   }
+
+  public function ad()
+  {
+    return $this->hasOne(Task_Ad::class, 'task_id');
+  }
 }

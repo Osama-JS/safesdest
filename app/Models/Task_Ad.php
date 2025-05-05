@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Task_Ad extends Model
 {
-  protected $table = 'task_ads';
+  protected $table = 'tasks_ads';
   protected $fillable = [
     'description',
     'status',

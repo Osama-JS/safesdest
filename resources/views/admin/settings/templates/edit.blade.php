@@ -120,13 +120,15 @@
                                 </td>
                                 <td>
                                     <select class="form-control field-type-select">
-                                        <option value="string" {{ $fieldType == 'string' ? 'selected' : '' }}>نص</option>
-                                        <option value="number" {{ $fieldType == 'number' ? 'selected' : '' }}>رقم</option>
-                                        <option value="email" {{ $fieldType == 'email' ? 'selected' : '' }}>بريد إلكتروني
+                                        <option value="string" {{ $fieldType == 'string' ? 'selected' : '' }}>text</option>
+                                        <option value="number" {{ $fieldType == 'number' ? 'selected' : '' }}>number
                                         </option>
-                                        <option value="date" {{ $fieldType == 'date' ? 'selected' : '' }}>تاريخ</option>
-                                        <option value="file" {{ $fieldType == 'file' ? 'selected' : '' }}>ملف</option>
-                                        <option value="select" {{ $fieldType == 'select' ? 'selected' : '' }}>اختيار
+                                        <option value="email" {{ $fieldType == 'email' ? 'selected' : '' }}>email
+                                        </option>
+                                        <option value="date" {{ $fieldType == 'date' ? 'selected' : '' }}>date</option>
+                                        <option value="file" {{ $fieldType == 'file' ? 'selected' : '' }}>file</option>
+                                        <option value="image" {{ $fieldType == 'image' ? 'selected' : '' }}>image</option>
+                                        <option value="select" {{ $fieldType == 'select' ? 'selected' : '' }}>select
                                         </option>
                                     </select>
                                     <span class="field-{{ $key }}-type-error text-danger text-error"></span>

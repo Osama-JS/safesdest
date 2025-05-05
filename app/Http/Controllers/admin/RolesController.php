@@ -15,6 +15,14 @@ use Illuminate\Support\Facades\Validator;
 
 class RolesController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_roles', ['only' => ['index', 'getData']]);
+    $this->middleware('permission:save_roles', ['only' => ['store']]);
+    $this->middleware('permission:delete_roles', ['only' => ['destroy']]);
+  }
+
   public function index()
   {
     return view('admin.roles.index');

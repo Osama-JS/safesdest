@@ -3,6 +3,11 @@
 let mapInstance = null;
 let mapReadyCallbackQueue = [];
 
+export async function mapConfig() {
+  const res = await fetch(baseUrl + 'mapbox-token');
+  const data = await res.json();
+  return data;
+}
 export async function initializeMap(containerId, center = [39.85791, 21.3891], zoom = 10, onReady) {
   if (mapInstance) {
     if (onReady) onReady(mapInstance);
@@ -19,7 +24,7 @@ export async function initializeMap(containerId, center = [39.85791, 21.3891], z
 
     mapInstance = new mapboxgl.Map({
       container: containerId,
-      style: 'mapbox://styles/mapbox/streets-v11',
+      style: 'mapbox://styles/' + data.style,
       center: center,
       zoom: zoom
     });

@@ -16,7 +16,7 @@
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 
     <script>
-        const templateId = {{ $driver_template->value }}
+        const templateId = {{ $driver_template->value ?? 0 }}
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
@@ -53,7 +53,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
-    @vite(['resources/js/admin/drivers.js'])
+    @vite(['resources/js/admin/drivers/drivers.js'])
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])

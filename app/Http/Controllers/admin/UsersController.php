@@ -10,6 +10,7 @@ use App\Models\Form_Template;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\Form_Field;
 use App\Models\mongo\mUsers;
 use App\Models\Settings;
@@ -18,10 +19,21 @@ use App\Models\User_Teams;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
+use App\Helpers\FileHelper;
+
 
 
 class UsersController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_admins', ['only' => ['index', 'getData', 'edit']]);
+    $this->middleware('permission:save_admins', ['only' => ['store']]);
+    $this->middleware('permission:status_admins', ['only' => ['chang_status', 'resetPass']]);
+    $this->middleware('permission:delete_admins', ['only' => ['destroy']]);
+  }
+
   public function index()
   {
     $users = User::where('status', '!=', 'deleted')->get();
@@ -34,6 +46,7 @@ class UsersController extends Controller
     $roles = Role::where('guard_name', 'web')->get();
     $teams_ids = User_Teams::select('team_id')->get();
     $teams = Teams::all();
+    $customers = Customer::where('status', 'active')->get();
     $user_template = Settings::where('key', 'user_template')->first();
 
 
@@ -45,7 +58,8 @@ class UsersController extends Controller
       'roles' => $roles,
       'teams' => $teams,
       'templates' => $templates,
-      'user_template' => $user_template
+      'user_template' => $user_template,
+      'customers' => $customers
     ]);
   }
 
@@ -178,6 +192,7 @@ class UsersController extends Controller
   {
     $data = User::findOrFail($id);
     $data->teamsIds = $data->teams()->pluck('team_id');
+    $data->customersIds = $data->customers()->pluck('customer_id');
     $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
     $data->fields =  $fields;
@@ -188,76 +203,78 @@ class UsersController extends Controller
 
   public function store(Request $req)
   {
-
     $rules = [
       'name'        => 'required',
-      'email'       => 'required|unique:users,email,' .  ($req->id ?? 0),
-      'phone'       => 'required|unique:users,phone,' .  ($req->id ?? 0),
+      'email'       => 'required|unique:users,email,' . ($req->id ?? 0),
+      'phone'       => 'required|unique:users,phone,' . ($req->id ?? 0),
       'password'    => 'required_without:id|same:confirm-password',
       'role'        => 'required|exists:roles,id',
       'teams'       => 'nullable|array',
+      'customers'   => 'nullable|array',
       'template'    => 'nullable|exists:form_templates,id'
     ];
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        if (!$req->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:10240';
+            break;
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120';
+            break;
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
 
-
     $validator = Validator::make($req->all(), $rules);
 
     if ($validator->fails()) {
-      return response()->json([
-        'status' => 0,
-        'error'  => $validator->errors()
-      ]);
+      return response()->json(['status' => 0, 'error' => $validator->errors()]);
     }
 
-
-
     DB::beginTransaction();
+    $filesToDelete = [];
+
     try {
       $data = [
-        'name'                => $req->name,
-        'email'               => $req->email,
-        'phone'               => $req->phone,
-        'phone_code'          => $req->phone_code,
-        'role_id'             => $req->role,
-        'form_template_id'    => $req->template ?? null,
-        'additional_data_id'  => $additionalData->_id ?? null
+        'name'       => $req->name,
+        'email'      => $req->email,
+        'phone'      => $req->phone,
+        'phone_code' => $req->phone_code,
+        'role_id'    => $req->role,
       ];
 
       if ($req->filled('password')) {
         $data['password'] = Hash::make($req->password);
       }
 
-
-
       $structuredFields = [];
-
-      if ($req->filled('template')) {
-        $data['form_template_id'] = $req->template;
-
-        $template = Form_Template::with('fields')->find($req->input('template'));
-
-        foreach ($template->fields as $field) {
-          $fieldName = $field->name;
-          if ($req->has("additional_fields.$fieldName")) {
-            $structuredFields[$fieldName] = [
-              'label' => $field->label,
-              'value' => $req->input("additional_fields.$fieldName"),
-              'type'  => $field->type,
-            ];
-          }
-        }
-        $data['additional_data'] = $structuredFields;
-      }
-
+      $oldAdditionalData = [];
 
       if ($req->filled('id')) {
         $user = User::findOrFail($req->id);
@@ -265,42 +282,83 @@ class UsersController extends Controller
           return response()->json(['status' => 2, 'error' => 'Can not find the selected user']);
         }
 
-        $done =  $user->update($data);
+        $oldAdditionalData = $user->additional_data ?? [];
 
+        if ($user->form_template_id && $user->form_template_id != $req->template) {
+          foreach ($oldAdditionalData as $field) {
+            if (in_array($field['type'], ['file', 'image'])) {
+              $filesToDelete[] = $field['value'];
+            }
+          }
+        }
+      }
+
+      if ($req->filled('template')) {
+        $data['form_template_id'] = $req->template;
+        $template = Form_Template::with('fields')->find($req->template);
+
+        foreach ($template->fields as $field) {
+          $fieldName = $field->name;
+          $fieldType = $field->type;
+
+          if (in_array($fieldType, ['file', 'image'])) {
+            if ($req->hasFile("additional_fields.$fieldName")) {
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+              }
+
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'users/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'type'  => $fieldType,
+              ];
+            } elseif (isset($oldAdditionalData[$fieldName])) {
+              $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+            }
+          } else {
+            if ($req->has("additional_fields.$fieldName")) {
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $req->input("additional_fields.$fieldName"),
+                'type'  => $fieldType,
+              ];
+            }
+          }
+        }
+
+        $data['additional_data'] = $structuredFields;
+      }
+
+      if ($req->filled('id')) {
+        $user->update($data);
         $user->teams()->delete();
-        $teams = collect($req->teams)->filter()->map(function ($teamId) {
-          return ['team_id' => $teamId];
-        })->toArray();
-        $done = $user->teams()->createMany($teams);
+        $user->customers()->sync($req->customers ?? []);
       } else {
         $user = User::create($data);
-        $teams = collect($req->teams)->filter()->map(function ($teamId) {
-          return ['team_id' => $teamId];
-        })->toArray();
-
-        $done = $user->teams()->createMany($teams);
+        $user->customers()->sync($req->customers ?? []);
       }
 
-      if (!$user) {
-        DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error creating user']);
-      }
-
-      if (!$done) {
-        DB::rollback();
-        return response()->json(['status' => 2, 'error' => 'Error Save user']);
-      }
+      $teams = collect($req->teams)->filter()->map(fn($teamId) => ['team_id' => $teamId])->toArray();
+      $user->teams()->createMany($teams);
 
       $role = Role::find($req->role);
-      $user->assignRole($role->name);
+      $user->syncRoles([$role->name]);
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'User saved']);
-    } catch (Exception $ex) {
+
+      foreach ($filesToDelete as $file) {
+        FileHelper::deleteFileIfExists($file);
+      }
+
+      return response()->json(['status' => 1, 'success' => 'User saved successfully']);
+    } catch (\Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
 
   public function destroy(Request $req)
   {

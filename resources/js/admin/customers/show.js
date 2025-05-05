@@ -3,28 +3,13 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, generateFields, showFormModal } from '../ajax';
+import { deleteRecord, showAlert, generateFields, showFormModal } from '../../ajax';
 
 // Datatable (jquery)
 $(function () {
   // Variable declaration for table
-  var dt_data_table = $('.datatables-users'),
-    userView = baseUrl + 'app/user/view/account';
+  var dt_data_table = $('.datatables-users-tasks');
 
-  if (templateId != null) {
-    $('#select-template').val(templateId).trigger('change');
-  }
-
-  var select2 = $('.select2');
-  if (select2.length) {
-    var $this = select2;
-    $this.wrap('<div class="position-relative"></div>').select2({
-      allowClear: true,
-      placeholder: 'Select Tags',
-      dropdownParent: $this.parent(),
-      closeOnSelect: false
-    });
-  }
   // ajax setup
   $.ajaxSetup({
     headers: {
@@ -38,34 +23,20 @@ $(function () {
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/customers/data',
+        url: baseUrl + 'admin/customers/tasks',
         data: function (d) {
           d.status = $('#statusFilter').val();
           d.search = $('#searchFilter').val();
-        },
-        dataSrc: function (json) {
-          $('#total').text(json.summary.total);
-          $('#total-active').text(json.summary.total_active);
-          $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-verified').text(json.summary.total_verified);
-          $('#total-verified + p').text(`(${((json.summary.total_verified / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-blocked').text(json.summary.total_blocked);
-          $('#total-blocked + p').text(`(${((json.summary.total_blocked / json.summary.total) * 100).toFixed(1)})%`);
-
-          return json.data;
+          d.customer = customerID;
         }
       },
       columns: [
-        { data: '' }, // للـ control (responsive)
-        { data: 'fake_id' }, // الترقيم التسلسلي
-        { data: 'name' }, // الاسم مع الأفاتار
-        { data: 'email' }, // البريد
-        { data: 'phone' }, // الجوال
-        { data: 'tags' }, // الحالة
-        { data: 'role' }, // الحالة
-        { data: 'status' }, // الحالة
-        { data: 'created_at' }, // تاريخ الإنشاء
-        { data: null } // actions
+        { data: '' },
+        { data: 'task_id' },
+        { data: 'status' },
+        { data: 'price' },
+        { data: 'created_at' },
+        { data: null }
       ],
       columnDefs: [
         {
@@ -83,93 +54,29 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
-            return `<span>${full.fake_id}</span>`;
+            return `<span>${full.task_id}</span>`;
           }
         },
         {
           targets: 2,
-          responsivePriority: 2,
           render: function (data, type, full, meta) {
-            var $name = full.name;
-            if (full.image === null) {
-              var initials = $name.match(/\b\w/g) || [];
-              initials = (initials.shift() || '') + (initials.pop() || '');
-              var colors = ['success', 'danger', 'warning', 'info', 'dark', 'primary'];
-              var color = colors[Math.floor(Math.random() * colors.length)];
-              var img = `<div class="avatar  bg-label-${color} rounded-circle">
-                      <span class="avatar-initial">${initials.toUpperCase()}</span>
-                    </div>`;
-            } else {
-              var img = `<div class="avatar  bg-label-${color} rounded-circle">
-                <img src="${full.image}"  class="rounded-circle  object-cover"/>
-            </div>`;
-            }
-
-            return `
-              <div class="d-flex align-items-center">
-                <div class="avatar-wrapper me-3">
-                  ${img}
-                </div>
-                <div class="d-flex flex-column">
-                  <span class="fw-medium">${$name}</span>
-                </div>
-              </div>`;
+            return `<span>${full.status}</span>`;
           }
         },
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.email}</span>`;
+            return `<span>${full.price}</span>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span>${full.phone}</span>`;
+            return `<span>${full.created_at}</span>`;
           }
         },
         {
           targets: 5,
-          render: function (data, type, full, meta) {
-            return `<span>${full.role}</span>`;
-          }
-        },
-        {
-          targets: 6,
-          render: function (data, type, full, meta) {
-            return `<span>${full.tags}</span>`;
-          }
-        },
-        {
-          targets: 7,
-          className: 'text-center',
-          render: function (data, type, full, meta) {
-            let icon = '';
-            let status = full.status;
-
-            switch (status) {
-              case 'active':
-                icon = '<i class="ti ti-shield-check text-success fs-5 ms-2"></i>';
-                break;
-              case 'blocked':
-                icon = '<i class="ti ti-shield-x text-danger fs-5 ms-2"></i>';
-                break;
-              case 'verified':
-                icon = '<i class="ti ti-hourglass text-warning fs-5 ms-2"></i>';
-                break;
-            }
-
-            return `<span class="bg-label-${status}">${status}</span> ${icon}`;
-          }
-        },
-        {
-          targets: 8,
-          render: function (data, type, full, meta) {
-            return full.created_at;
-          }
-        },
-        {
-          targets: 9,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -179,18 +86,9 @@ $(function () {
                 <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
                   <i class="ti ti-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.name}">
+                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.task_id}">
                   <i class="ti ti-trash"></i>
                 </button>
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                    <i class="ti ti-dots-vertical"></i>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="${userView}" class="dropdown-item">View</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
-                  </ul>
-                </div>
               </div>`;
           }
         }

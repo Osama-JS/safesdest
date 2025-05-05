@@ -94,8 +94,9 @@
                                     </div>
 
 
-                                    <button type="button" id="go-to-step2" class="btn btn-primary mt-3">التالي
-                                        ⏭️</button>
+                                    <button type="button" id="go-to-step2"
+                                        class="btn btn-primary mt-3">{{ __('Next') }}
+                                        <i class="ti ti-arrow-right"></i></button>
 
                                 </div>
 
@@ -211,7 +212,8 @@
                                                                     {{ __('Location') }}</label>
                                                                 <div class="input-group mb-2">
                                                                     <div class="form-control p-0"
-                                                                        id="pickup-geocoder"></div>
+                                                                        id="pickup-geocoder">
+                                                                    </div>
                                                                     <button type="button" title="إدخال يدوي"
                                                                         id="pickup-manual-btn"
                                                                         class="input-group-text bg-white">
@@ -485,9 +487,13 @@
                                             </div>
                                         </div>
                                         <div class="mb-3">
+
+                                            <button type="button" id="back-to-step1" class="btn btn-light mt-3"><i
+                                                    class="ti ti-arrow-left"></i>{{ __('Back') }}
+                                            </button>
                                             <button type="button" id="go-to-step3"
-                                                class="btn btn-primary mt-3">التالي
-                                                ⏭️</button>
+                                                class="btn btn-primary mt-3 mx-2">{{ __('Next') }}
+                                                <i class="ti ti-arrow-right"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -543,9 +549,12 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <button type="submit" id="go-to-step2" class="btn btn-primary mt-3"> Submit
+                                    <button type="button" id="back-to-step2" class="btn btn-light mt-3"><i
+                                            class="ti ti-arrow-left"></i>{{ __('Back') }}
                                     </button>
+                                    <button type="submit" id="go-to-step2" class="btn btn-primary mt-3 mx-2"> Submit
+                                    </button>
+
                                 </div>
                             </div>
 

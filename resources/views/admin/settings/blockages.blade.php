@@ -71,6 +71,7 @@
                     @csrf
                     <div class="modal-body">
 
+                        <input type="hidden" name="id" id="block_id">
                         <div class="mb-3">
                             <label for="type" class="form-label">* {{ __('Block Type') }}</label>
                             <select class="form-select" id="block-type" name="type" required>
@@ -93,11 +94,8 @@
                             <div id="map" class="w-100" style="height: 300px;"></div>
                         </div>
 
-                        <!-- الحقول المخفية لتخزين الإحداثيات -->
-                        <input type="text" id="block-coordinates" name="coordinates">
+                        <input type="hidden" id="coordinates" name="coordinates">
                         <span class="coordinates-error text-danger text-error"></span>
-
-
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary">حفظ</button>

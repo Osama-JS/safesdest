@@ -4,6 +4,7 @@
 
 'use strict';
 import { deleteRecord, showAlert, showFormModal } from '../ajax';
+import { initializeMap } from '../mapbox-helper';
 
 $(function () {
   var dt_data_table = $('.datatables-blockages');
@@ -173,12 +174,14 @@ $(function () {
   $('.dataTables_filter').hide();
 
   /* ==================== Map Control   ======================== */
+
+  // 🔵 إعداد السكروول
   const verticalExample = document.getElementById('vertical-scroll');
   if (verticalExample) {
     new PerfectScrollbar(verticalExample, { wheelPropagation: false });
   }
 
-  mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA'; // حط مفتاحك هنا
+  mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
 
   const map = new mapboxgl.Map({
     container: 'map',
@@ -187,101 +190,197 @@ $(function () {
     zoom: 10
   });
 
+  // initializeMap('map', [39.85791, 21.3891], 10, () => {});
+
   let markers = [];
   let coords = [];
+  let preventClick = false;
 
+  // تحديث حقل الإحداثيات
   function updateCoordinatesInput() {
-    $('#block-coordinates').val(JSON.stringify(coords));
+    const input = document.getElementById('coordinates');
+    if (input) input.value = JSON.stringify(coords);
   }
 
-  function drawLine() {
-    if (map.getSource('line')) {
-      map.getSource('line').setData({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: coords
-        }
-      });
-    } else {
-      map.addSource('line', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: coords
-          }
-        }
-      });
-
-      map.addLayer({
-        id: 'line',
-        type: 'line',
-        source: 'line',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#ff0000',
-          'line-width': 4
-        }
-      });
-    }
+  // حذف الخط إذا كان مرسومًا
+  function removeLineIfExists() {
+    if (map.getLayer('line')) map.removeLayer('line');
+    if (map.getSource('line')) map.removeSource('line');
   }
 
-  map.on('click', function (e) {
-    const blockType = document.getElementById('block-type').value;
-
-    if (!blockType) {
-      showAlert('warning', 'Choose the Block type first', 2000, true);
+  // رسم خط باستخدام الإحداثيات
+  async function drawLine() {
+    if (coords.length < 2) {
+      removeLineIfExists();
       return;
     }
 
-    const lngLat = [e.lngLat.lng, e.lngLat.lat];
+    const snappedCoords = await snapMultipleToRoad(coords);
+    if (!snappedCoords || snappedCoords.length < 2) return;
+
+    removeLineIfExists();
+
+    map.addSource('line', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: snappedCoords
+        }
+      }
+    });
+
+    map.addLayer({
+      id: 'line',
+      type: 'line',
+      source: 'line',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#FF0000',
+        'line-width': 4
+      }
+    });
+
+    coords = snappedCoords;
+    updateCoordinatesInput();
+  }
+
+  // سناب نقطة واحدة للطريق
+  async function snapToRoad(lngLat) {
+    const fakePath = `${lngLat[0]},${lngLat[1]};${lngLat[0]},${lngLat[1]}`;
+    const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${fakePath}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.matchings?.length > 0) {
+        return data.matchings[0].geometry.coordinates[0];
+      } else {
+        return null;
+      }
+    } catch (err) {
+      console.error('Snap failed:', err);
+      return null;
+    }
+  }
+
+  // سناب عدة نقاط دفعة واحدة لرسم خط
+  async function snapMultipleToRoad(coords) {
+    if (coords.length < 2) return coords;
+
+    const path = coords.map(c => `${c[0]},${c[1]}`).join(';');
+    const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${path}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.matchings?.length > 0) {
+        return data.matchings[0].geometry.coordinates;
+      } else {
+        console.warn('لم يتم العثور على طريق للخط!');
+        return coords;
+      }
+    } catch (err) {
+      console.error('Snap failed:', err);
+      return coords;
+    }
+  }
+
+  // إنشاء ماركر وتفعيل الحذف والسحب
+  function createMarker(lngLat) {
+    const marker = new mapboxgl.Marker({ draggable: true }).setLngLat(lngLat).addTo(map);
+
+    marker.on('dragend', async () => {
+      const newLngLat = [marker.getLngLat().lng, marker.getLngLat().lat];
+      const snapped = await snapToRoad(newLngLat);
+      if (snapped) {
+        marker.setLngLat(snapped);
+        const index = markers.indexOf(marker);
+        if (index !== -1) coords[index] = snapped;
+        updateCoordinatesInput();
+
+        if ($('#block-type').val() === 'line') {
+          await drawLine();
+        }
+      }
+    });
+
+    enableMarkerDelete(marker);
+    return marker;
+  }
+
+  // حذف النقطة عند النقر المزدوج عليها
+  function enableMarkerDelete(marker) {
+    marker.getElement().addEventListener('dblclick', e => {
+      e.stopPropagation();
+      preventClick = true;
+      setTimeout(() => (preventClick = false), 250);
+
+      const index = markers.indexOf(marker);
+      if (index !== -1) {
+        marker.remove();
+        markers.splice(index, 1);
+        coords.splice(index, 1);
+        updateCoordinatesInput();
+
+        if ($('#block-type').val() === 'line') {
+          drawLine();
+        } else {
+          removeLineIfExists();
+        }
+      }
+    });
+  }
+
+  // منع النقر بعد dblclick
+  map.on('dblclick', () => {
+    preventClick = true;
+    setTimeout(() => (preventClick = false), 250);
+  });
+
+  // التعامل مع النقر على الخريطة
+  map.on('click', async e => {
+    if (preventClick) return;
+
+    const blockType = $('#block-type').val();
+    if (!blockType) {
+      alert('اختر نوع الإغلاق أولاً!');
+      return;
+    }
+
+    let lngLat = [e.lngLat.lng, e.lngLat.lat];
+    const snapped = await snapToRoad(lngLat);
+
+    if (!snapped) {
+      alert('النقطة لا تقع على طريق، يرجى اختيار نقطة على الطريق.');
+      return;
+    }
+
+    lngLat = snapped;
 
     if (blockType === 'point') {
-      // إذا كان فيه ماركر موجود، فقط حركه
       if (markers.length > 0) {
         markers[0].setLngLat(lngLat);
         coords[0] = lngLat;
       } else {
-        const marker = new mapboxgl.Marker({ draggable: true }).setLngLat(lngLat).addTo(map);
-
-        marker.on('dragend', function () {
-          const newLngLat = marker.getLngLat();
-          coords[0] = [newLngLat.lng, newLngLat.lat];
-          updateCoordinatesInput();
-        });
-
+        const marker = createMarker(lngLat);
         markers.push(marker);
         coords.push(lngLat);
       }
-
       updateCoordinatesInput();
-
-      // إذا كان فيه خط مرسوم سابقاً احذفه
-      if (map.getLayer('line')) map.removeLayer('line');
-      if (map.getSource('line')) map.removeSource('line');
+      removeLineIfExists();
     } else if (blockType === 'line') {
-      // عادي يسمح بإضافة عدة نقاط
-      const marker = new mapboxgl.Marker({ draggable: true }).setLngLat(lngLat).addTo(map);
-
-      marker.on('dragend', function () {
-        const newLngLat = marker.getLngLat();
-        const index = markers.indexOf(marker);
-        if (index !== -1) {
-          coords[index] = [newLngLat.lng, newLngLat.lat];
-          updateCoordinatesInput();
-          drawLine();
-        }
-      });
-
+      const marker = createMarker(lngLat);
       markers.push(marker);
       coords.push(lngLat);
       updateCoordinatesInput();
-      drawLine();
+      await drawLine();
     }
   });
 
@@ -304,22 +403,48 @@ $(function () {
     }
   });
 
-  $(document).on('click', '.edit-record', function () {
-    var data_id = $(this).data('id'),
-      dtrModal = $('.dtr-bs-modal.show');
-    if (dtrModal.length) {
-      dtrModal.modal('hide');
-    }
-    $.get(`${baseUrl}admin/settings/blockages/edit/${data_id}`, function (data) {
-      console.log(data.teamsIds);
-      $('.text-error').html('');
-      $('#block_id').val(data.id);
-      $('#block-type').val(data.type);
-      $('#block-description').val(data.description);
-      $('#block-coordinates').val(data.coordinates);
+  $(document).on('click', '.edit-record', async function () {
+    const data_id = $(this).data('id');
+    const dtrModal = $('.dtr-bs-modal.show');
+    if (dtrModal.length) dtrModal.modal('hide');
 
-      $('#modelTitle').html(`Edit Point: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
-    });
+    // تنظيف الخريطة قبل التعديل
+    markers.forEach(m => m.remove());
+    markers = [];
+    coords = [];
+    removeLineIfExists();
+
+    // جلب البيانات
+    const data = await $.get(`${baseUrl}admin/settings/blockages/edit/${data_id}`);
+    console.log(data.teamsIds);
+
+    // تعبئة الحقول
+    $('.text-error').html('');
+    $('#block_id').val(data.id);
+    $('#block-type').val(data.type);
+    $('#block-description').val(data.description);
+    $('#coordinates').val(data.coordinates);
+    $('#modelTitle').html(`Edit Point: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
+
+    // تحويل الإحداثيات من JSON إلى مصفوفة
+    try {
+      const storedCoords = JSON.parse(data.coordinates);
+      if (!Array.isArray(storedCoords) || storedCoords.length === 0) return;
+
+      // أضف النقاط إلى الخريطة
+      for (const lngLat of storedCoords) {
+        const marker = createMarker(lngLat); // تستخدم نفس createMarker من الكود السابق
+        markers.push(marker);
+        coords.push(lngLat);
+      }
+
+      // في حالة LINE، ارسم المسار
+      if (data.type === 'line') {
+        await drawLine();
+      }
+    } catch (e) {
+      console.error('فشل في تحليل الإحداثيات:', e);
+    }
   });
 
   $(document).on('change', '.edit_status', function () {

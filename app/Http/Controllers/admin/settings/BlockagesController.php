@@ -82,6 +82,34 @@ class BlockagesController extends Controller
     ]);
   }
 
+  public function getBlockages()
+  {
+    $points = [];
+    $lines = [];
+
+    $blockages = Blockage::where('status', 1)->get();
+
+    foreach ($blockages as $block) {
+      if ($block->type === 'point') {
+        // dd($blockages);
+
+        $points[] = [
+          'lat' => $block->coordinates[1], // lat
+          'lng' => $block->coordinates[0], // lng
+        ];
+      } elseif ($block->type === 'line') {
+        $lines[] = [
+          'coordinates' => $block->coordinates
+        ];
+      }
+    }
+
+    return response()->json([
+      'points' => $points,
+      'lines' => $lines
+    ]);
+  }
+
   public function change_state(Request $req)
   {
     $find = Blockage::findOrFail($req->id);
@@ -130,7 +158,6 @@ class BlockagesController extends Controller
 
       if ($req->filled('id')) {
         $find = Blockage::findOrFail($req->id);
-
         $done = $find->update($data);
       } else {
         $done = Blockage::create($data);

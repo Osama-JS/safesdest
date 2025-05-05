@@ -21,6 +21,6 @@ class DatabaseSeeder extends Seeder
       SettingsSeeder::class,
       VehiclesSeeder::class,
     ]);
-    // Customer::factory()->count(10)->create();
+    Customer::factory()->count(10)->create();
   }
 }

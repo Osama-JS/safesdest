@@ -15,6 +15,8 @@ use App\Models\Settings;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\FileHelper;
+use App\Models\Task;
 
 class CustomersController extends Controller
 {
@@ -116,7 +118,6 @@ class CustomersController extends Controller
     ]);
   }
 
-
   public function chang_status(Request $req)
   {
     $validator = Validator::make($req->all(), [
@@ -153,29 +154,67 @@ class CustomersController extends Controller
     return response()->json($data);
   }
 
+
   public function store(Request $req)
   {
     $rules = [
-      'name'           => 'required|string|max:255',
-      'email'          => 'required|email|unique:customers,email,' . ($req->id ?? 0),
-      'phone'          => 'required|unique:customers,phone,' . ($req->id ?? 0),
-      'phone_code'     => 'required|string',
-      'password'       => 'nullable|same:confirm-password',
-      'role'           => 'nullable|exists:roles,id',
-      'image'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-      'c_name'         => 'nullable|string|max:255',
-      'c_address'      => 'nullable|string|max:255',
-      'tags'           => 'nullable|array',
+      'name'       => 'required|string|max:255',
+      'email'      => 'required|email|unique:customers,email,' . ($req->id ?? 0),
+      'phone'      => 'required|unique:customers,phone,' . ($req->id ?? 0),
+      'phone_code' => 'required|string',
+      'password'   => 'nullable|same:confirm-password',
+      'role'       => 'nullable|exists:roles,id',
+      'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+      'c_name'     => 'nullable|string|max:255',
+      'c_address'  => 'nullable|string|max:255',
+      'tags'       => 'nullable|array',
     ];
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        if (!$req->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        // إضافة قواعد بناءً على نوع الحقل
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            break;
+
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
+
 
     $validator = Validator::make($req->all(), $rules);
 
@@ -187,6 +226,7 @@ class CustomersController extends Controller
     }
 
     DB::beginTransaction();
+    $filesToDelete = []; // ❗ قائمة بالملفات التي ستحذف بعد نجاح المعاملة
 
     try {
       $data = [
@@ -204,22 +244,59 @@ class CustomersController extends Controller
       }
 
       $structuredFields = [];
+      $oldAdditionalData = [];
+
+      if ($req->filled('id')) {
+        $existing = Customer::find($req->id);
+        if ($existing) {
+          $oldAdditionalData = $existing->additional_data ?? [];
+
+          // حذف ملفات النموذج السابق إن تغيّر النموذج
+          if ($existing->form_template_id && $existing->form_template_id != $req->template) {
+            foreach ($oldAdditionalData as $field) {
+              if (in_array($field['type'], ['file', 'image'])) {
+                $filesToDelete[] = $field['value']; // حذف لاحق بعد commit
+              }
+            }
+          }
+        }
+      }
 
       if ($req->filled('template')) {
         $data['form_template_id'] = $req->template;
-
         $template = Form_Template::with('fields')->find($req->input('template'));
 
         foreach ($template->fields as $field) {
           $fieldName = $field->name;
-          if ($req->has("additional_fields.$fieldName")) {
-            $structuredFields[$fieldName] = [
-              'label' => $field->label,
-              'value' => $req->input("additional_fields.$fieldName"),
-              'type'  => $field->type,
-            ];
+          $fieldType = $field->type;
+
+          if (in_array($fieldType, ['file', 'image'])) {
+            if ($req->hasFile("additional_fields.$fieldName")) {
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                $filesToDelete[] = $oldAdditionalData[$fieldName]['value']; // حذف لاحقًا
+              }
+
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'customers/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'type'  => $fieldType,
+              ];
+            } elseif (isset($oldAdditionalData[$fieldName])) {
+              $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+            }
+          } else {
+            if ($req->has("additional_fields.$fieldName")) {
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $req->input("additional_fields.$fieldName"),
+                'type'  => $fieldType,
+              ];
+            }
           }
         }
+
         $data['additional_data'] = $structuredFields;
       }
 
@@ -230,6 +307,7 @@ class CustomersController extends Controller
         if (!$find) {
           return response()->json(['status' => 2, 'error' => 'Can not find the selected Customer']);
         }
+
         $oldImage = $find->image;
 
         if ($req->hasFile('image')) {
@@ -244,16 +322,10 @@ class CustomersController extends Controller
 
         if ($req->filled('tags')) {
           $find->tags()->delete();
-          $tags = [];
-          for ($i = 0; $i < count($req->tags); $i++) {
-            if (isset($req->tags[$i])) {
-              $tags[$i]['tag_id'] = $req->tags[$i];
-            }
-          }
-          $done = $find->tags()->createMany($tags);
+          $tags = collect($req->tags)->filter()->map(fn($id) => ['tag_id' => $id])->toArray();
+          $find->tags()->createMany($tags);
         }
       } else {
-
         if ($req->hasFile('image')) {
           $data['image'] = (new FunctionsController)->convert($req->image, 'customers');
         }
@@ -266,12 +338,11 @@ class CustomersController extends Controller
             $done->assignRole($role->name);
           }
         }
-        $tags = collect($req->tags)->filter()->map(function ($tagId) {
-          return ['tag_id' => $tagId];
-        })->toArray();
+
+        $tags = collect($req->tags)->filter()->map(fn($tagId) => ['tag_id' => $tagId])->toArray();
         $done->tags()->createMany($tags);
 
-        $done = (new WalletsController)->store('customer', $done->id, true);
+        (new WalletsController)->store('customer', $done->id, true);
       }
 
       if (!$done) {
@@ -280,13 +351,19 @@ class CustomersController extends Controller
           unlink($data['image']);
         }
         return response()->json(['status' => 2, 'error' => 'Error: can not save the Customer']);
-      } else {
-        if ($oldImage && $req->hasFile('image')) {
-          unlink($oldImage);
-        }
       }
 
       DB::commit();
+
+      // 🧹 حذف الملفات بعد نجاح التخزين
+      foreach ($filesToDelete as $file) {
+        FileHelper::deleteFileIfExists($file);
+      }
+
+      if ($oldImage && $req->hasFile('image')) {
+        unlink($oldImage);
+      }
+
       return response()->json([
         'status'  => 1,
         'success' => 'Customer saved successfully',
@@ -299,6 +376,7 @@ class CustomersController extends Controller
       ]);
     }
   }
+
 
   public function destroy(Request $req)
   {
@@ -321,5 +399,72 @@ class CustomersController extends Controller
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
+  }
+
+
+  public function show(Request $req)
+  {
+    $data = Customer::findOrFail($req->id);
+    return view('admin.customers.show', compact('data'));
+  }
+
+  public function getCustomerTasks(Request $request)
+  {
+    $columns = [
+      2 => 'task_id',
+      3 => 'status',
+      4 => 'price',
+      8 => 'created_at'
+    ];
+
+    $totalData = Task::where('customer_id', $request->customer)->count();
+    $totalFiltered = $totalData;
+
+    $limit  = $request->input('length');
+    $start  = $request->input('start');
+    $order  = $columns[$request->input('order.0.column')] ?? 'id';
+    $dir    = $request->input('order.0.dir') ?? 'desc';
+
+    $search = $request->input('search');
+    $statusFilter = $request->input('status');
+
+    $query = Task::where('customer_id', $request->customer);
+
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'LIKE', "%{$search}%")
+          ->orWhere('id', 'LIKE', "%{$search}%");
+      });
+    }
+    if (!empty($statusFilter)) {
+      $query->where('status', $statusFilter);
+    }
+
+    $totalFiltered = $query->count();
+
+
+    $items = $query
+      ->offset($start)
+      ->limit($limit)
+      ->orderBy($order, $dir)
+      ->get();
+
+    $data = [];
+    foreach ($items as $item) {
+      $data[] = [
+        'task_id'    => $item->id,
+        'status'     => $item->status,
+        'price'       => $item->name,
+        'created_at' => $item->created_at->format('Y-m-d H:i'),
+      ];
+    }
+
+    return response()->json([
+      'draw'            => intval($request->input('draw')),
+      'recordsTotal'    => $totalData,
+      'recordsFiltered' => $totalFiltered,
+      'code'            => 200,
+      'data'            => $data,
+    ]);
   }
 }

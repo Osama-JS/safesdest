@@ -4,7 +4,7 @@
 
 'use strict';
 import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../ajax';
-import { initializeMap, onMapReady } from '../mapbox-helper';
+import { mapConfig, onMapReady } from '../mapbox-helper';
 
 $(function () {
   let pointIndex = 0;
@@ -13,7 +13,11 @@ $(function () {
     $('#select-template').val(templateId).trigger('change');
   }
   /* ===========  MapBox  accessToken   ===========*/
-  mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
+  mapConfig().then(mapConfig => {
+    console.log(mapConfig);
+  });
+
+  mapboxgl.accessToken = mapConfig.token;
 
   /* ===========  ajax setup   ===========*/
   $.ajaxSetup({
@@ -34,7 +38,34 @@ $(function () {
 
   /* ===========  PreviewMap Code   ===========*/
 
-  initializeMap('preview-map', [39.85791, 21.3891], 10, () => {});
+  let blockedPoints = [];
+  let blockedLines = [];
+
+  async function loadBlockages() {
+    try {
+      const response = await fetch(`${baseUrl}admin/settings/blockages/get`); // <-- تأكد أن هذا هو الـ endpoint الصحيح
+      const data = await response.json();
+      console.log(data);
+
+      blockedPoints = data.points || [];
+      blockedLines = data.lines || [];
+    } catch (error) {
+      console.error('فشل تحميل الإغلاقات:', error);
+    }
+  }
+
+  mapboxgl.setRTLTextPlugin(
+    'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js',
+    null,
+    true // تحميل فقط عند الحاجة (lazy load)
+  );
+
+  const previewMap = new mapboxgl.Map({
+    container: `preview-map`,
+    style: 'mapbox://styles/' + mapConfig.style,
+    center: mapConfig.center,
+    zoom: 10
+  });
 
   let pickupMarker = null;
   let deliveryMarker = null;
@@ -43,41 +74,45 @@ $(function () {
   let pickupCoords = null;
   let deliveryCoords = null;
 
-  // 🚧 البيانات الثابتة للنقاط والخطوط المغلقة
-  const blockedPoints = [
-    { lat: 24.774265, lng: 46.738586 },
-    { lat: 24.798524, lng: 46.675214 },
-    { lat: 24.761234, lng: 46.69 }
-  ];
-
-  const blockedLines = [
-    {
-      coordinates: [
-        [46.73, 24.774],
-        [46.74, 24.778]
-      ]
-    }
-  ];
-
   // 🔍 دالة للتحقق هل نقطة قرب نقطة مغلقة
-  function isNearPoint(coord, point, threshold = 0.003) {
-    return Math.abs(coord[0] - point.lng) < threshold && Math.abs(coord[1] - point.lat) < threshold;
+  function isNearPoint(coord, point, threshold = 0.0003) {
+    const dx = coord[0] - point.lng;
+    const dy = coord[1] - point.lat;
+    return Math.sqrt(dx * dx + dy * dy) < threshold;
   }
 
   // 🔍 دالة للتحقق هل مسار يقطع خط مغلق (تقريبياً)
-  function isNearLine(coord, line, threshold = 0.002) {
+  function isNearLine(coord, line, threshold = 0.0003) {
     for (let i = 0; i < line.coordinates.length - 1; i++) {
       const [x1, y1] = line.coordinates[i];
       const [x2, y2] = line.coordinates[i + 1];
 
-      const minX = Math.min(x1, x2) - threshold;
-      const maxX = Math.max(x1, x2) + threshold;
-      const minY = Math.min(y1, y2) - threshold;
-      const maxY = Math.max(y1, y2) + threshold;
+      const A = coord[0] - x1;
+      const B = coord[1] - y1;
+      const C = x2 - x1;
+      const D = y2 - y1;
 
-      if (coord[0] >= minX && coord[0] <= maxX && coord[1] >= minY && coord[1] <= maxY) {
-        return true;
+      const dot = A * C + B * D;
+      const len_sq = C * C + D * D;
+      const param = len_sq !== 0 ? dot / len_sq : -1;
+
+      let xx, yy;
+      if (param < 0) {
+        xx = x1;
+        yy = y1;
+      } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+      } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
       }
+
+      const dx = coord[0] - xx;
+      const dy = coord[1] - yy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < threshold) return true;
     }
     return false;
   }
@@ -104,6 +139,7 @@ $(function () {
     if (previewMap.getSource('blocked-lines')) previewMap.removeSource('blocked-lines');
 
     pickupMarker = new mapboxgl.Marker({ color: 'green' })
+
       .setLngLat(pickupCoords)
       .setPopup(new mapboxgl.Popup().setText('Pickup Point'))
       .addTo(previewMap);
@@ -112,6 +148,8 @@ $(function () {
       .setLngLat(deliveryCoords)
       .setPopup(new mapboxgl.Popup().setText('Delivery Point'))
       .addTo(previewMap);
+
+    await loadBlockages(); // 📥 تحميل الإغلاقات من قاعدة البيانات
 
     async function fetchRouteWithRetry(pickup, delivery) {
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pickup.join(',')};${delivery.join(',')}?geometries=geojson&steps=true&overview=full&access_token=${mapboxgl.accessToken}`;
@@ -163,19 +201,17 @@ $(function () {
         paint: { 'line-color': '#007cbf', 'line-width': 4 }
       });
 
-      // ➕ نقاط مغلقة
-      const blockedGeojson = {
-        type: 'FeatureCollection',
-        features: blockedPoints.map(block => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [block.lng, block.lat]
-          }
-        }))
-      };
-
-      previewMap.addSource('blocked-roads', { type: 'geojson', data: blockedGeojson });
+      // 🎯 إضافة النقاط المغلقة
+      previewMap.addSource('blocked-roads', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: blockedPoints.map(point => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [point.lng, point.lat] }
+          }))
+        }
+      });
 
       previewMap.addLayer({
         id: 'blocked-roads',
@@ -189,19 +225,20 @@ $(function () {
         }
       });
 
-      // ➕ خطوط مغلقة
-      const blockedLinesGeojson = {
-        type: 'FeatureCollection',
-        features: blockedLines.map(line => ({
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: line.coordinates
-          }
-        }))
-      };
-
-      previewMap.addSource('blocked-lines', { type: 'geojson', data: blockedLinesGeojson });
+      // 🎯 إضافة الخطوط المغلقة
+      previewMap.addSource('blocked-lines', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: blockedLines.map(line => ({
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: line.coordinates
+            }
+          }))
+        }
+      });
 
       previewMap.addLayer({
         id: 'blocked-lines',
@@ -230,13 +267,14 @@ $(function () {
     }
   }
 
-  // const pickup = [46.675214, 24.798524]; // نقطة انطلاق
-  // const delivery = [46.738586, 24.774265]; // وجهة، تمر بطريق مغلق افتراضيًا
-  // updatePreviewRoute(pickup, delivery);
-
   /* ===========  Set pickup and delivery Points Map   ===========*/
   function setupMapboxLocationHandlers(prefix) {
-    initializeMap(`${prefix}-map`, [39.85791, 21.3891], 10, () => {});
+    const map = new mapboxgl.Map({
+      container: `${prefix}-map`,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [46.6753, 24.7136],
+      zoom: 10
+    });
 
     let marker;
     let selectedCoords = null;
@@ -427,8 +465,13 @@ $(function () {
   /* ================  Form Template Code   =============== */
 
   /* ==========================  Form Tabs Code  ========================== */
+  $('#back-to-step1').on('click', function () {
+    new bootstrap.Tab(document.querySelector('#tab-step1')).show();
+  });
+  $('#back-to-step2').on('click', function () {
+    new bootstrap.Tab(document.querySelector('#tab-step2')).show();
+  });
   $('#go-to-step2').on('click', function () {
-    const formData = $('#task-form').serialize();
     $('#task-form').block({
       message:
         '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
@@ -444,7 +487,9 @@ $(function () {
     $.ajax({
       url: baseUrl + 'admin/tasks/validate-step1',
       method: 'POST',
-      data: formData,
+      data: new FormData($('#task-form')[0]),
+      processData: false,
+      contentType: false,
 
       success: function (data) {
         $('span.text-error').text(''); // إعادة تعيين الأخطاء
@@ -569,7 +614,6 @@ $(function () {
   }
 
   $('#go-to-step3').on('click', function () {
-    const formData = $('#task-form').serialize();
     $('#task-form').block({
       message:
         '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
@@ -585,7 +629,9 @@ $(function () {
     $.ajax({
       url: baseUrl + 'admin/tasks/validate-step2',
       method: 'POST',
-      data: formData,
+      data: new FormData($('#task-form')[0]),
+      processData: false,
+      contentType: false,
 
       success: function (data) {
         $('span.text-error').text(''); // إعادة تعيين الأخطاء
@@ -594,11 +640,9 @@ $(function () {
           onUnblock: function () {
             if (data.status == 0) {
               showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
-              console.log(data.error);
               handleErrors(data.error);
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
             } else if (data.status == 1) {
-              console.log(data.data);
               renderPricingDetails(data.data);
               handlePricingResponse(data.data.drivers);
 
@@ -628,6 +672,8 @@ $(function () {
 
 function renderPricingDetails(data) {
   console.log(data);
+  $('#assign-section').hide();
+
   let html = `
     <div class="card p-4 shadow-sm rounded-3" style="font-family: Arial, sans-serif;">
       <h2 class="mb-4 text-center">تفاصيل التسعير</h2>

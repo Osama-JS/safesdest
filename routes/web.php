@@ -35,7 +35,7 @@ Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getT
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
 
 Route::get('/mapbox-token', function () {
-  return response()->json(['token' => config('services.mapbox.token')]);
+  return response()->json(['token' => config('services.mapbox.token'), 'style' => config('services.mapbox.style'), 'center' => config('services.mapbox.center')]);
 });
 
 
@@ -163,6 +163,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
         Route::get('/blockages', [BlockagesController::class, 'index'])->name('settings.blockages');
         Route::get('/blockages/data', [BlockagesController::class, 'getData'])->name('settings.blockages.data');
+        Route::get('/blockages/get', [BlockagesController::class, 'getBlockages'])->name('settings.blockages.get');
         Route::post('/blockages', [BlockagesController::class, 'store'])->name('settings.blockages.store');
         Route::get('/blockages/edit/{id}', [BlockagesController::class, 'edit'])->name('settings.blockages.show');
         Route::post('/blockages/status/{id}', [BlockagesController::class, 'change_state'])->name('settings.blockages.status');
@@ -199,6 +200,8 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
 
       Route::get('/customers', [CustomersController::class, 'index'])->name('customers.customers');
+      Route::get('/customers/account/{id}/{name}', [CustomersController::class, 'show'])->name('customers.show');
+      Route::get('/customers/tasks/', [CustomersController::class, 'getCustomerTasks'])->name('customers.tasks');
       Route::get('/customers/get/customers', [CustomersController::class, 'getCustomers'])->name('customers.get');
       Route::post('/customers', [CustomersController::class, 'store'])->name('customers.create');
       Route::get('/customers/data', [CustomersController::class, 'getData'])->name('customers.data');
@@ -212,6 +215,8 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
 
       Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
+      Route::get('/drivers/account/{id}/{name}', [DriversController::class, 'show'])->name('drivers.show');
+      Route::get('/drivers/tasks/', [DriversController::class, 'getCustomerTasks'])->name('drivers.tasks');
       Route::post('/drivers', [DriversController::class, 'store'])->name('drivers.create');
       Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');
       Route::post('/drivers/status', [DriversController::class, 'chang_status'])->name('drivers.status');

@@ -55,4 +55,9 @@ class Driver extends Authenticatable
   {
     return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
   }
+
+  public function tasks()
+  {
+    return $this->belongsTo(Task::class, 'driver_id');
+  }
 }

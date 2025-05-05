@@ -39,6 +39,7 @@ class Customer extends Authenticatable
 
   protected $dates = ['deleted_at'];
 
+
   public function form_template()
   {
     return $this->belongsTo(Form_Template::class, 'form_template_id');
@@ -57,5 +58,15 @@ class Customer extends Authenticatable
   public function points()
   {
     return $this->hasMany(Point::class, 'customer_id');
+  }
+
+  public function tasks()
+  {
+    return $this->hasMany(Task::class, 'customer_id');
+  }
+
+  public function users()
+  {
+    return $this->belongsToMany(User::class);
   }
 }

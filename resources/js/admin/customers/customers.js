@@ -3,18 +3,28 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, generateFields, showFormModal } from '../ajax';
+import { deleteRecord, showAlert, generateFields, showFormModal } from '../../ajax';
 
 // Datatable (jquery)
 $(function () {
+  // Variable declaration for table
   var dt_data_table = $('.datatables-users'),
-    userView = baseUrl + 'app/user/view/account';
-  console.log(templateId);
+    userView = baseUrl + 'admin/customers/account/';
 
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
   }
 
+  var select2 = $('.select2');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select Tags',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
   // ajax setup
   $.ajaxSetup({
     headers: {
@@ -28,7 +38,7 @@ $(function () {
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/drivers/data',
+        url: baseUrl + 'admin/customers/data',
         data: function (d) {
           d.status = $('#statusFilter').val();
           d.search = $('#searchFilter').val();
@@ -39,26 +49,23 @@ $(function () {
           $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
           $('#total-verified').text(json.summary.total_verified);
           $('#total-verified + p').text(`(${((json.summary.total_verified / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-pending').text(json.summary.total_pending);
-          $('#total-pending + p').text(`(${((json.summary.total_pending / json.summary.total) * 100).toFixed(1)})%`);
           $('#total-blocked').text(json.summary.total_blocked);
           $('#total-blocked + p').text(`(${((json.summary.total_blocked / json.summary.total) * 100).toFixed(1)})%`);
+
           return json.data;
         }
       },
       columns: [
-        // columns according to JSON
-        { data: '' },
-        { data: 'fake_id' },
-        { data: 'name' },
-        { data: 'username' },
-        { data: 'email' },
-        { data: 'phone' },
-        { data: 'role' },
-        { data: 'tags' },
-        { data: 'status' },
-        { data: 'created_at' },
-        { data: null }
+        { data: '' }, // للـ control (responsive)
+        { data: 'fake_id' }, // الترقيم التسلسلي
+        { data: 'name' }, // الاسم مع الأفاتار
+        { data: 'email' }, // البريد
+        { data: 'phone' }, // الجوال
+        { data: 'tags' }, // الحالة
+        { data: 'role' }, // الحالة
+        { data: 'status' }, // الحالة
+        { data: 'created_at' }, // تاريخ الإنشاء
+        { data: null } // actions
       ],
       columnDefs: [
         {
@@ -112,35 +119,29 @@ $(function () {
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.username}</span>`;
+            return `<span>${full.email}</span>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span>${full.email}</span>`;
+            return `<span>${full.phone}</span>`;
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            return `<span>${full.phone}</span>`;
+            return `<span>${full.role}</span>`;
           }
         },
         {
           targets: 6,
           render: function (data, type, full, meta) {
-            return `<span>${full.role}</span>`;
+            return `<span>${full.tags}</span>`;
           }
         },
         {
           targets: 7,
-          render: function (data, type, full, meta) {
-            return `<span>${full.tags || ''}</span>`;
-          }
-        },
-        {
-          targets: 8,
           className: 'text-center',
           render: function (data, type, full, meta) {
             let icon = '';
@@ -154,9 +155,7 @@ $(function () {
                 icon = '<i class="ti ti-shield-x text-danger fs-5 ms-2"></i>';
                 break;
               case 'verified':
-                icon = '<i class="ti ti-hourglass text-secondary fs-5 ms-2"></i>';
-              case 'pending':
-                icon = '<i class="ti ti-user-search text-warning fs-5 ms-2"></i>';
+                icon = '<i class="ti ti-hourglass text-warning fs-5 ms-2"></i>';
                 break;
             }
 
@@ -164,13 +163,13 @@ $(function () {
           }
         },
         {
-          targets: 9,
+          targets: 8,
           render: function (data, type, full, meta) {
             return full.created_at;
           }
         },
         {
-          targets: 10,
+          targets: 9,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -188,7 +187,7 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="${userView}" class="dropdown-item">View</a></li>
+                    <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
                   </ul>
                 </div>
@@ -206,12 +205,12 @@ $(function () {
         '<"col-md-6"i>' +
         '<"col-md-6"p>' +
         '>',
-      lengthMenu: [10, 25, 50, 100], //for length of menu
+      lengthMenu: [10, 25, 50, 100],
       language: {
         sLengthMenu: '_MENU_',
         search: '',
         searchPlaceholder: 'Search...',
-        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
         paginate: {
           next: '<i class="ti ti-chevron-right"></i>',
           previous: '<i class="ti ti-chevron-left"></i>'
@@ -219,17 +218,16 @@ $(function () {
       },
       buttons: [
         `<label class='me-2'>
-        <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="verified">Unverified</option>
-          <option value="blocked">Blocked</option>
-        </select>
-      </label>`,
+          <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="verified">Unverified</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>`,
         ` <label class="me-2">
-            <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
-        </label>`
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
+          </label>`
       ],
       responsive: {
         details: {
@@ -269,16 +267,16 @@ $(function () {
   $('.dataTables_filter').hide();
 
   document.addEventListener('formSubmitted', function (event) {
-    let id = $('#driver_id').val();
     $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
     $('#additional-form').html('');
     $('#select-template').val('');
-    if (id) {
-      setTimeout(() => {
-        $('#submitModal').modal('hide');
-      }, 2000);
-    }
+    $('#customer-tags').val([]).trigger('change');
+
+    setTimeout(() => {
+      $('#submitModal').modal('hide');
+    }, 2000);
+
     if (dt_data) {
       dt_data.draw();
     }
@@ -290,42 +288,28 @@ $(function () {
     }
   });
 
-  $(document).on('click', '.edit-record', async function () {
+  $(document).on('click', '.edit-record', function () {
     var data_id = $(this).data('id'),
       dtrModal = $('.dtr-bs-modal.show');
-
     if (dtrModal.length) {
       dtrModal.modal('hide');
     }
-
-    $.get(`${baseUrl}admin/drivers/edit/${data_id}`, async function (data) {
+    $.get(`${baseUrl}admin/customers/edit/${data_id}`, function (data) {
       $('.form_submit').trigger('reset');
+
       $('.text-error').html('');
-
-      $('#driver_id').val(data.id);
-      $('#driver-fullname').val(data.name);
-      $('#driver-username').val(data.username);
-      $('#driver-email').val(data.email);
-      $('#driver-phone').val(data.phone);
+      $('#customer_id').val(data.id);
+      $('#customer-fullname').val(data.name);
+      $('#customer-email').val(data.email);
+      $('#customer-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
-      $('#driver-role').val(data.role_id);
-      $('#driver-team').val(data.time_id);
-      $('#driver-address').val(data.address);
-      $('#driver-commission-type').val(data.commission_type);
-      $('#driver-commission').val(data.commission);
-
-      $('.vehicle-select').val(data.vehicle).trigger('change');
-
-      await delay(300);
-      $('.vehicle-type-select').val(data.vehicle_type).trigger('change');
-
-      await delay(300);
-      $('.vehicle-size-select').val(data.vehicle_size_id).trigger('change');
-
+      $('#customer-role').val(data.role_id);
+      $('#customer-c_name').val(data.company_name);
+      $('#customer-c_address').val(data.company_address);
+      $('#customer-tags').val(data.tagsIds).trigger('change');
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }
-
       $('#additional-form').html('');
       $('#select-template').val(data.form_template_id);
 
@@ -339,13 +323,8 @@ $(function () {
     });
   });
 
-  // وظيفة تأخير باستخدام Promise
-  function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
   $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/drivers/delete/' + $(this).data('id');
+    let url = baseUrl + 'admin/customers/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
   });
 
@@ -359,78 +338,28 @@ $(function () {
       <select class="form-select" name="status">
         <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
         <option value="verified" ${status === 'verified' ? 'selected' : ''}>Unverified</option>
-        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
         <option value="blocked" ${status === 'blocked' ? 'selected' : ''}>Blocked</option>
       </select>
     `;
 
     showFormModal({
-      title: `Change Driver: ${name} Status`,
+      title: `Change Customer: ${name} Status`,
       icon: 'info',
       fields: fields,
-      url: `${baseUrl}admin/drivers/status`,
+      url: `${baseUrl}admin/customers/status`,
       method: 'POST',
-      dataTable: dt_data
+      dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
-
+    $('#customer-tags').val([]).trigger('change');
     $('.text-error').html('');
-    $('#driver_id').val('');
-    $('#modelTitle').html('Add New Driver');
+    $('#customer_id').val('');
+    $('#modelTitle').html('Add New Customer');
     $('#additional-form').html('');
-    $('#select-template').val(templateId).trigger('change');
+    $('#select-template').val('');
   });
 });
-/* ================  Select Vehicles Code   =============== */
-let vehicleIndex = 0;
-const selectedTypes = new Set();
-
-function createVehicleRow(index) {
-  return $('#vehicle-row-template').html().replaceAll('{index}', index);
-}
-
-function updateVehicleRowEvents($row) {
-  const $vehicleSelect = $row.find('.vehicle-select');
-  const $typeSelect = $row.find('.vehicle-type-select');
-  const $sizeSelect = $row.find('.vehicle-size-select');
-
-  $vehicleSelect.on('change', function () {
-    const vehicleId = $(this).val();
-    $typeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
-    $sizeSelect.prop('disabled', true).empty().append('<option>Select a vehicle size</option>');
-
-    if (vehicleId) {
-      $.get(`${baseUrl}chosen/vehicles/types/${vehicleId}`, function (types) {
-        $typeSelect.empty().append('<option value="">Select a vehicle type</option>');
-        types.forEach(type => {
-          $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
-        });
-        $typeSelect.prop('disabled', false);
-      });
-    }
-  });
-
-  $typeSelect.on('change', function () {
-    const typeId = $(this).val();
-    $sizeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
-
-    if (typeId) {
-      selectedTypes.add(typeId);
-      $.get(`${baseUrl}chosen/vehicles/sizes/${typeId}`, function (sizes) {
-        $sizeSelect.empty().append('<option value="">Select a vehicle size</option>');
-        sizes.forEach(size => {
-          $sizeSelect.append(`<option value="${size.id}">${size.name}</option>`);
-        });
-        $sizeSelect.prop('disabled', false);
-      });
-    }
-  });
-}
-
-const $newRow = $(createVehicleRow(vehicleIndex++));
-$('#vehicle-selection-container').append($newRow);
-updateVehicleRowEvents($newRow);

@@ -209,12 +209,13 @@ $(function () {
                 </td>
                 <td>
                     <select class="form-control field-type-select">
-                        <option value="string">نص</option>
-                        <option value="number">رقم</option>
-                        <option value="email">بريد إلكتروني</option>
-                        <option value="date">تاريخ</option>
-                        <option value="file">ملف</option>
-                        <option value="select">اختيار</option>
+                        <option value="string">text</option>
+                        <option value="number">number</option>
+                        <option value="email">email</option>
+                        <option value="date">date</option>
+                        <option value="file">file</option>
+                        <option value="image">image</option>
+                        <option value="select">select</option>
                     </select>
                   <span class="field-${fieldIndex}-type-error text-danger text-error"></span>
 

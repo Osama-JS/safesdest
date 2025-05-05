@@ -14,12 +14,23 @@ $(function () {
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
   }
-  var select2 = $('.select2');
+  var select2 = $('.select-teams');
   if (select2.length) {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
       placeholder: 'Select teams',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+
+  var select2 = $('.select-customers');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select customers',
       dropdownParent: $this.parent(),
       closeOnSelect: false
     });
@@ -286,6 +297,7 @@ $(function () {
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
     $('#user-teams').val([]).trigger('change');
+    $('#user-customers').val([]).trigger('change');
     $('#additional-form').html('');
     $('#select-template').val('');
 
@@ -339,6 +351,7 @@ $(function () {
       $('#phone-code').val(data.phone_code);
       $('#user-role').val(data.role_id);
       $('#user-teams').val(data.teamsIds).trigger('change');
+      $('#user-customers').val(data.customersIds).trigger('change');
 
       $('#additional-form').html('');
       $('#select-template').val(data.form_template_id);
@@ -388,5 +401,6 @@ $(function () {
     $('#additional-form').html('');
     $('#select-template').val('');
     $('#user-teams').val([]).trigger('change');
+    $('#user-customers').val([]).trigger('change');
   });
 });

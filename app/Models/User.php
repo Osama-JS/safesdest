@@ -80,4 +80,9 @@ class User extends Authenticatable
   }
 
   protected $guard_name = 'web';
+
+  public function customers()
+  {
+    return $this->belongsToMany(Customer::class);
+  }
 }

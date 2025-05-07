@@ -22,7 +22,9 @@ return new class extends Migration
       $table->decimal('payment_pending_amount', 10, 2)->nullable();
       $table->jsonb('additional_data')->nullable();
       $table->jsonb('pricing_history')->nullable();
-
+      $table->integer('distribution_attempts')->default(0);
+      $table->timestamp('last_attempt_at')->nullable();
+      $table->foreignId('pending_driver_id')->nullable()->constrained('drivers')->nullOnDelete();
       $table->unsignedBigInteger('order_id')->nullable();
       $table->foreign('order_id')->references('id')->on('orders')->onDelete('restrict');
       $table->unsignedBigInteger('customer_id')->nullable();

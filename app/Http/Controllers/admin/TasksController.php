@@ -31,9 +31,8 @@ use App\Helpers\FileHelper;
 use App\Helpers\IpHelper;
 
 use App\Http\Controllers\FunctionsController;
-
-
-
+use App\Models\Driver;
+use App\Models\Team;
 
 class TasksController extends Controller
 {
@@ -57,6 +56,12 @@ class TasksController extends Controller
         $q->where('id', 'ILIKE', '%' . $search . '%');
       });
     }
+
+    if ($request->has('filter') && !empty($request->filter)) {
+      $searchDate = $request->filter;
+      $query->whereDate('created_at', $searchDate);
+    }
+
 
     $query->orderBy('id', 'DESC');
     $tasks = $query->get();
@@ -101,6 +106,7 @@ class TasksController extends Controller
   }
 
 
+
   public function show($id)
   {
     $task = Task::with(['point', 'customer'])->findOrFail($id);
@@ -115,10 +121,17 @@ class TasksController extends Controller
         'order_id'   => $task->order_id ?? "",
         'created_at' => $task->created_at->toDateTimeString(),
         'owner'      => $task->owner,
-        'pickup_note' => $task->pickup->note,
-        'delivery_note' => $task->delivery->note,
-        'pickup_image' => $task->pickup->note,
-        'delivery_image' => $task->delivery->note,
+        'total_price'      => $task->total_price,
+        'commission'      => $task->commission,
+        'pickup' => $task->pickup,
+        'delivery' => $task->delivery,
+
+
+        'point' => [
+          'latitude'  => $task->pickup->latitude ?? null,
+          'longitude' => $task->pickup->longitude ?? null,
+          'address'   => $task->pickup->address ?? null,
+        ],
 
         'customer'   => [
           'owner'  => $task->owner,
@@ -127,15 +140,90 @@ class TasksController extends Controller
           'email'  => $task->owner == "customer" ? optional($task->customer)->email : optional($task->user)->email,
           'address'  => $task->owner == "customer" ? optional($task->customer)->company_address : '',
         ],
+        'history' => $task->history
+          ->sortByDesc('id') // ✅ الترتيب بحسب ID من الأعلى إلى الأدنى
+          ->map(function ($val) {
+            return [
+              'type' => $val->action_type,
+              'description' => $val->description,
+              'date' => $val->created_at->format('Y-m-d H:i'),
+              'user' => optional($val->user)->name,
+              'file' => $val->file_path
+                ? [
+                  'url' => asset('storage/' . $val->file_path),
+                  'type' => pathinfo($val->file_path, PATHINFO_EXTENSION),
+                  'name' => basename($val->file_path),
+                ]
+                : null,
+              'color' => match ($val->action_type) {
+                'created' => 'success',
+                'updated' => 'info',
+                'deleted' => 'danger',
+                default => 'primary',
+              }
+            ];
+          })
+          ->values()
       ]
+
+
     ]);
   }
 
+  public function chang_status(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:tasks,id',
+      'status' => 'required|in:in_progress,assign,start,completed,canceled',
 
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+    }
 
+    try {
+      $find = Task::find($req->id);
+      $done = $find->update(['status' => $req->status]);
 
+      $userIp = IpHelper::getUserIpAddress();
+      $history = [
+        [
+          'action_type' => $req->status,
+          'description' => 'Change status',
+          'ip' => $userIp,
+          'user_id' => Auth::user()->id
+        ]
+      ];
+      $find->history()->createMany($history);
+      if (!$done) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change Task Status']);
+      }
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Task Status changed']);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
 
+  public function getToAssign($id)
+  {
+    $data = Task::findOrFail($id);
+    $drivers = Driver::where('vehicle_size_id', $data->vehicle_size_id)->get();
+    $data->drivers = $drivers;
+    return response()->json($data);
+  }
 
+  public function edit($id)
+  {
+    $data = Driver::findOrFail($id);
+    $data->img = $data->image ? url($data->image) : null;
+    $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
+    $data->vehicle = $data->vehicle_size->type->vehicle_id;
+    $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
+
+    $data->fields =  $fields;
+
+    return response()->json($data);
+  }
 
   public function store(Request $req, TaskPricingService $pricingService)
   {
@@ -169,8 +257,9 @@ class TasksController extends Controller
         'form_template_id' => $req->template,
         'user_id'          => Auth::id(),
         'pricing_id'       => $taskData['pricing'],
-        'vehicles_size_id' => $taskData['vehicles'][0]
+        'vehicle_size_id' => $taskData['vehicles'][0]
       ];
+
 
       if ($req->filled('owner') && $req->owner === 'customer') {
         $task['customer_id'] = $req->customer;
@@ -179,7 +268,7 @@ class TasksController extends Controller
       $history = [
         [
           'action_type' => 'added',
-          'description' => 'Added By',
+          'description' => 'Added',
           'ip' => $userIp,
           'user_id' => Auth::user()->id
         ],
@@ -189,20 +278,54 @@ class TasksController extends Controller
           'ip' => $userIp,
           'user_id' => Auth::user()->id
         ]
-
       ];
 
       if ($req->filled('task_driver')) {
         $task['driver_id'] = $req->task_driver;
-        $task['status']    = 'assign';
+
+        $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
+
+        $commissionType = $driver->commission_type;
+        $commissionValue = $driver->commission_value;
+
+        // إذا لم يوجد عمولة للسائق نبحث عن الفريق
+        if (!$commissionType && $driver->team_id) {
+          $team = Team::findOrFail($driver->team_id); // توقف التنفيذ إذا لم يوجد الفريق
+          $commissionType = $team->commission_type;
+          $commissionValue = $team->commission_value;
+        }
+
+        // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
+        if (!$commissionType) {
+          $commissionType = Settings::where('key', 'commission_type')->value('value');
+          if ($commissionType === 'rate') {
+            $commissionValue = Settings::where('key', 'commission_rate')->value('value');
+          } elseif ($commissionType === 'fixed') {
+            $commissionValue = Settings::where('key', 'commission_fixed')->value('value');
+          }
+        }
+
+        // نحسب العمولة
+        $task['commission'] = 0;
+        if ($commissionType && $commissionValue !== null) {
+          if ($commissionType === 'rate') {
+            $task['commission'] = ($commissionValue / 100) * $task['total_price'];
+          } elseif ($commissionType === 'fixed') {
+            $task['commission'] = $commissionValue;
+          }
+        }
+
+        // تحديث الحالة وإضافة السجل في التاريخ
+        $task['status'] = 'assign';
         $history[] = [
           'action_type' => 'assign',
-          'description' => 'Assign By',
+          'description' => 'Assign',
           'ip' => $userIp,
-          'user_id' => Auth::user()->id,
+          'user_id' => Auth::id(),
           'driver_id' => $req->task_driver
         ];
       }
+
 
       if ($req->filled('manual_total_pricing')) {
         $task['total_price'] = $req->manual_total_pricing;
@@ -229,7 +352,7 @@ class TasksController extends Controller
         ];
         $history[] = [
           'action_type' => 'advertised',
-          'description' => 'set as Advertised By',
+          'description' => 'set as Advertised',
           'ip' => $userIp,
           'user_id' => Auth::user()->id,
         ];
@@ -348,6 +471,7 @@ class TasksController extends Controller
         }
         return $newTask;
       });
+
 
       DB::commit();
 

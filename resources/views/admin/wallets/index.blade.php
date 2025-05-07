@@ -21,7 +21,7 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2"> {{ __('Wallets') }}</h5>
-            <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p>
+            {{-- <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p> --}}
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-users table">

@@ -4,7 +4,7 @@
       "url": "/",
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
-      "slug": "dashboard"
+      "slug": "user.dashboard"
     },
     {
       "url": "admin/tasks",
@@ -35,6 +35,12 @@
       "name": "Wallets",
       "icon": "menu-icon tf-icons ti ti-wallet",
       "slug": "wallets.wallets"
+    },
+    {
+      "url": "admin/ads",
+      "name": "Tasks Ads",
+      "icon": "menu-icon tf-icons ti ti-speakerphone",
+      "slug": "ads.ads"
     },
     {
       "menuHeader": "Users & Settings"

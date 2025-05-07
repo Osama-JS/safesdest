@@ -25,6 +25,8 @@ return new class extends Migration
       $table->boolean('online')->default(1);
       $table->decimal('longitude', 10, 2)->nullable();
       $table->decimal('altitude', 10, 2)->nullable();
+      $table->timestamp('last_seen_at')->nullable();
+
       $table->enum('commission_type', ['rate', 'fixed', 'subscription'])->nullable();
       $table->decimal('commission_value', 10, 2)->nullable();
       $table->integer('location_update_interval')->default(30);

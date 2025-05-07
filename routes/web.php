@@ -23,10 +23,11 @@ use App\Http\Controllers\admin\settings\TemplateController;
 use App\Http\Controllers\admin\settings\VehiclesController;
 use App\Http\Controllers\admin\settings\GeofencesController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
+use App\Http\Controllers\admin\TasksAdsController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Middleware\EnsureCorrectGuard;
 use App\Http\Middleware\EnsureGuardIs;
-
 
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
@@ -34,9 +35,7 @@ Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
 Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
 
-Route::get('/mapbox-token', function () {
-  return response()->json(['token' => config('services.mapbox.token'), 'style' => config('services.mapbox.style'), 'center' => config('services.mapbox.center')]);
-});
+
 
 
 Route::middleware('guest')->group(function () {
@@ -72,7 +71,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware([config('jetstream.auth_session')])->group(function () {
 
-
   Route::get('/', function () {
     if (Auth::guard('driver')->check()) {
       return redirect()->route('driver.dashboard');
@@ -89,13 +87,34 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
   // Driver routes
   Route::middleware(['guard.strict:driver'])->group(function () {
-    Route::get('/driver/dashboard',  [DashboardController::class, 'index'])->name('driver.dashboard');
+    Route::get('/driver/dashboard',  [App\Http\Controllers\driver\DashboardController::class, 'index'])->name('driver.dashboard');
+    Route::post('/driver/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
+    Route::get('/payment', [PaymentController::class, 'index'])->name('payment.payment');
+
+    Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+
+    // Route لاستقبال الـ callback من HyperPay
+    Route::get('/payment-callback', [PaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
+
+    Route::get('/payment/form', function (Request $request) {
+      return view('payment.form', ['checkout_id' => $request->checkout_id]);
+    })->name('payment.form');
+
+    // Route لعرض صفحة النجاح
+    Route::get('/payment/success', function () {
+      return view('payment.success');
+    })->name('payment.success');
+
+    // Route لعرض صفحة الفشل
+    Route::get('/payment/failure', function () {
+      return view('payment.failure');
+    })->name('payment.failure');
   });
 
   // Customer routes
 
   Route::middleware(['guard.strict:customer'])->group(function () {
-    Route::get('/customer/dashboard',  [DashboardController::class, 'index'])->name('customer.dashboard');
+    Route::get('/customer/dashboard',  [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
   });
 
 
@@ -237,6 +256,12 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::post('tasks', [TasksController::class, 'store'])->name('tasks.create');
       Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');
       Route::post('/tasks/validate-step2', [TasksController::class, 'validateStep2'])->name('tasks.validateStep2');
+      Route::post('/tasks/status', [TasksController::class, 'chang_status'])->name('tasks.status');
+      Route::get('/tasks/assign/{id}', [TasksController::class, 'getToAssign'])->name('tasks.get.assign');
+
+
+      Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');
+      Route::get('/ads/data', [TasksAdsController::class, 'getData'])->name('ads.data');
     });
   });
 });

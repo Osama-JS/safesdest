@@ -17,6 +17,9 @@ class Task extends Model
     'payment_pending_amount',
     'payment_id',
     'additional_data',
+    'distribution_attempts',
+    'last_attempt_at',
+    'pending_driver_id',
     'pricing_history',
     'order_id',
     'customer_id',
@@ -24,6 +27,7 @@ class Task extends Model
     'user_id',
     'form_template_id',
     'pricing_id',
+    'vehicle_size_id'
   ];
 
   protected $casts = [

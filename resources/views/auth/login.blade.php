@@ -58,7 +58,7 @@
                         <div class="mb-6">
                             <label for="login-email" class="form-label">Email</label>
                             <input type="text" class="form-control @error('email') is-invalid @enderror" id="login-email"
-                                name="email" placeholder="john@example.com" autofocus value="admin@mail.com">
+                                name="email" placeholder="john@example.com" autofocus>
                             @error('email')
                                 <span class="invalid-feedback" role="alert">
                                     <span class="fw-medium">{{ $message }}</span>
@@ -70,7 +70,6 @@
                             <div class="input-group input-group-merge @error('password') is-invalid @enderror">
                                 <input type="password" id="login-password"
                                     class="form-control @error('password') is-invalid @enderror" name="password"
-                                    value="admin@123"
                                     placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                     aria-describedby="password" />
                                 <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
@@ -81,22 +80,7 @@
                                 </span>
                             @enderror
                         </div>
-                        <div class="my-8">
-                            <div class="d-flex justify-content-between">
-                                <div class="form-check mb-0 ms-2">
-                                    <input class="form-check-input" type="checkbox" id="remember-me" name="remember"
-                                        {{ old('remember') ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="remember-me">
-                                        Remember Me
-                                    </label>
-                                </div>
-                                @if (Route::has('password.request'))
-                                    <a href="{{ route('password.request') }}">
-                                        <p class="mb-0">Forgot Password?</p>
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
+
 
 
                         <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>

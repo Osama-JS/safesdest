@@ -3,8 +3,8 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../ajax';
-import { mapConfig, onMapReady } from '../mapbox-helper';
+import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../../ajax';
+import { mapsConfig } from '../../mapbox-helper';
 
 $(function () {
   let pointIndex = 0;
@@ -13,11 +13,10 @@ $(function () {
     $('#select-template').val(templateId).trigger('change');
   }
   /* ===========  MapBox  accessToken   ===========*/
-  mapConfig().then(mapConfig => {
-    console.log(mapConfig);
-  });
 
-  mapboxgl.accessToken = mapConfig.token;
+  mapboxgl.accessToken = mapsConfig.token;
+
+  console.log('access token: ', mapboxgl.accessToken);
 
   /* ===========  ajax setup   ===========*/
   $.ajaxSetup({
@@ -62,9 +61,13 @@ $(function () {
 
   const previewMap = new mapboxgl.Map({
     container: `preview-map`,
-    style: 'mapbox://styles/' + mapConfig.style,
-    center: mapConfig.center,
+    style: 'mapbox://styles/' + mapsConfig.style,
+    center: mapsConfig.center,
     zoom: 10
+  });
+
+  $('#submitModal').on('shown.bs.modal', function () {
+    previewMap.resize();
   });
 
   let pickupMarker = null;
@@ -271,8 +274,8 @@ $(function () {
   function setupMapboxLocationHandlers(prefix) {
     const map = new mapboxgl.Map({
       container: `${prefix}-map`,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [46.6753, 24.7136],
+      style: 'mapbox://styles/' + mapsConfig.style,
+      center: mapsConfig.center,
       zoom: 10
     });
 
@@ -298,6 +301,19 @@ $(function () {
       $(`#${prefix}-address`).val(placeName);
       selectedCoords = coords;
       showMap(coords);
+    });
+
+    $(`#${prefix}-parse-link`).on('click', function () {
+      console.log('google');
+      const link = $(`#${prefix}-map-link`).val().trim();
+      const coords = extractCoordinatesFromLink(link);
+
+      if (coords) {
+        selectedCoords = coords;
+        showMap(coords);
+      } else {
+        showAlert('error', 'تعذر استخراج الإحداثيات من الرابط', 3000, true);
+      }
     });
 
     // get coordinates by manual using the map
@@ -389,7 +405,31 @@ $(function () {
     }
   }
 
-  // function call for the tow points
+  function extractCoordinatesFromLink(link) {
+    // 1. regex to match lat,lng in URL
+    const regex = /([-+]?\d{1,3}(?:\.\d+)?),\s*([-+]?\d{1,3}(?:\.\d+)?)/;
+
+    const match = link.match(regex);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lng, lat]; // Mapbox expects [lng, lat]
+      }
+    }
+
+    return null;
+  }
+
+  $('#pickup-toggle-link-input').on('click', function () {
+    $('#pickup-link-input-wrapper').slideToggle();
+  });
+
+  $('#delivery-toggle-link-input').on('click', function () {
+    $('#delivery-link-input-wrapper').slideToggle();
+  });
+
   setupMapboxLocationHandlers('pickup');
   setupMapboxLocationHandlers('delivery');
 
@@ -452,15 +492,6 @@ $(function () {
   const $newRow = $(createVehicleRow(vehicleIndex++));
   $('#vehicle-selection-container').append($newRow);
   updateVehicleRowEvents($newRow);
-
-  // $('#add-vehicle-btn').on('click', function () {
-  //   const $newRow = $(createVehicleRow(vehicleIndex++));
-  //   $('#vehicle-selection-container').append($newRow);
-  //   updateVehicleRowEvents($newRow);
-  // });
-
-  // // أول سطر بشكل افتراضي
-  // $('#add-vehicle-btn').trigger('click');
 
   /* ================  Form Template Code   =============== */
 

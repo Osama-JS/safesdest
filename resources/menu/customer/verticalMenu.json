@@ -1,0 +1,10 @@
+{
+  "menu": [
+    {
+      "url": "/",
+      "icon": "menu-icon tf-icons ti ti-chart-pie-2",
+      "name": "Dashboard",
+      "slug": "customer.dashboard"
+    }
+  ]
+}

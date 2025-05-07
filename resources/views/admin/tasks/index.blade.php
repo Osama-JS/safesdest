@@ -12,11 +12,6 @@
 
     @vite(['resources/css/app.css'])
     <style>
-        #preview-map {
-            height: 80vh !important;
-            width: 100% !important;
-        }
-
         .tab-content,
         .nav-tabs {
 
@@ -29,6 +24,45 @@
         .tab-content::-webkit-scrollbar {
             display: none;
             /* Chrome, Safari */
+        }
+
+        .custom-pickup-marker {
+            background-color: #0d6efd;
+            /* لون الإبرة */
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            border: 2px solid white;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+
+        .mapboxgl-popup {
+            max-width: 250px;
+        }
+
+        .mapboxgl-popup-content {
+            background: rgba(0, 0, 0, 0.85);
+            /* خلفية سوداء شفافة */
+            color: white;
+            /* نص أبيض */
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: none;
+            border: none;
+            /* إزالة أي حدود بيضاء */
+        }
+
+        .mapboxgl-popup-tip {
+            border-top-color: rgba(0, 0, 0, 0.85) !important;
+            /* مثلث السهم نفس لون الخلفية */
         }
     </style>
 
@@ -92,13 +126,22 @@
 <!-- Page Scripts -->
 @section('page-script')
     @vite(['resources/js/mapbox-helper.js'])
-    @vite(['resources/js/admin/tasks.js'])
-    @vite(['resources/js/admin/tasks-preview.js'])
+    @vite(['resources/js/admin/tasks/tasks.js'])
+    @vite(['resources/js/admin/tasks/preview.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
 @endsection
 @section('navbar-custom-nav')
-    <input class="form-control w-auto" type="date" value="{{ now()->format('Y-m-d') }}" id="filter-by-day">
+    <div class="btn-group" role="group" aria-label="Map and Table toggle">
+        <button type="button" class="btn btn-secondary" title="{{ __('View Map Layout') }}">
+            <i class="fas fa-map-marked-alt mx-1"></i> {{ __('Map') }}
+        </button>
+        <button type="button" class="btn btn-outline-secondary" title="{{ __('view Table layout') }}">
+            <i class="fas fa-table mx-1"></i> {{ __('Table') }}
+        </button>
+    </div>
+
+    <input class="form-control w-auto mx-2" type="date" value="{{ now()->format('Y-m-d') }}" id="filter-by-day">
 @endsection
 @section('content')
     <div class="row body-container-block">
@@ -166,13 +209,13 @@
                 </div>
 
                 <div id="task-details-view"
-                    class="position-absolute top-0 start-0 w-100 h-100 bg-white shadow-lg p-4 overflow-auto"
+                    class="position-absolute top-0 start-0 w-100 h-100 bg-white shadow-lg p-0 overflow-auto"
                     style="display: none; z-index: 1050;">
+                    <div class="d-flex justify-content-between p-3" id="taskDetailsControl">
 
-                    <button id="close-task-details" class="btn btn-sm  mb-3">
-                        <i class="ti ti-x"></i>
-                    </button>
-                    <div class="nav-align-top  overflow-auto" style="min-height: 75vh">
+                    </div>
+
+                    <div class="nav-align-top  overflow-auto p-0 " style="min-height: 75vh">
                         <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top" style="top: 0; z-index: 1030;"
                             role="tablist">
                             <li class="nav-item">
@@ -195,7 +238,7 @@
                             </li>
                         </ul>
 
-                        <div class="tab-content" style="max-height: calc(75vh - 60px); overflow-y: auto;">
+                        <div class="tab-content p-0 m-0" style="max-height: calc(75vh - 60px); overflow-y: auto;">
                             <div class="tab-pane fade show active" id="navs-justified-details" role="tabpanel">
 
                                 <div id="task-details-content">
@@ -203,110 +246,17 @@
                                 </div>
                             </div>
 
-                            <div class="tab-pane fade show active" id="navs-justified-owner" role="tabpanel">
+                            <div class="tab-pane fade p-0" id="navs-justified-owner" role="tabpanel">
 
                                 <div id="task-owner-content">
                                     <!-- تفاصيل المهمة ستُحقن هنا -->
                                 </div>
                             </div>
 
-                            <div class="tab-pane fade show active" id="navs-justified-history" role="tabpanel">
-                                <ul class="timeline mb-0">
-                                    <li class="timeline-item timeline-item-transparent">
-                                        <span class="timeline-point timeline-point-primary"></span>
-                                        <div class="timeline-event">
-                                            <div class="timeline-header mb-3">
-                                                <h6 class="mb-0">12 Invoices have been paid</h6>
-                                                <small class="text-muted">12 min ago</small>
-                                            </div>
-                                            <p class="mb-2">
-                                                Invoices have been paid to the company
-                                            </p>
-                                            <div class="d-flex align-items-center mb-2">
-                                                <div class="badge bg-lighter rounded d-flex align-items-center">
-                                                    <img src="{{ asset('assets/img/icons/misc/pdf.png') }}"
-                                                        alt="img" width="15" class="me-2">
-                                                    <span class="h6 mb-0 text-body">invoices.pdf</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li class="timeline-item timeline-item-transparent">
-                                        <span class="timeline-point timeline-point-success"></span>
-                                        <div class="timeline-event">
-                                            <div class="timeline-header mb-3">
-                                                <h6 class="mb-0">Client Meeting</h6>
-                                                <small class="text-muted">45 min ago</small>
-                                            </div>
-                                            <p class="mb-2">
-                                                Project meeting with john @10:15am
-                                            </p>
-                                            <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
-                                                <div class="d-flex flex-wrap align-items-center mb-50">
-                                                    <div class="avatar avatar-sm me-2">
-                                                        <img src="{{ asset('assets/img/avatars/1.png') }}" alt="Avatar"
-                                                            class="rounded-circle" />
-                                                    </div>
-                                                    <div>
-                                                        <p class="mb-0 small fw-medium">Lester McCarthy (Client)</p>
-                                                        <small>CEO of {{ config('variables.creatorName') }}</small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                    <li class="timeline-item timeline-item-transparent">
-                                        <span class="timeline-point timeline-point-info"></span>
-                                        <div class="timeline-event">
-                                            <div class="timeline-header mb-3">
-                                                <h6 class="mb-0">Create a new project for client</h6>
-                                                <small class="text-muted">2 Day Ago</small>
-                                            </div>
-                                            <p class="mb-2">
-                                                6 team members in a project
-                                            </p>
-                                            <ul class="list-group list-group-flush">
-                                                <li
-                                                    class="list-group-item d-flex justify-content-between align-items-center flex-wrap border-top-0 p-0">
-                                                    <div class="d-flex flex-wrap align-items-center">
-                                                        <ul
-                                                            class="list-unstyled users-list d-flex align-items-center avatar-group m-0 me-2">
-                                                            <li data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                                data-bs-placement="top" title="Vinnie Mostowy"
-                                                                class="avatar pull-up">
-                                                                <img class="rounded-circle"
-                                                                    src="{{ asset('assets/img/avatars/5.png') }}"
-                                                                    alt="Avatar" />
-                                                            </li>
-                                                            <li data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                                data-bs-placement="top" title="Allen Rieske"
-                                                                class="avatar pull-up">
-                                                                <img class="rounded-circle"
-                                                                    src="{{ asset('assets/img/avatars/12.png') }}"
-                                                                    alt="Avatar" />
-                                                            </li>
-                                                            <li data-bs-toggle="tooltip" data-popup="tooltip-custom"
-                                                                data-bs-placement="top" title="Julee Rossignol"
-                                                                class="avatar pull-up">
-                                                                <img class="rounded-circle"
-                                                                    src="{{ asset('assets/img/avatars/6.png') }}"
-                                                                    alt="Avatar" />
-                                                            </li>
-                                                            <li class="avatar">
-                                                                <span
-                                                                    class="avatar-initial rounded-circle pull-up text-heading"
-                                                                    data-bs-toggle="tooltip" data-bs-placement="bottom"
-                                                                    title="3 more">+3</span>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </li>
-                                </ul>
+                            <div class="tab-pane fade " id="navs-justified-history" role="tabpanel">
+
                                 <div id="task-history-content">
-                                    <!-- تفاصيل المهمة ستُحقن هنا -->
+
                                 </div>
                             </div>
 

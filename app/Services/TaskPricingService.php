@@ -225,7 +225,6 @@ class TaskPricingService
 
 
     $drivers = Driver::select('id', 'name')->whereIn('vehicle_size_id', $sizes)->get();
-
     $data['drivers'] = $drivers;
 
     return ['status' => true, 'data' => $data, 'task' => $taskData];

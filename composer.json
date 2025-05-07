@@ -9,6 +9,8 @@
   "license": "MIT",
   "require": {
     "php": "^8.2",
+    "barryvdh/laravel-dompdf": "^3.1",
+    "devinweb/laravel-hyperpay": "^1.2",
     "laravel/framework": "^11.0",
     "laravel/jetstream": "^5.3",
     "laravel/sanctum": "^4.0",

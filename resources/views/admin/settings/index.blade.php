@@ -24,7 +24,7 @@
     <div class="card mb-3">
         <div class="card-header border-bottom">
             <h5 class="card-title ">{{ __('Settings') }} | {{ __('General Settings') }}</h5>
-            <p>Add new roles with customized permissions as per your requirement. </p>
+            <p>{{ __('You can manage the main and vital settings of the platform from here, so be careful.') }}</p>
         </div>
     </div>
     <div class="row">
@@ -107,6 +107,49 @@
                         </select>
                         <span class="task-error text-danger"></span>
                     </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Drivers Commission') }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-9">
+                        <label for="commission-type" class="mb-2">{{ __('Default Customer Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="commission_type">
+                            <option value="{{ $val->id }}"
+                                {{ $settings['customer_template']['value'] == $val->id ? 'selected' : '' }}>
+                                {{ $val->name }}
+                            </option>
+                            <option value="rate" {{ $settings['commission_type']['value'] == 'rate' ? 'selected' : '' }}>
+                                {{ __('Rate') }}</option>
+                            <option value="fixed"
+                                {{ $settings['commission_type']['value'] == 'fixed' ? 'selected' : '' }}>
+                                {{ __('Fixed') }}</option>
+                        </select>
+                        <span class="commission_type-error text-danger"></span>
+                    </div>
+                    <div class="form-group mb-9">
+                        <label for="commission_rate" class="mb-2">{{ __('Commission Rate') }}</label>
+                        <input type="number" data-key="commission_rate" value={{ $settings['commission_rate']['value'] }}
+                            class="form-control">
+                        <span class="commission_rate-error text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-9">
+                        <label for="commission_fixed" class="mb-2">{{ __('Commission fixed Amount') }}</label>
+                        <input type="number" data-key="commission_fixed"
+                            value={{ $settings['commission_fixed']['value'] }} class="form-control">
+                        <span class="commission_fixed-error text-danger"></span>
+                    </div>
+
+
 
                 </div>
             </div>

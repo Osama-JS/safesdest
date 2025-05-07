@@ -4,7 +4,7 @@
 
 'use strict';
 import { deleteRecord, showAlert, showFormModal } from '../ajax';
-import { initializeMap } from '../mapbox-helper';
+import { mapsConfig } from '../mapbox-helper';
 
 $(function () {
   var dt_data_table = $('.datatables-blockages');
@@ -180,17 +180,24 @@ $(function () {
   if (verticalExample) {
     new PerfectScrollbar(verticalExample, { wheelPropagation: false });
   }
+  mapboxgl.setRTLTextPlugin(
+    'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js',
+    null,
+    true // تحميل فقط عند الحاجة (lazy load)
+  );
 
-  mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
+  mapboxgl.accessToken = mapsConfig.token;
 
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [46.6753, 24.7136],
+    style: 'mapbox://styles/' + mapsConfig.style,
+    center: mapsConfig.center,
     zoom: 10
   });
 
-  // initializeMap('map', [39.85791, 21.3891], 10, () => {});
+  $('#submitModal').on('shown.bs.modal', function () {
+    map.resize();
+  });
 
   let markers = [];
   let coords = [];

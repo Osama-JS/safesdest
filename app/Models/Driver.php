@@ -27,6 +27,7 @@ class Driver extends Authenticatable
     'online',
     'longitude',
     'altitude',
+    'last_seen_at',
     'commission_type',
     'commission_value',
     'location_update_interval',
@@ -59,5 +60,17 @@ class Driver extends Authenticatable
   public function tasks()
   {
     return $this->belongsTo(Task::class, 'driver_id');
+  }
+
+  public function possible_tasks()
+  {
+    return $this->hasMany(Task::class, 'pending_driver_id');
+  }
+
+
+
+  public function transactions()
+  {
+    return $this->morphMany(Transaction::class, 'payable');
   }
 }

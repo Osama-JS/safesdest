@@ -208,12 +208,19 @@
 
                                                             <!-- Location Geocoder + Map -->
                                                             <div class="mb-3" id="pickup-map-section">
+
+
                                                                 <label for="pickup-location">*
                                                                     {{ __('Location') }}</label>
                                                                 <div class="input-group mb-2">
                                                                     <div class="form-control p-0"
                                                                         id="pickup-geocoder">
                                                                     </div>
+                                                                    <button type="button" title="تحليل رابط موقع"
+                                                                        id="pickup-toggle-link-input"
+                                                                        class="input-group-text bg-white">
+                                                                        <i class="fas fa-link text-secondary"></i>
+                                                                    </button>
                                                                     <button type="button" title="إدخال يدوي"
                                                                         id="pickup-manual-btn"
                                                                         class="input-group-text bg-white">
@@ -226,6 +233,19 @@
                                                                             class="fas fa-location-crosshairs text-secondary"></i>
                                                                     </button>
                                                                 </div>
+                                                                <div id="pickup-link-input-wrapper" class="mt-2"
+                                                                    style="display: none;">
+                                                                    <div class="input-group">
+                                                                        <input type="text" id="pickup-map-link"
+                                                                            class="form-control"
+                                                                            placeholder="ألصق رابط الموقع هنا" />
+                                                                        <button type="button" id="pickup-parse-link"
+                                                                            class="btn btn-secondary">
+                                                                            تحليل الرابط
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
 
                                                                 <!-- Map Container -->
                                                                 <div id="pickup-map-container"
@@ -396,6 +416,11 @@
                                                                     <div class="form-control p-0"
                                                                         id="delivery-geocoder">
                                                                     </div>
+                                                                    <button type="button" title="تحليل رابط موقع"
+                                                                        id="delivery-toggle-link-input"
+                                                                        class="input-group-text bg-white">
+                                                                        <i class="fas fa-link text-secondary"></i>
+                                                                    </button>
                                                                     <button type="button" title="إدخال يدوي"
                                                                         id="delivery-manual-btn"
                                                                         class="input-group-text bg-white">
@@ -407,6 +432,19 @@
                                                                         <i
                                                                             class="fas fa-location-crosshairs text-secondary"></i>
                                                                     </button>
+                                                                </div>
+                                                                <div id="delivery-link-input-wrapper" class="mt-2"
+                                                                    style="display: none;">
+                                                                    <div class="input-group">
+                                                                        <input type="text" id="delivery-map-link"
+                                                                            class="form-control"
+                                                                            placeholder="ألصق رابط الموقع هنا" />
+                                                                        <button type="button"
+                                                                            id="delivery-parse-link"
+                                                                            class="btn btn-secondary">
+                                                                            تحليل الرابط
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
 
                                                                 <!-- Map Container -->
@@ -564,7 +602,7 @@
                         <!-- Right Column (Empty) -->
                         <div class="col-md-7">
                             <div class="w-full" style="position: sticky; top:0 ">
-                                <div id="preview-map" class="w-100" style="height: 500px">
+                                <div id="preview-map" class="w-100" style="height: 80vh">
                                 </div>
                                 <p id="distance-info"
                                     class="mt-2 text-primary fw-bold position-absolute top-0 end-0 m-2 z-3"></p>
@@ -584,5 +622,51 @@
 
         </div>
 
+    </div>
+</div>
+
+
+<div class="modal fade " id="assignModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog " role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignTitle">{{ __('Assign Task') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('teams.store') }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="col-xl-12">
+
+                        <div class="nav-align-top  ">
+
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active">
+                                    <input type="hidden" name="id" id="team_id">
+                                    <span class="id-error text-danger text-error"></span>
+                                    <div class="mb-4">
+                                        <label class="form-label" for="team-name">* {{ 'Team Name' }}</label>
+                                        <input type="text" name="name" class="form-control" id="team-name"
+                                            placeholder="{{ __('enter the team name') }}" />
+                                        <span class="name-error text-danger text-error"></span>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+
+                </div>
+            </form>
+
+        </div>
     </div>
 </div>

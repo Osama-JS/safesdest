@@ -34,7 +34,6 @@ return [
   'mapbox' => [
     'token' => env('MAPBOX_TOKEN'),
     'style' => env('MAPBOX_STYLE'),
-    'center' => env('MAPBOX_CENTER'),
   ],
 
 

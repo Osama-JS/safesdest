@@ -85,4 +85,9 @@ class User extends Authenticatable
   {
     return $this->belongsToMany(Customer::class);
   }
+
+  public function transactions()
+  {
+    return $this->morphMany(Transaction::class, 'payable');
+  }
 }

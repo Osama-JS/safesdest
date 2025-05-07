@@ -30,7 +30,7 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Blockages') }}</h5>
-            <p>Add new roles with customized permissions as per your requirement. </p>
+            {{-- <p>Add new roles with customized permissions as per your requirement. </p> --}}
 
             <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
                 data-bs-target="#submitModal">

@@ -2,30 +2,25 @@
 
 let mapInstance = null;
 let mapReadyCallbackQueue = [];
+export const mapsConfig = {
+  token: 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA',
+  style: 'osama1998/cma8lcv6p00ha01s58rdb73zw',
+  center: [46.6753, 24.7136]
+};
 
-export async function mapConfig() {
-  const res = await fetch(baseUrl + 'mapbox-token');
-  const data = await res.json();
-  return data;
-}
-export async function initializeMap(containerId, center = [39.85791, 21.3891], zoom = 10, onReady) {
+export function initializeMap(containerId, center = [39.85791, 21.3891], zoom = 10, onReady) {
   if (mapInstance) {
     if (onReady) onReady(mapInstance);
     return mapInstance;
   }
 
   try {
-    const res = await fetch(baseUrl + 'mapbox-token');
-    const data = await res.json();
-
-    if (!data.token) throw new Error('فشل في جلب التوكن');
-
-    mapboxgl.accessToken = data.token;
+    mapboxgl.accessToken = mapsConfig.token;
 
     mapInstance = new mapboxgl.Map({
       container: containerId,
-      style: 'mapbox://styles/' + data.style,
-      center: center,
+      style: 'mapbox://styles/' + mapsConfig.style,
+      center: mapsConfig.center,
       zoom: zoom
     });
 

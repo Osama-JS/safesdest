@@ -54,7 +54,7 @@ class Pricing_Template extends Model
 
   public function geoFences()
   {
-    return $this->hasMany(Pricing_GeoFence::class, 'pricing_template_id');
+    return $this->hasMany(Pricing_Geofence::class, 'pricing_template_id');
   }
 
 

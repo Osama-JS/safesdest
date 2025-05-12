@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use App\Helpers\FileHelper;
+use App\Http\Controllers\admin\WalletsController;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
@@ -146,8 +148,6 @@ class RegisterController extends Controller
   }
 
 
-
-
   public function registerCustomer(Request $req)
   {
 
@@ -163,9 +163,43 @@ class RegisterController extends Controller
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        if (!$req->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        // إضافة قواعد بناءً على نوع الحقل
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            break;
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
@@ -200,12 +234,23 @@ class RegisterController extends Controller
 
         foreach ($template->fields as $field) {
           $fieldName = $field->name;
-          if ($req->has("additional_fields.$fieldName")) {
+          $fieldType = $field->type;
+
+          if (in_array($fieldType, ['file', 'image'])) {
+            $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'customers/files');
             $structuredFields[$fieldName] = [
               'label' => $field->label,
-              'value' => $req->input("additional_fields.$fieldName"),
-              'type'  => $field->type,
+              'value' => $path,
+              'type'  => $fieldType,
             ];
+          } else {
+            if ($req->has("additional_fields.$fieldName")) {
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $req->input("additional_fields.$fieldName"),
+                'type'  => $field->type,
+              ];
+            }
           }
         }
         $data['additional_data'] = $structuredFields;
@@ -213,6 +258,7 @@ class RegisterController extends Controller
 
       // إنشاء العميل
       $customer = Customer::create($data);
+
 
       ($this)->sendVerificationEmail($customer, 'customer');
 
@@ -231,6 +277,8 @@ class RegisterController extends Controller
     }
   }
 
+
+
   public function registerDriver(Request $req)
   {
 
@@ -247,12 +295,48 @@ class RegisterController extends Controller
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+
+        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        if (!$req->filled('id') && $field->required) {
+          $rules[$fieldKey][] = 'required';
+        }
+
+        // إضافة قواعد بناءً على نوع الحقل
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            break;
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
+
+
     if ($validator->fails()) {
       return response()->json([
         'status' => 0,
@@ -283,12 +367,23 @@ class RegisterController extends Controller
 
         foreach ($template->fields as $field) {
           $fieldName = $field->name;
-          if ($req->has("additional_fields.$fieldName")) {
+          $fieldType = $field->type;
+
+          if (in_array($fieldType, ['file', 'image'])) {
+            $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'drivers/files');
             $structuredFields[$fieldName] = [
               'label' => $field->label,
-              'value' => $req->input("additional_fields.$fieldName"),
-              'type'  => $field->type,
+              'value' => $path,
+              'type'  => $fieldType,
             ];
+          } else {
+            if ($req->has("additional_fields.$fieldName")) {
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $req->input("additional_fields.$fieldName"),
+                'type'  => $field->type,
+              ];
+            }
           }
         }
         $data['additional_data'] = $structuredFields;
@@ -297,6 +392,8 @@ class RegisterController extends Controller
 
 
       $driver = Driver::create($data);
+
+
 
       ($this)->sendVerificationEmail($driver, 'driver');
 

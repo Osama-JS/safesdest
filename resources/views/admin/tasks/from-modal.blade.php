@@ -14,6 +14,7 @@
                     @csrf
                     <div class="row">
                         <div class="col-md-5">
+                            <input type="hidden" name="id" id="task-id">
 
                             <ul class="nav nav-tabs" id="taskTabs" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -150,7 +151,7 @@
                                                                         <input type="text" id="pickup-contact-name"
                                                                             name="pickup_name" class="form-control"
                                                                             placeholder="{{ __('Enter pickup address') }}"
-                                                                            required value="osama" />
+                                                                            required />
                                                                         <span
                                                                             class="pickup_name-error text-danger text-error"></span>
                                                                     </div>
@@ -161,7 +162,7 @@
                                                                             id="pickup-contact-phone"
                                                                             name="pickup_phone" class="form-control"
                                                                             placeholder="{{ __('Enter pickup address') }}"
-                                                                            required value="83456789" />
+                                                                            required />
                                                                         <span
                                                                             class="pickup_phone-error text-danger text-error"></span>
                                                                     </div>
@@ -184,10 +185,10 @@
                                                                     <div class="col-md-6">
                                                                         <label for="pickup-before">*
                                                                             {{ __('Pickup before') }}</label>
-                                                                        <input type="date" id="pickup-before"
-                                                                            name="pickup_before" class="form-control"
-                                                                            required
-                                                                            value="{{ now()->format('Y-m-d') }}" />
+                                                                        <input type="datetime-local"
+                                                                            id="pickup-before" name="pickup_before"
+                                                                            class="form-control" required
+                                                                            value="{{ now()->format('Y-m-d\TH:i') }}" />
                                                                         <span
                                                                             class="pickup_before-error text-danger text-error"></span>
                                                                     </div>
@@ -352,7 +353,7 @@
                                                                             id="delivery-contact-name"
                                                                             name="delivery_name" class="form-control"
                                                                             placeholder="{{ __('Enter delivery name') }}"
-                                                                            required value="osama" />
+                                                                            required />
                                                                         <span
                                                                             class="delivery_name-error text-danger text-error"></span>
                                                                     </div>
@@ -363,7 +364,7 @@
                                                                             id="delivery-contact-phone"
                                                                             name="delivery_phone" class="form-control"
                                                                             placeholder="{{ __('Enter delivery phone') }}"
-                                                                            required value="054345" />
+                                                                            required />
                                                                         <span
                                                                             class="delivery_phone-error text-danger text-error"></span>
                                                                     </div>
@@ -376,20 +377,22 @@
                                                                     <div class="col-md-6">
                                                                         <label for="delivery-email">*
                                                                             {{ __('Email') }}</label>
-                                                                        <input type="email" id="delivery-email"
+                                                                        <input type="email"
+                                                                            id="delivery-contact-email"
                                                                             name="delivery_email" class="form-control"
-                                                                            placeholder="{{ __('Email') }}" required
-                                                                            value="osama@mak.com" />
+                                                                            placeholder="{{ __('Email') }}"
+                                                                            required />
                                                                         <span
                                                                             class="delivery_email-error text-danger text-error"></span>
                                                                     </div>
                                                                     <div class="col-md-6">
                                                                         <label for="delivery-before">*
                                                                             {{ __('Delivery before') }}</label>
-                                                                        <input type="date" id="delivery-before"
+                                                                        <input type="datetime-local"
+                                                                            id="delivery-before"
                                                                             name="delivery_before"
                                                                             class="form-control" required
-                                                                            value="{{ now()->format('Y-m-d') }}" />
+                                                                            value="{{ now()->format('Y-m-d\TH:i') }}" />
                                                                         <span
                                                                             class="delivery_before-error text-danger text-error"></span>
                                                                     </div>
@@ -403,7 +406,7 @@
                                                                 <input type="text" id="delivery-address"
                                                                     name="delivery_address" class="form-control"
                                                                     placeholder="{{ __('Enter delivery address') }}"
-                                                                    required value="الرياض" />
+                                                                    required />
                                                                 <span
                                                                     class="delivery_address-error text-danger text-error"></span>
                                                             </div>
@@ -539,10 +542,7 @@
                                 <div class="tab-pane fade" id="step3" role="tabpanel">
                                     <div class="mb-3">
                                         <div id="taskFinalDetails">
-
                                         </div>
-
-
                                     </div>
                                     <div id="assign-section" style="display: none">
                                         <div class="mb-3">
@@ -633,40 +633,31 @@
                 <h5 class="modal-title" id="assignTitle">{{ __('Assign Task') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('teams.store') }}">
+            <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('tasks.assign') }}">
                 @csrf
                 <div class="modal-body">
                     <div class="col-xl-12">
-
-                        <div class="nav-align-top  ">
-
+                        <div class="nav-align-top">
                             <div class="tab-content">
                                 <div class="tab-pane fade show active">
-                                    <input type="hidden" name="id" id="team_id">
+                                    <input type="hidden" name="id" id="task-assign-id">
                                     <span class="id-error text-danger text-error"></span>
                                     <div class="mb-4">
-                                        <label class="form-label" for="team-name">* {{ 'Team Name' }}</label>
-                                        <input type="text" name="name" class="form-control" id="team-name"
-                                            placeholder="{{ __('enter the team name') }}" />
+                                        <label class="form-label" for="team-name">* {{ __('Driver') }}</label>
+                                        <select name="driver" id="task-driver"
+                                            class="task-driver form-select"></select>
                                         <span class="name-error text-danger text-error"></span>
                                     </div>
                                 </div>
-
-
                             </div>
                         </div>
                     </div>
-
-
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
-
                 </div>
             </form>
-
         </div>
     </div>
 </div>

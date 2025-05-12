@@ -14,6 +14,7 @@ class Task extends Model
     'commission',
     'payment_method',
     'payment_status',
+    'payment_paid',
     'payment_pending_amount',
     'payment_id',
     'additional_data',
@@ -21,6 +22,7 @@ class Task extends Model
     'last_attempt_at',
     'pending_driver_id',
     'pricing_history',
+    'closed',
     'order_id',
     'customer_id',
     'driver_id',
@@ -33,6 +35,8 @@ class Task extends Model
   protected $casts = [
     'additional_data' => 'array',
     'pricing_history' => 'array',
+    'last_attempt_at' => 'datetime',
+
   ];
 
   protected $appends = ['owner'];
@@ -102,5 +106,10 @@ class Task extends Model
   public function ad()
   {
     return $this->hasOne(Task_Ad::class, 'task_id');
+  }
+
+  public function vehicle_size()
+  {
+    return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
   }
 }

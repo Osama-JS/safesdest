@@ -19,9 +19,12 @@ class CreateTransactionsTable extends Migration
       $table->decimal('amount', 10, 2);
       $table->string('status')->default('pending'); // paid / failed / pending
       $table->string('type'); // wallet_topup / delivery / debt_payment
+      $table->string('payment_type'); // wallet_topup / delivery / debt_payment
       $table->unsignedBigInteger('reference_id')->nullable(); // ID مرتبط مثل order id
       $table->text('note')->nullable(); // ملاحظات إضافية
       $table->string('checkout_id')->nullable(); // من HyperPay
+      $table->string('receipt_image')->nullable(); // مثل credit_card / apple_pay
+      $table->string('receipt_number')->nullable(); // مثل credit_card / apple_pay
       $table->timestamps();
     });
   }

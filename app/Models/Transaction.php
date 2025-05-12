@@ -12,7 +12,9 @@ class Transaction extends Model
     'type',
     'note',
     'reference_id',
-    'checkout_id'
+    'checkout_id',
+    'payment_type',
+    'receipt_image'
   ];
 
   public function payable()

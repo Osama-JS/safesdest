@@ -70,6 +70,24 @@ Route::middleware('guest')->group(function () {
 
 
 Route::middleware([config('jetstream.auth_session')])->group(function () {
+  Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+
+  // Route لاستقبال الـ callback من HyperPay
+  Route::get('/payment-callback', [PaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
+
+  Route::get('/payment/form', function (Request $request) {
+    return view('payment.form', ['checkout_id' => $request->checkout_id]);
+  })->name('payment.form');
+
+  // Route لعرض صفحة النجاح
+  Route::get('/payment/success', function () {
+    return view('payment.success');
+  })->name('payment.success');
+
+  // Route لعرض صفحة الفشل
+  Route::get('/payment/failure', function () {
+    return view('payment.failure');
+  })->name('payment.failure');
 
   Route::get('/', function () {
     if (Auth::guard('driver')->check()) {
@@ -89,26 +107,8 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
   Route::middleware(['guard.strict:driver'])->group(function () {
     Route::get('/driver/dashboard',  [App\Http\Controllers\driver\DashboardController::class, 'index'])->name('driver.dashboard');
     Route::post('/driver/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
-    Route::get('/payment', [PaymentController::class, 'index'])->name('payment.payment');
-
-    Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
-
-    // Route لاستقبال الـ callback من HyperPay
-    Route::get('/payment-callback', [PaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
-
-    Route::get('/payment/form', function (Request $request) {
-      return view('payment.form', ['checkout_id' => $request->checkout_id]);
-    })->name('payment.form');
-
-    // Route لعرض صفحة النجاح
-    Route::get('/payment/success', function () {
-      return view('payment.success');
-    })->name('payment.success');
-
-    // Route لعرض صفحة الفشل
-    Route::get('/payment/failure', function () {
-      return view('payment.failure');
-    })->name('payment.failure');
+    Route::post('/driver/respond/task', [App\Http\Controllers\driver\DashboardController::class, 'respondToTask'])->name('driver.respond.task');
+    Route::post('/driver/task/histories', [App\Http\Controllers\driver\DashboardController::class, 'taskAddToHistories'])->name('task-histories.store');
   });
 
   // Customer routes
@@ -238,6 +238,7 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('/drivers/tasks/', [DriversController::class, 'getCustomerTasks'])->name('drivers.tasks');
       Route::post('/drivers', [DriversController::class, 'store'])->name('drivers.create');
       Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');
+      Route::get('/drivers/git', [DriversController::class, 'getDrivers'])->name('drivers.git');
       Route::post('/drivers/status', [DriversController::class, 'chang_status'])->name('drivers.status');
       Route::get('/drivers/edit/{id}', [DriversController::class, 'edit'])->name('drivers.show');
       Route::delete('/drivers/delete/{id}', [DriversController::class, 'destroy'])->name('drivers.delete');
@@ -252,12 +253,20 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
       Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');
       Route::get('/tasks/data', [TasksController::class, 'getData'])->name('tasks.data');
-      Route::get('/tasks/{id}', [TasksController::class, 'show'])->name('task.show');
+      Route::get('/tasks/show/{id}', [TasksController::class, 'show'])->name('task.show');
       Route::post('tasks', [TasksController::class, 'store'])->name('tasks.create');
       Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');
       Route::post('/tasks/validate-step2', [TasksController::class, 'validateStep2'])->name('tasks.validateStep2');
       Route::post('/tasks/status', [TasksController::class, 'chang_status'])->name('tasks.status');
       Route::get('/tasks/assign/{id}', [TasksController::class, 'getToAssign'])->name('tasks.get.assign');
+      Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
+      Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
+      Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
+
+      Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
+      Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
+      Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');
+
 
 
       Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');

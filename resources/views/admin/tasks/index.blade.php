@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Tasks'))
+@section('title', __('Tasks Map'))
 
 <!-- Vendor Styles -->
 @section('vendor-style')
@@ -108,7 +108,7 @@
           <span class="vehicles-{index}-vehicle_size-error text-danger text-error"></span>
 
         </div>
-        <div class="col-md-2">
+        <div class="col-md-2 vehicle-quantity">
           <label class="form-label">* Quantity</label>
           <input type="number" class="form-control vehicle-quantity" name="vehicles[{index}][quantity]" min="1" value="1" />
           <span class="vehicles-{index}-quantity-error text-danger text-error"></span>
@@ -130,20 +130,49 @@
     @vite(['resources/js/admin/tasks/preview.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
+    <script>
+        const navContent = document.querySelector('#navbar-custom-nav-container');
+        const mobileContainer = document.querySelector('#mobile-custom-nav');
+        const originalContent = navContent?.innerHTML;
+
+        function moveCustomNav() {
+            if (window.innerWidth < 1000) {
+                // شاشة صغيرة، انقل المحتوى إلى الأسفل
+                if (originalContent && mobileContainer && mobileContainer.innerHTML.trim() === '') {
+                    mobileContainer.innerHTML = originalContent;
+                    navContent.innerHTML = '';
+                }
+            } else {
+                // شاشة كبيرة، أعد المحتوى إلى مكانه الأصلي
+                if (originalContent && navContent && navContent.innerHTML.trim() === '') {
+                    navContent.innerHTML = originalContent;
+                    mobileContainer.innerHTML = '';
+                }
+            }
+        }
+
+        moveCustomNav(); // تنفيذ أولي
+        window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
+    </script>
 @endsection
 @section('navbar-custom-nav')
-    <div class="btn-group" role="group" aria-label="Map and Table toggle">
-        <button type="button" class="btn btn-secondary" title="{{ __('View Map Layout') }}">
+    <div class="btn-group col" role="group" aria-label="Map and Table toggle">
+        <a href="{{ route('tasks.tasks') }}" class="btn btn-secondary" title="{{ __('View Map Layout') }}">
             <i class="fas fa-map-marked-alt mx-1"></i> {{ __('Map') }}
-        </button>
-        <button type="button" class="btn btn-outline-secondary" title="{{ __('view Table layout') }}">
+        </a>
+        <a href="{{ route('tasks.list') }}" class="btn btn-outline-secondary" title="{{ __('view Table layout') }}">
             <i class="fas fa-table mx-1"></i> {{ __('Table') }}
-        </button>
+        </a>
     </div>
 
-    <input class="form-control w-auto mx-2" type="date" value="{{ now()->format('Y-m-d') }}" id="filter-by-day">
+    <div class="col">
+        <input class="form-control w-auto mx-2" type="date" value="{{ now()->format('Y-m-d') }}" id="filter-by-day">
+
+    </div>
 @endsection
 @section('content')
+    <div id="mobile-custom-nav" class="d-lg-none overflow-auto z-1 card shadow mb-3 p-2" style="white-space: nowrap;">
+    </div>
     <div class="row body-container-block">
 
         <div id="task-details-container" class="col-md-4 mb-3" style="display: none;"></div>

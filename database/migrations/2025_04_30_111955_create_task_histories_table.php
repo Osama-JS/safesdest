@@ -13,7 +13,7 @@ return new class extends Migration
   {
     Schema::create('task_histories', function (Blueprint $table) {
       $table->id();
-      $table->enum('action_type', ['update', 'added', 'pending_payment', 'payment_failed', 'advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled']);
+      $table->string('action_type');
       $table->text('description')->nullable();
       $table->string('file_path')->nullable();
       $table->string('file_type')->nullable();

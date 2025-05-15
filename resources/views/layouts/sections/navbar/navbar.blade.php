@@ -52,8 +52,9 @@
                 </a>
             </div>
         </div> --}}
-        @yield('navbar-custom-nav')
-        <!-- /Search -->
+        <div id="navbar-custom-nav-container" class="d-none d-lg-flex align-items-center justify-content-between ">
+            @yield('navbar-custom-nav')
+        </div>
     @endif
 
     <ul class="navbar-nav flex-row align-items-center ms-auto">

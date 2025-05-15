@@ -186,6 +186,9 @@ export function generateFields(fields, generateSection) {
         case 'file':
           inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" ${field.required ? 'required' : ''}>`;
           break;
+        case 'image':
+          inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+          break;
         case 'select':
           inputField = `<select name="additional_fields[${field.name}]" class="form-select" ${field.required ? 'required' : ''}>
           ${(() => {

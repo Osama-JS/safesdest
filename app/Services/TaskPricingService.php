@@ -180,6 +180,7 @@ class TaskPricingService
     $data = [
       'pricing_role' => $pricingTemplate->name,
       'pricing_method' => $method->name ?? 'Place your offer',
+      'pricing_method_id' => $method->id ?? 0,
     ];
 
     $taskData = [

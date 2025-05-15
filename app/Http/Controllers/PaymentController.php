@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Task;
 use App\Models\Transaction;
-use Devinweb\LaravelHyperpay\Facades\LaravelHyperpay;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Mail;
 use App\Services\HyperpayService;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use Devinweb\LaravelHyperpay\Facades\LaravelHyperpay;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -25,56 +30,193 @@ class PaymentController extends Controller
     return view('payment.checkout');
   }
 
-  // بدء عملية الدفع
   public function initiatePayment(Request $request)
   {
-    // تأكد من البيانات المدخلة
-    $amount = $request->input('amount');
-    $checkoutData = $this->hyperpay->createCheckout($amount);
+    $validator = Validator::make($request->all(), [
+      'id' => 'nullable|exists:tasks,id',
+      'payment_method' => 'required|in:credit,banking,wallet,cash',
 
-    // dd(auth()->user()->transactions);
-    if ($checkoutData && isset($checkoutData['result']['code']) && $checkoutData['result']['code'] == '000.200.100') {
-      // إنشاء سجل المعاملة في قاعدة البيانات
-      $transaction = auth()->user()->transactions()->create([
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+    }
+    $task = Task::find($request->input('id'));
+
+    DB::beginTransaction();
+    if (in_array($request->payment_method, ['credit', 'cash'])) {
+      if ($request->payment_method === 'credit') {
+        $amount = $task->total_price;
+        $payment_paid = 'all';
+      } else {
+        $payment_paid = 'just_commission';
+        $amount = $task->commission;
+      }
+      $checkoutData = $this->hyperpay->createCheckout($amount);
+      if ($checkoutData && isset($checkoutData['result']['code']) && $checkoutData['result']['code'] == '000.200.100') {
+
+        if ($task->owner == 'customer') {
+          $user = $task->customer;
+        } else {
+          $user = $task->user;
+        }
+        $transaction = $user->transactions()->create([
+          'amount' => $amount,
+          'status' => 'pending',
+          'type' => 'delivery',
+          'payment_type' => 'credit',
+          'reference_id' => $task->id,
+          'note' => 'دفع رسوم توصيل',
+          'checkout_id' => $checkoutData['id']
+        ]);
+
+        $paymentUrl = "https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=" . $checkoutData['id'];
+        $url = route('payment.form', ['checkout_id' => $checkoutData['id']]);
+        $task->update([
+          'payment_method' => $request->payment_method,
+          'payment_status' => 'pending',
+          'payment_paid' => $payment_paid,
+          'payment_id' => $transaction->id,
+        ]);
+        DB::commit();
+        return response()->json([
+          'status' => 1,
+          'url' => $url,
+          'hyperpay' => true,
+          'success' => __('You will now be redirected to the payment completion page'),
+        ]);
+      }
+      return response()->json([
+        'status' => 2,
+        'error' => __('An error occurred while starting the payment process'),
+      ]);
+    } elseif ($request->payment_method === 'banking') {
+      $amount = $task->total_price;
+
+      if ($task->owner == 'customer') {
+        $user = $task->customer;
+      } else {
+        $user = $task->user;
+      }
+
+      $result = null;
+      if ($request->hasFile('receipt_image')) {
+        $result = (new FunctionsController)->convert($request->receipt_image, 'tasks/payment');
+      }
+      $transaction = $user->transactions()->create([
         'amount' => $amount,
         'status' => 'pending',
         'type' => 'delivery',
-        'reference_id' => $request->input('delivery_id'),
-        'note' => 'دفع رسوم توصيل',
-        'checkout_id' => $checkoutData['id']
+        'payment_type' => 'banking',
+        'reference_id' => $task->id,
+        'note' => $request->note,
+        'receipt_image' => $result,
+        'receipt_number' => $request->receipt_number,
       ]);
 
-      $paymentUrl = "https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=" . $checkoutData['id'];
-      return redirect()->to(route('payment.form', ['checkout_id' => $checkoutData['id']]));
-    }
+      $task->update([
+        'payment_method' => 'banking',
+        'payment_status' => 'pending',
+      ]);
 
-    return redirect()->route('payment.failure')->with('error', 'حدث خطأ أثناء بدء عملية الدفع.');
+      DB::commit();
+      return response()->json([
+        'status' => 1,
+        'success' => __('ستم مراجعة التحويل البنكي ثم إبلاغك بالنتيجة عبر البريد الإلكتروني'),
+      ]);
+    } elseif ($request->payment_method === 'wallet') {
+      // تنفيذ عملية الدفع من المحفظة
+      // ...
+    }
+    return response()->json([
+      'status' => 2,
+      'success' => __('طريقة الدفع غير مدعومة'),
+    ]);
   }
 
   public function handlePaymentCallback(Request $request)
   {
     $checkoutId = $request->query('id');
 
-    $transaction = Transaction::where('checkout_id', $checkoutId)->first();
+    $transaction = Transaction::firstWhere('checkout_id', $checkoutId);
+
 
     if (!$transaction) {
-      return redirect()->route('payment.failure')->withErrors(['msg' => 'المعاملة غير موجودة']);
+      return redirect()
+        ->route('payment.failure')
+        ->withErrors(['msg' => 'المعاملة غير موجودة.']);
     }
 
+    // استعلام حالة الدفع
     $result = app(HyperpayService::class)->getPaymentStatus($checkoutId);
+    // ❶ التحقق من وجود الكود
+    $code        = data_get($result, 'result.code');
+    $description = data_get($result, 'result.description', 'غير معرَّف');
 
-    if (!empty($result['result']['code']) && in_array($result['result']['code'], ['000.100.110', '000.100.111', '000.100.112'])) {
-      $transaction->update(['status' => 'paid']);
+    // سجِّل كل شىء للفحص لاحقاً
+    Log::info('HyperPay-Callback', [
+      'checkout_id' => $checkoutId,
+      'code'        => $code,
+      'description' => $description,
+      'payload'     => $result,
+    ]);
 
-      // إنشاء الفاتورة وإرسالها كما كنت تفعل سابقاً
-      $pdf = Pdf::loadView('invoices.receipt', ['transaction' => $transaction]);
-      $pdf->setOptions(['defaultFont' => 'Tajawal']);
-      Mail::to($transaction->payable->email)->send(new \App\Mail\TransactionReceipt($transaction, $pdf));
+    /***********************************************************************
+    | تصنيف أكواد HyperPay (طبقاً للوثائق الرسمية)                       |
+    |---------------------------------------------------------------------|
+    | - نجاح فوري          : 000.000.*  أو 000.100.1xx                    |
+    | - نجاح مع مراجعة     : 000.400.0xx أو 000.400.100                   |
+    | - مُعلَّق            : 000.200.*                                    |
+    | - فشل / خطأ مصادقة   : 800.*  / 900.*  / أكواد أخرى                 |
+     ***********************************************************************/
+    $status = 'failed';            // القيمة الافتراضية
+    $userMessage = 'فشلت عملية الدفع.';
+
+    if (Str::startsWith($code, ['000.000', '000.100'])) {          // نجاح فوري
+      $status      = 'paid';
+      $userMessage = 'تم الدفع بنجاح.';
+    } elseif (Str::startsWith($code, '000.400')) {                 // نجاح مع مراجعة
+      $status      = 'review';
+      $userMessage = 'تمت العملية، ولكن تحتاج إلى مراجعة يدوية.';
+    } elseif (Str::startsWith($code, '000.200')) {                 // مُعلَّق
+      $status      = 'pending';
+      $userMessage = 'العملية قيد الانتظار… سيتم تحديثها لاحقاً.';
+    } elseif (Str::startsWith($code, ['800', '900'])) {            // خطأ مصادقة أو فشل
+      $status      = 'auth_error';
+      $userMessage = 'فشل التحقق من الهوية لدى بوابة الدفع.';
+    }
+
+    // ❷ تحديث سجل المعاملة
+    $transaction->update([
+      'status'        => $status,
+      'gateway_code'  => $code,
+      'gateway_msg'   => $description,
+      'processed_at'  => Carbon::now(),
+    ]);
+
+    /***************** إجراءات ما بعد كل حالة *****************/
+    if ($status === 'paid') {                       // ✅ نجاح فوري
+      // توليد الفاتورة وإرسالها
+      $pdf = PDF::loadView('invoices.receipt', ['transaction' => $transaction])
+        ->setOptions(['defaultFont' => 'Tajawal']);
+
+      if ($transaction->payable && $transaction->payable->email) {
+        Mail::to($transaction->payable->email)
+          ->send(new \App\Mail\TransactionReceipt($transaction, $pdf));
+      }
 
       return redirect()->route('payment.success');
-    } else {
-      $transaction->update(['status' => 'failed']);
-      return redirect()->route('payment.failure')->withErrors(['msg' => 'فشلت عملية الدفع.']);
     }
+
+    if ($status === 'pending' || $status === 'review') {
+      // صفحة انتظار أو مراجعة
+      return redirect()
+        ->route('payment.pending')
+        ->with('msg', $userMessage);
+    }
+
+    /* جميع الحالات الأخرى تُعامل كفشل */
+    return redirect()
+      ->route('payment.failure')
+      ->withErrors(['msg' => $userMessage . " ({$code})"]);
   }
 }

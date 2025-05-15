@@ -13,9 +13,7 @@ class DriverScheduler
   {
     $schedule->call(function () {
       Log::info('🔄 Running scheduler...');
-      $tasks = Task::where('status', 'in_progress')
-        ->whereNull('pending_driver_id')
-        ->where('distribution_attempts', '<', 5)
+      $tasks = Task::where('status', 'in_progress')->where('distribution_attempts', '<', 5)
         ->get();
       Log::info('📝 Found ' . $tasks->count() . ' tasks to distribute.');
 

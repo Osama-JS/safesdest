@@ -24,7 +24,10 @@ class CreateTransactionsTable extends Migration
       $table->text('note')->nullable(); // ملاحظات إضافية
       $table->string('checkout_id')->nullable(); // من HyperPay
       $table->string('receipt_image')->nullable(); // مثل credit_card / apple_pay
-      $table->string('receipt_number')->nullable(); // مثل credit_card / apple_pay
+      $table->string('receipt_number')->nullable();
+      $table->unsignedBigInteger('user_check')->nullable();
+      $table->string('user_ip')->nullable();
+      $table->timestamp('checkout_at')->nullable(); // تاريخ الدفع
       $table->timestamps();
     });
   }

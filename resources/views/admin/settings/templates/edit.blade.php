@@ -40,6 +40,11 @@
         const geoFences = @json($geofences);
     </script>
 @endsection
+@section('templates-isactive')
+active
+@endsection
+
+
 
 @section('content')
 

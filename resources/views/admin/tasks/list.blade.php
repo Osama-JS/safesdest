@@ -55,6 +55,9 @@
         window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
     </script>
 @endsection
+@section('task-isactive')
+    active
+@endsection
 @section('navbar-custom-nav')
 
     <!-- Toggle Buttons -->
@@ -76,16 +79,16 @@
 
         <!-- Owner Type Dropdown -->
         <div>
-            <select class="form-select">
-                <option value="user">Admin</option>
+            <select class="form-select" id="owner-fillter">
+                <option value="admin">Admin</option>
                 <option value="customer">Customer</option>
             </select>
         </div>
 
         <!-- Teams Dropdown -->
         <div>
-            <select class="form-select task-teams-select2">
-                <option value="">ALL Teams</option>
+            <select class="form-select task-teams-select2" id="team-fillter">
+                <option value="">All Teams</option>
                 @foreach ($teams as $key)
                     <option value="{{ $key->id }}">{{ $key->name }}</option>
                 @endforeach
@@ -94,8 +97,8 @@
 
         <!-- Drivers Dropdown -->
         <div>
-            <select class="form-select task-drivers-select2">
-                <option value="">Select Driver</option>
+            <select class="form-select task-drivers-select2" id="driver-fillter">
+                <option value="">All Driver</option>
                 {{-- Populate via JS if needed --}}
             </select>
         </div>
@@ -142,7 +145,8 @@
                     <h5 class="modal-title" id="assignTitle">{{ __('Assign Task') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form class="add-new-user pt-0 payment_submit" method="POST" action="{{ route('payment.initiate') }}">
+                <form class="add-new-user pt-0 payment_submit payment_form" method="POST"
+                    action="{{ route('payment.initiate') }}">
                     @csrf
                     <div class="modal-body">
                         <div class="col-xl-12">
@@ -199,6 +203,30 @@
                         <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
                     </div>
                 </form>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade " id="checkPaymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignTitle">{{ __('Check Payment') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="add-new-user pt-0 payment_submit payment_form" method="POST"
+                    action="{{ route('payment.initiate') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div id="checkPaymentContainer">
+
+                        </div>
+
+                    </div>
+
+                </form>
+
             </div>
         </div>
     </div>

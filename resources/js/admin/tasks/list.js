@@ -64,6 +64,7 @@ $(function () {
 
   var start_from = moment().startOf('month').format('YYYY-MM-DD');
   var end_to = moment().endOf('month').format('YYYY-MM-DD');
+
   // Users datatable
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
@@ -74,6 +75,9 @@ $(function () {
         data: function (d) {
           d.from_date = start_from;
           d.to_date = end_to;
+          d.owner = $('#owner-fillter').val();
+          d.team = $('#team-fillter').val();
+          d.driver = $('#driver-fillter').val();
         }
       },
       columns: [
@@ -265,7 +269,7 @@ $(function () {
           </select>
         </label>`,
         ` <label class="me-2">
-              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search Tasks" />
           </label>`
       ],
       responsive: {
@@ -303,6 +307,15 @@ $(function () {
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
+  $('#owner-fillter').on('change', function () {
+    dt_data.draw();
+  });
+  $('#team-fillter').on('change', function () {
+    dt_data.draw();
+  });
+  $('#driver-fillter').on('change', function () {
+    dt_data.draw();
+  });
   $('.dataTables_filter').hide();
 
   $(document).on('click', '.payment-task', function () {
@@ -312,14 +325,104 @@ $(function () {
       if (data.status === 2) {
         showAlert('error', data.error);
         return;
+      } else if (data.status === 3) {
+        showAlert('success', data.message);
+        $('#assignTitle').html(`Check Payment Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+        $('#checkPaymentModal').modal('show');
+        $('#task-payment-id').val(id);
+
+        var checkButtons = '';
+        if (data.data.status === 'pending') {
+          checkButtons = `
+            <button type="button" data-id="${data.data.reference_id}"  class="btn btn-primary confirm-payment">Confirm the payment</button>
+            <button type="button" data-id="${data.data.reference_id}"  class="btn btn-danger cancel-payment">Undo the process</button>
+
+            <div class="alert alert-danger mt-2">When you cancel a payment, it will be completely deleted along with its files.</div>`;
+        }
+
+        var checkHtml = `
+        <div class="alert alert-light alert-dismissible">
+          <h4 class="alert-heading">Check Payment</h4>
+          <p>Task ID: <span class="px-3 py-0 bg-info text-white rounded">#${data.data.reference_id}</span></p>
+          <p>Transaction ID: <span class="px-3 py-0 bg-info text-white rounded">#${data.data.id}</span></p>
+          <p>Amount: <span class="px-3 py-0 bg-info text-white rounded">${data.data.amount} SAR </span></p>
+          <p>Payment Method: <span class="px-3 py-0 bg-info text-white rounded"> ${data.data.payment_type} </span></p>
+          <p>Payment Status: <span class="px-3 py-0 bg-warning text-white rounded">${data.data.status}</span></p>
+          <p>Payment Receipt: </p>
+          <img src="${baseUrl + data.data.receipt_image}" alt="Receipt" class="img-fluid mb-2" style="max-width: 100%; height: auto; "/>
+
+          <p>Payment Note: ${data.data.note}</p>
+          <p>Payment Created At: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user}</span></p>
+          <p>Payment Created By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.created_at}</span></p>
+
+          <div>
+            ${checkButtons}
+          </div>
+
+        </div>
+
+        `;
+        $('#checkPaymentContainer').html(checkHtml);
+
+        console.log(data);
+        return;
+      } else {
+        $('#task-payment-commission').val(data.commission);
+        $('#task-payment-total').val(data.total_price);
+        $('#assignTitle').html(`Payment Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+        $('#paymentModal').modal('show');
+        $('#task-payment-id').val(id);
+        $('#pay-price').text(data.total_price + ' SAR');
       }
-      $('#task-payment-commission').val(data.commission);
-      $('#task-payment-total').val(data.total_price);
-      $('#assignTitle').html(`Payment Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
-      $('#paymentModal').modal('show');
-      $('#task-payment-id').val(id);
-      $('#pay-price').text(data.total_price + ' SAR');
     });
+  });
+
+  $(document).on('click', '.confirm-payment', function () {
+    console.log('confirm payment');
+    const id = $(this).data('id');
+    fetch(baseUrl + 'admin/tasks/payment/confirm/' + id, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json'
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 1) {
+          showAlert('success', data.message, 5000, true);
+          dt_data.draw();
+        } else {
+          showAlert('danger', data.message, 5000, true);
+        }
+      })
+      .catch(error => {
+        showAlert('danger', 'Error to connect with server', 5000, true);
+        console.error(error);
+      });
+  });
+
+  $(document).on('click', '.cancel-payment', function () {
+    console.log('confirm payment');
+    const id = $(this).data('id');
+    fetch(baseUrl + 'admin/tasks/payment/cancel/' + id, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json'
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 1) {
+          showAlert('success', data.message, 5000, true);
+          dt_data.draw();
+        } else {
+          showAlert('danger', data.message, 5000, true);
+        }
+      })
+      .catch(error => {
+        showAlert('danger', 'Error to connect with server', 5000, true);
+        console.error(error);
+      });
   });
 
   $(document).on('change', '#task-payment-method', function () {

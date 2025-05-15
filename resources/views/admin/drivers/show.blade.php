@@ -23,6 +23,9 @@
     @vite(['resources/js/admin/drivers/show.js'])
 
 @endsection
+@section('drivers.isactive')
+active
+@endsection
 
 @section('content')
     <div class="row">

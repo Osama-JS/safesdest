@@ -371,9 +371,11 @@ $(function () {
                   <strong>Created At</strong>
                   <span>${task.data.created_at || '—'}</span>
                 </li>
+                </ul>
                  <div class="divider text-start">
                       <div class="divider-text"><strong>Pickup info</strong></div>
                   </div>
+                  <ul class="bg-light list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Name</strong>
                   <span>${task.data.pickup.contact_name || '—'}</span>
@@ -405,11 +407,13 @@ $(function () {
                   <strong>Pickup Reference Image</strong>
                   <img src="${task.data.pickup.note || '—'}" >
                 </li>
+                </ul>
 
 
                 <div class="divider text-start">
                       <div class="divider-text"><strong>Delivery info</strong></div>
                   </div>
+                  <ul class="bg-light list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Name</strong>
                   <span>${task.data.delivery.contact_name || '—'}</span>
@@ -489,7 +493,9 @@ $(function () {
               ${(task.data.history || [])
                 .map(event => {
                   const userInfo = event.user ? `<div class="text-muted small mb-1">By: ${event.user}</div>` : '';
-                  const driverInfo = event.driver ? `<div class="text-muted small mb-1">By: ${event.driver}</div>` : '';
+                  const driverInfo = event.driver
+                    ? `<div class="text-muted small mb-1">${event.type === 'assign' ? 'To' : 'By'}: ${event.driver}</div>`
+                    : '';
                   const fileInfo = event.file
                     ? `
                       <div class="d-flex align-items-center mt-2">
@@ -505,10 +511,10 @@ $(function () {
 
                   return `
                     <li class="timeline-item timeline-item-transparent">
-                      <span class="timeline-point timeline-point-${event.color || 'primary'}"></span>
+                      <span class="timeline-point timeline-point-${event.color || 'secundary'}"></span>
                       <div class="timeline-event">
                         <div class="timeline-header mb-2">
-                          <h6 class="mb-0 border rounded  px-3 py-2">${event.type || 'Unknown Action'}</h6>
+                          <h6 class="mb-0 border rounded border-${event.color || 'secundary'}  px-3 py-2">${event.type || 'Unknown Action'}</h6>
                           <small class="text-muted">${event.date || ''}</small>
                         </div>
                         ${userInfo}

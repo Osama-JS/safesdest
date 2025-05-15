@@ -144,13 +144,15 @@ class DashboardController extends Controller
         $fileType = $file->getClientOriginalExtension();
       }
 
+      $driver = Driver::findOrFail(Auth::user()->id);
+
 
       Task_History::create([
         'task_id' => $req->task,
         'description' => $req->description,
         'file_path' => $filePath,
         'file_type' => $fileType,
-        'driver_id' => auth()->user()->type === 'driver' ? auth()->id() : null,
+        'driver_id' => $driver->id,
         'action_type' => 'added',
       ]);
 

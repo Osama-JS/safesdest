@@ -70,7 +70,7 @@
                 @endphp
 
                 {{-- main menu --}}
-                <li class="menu-item {{ $activeClass }}">
+                <li class="menu-item {{ $activeClass }} @yield($menu->isactive ?? '')">
                     <a href="{{ isset($menu->url) ? url($menu->url) : 'javascript:void(0);' }}"
                         class="{{ isset($menu->submenu) ? 'menu-link menu-toggle' : 'menu-link' }}"
                         @if (isset($menu->target) and !empty($menu->target)) target="_blank" @endif>

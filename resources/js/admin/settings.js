@@ -10,7 +10,7 @@ $(function () {
     }
   });
 
-  $('.update-setting-select').on('change', function () {
+  $('.update-setting-select, .update-setting-input').on('change', function () {
     var settingKey = $(this).data('key');
     var settingValue = $(this).val();
 

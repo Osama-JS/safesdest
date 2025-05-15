@@ -25,6 +25,7 @@ class Driver extends Authenticatable
     'status',
     'address',
     'online',
+    'free',
     'longitude',
     'altitude',
     'last_seen_at',
@@ -72,5 +73,41 @@ class Driver extends Authenticatable
   public function transactions()
   {
     return $this->morphMany(Transaction::class, 'payable');
+  }
+
+  // App\Models\Driver.php
+
+  public function calculateCommission(float $totalPrice): float
+  {
+    $commissionType = $this->commission_type;
+    $commissionValue = $this->commission_value;
+
+    // إذا لم يوجد عمولة للسائق نبحث عن الفريق
+    if (!$commissionType && $this->team_id && $this->team) {
+      $commissionType = $this->team->commission_type;
+      $commissionValue = $this->team->commission_value;
+    }
+
+    // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
+    if (!$commissionType) {
+      $commissionType = \App\Models\Settings::where('key', 'commission_type')->value('value');
+
+      if ($commissionType === 'rate') {
+        $commissionValue = \App\Models\Settings::where('key', 'commission_rate')->value('value');
+      } elseif ($commissionType === 'fixed') {
+        $commissionValue = \App\Models\Settings::where('key', 'commission_fixed')->value('value');
+      }
+    }
+
+    // حساب العمولة
+    if ($commissionType && $commissionValue !== null) {
+      if ($commissionType === 'rate') {
+        return ($commissionValue / 100) * $totalPrice;
+      } elseif ($commissionType === 'fixed') {
+        return $commissionValue;
+      }
+    }
+
+    return 0;
   }
 }

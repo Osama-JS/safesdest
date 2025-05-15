@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal } from '../../ajax';
+import { deleteRecord, showAlert, showFormModal, generateFields } from '../../ajax';
 import { mapsConfig } from '../../mapbox-helper';
 
 // Datatable (jquery)
@@ -14,6 +14,18 @@ $(function () {
       wheelPropagation: false
     });
   }
+
+  var select2 = $('.task-driver');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'Select Driver',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+
   // ajax setup
   $.ajaxSetup({
     headers: {
@@ -317,7 +329,7 @@ $(function () {
 
   function showTaskDetails(taskId) {
     $.ajax({
-      url: `${baseUrl}admin/tasks/${taskId}`, // تأكد أن هذا المسار يتوافق مع ما أنشأته في الباك
+      url: `${baseUrl}admin/tasks/show/${taskId}`, // تأكد أن هذا المسار يتوافق مع ما أنشأته في الباك
       type: 'GET',
       success: function (task) {
         const statusClass = getStatusBadgeClass(task.data.status);
@@ -334,8 +346,8 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-                    <li><a href="" class="dropdown-item">Edit Task</a></li>
-                    <li><a href="" class="dropdown-item assign-task" data-id="${task.data.id}" data-bs-toggle="modal" data-bs-target="#assignModal" >Assign Driver</a></li>
+                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" >Edit Task</a></li>
+                    <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
                   </ul>
               </div>
@@ -359,9 +371,11 @@ $(function () {
                   <strong>Created At</strong>
                   <span>${task.data.created_at || '—'}</span>
                 </li>
+                </ul>
                  <div class="divider text-start">
                       <div class="divider-text"><strong>Pickup info</strong></div>
                   </div>
+                  <ul class="bg-light list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Name</strong>
                   <span>${task.data.pickup.contact_name || '—'}</span>
@@ -393,11 +407,13 @@ $(function () {
                   <strong>Pickup Reference Image</strong>
                   <img src="${task.data.pickup.note || '—'}" >
                 </li>
+                </ul>
 
 
                 <div class="divider text-start">
                       <div class="divider-text"><strong>Delivery info</strong></div>
                   </div>
+                  <ul class="bg-light list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Name</strong>
                   <span>${task.data.delivery.contact_name || '—'}</span>
@@ -477,6 +493,9 @@ $(function () {
               ${(task.data.history || [])
                 .map(event => {
                   const userInfo = event.user ? `<div class="text-muted small mb-1">By: ${event.user}</div>` : '';
+                  const driverInfo = event.driver
+                    ? `<div class="text-muted small mb-1">${event.type === 'assign' ? 'To' : 'By'}: ${event.driver}</div>`
+                    : '';
                   const fileInfo = event.file
                     ? `
                       <div class="d-flex align-items-center mt-2">
@@ -492,13 +511,14 @@ $(function () {
 
                   return `
                     <li class="timeline-item timeline-item-transparent">
-                      <span class="timeline-point timeline-point-${event.color || 'primary'}"></span>
+                      <span class="timeline-point timeline-point-${event.color || 'secundary'}"></span>
                       <div class="timeline-event">
                         <div class="timeline-header mb-2">
-                          <h6 class="mb-0 border rounded  px-3 py-2">${event.type || 'Unknown Action'}</h6>
+                          <h6 class="mb-0 border rounded border-${event.color || 'secundary'}  px-3 py-2">${event.type || 'Unknown Action'}</h6>
                           <small class="text-muted">${event.date || ''}</small>
                         </div>
                         ${userInfo}
+                        ${driverInfo}
                         <p class="mb-2">${event.description || ''}</p>
                         ${fileInfo}
                       </div>
@@ -604,6 +624,7 @@ $(function () {
     loadTasks();
     setTimeout(() => {
       $('#submitModal').modal('hide');
+      $('#assignModal').modal('hide');
     }, 2000);
   });
 
@@ -638,32 +659,83 @@ $(function () {
 
   $(document).on('click', '.assign-task', function () {
     const id = $(this).data('id');
-    $('#assignModal').modal('show');
-    $('#assignTitle').html(`Assign Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
 
     $.get(`${baseUrl}admin/tasks/assign/${id}`, function (data) {
-      // $('#task_id').val(data.id);
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#assignModal').modal('show');
+      $('#assignTitle').html(`Assign Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+
+      $('#task-assign-id').val(id);
+      let option = ''; // changed from const to let
+      data.drivers.forEach(key => {
+        option += `<option value="${key.id}" ${data.driver_id === key.id ? 'selected' : ''}>
+                ${key.name}
+              </option>`;
+      });
+      $('#task-driver').html(option);
       console.log(data);
     });
   });
 
-  $(document).on('click', '.edit-record', function () {
-    var teamId = $(this).data('id');
-    var teamName = $(this).data('name');
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
-    $('#submitModal').modal('show');
+  $(document).on('click', '.edit-task', function () {
+    var taskId = $(this).data('id');
 
-    $('#modelTitle').html(`Edit Team: <span class="bg-info text-white px-2 rounded">${teamName}</span>`);
+    $.get(`${baseUrl}admin/tasks/edit/${taskId}`, async function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#submitModal').modal('show');
+      $('#task-form').attr('action', `${baseUrl}admin/task/edit`);
 
-    // get data
-    $.get(`${baseUrl}admin/teams/edit/${teamId}`, function (data) {
-      $('#team_id').val(data.id);
-      $('#team-name').val(data.name);
-      $('#team-address').val(data.address);
-      $('#team-location_update').val(data.location_update_interval);
-      $('#team-commission-type').val(data.team_commission_type);
-      $('#team-commission').val(data.team_commission_value);
-      $('#team-note').val(data.note);
+      $('#modelTitle').html(`Edit Task: <span class="bg-info text-white px-2 rounded">#${taskId}</span>`);
+      // get data
+      $('#task-id').val(data.id);
+      $('#task-owner').val(data.owner).trigger('change');
+      $('#task-customer').val(data.customer_id).trigger('change');
+      $('.vehicle-quantity').hide();
+      $('.vehicle-select').val(data.vehicle).trigger('change');
+
+      await delay(1000);
+      $('.vehicle-type-select').val(data.vehicle_type).trigger('change');
+
+      await delay(1000);
+      $('.vehicle-size-select').val(data.vehicle_size_id).trigger('change');
+
+      $('#additional-form').html('');
+      $('#select-template').val(data.form_template_id);
+
+      if (data.form_template_id === null) {
+        $('#select-template').val(templateId).trigger('change');
+      }
+      generateFields(data.fields, data.additional_data);
+
+      $('#pickup-contact-name').val(data.pickup.contact_name);
+      $('#pickup-contact-phone').val(data.pickup.contact_phone);
+      $('#pickup-contact-email').val(data.pickup.contact_emil);
+      $('#pickup-before').val(data.pickup.scheduled_time);
+      $('#pickup-address').val(data.pickup.address);
+      $('#pickup-longitude').val(data.pickup.longitude);
+      $('#pickup-latitude').val(data.pickup.latitude);
+      $('#pickup-note').val(data.pickup.note);
+
+      $('#delivery-contact-name').val(data.delivery.contact_name);
+      $('#delivery-contact-phone').val(data.delivery.contact_phone);
+      $('#delivery-contact-email').val(data.delivery.contact_emil);
+      $('#delivery-before').val(data.delivery.scheduled_time);
+      $('#delivery-address').val(data.delivery.address);
+      $('#delivery-longitude').val(data.delivery.longitude);
+      $('#delivery-latitude').val(data.delivery.latitude);
+      $('#delivery-note').val(data.delivery.note);
+
+      console.log(data);
     });
   });
 

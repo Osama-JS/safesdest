@@ -5,6 +5,12 @@
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
       "slug": "driver.dashboard"
+    },
+    {
+      "url": "admin/tasks",
+      "name": "Tasks",
+      "icon": "menu-icon tf-icons ti ti-truck-delivery",
+      "slug": "tasks.tasks"
     }
   ]
 }

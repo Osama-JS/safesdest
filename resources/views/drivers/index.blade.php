@@ -22,7 +22,34 @@
 @endsection
 
 @section('page-script')
-    @vite(['resources/assets/js/dashboards-analytics.js'])
+
+    @vite(['resources/js/driver/index.js'])
+    @vite(['resources/js/ajax.js'])
+    @php
+        $taskMapData = auth()
+            ->user()
+            ->possible_tasks->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'longitude' => optional($task->pickup)->longitude,
+                    'latitude' => optional($task->pickup)->latitude,
+                ];
+            })
+            ->values()
+            ->toArray();
+    @endphp
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tasks = @json($taskMapData);
+
+            tasks.forEach(task => {
+                if (task.longitude && task.latitude) {
+                    initMapForAd(task.id, [task.longitude, task.latitude]);
+                }
+            });
+        });
+    </script>
     <script>
         function updateDriverLocation() {
             if (navigator.geolocation) {
@@ -51,99 +78,125 @@
 @section('content')
 
     <div class="row">
-        <!-- User Sidebar -->
-        <div class="col-xl-4 col-lg-5 order-1 order-md-0">
-            <!-- User Card -->
-            <div class="card mb-6">
-                <div class="card-body pt-12">
-                    <div class="user-avatar-section">
-                        <div class=" d-flex align-items-center flex-column">
-                            <img class="img-fluid rounded mb-4"
-                                src="{{ auth()->user()->image ? asset(auth()->user()->image) : asset('assets/img/person.png') }}"
-                                style="width: 200px;" alt="User avatar" />
-                            <div class="user-info text-center">
-                                <h5>{{ auth()->user()->name }}</h5> <span
-                                    class="badge bg-label-secondary">{{ auth()->user()->team->name ?? '' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-around flex-wrap my-6 gap-0 gap-md-3 gap-lg-4">
-                        <div class="d-flex align-items-center me-5 gap-4">
-                            <div class="avatar">
-                                <div class="avatar-initial bg-label-primary rounded">
-                                    <i class='ti ti-checkbox ti-lg'></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h5 class="mb-0">{{ auth()->user()->tasks()->where('status', 'completed')->count() }}</h5>
-                                <span>{{ __('Task Done') }}</span>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-4">
-                            <div class="avatar">
-                                <div class="avatar-initial bg-label-primary rounded">
-                                    <i class='ti ti-truck-delivery ti-lg'></i>
-                                </div>
-                            </div>
-                            <div>
-                                <h5 class="mb-0">
-                                    {{ auth()->user()->tasks()->where('status', '!=', 'completed')->where('status', '!=', 'canceled')->count() }}
-                                </h5>
-                                <span>{{ __('Running Tasks') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <h5 class="pb-4 border-bottom mb-4">{{ __('Details') }}</h5>
-                    <div class="info-container">
-                        <ul class="list-unstyled mb-6">
-                            <li class="mb-2">
-                                <span class="h6">{{ __('username') }}:</span>
-                                <span>{{ auth()->user()->username }}</span>
-                            </li>
-                            <li class="mb-2">
-                                <span class="h6">{{ __('Phone') }}:</span>
-                                <span>{{ auth()->user()->phone }}</span>
-                            </li>
-                            <li class="mb-2">
-                                <span class="h6">{{ __('Email') }}:</span>
-                                <span>{{ auth()->user()->email }}</span>
-                            </li>
-                            <li class="mb-2">
-                                <span class="h6">{{ __('address') }}:</span>
-                                <span>{{ auth()->user()->address }}</span>
-                            </li>
-                            <li class="mb-2">
-                                <span class="h6">{{ __('Status') }}:</span>
-                                <span>{{ auth()->user()->status }}</span>
-                            </li>
-                            <li class="mb-2">
-                                <span class="h6">{{ __('Role') }}:</span>
-                                <span>{{ auth()->user()->role }}</span>
-                            </li>
-
-                        </ul>
-
-                    </div>
-                </div>
+        <div class="col-lg-3 col-md-4 d-flex ">
+            <img class="img-fluid rounded  mx-3"
+                src="{{ auth()->user()->image ? asset(auth()->user()->image) : asset('assets/img/person.png') }}"
+                style="height: 70px;" alt="Driver avatar" />
+            <div class="user-info">
+                <h5>{{ auth()->user()->name }}</h5> <span
+                    class="badge bg-label-secondary">{{ auth()->user()->team->name ?? '' }}</span>
+                @if (auth()->user()->online)
+                    <span class="card-title mb-0"><span class="badge bg-success">Online</span></span>
+                @else
+                    <span class="card-title mb-0"><span class="badge bg-danger">Offline</span></span>
+                @endif
+                @if (auth()->user()->free)
+                    <span class="card-title mb-0"><span class="badge bg-info">Free</span></span>
+                @else
+                    <span class="card-title mb-0"><span class="badge bg-secondary">Busy</span></span>
+                @endif
             </div>
-            <!-- /User Card -->
-
         </div>
-        <!--/ User Sidebar -->
+        <div class="col-lg-9 col-md-8">
+            <div class="row">
+                @foreach (auth()->user()->possible_tasks as $task)
+                    <div class="col-md-6">
 
+                        <div class="mb-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header bg-white border-bottom-0">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">Task #{{ $task->id }}</h5>
+                                        <span
+                                            class="badge bg-{{ match ($task->status) {
+                                                'pending' => 'warning',
+                                                'in_progress' => 'info',
+                                                'completed' => 'success',
+                                                default => 'secondary',
+                                            } }}">
+                                            {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                                        </span>
 
-        <!-- User Content -->
-        <div class="col-xl-8 col-lg-7 order-0 order-md-1">
+                                    </div>
+                                </div>
+                                {{-- الخريطة --}}
+                                <div class="map-container
+                                    rounded-top"
+                                    id="map-{{ $task->id }}" style="height: 100px;">
+                                </div>
 
+                                <div class="card-body">
+                                    {{-- بيانات العميل --}}
+                                    <div class="mb-3">
+                                        <p class="mb-1"><strong>Owner Type:</strong> {{ ucfirst($task->owner) }}</p>
+                                        @if ($task->owner === 'customer' && $task->customer)
+                                            <p class="mb-0"><strong>Customer Name:</strong> {{ $task->customer->name }}
+                                            </p>
+                                            <p class="mb-0"><strong>Customer Phone:</strong>
+                                                {{ $task->customer->phone ?? 'N/A' }}</p>
+                                        @elseif ($task->owner === 'admin' && $task->user)
+                                            <p class="mb-0"><strong>Admin:</strong> {{ $task->user->name }}</p>
+                                        @endif
+                                    </div>
 
-            @foreach (auth()->user()->possible_tasks as $task)
+                                    {{-- بيانات النقاط --}}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <strong>{{ __('Pickup address') }}:</strong>
+                                                <p class="mb-0 text-muted">
+                                                    {{ optional($task->pickup)->address ?? 'Not set' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <strong>{{ __('Delivery address') }}:</strong>
+                                                <p class="mb-0 text-muted">
+                                                    {{ optional($task->delivery)->address ?? 'Not set' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- معلومات إضافية --}}
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 ">
+                                            <p class="border p-2 rounded"><strong>Price:</strong>
+                                                {{ $task->total_price - auth()->user()->calculateCommission($task->total_price) }}
+                                                SAR
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-footer bg-white border-top-0 text-end d-flex ">
+                                    <form action="{{ route('driver.respond.task') }}" method="POST" class="form_submit">
+                                        <input type="hidden" name="task_id" value="{{ $task->id }}">
+                                        <input type="hidden" name="response" value="accept">
+                                        <button type="submit" class="btn btn-primary mx-2">Accept</button>
+                                    </form>
+                                    <form action="{{ route('driver.respond.task') }}" method="POST" class="form_submit">
+                                        <input type="hidden" name="task_id" value="{{ $task->id }}">
+                                        <input type="hidden" name="response" value="reject">
+                                        <button type="submit" class="btn btn-outline-danger mx-2">reject</button>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                @endforeach
+            </div>
+            {{ auth()->user()->tasks }}
+
+            @foreach ($data as $task)
                 <div class="mb-4">
-                    <div class="card shadow-sm border-0">
-                        {{-- الخريطة --}}
-                        <div class="map-container rounded-top" id="map-{{ $task->id }}" style="height: 200px;"></div>
 
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div id="task-details-view" class=" bg-white shadow-lg p-0 overflow-auto">
+                        <div class="card-header bg-white border-bottom-0 p-3">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0">Task #{{ $task->id }}</h5>
                                 <span
                                     class="badge bg-{{ match ($task->status) {
@@ -154,63 +207,181 @@
                                     } }}">
                                     {{ ucfirst(str_replace('_', ' ', $task->status)) }}
                                 </span>
-                            </div>
 
-                            {{-- بيانات العميل --}}
-                            <div class="mb-3">
-                                <p class="mb-1"><strong>Owner Type:</strong> {{ ucfirst($task->owner) }}</p>
-                                @if ($task->owner === 'customer' && $task->customer)
-                                    <p class="mb-0"><strong>Customer Name:</strong> {{ $task->customer->name }}</p>
-                                    <p class="mb-0"><strong>Customer Phone:</strong>
-                                        {{ $task->customer->phone ?? 'N/A' }}</p>
-                                @elseif ($task->owner === 'admin' && $task->user)
-                                    <p class="mb-0"><strong>Admin:</strong> {{ $task->user->name }}</p>
-                                @endif
                             </div>
+                        </div>
+                        <div class="nav-align-top  overflow-auto p-0 " style="min-height: 75vh">
+                            <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top"
+                                style="top: 0; z-index: 1030;" role="tablist">
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-details" aria-controls="navs-justified-home"
+                                        aria-selected="true"><span class="d-none d-sm-block">
+                                            {{ __('details') }}</span><i class="ti ti-home ti-sm d-sm-none"></i></button>
+                                </li>
 
-                            {{-- بيانات النقاط --}}
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-2">
-                                        <strong>Pickup:</strong>
-                                        <p class="mb-0 text-muted">{{ optional($task->pickup)->address ?? 'Not set' }}</p>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-history" aria-controls="navs-justified-messages"
+                                        aria-selected="false"><span class="d-none d-sm-block">
+                                            {{ __('history') }}</span><i
+                                            class="ti ti-message-dots ti-sm d-sm-none"></i></button>
+                                </li>
+                            </ul>
+
+                            <div class="tab-content p-0 m-0" style="max-height: calc(75vh - 60px); overflow-y: auto;">
+                                <div class="tab-pane fade show active" id="navs-justified-details" role="tabpanel">
+
+                                    <div id="task-details-content">
+                                        <div class="card shadow-sm border-0">
+
+                                            {{-- الخريطة --}}
+                                            <div class="map-container
+                                    rounded-top"
+                                                id="map-{{ $task->id }}" style="height: 100px;">
+                                            </div>
+
+                                            <div class="card-body">
+                                                {{-- بيانات العميل --}}
+                                                <div class="mb-3">
+                                                    <p class="mb-1"><strong>Owner Type:</strong>
+                                                        {{ ucfirst($task->owner) }}</p>
+                                                    @if ($task->owner === 'customer' && $task->customer)
+                                                        <p class="mb-0"><strong>Customer Name:</strong>
+                                                            {{ $task->customer->name }}
+                                                        </p>
+                                                        <p class="mb-0"><strong>Customer Phone:</strong>
+                                                            {{ $task->customer->phone ?? 'N/A' }}</p>
+                                                    @elseif ($task->owner === 'admin' && $task->user)
+                                                        <p class="mb-0"><strong>Admin:</strong> {{ $task->user->name }}
+                                                        </p>
+                                                    @endif
+                                                    <div class="row mt-3">
+                                                        <div class="col-md-6 ">
+                                                            <p class="border p-2 rounded"><strong>Price:</strong>
+                                                                {{ $task->total_price - auth()->user()->calculateCommission($task->total_price) }}
+                                                                SAR
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {{-- بيانات النقاط --}}
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="mb-2">
+                                                            <strong>{{ __('Pickup Address') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->pickup)->address ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Pickup Contact Name') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->pickup)->contact_name ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Pickup Contact phone') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->pickup)->contact_phone ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Pickup Contact eamil') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->pickup)->contact_email ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Pickup Note') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->pickup)->note ?? 'Not set' }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="mb-2">
+                                                            <strong>{{ __('Delivery address') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->delivery)->address ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Delivery Contact Name') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->delivery)->contact_name ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Delivery Contact phone') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->delivery)->contact_phone ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Delivery Contact eamil') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->delivery)->contact_email ?? 'Not set' }}
+                                                            </p>
+                                                            <strong>{{ __('Delivery Note') }}:</strong>
+                                                            <p class="mb-0 text-muted">
+                                                                {{ optional($task->delivery)->note ?? 'Not set' }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {{-- معلومات إضافية --}}
+
+                                            </div>
+
+                                            <div class="card-footer bg-white border-top-0 text-end d-flex ">
+                                                <form action="{{ route('driver.respond.task') }}" method="POST"
+                                                    class="form_submit">
+                                                    <input type="hidden" name="task_id" value="{{ $task->id }}">
+                                                    <input type="hidden" name="response" value="accept">
+                                                    <button type="submit" class="btn btn-primary mx-2">Accept</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="mb-2">
-                                        <strong>Delivery:</strong>
-                                        <p class="mb-0 text-muted">{{ optional($task->delivery)->address ?? 'Not set' }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                                <div class="tab-pane fade " id="navs-justified-history" role="tabpanel">
 
-                            {{-- معلومات إضافية --}}
-                            <div class="row mt-3">
-                                <div class="col-md-4">
-                                    <p><strong>Price:</strong> {{ $task->total_price ?? '—' }}</p>
+                                    <div class="my-3 p-5">
+                                        <form action="{{ route('task-histories.store') }}" method="POST"
+                                            class="form_submit" enctype="multipart/form-data"
+                                            class="card p-4 shadow-sm border-0 mb-4">
+                                            @csrf
+                                            <input type="hidden" name="task" id="task_id"
+                                                value="{{ $task->id }}">
+                                            <span class="task-error text-danger text-error"></span>
+                                            {{-- حقل وصف الملاحظة --}}
+                                            <div class="mb-3">
+                                                <label for="description" class="form-label">{{ __('Add Note') }}</label>
+                                                <textarea name="description" id="description" class="form-control" rows="3"
+                                                    placeholder="{{ __('Type the note here') }}..."></textarea>
+                                                <span class="description-error text-danger text-error"></span>
+
+                                            </div>
+
+                                            {{-- رفع ملف --}}
+                                            <div class="mb-3">
+                                                <label for="file" class="form-label">{{ __('upload file') }}
+                                                    ({{ __('optional') }})
+                                                </label>
+                                                <input type="file" name="file" id="file"
+                                                    class="form-control">
+                                                <span class="file-error text-danger text-error"></span>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                {{ __('Submit') }}
+                                            </button>
+                                        </form>
+                                    </div>
+
+
                                 </div>
-                                <div class="col-md-4">
-                                    <p><strong>Payment:</strong> {{ ucfirst($task->payment_status) ?? '—' }}</p>
-                                </div>
-                                <div class="col-md-4">
-                                    <p><strong>Payment Method:</strong> {{ ucfirst($task->payment_method) ?? '—' }}</p>
-                                </div>
+
                             </div>
 
                         </div>
 
-                        <div class="card-footer bg-white border-top-0 text-end">
-                            <a href="" class="btn btn-outline-primary">View
-                                Details</a>
-                        </div>
                     </div>
                 </div>
             @endforeach
-
-
         </div>
-        <!--/ User Content -->
     </div>
+
+
+
+
 
 @endsection

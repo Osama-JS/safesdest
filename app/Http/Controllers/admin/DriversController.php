@@ -32,6 +32,21 @@ class DriversController extends Controller
     return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template'));
   }
 
+  public function getDrivers(Request $request)
+  {
+    $search = $request->input('q');
+
+    $drivers = Driver::query();
+    // if ($search) {
+    //   $drivers->where('team_id', $search);
+    // }
+
+    $drivers->select('id', 'name')
+      ->limit(20)
+      ->get();
+
+    return response()->json(['results' => $drivers]);
+  }
   public function getData(Request $request)
   {
     $columns = [

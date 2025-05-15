@@ -23,6 +23,9 @@
     @vite(['resources/js/admin/customers/show.js'])
 
 @endsection
+@section('customers.isactive')
+active
+@endsection
 
 @section('content')
     <div class="row">
@@ -144,57 +147,65 @@
                     <div class="tab-pane fade" id="navs-pills-top-profile" role="tabpanel">
                         <h3 class="text-xl font-semibold mb-4">Additional Fields</h3>
                         <div class="row g-4">
-                            @foreach ($data->additional_data as $key => $field)
-                                <div class="col-12 col-md-6">
-                                    <div class="card h-100 shadow-sm">
-                                        <div class="card-body">
-                                            <h6 class="card-title text-muted">{{ $field['label'] }}</h6>
+                            @if ($data->additional_data != null && count($data->additional_data) > 0)
+                                @foreach ($data->additional_data as $key => $field)
+                                    <div class="col-12 col-md-6">
+                                        <div class="card h-100 shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="card-title text-muted">{{ $field['label'] }}</h6>
 
-                                            @switch($field['type'])
-                                                @case('text')
-                                                @case('string')
+                                                @switch($field['type'])
+                                                    @case('text')
+                                                    @case('string')
 
-                                                @case('number')
-                                                    <p class="card-text">{{ $field['value'] }}</p>
-                                                @break
+                                                    @case('number')
+                                                        <p class="card-text">{{ $field['value'] }}</p>
+                                                    @break
 
-                                                @case('image')
-                                                    <img src="{{ asset('storage/' . $field['value']) }}"
-                                                        alt="{{ $field['label'] }}" class="img-fluid rounded border"
-                                                        style="max-height: 250px; object-fit: cover;">
-                                                @break
+                                                    @case('image')
+                                                        <img src="{{ asset('storage/' . $field['value']) }}"
+                                                            alt="{{ $field['label'] }}" class="img-fluid rounded border"
+                                                            style="max-height: 250px; object-fit: cover;">
+                                                    @break
 
-                                                @case('file')
-                                                    @php
-                                                        $ext = strtolower(
-                                                            pathinfo($field['value'], PATHINFO_EXTENSION),
-                                                        );
-                                                        $icons = [
-                                                            'pdf' => 'ti ti-file-text',
-                                                            'doc' => 'ti ti-file-description',
-                                                            'docx' => 'ti ti-file-description',
-                                                            'xls' => 'ti ti-file-spreadsheet',
-                                                            'xlsx' => 'ti ti-file-spreadsheet',
-                                                            'ppt' => 'ti ti-presentation',
-                                                            'pptx' => 'ti ti-presentation',
-                                                        ];
-                                                        $iconClass = $icons[$ext] ?? 'ti ti-file';
-                                                    @endphp
+                                                    @case('file')
+                                                        @php
+                                                            $ext = strtolower(
+                                                                pathinfo($field['value'], PATHINFO_EXTENSION),
+                                                            );
+                                                            $icons = [
+                                                                'pdf' => 'ti ti-file-text',
+                                                                'doc' => 'ti ti-file-description',
+                                                                'docx' => 'ti ti-file-description',
+                                                                'xls' => 'ti ti-file-spreadsheet',
+                                                                'xlsx' => 'ti ti-file-spreadsheet',
+                                                                'ppt' => 'ti ti-presentation',
+                                                                'pptx' => 'ti ti-presentation',
+                                                            ];
+                                                            $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                                        @endphp
 
-                                                    <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
-                                                        class="d-flex align-items-center text-decoration-none">
-                                                        <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
-                                                        <span class="text-truncate">{{ basename($field['value']) }}</span>
-                                                    </a>
-                                                @break
+                                                        <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                            class="d-flex align-items-center text-decoration-none">
+                                                            <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                            <span class="text-truncate">{{ basename($field['value']) }}</span>
+                                                        </a>
+                                                    @break
 
-                                                @default
-                                                    <p class="card-text">{{ $field['value'] }}</p>
-                                            @endswitch
+                                                    @default
+                                                        <p class="card-text">{{ $field['value'] }}</p>
+                                                @endswitch
+                                            </div>
                                         </div>
                                     </div>
+                                @endforeach
+                            @else
+                                <div class="col-12">
+                                    <div class="alert alert-info" role="alert">
+                                        {{ __('No additional data found for this customer.') }}
+                                    </div>
                                 </div>
-                            @endforeach
+                            @endif
                         </div>
 
 

@@ -23,6 +23,7 @@ return new class extends Migration
       $table->enum('status', ['verified', 'active', 'blocked', 'pending'])->default('verified');
       $table->text('address');
       $table->boolean('online')->default(1);
+      $table->boolean('free')->default(1);
       $table->decimal('longitude', 10, 2)->nullable();
       $table->decimal('altitude', 10, 2)->nullable();
       $table->timestamp('last_seen_at')->nullable();

@@ -41,6 +41,7 @@ $(document)
       dataType: 'json',
       contentType: false,
       success: function (data) {
+        console.log(data);
         $('span.text-error').text(''); // إعادة تعيين الأخطاء
 
         $this.unblock({

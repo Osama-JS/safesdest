@@ -121,12 +121,9 @@
                 </div>
                 <div class="card-body">
                     <div class="form-group mb-9">
-                        <label for="commission-type" class="mb-2">{{ __('Default Customer Template') }}</label>
+                        <label for="commission-type" class="mb-2">{{ __('Commission Type') }}</label>
                         <select class="form-select  update-setting-select" data-key="commission_type">
-                            <option value="{{ $val->id }}"
-                                {{ $settings['customer_template']['value'] == $val->id ? 'selected' : '' }}>
-                                {{ $val->name }}
-                            </option>
+
                             <option value="rate" {{ $settings['commission_type']['value'] == 'rate' ? 'selected' : '' }}>
                                 {{ __('Rate') }}</option>
                             <option value="fixed"
@@ -137,15 +134,15 @@
                     </div>
                     <div class="form-group mb-9">
                         <label for="commission_rate" class="mb-2">{{ __('Commission Rate') }}</label>
-                        <input type="number" data-key="commission_rate" value={{ $settings['commission_rate']['value'] }}
-                            class="form-control">
+                        <input type="number" data-key="commission_rate" max="100" min="0" step="any"
+                            value={{ $settings['commission_rate']['value'] }} class="form-control update-setting-input">
                         <span class="commission_rate-error text-danger"></span>
                     </div>
 
                     <div class="form-group mb-9">
                         <label for="commission_fixed" class="mb-2">{{ __('Commission fixed Amount') }}</label>
-                        <input type="number" data-key="commission_fixed"
-                            value={{ $settings['commission_fixed']['value'] }} class="form-control">
+                        <input type="number" data-key="commission_fixed" min="0" step="any"
+                            value={{ $settings['commission_fixed']['value'] }} class="form-control update-setting-input">
                         <span class="commission_fixed-error text-danger"></span>
                     </div>
 

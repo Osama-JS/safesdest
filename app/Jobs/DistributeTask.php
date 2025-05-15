@@ -4,14 +4,13 @@ namespace App\Jobs;
 
 use App\Models\Task;
 use App\Models\Driver;
-use App\Notifications\NewTaskNotification;
+use App\Models\TaskDriverAttempt;
 use Illuminate\Bus\Queueable;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\Log;
 
 class DistributeTask implements ShouldQueue
 {
@@ -26,33 +25,45 @@ class DistributeTask implements ShouldQueue
 
   public function handle(): void
   {
-    Log::info('🔄 Running job work...');
+    Log::info('🔄 Running job work for task ID: ' . $this->task->id);
 
-    if ($this->task->status !== 'in_progress' || $this->task->pending_driver_id !== null) {
+    if ($this->task->status !== 'in_progress') {
+      Log::info('❌ Task is not in progress.');
       return;
     }
 
-    Log::info('📝 Found the task: ' . $this->task->id . '  to work.');
+    // إذا كان هناك سائق في الانتظار ولم يرد، وأكملت 3 دقائق، قم بإلغاء التخصيص
+    if ($this->task->pending_driver_id !== null) {
+      if (!$this->task->last_attempt_at || $this->task->last_attempt_at->lte(now()->subMinutes(3))) {
+        Log::info('⛔ No response from pending driver. Releasing task for reassignment.');
+
+        $this->task->update([
+          'pending_driver_id' => null
+        ]);
+      } else {
+        Log::info('⏱️ Still waiting for pending driver response. Time diff: ' . now()->diffInMinutes($this->task->last_attempt_at));
+        return;
+      }
+    }
 
     // لا تحاول توزيع أكثر من 5 مرات
     if ($this->task->distribution_attempts >= 5) {
+      Log::info('🚫 Max distribution attempts reached.');
       return;
     }
 
-    Log::info('there is chance to assign it again');
-
-
-    // إذا لم تمر 3 دقائق على آخر محاولة، تجاهل
-    if ($this->task->last_attempt_at && now()->diffInMinutes($this->task->last_attempt_at) < 3) {
-      Log::info('wite:  the is timing for re assign');
-      return;
-    }
-
+    // استثناء السائقين الذين سبق تخصيصهم
     $excludedIds = array_filter([
       $this->task->driver_id,
       $this->task->pending_driver_id,
     ], fn($id) => !is_null($id));
 
+    // استثناء السائقين الذين تم إرسال المهمة لهم مسبقًا (من TaskDriverAttempt)
+    $previouslyTriedDriverIds = TaskDriverAttempt::where('task_id', $this->task->id)
+      ->pluck('driver_id')
+      ->toArray();
+
+    $excludedIds = array_unique(array_merge($excludedIds, $previouslyTriedDriverIds));
 
     $drivers = Driver::where('vehicle_size_id', $this->task->vehicle_size_id)
       ->where('online', true)
@@ -60,44 +71,50 @@ class DistributeTask implements ShouldQueue
         $query->whereNotIn('id', $excludedIds);
       })
       ->orderByRaw("
-        ST_Distance(
-            ST_SetSRID(ST_MakePoint(drivers.longitude, drivers.altitude), 4326)::geography,
-            ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
-        )
-    ", [
+                ST_Distance(
+                    ST_SetSRID(ST_MakePoint(drivers.longitude, drivers.altitude), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+                )
+            ", [
         $this->task->pickup->longitude,
         $this->task->pickup->altitude,
       ])
       ->get();
 
-
-    // تصفية السائقين الذين يتواجدون ضمن مسافة معينة (مثلاً 1 كم)
+    // تصفية السائقين لمسافة أقصاها 1 كم
     $drivers = $drivers->filter(function ($driver) {
-      $distance = $driver->distance; // المسافة المحسوبة
-      return $distance <= 1000; // التصفية فقط في حال كانت المسافة أقل من 1 كم
+      $distance = $driver->distance;
+      return $distance <= 1000;
     });
 
-
-
-
-    // إذا لا يوجد سائقين
     if ($drivers->isEmpty()) {
-      Log::info('👀 No Driver Found');
+      Log::info('❌ No suitable drivers found nearby.');
+      $this->task->update([
+        'distribution_attempts' => $this->task->distribution_attempts + 1,
+        'last_attempt_at' => now(),
+      ]);
       return;
     }
 
-    // إرسال للسائق الأول
+    // إرسال المهمة لأقرب سائق
     $nextDriver = $drivers->first();
-    Log::info('✔ we found Driver: ' . $nextDriver->name . ' to do the task');
+    Log::info('✔ Assigned to driver: ' . $nextDriver->name);
 
-
-    // حفظ الحالة الحالية
     $this->task->update([
       'pending_driver_id' => $nextDriver->id,
       'distribution_attempts' => $this->task->distribution_attempts + 1,
       'last_attempt_at' => now(),
     ]);
 
+    // ✅ تسجيل محاولة التوزيع في TaskDriverAttempt
+    TaskDriverAttempt::create([
+      'task_id' => $this->task->id,
+      'driver_id' => $nextDriver->id,
+      'attempted_at' => now(),
+      'status' => 'ignored',
+    ]);
+
+    // إرسال إشعار إذا لزم
     // $nextDriver->notify(new NewTaskNotification($this->task));
   }
 }

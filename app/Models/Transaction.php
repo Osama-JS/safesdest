@@ -8,13 +8,18 @@ class Transaction extends Model
 {
   protected $fillable = [
     'amount',
-    'status',
+    '1',
     'type',
     'note',
+    'status',
     'reference_id',
     'checkout_id',
     'payment_type',
-    'receipt_image'
+    'receipt_image',
+    'receipt_number',
+    'user_check',
+    'user_ip',
+    'checkout_at'
   ];
 
   public function payable()

@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TasksController extends Controller
@@ -151,8 +152,9 @@ class TasksController extends Controller
             return [
               'type' => $val->action_type,
               'description' => $val->description,
-              'date' => $val->created_at->format('Y-m-d H:i'),
+              'date' => $val->created_at->format('F, Y-d H:i'),
               'user' => optional($val->user)->name,
+              'driver' => optional($val->driver)->name,
               'file' => $val->file_path
                 ? [
                   'url' => asset('storage/' . $val->file_path),
@@ -161,10 +163,11 @@ class TasksController extends Controller
                 ]
                 : null,
               'color' => match ($val->action_type) {
-                'created' => 'success',
+                'added' => 'success',
                 'updated' => 'info',
-                'deleted' => 'danger',
-                default => 'primary',
+                'assign' => 'primary',
+                'canceld' => 'danger',
+                default => 'secundary',
               }
             ];
           })
@@ -180,7 +183,6 @@ class TasksController extends Controller
     $validator = Validator::make($req->all(), [
       'id' => 'required|exists:tasks,id',
       'status' => 'required|in:in_progress,assign,start,completed,canceled',
-
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
@@ -194,7 +196,7 @@ class TasksController extends Controller
       $history = [
         [
           'action_type' => $req->status,
-          'description' => 'Change status',
+          'description' => 'Change status from ' . $find->status,
           'ip' => $userIp,
           'user_id' => Auth::user()->id
         ]
@@ -330,8 +332,8 @@ class TasksController extends Controller
 
       $history = [
         [
-          'action_type' => 'added',
-          'description' => 'Added',
+          'action_type' => 'created',
+          'description' => 'Create Task',
           'ip' => $userIp,
           'user_id' => Auth::user()->id
         ],
@@ -343,51 +345,6 @@ class TasksController extends Controller
         ]
       ];
 
-      if ($req->filled('task_driver')) {
-        $task['driver_id'] = $req->task_driver;
-
-        $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
-
-        $commissionType = $driver->commission_type;
-        $commissionValue = $driver->commission_value;
-
-        // إذا لم يوجد عمولة للسائق نبحث عن الفريق
-        if (!$commissionType && $driver->team_id) {
-          $team = Team::findOrFail($driver->team_id); // توقف التنفيذ إذا لم يوجد الفريق
-          $commissionType = $team->commission_type;
-          $commissionValue = $team->commission_value;
-        }
-
-        // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
-        if (!$commissionType) {
-          $commissionType = Settings::where('key', 'commission_type')->value('value');
-          if ($commissionType === 'rate') {
-            $commissionValue = Settings::where('key', 'commission_rate')->value('value');
-          } elseif ($commissionType === 'fixed') {
-            $commissionValue = Settings::where('key', 'commission_fixed')->value('value');
-          }
-        }
-
-        // نحسب العمولة
-        $task['commission'] = 0;
-        if ($commissionType && $commissionValue !== null) {
-          if ($commissionType === 'rate') {
-            $task['commission'] = ($commissionValue / 100) * $task['total_price'];
-          } elseif ($commissionType === 'fixed') {
-            $task['commission'] = $commissionValue;
-          }
-        }
-
-        // تحديث الحالة وإضافة السجل في التاريخ
-        $task['status'] = 'assign';
-        $history[] = [
-          'action_type' => 'assign',
-          'description' => 'Assign',
-          'ip' => $userIp,
-          'user_id' => Auth::id(),
-          'driver_id' => $req->task_driver
-        ];
-      }
 
 
       if ($req->filled('manual_total_pricing')) {
@@ -396,14 +353,33 @@ class TasksController extends Controller
         $data['manual_pricing'] = $req->manual_total_pricing;
       }
 
+
+      if ($req->filled('task_driver')) {
+        $task['driver_id'] = $req->task_driver;
+        $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
+        // نحسب العمولة
+        $task['commission'] = $task['total_price'] - $driver->calculateCommission($task['total_price']);
+        // تحديث الحالة وإضافة السجل في التاريخ
+        $task['status'] = 'assign';
+        $history[] = [
+          'action_type' => 'assigned',
+          'description' => 'assign task manual ',
+          'ip' => $userIp,
+          'user_id' => Auth::id(),
+          'driver_id' => $req->task_driver
+        ];
+      }
+
+
+
       if ($taskData['method'] == 0) {
         if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
           DB::rollBack();
-          return response()->json(['status' => 2, 'error' => 'You can create Task AD for just one task']);
+          return response()->json(['status' => 2, 'error' => __('You can create Task AD for just one task')]);
         }
         if ($req->filled('task_driver')) {
           DB::rollBack();
-          return response()->json(['status' => 2, 'error' => 'You can not assign driver to advertised Task']);
+          return response()->json(['status' => 2, 'error' => __('You can not assign driver to advertised Task')]);
         }
         $task['total_price']  = 0;
         $task['pricing_type'] = 'manual';
@@ -524,6 +500,8 @@ class TasksController extends Controller
       // إنشاء المهام بعدد المركبات المطلوبة
       $number = $taskData['vehicles_quantity'] ?? 1;
 
+      $task['pricing_history'] = $data;
+      dd($data);
       $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
         $newTask = Task::create($task);
         $newTask->point()->create($pickup_point);
@@ -655,45 +633,18 @@ class TasksController extends Controller
 
 
       if ($req->filled('task_driver')) {
+
         $task['driver_id'] = $req->task_driver;
-
         $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
-
-        $commissionType = $driver->commission_type;
-        $commissionValue = $driver->commission_value;
-
-        // إذا لم يوجد عمولة للسائق نبحث عن الفريق
-        if (!$commissionType && $driver->team_id) {
-          $team = Team::findOrFail($driver->team_id); // توقف التنفيذ إذا لم يوجد الفريق
-          $commissionType = $team->commission_type;
-          $commissionValue = $team->commission_value;
-        }
-
-        // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
-        if (!$commissionType) {
-          $commissionType = Settings::where('key', 'commission_type')->value('value');
-          if ($commissionType === 'rate') {
-            $commissionValue = Settings::where('key', 'commission_rate')->value('value');
-          } elseif ($commissionType === 'fixed') {
-            $commissionValue = Settings::where('key', 'commission_fixed')->value('value');
-          }
-        }
-
         // نحسب العمولة
-        $task['commission'] = 0;
-        if ($commissionType && $commissionValue !== null) {
-          if ($commissionType === 'rate') {
-            $task['commission'] = ($commissionValue / 100) * $task['total_price'];
-          } elseif ($commissionType === 'fixed') {
-            $task['commission'] = $commissionValue;
-          }
-        }
+        $task['commission'] = $task['total_price'] - $driver->calculateCommission($task['total_price']);
+
 
         // تحديث الحالة وإضافة السجل في التاريخ
         $task['status'] = 'assign';
         $history[] = [
-          'action_type' => 'assign',
-          'description' => 'Assign',
+          'action_type' => 'assigned',
+          'description' => 'Assign Task manual',
           'ip' => $userIp,
           'user_id' => Auth::id(),
           'driver_id' => $req->task_driver
@@ -1037,6 +988,9 @@ class TasksController extends Controller
 
     $fromDate  = $request->input('from_date');
     $toDate    = $request->input('to_date');
+    $owner    = $request->input('owner');
+    $team    = $request->input('team');
+    $driver    = $request->input('driver');
 
     $query = Task::query();
 
@@ -1047,6 +1001,23 @@ class TasksController extends Controller
         Carbon::parse($toDate)->endOfDay()
       ]);
     }
+
+    if ($owner === 'customer') {
+      $query->whereNotNull('customer_id');
+    } elseif ($owner === 'admin') {
+      $query->whereNull('customer_id');
+    }
+
+    if ($team) {
+      $query->whereHas('driver.team', function ($q) use ($team) {
+        $q->where('id', $team);
+      });
+    }
+
+    if ($driver) {
+      $query->where('driver_id', $driver);
+    }
+
 
     $totalFiltered = $query->count();
 
@@ -1098,9 +1069,11 @@ class TasksController extends Controller
         ]);
       }
       if ($data->payment_status !== 'waiting') {
+        $transiction = Transaction::where('reference_id', $data->id)->first();
         return response()->json([
-          'status' => 2,
-          'error' => __('This task has allredy make pyment request and it is ' . $data->payment_status),
+          'status' => 3,
+          'message' => __('This task has already make payment request and it is ' . $data->payment_status),
+          'data' => $transiction
         ]);
       }
       return response()->json($data);
@@ -1108,6 +1081,105 @@ class TasksController extends Controller
       return response()->json([
         'status' => 2,
         'error' => __('Task not found')
+      ]);
+    }
+  }
+
+
+  public function confirmPayment($id)
+  {
+    DB::beginTransaction();
+    try {
+      $data = Task::findOrFail($id);
+      if (in_array($data->status, ['in_progress', 'advertised'])) {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This task cannot be Payed in its current state'),
+        ]);
+      }
+      if ($data->payment_status === 'pending') {
+        $transaction = Transaction::where('reference_id', $data->id)->first();
+        if (!$transaction) {
+          return response()->json([
+            'status' => 2,
+            'error' => __('Transaction not found')
+          ]);
+        }
+        $transaction->update([
+          'status' => 'paid',
+          'user_check' => Auth::user()->id,
+          'user_ip' => IpHelper::getUserIpAddress(),
+          'checkout_at' => Carbon::now(),
+        ]);
+        $data->update([
+          'payment_status' => 'completed'
+        ]);
+        DB::commit();
+
+        return response()->json([
+          'status' => 1,
+          'message' => __('Payment has been confirmed for task') . ' #' . $data->id,
+        ]);
+      }
+      DB::rollBack();
+      return response()->json([
+        'status' => 2,
+        'message' => __('You can not confirm payment for this task'),
+      ]);
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'status' => 2,
+        'message' => __('Task not found')
+      ]);
+    }
+  }
+
+  public function cancelPayment($id)
+  {
+    DB::beginTransaction();
+    try {
+      $data = Task::findOrFail($id);
+      if (in_array($data->status, ['in_progress', 'advertised'])) {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This task cannot be Payed in its current state'),
+        ]);
+      }
+      if ($data->payment_status !== 'pending') {
+        $transaction = Transaction::where('reference_id', $data->id)->first();
+        if (!$transaction) {
+          return response()->json([
+            'status' => 2,
+            'error' => __('Transaction not found')
+          ]);
+        }
+
+        Transaction::where('reference_id', $data->id)->delete();
+
+        $data->update([
+          'payment_status' => 'waiting'
+        ]);
+
+        if ($transaction->receipt_image) {
+          unlink($transaction->receipt_image);
+        }
+        DB::commit();
+        return response()->json([
+          'status' => 1,
+          'message' => __('Payment has been canceled for task') . ' #' . $data->is,
+        ]);
+      }
+      DB::rollBack();
+      return response()->json([
+        'status' => 2,
+        'message' => __('You can not cancel payment for this task'),
+      ]);
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json([
+        'status' => 2,
+        'message' => __('Task not found')
       ]);
     }
   }

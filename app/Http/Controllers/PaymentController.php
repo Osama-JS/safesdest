@@ -127,7 +127,10 @@ class PaymentController extends Controller
       // تنفيذ عملية الدفع من المحفظة
       // ...
     }
-    return redirect()->route('payment.failure')->with('error', 'طريقة الدفع غير مدعومة.');
+    return response()->json([
+      'status' => 2,
+      'success' => __('طريقة الدفع غير مدعومة'),
+    ]);
   }
 
   public function handlePaymentCallback(Request $request)

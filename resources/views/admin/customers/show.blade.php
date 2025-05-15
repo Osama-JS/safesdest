@@ -23,6 +23,9 @@
     @vite(['resources/js/admin/customers/show.js'])
 
 @endsection
+@section('customers.isactive')
+active
+@endsection
 
 @section('content')
     <div class="row">

@@ -267,6 +267,9 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
       Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');
 
+      Route::get('tasks/payment/confirm/{id}', [TasksController::class, 'confirmPayment'])->name('tasks.payment.confirm');
+      Route::get('tasks/payment/cancel/{id}', [TasksController::class, 'cancelPayment'])->name('tasks.payment.cancel');
+
 
 
       Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');

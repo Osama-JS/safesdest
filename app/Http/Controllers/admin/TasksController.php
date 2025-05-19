@@ -501,7 +501,7 @@ class TasksController extends Controller
       $number = $taskData['vehicles_quantity'] ?? 1;
 
       $task['pricing_history'] = $data;
-      dd($data);
+    
       $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
         $newTask = Task::create($task);
         $newTask->point()->create($pickup_point);

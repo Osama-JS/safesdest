@@ -322,6 +322,11 @@ $(function () {
     const id = $(this).data('id');
     $.get(`${baseUrl}admin/tasks/payment/${id}`, function (data) {
       console.log(data);
+      if (data.owner !== 'customer') {
+        $('#wallet-option').hide();
+      } else {
+        $('#wallet-option').show();
+      }
       if (data.status === 2) {
         showAlert('error', data.error);
         return;
@@ -427,7 +432,6 @@ $(function () {
 
   $(document).on('change', '#task-payment-method', function () {
     const method = $(this).val();
-    const commission = $('#task-payment-commission').val();
     if (method === 'credit') {
       $('#receipt-section').hide();
 
@@ -438,8 +442,11 @@ $(function () {
       $('#pay-price').text('You need to Bay :' + $('#task-payment-commission').val() + ' SAR by credit card');
     } else if (method === 'wallet') {
       $('#receipt-section').hide();
-
-      $('#pay-price').text($('#task-payment-total').val() + ' SAR');
+      $('#pay-price').html(
+        'You need to Bay' +
+          $('#task-payment-total').val() +
+          ' SAR From your wallet </br> <h6 class="alert alert-info">Check if your wallet and have the enough balance</h6>'
+      );
     } else {
       $('#receipt-section').show();
       $('#pay-price').text($('#task-payment-total').val() + ' SAR');
@@ -498,7 +505,7 @@ $(function () {
         contentType: false,
         success: function (data) {
           $('span.text-error').text(''); // إعادة تعيين الأخطاء
-
+          console.log(data);
           $this.unblock({
             onUnblock: function () {
               $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
@@ -517,6 +524,7 @@ $(function () {
                 }
               } else if (data.status === 2) {
                 showAlert('error', data.error, 10000, true);
+                showBlockAlert('warning', data.error);
               }
             }
           });

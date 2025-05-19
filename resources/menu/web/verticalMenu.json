@@ -11,22 +11,21 @@
       "name": "Tasks",
       "icon": "menu-icon tf-icons ti ti-truck-delivery",
       "slug": "tasks.tasks",
-      "isactive" : "task-isactive"
+      "isactive": "task-isactive"
     },
     {
       "url": "admin/customers",
       "name": "Customers",
       "icon": "menu-icon tf-icons ti ti-user-circle",
       "slug": "customers.customers",
-      "isactive" : "customers-isactive"
-
+      "isactive": "customers-isactive"
     },
     {
       "url": "admin/drivers",
       "name": "Drivers",
       "icon": "menu-icon tf-icons ti  ti-steering-wheel",
       "slug": "drivers.drivers",
-      "isactive" : "drivers-isactive"
+      "isactive": "drivers-isactive"
     },
     {
       "url": "admin/teams",
@@ -38,7 +37,8 @@
       "url": "admin/wallets",
       "name": "Wallets",
       "icon": "menu-icon tf-icons ti ti-wallet",
-      "slug": "wallets.wallets"
+      "slug": "wallets.wallets",
+      "isactive": "wallets-isactive"
     },
     {
       "url": "admin/ads",
@@ -101,8 +101,7 @@
           "name": "Templates",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.templates",
-          "isactive" : "templates-isactive"
-
+          "isactive": "templates-isactive"
         }
       ]
     },

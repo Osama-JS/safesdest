@@ -192,24 +192,25 @@ class TaskPricingService
 
 
     $totalPrice = 0;
-    if ($request->pricing_method != 0) {
+    if ($request->pricing_method != 0 && $method->type === 'distance') {
       $totalPrice = $pricingTemplate->base_fare;
     }
-
-
 
     $totalPrice += $this->calculateDistancePricing($pricing, $method->type ?? 'manual', $request, $data);
 
     if ($request->pricing_method != 0) {
-      $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data);
-      $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
-      $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
-      $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
-      $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
+      if ($method->type !== 'points') {
+        $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data);
+        $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
+        $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
+        $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+        $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
 
-      $data['vat_commission'] = $pricingTemplate->vat_commission;
-      $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
-      $data['discount_percentage'] = $pricingTemplate->discount_percentage;
+        $data['vat_commission'] = $pricingTemplate->vat_commission;
+        $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
+        $data['discount_percentage'] = $pricingTemplate->discount_percentage;
+      }
+
 
       $data['total_price'] = $totalPrice;
     }

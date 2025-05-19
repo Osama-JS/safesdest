@@ -570,7 +570,7 @@ $(function () {
               $(`.${field}-error`).text(errors[field][0]);
             }
 
-            showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+            showAlert('error', 'يرجى تصحيح الأخطاء', 10000, true);
           }
         });
       }
@@ -670,6 +670,7 @@ $(function () {
         $('#task-form').unblock({
           onUnblock: function () {
             if (data.status == 0) {
+              console.log(data.error);
               showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
               handleErrors(data.error);
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
@@ -749,16 +750,21 @@ function renderPricingDetails(data) {
     html += `<div class="mb-2 alert alert-info"><strong>Nte:</strong> ${data.vehicles}</div>`;
   }
 
-  if (Array.isArray(data.fields) && data.fields.length > 0) {
+  if (data.fields) {
     html += `
-      <div class="mb-3"><strong>Fields:</strong><ul class="list-group">
-    `;
-    data.fields.forEach(field => {
+    <div class="mb-3"><strong>Fields:</strong><ul class="list-group">
+  `;
+
+    const fieldsArray = Array.isArray(data.fields) ? data.fields : [data.fields];
+
+    fieldsArray.forEach(field => {
       html += `
-        <li class="list-group-item">
-          <strong>${field.name || ''}:</strong> ${field.value || ''} (زيادة: ${parseFloat(field.increase || 0).toFixed(2)} ريال)
-        </li>`;
+      <li class="list-group-item">
+        <strong>${field.name || ''}:</strong> ${field.value || ''}
+        (زيادة: ${parseFloat(field.increase || 0).toFixed(2)} ريال)
+      </li>`;
     });
+
     html += `</ul></div>`;
   }
 

@@ -14,7 +14,7 @@ return new class extends Migration
     Schema::create('wallets', function (Blueprint $table) {
       $table->id()->startingValue(1000);
       $table->enum('user_type', ['customer', 'driver']);
-      $table->decimal('balance', 10, 2)->default(0);
+      $table->decimal('debt_ceiling', 10, 2)->default(5000);
       $table->boolean('status')->default(0);
       $table->boolean('preview')->default(0);
       $table->bigInteger('customer_id')->nullable();

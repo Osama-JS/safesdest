@@ -13,17 +13,21 @@ return new class extends Migration
   {
     Schema::create('wallet_transactions', function (Blueprint $table) {
       $table->id()->startingValue(1000);
+      $table->unsignedBigInteger('sequence')->default(1);
       $table->decimal('amount', 10, 2);
       $table->enum('transaction_type', ['credit', 'debit']);
       $table->string('description');
-      $table->dateTime('maturity_time')->nullable();
+      $table->string('image')->nullable();
+      $table->timestamp('maturity_time')->nullable();
       $table->unsignedBigInteger('wallet_id');
       $table->foreign('wallet_id')->references('id')->on('wallets')->onDelete('restrict');
       $table->unsignedBigInteger('task_id')->nullable();
       $table->foreign('task_id')->references('id')->on('tasks')->onDelete('restrict');
-      $table->unsignedBigInteger('user_id');
+      $table->unsignedBigInteger('user_id')->nullable();
       $table->foreign('user_id')->references('id')->on('users')->onDelete('restrict');
       $table->timestamps();
+
+      $table->unique(['wallet_id', 'sequence'], 'wallet_sequence_unique');
     });
   }
 

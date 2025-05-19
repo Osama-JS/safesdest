@@ -133,16 +133,16 @@ class TagsController extends Controller
 
       $find = Tag::findOrFail($req->id);
       if ($find->drivers->count() > 0 || $find->customers->count() > 0 || $find->pricing->count() > 0) {
-        return response()->json(['status' => 2, 'error' => 'Error to find selected Vehicle']);
+        return response()->json(['status' => 2, 'error' => 'Error to find selected Tag']);
       }
 
       $done = $find->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Vehicle']);
+        return response()->json(['status' => 2, 'error' => 'Error to delete Tag']);
       }
       DB::commit();
-      return response()->json(['status' => 1, 'success' => __('Vehicle deleted')]);
+      return response()->json(['status' => 1, 'success' => __('Tag deleted')]);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

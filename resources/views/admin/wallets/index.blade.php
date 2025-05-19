@@ -12,7 +12,8 @@
 @endsection
 
 @section('page-script')
-    @vite(['resources/js/admin/wallets.js'])
+
+    @vite(['resources/js/admin/wallets/wallets.js'])
     @vite(['resources/js/ajax.js'])
 @endsection
 
@@ -31,6 +32,7 @@
                         <th>#</th>
                         <th>{{ __('name') }}</th>
                         <th>{{ __('balance') }}</th>
+                        <th>{{ __('Debt Ceiling') }}</th>
                         <th>{{ __('status') }}</th>
                         <th>{{ __('preview') }}</th>
                         <th>{{ __('last transaction') }}</th>

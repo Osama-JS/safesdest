@@ -80,6 +80,7 @@
         <!-- Owner Type Dropdown -->
         <div>
             <select class="form-select" id="owner-fillter">
+                <option value="">All</option>
                 <option value="admin">Admin</option>
                 <option value="customer">Customer</option>
             </select>
@@ -165,7 +166,8 @@
                                             <select name="payment_method" id="task-payment-method" class="form-select">
                                                 <option value="credit">{{ __('Credit Card') }}</option>
                                                 <option value="banking">{{ __('Bank transfer') }}</option>
-                                                <option value="wallet">{{ __('Use your Wallet') }}</option>
+                                                <option value="wallet" id="wallet-option">{{ __('Use your Wallet') }}
+                                                </option>
                                                 <option value="cash">{{ __('Cash On Delivery') }}</option>
                                             </select>
                                             <span class="payment_method-error text-danger text-error"></span>

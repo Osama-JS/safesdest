@@ -11,9 +11,26 @@ class Wallet_Transaction extends Model
     'user_id',
     'amount',
     'transaction_type',
+    'description',
+    'image',
     'wallet_id',
+    'maturity_time',
+    'sequence',
     'task_id',
   ];
+
+
+  protected static function booted()
+  {
+    static::creating(function ($transaction) {
+      $last = self::where('wallet_id', $transaction->wallet_id)
+        ->lockForUpdate()
+        ->orderByDesc('sequence')
+        ->first();
+
+      $transaction->sequence = optional($last)->sequence + 1 ?? 1;
+    });
+  }
 
   public function wallet()
   {

@@ -227,9 +227,18 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::post('/customers/status', [CustomersController::class, 'chang_status'])->name('customers.status');
       Route::get('/customers/edit/{id}', [CustomersController::class, 'edit'])->name('customers.show');
       Route::delete('/customers/delete/{id}', [CustomersController::class, 'destroy'])->name('customers.delete');
+      Route::post('/customers/wallet/create', [CustomersController::class, 'createWallet'])->name('customers.wallet.create');
 
       Route::get('/wallets', [WalletsController::class, 'index'])->name('wallets.wallets');
       Route::get('/wallets/data', [WalletsController::class, 'getData'])->name('wallets.data');
+      Route::post('/wallets/update', [WalletsController::class, 'update'])->name('wallets.update');
+      Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
+      Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');
+      Route::get('/wallets/transaction/show/{id}/{name}', [WalletsController::class, 'show'])->name('wallets.transaction');
+      Route::get('/wallets/transaction/data', [WalletsController::class, 'getDataTransactions'])->name('wallets.transaction.data');
+      Route::post('/wallets/transaction/store', [WalletsController::class, 'storeTransaction'])->name('wallets.transaction.store');
+      Route::get('/wallets/transaction/edit/{id}', [WalletsController::class, 'editTransaction'])->name('wallets.transaction.edit');
+      Route::delete('/wallets/transaction/delete/{id}', [WalletsController::class, 'destroy'])->name('wallets.transaction.delete');
 
 
 

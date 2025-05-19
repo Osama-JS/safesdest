@@ -154,6 +154,35 @@ class CustomersController extends Controller
     return response()->json($data);
   }
 
+  public function createWallet(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:customers,id',
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+    }
+
+    try {
+      $find = Customer::find($req->id);
+      if ($find->status != 'active') {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => 'Customer is not active']);
+      }
+      if ($find->wallet) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => 'Wallet already exists']);
+      }
+
+      $done = (new WalletsController)->store('customer', $req->id, true);
+
+      if (!$done) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to create Wallet']);
+      }
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Wallet created successfully']);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
+
 
   public function store(Request $req)
   {
@@ -342,7 +371,7 @@ class CustomersController extends Controller
         $tags = collect($req->tags)->filter()->map(fn($tagId) => ['tag_id' => $tagId])->toArray();
         $done->tags()->createMany($tags);
 
-        (new WalletsController)->store('customer', $done->id, true);
+        // (new WalletsController)->store('customer', $done->id, true);
       }
 
       if (!$done) {

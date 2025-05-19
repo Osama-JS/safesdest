@@ -189,6 +189,7 @@ $(function () {
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
+                    <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >Create Wallet</a></li>
                   </ul>
                 </div>
               </div>`;
@@ -347,6 +348,23 @@ $(function () {
       icon: 'info',
       fields: fields,
       url: `${baseUrl}admin/customers/status`,
+      method: 'POST',
+      dataTable: dt_data // إعادة تحميل الجدول إذا موجود
+    });
+  });
+
+  $(document).on('click', '.wallet-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+    `;
+
+    showFormModal({
+      title: `Create Wallet For Customer: <h4> <span class="bg-info p-0 px-2 rounded text-white"> ${name} </span> </h4>`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/customers/wallet/create`,
       method: 'POST',
       dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });

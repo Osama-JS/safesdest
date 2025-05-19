@@ -17,7 +17,7 @@ return new class extends Migration
       $table->enum('pricing_type', ['dynamic', 'manual'])->default('dynamic');
       $table->decimal('total_price', 10, 2)->default(0);
       $table->decimal('commission', 10, 2)->default(0);
-      $table->enum('payment_method', ['cash', 'credit', 'banking', 'postpaid'])->default('cash');
+      $table->enum('payment_method', ['cash', 'credit', 'banking', 'wallet'])->default('cash');
       $table->enum('payment_status', ['waiting', 'completed', 'pending'])->default('waiting');
       $table->enum('payment_paid', ['all', 'just_commission', 'pending'])->default('pending');
       $table->decimal('payment_pending_amount', 10, 2)->nullable();

@@ -294,7 +294,7 @@ $(function () {
 
       $('.text-error').html('');
       $('#trans_id').val(data.data.id);
-      $('#image').attr('src', baseUrl + data.data.image);
+      $('#image').attr('src', baseUrl + (data.data.image || 'assets/img/placeholder.jpg'));
       $('#trans_amount').val(data.data.amount);
       $('#trans_description').val(data.data.description);
       $('#trans_maturity').val(data.data.maturity_time);

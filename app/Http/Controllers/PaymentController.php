@@ -170,13 +170,14 @@ class PaymentController extends Controller
           ]);
         }
 
-        if ($done->status == false) {
-          DB::rollBack();
-          return response()->json([
-            'status' => 2,
-            'error' => __('The wallet is inactive, please wait for the admin to active it'),
-          ]);
-        }
+
+        // if ($done->status == false) {
+        //   DB::rollBack();
+        //   return response()->json([
+        //     'status' => 2,
+        //     'error' => __('The wallet is inactive, please wait for the admin to active it'),
+        //   ]);
+        // }
 
 
         $transaction = $task->customer->transactions()->create([
@@ -196,7 +197,7 @@ class PaymentController extends Controller
         }
 
         $task->update([
-          'payment_method' => 'postpaid',
+          'payment_method' => 'wallet',
           'payment_status' => 'completed',
           'payment_paid' => 'all',
           'payment_id' => $transaction->id,

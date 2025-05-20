@@ -200,7 +200,7 @@ class TaskPricingService
 
     if ($request->pricing_method != 0) {
       if ($method->type !== 'points') {
-        $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data);
+        $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data, $totalPrice);
         $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
         $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
         $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
@@ -267,9 +267,9 @@ class TaskPricingService
     return $price;
   }
 
-  protected function calculateFieldsPricing($pricingTemplate, $request, &$data)
+  protected function calculateFieldsPricing($pricingTemplate, $request, &$data, $totalPrice)
   {
-    $price = 0;
+    $price = $totalPrice;
     $data['fields'] = [];
     if ($pricingTemplate->fields->count() > 0) {
       $inputs = $request->input('additional_fields', []);
@@ -291,7 +291,7 @@ class TaskPricingService
 
         if ($shouldApply) {
           $increment = $pricingField->type === 'fixed' ? $pricingField->amount : ($price * ($pricingField->amount / 100));
-          $price += $increment;
+          $price = $increment;
 
           $data['fields'] = [
             'name' => $pricingField->form_field->label,

@@ -20,6 +20,19 @@ use App\Models\Task;
 
 class CustomersController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_customers', ['only' => ['index', 'getData', 'edit']]);
+    $this->middleware('permission:save_customers', ['only' => ['store']]);
+    $this->middleware('permission:status_customers', ['only' => ['chang_status']]);
+    $this->middleware('permission:delete_customers', ['only' => ['destroy']]);
+    $this->middleware('permission:profile_customers', ['only' => ['show', 'getCustomerTasks']]);
+    $this->middleware('permission:wallet_customers', ['only' => ['']]);
+    $this->middleware('permission:mange_wallet_customers', ['only' => ['']]);
+    $this->middleware('permission:task_customers', ['only' => ['']]);
+  }
+
   public function index()
   {
     $templates = Form_Template::all();
@@ -30,13 +43,11 @@ class CustomersController extends Controller
     return view('admin.customers.index', compact('templates', 'roles', 'tags', 'customer_template'));
   }
 
-
   public function getCustomers()
   {
     $data = Customer::select('id', 'name')->get();
     return response()->json($data);
   }
-
 
   public function getData(Request $request)
   {
@@ -46,7 +57,7 @@ class CustomersController extends Controller
       3 => 'email',
       4 => 'phone',
       5 => 'role',
-      6 => 'tags',       // تم الاحتفاظ بـ 'tags' فقط هنا
+      6 => 'tags',
       7 => 'status',
       8 => 'created_at'
     ];
@@ -123,24 +134,30 @@ class CustomersController extends Controller
     $validator = Validator::make($req->all(), [
       'id' => 'required|exists:customers,id',
       'status' => 'required',
-
+    ], [
+      'id.required' => __('The customer id is required.'),
+      'id.exists' => __('The selected customer does not exist.'),
+      'status.required' => __('The status field is required.'),
     ]);
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
     }
 
     try {
+      $user = auth()->user();
+      if (!$user || !$user->checkCustomer($req->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       $done = Customer::find($req->id)->update(['status' => $req->status]);
 
       if (!$done) {
-        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change Customer Status']);
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Customer Status')]);
       }
-      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Customer Status changed']);
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Customer Status changed')]);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
     }
   }
-
 
   public function edit($id)
   {
@@ -334,7 +351,11 @@ class CustomersController extends Controller
       if ($req->filled('id')) {
         $find = Customer::findOrFail($req->id);
         if (!$find) {
-          return response()->json(['status' => 2, 'error' => 'Can not find the selected Customer']);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected Customer')]);
+        }
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($find->id)) {
+          return response()->json(['status' => 2,  'error' => __('You do not have permission to do actions to this record')]);
         }
 
         $oldImage = $find->image;
@@ -376,10 +397,7 @@ class CustomersController extends Controller
 
       if (!$done) {
         DB::rollBack();
-        if ($req->hasFile('image')) {
-          unlink($data['image']);
-        }
-        return response()->json(['status' => 2, 'error' => 'Error: can not save the Customer']);
+        return response()->json(['status' => 2, 'error' => __('Error: can not save the Customer')]);
       }
 
       DB::commit();
@@ -395,7 +413,7 @@ class CustomersController extends Controller
 
       return response()->json([
         'status'  => 1,
-        'success' => 'Customer saved successfully',
+        'success' => __('Customer saved successfully'),
       ]);
     } catch (\Exception $ex) {
       DB::rollBack();
@@ -414,13 +432,18 @@ class CustomersController extends Controller
     try {
       $find = Customer::findOrFail($req->id);
       if (!$find) {
-        return response()->json(['status' => 2, 'error' => 'Can not find the selected Customer']);
+        return response()->json(['status' => 2, 'error' => __('Can not find the selected Customer')]);
       }
+      $user = auth()->user();
+      if (!$user || !$user->checkCustomer($find->id)) {
+        return response()->json(['status' => 2,  'error' => __('You do not have permission to do actions to this record')]);
+      }
+
 
       $done = Customer::where('id', $req->id)->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Customer']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Customer')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Customer deleted')]);
@@ -434,6 +457,11 @@ class CustomersController extends Controller
   public function show(Request $req)
   {
     $data = Customer::findOrFail($req->id);
+    // $user = auth()->user();
+    // if (!$user || !$user->checkCustomer($data->id)) {
+    //   abort(403);
+    // }
+
     return view('admin.customers.show', compact('data'));
   }
 

@@ -8,8 +8,6 @@ import { mapsConfig } from '../mapbox-helper';
 
 // Datatable (jquery)
 $(function () {
-  console.log(typeof Lang);
-
   // ajax setup
   $.ajaxSetup({
     headers: {

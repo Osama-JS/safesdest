@@ -71,7 +71,7 @@ $(function () {
         {
           // Actions
           targets: -1,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -98,8 +98,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search User',
-        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search User'),
+        info: __('Displaying _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
@@ -113,7 +113,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data['name'];
+              return __('Details of') + ' ' + data['name'];
             }
           }),
           type: 'column',
@@ -173,7 +173,7 @@ $(function () {
     document.querySelector('.form_submit').reset();
     $('.text-error').html('');
     $('#pricing-distance').attr('checked', false);
-    $('#modelTitle').html('Add New Method');
+    $('#modelTitle').html(__('Add New Method'));
   });
 
   $(document).ready(function () {

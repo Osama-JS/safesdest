@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 class SettingsController extends Controller
 {
 
+  public function __construct()
+  {
+    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate']]);
+  }
+
   public function index()
   {
     $templates = Form_Template::all();

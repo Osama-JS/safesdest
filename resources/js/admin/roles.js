@@ -36,7 +36,7 @@ $(function () {
         { data: 'created_at', render: data => `<span class="user-email">${data}</span>` },
         {
           data: 'action',
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: (data, type, full) =>
@@ -72,8 +72,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search User',
-        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search User'),
+        info: __('Displaying _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
@@ -82,16 +82,16 @@ $(function () {
       buttons: [
         ` <label class='me-2'>
           <select id='typeFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
-            <option value='web'>Administrator</option>
-            <option value='driver'>Driver</option>
-            <option value='customer'>Customer</option>
+            <option value='web'>${__('Administrator')}</option>
+            <option value='driver'>${__('Driver')}</option>
+            <option value='customer'>${__('Customer')}</option>
           </select>
         </label>`
       ],
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
-            header: row => 'Details of ' + row.data().name
+            header: row => __('Details of') + ' ' + row.data().name
           }),
           type: 'column',
           renderer: (api, rowIdx, columns) => {
@@ -147,7 +147,7 @@ $(function () {
       dtrModal.modal('hide');
     }
 
-    $('#modelTitle').html(`Edit Role: <span class="bg-info text-white px-2 rounded">${role_name}</span>`);
+    $('#modelTitle').html(`${__('Edit Role')}: <span class="bg-info text-white px-2 rounded">${role_name}</span>`);
 
     $('#role_id').val(role_id);
     $('#role-name').val(role_name);
@@ -252,12 +252,12 @@ $(function () {
           $(`.${groupClass}`).prop('checked', isChecked).trigger('change'); // تحديث حالة الصلاحيات
         });
       } else {
-        $('#permissions_types').html('<p class="text-muted">There is no Permissions found!</p>');
+        $('#permissions_types').html('<p class="text-muted">' + __('There is no Permissions found!') + '</p>');
         $('#permissions_container').html('');
       }
     }).fail(function () {
-      showAlert('error', 'Error!! can not fiche any Permission', 10000, true);
-      $('#permissions_types').html('<p class="text-danger">Error!! can not fiche any Permission</p>');
+      showAlert('error', __('Error!! can not fiche any Permission'), 10000, true);
+      $('#permissions_types').html('<p class="text-danger">' + __('Error!! can not fiche any Permission') + '</p>');
     });
   }
 
@@ -271,7 +271,7 @@ $(function () {
     $(this).find('form')[0].reset();
     $('.text-error').html('');
     $('#role_id').val('');
-    $('#modelTitle').html('Add New Role');
+    $('#modelTitle').html(__('Add New Role'));
     $('#check-guard').show();
     getPermissions('web');
     $('.form_submit').attr('action', `${baseUrl}admin/roles`);

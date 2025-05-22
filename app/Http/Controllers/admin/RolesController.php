@@ -97,6 +97,13 @@ class RolesController extends Controller
       'name'         => 'required|unique:roles,name,' .  ($req->id ?? 0),
       'guard'        => 'required|in:web,driver,customer',
       'permissions'  => 'required|array',
+    ], [
+      'name.required' => __('The role name is required.'),
+      'name.unique' => __('The role name has already been taken.'),
+      'guard.required' => __('The guard field is required.'),
+      'guard.in' => __('The selected guard is invalid.'),
+      'permissions.required' => __('At least one permission must be selected.'),
+      'permissions.array' => __('Permissions must be an array.'),
     ]);
 
     if ($validator->fails()) {
@@ -123,7 +130,7 @@ class RolesController extends Controller
       }
       if (!$role) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to Save Role']);
+        return response()->json(['status' => 2, 'error' => __('Error to Save Role')]);
       }
       $permissions = Permission::whereIn('id', $req->permissions)
         ->where('guard_name', $req->guard)
@@ -131,7 +138,7 @@ class RolesController extends Controller
         ->toArray();
       $role->syncPermissions($permissions);
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'Role Saved']);
+      return response()->json(['status' => 1, 'success' => __('Role Saved')]);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
@@ -144,20 +151,20 @@ class RolesController extends Controller
     DB::beginTransaction();
 
     if ($req->id === 1) {
-      return response()->json(['status' => 2, 'error' => 'this role can not be deleted']);
+      return response()->json(['status' => 2, 'error' => __('This role can not be deleted')]);
     }
     try {
       $users = User::where('role_id', $req->id)->count();
       if ($users !== 0) {
-        return response()->json(['status' => 2, 'error' => 'there are users connected with this role']);
+        return response()->json(['status' => 2, 'error' => __('There are users connected with this role')]);
       }
       $done = Role::where('id', $req->id)->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete role']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete role')]);
       }
       DB::commit();
-      return response()->json(['status' => 1, 'success' => __('role deleted')]);
+      return response()->json(['status' => 1, 'success' => __('Role deleted')]);
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

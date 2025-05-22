@@ -3,7 +3,7 @@
 let mapInstance = null;
 let mapReadyCallbackQueue = [];
 export const mapsConfig = {
-  token: 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA',
+  token: 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtYXc0Y2gwNTBiaXoyaXNkZmd3b2V6YzcifQ.bumnNtPfvx8ZXHpKbeJkPA',
   style: 'osama1998/cma8lcv6p00ha01s58rdb73zw',
   center: [46.6753, 24.7136]
 };

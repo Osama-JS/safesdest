@@ -16,6 +16,16 @@ use Illuminate\Support\Facades\Validator;
 
 class WalletsController extends Controller
 {
+
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_wallets', ['only' => ['index', 'getData']]);
+    $this->middleware('permission:save_wallets', ['only' => ['update']]);
+    $this->middleware('permission:details_wallets', ['only' => ['show', 'getDataTransactions']]);
+    $this->middleware('permission:transaction_wallets', ['only' => ['storeTransaction', 'editTransaction', 'destroy']]);
+  }
+
   public function index()
   {
     return view('admin.wallets.index');
@@ -172,8 +182,6 @@ class WalletsController extends Controller
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
     }
   }
-
-
 
   public function show($id, $name)
   {

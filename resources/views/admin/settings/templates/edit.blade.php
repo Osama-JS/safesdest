@@ -41,7 +41,7 @@
     </script>
 @endsection
 @section('templates-isactive')
-active
+    active
 @endsection
 
 
@@ -64,13 +64,13 @@ active
                     <thead>
                         <tr>
                             <th></th>
-                            <th>name</th>
-                            <th>label</th>
-                            <th>driver can</th>
-                            <th>customer can</th>
-                            <th>type</th>
-                            <th>value</th>
-                            <th>require</th>
+                            <th>{{ __('name') }}</th>
+                            <th>{{ __('label') }}</th>
+                            <th>{{ __('driver can') }}</th>
+                            <th>{{ __('customer can') }}</th>
+                            <th>{{ __('type') }}</th>
+                            <th>{{ __('value') }}</th>
+                            <th>{{ __('require') }}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -87,7 +87,8 @@ active
                             <tr class="form-field-row" data-id="{{ $field->id }}">
                                 <td class="drag-handle" style="cursor: grab;">☰</td>
                                 <td>
-                                    <input type="text" class="form-control field-name-input" value="{{ $field->name }}">
+                                    <input type="text" class="form-control field-name-input"
+                                        value="{{ $field->name }}">
                                     <span class="field-{{ $key }}-name-error text-danger text-error"></span>
 
                                 </td>
@@ -161,13 +162,13 @@ active
                                 <tr class="select-values-table connected-row" data-id="{{ $field->id }}">
                                     <td colspan="4">
                                         <div class="p-2 border rounded  shadow-sm">
-                                            <h6 class="text-primary">🔗 قيم الاختيار</h6>
+                                            <h6 class="text-primary">🔗 {{ __('Select Values') }}</h6>
                                             <table class="table ">
                                                 <thead>
                                                     <tr>
-                                                        <th>القيمة</th>
-                                                        <th>الاسم الظاهر</th>
-                                                        <th>إجراء</th>
+                                                        <th>{{ __('Value') }}</th>
+                                                        <th>{{ __('Display Name') }}</th>
+                                                        <th>{{ __('Action') }}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="select-values-body">
@@ -292,13 +293,13 @@ active
                         <!-- Customers Selection -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Customers Selections</strong></div>
+                                <div class="divider-text"><strong>{{ __('Customers Selections') }}</strong></div>
                             </div>
 
                             <div class="mb-4">
                                 <input type="checkbox" id="allCustomers" name="all_customers" value="true"
                                     class="form-check-input" checked>
-                                <label for="allCustomers">Apply to All Customers</label>
+                                <label for="allCustomers">{{ __('Apply to All Customers') }}</label>
                                 <span class="all_customers-error text-danger text-error"></span>
 
                             </div>
@@ -306,7 +307,7 @@ active
                             <div class="row">
                                 <!-- Tags -->
                                 <div class="col-md-6">
-                                    <label for="">Use customers tags </label>
+                                    <label for="">{{ __('Use customers tags') }} </label>
                                     <input type="checkbox" id="useTags" name="use_tags" value="true"
                                         class="form-check-input mb-2">
                                     <select class="form-select select2-tags" name="tags[]" multiple id="tagsSelect"
@@ -322,7 +323,7 @@ active
 
                                 <!-- Specific Customers -->
                                 <div class="col-md-6">
-                                    <label for="">Use Specific customers </label>
+                                    <label for="">{{ __('Use Specific customers') }} </label>
                                     <input type="checkbox" id="useCustomers" name="use_customers" value="true"
                                         class="form-check-input mb-2">
                                     <select class="form-select select2-customers" name="customers[]" multiple
@@ -341,7 +342,7 @@ active
                         <!-- Vehicle Sizes -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Vehicles Selections</strong></div>
+                                <div class="divider-text"><strong>{{ __('Vehicles Selections') }}</strong></div>
                             </div>
                             <!-- vehicle tabs start -->
                             <div class="nav-align-top mb-6">
@@ -406,23 +407,23 @@ active
                         <!-- Pricing Inputs -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Pricing</strong></div>
+                                <div class="divider-text"><strong>{{ __('Pricing') }}</strong></div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Base Fare</label>
+                                    <label class="form-label">{{ __('Base Fare') }}</label>
                                     <input type="number" name="base_fare" class="form-control" placeholder="0.00" />
                                     <span class="base_fare-error text-danger text-error"></span>
 
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Base Distance</label>
+                                    <label class="form-label">{{ __('Base Distance') }}</label>
                                     <input type="number" name="base_distance" class="form-control" placeholder="km" />
                                     <span class="base_distance-error text-danger text-error"></span>
 
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Base Waiting</label>
+                                    <label class="form-label">{{ __('Base Waiting') }}</label>
                                     <input type="number" name="base_waiting" class="form-control"
                                         placeholder="minuets" />
                                     <span class="base_waiting-error text-danger text-error"></span>
@@ -431,13 +432,13 @@ active
                                 <div class="col-md-4"></div>
 
                                 <div class="col-md-4">
-                                    <label class="form-label">Distance Fare</label>
+                                    <label class="form-label">{{ __('Distance Fare') }}</label>
                                     <input type="number" name="distance_fare" min="0.00" class="form-control"
                                         placeholder="0.00" />
                                     <span class="distance_fare-error text-danger text-error"></span>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Waiting Fare</label>
+                                    <label class="form-label">{{ __('Waiting Fare') }}</label>
                                     <input type="number" name="waiting_fare" min="0.00" class="form-control"
                                         placeholder="0.00" />
                                     <span class="waiting_fare-error text-danger text-error"></span>
@@ -451,7 +452,7 @@ active
                         <!-- Customize Pricing -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Pricing Methods</strong></div>
+                                <div class="divider-text"><strong>{{ __('Pricing Methods') }}</strong></div>
                             </div>
                             @foreach ($pricing_methods as $method)
                                 <div class="form-check mb-2">
@@ -469,13 +470,14 @@ active
                         <!-- Dynamic Pricing (جافاسكربت يضيف الحقول داخلها) -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Dynamic Pricing Based on Field Values</strong></div>
+                                <div class="divider-text">
+                                    <strong>{{ __('Dynamic Pricing Based on Field Values') }}</strong></div>
                             </div>
                             <div>
                                 <div class="row g-2 mb-2 field-pricing-row">
                                     <div class="col-md-2 d-flex align-items-end">
                                         <button type="button" class="btn btn-sm border add-field-pricing">
-                                            <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> add field
+                                            <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> {{ __('add field') }}
                                         </button>
                                     </div>
                                 </div>
@@ -484,11 +486,12 @@ active
                         </div>
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Dynamic Pricing Based on Geo-fence </strong></div>
+                                <div class="divider-text"><strong>{{ __('Dynamic Pricing Based on Geo-fence') }}</strong>
+                                </div>
                             </div>
 
                             <button type="button" class="btn btn-sm border mb-2 add-geofence-pricing">
-                                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> add geofence
+                                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> {{ __('add geofence') }}
                             </button>
 
                             <div id="geofence-pricing-wrapper"></div>
@@ -498,18 +501,18 @@ active
                         <!-- Commission -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Commission</strong></div>
+                                <div class="divider-text"><strong>{{ __('Commission') }}</strong></div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <label class="form-label">VAT Commission</label>
+                                    <label class="form-label">{{ __('VAT Commission') }}</label>
                                     <input type="number" name="vat_commission" class="form-control" min="0.00"
                                         placeholder="0.00">
                                     <span class="vat_commission-error text-danger text-error"></span>
 
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Service Tax Commission</label>
+                                    <label class="form-label">{{ __('Service Tax Commission') }}</label>
                                     <input type="number" name="service_commission" class="form-control" min="0.00"
                                         placeholder="0.00">
                                     <span class="service_commission-error text-danger text-error"></span>
@@ -520,10 +523,10 @@ active
                         <!-- Discount -->
                         <div class="mb-3">
                             <div class="divider text-start">
-                                <div class="divider-text"><strong>Discount Fare</strong></div>
+                                <div class="divider-text"><strong>{{ __('Discount Fare') }}</strong></div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Discount percentage %</label>
+                                <label class="form-label">{{ __('Discount percentage %') }}</label>
                                 <input type="number" name="discount" class="form-control" min="0.00"
                                     placeholder="0.00">
                                 <span class="discount-error text-danger text-error"></span>
@@ -534,8 +537,9 @@ active
 
                     <!-- Footer -->
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
 

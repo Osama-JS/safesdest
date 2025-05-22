@@ -500,6 +500,7 @@ class TasksController extends Controller
       // إنشاء المهام بعدد المركبات المطلوبة
       $number = $taskData['vehicles_quantity'] ?? 1;
 
+
       $task['pricing_history'] = $data;
       $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
         $newTask = Task::create($task);

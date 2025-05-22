@@ -19,6 +19,12 @@ use Symfony\Component\Console\Command\DumpCompletionCommand;
 
 class TemplateController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:templates_settings', ['only' => ['index', 'getData', 'edit',  'store', 'update']]);
+  }
+
   public function index()
   {
     return view('admin.settings.templates.index');
@@ -140,8 +146,6 @@ class TemplateController extends Controller
     }
   }
 
-
-
   public function edit($id)
   {
     $data = Form_Template::with('fields', 'pricing_templates')->find($id);
@@ -156,8 +160,6 @@ class TemplateController extends Controller
     }
     return view('admin.settings.templates.edit', compact('data', 'vehicle', 'methods', 'tags', 'customers', 'pricing_methods', 'geofences'));
   }
-
-
 
   public function update(Request $request)
   {

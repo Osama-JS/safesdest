@@ -13,6 +13,16 @@ use Illuminate\Http\JsonResponse;
 
 class TeamsController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_teams', ['only' => ['index', 'getData', 'edit']]);
+    $this->middleware('permission:save_teams', ['only' => ['store']]);
+    $this->middleware('permission:delete_teams', ['only' => ['destroy']]);
+    $this->middleware('permission:details_teams', ['only' => ['']]);
+  }
+
+
   public function index()
   {
     $teams = Teams::paginate(8);

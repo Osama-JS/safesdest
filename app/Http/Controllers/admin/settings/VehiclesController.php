@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Validator;
 
 class VehiclesController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:vehicles_settings', ['only' => ['index', 'getData', 'store', 'store_type', 'store_size', 'destroy', 'destroy_type', 'destroy_size']]);
+  }
+
   public function index()
   {
     return view('admin.settings.vehicles');

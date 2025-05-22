@@ -23,8 +23,7 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Vehicles') }}</h5>
-            <p>{{ __('Managing the types of vehicles and trucks that will provide delivery services on the platform') }}
-            </p>
+            <p>{{ __('Managing the types of vehicles and trucks that will provide delivery services on the platform') }}</p>
         </div>
     </div>
 
@@ -58,7 +57,7 @@
                                     <div class="form-group">
                                         <label for="vehicle-name">* {{ __('name') }}</label>
                                         <input type="text" name="v_name" id="vehicle-name" class="form-control"
-                                            placeholder="vehicle name">
+                                            placeholder="{{ __('vehicle name') }}">
                                         <span class="v_name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -66,7 +65,7 @@
                                     <div class="form-group">
                                         <label for="vehicle-en-name">* {{ __('English name') }}</label>
                                         <input type="text" name="v_en_name" id="vehicle-en-name" class="form-control"
-                                            placeholder="vehicle name">
+                                            placeholder="{{ __('vehicle name') }}">
                                         <span class="v_en_name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -103,7 +102,7 @@
                                     <div class="form-group">
                                         <label for="vehicle-type-name">* {{ __('name') }}</label>
                                         <input type="text" name="name" id="vehicle-type-name" class="form-control"
-                                            placeholder="vehicle name">
+                                            placeholder="{{ __('vehicle name') }}">
                                         <span class="name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -112,7 +111,7 @@
                                     <div class="form-group">
                                         <label for="vehicle-type-en-name">* {{ __('English name') }}</label>
                                         <input type="text" name="en_name" id="vehicle-type-en-name" class="form-control"
-                                            placeholder="vehicle name">
+                                            placeholder="{{ __('vehicle name') }}">
                                         <span class="en_name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -121,7 +120,7 @@
                                         <label for="vehicle-type-vehicle">* {{ __('Select vehicle') }}</label>
                                         <select name="vehicle" id="vehicle-type-vehicle"
                                             class="form-select vehicle-type-vehicle">
-                                            <option value="">-- {{ __('select vehicle') }}</option>
+                                            <option value="">{{ __('select vehicle') }}</option>
                                         </select>
 
                                         <span class="vehicle-error text-danger text-error"></span>
@@ -137,7 +136,7 @@
                                     <label for="type-vehicle-flitter">{{ __('Flitter by vehicle') }}</label>
                                     <select name="flitter-vehicle" id="type-vehicle-flitter"
                                         class="form-select w-auto vehicle-type-vehicle">
-                                        <option value="">-- {{ __('all vehicle') }}</option>
+                                        <option value="">{{ __('all vehicle') }}</option>
                                     </select>
                                 </div>
                             </div>
@@ -166,7 +165,7 @@
                                     <div class="form-group">
                                         <label for="vehicle-size-name">* {{ __('size') }}</label>
                                         <input type="text" name="name" id="vehicle-size-name"
-                                            class="form-control " placeholder="vehicle name">
+                                            class="form-control " placeholder="{{ __('vehicle name') }}">
                                         <span class="name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -186,7 +185,7 @@
                                         <label for="vehicle-size-type">* {{ __('Select vehicle Type') }}</label>
                                         <select name="type" id="vehicle-size-type"
                                             class="form-select vehicle-sizes-vehicle">
-                                            <option value="">-- {{ __('select vehicle') }}</option>
+                                            <option value="">{{ __('select vehicle') }}</option>
                                         </select>
 
                                         <span class="type-error text-danger text-error"></span>
@@ -204,7 +203,7 @@
                                             <label for="size-vehicle-flitter">{{ __('Flitter by vehicle') }}</label>
                                             <select name="flitter-vehicle" id="size-vehicle-flitter"
                                                 class="form-select w-auto vehicle-type-vehicle">
-                                                <option value="">-- {{ __('select vehicle') }}</option>
+                                                <option value="">{{ __('select vehicle') }}</option>
                                             </select>
 
                                         </div>
@@ -214,7 +213,7 @@
                                             <label for="size-type-flitter"> {{ __('Flitter by vehicle type') }}</label>
                                             <select name="flitter-type" id="size-type-flitter"
                                                 class="form-select w-auto vehicle-sizes-vehicle">
-                                                <option value="">-- {{ __('select vehicle type') }}</option>
+                                                <option value="">{{ __('select vehicle type') }}</option>
                                             </select>
 
                                         </div>

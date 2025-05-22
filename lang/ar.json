@@ -1,6 +1,6 @@
 {
   "Dashboards": "لوحات القيادة",
-  "Dashboard": "لوحة القيادة",
+  "Dashboard": "لوحة التحكم",
   "CRM": "إدارة علاقات العملاء",
   "eCommerce": "التجارة الإلكترونية",
   "Layouts": "التخطيطات",
@@ -47,7 +47,70 @@
   "Role Name": "اسم الدور",
   "Guard": "الحارس",
   "Permissions": "الصلاحيات",
-  "Users": "المستخدمين",
+  "Users": "المستخدمون",
+  "Active Users": "المستخدمون النشطون",
+  "Inactive Users": "المستخدمون غير النشطين",
+  "Pending Users": "المستخدمون قيد الانتظار",
+  "Add New User": "إضافة مستخدم جديد",
+  "Edit User": "تعديل المستخدم",
+  "User": "المستخدم",
+  "Email": "البريد الإلكتروني",
+  "Phone": "الهاتف",
+  "Role": "الدور",
+  "Status": "الحالة",
+  "Reset Password": "إعادة تعيين كلمة المرور",
+  "Actions": "الإجراءات",
+  "Search...": "بحث...",
+  "Showing _START_ to _END_ of _TOTAL_ entries": "عرض _START_ إلى _END_ من أصل _TOTAL_ مدخل",
+  "Details of": "تفاصيل",
+  "Add New Tag": "إضافة وسم جديد",
+  "Add new User": "إضافة مستخدم جديد",
+  "Main": "رئيسي",
+  "Additional": "إضافي",
+  "Full Name": "الاسم الكامل",
+  "example@example.com": "example@example.com",
+  "Enter phone number": "أدخل رقم الهاتف",
+  "Password": "كلمة المرور",
+  "Confirm Password": "تأكيد كلمة المرور",
+  "User Role": "دور المستخدم",
+  "Teams": "الفرق",
+  "Customers": "العملاء",
+  "Active Customers": "العملاء النشطون",
+  "Unverified Customers": "العملاء غير الموثقين",
+  "Blocked Customers": "العملاء المحظورون",
+  "name": "الاسم",
+  "email": "البريد الإلكتروني",
+  "phone": "الهاتف",
+  "role": "الدور",
+  "tags": "الوسوم",
+  "status": "الحالة",
+  "created at": "تاريخ الإنشاء",
+  "actions": "الإجراءات",
+  "Add New Customer": "إضافة عميل جديد",
+  "Close": "إغلاق",
+  "Full Name": "الاسم الكامل",
+  "Email": "البريد الإلكتروني",
+  "example@example.com": "example@example.com",
+  "Phone": "الهاتف",
+  "Enter phone number": "أدخل رقم الهاتف",
+  "Customer Role": "دور العميل",
+  "Select Role": "اختر الدور",
+  "Password": "كلمة المرور",
+  "Confirm Password": "تأكيد كلمة المرور",
+  "Company Info": "معلومات الشركة",
+  "Company Name": "اسم الشركة",
+  "enter company name": "أدخل اسم الشركة",
+  "Company Address": "عنوان الشركة",
+  "enter company address": "أدخل عنوان الشركة",
+  "Tags": "الوسوم",
+  "Select Template": "اختر القالب",
+  "-- Select Template": "-- اختر القالب",
+  "Submit": "إرسال",
+  "Select Template": "اختر القالب",
+  "--- Select Template": "--- اختر القالب",
+  "-- Select Template": "-- اختر القالب",
+  "Close": "إغلاق",
+  "Submit": "إرسال",
   "Users & Settings": "الإعدادات & المستخدمين",
   "List": "القائمة",
   "View": "عرض",
@@ -177,14 +240,15 @@
   "Charts & Maps": "الرسوم البيانية والخرائط",
   "Tabler": "طاولة",
   "Add new roles with customized permissions as per your requirement": "أضف أدوارًا جديدة مع صلاحيات مخصصة حسب متطلباتك",
-  "Add New Role": "أضف دورًا جديدًا",
+  "Add New Role": "إضافة دور جديد",
+  "Edit Role": "تعديل الدور",
   "Role": "الدور",
   "Created At": "تاريخ الإنشاء",
   "add new role": "أضف دورًا جديدًا",
   "role": "الدور",
   "role name": "اسم الدور",
   "guard": "الحارس",
-  "Administrator": "مدير",
+  "Administrator": "مسؤول",
   "Driver": "سائق",
   "Customer": "عميل",
   "permissions": "الصلاحيات",
@@ -211,10 +275,10 @@
   "Confirm Password": "تأكيد كلمة المرور",
   "Password": "كلمة المرور",
   "Geo-fence": "السياج الجغرافي",
-  "It allows you to categorize Manager and simplifies the process of task assignment by letting you create virtual boundaries.": "يسمح لك بتصنيف المدير ويبسط عملية تعيين المهام من خلال السماح لك بإنشاء حدود افتراضية.",
+  "It allows you to categorize Manager and simplifies the process of task assignment by letting you create virtual boundaries.": "يتيح لك تصنيف المدير ويسهل عملية توزيع المهام من خلال إنشاء حدود افتراضية.",
   "Add New Geo-fence": "إضافة سياج جغرافي جديد",
   "🔍 Search Team": "🔍 بحث عن فريق",
-  "Marker Circle & Polygon": "دائرة العلامة والمضلع",
+  "Geofences": "الأسياج الجغرافية",
   "Add Geo-fence": "إضافة سياج جغرافي",
   "Name": "الاسم",
   "Enter name": "أدخل الاسم",
@@ -222,5 +286,373 @@
   "Enter description": "أدخل الوصف",
   "Vehicles Selections": "اختيار المركبات",
   "Select Template": "اختر القالب",
-  "-- Select Template": "-- اختر القالب"
+  "--- Select Template": "--- اختر القالب",
+  "-- Select Template": "-- اختر القالب",
+  "search": "بحث",
+  "Search User": "بحث عن مستخدم",
+  "Displaying _START_ to _END_ of _TOTAL_ entries": "عرض _START_ إلى _END_ من أصل _TOTAL_ مدخل",
+  "Details of": "تفاصيل",
+  "There is no Permissions found!": "لا توجد صلاحيات!",
+  "Error!! can not fiche any Permission": "خطأ! لا يمكن جلب أي صلاحية",
+  "The role name is required.": "اسم الدور مطلوب.",
+  "The role name has already been taken.": "اسم الدور مستخدم بالفعل.",
+  "The guard field is required.": "حقل الحارس مطلوب.",
+  "The selected guard is invalid.": "الحارس المحدد غير صالح.",
+  "At least one permission must be selected.": "يجب اختيار صلاحية واحدة على الأقل.",
+  "Permissions must be an array.": "يجب أن تكون الصلاحيات في مصفوفة.",
+  "Error to Save Role": "حدث خطأ أثناء حفظ الدور",
+  "Role Saved": "تم حفظ الدور بنجاح",
+  "This role can not be deleted": "لا يمكن حذف هذا الدور",
+  "There are users connected with this role": "هناك مستخدمون مرتبطون بهذا الدور",
+  "Error to delete role": "حدث خطأ أثناء حذف الدور",
+  "Role deleted": "تم حذف الدور",
+  "Rate": "نسبة",
+  "Fixed": "ثابت",
+  "Commission Rate": "نسبة العمولة",
+  "Commission fixed Amount": "مبلغ العمولة الثابت",
+  "General Settings": "الإعدادات العامة",
+  "You can manage the main and vital settings of the platform from here, so be careful.": "يمكنك إدارة الإعدادات الرئيسية والهامة للمنصة من هنا، لذا كن حذراً.",
+  "Templates": "القوالب",
+  "Manage data entry templates that allow you to create templates and link them to users to obtain additional information, data, and more": "إدارة قوالب إدخال البيانات التي تتيح لك إنشاء قوالب وربطها بالمستخدمين للحصول على معلومات وبيانات إضافية والمزيد",
+  "Add New Template": "إضافة قالب جديد",
+  "Name": "الاسم",
+  "Description": "الوصف",
+  "Created At": "تاريخ الإنشاء",
+  "Actions": "الإجراءات",
+  "Template Name": "اسم القالب",
+  "enter the Template name": "أدخل اسم القالب",
+  "Close": "إغلاق",
+  "Submit": "إرسال",
+  "Default Customer Template": "قالب العميل الافتراضي",
+  "Default Driver Template": "قالب السائق الافتراضي",
+  "Default User Template": "قالب المستخدم الافتراضي",
+  "Default Task Template": "قالب المهمة الافتراضي",
+  "Drivers Commission": "عمولة السائقين",
+  "Commission Type": "نوع العمولة",
+  "The user id is required.": "معرّف المستخدم مطلوب.",
+  "The selected user does not exist.": "المستخدم المحدد غير موجود.",
+  "The status field is required.": "حقل الحالة مطلوب.",
+  "Error to Change user Status": "حدث خطأ أثناء تغيير حالة المستخدم",
+  "User Status changed": "تم تغيير حالة المستخدم",
+  "The name field is required.": "حقل الاسم مطلوب.",
+  "The email field is required.": "حقل البريد الإلكتروني مطلوب.",
+  "The email has already been taken.": "البريد الإلكتروني مستخدم بالفعل.",
+  "The phone field is required.": "حقل الهاتف مطلوب.",
+  "The phone has already been taken.": "رقم الهاتف مستخدم بالفعل.",
+  "The password field is required.": "حقل كلمة المرور مطلوب.",
+  "The password and confirmation must match.": "كلمة المرور وتأكيدها يجب أن يتطابقا.",
+  "The user role is required.": "دور المستخدم مطلوب.",
+  "The selected role is invalid.": "الدور المحدد غير صالح.",
+  "Teams must be an array.": "الفرق يجب أن تكون في مصفوفة.",
+  "Customers must be an array.": "العملاء يجب أن يكونوا في مصفوفة.",
+  "The selected template is invalid.": "القالب المحدد غير صالح.",
+  "The :label field is required.": "حقل :label مطلوب.",
+  "Can not find the selected user": "لا يمكن العثور على المستخدم المحدد",
+  "User saved successfully": "تم حفظ المستخدم بنجاح",
+  "User not found": "المستخدم غير موجود",
+  "Error to change reset password  status": "حدث خطأ أثناء تغيير حالة إعادة تعيين كلمة المرور",
+  "User deleted": "تم حذف المستخدم",
+  "The selected User has teams to mange. you can not delete hem right now": "المستخدم المحدد لديه فرق لإدارتها. لا يمكنك حذفه الآن",
+  "Error to delete User": "حدث خطأ أثناء حذف المستخدم",
+  "Vehicles": "المركبات",
+  "Managing the types of vehicles and trucks that will provide delivery services on the platform": "إدارة أنواع المركبات والشاحنات التي ستقدم خدمات التوصيل على المنصة",
+  "Vehicles Types": "أنواع المركبات",
+  "Vehicles Sizes": "أحجام المركبات",
+  "name": "الاسم",
+  "vehicle name": "اسم المركبة",
+  "English name": "الاسم بالإنجليزية",
+  "save": "حفظ",
+  "types": "الأنواع",
+  "actions": "الإجراءات",
+  "Select vehicle": "اختر المركبة",
+  "select vehicle": "اختر المركبة",
+  "Flitter by vehicle": "تصفية حسب المركبة",
+  "all vehicle": "كل المركبات",
+  "vehicle": "المركبة",
+  "type name": "اسم النوع",
+  "sizes": "الأحجام",
+  "size": "الحجم",
+  "Select vehicle Type": "اختر نوع المركبة",
+  "Flitter by vehicle type": "تصفية حسب نوع المركبة",
+  "select vehicle type": "اختر نوع المركبة",
+  "vehicle type": "نوع المركبة",
+  "No data available": "لا توجد بيانات",
+  "select vehicle Size": "اختر حجم المركبة",
+  "Tags": "الوسوم",
+  "Add New Tag": "إضافة وسم جديد",
+  "slug": "المعرف",
+  "drivers": "السائقين",
+  "customers": "العملاء",
+  "tag name": "اسم الوسم",
+  "enter the tag name": "أدخل اسم الوسم",
+  "tag slug": "معرف الوسم",
+  "enter the tag slug": "أدخل معرف الوسم",
+  "The tag name is required.": "اسم الوسم مطلوب.",
+  "The tag name has already been taken.": "اسم الوسم مستخدم بالفعل.",
+  "The tag slug is required.": "معرف الوسم مطلوب.",
+  "The tag slug has already been taken.": "معرف الوسم مستخدم بالفعل.",
+  "The description must be a string.": "الوصف يجب أن يكون نصاً.",
+  "The description may not be greater than 400 characters.": "الوصف يجب ألا يزيد عن 400 حرف.",
+  "Can not find the selected Tag": "لا يمكن العثور على الوسم المحدد",
+  "Error: can not save the Tag": "خطأ: لا يمكن حفظ الوسم",
+  "Tag saved successfully": "تم حفظ الوسم بنجاح",
+  "Error to find selected Tag": "خطأ في العثور على الوسم المحدد",
+  "Error to delete Tag": "خطأ في حذف الوسم",
+  "Tag deleted": "تم حذف الوسم",
+  "Select Teams": "اختر الفرق",
+  "Add Geo-fence": "إضافة سياج جغرافي",
+  "The geofence name is required.": "اسم السياج الجغرافي مطلوب.",
+  "The geofence name has already been taken.": "اسم السياج الجغرافي مستخدم بالفعل.",
+  "The description must be a string.": "الوصف يجب أن يكون نصاً.",
+  "The coordinates field is required.": "حقل الإحداثيات مطلوب.",
+  "The coordinates must be a string.": "الإحداثيات يجب أن تكون نصاً.",
+  "Teams must be an array.": "الفرق يجب أن تكون في مصفوفة.",
+  "Can not find the selected Geo-Fence": "لا يمكن العثور على السياج الجغرافي المحدد",
+  "error to save Geo-Fence": "خطأ في حفظ السياج الجغرافي",
+  "Geo-Fence saved successfully": "تم حفظ السياج الجغرافي بنجاح",
+  "Error to delete Geo-fence": "خطأ في حذف السياج الجغرافي",
+  "Geo-fence deleted": "تم حذف السياج الجغرافي",
+  "Points": "النقاط",
+  "Add New Point": "إضافة نقطة جديدة",
+  "address": "العنوان",
+  "customer": "العميل",
+  "status": "الحالة",
+  "enter the point name": "أدخل اسم النقطة",
+  "enter the point address": "أدخل عنوان النقطة",
+  "Location": "الموقع",
+  "confirm location": "تأكيد الموقع",
+  "Contact name": "اسم جهة الاتصال",
+  "enter the point contact name": "أدخل اسم جهة الاتصال للنقطة",
+  "Contact phone": "هاتف جهة الاتصال",
+  "enter the point contact phone": "أدخل هاتف جهة الاتصال للنقطة",
+  "Select Customer": "اختر العميل",
+  "The point name is required.": "اسم النقطة مطلوب.",
+  "The point name must be a string.": "اسم النقطة يجب أن يكون نصاً.",
+  "The contact name must be a string.": "اسم جهة الاتصال يجب أن يكون نصاً.",
+  "The contact name may not be greater than 400 characters.": "اسم جهة الاتصال يجب ألا يزيد عن 400 حرف.",
+  "The contact phone must be a string.": "هاتف جهة الاتصال يجب أن يكون نصاً.",
+  "The contact phone may not be greater than 50 characters.": "هاتف جهة الاتصال يجب ألا يزيد عن 50 حرفاً.",
+  "The address field is required.": "حقل العنوان مطلوب.",
+  "The address must be a string.": "العنوان يجب أن يكون نصاً.",
+  "The address may not be greater than 500 characters.": "العنوان يجب ألا يزيد عن 500 حرف.",
+  "The latitude field is required.": "حقل خط العرض مطلوب.",
+  "The latitude must be a number.": "خط العرض يجب أن يكون رقماً.",
+  "The longitude field is required.": "حقل خط الطول مطلوب.",
+  "The longitude must be a number.": "خط الطول يجب أن يكون رقماً.",
+  "The selected customer is invalid.": "العميل المحدد غير صالح.",
+  "Can not find the selected Point": "لا يمكن العثور على النقطة المحددة",
+  "Error: can not save the Point": "خطأ: لا يمكن حفظ النقطة",
+  "Point saved successfully": "تم حفظ النقطة بنجاح",
+  "Error to delete Point. its connect with pricing mater": "خطأ في حذف النقطة. النقطة مرتبطة بالتسعير",
+  "Error to delete Point": "خطأ في حذف النقطة",
+  "Point deleted": "تم حذف النقطة",
+  "Blockages": "الإغلاقات",
+  "Add a new Blockage": "إضافة إغلاق جديد",
+  "type": "النوع",
+  "description": "الوصف",
+  "coordinates": "الإحداثيات",
+  "status": "الحالة",
+  "created at": "تاريخ الإنشاء",
+  "actions": "الإجراءات",
+  "Block Type": "نوع الإغلاق",
+  "Select Type": "اختر النوع",
+  "Point Closed": "إغلاق نقطة",
+  "Line Closed": "إغلاق خط",
+  "Block Description": "وصف الإغلاق",
+  "optional": "اختياري",
+  "draw the Points on the map": "ارسم النقاط على الخريطة",
+  "Save": "حفظ",
+  "Cancel": "إلغاء",
+  "The blockage type is required.": "نوع الإغلاق مطلوب.",
+  "The selected blockage type is invalid.": "نوع الإغلاق المحدد غير صالح.",
+  "The description must be a string.": "الوصف يجب أن يكون نصاً.",
+  "The description may not be greater than 400 characters.": "الوصف يجب ألا يزيد عن 400 حرف.",
+  "The coordinates field is required.": "حقل الإحداثيات مطلوب.",
+  "The coordinates must be a string.": "الإحداثيات يجب أن تكون نصاً.",
+  "Error: can not save the Blockage": "خطأ: لا يمكن حفظ الإغلاق",
+  "Blockage saved successfully": "تم حفظ الإغلاق بنجاح",
+  "Error to delete Blockage": "خطأ في حذف الإغلاق",
+  "Blockage deleted": "تم حذف الإغلاق",
+  "Pricing Methods": "طرق التسعير",
+  "Method": "الطريقة",
+  "Description": "الوصف",
+  "Status": "الحالة",
+  "Actions": "الإجراءات",
+  "Add New Method": "إضافة طريقة جديدة",
+  "Method Name": "اسم الطريقة",
+  "enter the Method name": "أدخل اسم الطريقة",
+  "Close": "إغلاق",
+  "Submit": "إرسال",
+  "Edit Method": "تعديل الطريقة",
+  "The method name is required.": "اسم الطريقة مطلوب.",
+  "The method name has already been taken.": "اسم الطريقة مستخدم بالفعل.",
+  "The description field is required.": "حقل الوصف مطلوب.",
+  "The description must be a string.": "الوصف يجب أن يكون نصاً.",
+  "Can not find the selected Pricing Method": "لا يمكن العثور على طريقة التسعير المحددة",
+  "error to save Pricing Method": "خطأ في حفظ طريقة التسعير",
+  "Pricing Method saved successfully": "تم حفظ طريقة التسعير بنجاح",
+  "Pricing Method not found": "طريقة التسعير غير موجودة",
+  "Error to change Pricing Method status": "خطأ في تغيير حالة طريقة التسعير",
+  "name": "الاسم",
+  "label": "التسمية",
+  "driver can": "إمكانية السائق",
+  "customer can": "إمكانية العميل",
+  "type": "النوع",
+  "value": "القيمة",
+  "require": "مطلوب",
+  "Select Values": "قيم الاختيار",
+  "Value": "القيمة",
+  "Display Name": "الاسم الظاهر",
+  "Action": "إجراء",
+  "More": "المزيد",
+  "save": "حفظ",
+  "Customers Selections": "اختيارات العملاء",
+  "Apply to All Customers": "تطبيق على جميع العملاء",
+  "Use customers tags": "استخدم وسوم العملاء",
+  "Use Specific customers": "استخدم عملاء محددين",
+  "Vehicles Selections": "اختيارات المركبات",
+  "Pricing": "التسعير",
+  "Base Fare": "الأجرة الأساسية",
+  "Base Distance": "المسافة الأساسية",
+  "Base Waiting": "الانتظار الأساسي",
+  "Distance Fare": "أجرة المسافة",
+  "Waiting Fare": "أجرة الانتظار",
+  "Pricing Methods": "طرق التسعير",
+  "Dynamic Pricing Based on Field Values": "تسعير ديناميكي بناءً على قيم الحقول",
+  "add field": "إضافة حقل",
+  "Dynamic Pricing Based on Geo-fence": "تسعير ديناميكي بناءً على السياج الجغرافي",
+  "add geofence": "إضافة سياج جغرافي",
+  "Commission": "العمولة",
+  "VAT Commission": "عمولة ضريبة القيمة المضافة",
+  "Service Tax Commission": "عمولة ضريبة الخدمة",
+  "Discount Fare": "خصم الأجرة",
+  "Discount percentage %": "نسبة الخصم %",
+  "Close": "إغلاق",
+  "Submit": "إرسال",
+  "The rule name is required.": "اسم القاعدة مطلوب.",
+  "The rule name must be a string.": "اسم القاعدة يجب أن يكون نصاً.",
+  "The rule name may not be greater than 255 characters.": "اسم القاعدة يجب ألا يزيد عن 255 حرفاً.",
+  "The rule name has already been taken.": "اسم القاعدة مستخدم بالفعل.",
+  "The decimal places field is required.": "حقل المنازل العشرية مطلوب.",
+  "The decimal places must be an integer.": "المنازل العشرية يجب أن تكون عدداً صحيحاً.",
+  "The decimal places must be at least 0.": "المنازل العشرية يجب أن تكون 0 أو أكثر.",
+  "The decimal places may not be greater than 10.": "المنازل العشرية يجب ألا تزيد عن 10.",
+  "The form template is required.": "قالب النموذج مطلوب.",
+  "The form template id must be an integer.": "معرف قالب النموذج يجب أن يكون عدداً صحيحاً.",
+  "The selected form template is invalid.": "قالب النموذج المحدد غير صالح.",
+  "At least one customer must be selected.": "يجب اختيار عميل واحد على الأقل.",
+  "Customers must be an array.": "العملاء يجب أن يكونوا في مصفوفة.",
+  "Each customer is required.": "كل عميل مطلوب.",
+  "Each customer id must be an integer.": "معرف كل عميل يجب أن يكون عدداً صحيحاً.",
+  "The selected customer is invalid.": "العميل المحدد غير صالح.",
+  "At least one tag must be selected.": "يجب اختيار وسم واحد على الأقل.",
+  "Tags must be an array.": "الوسوم يجب أن تكون في مصفوفة.",
+  "Each tag is required.": "كل وسم مطلوب.",
+  "Each tag id must be an integer.": "معرف كل وسم يجب أن يكون عدداً صحيحاً.",
+  "The selected tag is invalid.": "الوسم المحدد غير صالح.",
+  "At least one vehicle size must be selected.": "يجب اختيار حجم مركبة واحد على الأقل.",
+  "Sizes must be an array.": "الأحجام يجب أن تكون في مصفوفة.",
+  "Each size id must be an integer.": "معرف كل حجم يجب أن يكون عدداً صحيحاً.",
+  "The selected vehicle size is invalid.": "حجم المركبة المحدد غير صالح.",
+  "The base fare field is required.": "حقل الأجرة الأساسية مطلوب.",
+  "The base fare must be a number.": "الأجرة الأساسية يجب أن تكون رقماً.",
+  "The base fare must be at least 0.": "الأجرة الأساسية يجب أن تكون 0 أو أكثر.",
+  "The base distance field is required.": "حقل المسافة الأساسية مطلوب.",
+  "The base distance must be a number.": "المسافة الأساسية يجب أن تكون رقماً.",
+  "The base distance must be at least 0.": "المسافة الأساسية يجب أن تكون 0 أو أكثر.",
+  "The base waiting field is required.": "حقل الانتظار الأساسي مطلوب.",
+  "The base waiting must be a number.": "الانتظار الأساسي يجب أن تكون رقماً.",
+  "The base waiting must be at least 0.": "الانتظار الأساسي يجب أن تكون 0 أو أكثر.",
+  "The distance fare field is required.": "حقل أجرة المسافة مطلوب.",
+  "The distance fare must be a number.": "أجرة المسافة يجب أن تكون رقماً.",
+  "The distance fare must be at least 0.": "أجرة المسافة يجب أن تكون 0 أو أكثر.",
+  "The waiting fare field is required.": "حقل أجرة الانتظار مطلوب.",
+  "The waiting fare must be a number.": "أجرة الانتظار يجب أن تكون رقماً.",
+  "The waiting fare must be at least 0.": "أجرة الانتظار يجب أن تكون 0 أو أكثر.",
+  "The VAT commission field is required.": "حقل عمولة ضريبة القيمة المضافة مطلوب.",
+  "The VAT commission must be a number.": "عمولة ضريبة القيمة المضافة يجب أن تكون رقماً.",
+  "The VAT commission must be at least 0.": "عمولة ضريبة القيمة المضافة يجب أن تكون 0 أو أكثر.",
+  "The VAT commission may not be greater than 100.": "عمولة ضريبة القيمة المضافة يجب ألا تزيد عن 100.",
+  "The service commission field is required.": "حقل عمولة الخدمة مطلوب.",
+  "The service commission must be a number.": "عمولة الخدمة يجب أن تكون رقماً.",
+  "The service commission must be at least 0.": "عمولة الخدمة يجب أن تكون 0 أو أكثر.",
+  "The service commission may not be greater than 100.": "عمولة الخدمة يجب ألا تزيد عن 100.",
+  "The discount must be a number.": "الخصم يجب أن يكون رقماً.",
+  "The discount must be at least 0.": "الخصم يجب أن يكون 0 أو أكثر.",
+  "The discount may not be greater than 100.": "الخصم يجب ألا يزيد عن 100.",
+  "Task Done": "المهام المنجزة",
+  "Running Tasks": "المهام الجارية",
+  "Details": "التفاصيل",
+  "Suspend": "تعليق",
+  "Tasks": "المهام",
+  "Total": "الإجمالي",
+  "Issued Date": "تاريخ الإصدار",
+  "Additional Fields": "حقول إضافية",
+  "No additional data found for this customer.": "لا توجد بيانات إضافية لهذا العميل.",
+  "Select Tags": "اختر الوسوم",
+  "Change Status": "تغيير الحالة",
+  "Create Wallet": "إنشاء محفظة",
+  "The customer id is required.": "معرّف العميل مطلوب.",
+  "The selected customer does not exist.": "العميل المحدد غير موجود.",
+  "The status field is required.": "حقل الحالة مطلوب.",
+  "You do not have permission to do actions to this record": "ليس لديك صلاحية لتنفيذ هذا الإجراء على هذا السجل",
+  "Error to Change Customer Status": "حدث خطأ أثناء تغيير حالة العميل",
+  "Customer Status changed": "تم تغيير حالة العميل",
+  "Can not find the selected Customer": "لا يمكن العثور على العميل المحدد",
+  "Error: can not save the Customer": "خطأ: لا يمكن حفظ العميل",
+  "Customer saved successfully": "تم حفظ العميل بنجاح",
+  "Error to delete Customer": "خطأ في حذف العميل",
+  "Customer deleted": "تم حذف العميل",
+  "The driver id is required.": "معرّف السائق مطلوب.",
+  "The selected driver does not exist.": "السائق المحدد غير موجود.",
+  "Error to Change Driver Status": "حدث خطأ أثناء تغيير حالة السائق",
+  "Driver Status changed": "تم تغيير حالة السائق",
+  "Can not find the selected Driver": "لا يمكن العثور على السائق المحدد",
+  "Error: can not save the Driver": "خطأ: لا يمكن حفظ السائق",
+  "Driver saved successfully": "تم حفظ السائق بنجاح",
+  "Error to delete Driver": "خطأ في حذف السائق",
+  "Driver deleted": "تم حذف السائق",
+  "Drivers": "السائقين",
+  "Active Drivers": "السائقين النشطين",
+  "Pending Drivers": "السائقين قيد الانتظار",
+  "Blocked Drivers": "السائقين المحظورين",
+  "Unverified Drivers": "السائقين غير الموثقين",
+  "username": "اسم المستخدم",
+  "Add new Driver": "إضافة سائق جديد",
+  "Username": "اسم المستخدم",
+  "Team": "الفريق",
+  "Select Team": "اختر الفريق",
+  "Driver Role": "دور السائق",
+  "Home Address": "عنوان المنزل",
+  "enter home address": "أدخل عنوان المنزل",
+  "Select Commission Type": "اختر نوع العمولة",
+  "ٌRate": "نسبة",
+  "Fixed Amount": "مبلغ ثابت",
+  "Subscription Monthly": "اشتراك شهري",
+  "Commission Amount": "مبلغ العمولة",
+  "Vehicle Selection": "اختيار المركبة",
+  "Wallets": "المحافظ",
+  "balance": "الرصيد",
+  "Debt Ceiling": "سقف الدين",
+  "preview": "معاينة",
+  "last transaction": "آخر معاملة",
+  "Amount": "المبلغ",
+  "Description": "الوصف",
+  "Maturity": "تاريخ الاستحقاق",
+  "Task": "المهمة",
+  "User": "المستخدم",
+  "Created At": "تاريخ الإنشاء",
+  "Actions": "الإجراءات",
+  "Add New Transaction": "إضافة معاملة جديدة",
+  "Close": "إغلاق",
+  "Enter the amount": "أدخل المبلغ",
+  "Transaction Type": "نوع المعاملة",
+  "Credit": "إيداع",
+  "Debit": "سحب",
+  "Maturity Time": "تاريخ الاستحقاق",
+  "Optional notes...": "ملاحظات اختيارية...",
+  "Image ": "الصورة",
+  "View the image": "عرض الصورة",
+  "close": "إغلاق",
+  "image": "صورة"
 }

@@ -93,7 +93,7 @@ $(function () {
         {
           // Actions
           targets: -1,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -118,8 +118,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search...',
-        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search...'),
+        info: __('Displaying _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
@@ -133,7 +133,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data['name'];
+              return __('Details of') + ' ' + data['name'];
             }
           }),
           type: 'column',
@@ -198,7 +198,7 @@ $(function () {
     var Id = $(this).data('id');
     var name = $(this).data('name');
 
-    $('#modelTitle').html(`Edit Method: <span class="bg-info text-white px-2 rounded">${name}</span>`);
+    $('#modelTitle').html(__('Edit Method') + `: <span class="bg-info text-white px-2 rounded">${name}</span>`);
     // get data
     $.get(`${baseUrl}admin/settings/pricing/edit/${Id}`, function (data) {
       $('#submitModal').modal('show');
@@ -212,6 +212,6 @@ $(function () {
   $('#submitModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
     $('.text-error').html('');
-    $('#modelTitle').html('Edit Method');
+    $('#modelTitle').html(__('Edit Method'));
   });
 });

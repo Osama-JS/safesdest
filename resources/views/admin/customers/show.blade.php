@@ -24,7 +24,7 @@
 
 @endsection
 @section('customers.isactive')
-active
+    active
 @endsection
 
 @section('content')
@@ -94,12 +94,11 @@ active
                                 <span class="h6">{{ __('Role') }}:</span>
                                 <span>{{ $data->role }}</span>
                             </li>
-
                         </ul>
                         <div class="d-flex justify-content-center">
                             <a href="javascript:;" class="btn btn-primary me-4" data-bs-target="#editUser"
-                                data-bs-toggle="modal">Edit</a>
-                            <a href="javascript:;" class="btn btn-label-danger suspend-user">Suspend</a>
+                                data-bs-toggle="modal">{{ __('Edit') }}</a>
+                            <a href="javascript:;" class="btn btn-label-danger suspend-user">{{ __('Suspend') }}</a>
                         </div>
                     </div>
                 </div>
@@ -125,7 +124,6 @@ active
                             data-bs-target="#navs-pills-top-profile" aria-controls="navs-pills-top-profile"
                             aria-selected="false"><i class="ti ti-details ti-sm me-1_5"></i>{{ __('Details') }}</button>
                     </li>
-
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="navs-pills-top-home" role="tabpanel">
@@ -135,17 +133,17 @@ active
                                     <tr>
                                         <th></th>
                                         <th>#</th>
-                                        <th>Status</th>
-                                        <th>Total</th>
-                                        <th>Issued Date</th>
-                                        <th>Action</th>
+                                        <th>{{ __('Status') }}</th>
+                                        <th>{{ __('Total') }}</th>
+                                        <th>{{ __('Issued Date') }}</th>
+                                        <th>{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
                             </table>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="navs-pills-top-profile" role="tabpanel">
-                        <h3 class="text-xl font-semibold mb-4">Additional Fields</h3>
+                        <h3 class="text-xl font-semibold mb-4">{{ __('Additional Fields') }}</h3>
                         <div class="row g-4">
                             @if ($data->additional_data != null && count($data->additional_data) > 0)
                                 @foreach ($data->additional_data as $key => $field)
@@ -153,7 +151,6 @@ active
                                         <div class="card h-100 shadow-sm">
                                             <div class="card-body">
                                                 <h6 class="card-title text-muted">{{ $field['label'] }}</h6>
-
                                                 @switch($field['type'])
                                                     @case('text')
                                                     @case('string')
@@ -207,14 +204,9 @@ active
                                 </div>
                             @endif
                         </div>
-
-
-
                     </div>
-
                 </div>
             </div>
-
         </div>
         <!--/ User Content -->
     </div>

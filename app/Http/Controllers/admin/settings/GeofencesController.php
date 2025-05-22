@@ -14,6 +14,12 @@ use Illuminate\Http\JsonResponse;
 
 class GeofencesController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:geo_fence_settings', ['only' => ['index', 'getData', 'edit', 'store', 'destroy']]);
+  }
+
   public function index()
   {
     $data = Teams::all();
@@ -45,8 +51,6 @@ class GeofencesController extends Controller
     return response()->json(['status' => 1, 'data' => $data]);
   }
 
-
-
   public function store(Request $req)
   {
     $validator = Validator::make($req->all(), [
@@ -54,6 +58,13 @@ class GeofencesController extends Controller
       'description' => 'nullable|string',
       'coordinates' => 'required|string',
       'teams' => 'nullable|array',
+    ], [
+      'name.required' => __('The geofence name is required.'),
+      'name.unique' => __('The geofence name has already been taken.'),
+      'description.string' => __('The description must be a string.'),
+      'coordinates.required' => __('The coordinates field is required.'),
+      'coordinates.string' => __('The coordinates must be a string.'),
+      'teams.array' => __('Teams must be an array.'),
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -114,7 +125,7 @@ class GeofencesController extends Controller
       $done = Geofence::where('id', $req->id)->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Geo-fence']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Geo-fence')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Geo-fence deleted')]);

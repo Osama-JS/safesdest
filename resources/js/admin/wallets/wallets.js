@@ -164,7 +164,7 @@ $(function () {
         </select>
       </label>`,
         ` <label class="me-2">
-              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search..." />
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="${__('search')}..." />
           </label>`
       ],
       responsive: {

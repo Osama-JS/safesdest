@@ -21,6 +21,19 @@ use App\Models\Task;
 
 class DriversController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_drivers', ['only' => ['index', 'getData', 'edit']]);
+    $this->middleware('permission:save_drivers', ['only' => ['store']]);
+    $this->middleware('permission:status_drivers', ['only' => ['chang_status']]);
+    $this->middleware('permission:delete_drivers', ['only' => ['destroy']]);
+    $this->middleware('permission:profile_drivers', ['only' => ['show', 'getCustomerTasks']]);
+    $this->middleware('permission:wallet_drivers', ['only' => ['']]);
+    $this->middleware('permission:manage_wallet_drivers', ['only' => ['']]);
+  }
+
+
   public function index()
   {
     $templates = Form_Template::all();
@@ -47,6 +60,7 @@ class DriversController extends Controller
 
     return response()->json(['results' => $drivers]);
   }
+
   public function getData(Request $request)
   {
     $columns = [
@@ -138,21 +152,28 @@ class DriversController extends Controller
   public function chang_status(Request $req)
   {
     $validator = Validator::make($req->all(), [
-      'id' => 'required|exists:customers,id',
+      'id' => 'required|exists:drivers,id',
       'status' => 'required',
-
+    ], [
+      'id.required' => __('The driver id is required.'),
+      'id.exists' => __('The selected driver does not exist.'),
+      'status.required' => __('The status field is required.'),
     ]);
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
     }
 
     try {
+      $user = auth()->user();
+      if (!$user || !$user->checkDriver($req->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       $done = Driver::find($req->id)->update(['status' => $req->status]);
 
       if (!$done) {
-        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change Driver Status']);
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Driver Status')]);
       }
-      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Driver Status changed']);
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Driver Status changed')]);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
     }
@@ -170,7 +191,6 @@ class DriversController extends Controller
 
     return response()->json($data);
   }
-
 
   public function store(Request $req)
   {
@@ -320,7 +340,11 @@ class DriversController extends Controller
       if ($req->filled('id')) {
         $find = Driver::findOrFail($req->id);
         if (!$find) {
-          return response()->json(['status' => 2, 'error' => 'Can not find the selected Driver']);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected Driver')]);
+        }
+        $user = auth()->user();
+        if (!$user || !$user->checkDriver($find->id)) {
+          return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
         }
 
         $oldImage = $find->image;
@@ -356,7 +380,7 @@ class DriversController extends Controller
         if ($req->hasFile('image')) {
           unlink($data['image']);
         }
-        return response()->json(['status' => 2, 'error' => 'Error: can not save the Driver']);
+        return response()->json(['status' => 2, 'error' => __('Error: can not save the Driver')]);
       }
 
       DB::commit();
@@ -371,7 +395,7 @@ class DriversController extends Controller
 
       return response()->json([
         'status'  => 1,
-        'success' => 'Driver saved successfully',
+        'success' => __('Driver saved successfully'),
       ]);
     } catch (\Exception $ex) {
       DB::rollBack();
@@ -382,8 +406,6 @@ class DriversController extends Controller
     }
   }
 
-
-
   public function destroy(Request $req)
   {
     DB::beginTransaction();
@@ -391,13 +413,17 @@ class DriversController extends Controller
     try {
       $find = Driver::findOrFail($req->id);
       if (!$find) {
-        return response()->json(['status' => 2, 'error' => 'Can not find the selected Driver']);
+        return response()->json(['status' => 2, 'error' => __('Can not find the selected Driver')]);
+      }
+      $user = auth()->user();
+      if (!$user || !$user->checkDriver($find->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
 
       $done = Driver::where('id', $req->id)->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Driver']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Driver')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Driver deleted')]);
@@ -406,7 +432,6 @@ class DriversController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
-
 
   public function show(Request $req)
   {

@@ -52,7 +52,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modelTitle">{{ __('Add New Tag') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('settings.tags.store') }}">
                     @csrf
@@ -82,7 +83,7 @@
 
                                         <div class="mb-4">
                                             <label class="form-label" for="tag-description">
-                                                {{ 'Description' }} </label>
+                                                {{ __('Description') }} </label>
                                             <textarea name="description" id="tag-description" class="form-control" cols="30" rows="3"></textarea>
                                             <span class="description-error text-danger text-error"></span>
                                         </div>
@@ -93,8 +94,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
 
                     </div>
                 </form>

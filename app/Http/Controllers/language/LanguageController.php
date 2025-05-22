@@ -15,7 +15,8 @@ class LanguageController extends Controller
     } else {
       $request->session()->put('locale', $locale);
     }
-    App::setLocale($locale);
+    App::setLocale($locale);;
+
     return redirect()->back();
   }
 }

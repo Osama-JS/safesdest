@@ -225,7 +225,6 @@ class TaskPricingService
 
     $taskData['vehicles_quantity'] = $totalVehicles;
 
-
     $drivers = Driver::select('id', 'name')->whereIn('vehicle_size_id', $sizes)->get();
     $data['drivers'] = $drivers;
 
@@ -260,6 +259,7 @@ class TaskPricingService
       $price = $param->price;
       $pointFrom = Point::find($param->from_val);
       $pointTo = Point::find($param->to_val);
+      $data['point_id'] = $param->id;
       $data['points'] = 'From: ' . $pointFrom->name . ' To: ' . $pointTo->name;
     } elseif ($method === 'manual') {
       $data['manual'] = true;

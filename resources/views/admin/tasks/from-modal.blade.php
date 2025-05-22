@@ -14,7 +14,7 @@
                     @csrf
                     <div class="row">
                         <div class="col-md-5">
-                            <input type="hidden" name="id" id="task-id">
+                            <input type="text" name="id" id="task-id">
 
                             <ul class="nav nav-tabs" id="taskTabs" role="tablist">
                                 <li class="nav-item" role="presentation">

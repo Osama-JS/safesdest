@@ -30,8 +30,7 @@
     <div class="card">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Blockages') }}</h5>
-            {{-- <p>Add new roles with customized permissions as per your requirement. </p> --}}
-
+            {{-- <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p> --}}
             <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
                 data-bs-target="#submitModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
@@ -65,7 +64,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ __('Add a new Blockage') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
                 </div>
                 <form class="form_submit" method="POST" action="{{ route('settings.blockages.store') }}">
                     @csrf
@@ -98,8 +98,9 @@
                         <span class="coordinates-error text-danger text-error"></span>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">حفظ</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                        <button type="button" class="btn btn-secondary"
+                            data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     </div>
                 </form>
             </div>

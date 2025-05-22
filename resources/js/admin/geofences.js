@@ -17,7 +17,7 @@ $(function () {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
-      placeholder: 'Select Teams',
+      placeholder: __('Select Teams'),
       dropdownParent: $this.parent(),
       closeOnSelect: false
     });
@@ -63,7 +63,9 @@ $(function () {
         activeDiv = null;
 
       if (response.data.length === 0) {
-        $('#geofence-list').append('<div class="text-center alert alert-secondary">No data available</div>');
+        $('#geofence-list').append(
+          '<div class="text-center alert alert-secondary">' + __('No data available') + '</div>'
+        );
       }
 
       response.data.forEach(geofence => {
@@ -265,7 +267,7 @@ $(function () {
 
   $('#submitModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
-    $('#modelTitle').html('Add Geo-fence');
+    $('#modelTitle').html(__('Add Geo-fence'));
     $('#geo-teams').val([]).trigger('change');
 
     document.getElementById('geo-coordinates').value = '';

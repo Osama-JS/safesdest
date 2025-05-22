@@ -131,7 +131,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modelTitle">{{ __('Add New Transaction') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
                 </div>
                 <form class="add-new-transaction pt-0 form_submit" method="POST"
                     action="{{ route('wallets.transaction.store') }}">
@@ -164,7 +165,7 @@
                                                         value="credit" autocomplete="off" required checked>
                                                     <label class="btn btn-outline-success w-100 py-2 btn-credit"
                                                         for="credit">
-                                                        <i class="ti ti-circle-plus me-1"></i> Credit
+                                                        <i class="ti ti-circle-plus me-1"></i> {{ __('Credit') }}
                                                     </label>
                                                 </div>
                                                 <div class="col-6">
@@ -172,7 +173,7 @@
                                                         value="debit" autocomplete="off" required>
                                                     <label class="btn btn-outline-danger w-100 py-2 btn-debit"
                                                         for="debit">
-                                                        <i class="ti ti-circle-minus me-1"></i> Debit
+                                                        <i class="ti ti-circle-minus me-1"></i> {{ __('Debit') }}
                                                     </label>
                                                 </div>
                                             </div>

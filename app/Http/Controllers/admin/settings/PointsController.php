@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\Validator;
 
 class PointsController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:geo_fence_settings', ['only' => ['index', 'getData', 'change_state', 'edit', 'store', 'destroy']]);
+  }
+
   public function index()
   {
     return view('admin.settings.points');
@@ -112,8 +118,6 @@ class PointsController extends Controller
     return response()->json($response);
   }
 
-
-
   public function change_state(Request $req)
   {
     $find = Point::where('id', $req->id)->first();
@@ -150,12 +154,26 @@ class PointsController extends Controller
       'latitude' => 'required|numeric',
       'longitude' => 'required|numeric',
       'customer' => 'nullable|exists:customers,id'
+    ], [
+      'name.required' => __('The point name is required.'),
+      'name.string' => __('The point name must be a string.'),
+      'contact_name.string' => __('The contact name must be a string.'),
+      'contact_name.max' => __('The contact name may not be greater than 400 characters.'),
+      'contact_phone.string' => __('The contact phone must be a string.'),
+      'contact_phone.max' => __('The contact phone may not be greater than 50 characters.'),
+      'address.required' => __('The address field is required.'),
+      'address.string' => __('The address must be a string.'),
+      'address.max' => __('The address may not be greater than 500 characters.'),
+      'latitude.required' => __('The latitude field is required.'),
+      'latitude.numeric' => __('The latitude must be a number.'),
+      'longitude.required' => __('The longitude field is required.'),
+      'longitude.numeric' => __('The longitude must be a number.'),
+      'customer.exists' => __('The selected customer is invalid.'),
     ]);
 
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
     }
-
 
     try {
       $data = [
@@ -186,8 +204,6 @@ class PointsController extends Controller
     }
   }
 
-
-
   public function destroy(Request $req)
   {
     DB::beginTransaction();
@@ -198,12 +214,12 @@ class PointsController extends Controller
       $pricing = Pricing::where('pricing_method_id', $methods->id)->pluck('id');
       $parametars = Pricing_Parametar::whereIn('pricing_id', $pricing)->where('from_val', $find->id)->orWhere('to_val', $find->id)->count();
       if ($parametars > 0) {
-        return response()->json(['status' => 2, 'error' => 'Error to delete Point. its connect with pricing mater']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Point. its connect with pricing mater')]);
       }
       $done =  $find->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Point']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Point')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Point deleted')]);

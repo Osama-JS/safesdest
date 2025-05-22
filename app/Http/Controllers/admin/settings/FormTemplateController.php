@@ -9,6 +9,12 @@ use Illuminate\Support\Facades\Validator;
 
 class FormTemplateController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:templates_settings', ['only' => ['index', 'getData', 'create',  'store']]);
+  }
+
   public function index()
   {
     return view('admin.settings.form_template.index');

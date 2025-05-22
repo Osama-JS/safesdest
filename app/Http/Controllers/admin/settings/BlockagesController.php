@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Validator;
 
 class BlockagesController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:blockages_settings', ['only' => ['index', 'getData', 'change_state', 'edit', 'store', 'destroy']]);
+  }
   public function index()
   {
     return view('admin.settings.blockages');
@@ -142,6 +147,13 @@ class BlockagesController extends Controller
       'type' => 'required|in:point,line',
       'description' => 'nullable|string|max:400',
       'coordinates' => 'required|string',
+    ], [
+      'type.required' => __('The blockage type is required.'),
+      'type.in' => __('The selected blockage type is invalid.'),
+      'description.string' => __('The description must be a string.'),
+      'description.max' => __('The description may not be greater than 400 characters.'),
+      'coordinates.required' => __('The coordinates field is required.'),
+      'coordinates.string' => __('The coordinates must be a string.'),
     ]);
 
     if ($validator->fails()) {
@@ -180,7 +192,7 @@ class BlockagesController extends Controller
       $done =  $find->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Blockage']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Blockage')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Blockage deleted')]);

@@ -19,7 +19,7 @@ $(function () {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
-      placeholder: 'Select teams',
+      placeholder: __('Select teams'),
       dropdownParent: $this.parent(),
       closeOnSelect: false
     });
@@ -30,7 +30,7 @@ $(function () {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
-      placeholder: 'Select customers',
+      placeholder: __('Select customers'),
       dropdownParent: $this.parent(),
       closeOnSelect: false
     });
@@ -43,6 +43,7 @@ $(function () {
     }
   });
 
+  var permissions = [];
   // Users datatable
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
@@ -59,6 +60,8 @@ $(function () {
           $('#total-pending').text(json.summary.total_pending);
           $('#total-pending + p').text(`(${((json.summary.total_pending / json.summary.total) * 100).toFixed(1)})%`);
 
+          permissions['edit'] = json.summary.edit_permission;
+          permissions['delete'] = json.summary.delete_permission;
           return json.data;
         }
       },
@@ -210,23 +213,21 @@ $(function () {
         {
           // Actions
           targets: -1,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
             return full['id'] === 1
               ? ''
-              : '<div class="d-flex align-items-center gap-50">' +
-                  `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#submitModal"><i class="ti ti-edit"></i></button>` +
-                  `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button>` +
-                  '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>' +
-                  '<div class="dropdown-menu dropdown-menu-end m-0">' +
-                  '<a href="' +
-                  userView +
-                  '" class="dropdown-item">View</a>' +
-                  `<a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">change status</a>` +
-                  '</div>' +
-                  '</div>';
+              : `<div class="d-flex align-items-center gap-50">
+                  ${permissions['edit'] ? `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-bs-toggle="modal" data-bs-target="#submitModal"><i class="ti ti-edit"></i></button>` : ''}
+                  ${permissions['delete'] ? `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button>` : ''}
+                  <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
+                  <div class="dropdown-menu dropdown-menu-end m-0">
+                  <a href="${userView}" class="dropdown-item">${__('View')}</a>
+                  <a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">${__('change status')}</a>
+                  </div>
+                  </div>`;
           }
         }
       ],
@@ -244,8 +245,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search...',
-        info: 'Displaying _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search...'),
+        info: __('Displaying _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
           previous: '<i class="ti ti-chevron-left ti-sm"></i>'
@@ -259,7 +260,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data['name'];
+              return __('Details of') + ' ' + data['name'];
             }
           }),
           type: 'column',
@@ -334,15 +335,9 @@ $(function () {
   });
 
   $(document).on('click', '.edit-record', function () {
-    var user_id = $(this).data('id'),
-      dtrModal = $('.dtr-bs-modal.show');
-
-    if (dtrModal.length) {
-      dtrModal.modal('hide');
-    }
+    var user_id = $(this).data('id');
 
     $.get(`${baseUrl}admin/users/edit/${user_id}`, function (data) {
-      console.log(data.teamsIds);
       $('.text-error').html('');
       $('#user_id').val(data.id);
       $('#user-fullname').val(data.name);
@@ -361,8 +356,13 @@ $(function () {
       }
 
       generateFields(data.fields, data.additional_data);
-      $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
+      $('#modelTitle').html(`${__('Edit User')}: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
+    var dtrModal = $('.dtr-bs-modal.show');
+
+    if (dtrModal.length) {
+      dtrModal.modal('hide');
+    }
   });
 
   $(document).on('click', '.delete-record', function () {
@@ -373,19 +373,19 @@ $(function () {
   $(document).on('click', '.status-record', function () {
     const id = $(this).data('id');
     const name = $(this).data('name');
-    const status = $(this).data('status');
+    const status = $(this).data['status'];
 
     const fields = `
       <input type="hidden" name="id" value="${id}">
       <select class="form-select" name="status">
-        <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
-        <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
-        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+        <option value="active" ${status === 'active' ? 'selected' : ''}>${__('Active')}</option>
+        <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>${__('Inactive')}</option>
+        <option value="pending" ${status === 'pending' ? 'selected' : ''}>${__('Pending')}</option>
       </select>
     `;
 
     showFormModal({
-      title: `Change User: ${name} Status`,
+      title: __('Change User:') + ` ${name} ` + __('Status'),
       icon: 'info',
       fields: fields,
       url: `${baseUrl}admin/users/status`,
@@ -397,7 +397,7 @@ $(function () {
   $('#submitModal').on('hidden.bs.modal', function () {
     $(this).find('form')[0].reset();
     $('.text-error').html('');
-    $('#modelTitle').html('Add New User');
+    $('#modelTitle').html(__('Add New User'));
     $('#additional-form').html('');
     $('#select-template').val('');
     $('#user-teams').val([]).trigger('change');

@@ -13,7 +13,7 @@ return new class extends Migration
   {
     Schema::create('tasks', function (Blueprint $table) {
       $table->id();
-      $table->enum('status', ['advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled'])->default('in_progress');
+      $table->string('status')->default('in_progress'); //  ['advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled']
       $table->enum('pricing_type', ['dynamic', 'manual'])->default('dynamic');
       $table->decimal('total_price', 10, 2)->default(0);
       $table->decimal('commission', 10, 2)->default(0);

@@ -13,6 +13,12 @@ use Illuminate\Http\JsonResponse;
 
 class PricingController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:pricing_methods_settings', ['only' => ['index', 'getData', 'change_state', 'edit', 'store']]);
+  }
+
   public function index()
   {
     return view('admin.settings.pricing');
@@ -86,6 +92,11 @@ class PricingController extends Controller
     $validator = Validator::make($req->all(), [
       'name' => 'required|unique:pricing_methods,name,' .  $req->id,
       'description' => 'required|string',
+    ], [
+      'name.required' => __('The method name is required.'),
+      'name.unique' => __('The method name has already been taken.'),
+      'description.required' => __('The description field is required.'),
+      'description.string' => __('The description must be a string.'),
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -119,9 +130,6 @@ class PricingController extends Controller
     $data = Pricing_Method::findOrFail($id);
     return response()->json($data);
   }
-
-
-
 
   public function change_state(Request $req)
   {

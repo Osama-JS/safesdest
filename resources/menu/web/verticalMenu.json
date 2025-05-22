@@ -18,27 +18,31 @@
       "name": "Customers",
       "icon": "menu-icon tf-icons ti ti-user-circle",
       "slug": "customers.customers",
-      "isactive": "customers-isactive"
+      "isactive": "customers-isactive",
+      "permission": "view_customers"
     },
     {
       "url": "admin/drivers",
       "name": "Drivers",
       "icon": "menu-icon tf-icons ti  ti-steering-wheel",
       "slug": "drivers.drivers",
-      "isactive": "drivers-isactive"
+      "isactive": "drivers-isactive",
+      "permission": "view_drivers"
     },
     {
       "url": "admin/teams",
       "name": "Teams",
       "icon": "menu-icon tf-icons ti ti-users-group",
-      "slug": "teams.teams"
+      "slug": "teams.teams",
+      "permission": "view_teams"
     },
     {
       "url": "admin/wallets",
       "name": "Wallets",
       "icon": "menu-icon tf-icons ti ti-wallet",
       "slug": "wallets.wallets",
-      "isactive": "wallets-isactive"
+      "isactive": "wallets-isactive",
+      "permission": "view_wallets"
     },
     {
       "url": "admin/ads",
@@ -47,61 +51,67 @@
       "slug": "ads.ads"
     },
     {
-      "menuHeader": "Users & Settings"
-    },
-    {
       "name": "Settings",
       "icon": "menu-icon tf-icons ti ti-adjustments",
       "slug": "settings",
+      "permission": "view_setting_list",
       "submenu": [
         {
           "url": "admin/settings",
           "icon": "menu-icon tf-icons ti ti-chart-pie-2",
           "name": "General",
-          "slug": "settings.general"
+          "slug": "settings.general",
+          "permission": "general_settings"
         },
         {
           "url": "admin/settings/vehicles",
           "name": "Vehicles",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.vehicles"
+          "slug": "settings.vehicles",
+          "permission": "vehicles_settings"
         },
         {
           "url": "admin/settings/tags",
           "name": "Tags",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.tags"
+          "slug": "settings.tags",
+          "permission": "tags_settings"
         },
         {
           "url": "admin/settings/geofences",
           "name": "Geo-fence",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.geofences"
+          "slug": "settings.geofences",
+          "permission": "geo_fence_settings"
         },
         {
           "url": "admin/settings/points",
           "name": "Points",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.points"
+          "slug": "settings.points",
+          "permission": "points_settings"
         },
         {
           "url": "admin/settings/blockages",
           "name": "Blockages",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.blockages"
+          "slug": "settings.blockages",
+          "permission": "blockages_settings"
         },
         {
           "url": "admin/settings/pricing",
           "name": "Pricing Methods",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
-          "slug": "settings.pricing"
+          "slug": "settings.pricing",
+          "permission": "pricing_methods_settings"
         },
         {
           "url": "admin/settings/templates",
           "name": "Templates",
           "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
           "slug": "settings.templates",
-          "isactive": "templates-isactive"
+          "isactive": "templates-isactive",
+          "permission": "templates_settings"
         }
       ]
     },
@@ -109,13 +119,15 @@
       "url": "admin/users",
       "name": "Users",
       "icon": "menu-icon tf-icons ti ti-users",
-      "slug": "user.users"
+      "slug": "user.users",
+      "permission": "view_admins"
     },
     {
       "url": "admin/roles",
       "name": "Roles & Permissions",
       "icon": "menu-icon tf-icons ti ti-shield-lock",
-      "slug": "role.roles"
+      "slug": "role.roles",
+      "permission": "view_roles"
     }
   ]
 }

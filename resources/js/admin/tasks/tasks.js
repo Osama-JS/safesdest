@@ -524,7 +524,6 @@ $(function () {
 
       success: function (data) {
         $('span.text-error').text(''); // إعادة تعيين الأخطاء
-
         $('#task-form').unblock({
           onUnblock: function () {
             if (data.status == 0) {
@@ -552,6 +551,9 @@ $(function () {
               // تنفيذ دالة الإعداد بعد نجاح الطلب
               $('#params-select-wrapper').remove();
               setupMethodSelection(data.data);
+              if ($('#task-id').val() !== '') {
+                select.val($('#task-id').attr('data-method')).trigger('change');
+              }
               new bootstrap.Tab(document.querySelector('#tab-step2')).show();
             } else {
               showAlert('error', data.error, 10000, true);
@@ -588,6 +590,7 @@ $(function () {
     $('#pricing-method-select')
       .off('change')
       .on('change', function () {
+        console.log('change');
         const selectedId = $(this).val();
         const selectedMethod = methodsMap[selectedId];
 
@@ -606,7 +609,8 @@ $(function () {
               data-from-lat="${param.from_point.latitude}"
               data-from-lng="${param.from_point.longitude}"
               data-to-lat="${param.to_point.latitude}"
-              data-to-lng="${param.to_point.longitude}">
+              data-to-lng="${param.to_point.longitude}"
+              ${$('#task-id').val() !== '' ? (param.param == $('#task-id').attr('data-point') ? 'selected' : '') : ''}>
               من ${param.from_point.name} إلى ${param.to_point.name} - السعر: ${parseFloat(param.price).toFixed(0)} ريال
             </option>`;
           });
@@ -618,6 +622,7 @@ $(function () {
           </div>`;
 
           $('#pricing-method-select').after(selectHTML);
+          $('#params-select').trigger('change');
           $('#delivery-map-section').hide();
           $('#pickup-map-section').hide();
         } else {

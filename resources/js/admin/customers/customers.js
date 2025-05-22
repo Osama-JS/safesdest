@@ -20,7 +20,7 @@ $(function () {
     var $this = select2;
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
-      placeholder: 'Select Tags',
+      placeholder: __('Select Tags'),
       dropdownParent: $this.parent(),
       closeOnSelect: false
     });
@@ -170,7 +170,7 @@ $(function () {
         },
         {
           targets: 9,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -187,9 +187,9 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
-                    <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >Create Wallet</a></li>
+                    <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">${__('View')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">${__('Change Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >${__('Create Wallet')}</a></li>
                   </ul>
                 </div>
               </div>`;
@@ -210,8 +210,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search...',
-        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search...'),
+        info: __('Showing _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right"></i>',
           previous: '<i class="ti ti-chevron-left"></i>'
@@ -235,7 +235,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data.name;
+              return __('Details of') + ' ' + data.name;
             }
           }),
           type: 'column',
@@ -376,7 +376,7 @@ $(function () {
     $('#customer-tags').val([]).trigger('change');
     $('.text-error').html('');
     $('#customer_id').val('');
-    $('#modelTitle').html('Add New Customer');
+    $('#modelTitle').html(__('Add New Customer'));
     $('#additional-form').html('');
     $('#select-template').val('');
   });

@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\Validator;
 
 class TagsController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:tags_settings', ['only' => ['index', 'getData', 'edit', 'store', 'destroy']]);
+  }
   public function index()
   {
     return view('admin.settings.tags');
@@ -94,6 +99,13 @@ class TagsController extends Controller
       'name' => 'required|unique:tags,name,'  . ($req->id ?? 0),
       'slug' => 'required|unique:tags,slug,'  . ($req->id ?? 0),
       'description' => 'nullable|string|max:400',
+    ], [
+      'name.required' => __('The tag name is required.'),
+      'name.unique' => __('The tag name has already been taken.'),
+      'slug.required' => __('The tag slug is required.'),
+      'slug.unique' => __('The tag slug has already been taken.'),
+      'description.string' => __('The description must be a string.'),
+      'description.max' => __('The description may not be greater than 400 characters.'),
     ]);
 
     if ($validator->fails()) {
@@ -133,13 +145,13 @@ class TagsController extends Controller
 
       $find = Tag::findOrFail($req->id);
       if ($find->drivers->count() > 0 || $find->customers->count() > 0 || $find->pricing->count() > 0) {
-        return response()->json(['status' => 2, 'error' => 'Error to find selected Tag']);
+        return response()->json(['status' => 2, 'error' => __('Error to find selected Tag')]);
       }
 
       $done = $find->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete Tag']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete Tag')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Tag deleted')]);

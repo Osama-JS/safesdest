@@ -106,7 +106,7 @@
         <div class="col-md-5">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Geofences</h5>
+                    <h5 class="card-title">{{ __('Geofences') }}</h5>
                     <div id="vertical-scroll">
                         <div id="geofence-list">
                             <!-- سيتم إضافة البيانات هنا باستخدام JavaScript -->

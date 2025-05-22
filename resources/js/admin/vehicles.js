@@ -44,7 +44,7 @@ $(function () {
 
           if (response.data.vehicles.length === 0) {
             vehicles = `<tr>
-              <td colspan="4" class="text-center">No data available</td>
+              <td colspan="4" class="text-center">${__('No data available')}</td>
             </tr>`;
           }
           $('#vehicle-table').html(vehicles);
@@ -73,7 +73,7 @@ $(function () {
 
           if (response.data.types.length === 0) {
             types = `<tr>
-                <td colspan="5" class="text-center">No data available</td>
+                <td colspan="5" class="text-center">${__('No data available')}</td>
               </tr>`;
           }
           $('#types-table').html(types);
@@ -102,13 +102,13 @@ $(function () {
 
           if (response.data.sizes.length === 0) {
             sizes = `<tr>
-                  <td colspan="5" class="text-center">No data available</td>
+                  <td colspan="5" class="text-center">${__('No data available')}</td>
                 </tr>`;
           }
           $('#sizes-table').html(sizes);
         }
         // توليد القوائم المنسدلة
-        var vehicle_options = ` <option value="">-- Select vehicle --</option>`;
+        var vehicle_options = ` <option value="">-- ${__('Select vehicle')} --</option>`;
         vehicle_options += response.data.vehicles
           .map(
             option => `
@@ -120,7 +120,7 @@ $(function () {
           $('.vehicle-type-vehicle').html(vehicle_options);
         }
 
-        var vehicle_type_options = ` <option value="">-- select vehicle type --</option>`;
+        var vehicle_type_options = ` <option value="">-- ${__('select vehicle type')} --</option>`;
         vehicle_type_options += response.data.types
           .map(
             option => `
@@ -133,7 +133,7 @@ $(function () {
           $('.vehicle-sizes-vehicle').html(vehicle_type_options);
         }
 
-        var vehicle_sizes_options = ` <option value="">-- select vehicle Size --</option>`;
+        var vehicle_sizes_options = ` <option value="">-- ${__('select vehicle Size')} --</option>`;
         vehicle_sizes_options += response.data.sizes
           .map(
             size => `

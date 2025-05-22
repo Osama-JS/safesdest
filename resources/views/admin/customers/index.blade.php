@@ -157,7 +157,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modelTitle">{{ __('Add New Customer') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('customers.create') }}"
                     enctype="multipart/form-data">
@@ -296,7 +297,7 @@
                                                     <div class="col-md-6">
                                                         <div class="mb-4">
                                                             <label class="form-label" for="customer-c_name">
-                                                                {{ 'Company Name' }}</label>
+                                                                {{ __('Company Name') }}</label>
                                                             <input type="text" name="c_name" class="form-control"
                                                                 id="customer-c_name"
                                                                 placeholder="{{ __('enter company name') }}" />
@@ -306,7 +307,7 @@
                                                     <div class="col-md-6">
                                                         <div class="mb-4">
                                                             <label class="form-label" for="customer-c_address">
-                                                                {{ 'Company Address' }}</label>
+                                                                {{ __('Company Address') }}</label>
                                                             <input type="text" name="c_address" class="form-control"
                                                                 id="customer-c_address"
                                                                 placeholder="{{ __('enter company address') }}" />

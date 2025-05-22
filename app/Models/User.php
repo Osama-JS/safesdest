@@ -86,6 +86,34 @@ class User extends Authenticatable
     return $this->belongsToMany(Customer::class);
   }
 
+  public function checkCustomer($id)
+  {
+    if ($this->can('mange_customers')) {
+      return true;
+    }
+    return $this->customers()->where('customer_id', $id)->exists();
+  }
+
+  public function checkTeam($id)
+  {
+    if ($this->can('mange_teams')) {
+      return true;
+    }
+    return $this->teams()->where('team_id', $id)->exists();
+  }
+
+  public function checkDriver($id)
+  {
+    if ($this->can('mange_drivers')) {
+      return true;
+    }
+    $driver = Driver::find($id);
+    if ($driver) {
+      return $this->teams()->where('team_id', $driver->team_id)->exists();
+    }
+    return false;
+  }
+
   public function transactions()
   {
     return $this->morphMany(Transaction::class, 'payable');

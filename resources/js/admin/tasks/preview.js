@@ -692,7 +692,6 @@ $(function () {
         showAlert('error', data.error);
         return;
       }
-      $('#submitModal').modal('show');
       $('#task-form').attr('action', `${baseUrl}admin/task/edit`);
 
       $('#modelTitle').html(`Edit Task: <span class="bg-info text-white px-2 rounded">#${taskId}</span>`);
@@ -702,6 +701,7 @@ $(function () {
       $('#task-customer').val(data.customer_id).trigger('change');
       $('.vehicle-quantity').hide();
       $('.vehicle-select').val(data.vehicle).trigger('change');
+      $('#submitModal').modal('show');
 
       await delay(1000);
       $('.vehicle-type-select').val(data.vehicle_type).trigger('change');
@@ -716,6 +716,9 @@ $(function () {
         $('#select-template').val(templateId).trigger('change');
       }
       generateFields(data.fields, data.additional_data);
+
+      $('#task-id').attr('data-method', data.pricing_history.pricing_method_id);
+      $('#task-id').attr('data-point', data.pricing_history.point_id);
 
       $('#pickup-contact-name').val(data.pickup.contact_name);
       $('#pickup-contact-phone').val(data.pickup.contact_phone);
@@ -746,8 +749,13 @@ $(function () {
 
   $('#submitModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
+    new bootstrap.Tab(document.querySelector('#tab-step1')).show();
+    $('#taskFinalDetails').html('');
+    $('#params-select-wrapper').remove();
     $('.text-error').html('');
-    $('#team_id').val('');
-    $('#modelTitle').html('Add New Team');
+    $('#task_id').val('');
+    $('.vehicle-select').val('').trigger('change');
+    $('#select-template').val(templateId).trigger('change');
+    $('#modelTitle').html('Add New Tasks');
   });
 });

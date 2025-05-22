@@ -41,7 +41,7 @@
                         <label for="customer-template" class="mb-2">{{ __('Default Customer Template') }}</label>
                         <select class="form-select  update-setting-select" data-key="customer_template">
                             @if (empty($settings['customer_template']['value']) || empty($templates))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
@@ -50,7 +50,7 @@
                                 </option>
                             @endforeach
                             @if (!empty($settings['customer_template']['value']))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                         </select>
                         <span class="customer-error text-danger"></span>
@@ -59,7 +59,7 @@
                         <label for="driver-template" class="mb-2">{{ __('Default Driver Template') }}</label>
                         <select class="form-select  update-setting-select" data-key="driver_template" id="driver-template">
                             @if (empty($settings['driver_template']['value']) || empty($templates))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
@@ -68,7 +68,7 @@
                                 </option>
                             @endforeach
                             @if (!empty($settings['customer_template']['value']))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                         </select>
                         <span class="driver-error text-danger"></span>
@@ -78,7 +78,7 @@
                         <label for="user-template" class="mb-2">{{ __('Default User Template') }}</label>
                         <select class="form-select  update-setting-select" data-key="user_template" id="user-template">
                             @if (empty($settings['user_template']['value']) || empty($templates))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
@@ -87,7 +87,7 @@
                                 </option>
                             @endforeach
                             @if (!empty($settings['customer_template']['value']))
-                                <option value="">--- {{ __('Select Template') }}</option>
+                                <option value="">{{ __('--- Select Template') }}</option>
                             @endif
                         </select>
                         <span class="user-error text-danger"></span>
@@ -95,9 +95,7 @@
                     <div class="form-group mb-9">
                         <label for="task-template" class="mb-2">{{ __('Default Task Template') }}</label>
                         <select class="form-select  update-setting-select" data-key="task_template" id="task-template">
-                            @if (empty($settings['task_template']['value']) || empty($templates))
-                                <option value="">--- {{ __('Select Template') }}</option>
-                            @endif
+                            <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
                                     {{ $settings['task_template']['value'] == $val->id ? 'selected' : '' }}>
@@ -145,16 +143,9 @@
                             value={{ $settings['commission_fixed']['value'] }} class="form-control update-setting-input">
                         <span class="commission_fixed-error text-danger"></span>
                     </div>
-
-
-
                 </div>
             </div>
         </div>
     </div>
-
-
-
-
 
 @endsection

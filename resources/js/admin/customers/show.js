@@ -77,7 +77,7 @@ $(function () {
         },
         {
           targets: 5,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -107,8 +107,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search...',
-        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search...'),
+        info: __('Showing _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right"></i>',
           previous: '<i class="ti ti-chevron-left"></i>'
@@ -132,7 +132,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data.name;
+              return __('Details of') + ' ' + data.name;
             }
           }),
           type: 'column',
@@ -256,7 +256,7 @@ $(function () {
     $('#customer-tags').val([]).trigger('change');
     $('.text-error').html('');
     $('#customer_id').val('');
-    $('#modelTitle').html('Add New Customer');
+    $('#modelTitle').html(__('Add New Customer'));
     $('#additional-form').html('');
     $('#select-template').val('');
   });

@@ -21,8 +21,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use App\Helpers\FileHelper;
 
-
-
 class UsersController extends Controller
 {
 
@@ -48,7 +46,6 @@ class UsersController extends Controller
     $teams = Teams::all();
     $customers = Customer::where('status', 'active')->get();
     $user_template = Settings::where('key', 'user_template')->first();
-
 
     return view('admin.users.index', [
       'totalUser' => $userCount,
@@ -126,11 +123,9 @@ class UsersController extends Controller
         $nestedData['status'] = $user->status;
         $nestedData['reset_password'] = $user->reset_password;
 
-
         $data[] = $nestedData;
       }
     }
-
 
     return response()->json([
       'draw' => intval($request->input('draw')),
@@ -143,6 +138,8 @@ class UsersController extends Controller
         'total_active' => User::where('status', 'active')->count(),
         'total_inactive' => User::where('status', 'inactive')->count(),
         'total_pending' => User::where('status', 'pending')->count(),
+        'edit_permission' => auth()->user()->can('save_admins'),
+        'delete_permission' => auth()->user()->can('delete_admins'),
       ]
     ]);
   }
@@ -153,24 +150,26 @@ class UsersController extends Controller
     $validator = Validator::make($req->all(), [
       'id' => 'required|exists:users,id',
       'status' => 'required',
-
+    ], [
+      'id.required' => __('The user id is required.'),
+      'id.exists' => __('The selected user does not exist.'),
+      'status.required' => __('The status field is required.'),
     ]);
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
     }
 
     try {
       $done = User::find($req->id)->update(['status' => $req->status]);
 
       if (!$done) {
-        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change user Status']);
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change user Status')]);
       }
-      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'user Status changed']);
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => __('User Status changed')]);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
     }
   }
-
 
   public function resetPass(Request $req)
   {
@@ -200,7 +199,6 @@ class UsersController extends Controller
     return response()->json($data);
   }
 
-
   public function store(Request $req)
   {
     $rules = [
@@ -214,6 +212,21 @@ class UsersController extends Controller
       'template'    => 'nullable|exists:form_templates,id'
     ];
 
+    $messages = [
+      'name.required' => __('The name field is required.'),
+      'email.required' => __('The email field is required.'),
+      'email.unique' => __('The email has already been taken.'),
+      'phone.required' => __('The phone field is required.'),
+      'phone.unique' => __('The phone has already been taken.'),
+      'password.required_without' => __('The password field is required.'),
+      'password.same' => __('The password and confirmation must match.'),
+      'role.required' => __('The user role is required.'),
+      'role.exists' => __('The selected role is invalid.'),
+      'teams.array' => __('Teams must be an array.'),
+      'customers.array' => __('Customers must be an array.'),
+      'template.exists' => __('The selected template is invalid.'),
+    ];
+
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
       foreach ($fields as $field) {
@@ -222,6 +235,7 @@ class UsersController extends Controller
 
         if (!$req->filled('id') && $field->required) {
           $rules[$fieldKey][] = 'required';
+          $messages["$fieldKey.required"] = __('The :label field is required.', ['label' => $field->label]);
         }
 
         switch ($field->type) {
@@ -251,7 +265,7 @@ class UsersController extends Controller
       }
     }
 
-    $validator = Validator::make($req->all(), $rules);
+    $validator = Validator::make($req->all(), $rules, $messages);
 
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()]);
@@ -279,7 +293,7 @@ class UsersController extends Controller
       if ($req->filled('id')) {
         $user = User::findOrFail($req->id);
         if (!$user) {
-          return response()->json(['status' => 2, 'error' => 'Can not find the selected user']);
+          return response()->json(['status' => 2, 'error' => __('Can not find the selected user')]);
         }
 
         $oldAdditionalData = $user->additional_data ?? [];
@@ -352,13 +366,12 @@ class UsersController extends Controller
         FileHelper::deleteFileIfExists($file);
       }
 
-      return response()->json(['status' => 1, 'success' => 'User saved successfully']);
+      return response()->json(['status' => 1, 'success' => __('User saved successfully')]);
     } catch (\Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
-
 
   public function destroy(Request $req)
   {
@@ -370,16 +383,16 @@ class UsersController extends Controller
     try {
       $find = User::findOrFail($req->id);
       if (!$find) {
-        return response()->json(['status' => 2, 'error' => 'Can not find the selected user']);
+        return response()->json(['status' => 2, 'error' => __('Can not find the selected user')]);
       }
       if ($find->teams->count() !== 0) {
-        return response()->json(['status' => 2, 'error' => 'The selected User has teams to mange. you can not delete hem right now']);
+        return response()->json(['status' => 2, 'error' => __('The selected User has teams to mange. you can not delete hem right now')]);
       }
 
       $done = User::where('id', $req->id)->delete();
       if (!$done) {
         DB::rollBack();
-        return response()->json(['status' => 2, 'error' => 'Error to delete User']);
+        return response()->json(['status' => 2, 'error' => __('Error to delete User')]);
       }
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('User deleted')]);

@@ -23,11 +23,11 @@ $(function () {
 
     $this.wrap('<div class="position-relative"></div>').select2({
       allowClear: true,
-      placeholder: 'Select Customer',
+      placeholder: __('Select Customer'),
       dropdownParent: $this.parent(),
       closeOnSelect: false,
       ajax: {
-        url: baseUrl + 'admin/customers/get/customers', // ← غيّر هذا حسب رابط API عندك
+        url: baseUrl + 'admin/customers/get/customers',
         dataType: 'json',
         delay: 250, // لتقليل عدد الطلبات عند الكتابة
         processResults: function (data) {
@@ -121,7 +121,7 @@ $(function () {
 
         {
           targets: 6,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -133,7 +133,6 @@ $(function () {
                 <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.name}">
                   <i class="ti ti-trash"></i>
                 </button>
-
               </div>`;
           }
         }
@@ -152,8 +151,8 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'Search...',
-        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        searchPlaceholder: __('Search...'),
+        info: __('Showing _START_ to _END_ of _TOTAL_ entries'),
         paginate: {
           next: '<i class="ti ti-chevron-right"></i>',
           previous: '<i class="ti ti-chevron-left"></i>'
@@ -161,7 +160,7 @@ $(function () {
       },
       buttons: [
         ` <label class="me-2">
-              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search..." />
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="${__('Search...')}" />
           </label>`
       ],
       responsive: {
@@ -169,7 +168,7 @@ $(function () {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data.name;
+              return __('Details of') + ' ' + data.name;
             }
           }),
           type: 'column',
@@ -372,6 +371,6 @@ $(function () {
     $('.text-error').html('');
     $('#tag_id').val('');
     $('#point-customer').val('').trigger('change');
-    $('#modelTitle').html('Add New Tag');
+    $('#modelTitle').html(__('Add New Point'));
   });
 });

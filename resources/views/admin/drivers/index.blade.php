@@ -217,7 +217,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modelTitle">{{ __('Add new Driver') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('drivers.create') }}">
                     <div class="modal-body">
@@ -369,7 +370,7 @@
                                                     <div class="col-md-6">
                                                         <div class="mb-4">
                                                             <label class="form-label" for="driver-address">*
-                                                                {{ 'Home Address' }}</label>
+                                                                {{ __('Home Address') }}</label>
                                                             <input type="text" name="address" class="form-control"
                                                                 id="driver-address"
                                                                 placeholder="{{ __('enter home address') }}" />

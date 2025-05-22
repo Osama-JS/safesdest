@@ -70,24 +70,26 @@
                 @endphp
 
                 {{-- main menu --}}
-                <li class="menu-item {{ $activeClass }} @yield($menu->isactive ?? '')">
-                    <a href="{{ isset($menu->url) ? url($menu->url) : 'javascript:void(0);' }}"
-                        class="{{ isset($menu->submenu) ? 'menu-link menu-toggle' : 'menu-link' }}"
-                        @if (isset($menu->target) and !empty($menu->target)) target="_blank" @endif>
-                        @isset($menu->icon)
-                            <i class="{{ $menu->icon }}"></i>
-                        @endisset
-                        <div>{{ isset($menu->name) ? __($menu->name) : '' }}</div>
-                        @isset($menu->badge)
-                            <div class="badge bg-{{ $menu->badge[0] }} rounded-pill ms-auto">{{ $menu->badge[1] }}</div>
-                        @endisset
-                    </a>
+                @can($menu->permission ?? null)
+                    <li class="menu-item {{ $activeClass }} @yield($menu->isactive ?? '')">
+                        <a href="{{ isset($menu->url) ? url($menu->url) : 'javascript:void(0);' }}"
+                            class="{{ isset($menu->submenu) ? 'menu-link menu-toggle' : 'menu-link' }}"
+                            @if (isset($menu->target) and !empty($menu->target)) target="_blank" @endif>
+                            @isset($menu->icon)
+                                <i class="{{ $menu->icon }}"></i>
+                            @endisset
+                            <div>{{ isset($menu->name) ? __($menu->name) : '' }}</div>
+                            @isset($menu->badge)
+                                <div class="badge bg-{{ $menu->badge[0] }} rounded-pill ms-auto">{{ $menu->badge[1] }}</div>
+                            @endisset
+                        </a>
 
-                    {{-- submenu --}}
-                    @isset($menu->submenu)
-                        @include('layouts.sections.menu.submenu', ['menu' => $menu->submenu])
-                    @endisset
-                </li>
+                        {{-- submenu --}}
+                        @isset($menu->submenu)
+                            @include('layouts.sections.menu.submenu', ['menu' => $menu->submenu])
+                        @endisset
+                    </li>
+                @endcan
             @endif
         @endforeach
     </ul>

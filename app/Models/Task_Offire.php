@@ -8,16 +8,16 @@ class Task_Offire extends Model
 {
   protected $table = 'tasks_offers';
   protected $fillable = [
-    'task_id',
+    'task_ad_id',
     'driver_id',
     'accepted',
     'price',
     'description'
   ];
 
-  public function task()
+  public function ad()
   {
-    return $this->belongsTo(Task::class, 'task_id');
+    return $this->belongsTo(Task_Ad::class, 'task_ad_id');
   }
   public function driver()
   {

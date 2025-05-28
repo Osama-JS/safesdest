@@ -132,6 +132,7 @@
                         <th>{{ __('complete before') }}</th>
                         <th>{{ __('status') }}</th>
                         <th>{{ __('payment') }}</th>
+                        <th>{{ __('closed') }}</th>
                         <th>{{ __('action') }}</th>
                     </tr>
                 </thead>

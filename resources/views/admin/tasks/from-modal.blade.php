@@ -546,31 +546,40 @@
                                     </div>
                                     <div id="assign-section" style="display: none">
                                         <div class="mb-3">
-                                            <div class="form-group border rounded">
-                                                <label for="">{{ __('Set the total price Manual') }}</label>
-                                                <input type="number" id="total-price" step="any"
-                                                    name="manual_total_pricing" class="form-control">
-                                                <span>{{ __('do you want to set the price manual') }}</span>
-                                                <span class="owner-error text-danger text-error"></span>
+                                            <div class="form-group border p-3 rounded ">
+                                                @include('admin.tasks.pricing-section')
+                                                <div class="form-group">
+                                                    <label
+                                                        for="">{{ __('Set the total price Manual') }}</label>
+                                                    <input type="number" id="total-price" step="any"
+                                                        name="manual_total_pricing" class="form-control">
+                                                    <span class="owner-error text-danger text-error"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label
+                                                        for="">{{ __('Set the The commission Manual') }}</label>
+                                                    <input type="number" id="task-commission" step="any"
+                                                        min="0.00" name="manual_commission" class="form-control"
+                                                        placeholder="0.00">
+                                                    <span class="owner-error text-danger text-error"></span>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>{{ __('Add the details of the Price') }}</label>
+                                                    <br>
+                                                    <button type="button" class="btn btn-light btn-sm mb-2"
+                                                        id="add-pricing-details">
+                                                        {{ __('Add Details') }}
+                                                    </button>
+                                                    <div id="pricing-details-container"></div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="mb-3">
                                             <div class="form-group">
                                                 <label for="">{{ __('Assign Driver') }}</label>
-                                                <span>{{ __('do you want to set the price manual') }}</span>
-
                                                 <div class="row">
-                                                    <div class="col-md-6">
-                                                        <input type="radio" id="driver-automatically"
-                                                            name="driver_assign_type" value="auto"
-                                                            class="form-checkbox">
-                                                        <label
-                                                            for="driver-automatically">{{ __('Assign Automatically') }}</label>
-
-
-                                                    </div>
                                                     <div class="com-md-6">
-                                                        <input type="radio" id="driver-manual"
+                                                        <input type="checkbox" id="driver-manual"
                                                             name="driver_assign_type" value="manual"
                                                             class="form-checkbox">
                                                         <label for="driver-manual">{{ __('Assign Manually') }}</label>
@@ -651,6 +660,96 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade " id="adModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog " role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adTitle">{{ __('Edit Task Ad') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('ads.update') }}">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="ad-id">
+                    <div class="mb-3 row">
+                        <div class="col-md-6">
+                            <label for="min-price">* Min Price</label>
+                            <input type="number" name="min_price" id="ad-min-price" class="form-control"
+                                step="any">
+                            <span class="min_price-error text-danger text-error"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="max-price">* Max Price</label>
+                            <input type="number" name="max_price" id="ad-max-price" class="form-control"
+                                step="any">
+                            <span class="max_price-error text-danger text-error"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="not-price">Note</label>
+                        <textarea name="note_price" id="ad-not-price" class="form-control"></textarea>
+                        <span class="note_price-error text-danger text-error"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade " id="pricingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog " role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pricingTitle">{{ __('Edit Task Pricing') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('tasks.pricing.update') }}">
+                @csrf
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="pricing-id">
+                    <div class="row mb-3">
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="">{{ __('Set the total price Manual') }}</label>
+                                <input type="number" id="pricing-total-price" step="any" name="price"
+                                    class="form-control">
+                                <span class="owner-error text-danger text-error"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="">{{ __('Set the The commission Manual') }}</label>
+                                <input type="number" id="pricing-commission" step="any" min="0.00"
+                                    name="commission" class="form-control" placeholder="0.00">
+                                <span class="owner-error text-danger text-error"></span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label>{{ __('Add the details of the Price') }}</label>
+                        <br>
+                        <button type="button" class="btn btn-light btn-sm mb-2" id="pricing-add-pricing-details">
+                            {{ __('Add Details') }}
+                        </button>
+                        <div id="pricing-pricing-details-container"></div>
                     </div>
                 </div>
                 <div class="modal-footer">

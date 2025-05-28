@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\admin;
 
-use App\Http\Controllers\Controller;
+use App\Helpers\IpHelper;
+use Exception;
+use App\Models\Task;
 use App\Models\Task_Ad;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class TasksAdsController extends Controller
 {
@@ -18,14 +23,7 @@ class TasksAdsController extends Controller
   {
     $query = Task_Ad::query();
 
-    // إضافة التصفية إذا كان هناك قيمة بحث
-    if ($request->has('search') && !empty($request->search)) {
-      $search = $request->search;
-      $query->where(function ($q) use ($search) {
-        $q->where('name', 'ILIKE', '%' . $search . '%')
-          ->orWhere('id', 'ILIKE', '%' . $search . '%');
-      });
-    }
+
 
     // ترتيب البيانات حسب الـ id بشكل تنازلي
     $query->orderBy('id', 'DESC');
@@ -58,5 +56,60 @@ class TasksAdsController extends Controller
 
     // إرجاع النتيجة مع التعداد (count) و pagination
     return response()->json(['data' => $products, 'count' => $products->total()]);
+  }
+
+  public function editByTask($id)
+  {
+    try {
+      $task = Task::findOrFail($id);
+      if ($task->ad) {
+        $data = $task->ad;
+        return response()->json(['status' => 1, 'data' => $data]);
+      }
+      return response()->json(['status' => 2, 'error' => 'There is no ad for this task']);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function edit($id)
+  {
+    try {
+      $data = Task_Ad::findOrFail($id);
+      return response()->json(['status' => 1, 'data' => $data]);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function update(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'min_price' => 'required|numeric|min:0',
+      'max_price' => 'required|numeric|gt:min_price',
+      'note_price' => 'nullable|string|max:400',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+    }
+
+    try {
+
+      $find = Task_Ad::findOrFail($req->id);
+
+      $done = $find->update([
+        'lowest_price' => $req->min_price,
+        'highest_price' => $req->max_price,
+        'description' => $req->note_price,
+      ]);
+
+      if (!$done) {
+        return response()->json(['status' => 2, 'error' => __('Error: can not save the Tag')]);
+      }
+      return response()->json(['status' => 1, 'success' => __('Tag saved successfully')]);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
   }
 }

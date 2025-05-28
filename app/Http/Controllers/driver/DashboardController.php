@@ -20,7 +20,6 @@ class DashboardController extends Controller
   public function index()
   {
     $data = Task::where('driver_id', auth()->user()->id)
-      ->where('status', '!=', 'completed')
       ->where('closed', 0)
       ->orderBy('created_at', 'desc')
       ->get();
@@ -170,6 +169,109 @@ class DashboardController extends Controller
         'status' => 2,
         'error'  => $ex->getMessage()
       ]);
+    }
+  }
+
+  public function  getCurrentTaskHistory($id)
+  {
+    try {
+      $task = Task::findOrFail($id);
+      if (auth()->user()->id !== $task->driver_id) {
+        return response()->json([
+          'status' => 2,
+          'error'  => __('you do not have the permission to preview this data')
+        ]);
+      }
+
+      $taskHistory = Task_History::where('task_id', $id)
+        ->orderByDesc('id') // استخدم orderByDesc بدلاً من sortByDesc
+        ->get()
+        ->map(function ($val) {
+          return [
+            'type' => $val->action_type,
+            'description' => $val->description,
+            'date' => $val->created_at->format('F, Y-d H:i'),
+            'user' => optional($val->user)->name,
+            'driver' => optional($val->driver)->name,
+            'file' => $val->file_path
+              ? [
+                'url' => asset('storage/' . $val->file_path),
+                'type' => pathinfo($val->file_path, PATHINFO_EXTENSION),
+                'name' => basename($val->file_path),
+              ]
+              : null,
+            'color' => match ($val->action_type) {
+              'added' => 'success',
+              'updated' => 'info',
+              'assign' => 'primary',
+              'canceld' => 'danger',
+              default => 'secundary',
+            }
+          ];
+        })
+        ->values();
+
+      return response()->json([
+        'status' => 1,
+        'data'   => $taskHistory
+      ]);
+    } catch (Exception $ex) {
+      return response()->json([
+        'status' => 2,
+        'error'  => $ex->getMessage()
+      ]);
+    }
+  }
+
+  public function updateStatus(Request $request)
+  {
+    $request->validate([
+      'task_id' => 'required|exists:tasks,id',
+      'status' => 'required|string',
+    ]);
+
+    DB::beginTransaction();
+    try {
+      $task = Task::findOrFail($request->task_id);
+
+      // ترتيب الحالات
+      $statuses = [
+        'started',
+        'in pickup point',
+        'loading',
+        'in the way',
+        'in delivery point',
+        'unloading',
+        'completed',
+      ];
+
+      $currentIndex = array_search($task->status, $statuses);
+      $requestedIndex = array_search($request->status, $statuses);
+
+      // تحقق من الصلاحية
+      if ($requestedIndex === false || $requestedIndex !== $currentIndex + 1) {
+        return back()->with('error', 'Invalid status change.');
+      }
+
+      $task->status = $request->status;
+      if ($request->status == 'completed') {
+        $task->completed_at = now();
+      }
+      $task->save();
+
+      // إضافة إلى سجل التاريخ إن لزم
+      Task_History::create([
+        'task_id' => $task->id,
+        'action_type' => $request->status,
+        'description' => "Driver changed status to '{$request->status}'",
+        'driver_id' => auth()->user()->id,
+      ]);
+
+      DB::commit();
+      return back()->with('success', 'Task status updated successfully.');
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return back()->with('error', 'Error: ' . $ex->getMessage());
     }
   }
 }

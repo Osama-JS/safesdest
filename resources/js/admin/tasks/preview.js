@@ -347,6 +347,8 @@ $(function () {
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
                     <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" >Edit Task</a></li>
+                    ${task.data.status !== 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" >Edit Task Pricing</a></li>` : ``}
+                    ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" >Edit Task Ad</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
                   </ul>
@@ -405,7 +407,7 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Pickup Reference Image</strong>
-                  <img src="${task.data.pickup.note || '—'}" >
+                  <img style=" width: 100px;" src="${baseUrl + task.data.pickup.image || '—'}" >
                 </li>
                 </ul>
 
@@ -443,7 +445,7 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong> Reference Image</strong>
-                  <img src="${task.data.delivery.note || '—'}" >
+                  <img style=" width: 100px;" src="${baseUrl + task.data.delivery.image || '—'}" >
                 </li>
 
 
@@ -620,11 +622,12 @@ $(function () {
 
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
-    console.log('osama');
-    loadTasks();
     setTimeout(() => {
       $('#submitModal').modal('hide');
       $('#assignModal').modal('hide');
+      $('#adModal').modal('hide');
+      $('#pricingModal').modal('hide');
+      loadTasks();
     }, 2000);
   });
 
@@ -641,8 +644,12 @@ $(function () {
         <input type="hidden" name="id" value="${id}">
         <select class="form-select" name="status">
           <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>in progress</option>
-          <option value="assign" ${status === 'assign' ? 'selected' : ''}>assign</option>
-          <option value="start" ${status === 'start' ? 'selected' : ''}>start</option>
+          <option value="started" ${status === 'started' ? 'selected' : ''}>started</option>
+          <option value="in pickup point" ${status === 'in pickup point' ? 'selected' : ''}>in pickup point</option>
+          <option value="loading" ${status === 'loading' ? 'selected' : ''}>loading</option>
+          <option value="in the way" ${status === 'in the way' ? 'selected' : ''}>in the way</option>
+          <option value="in delivery point" ${status === 'in delivery point' ? 'selected' : ''}>in delivery point</option>
+          <option value="unloading" ${status === 'unloading' ? 'selected' : ''}>unloading</option>
           <option value="completed" ${status === 'completed' ? 'selected' : ''}>completed</option>
           <option value="canceled" ${status === 'canceled' ? 'selected' : ''}>canceled</option>
         </select>
@@ -655,6 +662,9 @@ $(function () {
       url: `${baseUrl}admin/tasks/status`,
       method: 'POST'
     });
+  });
+  document.addEventListener('statusChange', function (event) {
+    loadTasks();
   });
 
   $(document).on('click', '.assign-task', function () {
@@ -680,6 +690,41 @@ $(function () {
     });
   });
 
+  $(document).on('click', '.edit-task-pricing', function () {
+    const id = $(this).data('id');
+
+    $.get(`${baseUrl}admin/tasks/pricing/edit/${id}`, function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#pricing-id').val(data.data.id);
+      $('#pricing-total-price').val(data.data.total_price);
+
+      $('#pricing-commission').val(data.data.commission);
+      renderPricingDetails(data.data.pricing_details, $('#pricing-pricing-details-container'));
+      $('#pricingModal').modal('show');
+      $('#pricingTitle').html(`Edit Task Pricing: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+    });
+  });
+
+  $(document).on('click', '.edit-task-ad', function () {
+    const id = $(this).data('id');
+
+    $.get(`${baseUrl}admin/ads/task/edit/${id}`, function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#ad-id').val(data.data.id);
+      $('#ad-min-price').val(data.data.lowest_price);
+      $('#ad-max-price').val(data.data.highest_price);
+      $('#ad-not-price').text(data.data.description);
+      $('#adModal').modal('show');
+      $('#adTitle').html(`Edit Task Ad: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+    });
+  });
+
   function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -692,7 +737,7 @@ $(function () {
         showAlert('error', data.error);
         return;
       }
-      $('#task-form').attr('action', `${baseUrl}admin/task/edit`);
+      $('#task-form').attr('action', `${baseUrl}admin/tasks/edit`);
 
       $('#modelTitle').html(`Edit Task: <span class="bg-info text-white px-2 rounded">#${taskId}</span>`);
       // get data
@@ -720,6 +765,12 @@ $(function () {
       $('#task-id').attr('data-method', data.pricing_history.pricing_method_id);
       $('#task-id').attr('data-point', data.pricing_history.point_id);
 
+      if (data.pricing_history.pricing_method_id == 0) {
+        $('#task-id').attr('data-min', data.ad.lowest_price || 0.0);
+        $('#task-id').attr('data-max', data.ad.highest_price || 0.0);
+        $('#task-id').attr('data-note', data.ad.description || '');
+      }
+
       $('#pickup-contact-name').val(data.pickup.contact_name);
       $('#pickup-contact-phone').val(data.pickup.contact_phone);
       $('#pickup-contact-email').val(data.pickup.contact_emil);
@@ -738,24 +789,109 @@ $(function () {
       $('#delivery-latitude').val(data.delivery.latitude);
       $('#delivery-note').val(data.delivery.note);
 
+      if (data.pricing_type === 'manual') {
+        $('#total-price').val(data.total_price);
+        $(`<span  class="ms-2 badge bg-success task-priceing-hint">${__('the price set manual')}</span>`).insertAfter(
+          '#total-price'
+        );
+      }
+      if (data.commission_type === 'manual') {
+        $('#task-commission').val(data.commission);
+        $(
+          `<span class="ms-2 badge bg-success task-priceing-hint">${__('the commission set manual')}</span>`
+        ).insertAfter('#task-commission');
+      }
+
+      renderPricingDetails(data.pricing_details);
+
       console.log(data);
     });
   });
+
+  let Detailsindex = 0;
+
+  $('#pricing-add-pricing-details').on('click', function () {
+    const detailHTML = `
+            <div class="row mb-2 pricing-detail-row">
+                <div class="col-md-6">
+                    <input type="text" name="pricing_details[${Detailsindex}][label]" class="form-control" placeholder="Detail description" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="number" name="pricing_details[${Detailsindex}][amount]" step="any" class="form-control" placeholder="Amount" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-detail">&times;</button>
+                </div>
+            </div>
+        `;
+    $('#pricing-pricing-details-container').append(detailHTML);
+    Detailsindex++;
+  });
+
+  $('#add-pricing-details').on('click', function () {
+    const detailHTML = `
+            <div class="row mb-2 pricing-detail-row">
+                <div class="col-md-6">
+                    <input type="text" name="pricing_details[${Detailsindex}][label]" class="form-control" placeholder="Detail description" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="number" name="pricing_details[${Detailsindex}][amount]" step="any" class="form-control" placeholder="Amount" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-detail">&times;</button>
+                </div>
+            </div>
+        `;
+    $('#pricing-details-container').append(detailHTML);
+    Detailsindex++;
+  });
+
+  function renderPricingDetails(pricing_details, container = $('#pricing-details-container')) {
+    container.empty();
+
+    if (Array.isArray(pricing_details) && pricing_details.length > 0) {
+      pricing_details.forEach((detail, index) => {
+        const detailHTML = `
+        <div class="row mb-2 pricing-detail-row">
+          <div class="col-md-6">
+            <input type="text" name="pricing_details[${index}][label]" class="form-control" value="${detail.label}" placeholder="Detail description" required>
+          </div>
+          <div class="col-md-4">
+            <input type="number" name="pricing_details[${index}][amount]" step="any" class="form-control" value="${detail.amount}" placeholder="Amount" required>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-detail">&times;</button>
+          </div>
+        </div>
+      `;
+        container.append(detailHTML);
+      });
+
+      // تحديث Detailsindex إلى العدد الحالي
+      console.log(pricing_details.length);
+      Detailsindex = pricing_details.length; // يرجعها إلى 5
+    } else {
+      Detailsindex = 0; // يرجعها إلى 5
+    }
+  }
 
   $(document).on('click', '.delete-record', function () {
     let url = baseUrl + 'admin/teams/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
   });
 
-  $('#submitModal').on('hidden.bs.modal', function () {
+  $('#submitModal, #assignModal, #adModal, #pricingModal').on('hidden.bs.modal', function () {
     $('.form_submit').trigger('reset');
     new bootstrap.Tab(document.querySelector('#tab-step1')).show();
     $('#taskFinalDetails').html('');
     $('#params-select-wrapper').remove();
     $('.text-error').html('');
     $('#task_id').val('');
+    $('.task-priceing-hint').remove();
+    $('#pricing-details-container').html('');
     $('.vehicle-select').val('').trigger('change');
     $('#select-template').val(templateId).trigger('change');
     $('#modelTitle').html('Add New Tasks');
+    Detailsindex = 0;
   });
 });

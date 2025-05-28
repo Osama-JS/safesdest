@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
 use App\Models\Transaction;
+use App\Models\Wallet_Transaction;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TasksController extends Controller
@@ -73,7 +74,7 @@ class TasksController extends Controller
     $tasks = $query->get();
 
     $unassignedStatuses = ['in_progress', 'pending_payment', 'payment_failed', 'advertised'];
-    $assignedStatuses = ['assign', 'accepted', 'start'];
+    $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'];
     $completedStatuses = ['completed', 'canceled'];
 
     $grouped = [
@@ -182,7 +183,7 @@ class TasksController extends Controller
   {
     $validator = Validator::make($req->all(), [
       'id' => 'required|exists:tasks,id',
-      'status' => 'required|in:in_progress,assign,start,completed,canceled',
+      'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,canceled',
     ]);
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
@@ -273,8 +274,10 @@ class TasksController extends Controller
       $driver = Driver::findOrFail($req->driver);
 
 
+      if ($data->commission_type == 'dynamic') {
+        $data->commission =  $driver->calculateCommission($data->total_price);
+      }
 
-      $data->commission = $data->total_price - $driver->calculateCommission($data->total_price);
       $data->history()->createMany($history);
 
       $data->save();
@@ -354,11 +357,13 @@ class TasksController extends Controller
       }
 
 
+
       if ($req->filled('task_driver')) {
         $task['driver_id'] = $req->task_driver;
         $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
         // نحسب العمولة
-        $task['commission'] = $task['total_price'] - $driver->calculateCommission($task['total_price']);
+
+        $task['commission'] =  $driver->calculateCommission($task['total_price']);
         // تحديث الحالة وإضافة السجل في التاريخ
         $task['status'] = 'assign';
         $history[] = [
@@ -369,6 +374,32 @@ class TasksController extends Controller
           'driver_id' => $req->task_driver
         ];
       }
+
+      if ($req->filled('manual_commission')) {
+        if ($req->manual_commission > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+        }
+        $task['commission_type'] = 'manual';
+        $task['commission'] = $req->manual_commission;
+        $data['manual_commission'] = $req->manual_commission;
+      }
+
+      if ($req->filled('pricing_details')) {
+        $details = $req->pricing_details ?? [];
+        $sumDetails = collect($req->input('pricing_details', []))
+          ->sum(function ($item) {
+            return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+          });
+        if ($sumDetails > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
+        }
+        $task['pricing_details'] = $details;
+      }
+
+
+
 
 
 
@@ -476,7 +507,7 @@ class TasksController extends Controller
       ];
 
       if ($req->hasFile('pickup_image')) {
-        $pickup_point['image'] = (new FunctionsController)->convert($req->image, 'tasks/points');
+        $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
       }
 
       // نقطة التسليم
@@ -494,7 +525,7 @@ class TasksController extends Controller
       ];
 
       if ($req->hasFile('delivery_image')) {
-        $delivery_point['image'] = (new FunctionsController)->convert($req->image, 'tasks/points');
+        $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
       }
 
       // إنشاء المهام بعدد المركبات المطلوبة
@@ -546,7 +577,7 @@ class TasksController extends Controller
 
   public function edit($id)
   {
-    $data = Task::with('pickup', 'delivery')->findOrFail($id);
+    $data = Task::with('pickup', 'delivery', 'ad')->findOrFail($id);
     if (!in_array($data->status, ['in_progress', 'advertised'])) {
       return response()->json([
         'status' => 2,
@@ -631,13 +662,18 @@ class TasksController extends Controller
         ],
       ];
 
+      if ($req->filled('manual_total_pricing')) {
+        $task['total_price'] = $req->manual_total_pricing;
+        $task['pricing_type'] = 'manual';
+        $data['manual_pricing'] = $req->manual_total_pricing;
+      }
 
       if ($req->filled('task_driver')) {
 
         $task['driver_id'] = $req->task_driver;
         $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
         // نحسب العمولة
-        $task['commission'] = $task['total_price'] - $driver->calculateCommission($task['total_price']);
+        $task['commission'] = $driver->calculateCommission($task['total_price']);
 
 
         // تحديث الحالة وإضافة السجل في التاريخ
@@ -651,11 +687,32 @@ class TasksController extends Controller
         ];
       }
 
-      if ($req->filled('manual_total_pricing')) {
-        $task['total_price'] = $req->manual_total_pricing;
-        $task['pricing_type'] = 'manual';
-        $data['manual_pricing'] = $req->manual_total_pricing;
+      if ($req->filled('manual_commission')) {
+        if ($req->manual_commission > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+        }
+        $task['commission_type'] = 'manual';
+        $task['commission'] = $req->manual_commission;
+        $data['manual_commission'] = $req->manual_commission;
       }
+
+
+      if ($req->filled('pricing_details')) {
+        $details = $req->pricing_details ?? [];
+        $sumDetails = collect($req->input('pricing_details', []))
+          ->sum(function ($item) {
+            return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+          });
+        if ($sumDetails > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
+        }
+        $task['pricing_details'] = $details;
+      }
+
+
+
 
       if ($taskData['method'] == 0) {
         if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
@@ -750,7 +807,7 @@ class TasksController extends Controller
         if ($oldTask->pickup->image) {
           $imageForDelete[] = $oldTask->pickup->image;
         }
-        $pickup_point['image'] = (new FunctionsController)->convert($req->image, 'tasks/points');
+        $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
       }
 
       // نقطة التسليم
@@ -771,7 +828,7 @@ class TasksController extends Controller
         if ($oldTask->delivery->image) {
           $imageForDelete[] = $oldTask->delivery->image;
         }
-        $delivery_point['image'] = (new FunctionsController)->convert($req->image, 'tasks/points');
+        $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
       }
       $newTask = Task::findOrFail($req->id);
       $newTask->update($task);
@@ -1043,6 +1100,7 @@ class TasksController extends Controller
           ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
           : "",
         'status'     => $task->status,
+        'closed'     => $task->closed,
         'payment'     => $task->payment_status,
         'created_at' => $task->created_at->format('Y-m-d H:i'),
       ];
@@ -1115,7 +1173,6 @@ class TasksController extends Controller
           'payment_status' => 'completed'
         ]);
         DB::commit();
-
         return response()->json([
           'status' => 1,
           'message' => __('Payment has been confirmed for task') . ' #' . $data->id,
@@ -1181,6 +1238,165 @@ class TasksController extends Controller
         'status' => 2,
         'message' => __('Task not found')
       ]);
+    }
+  }
+
+  public function showDetails($id)
+  {
+    $task = Task::with([
+      'customer',
+      'driver',
+      'user',
+      'pickup',
+      'delivery',
+      'points',
+      'payments',
+      'order',
+      'formTemplate',
+      'pricingTemplate',
+      'vehicle_size',
+      'history.user',
+      'history.driver',
+    ])->findOrFail($id);
+
+    return view('admin.tasks.show', compact('task'));
+  }
+
+  public function closeTask($id)
+  {
+    DB::beginTransaction();
+    try {
+      $task = Task::findOrFail($id);
+      if ($task->closed) {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This Task already closed'),
+        ]);
+      }
+      if ($task->status !== 'completed') {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This task cannot be closed in its current state'),
+        ]);
+      }
+      if ($task->payment_status !== 'completed') {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This transaction cannot be closed until the payment is completed.'),
+        ]);
+      }
+      $driver = Driver::find($task->driver_id);
+      if (!$driver) {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This Task cannot be closed due to a driver issue'),
+        ]);
+      }
+
+      $task->update(['closed' => 'true']);
+      $task->history()->create([
+        'action_type' => 'closed',
+        'description' => 'Task closed by admin',
+        'ip' => IpHelper::getUserIpAddress(),
+        'user_id' => Auth::id(),
+      ]);
+
+      $wallet = $driver->wallet;
+      if (!$wallet) {
+        return response()->json([
+          'status' => 2,
+          'error' => __('This Task cannot be closed due to a wallet issue'),
+        ]);
+      }
+      $data = [
+        'amount'              => $task->total_price - $task->commission,
+        'description'         => 'Delivery Amount for Task  #' . $task->id,
+        'transaction_type'    => 'credit',
+        'wallet_id'           => $wallet->id,
+        'maturity_time'       => Carbon::now()->copy()->addDays(3),
+        'task_id'             => $task->id,
+      ];
+      $done = Wallet_Transaction::create($data);
+
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Task closed successfully')]);
+    } catch (Exception $e) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+    }
+  }
+
+
+  public function editPricing($id)
+  {
+    try {
+      $data = Task::select(['id', 'closed', 'payment_status', 'total_price', 'commission', 'pricing_details'])->findOrFail($id);
+      if ($data->closed) {
+        return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
+      }
+      if ($data->payment_status !== 'waiting') {
+        return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as it has already been paid for')]);
+      }
+      return response()->json(['status' => 1, 'data' => $data]);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function updatePricing(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'price' => 'required|numeric|min:0',
+      'commission' => 'required|numeric|lt:price',
+      'pricing_details' => 'nullable|array',
+      'pricing_details.*.label' => 'required_with:pricing_details.*.amount|string',
+      'pricing_details.*.amount' => 'required_with:pricing_details.*.label|numeric'
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+    }
+
+    DB::beginTransaction();
+    try {
+      $find = Task::findOrFail($req->id);
+      $details = $req->pricing_details ?? [];
+      $sumDetails = collect($req->input('pricing_details', []))
+        ->sum(function ($item) {
+          return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+        });
+      if ($sumDetails > $req->price) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
+      }
+
+      $userIp = IpHelper::getUserIpAddress();
+      $history = [
+        [
+          'action_type' => 'updated',
+          'description' => 'Update Task Pricing Manual',
+          'ip' => $userIp,
+          'user_id' => Auth::user()->id
+        ]
+      ];
+      $find->history()->createMany($history);
+      $done = $find->update([
+        'total_price' => $req->price,
+        'commission' => $req->commission,
+        'pricing_details' => $details,
+        'pricing_type' => 'manual',
+        'commission_type' => 'manual'
+      ]);
+
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => __('Error: can not Update the task pricing')]);
+      }
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('pricing Updated successfully')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
 }

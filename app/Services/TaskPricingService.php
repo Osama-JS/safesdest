@@ -130,6 +130,24 @@ class TaskPricingService
         }
       }
     }
+    if ($request->filled('manual_total_pricing')) {
+      $rules['manual_total_pricing'] = 'required|numeric|min:0';
+    } else {
+      $rules['manual_total_pricing'] = 'nullable|numeric|min:0';
+    }
+
+    if ($request->filled('manual_commission')) {
+      $rules['manual_commission'] = 'required|numeric|min:0';
+    } else {
+      $rules['manual_commission'] = 'nullable|numeric|min:0';
+    }
+
+
+    if ($request->filled('pricing_details')) {
+      $rules['pricing_details'] = 'nullable|array';
+      $rules['pricing_details.*.label'] = 'required_with:pricing_details.*.amount|string';
+      $rules['pricing_details.*.amount'] = 'required_with:pricing_details.*.label|numeric';
+    }
 
     return $rules;
   }

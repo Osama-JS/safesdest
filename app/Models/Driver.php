@@ -68,6 +68,11 @@ class Driver extends Authenticatable
     return $this->hasMany(Task::class, 'pending_driver_id');
   }
 
+  public function wallet()
+  {
+    return $this->hasOne(Wallet::class, 'driver_id');
+  }
+
 
 
   public function transactions()

@@ -146,12 +146,8 @@ $(function () {
 
     let page = $(this).data('page'); // جلب رقم الصفحة من الزر
     if (page) {
-      loadAds(page, $('#search-team').val()); // استدعاء الدالة مع رقم الصفحة الجديد
+      loadAds(page); // استدعاء الدالة مع رقم الصفحة الجديد
     }
-  });
-
-  $('#search-team').on('input', function () {
-    loadAds(1, $(this).val());
   });
 
   loadAds();

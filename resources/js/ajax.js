@@ -158,6 +158,7 @@ export function showFormModal(options) {
           if (response.status == 1 && dataTable) {
             dataTable.draw();
           }
+          document.dispatchEvent(new CustomEvent('statusChange'));
         },
         error: function (xhr, status, error) {
           showAlert('error', 'Something went wrong! : ' + error, 10000, true);

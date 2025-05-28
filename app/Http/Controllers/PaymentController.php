@@ -148,8 +148,6 @@ class PaymentController extends Controller
           ]);
         }
 
-
-
         $data = [
           'amount'              => $amount,
           'description'         => 'Pay the delivery fee for task #' . $task->id,

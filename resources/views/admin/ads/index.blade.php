@@ -104,14 +104,7 @@
                 the basis of location, geography, type of service and so on and so forth.</p> --}}
 
         </div>
-        <div class="row mb-3 p-3">
-            <div class="col-md-12">
 
-                <input type="text" id="search-team" class="form-control " placeholder="🔍 Search Team">
-
-            </div>
-
-        </div>
 
     </div>
 

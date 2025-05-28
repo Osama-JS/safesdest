@@ -19,7 +19,7 @@ class FunctionsController extends Controller
       imagepalettetotruecolor($im);
 
       // have exact value with WEBP extension
-      $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
+      $new_webp = preg_replace('"\.(jpg|jpeg|png|PNG|webp)$"', '.webp', $webp);
       //del old image
       unlink($webp);
 

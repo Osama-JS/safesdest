@@ -11,6 +11,7 @@ class Task extends Model
     'status',
     'pricing_type',
     'total_price',
+    'commission_type',
     'commission',
     'payment_method',
     'payment_status',
@@ -22,6 +23,7 @@ class Task extends Model
     'last_attempt_at',
     'pending_driver_id',
     'pricing_history',
+    'pricing_details',
     'closed',
     'order_id',
     'customer_id',
@@ -35,6 +37,7 @@ class Task extends Model
   protected $casts = [
     'additional_data' => 'array',
     'pricing_history' => 'array',
+    'pricing_details' => 'array',
     'last_attempt_at' => 'datetime',
 
   ];

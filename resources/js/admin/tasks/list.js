@@ -90,6 +90,7 @@ $(function () {
         { data: 'start' }, // الحالة
         { data: 'complete' }, // الحالة
         { data: 'status' }, // الحالة
+        { data: 'task' }, // الحالة
         { data: 'created_at' }, // تاريخ الإنشاء
         { data: null } // actions
       ],
@@ -218,6 +219,12 @@ $(function () {
         },
         {
           targets: 11,
+          render: function (data, type, full, meta) {
+            return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span>` : `<span class="px-2 rounded bg-success text-white">Open</span>`}`;
+          }
+        },
+        {
+          targets: 12,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -231,7 +238,8 @@ $(function () {
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}">Payment Task</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
+                    <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
+                    ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                   </ul>
                 </div>
               </div>`;
@@ -540,4 +548,38 @@ $(function () {
         }
       });
     });
+
+  $(document).on('click', '.closed-record', function () {
+    var id = $(this).data('id');
+    Swal.fire({
+      title: `Close Task #${id} ?`,
+      text: 'You will not be able to undo this action!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Close it!',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      },
+      buttonsStyling: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: ` ${baseUrl}admin/tasks/close/${id}`,
+          type: 'GET',
+          success: function (response) {
+            if (response.status === 1) {
+              showAlert('success', response.success, 10000, true);
+              dt_data.draw();
+            } else {
+              showAlert('error', response.error, 10000, true);
+            }
+          },
+          error: function () {
+            showAlert('error', 'Field to Close the Task', 10000, true);
+          }
+        });
+      }
+    });
+  });
 });

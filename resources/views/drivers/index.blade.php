@@ -9,16 +9,71 @@
 @section('title', 'Driver Dashboard')
 
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss', 'resources/assets/vendor/libs/swiper/swiper.scss', 'resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-checkboxes-jquery/datatables.checkboxes.scss'])
+    @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss', 'resources/assets/vendor/libs/swiper/swiper.scss', 'resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-checkboxes-jquery/datatables.checkboxes.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+
 @endsection
 
 @section('page-style')
     <!-- Page -->
     @vite(['resources/assets/vendor/scss/pages/cards-advance.scss'])
+    <style>
+        .stepper-container {
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .stepper {
+            min-width: 650px;
+            gap: 0;
+        }
+
+        .step-form {
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-weight: bold;
+            padding: 0;
+            transition: 0.3s;
+        }
+
+        .step-line {
+            flex-grow: 1;
+            height: 3px;
+            margin: 0 5px;
+            z-index: 0;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        .step-label {
+            width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 576px) {
+            .stepper {
+                min-width: auto;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+
+            .step-label {
+                font-size: 10px;
+                width: 60px;
+            }
+        }
+    </style>
 @endsection
 
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/apex-charts/apexcharts.js', 'resources/assets/vendor/libs/swiper/swiper.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js'])
+    @vite(['resources/assets/vendor/libs/apex-charts/apexcharts.js', 'resources/assets/vendor/libs/swiper/swiper.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
 @section('page-script')
@@ -72,6 +127,14 @@
         // تحديث كل دقيقة
         setInterval(updateDriverLocation, 60000);
         updateDriverLocation(); // أول مرة
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
 @endsection
 
@@ -192,191 +255,230 @@
             {{ auth()->user()->tasks }}
 
             @foreach ($data as $task)
-                <div class="mb-4">
-
-                    <div id="task-details-view" class=" bg-white shadow-lg p-0 overflow-auto">
-                        <div class="card-header bg-white border-bottom-0 p-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Task #{{ $task->id }}</h5>
-                                <span
-                                    class="badge bg-{{ match ($task->status) {
-                                        'pending' => 'warning',
-                                        'in_progress' => 'info',
-                                        'completed' => 'success',
-                                        default => 'secondary',
-                                    } }}">
-                                    {{ ucfirst(str_replace('_', ' ', $task->status)) }}
-                                </span>
-
-                            </div>
+                <div class="mb-5">
+                    <div id="task-details-view" class="bg-white shadow rounded-3 overflow-hidden">
+                        <div class="card-header p-4 border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Task #{{ $task->id }}</h5>
+                            <span
+                                class="badge bg-{{ match ($task->status) {
+                                    'pending' => 'warning',
+                                    'in_progress' => 'info',
+                                    'completed' => 'success',
+                                    default => 'secondary',
+                                } }}">
+                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                            </span>
                         </div>
-                        <div class="nav-align-top  overflow-auto p-0 " style="min-height: 75vh">
-                            <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top"
-                                style="top: 0; z-index: 1030;" role="tablist">
-                                <li class="nav-item">
-                                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
-                                        data-bs-target="#navs-justified-details" aria-controls="navs-justified-home"
-                                        aria-selected="true"><span class="d-none d-sm-block">
-                                            {{ __('details') }}</span><i class="ti ti-home ti-sm d-sm-none"></i></button>
-                                </li>
 
+                        <div class="nav-align-top p-0" style="min-height: 75vh;">
+                            <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top"
+                                style="top: 0; z-index: 1030;">
                                 <li class="nav-item">
-                                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                                        data-bs-target="#navs-justified-history" aria-controls="navs-justified-messages"
-                                        aria-selected="false"><span class="d-none d-sm-block">
-                                            {{ __('history') }}</span><i
-                                            class="ti ti-message-dots ti-sm d-sm-none"></i></button>
+                                    <button type="button" class="nav-link active" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-details-{{ $task->id }}" role="tab">
+                                        <span class="d-none d-sm-inline">{{ __('Details') }}</span>
+                                        <i class="ti ti-info-circle ti-sm d-sm-none"></i>
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-history-{{ $task->id }}" role="tab">
+                                        <span class="d-none d-sm-inline">{{ __('History') }}</span>
+                                        <i class="ti ti-clock ti-sm d-sm-none"></i>
+                                    </button>
                                 </li>
                             </ul>
 
                             <div class="tab-content p-0 m-0" style="max-height: calc(75vh - 60px); overflow-y: auto;">
-                                <div class="tab-pane fade show active" id="navs-justified-details" role="tabpanel">
+                                {{-- Details Tab --}}
+                                <div class="tab-pane fade show active" id="navs-justified-details-{{ $task->id }}"
+                                    role="tabpanel">
+                                    <div id="task-details-content" class="p-4">
+                                        <div class="  mb-4">
+                                            <div id="map-{{ $task->id }}" class="rounded-top"
+                                                style="height: 150px;"></div>
+                                            <div class="mb-3">
+                                                @php
+                                                    $statuses = [
+                                                        'started',
+                                                        'in pickup point',
+                                                        'loading',
+                                                        'in the way',
+                                                        'in delivery point',
+                                                        'unloading',
+                                                        'completed',
+                                                    ];
+                                                    $currentIndex = array_search($task->status, $statuses);
+                                                @endphp
 
-                                    <div id="task-details-content">
-                                        <div class="card shadow-sm border-0">
+                                                <div class="stepper-container my-4">
+                                                    <div
+                                                        class="stepper d-flex justify-content-between align-items-center position-relative">
+                                                        @foreach ($statuses as $index => $status)
+                                                            @php
+                                                                $isCompleted = $index < $currentIndex;
+                                                                $isActive = $index == $currentIndex;
+                                                                $isNext = $index == $currentIndex + 1;
+                                                            @endphp
 
-                                            {{-- الخريطة --}}
-                                            <div class="map-container
-                                    rounded-top"
-                                                id="map-{{ $task->id }}" style="height: 100px;">
-                                            </div>
+                                                            <form class="step-form text-center" method="POST"
+                                                                action="{{ route('driver.task.updateStatus') }}">
+                                                                @csrf
+                                                                <input type="hidden" name="task_id"
+                                                                    value="{{ $task->id }}">
+                                                                <input type="hidden" name="status"
+                                                                    value="{{ $status }}">
 
-                                            <div class="card-body">
-                                                {{-- بيانات العميل --}}
-                                                <div class="mb-3">
-                                                    <p class="mb-1"><strong>Owner Type:</strong>
-                                                        {{ ucfirst($task->owner) }}</p>
-                                                    @if ($task->owner === 'customer' && $task->customer)
-                                                        <p class="mb-0"><strong>Customer Name:</strong>
-                                                            {{ $task->customer->name }}
-                                                        </p>
-                                                        <p class="mb-0"><strong>Customer Phone:</strong>
-                                                            {{ $task->customer->phone ?? 'N/A' }}</p>
-                                                    @elseif ($task->owner === 'admin' && $task->user)
-                                                        <p class="mb-0"><strong>Admin:</strong> {{ $task->user->name }}
-                                                        </p>
-                                                    @endif
-                                                    <div class="row mt-3">
-                                                        <div class="col-md-6 ">
-                                                            <p class="border p-2 rounded"><strong>Price:</strong>
-                                                                {{ $task->total_price - auth()->user()->calculateCommission($task->total_price) }}
-                                                                SAR
-                                                            </p>
-                                                        </div>
+                                                                <button type="button"
+                                                                    class="step-circle btn {{ $isActive ? 'btn-primary' : ($isNext ? 'btn-outline-primary' : 'btn-outline-secondary') }}"
+                                                                    data-status="{{ $status }}"
+                                                                    {{ !$isNext ? 'disabled' : '' }}
+                                                                    title="{{ ucfirst($status) }}"
+                                                                    style="width: 45px; height: 45px; border-radius: 50%;">
+                                                                    {{ $index + 1 }}
+                                                                </button>
+
+                                                                <div class="step-label mt-1 small">
+                                                                    <small
+                                                                        class="{{ $isCompleted ? 'text-success' : ($isActive ? 'text-primary' : 'text-muted') }}">
+                                                                        {{ __($status) }}
+                                                                    </small>
+                                                                </div>
+                                                            </form>
+
+
+                                                            @if ($index < count($statuses) - 1)
+                                                                <div
+                                                                    class="step-line {{ $index < $currentIndex ? 'bg-primary' : 'bg-secondary' }}">
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
                                                     </div>
                                                 </div>
+                                            </div>
+                                            @if ($task->status == 'completed')
+                                                <div class="alert alert-success" role="alert">
+                                                    <b>{{ __('You need to wait for the responsible supervisor to check the task and close it, thank you') }}</b>
+                                                </div>
+                                            @endif
 
-                                                {{-- بيانات النقاط --}}
+                                            <div class="">
+                                                <h6 class="fw-bold mb-3">Client Information</h6>
+                                                <input type="hidden" id="task-id-history" value="{{ $task->id }}">
+                                                {{-- <p><strong>Owner Type:</strong> {{ ucfirst($task->owner) }}</p> --}}
+                                                @if ($task->owner === 'customer' && $task->customer)
+                                                    <p><strong>Customer Name:</strong> {{ $task->customer->name }}</p>
+                                                    <p><strong>Customer Phone:</strong>
+                                                        {{ $task->customer->phone ?? 'N/A' }}</p>
+                                                @elseif ($task->owner === 'admin' && $task->user)
+                                                    <p><strong>Admin:</strong> {{ $task->user->name }}</p>
+                                                @endif
+
+                                                <div class="row mt-3">
+                                                    <div class="col-md-6">
+                                                        <div class="border p-3 rounded">
+                                                            <strong>Price:</strong>
+                                                            {{ $task->total_price - auth()->user()->calculateCommission($task->total_price) }}
+                                                            SAR
+                                                        </div>
+                                                    </div>
+
+
+
+
+
+
+                                                </div>
+
+                                                <hr class="my-4" />
+
                                                 <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="mb-2">
-                                                            <strong>{{ __('Pickup Address') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->pickup)->address ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Pickup Contact Name') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->pickup)->contact_name ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Pickup Contact phone') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->pickup)->contact_phone ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Pickup Contact eamil') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->pickup)->contact_email ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Pickup Note') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->pickup)->note ?? 'Not set' }}
-                                                            </p>
-                                                        </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <h6 class="fw-bold">{{ __('Pickup Information') }}</h6>
+                                                        <p class="mb-1"><strong>{{ __('Address') }}:</strong>
+                                                            {{ optional($task->pickup)->address ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Contact Name') }}:</strong>
+                                                            {{ optional($task->pickup)->contact_name ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Phone') }}:</strong>
+                                                            {{ optional($task->pickup)->contact_phone ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Email') }}:</strong>
+                                                            {{ optional($task->pickup)->contact_email ?? 'Not set' }}</p>
+                                                        <p class="mb-0"><strong>{{ __('Note') }}:</strong>
+                                                            {{ optional($task->pickup)->note ?? 'Not set' }}</p>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="mb-2">
-                                                            <strong>{{ __('Delivery address') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->delivery)->address ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Delivery Contact Name') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->delivery)->contact_name ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Delivery Contact phone') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->delivery)->contact_phone ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Delivery Contact eamil') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->delivery)->contact_email ?? 'Not set' }}
-                                                            </p>
-                                                            <strong>{{ __('Delivery Note') }}:</strong>
-                                                            <p class="mb-0 text-muted">
-                                                                {{ optional($task->delivery)->note ?? 'Not set' }}
-                                                            </p>
-                                                        </div>
+
+                                                    <div class="col-md-6 mb-3">
+                                                        <h6 class="fw-bold">{{ __('Delivery Information') }}</h6>
+                                                        <p class="mb-1"><strong>{{ __('Address') }}:</strong>
+                                                            {{ optional($task->delivery)->address ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Contact Name') }}:</strong>
+                                                            {{ optional($task->delivery)->contact_name ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Phone') }}:</strong>
+                                                            {{ optional($task->delivery)->contact_phone ?? 'Not set' }}</p>
+                                                        <p class="mb-1"><strong>{{ __('Email') }}:</strong>
+                                                            {{ optional($task->delivery)->contact_email ?? 'Not set' }}</p>
+                                                        <p class="mb-0"><strong>{{ __('Note') }}:</strong>
+                                                            {{ optional($task->delivery)->note ?? 'Not set' }}</p>
                                                     </div>
                                                 </div>
-
-                                                {{-- معلومات إضافية --}}
-
                                             </div>
 
-                                            <div class="card-footer bg-white border-top-0 text-end d-flex ">
-                                                <form action="{{ route('driver.respond.task') }}" method="POST"
-                                                    class="form_submit">
-                                                    <input type="hidden" name="task_id" value="{{ $task->id }}">
-                                                    <input type="hidden" name="response" value="accept">
-                                                    <button type="submit" class="btn btn-primary mx-2">Accept</button>
+                                            <div class="card-footer bg-white border-top-0 text-end">
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- History Tab --}}
+                                <div class="tab-pane fade" id="navs-justified-history-{{ $task->id }}"
+                                    role="tabpanel">
+                                    <div class="row m-0 p-4">
+                                        <div class="col-md-6">
+                                            <div id="task-history-container"></div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="sticky-top" style="top: 80px;">
+                                                <form action="{{ route('task-histories.store') }}" method="POST"
+                                                    class="card shadow-sm p-4 border-0 form_submit"
+                                                    enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="hidden" name="task" id="task_id"
+                                                        value="{{ $task->id }}">
+                                                    <span class="task-error text-danger text-error"></span>
+
+                                                    <div class="mb-3">
+                                                        <label for="description"
+                                                            class="form-label">{{ __('Add Note') }}</label>
+                                                        <textarea name="description" id="description" class="form-control" rows="3"
+                                                            placeholder="{{ __('Type the note here') }}..."></textarea>
+                                                        <span class="description-error text-danger text-error"></span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label for="file" class="form-label">{{ __('Upload File') }}
+                                                            ({{ __('optional') }})
+                                                        </label>
+                                                        <input type="file" name="file" id="file"
+                                                            class="form-control">
+                                                        <span class="file-error text-danger text-error"></span>
+                                                    </div>
+
+                                                    <button type="submit"
+                                                        class="btn btn-primary">{{ __('Submit') }}</button>
                                                 </form>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="tab-pane fade " id="navs-justified-history" role="tabpanel">
-
-                                    <div class="my-3 p-5">
-                                        <form action="{{ route('task-histories.store') }}" method="POST"
-                                            class="form_submit" enctype="multipart/form-data"
-                                            class="card p-4 shadow-sm border-0 mb-4">
-                                            @csrf
-                                            <input type="hidden" name="task" id="task_id"
-                                                value="{{ $task->id }}">
-                                            <span class="task-error text-danger text-error"></span>
-                                            {{-- حقل وصف الملاحظة --}}
-                                            <div class="mb-3">
-                                                <label for="description" class="form-label">{{ __('Add Note') }}</label>
-                                                <textarea name="description" id="description" class="form-control" rows="3"
-                                                    placeholder="{{ __('Type the note here') }}..."></textarea>
-                                                <span class="description-error text-danger text-error"></span>
-
-                                            </div>
-
-                                            {{-- رفع ملف --}}
-                                            <div class="mb-3">
-                                                <label for="file" class="form-label">{{ __('upload file') }}
-                                                    ({{ __('optional') }})
-                                                </label>
-                                                <input type="file" name="file" id="file"
-                                                    class="form-control">
-                                                <span class="file-error text-danger text-error"></span>
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">
-                                                {{ __('Submit') }}
-                                            </button>
-                                        </form>
-                                    </div>
-
-
-                                </div>
-
                             </div>
-
                         </div>
-
                     </div>
                 </div>
             @endforeach
+
         </div>
     </div>
 

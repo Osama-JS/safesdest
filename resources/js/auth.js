@@ -123,9 +123,9 @@ function updateVehicleRowEvents($row) {
       $.get(`${baseUrl}chosen/vehicles/types/${vehicleId}`, function (types) {
         $typeSelect.empty().append('<option value="">Select a vehicle type</option>');
         types.forEach(type => {
-          if (!selectedTypes.has(type.id.toString())) {
-            $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
-          }
+          // if (!selectedTypes.has(type.id.toString())) {
+          $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
+          // }
         });
         $typeSelect.prop('disabled', false);
       });

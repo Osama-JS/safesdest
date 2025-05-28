@@ -455,9 +455,9 @@ $(function () {
         $.get(`${baseUrl}admin/settings/vehicles/types/${vehicleId}`, function (types) {
           $typeSelect.empty().append('<option value="">Select a vehicle type</option>');
           types.forEach(type => {
-            if (!selectedTypes.has(type.id.toString())) {
-              $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
-            }
+            // if (!selectedTypes.has(type.id.toString())) {
+            $typeSelect.append(`<option value="${type.id}">${type.name}</option>`);
+            // }
           });
           $typeSelect.prop('disabled', false);
         });
@@ -629,10 +629,12 @@ $(function () {
           $('#delivery-map-section').show();
           $('#pickup-map-section').show();
 
-          $('#pickup-latitude').val('');
-          $('#pickup-longitude').val('');
-          $('#delivery-latitude').val('');
-          $('#delivery-longitude').val('');
+          if ($('#task-id').val() === '') {
+            $('#pickup-latitude').val('');
+            $('#pickup-longitude').val('');
+            $('#delivery-latitude').val('');
+            $('#delivery-longitude').val('');
+          }
         }
       });
 
@@ -704,6 +706,11 @@ $(function () {
         });
       }
     });
+  });
+
+  // Remove detail row
+  $('#pricing-details-container').on('click', '.remove-detail', function () {
+    $(this).closest('.pricing-detail-row').remove();
   });
 });
 
@@ -779,18 +786,18 @@ function renderPricingDetails(data) {
       <div class="mb-3 row">
         <div class="col-md-6">
           <label for="min-price">* Min Price</label>
-          <input type="number" name="min_price" id="min-price"  class="form-control" step="any" value="0.00" >
+          <input type="number" name="min_price"  id="min-price"  class="form-control" step="any" value="${$('#task-id').data('min')}" >
           <span class="min_price-error text-danger text-error"></span>
         </div>
          <div class="col-md-6">
           <label for="max-price">* Max Price</label>
-          <input type="number" name="max_price" id="max-price"  class="form-control" step="any" value="0.00" >
+          <input type="number" name="max_price" id="max-price"  class="form-control" step="any" value="${$('#task-id').data('max')}" >
           <span class="max_price-error text-danger text-error"></span>
         </div>
       </div>
       <div class="mb-3">
           <label for="not-price">Note</label>
-          <textarea name="note_price" id="not-price" class="form-control"></textarea>
+          <textarea name="note_price" id="not-price" class="form-control">${$('#task-id').data('note')}</textarea>
           <span class="note_price-error text-danger text-error"></span>
       </div>
     </div>`;
@@ -818,7 +825,7 @@ function renderPricingDetails(data) {
       </div>
     `;
     $('#assign-section').show();
-    $('#total-price').attr('placeholder', data.total_price);
+    $('#total-price').attr('placeholder', parseFloat(data.total_price).toFixed(2));
   }
 
   html += `</div>`;
@@ -857,15 +864,11 @@ function handlePricingResponse(response) {
 
 $('#task-driver-select').parent().hide(); // اخفائها بدايةً
 
-$('#driver-automatically').on('change', function () {
-  if (this.checked) {
-    $('#task-driver-select').parent().hide();
-    $('#task-driver-select').val('').trigger('change');
-  }
-});
-
 $('#driver-manual').on('change', function () {
   if (this.checked) {
     $('#task-driver-select').parent().show();
+  } else {
+    $('#task-driver-select').parent().hide();
+    $('#task-driver-select').val('').trigger('change');
   }
 });

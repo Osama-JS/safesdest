@@ -103,15 +103,25 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
   Route::post('/custom-logout', [RegisterController::class, 'logout'])->name('custom.logout');
 
-  // Driver routes
+
   Route::middleware(['guard.strict:driver'])->group(function () {
-    Route::get('/driver/dashboard',  [App\Http\Controllers\driver\DashboardController::class, 'index'])->name('driver.dashboard');
-    Route::post('/driver/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
-    Route::post('/driver/respond/task', [App\Http\Controllers\driver\DashboardController::class, 'respondToTask'])->name('driver.respond.task');
-    Route::post('/driver/task/histories', [App\Http\Controllers\driver\DashboardController::class, 'taskAddToHistories'])->name('task-histories.store');
+    Route::prefix('driver')->group(function () {
+      Route::get('/dashboard',  [App\Http\Controllers\driver\DashboardController::class, 'index'])->name('driver.dashboard');
+      Route::post('/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
+      Route::post('/respond/task', [App\Http\Controllers\driver\DashboardController::class, 'respondToTask'])->name('driver.respond.task');
+      Route::post('/task/histories', [App\Http\Controllers\driver\DashboardController::class, 'taskAddToHistories'])->name('task-histories.store');
+      Route::post('/task/histories', [App\Http\Controllers\driver\DashboardController::class, 'taskAddToHistories'])->name('task-histories.store');
+      Route::get('/task/current/history/{id}', [App\Http\Controllers\driver\DashboardController::class, 'getCurrentTaskHistory'])->name('task-histories.current');
+      Route::post('/task/update-status', [App\Http\Controllers\driver\DashboardController::class, 'updateStatus'])->name('driver.task.updateStatus');
+
+      Route::get('/task/list', [App\Http\Controllers\driver\TasksController::class, 'index'])->name('driver.task.list');
+      Route::get('/task/list/data', [App\Http\Controllers\driver\TasksController::class, 'getData'])->name('driver.task.data');
+      Route::get('/task/list/show/{id}', [App\Http\Controllers\driver\TasksController::class, 'show'])->name('driver.task.show');
+    });
   });
 
   // Customer routes
+
 
   Route::middleware(['guard.strict:customer'])->group(function () {
     Route::get('/customer/dashboard',  [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
@@ -271,18 +281,30 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
       Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
       Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
-
+      Route::get('/tasks/close/{id}', [TasksController::class, 'closeTask'])->name('teams.close');
       Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
       Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
+      Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');
+
+      Route::get('tasks/pricing/edit/{id}', [TasksController::class, 'editPricing'])->name('tasks.pricing.edit');
+      Route::post('tasks/pricing/edit/', [TasksController::class, 'updatePricing'])->name('tasks.pricing.update');
+
+
       Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');
+
 
       Route::get('tasks/payment/confirm/{id}', [TasksController::class, 'confirmPayment'])->name('tasks.payment.confirm');
       Route::get('tasks/payment/cancel/{id}', [TasksController::class, 'cancelPayment'])->name('tasks.payment.cancel');
 
 
 
+
+
       Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');
       Route::get('/ads/data', [TasksAdsController::class, 'getData'])->name('ads.data');
+      Route::get('/ads/edit/{id}', [TasksAdsController::class, 'edit'])->name('ads.edit');
+      Route::get('/ads/task/edit/{id}', [TasksAdsController::class, 'editByTask'])->name('ads.task.edit');
+      Route::post('/ads/edit', [TasksAdsController::class, 'update'])->name('ads.update');
     });
   });
 });

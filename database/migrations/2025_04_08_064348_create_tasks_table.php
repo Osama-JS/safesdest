@@ -16,14 +16,18 @@ return new class extends Migration
       $table->string('status')->default('in_progress'); //  ['advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled']
       $table->enum('pricing_type', ['dynamic', 'manual'])->default('dynamic');
       $table->decimal('total_price', 10, 2)->default(0);
+      $table->enum('commission_type', ['dynamic', 'manual'])->default('dynamic');
       $table->decimal('commission', 10, 2)->default(0);
       $table->enum('payment_method', ['cash', 'credit', 'banking', 'wallet'])->default('cash');
       $table->enum('payment_status', ['waiting', 'completed', 'pending'])->default('waiting');
       $table->enum('payment_paid', ['all', 'just_commission', 'pending'])->default('pending');
       $table->decimal('payment_pending_amount', 10, 2)->nullable();
       $table->boolean('closed')->default(0);
+      $table->timestamp('completed_at')->nullable();
+      $table->timestamp('closed_at')->nullable();
       $table->jsonb('additional_data')->nullable();
       $table->jsonb('pricing_history')->nullable();
+      $table->jsonb('pricing_details')->nullable();
       $table->integer('distribution_attempts')->default(0);
       $table->timestamp('last_attempt_at')->nullable();
       $table->foreignId('pending_driver_id')->nullable()->constrained('drivers')->nullOnDelete();

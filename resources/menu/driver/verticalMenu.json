@@ -21,10 +21,11 @@
       "isactive": "wallets-isactive"
     },
     {
-      "url": "admin/ads",
+      "url": "driver/ads",
       "name": "Tasks Ads",
       "icon": "menu-icon tf-icons ti ti-speakerphone",
-      "slug": "ads.ads"
+      "slug": "driver.ads.ads",
+      "isactive": "ad-isactive"
     }
   ]
 }

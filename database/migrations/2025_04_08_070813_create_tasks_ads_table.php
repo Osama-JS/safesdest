@@ -14,7 +14,7 @@ return new class extends Migration
     Schema::create('tasks_ads', function (Blueprint $table) {
       $table->id();
       $table->string('description');
-      $table->enum('status', ['running', 'closed'])->default('running');
+      $table->string('status')->default('running'); //['running', 'closed']
       $table->decimal('highest_price', 10, 2)->nullable();
       $table->decimal('lowest_price', 10, 2)->nullable();
       $table->unsignedBigInteger('task_id');

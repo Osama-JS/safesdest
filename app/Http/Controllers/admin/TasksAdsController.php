@@ -22,9 +22,6 @@ class TasksAdsController extends Controller
   public function getData(Request $request)
   {
     $query = Task_Ad::query();
-
-
-
     // ترتيب البيانات حسب الـ id بشكل تنازلي
     $query->orderBy('id', 'DESC');
 

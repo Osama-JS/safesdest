@@ -77,6 +77,21 @@
             width: 100%;
             margin-bottom: 10px;
         }
+
+        .badge-ownership {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #0d6efd;
+            /* Bootstrap primary */
+            color: white;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
     </style>
 @endsection
 

@@ -14,10 +14,10 @@
       "isactive": "task-isactive"
     },
     {
-      "url": "admin/wallets",
+      "url": "driver/wallet",
       "name": "Wallets",
       "icon": "menu-icon tf-icons ti ti-wallet",
-      "slug": "wallets.wallets",
+      "slug": "driver.wallet.wallet",
       "isactive": "wallets-isactive"
     },
     {

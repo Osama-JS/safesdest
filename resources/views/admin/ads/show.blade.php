@@ -58,7 +58,7 @@
     <script>
       const adId = {{ $ad->id }}
     </script>
-    @vite(['resources/js/driver/offers.js'])
+    @vite(['resources/js/admin/offers.js'])
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
@@ -264,10 +264,6 @@
             <div class="card mb-5" style="min-height: 80vh">
                 <div class="card-header border-bottom  mb-4 d-flex justify-content-between">
                   <strong>{{ __('Submitted Offers') }} (<span id="total-offers-counter">0</span>)</strong>
-                  <button  class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#offerModal">
-                        <i class="bx bx-arrow-back"></i>{{ $offer ? __('Update your offer') : __('Add your offer') }}
-                </button>
                 </div>
                 <div class="card-body" id="offers-container">
                     <div class="text-center text-muted" >جارٍ تحميل العروض...</div>

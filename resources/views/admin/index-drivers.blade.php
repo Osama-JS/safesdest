@@ -64,6 +64,12 @@
             border-top-color: rgba(0, 0, 0, 0.85) !important;
             /* مثلث السهم نفس لون الخلفية */
         }
+
+        .driver-card.selected {
+            border: 2px solid #007cbf;
+            background-color: #e0f0ff;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
     </style>
 
 @endsection
@@ -84,7 +90,7 @@
 <!-- Page Scripts -->
 @section('page-script')
     @vite(['resources/js/mapbox-helper.js'])
-    @vite(['resources/js/admin/tasks-dashboard.js'])
+    @vite(['resources/js/admin/drivers-dashboard.js'])
     @vite(['resources/js/ajax.js'])
     <script>
         const navContent = document.querySelector('#navbar-custom-nav-container');
@@ -113,10 +119,10 @@
 @endsection
 @section('navbar-custom-nav')
     <div class="btn-group col" role="group" aria-label="Map and Table toggle">
-        <a href="{{ route('user.dashboard') }}" class="btn btn-secondary" title="{{ __('View Tasks') }}">
+        <a href="{{ route('user.dashboard') }}" class="btn btn-outline-secondary" title="{{ __('View Map Layout') }}">
             <i class="tf-icons ti ti-truck-delivery mx-1"></i> {{ __('Tasks') }}
         </a>
-        <a href="{{ route('dashboard.dashboard') }}" class="btn btn-outline-secondary" title="{{ __('view Drivers') }}">
+        <a href="{{ route('tasks.list') }}" class="btn btn-secondary" title="{{ __('view Table layout') }}">
             <i class="tf-icons ti  ti-steering-wheel mx-1"></i> {{ __('Drivers') }}
         </a>
     </div>
@@ -136,43 +142,51 @@
 
 
                 </div>
-                <div class="nav-align-top overflow-auto" style="min-height: 75vh">
+                <div class="overflow-auto" style="min-height: 75vh">
                     <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top" style="top: 0; z-index: 1030;"
                         role="tablist">
                         <li class="nav-item">
-                            <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
-                                data-bs-target="#tab-running" aria-controls="tab-running" aria-selected="true">
-                                <span class="d-none d-sm-block">
-                                    {{ __('Running Tasks') }}
-                                    <span
-                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-success ms-1_5 pt-50 count-running">0</span>
-                                </span>
-                                <i class="ti ti-loader ti-sm d-sm-none"></i>
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#drivers-online"
+                                type="button" role="tab" aria-selected="true">
+                                {{ __('Online') }}
+                                <span class="badge bg-success ms-1 count-drivers-online">0</span>
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                                data-bs-target="#tab-complete" aria-controls="tab-complete" aria-selected="false">
-                                <span class="d-none d-sm-block">
-                                    {{ __('Completed (Unclosed)') }}
-                                    <span
-                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-info ms-1_5 pt-50 count-complete">0</span>
-                                </span>
-                                <i class="ti ti-check ti-sm d-sm-none"></i>
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#drivers-busy" type="button"
+                                role="tab" aria-selected="false">
+                                {{ __('Busy') }}
+                                <span class="badge bg-warning text-dark ms-1 count-drivers-busy">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#drivers-offline" type="button"
+                                role="tab" aria-selected="false">
+                                {{ __('Offline') }}
+                                <span class="badge bg-secondary ms-1 count-drivers-offline">0</span>
                             </button>
                         </li>
                     </ul>
 
-                    <div class="tab-content" style="max-height: calc(75vh - 60px); overflow-y: auto;">
-                        <div class="tab-pane fade show active" id="tab-running" role="tabpanel">
-                            <div id="task-running-container"></div>
+                    <div class="tab-content p-2" style="max-height: calc(75vh - 60px); overflow-y: auto;">
+                        <div class="tab-pane fade show active" id="drivers-online" role="tabpanel">
+                            <div id="drivers-online-container" class="d-flex flex-column gap-2 ">
+                                <!-- سيتم حقن السائقين المتصلين -->
+                            </div>
                         </div>
-
-                        <div class="tab-pane fade" id="tab-complete" role="tabpanel">
-                            <div id="task-complete-container"></div>
+                        <div class="tab-pane fade" id="drivers-busy" role="tabpanel">
+                            <div id="drivers-busy-container" class="d-flex flex-column gap-2">
+                                <!-- سيتم حقن السائقين المشغولين -->
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="drivers-offline" role="tabpanel">
+                            <div id="drivers-offline-container" class="d-flex flex-column gap-2">
+                                <!-- سيتم حقن السائقين غير المتصلين -->
+                            </div>
                         </div>
                     </div>
                 </div>
+
 
 
                 <div id="task-details-view"

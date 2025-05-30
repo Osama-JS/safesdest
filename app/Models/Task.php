@@ -25,6 +25,8 @@ class Task extends Model
     'pricing_history',
     'pricing_details',
     'closed',
+    'closed_at',
+    'completed_at',
     'order_id',
     'customer_id',
     'driver_id',

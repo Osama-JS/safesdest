@@ -24,7 +24,7 @@
 
 @endsection
 @section('drivers.isactive')
-active
+    active
 @endsection
 
 @section('content')
@@ -98,13 +98,8 @@ active
                                 <span class="h6">{{ __('Role') }}:</span>
                                 <span>{{ $data->role }}</span>
                             </li>
-
                         </ul>
-                        <div class="d-flex justify-content-center">
-                            <a href="javascript:;" class="btn btn-primary me-4" data-bs-target="#editUser"
-                                data-bs-toggle="modal">Edit</a>
-                            <a href="javascript:;" class="btn btn-label-danger suspend-user">Suspend</a>
-                        </div>
+
                     </div>
                 </div>
             </div>

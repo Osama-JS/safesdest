@@ -138,6 +138,14 @@ class PaymentController extends Controller
         $amount = $task->total_price;
 
         $wallet = $task->customer->wallet;
+        if ($wallet->status == false) {
+          DB::rollBack();
+          return response()->json([
+            'status' => 2,
+            'error' => __('The wallet is inactive, please wait for the admin to active it'),
+          ]);
+        }
+
         $adjustedBalance = $wallet->balance;
         $adjustedBalance -= $amount;
 
@@ -157,7 +165,6 @@ class PaymentController extends Controller
           'task_id'             => $task->id,
         ];
 
-
         $done = Wallet_Transaction::create($data);
 
         if (!$done) {
@@ -168,14 +175,6 @@ class PaymentController extends Controller
           ]);
         }
 
-
-        // if ($done->status == false) {
-        //   DB::rollBack();
-        //   return response()->json([
-        //     'status' => 2,
-        //     'error' => __('The wallet is inactive, please wait for the admin to active it'),
-        //   ]);
-        // }
 
 
         $transaction = $task->customer->transactions()->create([

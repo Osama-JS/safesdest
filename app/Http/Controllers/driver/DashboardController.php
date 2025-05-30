@@ -9,9 +9,11 @@ use App\Helpers\IpHelper;
 use App\Jobs\DistributeTask;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\FunctionsController;
 use App\Models\Task_History;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -252,6 +254,9 @@ class DashboardController extends Controller
       if ($requestedIndex === false || $requestedIndex !== $currentIndex + 1) {
         return back()->with('error', 'Invalid status change.');
       }
+      if ($task->closed) {
+        return back()->with('error', 'Error: ' .  'This Task is already closed');
+      }
 
       $task->status = $request->status;
       if ($request->status == 'completed') {
@@ -272,6 +277,76 @@ class DashboardController extends Controller
     } catch (Exception $ex) {
       DB::rollBack();
       return back()->with('error', 'Error: ' . $ex->getMessage());
+    }
+  }
+
+  public function profile()
+  {
+    $data = Driver::find(Auth::user()->id);
+    return view('drivers.profile.index', compact('data'));
+  }
+
+  public function updateProfile(Request $req)
+  {
+
+    $validator = Validator::make($req->all(), [
+      'name'         => 'required|string',
+      'username'         => 'required|unique:users,phone,' . Auth::id(),
+      'address'      => 'required|string',
+      'phone'        => 'required|unique:users,phone,' . Auth::id(),
+      'phone_code'   => 'required|string',
+      'password'     => 'nullable|same:confirm-password',
+    ], [
+      'name.required'        => __('The name field is required.'),
+      'username.required'       => __('The username field is required.'),
+      'username.unique'         => __('The username has already been taken.'),
+      'address.required'       => __('The Address field is required.'),
+      'address.string'         => __('The Address field is required.'),
+      'phone.required'       => __('The phone field is required.'),
+      'phone.unique'         => __('The phone has already been taken.'),
+      'phone_code.required'  => __('The phone code is required.'),
+      'phone_code.string'    => __('The phone code must be a string.'),
+      'password.same'        => __('The password and confirmation must match.'),
+    ]);
+
+
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()]);
+    }
+    try {
+      $find = Driver::findOrFail(Auth::user()->id);
+      $password =  $find->password;
+      if ($req->filled('password')) {
+        $password = Hash::make($req->password);
+      }
+      $image = $find->image;
+      $oldImage = null;
+
+      if ($req->hasFile('image')) {
+        $image = (new FunctionsController)->convert($req->image, 'drivers');
+        $oldImage = $find->image;
+      }
+
+      $done = $find->update([
+        'name' => $req->name,
+        'username' => $req->username,
+        'image'   => $image,
+        'address' => $req->address,
+        'password' => $password,
+        'phone' => $req->phone,
+        'phone_code' => $req->phone_code,
+      ]);
+
+      if (!$done) {
+        return response()->json(['status' => 2, 'error' => __('Error to Update Profile')]);
+      }
+      if ($oldImage && $req->hasFile('image')) {
+        unlink($oldImage);
+      }
+      return response()->json(['status' => 1, 'success' => __('Profile Updated Successfully')]);
+    } catch (\Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
 }

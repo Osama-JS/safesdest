@@ -42,16 +42,33 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TasksController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'show', 'indexList', 'getListData']]);
+    $this->middleware('permission:create_tasks', ['only' => ['store']]);
+    $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
+    $this->middleware('permission:show_tasks', ['only' => ['showDetails']]);
+    $this->middleware('permission:delete_tasks', ['only' => []]);
+    $this->middleware('permission:status_tasks', ['only' => ['chang_status']]);
+    $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign']]);
+    $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
+    $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
+    $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment']]);
+  }
+
+
   public function index()
   {
-    $customers = Customer::where('status', 'active')->get();
+    $customers = Auth::user()->customers;
+    if (Auth::user()->can('mange_customers')) {
+      $customers = Customer::where('status', 'active')->get();
+    }
     $vehicles = Vehicle::all();
     $templates = Form_Template::all();
     $task_template = Settings::where('key', 'task_template')->first();
     return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'task_template'));
   }
-
-
 
   public function getData(Request $request)
   {
@@ -185,13 +202,28 @@ class TasksController extends Controller
       'id' => 'required|exists:tasks,id',
       'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,canceled',
     ]);
+
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
     }
 
     try {
       $find = Task::find($req->id);
-      $done = $find->update(['status' => $req->status]);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($req->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
+      if ($find->closed) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
+      }
+      $data = [
+        'status' => $req->status
+      ];
+      if ($req->status === 'completed') {
+        $data['completed_at'] = now();
+      }
+
+      $done = $find->update($data);
 
       $userIp = IpHelper::getUserIpAddress();
       $history = [
@@ -243,6 +275,14 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $data = Task::find($req->id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($req->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
+      if ($data->closed) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
+      }
+
       if (!in_array($data->status, ['in_progress', 'advertised'])) {
         return response()->json([
           'status' => 2,
@@ -330,6 +370,16 @@ class TasksController extends Controller
 
 
       if ($req->filled('owner') && $req->owner === 'customer') {
+        if (!Auth::user()->can('mange_customers')) {
+          $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
+
+          if (!$ownsCustomer) {
+            return response()->json([
+              'status' => 2,
+              'error' => ['You do not have permission to create task for this customer']
+            ]);
+          }
+        }
         $task['customer_id'] = $req->customer;
       }
 
@@ -397,9 +447,6 @@ class TasksController extends Controller
         }
         $task['pricing_details'] = $details;
       }
-
-
-
 
 
 
@@ -578,12 +625,20 @@ class TasksController extends Controller
   public function edit($id)
   {
     $data = Task::with('pickup', 'delivery', 'ad')->findOrFail($id);
+    $user = auth()->user();
+    if (!$user || !$user->checkTask($data->id)) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+    }
+    if ($data->closed) {
+      return response()->json(['status' =>  2, 'error' => 'This Task is already closed']);
+    }
     if (!in_array($data->status, ['in_progress', 'advertised'])) {
       return response()->json([
         'status' => 2,
         'error' => __('This task cannot be modified in its current state'),
       ]);
     }
+
 
     // $data->pickup->scheduled_time = $data->pickup->scheduled_time->format('Y-m-d\TH:i');
     // $data->delivery->scheduled_time = $data->delivery->scheduled_time->format('Y-m-d\TH:i');
@@ -600,8 +655,14 @@ class TasksController extends Controller
   {
 
     $oldTask = Task::findOrFail($req->id);
+    $user = auth()->user();
+    if (!$user || !$user->checkTask($oldTask->id)) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+    }
 
-
+    if ($oldTask->closed) {
+      return response()->json(['status' =>  2, 'error' => 'This Task is already closed']);
+    }
     // ✳️ تحقق من صلاحية التعديل
     if (!in_array($oldTask->status, ['in_progress', 'advertised'])) {
       return response()->json([
@@ -650,6 +711,16 @@ class TasksController extends Controller
       ];
 
       if ($req->filled('owner') && $req->owner === 'customer') {
+        if (!Auth::user()->can('mange_customers')) {
+          $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
+
+          if (!$ownsCustomer) {
+            return response()->json([
+              'status' => 2,
+              'error' => ['You do not have permission to create task for this customer']
+            ]);
+          }
+        }
         $task['customer_id'] = $req->customer;
       }
 
@@ -1149,12 +1220,17 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $data = Task::findOrFail($id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($data->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       if (in_array($data->status, ['in_progress', 'advertised'])) {
         return response()->json([
           'status' => 2,
           'error' => __('This task cannot be Payed in its current state'),
         ]);
       }
+
       if ($data->payment_status === 'pending') {
         $transaction = Transaction::where('reference_id', $data->id)->first();
         if (!$transaction) {
@@ -1172,6 +1248,9 @@ class TasksController extends Controller
         $data->update([
           'payment_status' => 'completed'
         ]);
+
+
+
         DB::commit();
         return response()->json([
           'status' => 1,
@@ -1197,6 +1276,10 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $data = Task::findOrFail($id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($data->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       if (in_array($data->status, ['in_progress', 'advertised'])) {
         return response()->json([
           'status' => 2,
@@ -1267,6 +1350,10 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $task = Task::findOrFail($id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($task->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       if ($task->closed) {
         return response()->json([
           'status' => 2,
@@ -1331,6 +1418,10 @@ class TasksController extends Controller
   {
     try {
       $data = Task::select(['id', 'closed', 'payment_status', 'total_price', 'commission', 'pricing_details'])->findOrFail($id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($data->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
       if ($data->closed) {
         return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
       }
@@ -1360,6 +1451,13 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $find = Task::findOrFail($req->id);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($find->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
+      if ($find->closed) {
+        return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
+      }
       $details = $req->pricing_details ?? [];
       $sumDetails = collect($req->input('pricing_details', []))
         ->sum(function ($item) {

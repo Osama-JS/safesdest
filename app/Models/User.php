@@ -86,6 +86,11 @@ class User extends Authenticatable
     return $this->belongsToMany(Customer::class);
   }
 
+  public function tasks()
+  {
+    return $this->hasMany(Task::class, 'user_id');
+  }
+
   public function checkCustomer($id)
   {
     if ($this->can('mange_customers')) {
@@ -112,6 +117,14 @@ class User extends Authenticatable
       return $this->teams()->where('team_id', $driver->team_id)->exists();
     }
     return false;
+  }
+
+  public function checkTask($id)
+  {
+    if ($this->can('manage_tasks')) {
+      return true;
+    }
+    return $this->tasks()->where('id', $id)->exists();
   }
 
   public function transactions()

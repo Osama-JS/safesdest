@@ -221,7 +221,7 @@
 
         <!-- Notification -->
         <li class="nav-item dropdown-notifications navbar-dropdown dropdown me-3 me-xl-2">
-            <a class="nav-link btn btn-text-secondary btn-icon rounded-pill dropdown-toggle hide-arrow"
+            {{-- <a class="nav-link btn btn-text-secondary btn-icon rounded-pill dropdown-toggle hide-arrow"
                 href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                 <span class="position-relative">
                     <i class="ti ti-bell ti-md"></i>
@@ -443,7 +443,7 @@
                         </a>
                     </div>
                 </li>
-            </ul>
+            </ul> --}}
         </li>
         <!--/ Notification -->
 
@@ -451,18 +451,17 @@
         <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
                 <div class="avatar avatar-online">
-                    <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : asset('assets/img/avatars/1.png') }}"
+                    <img src="{{ Auth::user()->image ? url(asset(Auth::user()->image)) : asset('assets/img/person.png') }}"
                         alt class="rounded-circle">
                 </div>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
-                    <a class="dropdown-item mt-0"
-                        href="{{ Route::has('profile.show') ? route('profile.show') : url('pages/profile-user') }}">
+                    <a class="dropdown-item mt-0" href="{{ route('profile.show') }}">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0 me-2">
                                 <div class="avatar avatar-online">
-                                    <img src="{{ Auth::user() ? Auth::user()->profile_photo_url : asset('assets/img/avatars/1.png') }}"
+                                    <img src="{{ Auth::user()->image ? url(asset(Auth::user()->image)) : asset('assets/img/person.png') }}"
                                         alt class="rounded-circle">
                                 </div>
                             </div>
@@ -483,8 +482,7 @@
                     <div class="dropdown-divider my-1 mx-n2"></div>
                 </li>
                 <li>
-                    <a class="dropdown-item"
-                        href="{{ Route::has('profile.show') ? route('profile.show') : url('pages/profile-user') }}">
+                    <a class="dropdown-item" href="{{ url('/profile') }}">
                         <i class="ti ti-user me-3 ti-md"></i><span class="align-middle">My Profile</span>
                     </a>
                 </li>

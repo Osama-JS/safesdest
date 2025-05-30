@@ -101,12 +101,28 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
     }
   });
 
+  Route::get('/profile', function () {
+    if (Auth::guard('driver')->check()) {
+      return redirect()->route('driver.profile');
+    } elseif (Auth::guard('customer')->check()) {
+      return redirect()->route('customer.profile');
+    } elseif (Auth::guard('web')->check()) {
+      return redirect()->route('user.profile');
+    } else {
+      return redirect()->route('login');
+    }
+  });
+
   Route::post('/custom-logout', [RegisterController::class, 'logout'])->name('custom.logout');
 
 
   Route::middleware(['guard.strict:driver'])->group(function () {
     Route::prefix('driver')->group(function () {
       Route::get('/dashboard',  [App\Http\Controllers\driver\DashboardController::class, 'index'])->name('driver.dashboard');
+
+      Route::get('/profile', [App\Http\Controllers\driver\DashboardController::class, 'profile'])->name('driver.profile');
+      Route::post('/profile/update', [App\Http\Controllers\driver\DashboardController::class, 'updateProfile'])->name('driver.profile.update');
+
       Route::post('/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
       Route::post('/respond/task', [App\Http\Controllers\driver\DashboardController::class, 'respondToTask'])->name('driver.respond.task');
       Route::post('/task/histories', [App\Http\Controllers\driver\DashboardController::class, 'taskAddToHistories'])->name('task-histories.store');
@@ -118,9 +134,14 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
       Route::get('/task/list/data', [App\Http\Controllers\driver\TasksController::class, 'getData'])->name('driver.task.data');
       Route::get('/task/list/show/{id}', [App\Http\Controllers\driver\TasksController::class, 'show'])->name('driver.task.show');
 
+      Route::get('/wallet', [App\Http\Controllers\driver\WalletController::class, 'index'])->name('driver.wallet.wallet');
+      Route::get('/wallet/data', [App\Http\Controllers\driver\WalletController::class, 'getData'])->name('driver.wallet.data');
+
       Route::get('/ads', [App\Http\Controllers\driver\TasksAdsController::class, 'index'])->name('driver.ads.ads');
       Route::get('/ads/data', [App\Http\Controllers\driver\TasksAdsController::class, 'getData'])->name('driver.ads.data');
       Route::get('/ads/show/{id}', [App\Http\Controllers\driver\TasksAdsController::class, 'show'])->name('driver.ads.show');
+      Route::get('/ads/offers/show/', [App\Http\Controllers\driver\TasksAdsController::class, 'getOffers'])->name('driver.offers.data');
+      Route::post('/ads/offers/store/', [App\Http\Controllers\driver\TasksAdsController::class, 'storeOffers'])->name('driver.offers.store');
     });
   });
 
@@ -128,7 +149,11 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
 
   Route::middleware(['guard.strict:customer'])->group(function () {
-    Route::get('/customer/dashboard',  [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
+    Route::prefix('customer')->group(function () {
+      Route::get('/dashboard',  [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
+      Route::get('/profile', [App\Http\Controllers\customer\DashboardController::class, 'profile'])->name('customer.profile');
+      Route::post('/profile/update', [App\Http\Controllers\customer\DashboardController::class, 'updateProfile'])->name('customer.profile.update');
+    });
   });
 
 
@@ -136,6 +161,13 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
     Route::prefix('admin')->group(function () {
 
       Route::get('/', [DashboardController::class, 'index'])->name('user.dashboard');
+      Route::get('/dashboard', [DashboardController::class, 'driversIndex'])->name('dashboard.dashboard');
+      Route::get('dashboard/tasks/data', [DashboardController::class, 'getTasksData'])->name('dashboard.tasks.data');
+      Route::get('dashboard/drivers/data', [DashboardController::class, 'getDriversData'])->name('dashboard.drivers.data');
+
+      Route::get('/profile', [UsersController::class, 'profile'])->name('user.profile');
+      Route::post('/profile/update', [UsersController::class, 'updateProfile'])->name('user.profile.update');
+
 
       Route::get('/users', [UsersController::class, 'index'])->name('user.users');
       Route::get('/users/data', [UsersController::class, 'getData'])->name('user.data');
@@ -306,9 +338,13 @@ Route::middleware([config('jetstream.auth_session')])->group(function () {
 
       Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');
       Route::get('/ads/data', [TasksAdsController::class, 'getData'])->name('ads.data');
+      Route::get('/ads/show/{id}', [TasksAdsController::class, 'show'])->name('ads.show');
       Route::get('/ads/edit/{id}', [TasksAdsController::class, 'edit'])->name('ads.edit');
       Route::get('/ads/task/edit/{id}', [TasksAdsController::class, 'editByTask'])->name('ads.task.edit');
       Route::post('/ads/edit', [TasksAdsController::class, 'update'])->name('ads.update');
+
+      Route::get('/ads/offers/show/', [TasksAdsController::class, 'getOffers'])->name('ads.offers.data');
+      Route::get('/ads/offers/accept/{id}', [TasksAdsController::class, 'acceptOffer'])->name('ads.offers.accept');
     });
   });
 });

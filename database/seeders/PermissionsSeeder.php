@@ -14,6 +14,10 @@ class PermissionsSeeder extends Seeder
   {
     $types = [
       [
+        'name' =>  'Tasks Permissions',
+        'slug' => 'tasks_permissions',
+      ],
+      [
         'name' =>  'Customers Permissions',
         'slug' => 'customers_permissions',
       ],
@@ -30,6 +34,10 @@ class PermissionsSeeder extends Seeder
         'slug' => 'wallets_permissions',
       ],
       [
+        'name' =>  'Tasks Ads Permissions',
+        'slug' => 'ads_permissions',
+      ],
+      [
         'name' =>  'Admins Permissions',
         'slug' => 'admins_permissions',
       ],
@@ -43,6 +51,71 @@ class PermissionsSeeder extends Seeder
       ]
     ];
     $permissions = [
+
+      [
+        'name' => 'view_tasks',
+        'd_name' => 'View Tasks',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'create_tasks',
+        'd_name' => 'Create Tasks',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'edit_tasks',
+        'd_name' => 'Edit Tasks',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'show_tasks',
+        'd_name' => 'Show Tasks',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'show_pricing_tasks',
+        'd_name' => 'Show Tasks Pricing Details',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'delete_tasks',
+        'd_name' => 'Delete Tasks',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'status_tasks',
+        'd_name' => 'Change Task Status',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'assign_tasks',
+        'd_name' => 'Assign Drivers to Task',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'pricing_tasks',
+        'd_name' => 'Edit Pricing Task',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'close_tasks',
+        'd_name' => 'Close Task',
+        'slug' => 'tasks_permissions'
+      ],
+
+      [
+        'name' => 'pay_tasks',
+        'd_name' => 'Mange Payment Task',
+        'slug' => 'tasks_permissions'
+      ],
+      [
+        'name' => 'manage_tasks',
+        'd_name' => 'Manage All Task',
+        'slug' => 'tasks_permissions'
+      ],
+
+
+
 
       [
         'name' => 'view_customers',
@@ -183,6 +256,12 @@ class PermissionsSeeder extends Seeder
         'slug' => 'wallets_permissions'
       ],
 
+
+      [
+        'name' => 'view_ads',
+        'd_name' => 'View Tasks Ads',
+        'slug' => 'ads_permissions'
+      ],
 
 
 

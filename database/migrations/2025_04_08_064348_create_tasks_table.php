@@ -14,13 +14,13 @@ return new class extends Migration
     Schema::create('tasks', function (Blueprint $table) {
       $table->id();
       $table->string('status')->default('in_progress'); //  ['advertised', 'in_progress', 'assign', 'accepted', 'start', 'completed', 'canceled']
-      $table->enum('pricing_type', ['dynamic', 'manual'])->default('dynamic');
+      $table->string('pricing_type')->default('dynamic'); //['dynamic', 'manual']
       $table->decimal('total_price', 10, 2)->default(0);
-      $table->enum('commission_type', ['dynamic', 'manual'])->default('dynamic');
+      $table->string('commission_type')->default('dynamic'); // ['dynamic', 'manual']
       $table->decimal('commission', 10, 2)->default(0);
-      $table->enum('payment_method', ['cash', 'credit', 'banking', 'wallet'])->default('cash');
-      $table->enum('payment_status', ['waiting', 'completed', 'pending'])->default('waiting');
-      $table->enum('payment_paid', ['all', 'just_commission', 'pending'])->default('pending');
+      $table->string('payment_method')->default('cash'); // ['cash', 'credit', 'banking', 'wallet']
+      $table->string('payment_status')->default('waiting'); // ['waiting', 'completed', 'pending']
+      $table->string('payment_paid')->default('pending'); // ['all', 'just_commission', 'pending']
       $table->decimal('payment_pending_amount', 10, 2)->nullable();
       $table->boolean('closed')->default(0);
       $table->timestamp('completed_at')->nullable();

@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\Task_Ad;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Task_Offire;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -15,6 +16,7 @@ class TasksAdsController extends Controller
 {
   public function index()
   {
+
     return view('admin.ads.index');
   }
 
@@ -37,8 +39,10 @@ class TasksAdsController extends Controller
         'high_price' => $ad->highest_price,
         'note' => $ad->description,
         'status' => $ad->status,
+        'user' => Auth::user()->id,
         'customer' => [
           'owner'  => $ad->task->owner,
+          'id'     => $ad->task->owner == "customer" ? optional($ad->task->customer)->id : optional($ad->task->user)->id,
           'name'   => $ad->task->owner == "customer" ? optional($ad->task->customer)->name : optional($ad->task->user)->name,
           'phone'  => $ad->task->owner == "customer" ? optional($ad->task->customer)->phone : optional($ad->task->user)->phone,
           'email'  => $ad->task->owner == "customer" ? optional($ad->task->customer)->email : optional($ad->task->user)->email,
@@ -54,6 +58,62 @@ class TasksAdsController extends Controller
     // إرجاع النتيجة مع التعداد (count) و pagination
     return response()->json(['data' => $products, 'count' => $products->total()]);
   }
+
+  public function show($id)
+  {
+    $ad = Task_Ad::with('task')->findOrFail($id);
+    $task = $ad->task;
+    $offer = Task_Offire::where('task_ad_id', $id)->where('driver_id', Auth::user()->id)->first();
+    return view('admin.ads.show', compact('ad', 'task', 'offer'));
+  }
+
+
+  public function getOffers(Request $req)
+  {
+    $offers = Task_Offire::where('task_ad_id', $req->id)->get();
+
+    $transformed = $offers->map(function ($offer) {
+      return [
+        'id' => $offer->id,
+        'driver' => $offer->driver,
+        'driver_id' => $offer->driver_id,
+        'price' => $offer->price,
+        'accepted' => $offer->accepted,
+        'description' => $offer->description,
+      ];
+    });
+
+    return response()->json([
+      'data' => $transformed,
+      'count' => $transformed->count(),
+    ]);
+  }
+
+  public function acceptOffer($id)
+  {
+    $offer = Task_Offire::with('ad.task')->findOrFail($id);
+    if ($offer->ad && $offer->ad->task && $offer->ad->task->user_id !== Auth::id()) {
+      return response()->json([
+        'status' => 2,
+        'error' => 'You do not have the right permission to do this action'
+      ]);
+    }
+
+    if ($offer->accepted) {
+      return response()->json(['status' => 2, 'error' => 'This offer is already accepted']);
+    }
+
+    Task_Offire::where('task_ad_id', $offer->ad_id)->update(['accepted' => false]);
+
+    $offer->accepted = true;
+    $offer->save();
+    return response()->json(['status' => 1, 'success' => __('The Offer accepted successfully')]);
+
+    return response()->json(['message' => 'Offer accepted successfully.', 'offer' => $offer]);
+  }
+
+
+
 
   public function editByTask($id)
   {

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\JsonResponse;
 use App\Helpers\FileHelper;
+use Illuminate\Support\Facades\Auth;
 
 class UsersController extends Controller
 {
@@ -397,6 +398,63 @@ class UsersController extends Controller
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('User deleted')]);
     } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function profile()
+  {
+    $user = User::find(Auth::user()->id);
+    return view('admin.profile.index', compact('user'));
+  }
+
+  public function updateProfile(Request $req)
+  {
+
+    $validator = Validator::make($req->all(), [
+      'name'         => 'required|string',
+      'email'        => 'required|email|unique:users,email,' . Auth::id(),
+      'phone'        => 'required|unique:users,phone,' . Auth::id(),
+      'phone_code'   => 'required|string',
+      'password'     => 'nullable|same:confirm-password',
+    ], [
+      'name.required'        => __('The name field is required.'),
+      'email.required'       => __('The email field is required.'),
+      'email.unique'         => __('The email has already been taken.'),
+      'phone.required'       => __('The phone field is required.'),
+      'phone.unique'         => __('The phone has already been taken.'),
+      'phone_code.required'  => __('The phone code is required.'),
+      'phone_code.string'    => __('The phone code must be a string.'),
+      'password.same'        => __('The password and confirmation must match.'),
+    ]);
+
+
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()]);
+    }
+    try {
+      $find = User::findOrFail(Auth::user()->id);
+      $password =  $find->password;
+      if ($req->filled('password')) {
+        $password = Hash::make($req->password);
+      }
+
+      $done = $find->update([
+        'name' => $req->name,
+        'email' => $req->email,
+        'password' => $password,
+        'phone' => $req->phone,
+        'phone_code' => $req->phone_code,
+      ]);
+
+      if (!$done) {
+        DB::rollBack();
+        return response()->json(['status' => 2, 'error' => __('Error to Update Profile')]);
+      }
+      return response()->json(['status' => 1, 'success' => __('Profile Updated Successfully')]);
+    } catch (\Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }

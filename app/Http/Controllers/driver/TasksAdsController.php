@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\driver;
 
-use App\Http\Controllers\Controller;
+use Exception;
 use App\Models\Task_Ad;
 use App\Models\Task_Offire;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class TasksAdsController extends Controller
 {
@@ -58,6 +61,64 @@ class TasksAdsController extends Controller
   {
     $ad = Task_Ad::with('task')->findOrFail($id);
     $task = $ad->task;
-    return view('drivers.ads.show', compact('ad', 'task'));
+    $offer = Task_Offire::where('task_ad_id', $id)->where('driver_id', Auth::user()->id)->first();
+    return view('drivers.ads.show', compact('ad', 'task', 'offer'));
+  }
+
+
+  public function getOffers(Request $req)
+  {
+    $offers = Task_Offire::where('task_ad_id', $req->id)->get();
+
+    $transformed = $offers->map(function ($offer) {
+      return [
+        'id' => $offer->id,
+        'driver' => $offer->driver,
+        'driver_id' => $offer->driver_id,
+        'price' => $offer->price,
+        'accepted' => $offer->accepted,
+        'description' => $offer->description,
+      ];
+    });
+
+    return response()->json([
+      'data' => $transformed,
+      'count' => $transformed->count(),
+    ]);
+  }
+
+  public function storeOffers(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'ad' => 'required|exists:tasks_ads,id',
+      'price' => 'required|numeric',
+      'description' => 'nullable|string|max:400',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+    }
+
+    try {
+      $data = [
+        'price' => $req->price,
+        'description' => $req->description,
+      ];
+
+      if ($req->filled('id')) {
+        $find = Task_Offire::findOrFail($req->id);
+        $done = $find->update($data);
+      } else {
+        $data['task_ad_id'] = $req->ad;
+        $data['driver_id'] = Auth::user()->id;
+        $done = Task_Offire::create($data);
+      }
+      if (!$done) {
+        return response()->json(['status' => 2, 'error' => __('Error: can not save the Offer')]);
+      }
+      return response()->json(['status' => 1, 'success' => __('Offer saved successfully')]);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
   }
 }

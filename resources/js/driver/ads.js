@@ -108,6 +108,12 @@ $(function () {
     });
   }
 
+  mapboxgl.setRTLTextPlugin(
+    'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js',
+    null,
+    true // تحميل فقط عند الحاجة (lazy load)
+  );
+
   // دالة لتحميل الخريطة باستخدام Mapbox
   function initMapForAd(adId, location) {
     let mapContainer = document.getElementById(`map-${adId}`);
@@ -120,7 +126,7 @@ $(function () {
       container: mapContainer,
       style: 'mapbox://styles/' + mapsConfig.style, // اختر الأسلوب الذي تفضله
       center: [location[0], location[1]], // الموقع الأول (longitude, latitude)
-      zoom: 12
+      zoom: 13
     });
 
     // إضافة مؤشر على الخريطة

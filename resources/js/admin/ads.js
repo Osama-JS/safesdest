@@ -67,9 +67,17 @@ $(function () {
             priceHtml = '<span>Price not specified</span>';
           }
 
+          let ownershipBadge = '';
+          if (ad.user === ad.customer.id) {
+            ownershipBadge = `
+                <span class="badge badge-ownership">My Ad</span>
+              `;
+          }
+
           let cardHtml = `
-            <div class="col-md-3 col-sm-6 col-12 mb-4">
+            <div class="col-md-3 col-sm-6 col-12 mb-4 ">
               <div class="card">
+              ${ownershipBadge}
                 <div class="map-container" id="map-${ad.id}"></div>
 
                 <div class="card-body">
@@ -91,7 +99,7 @@ $(function () {
                 </div>
                 <div class="card-footer">
                   ${priceHtml}
-                  <button class=" form-control btn btn-outline-primary mt-2">View Details</button>
+                  <a href="${baseUrl}admin/ads/show/${ad.id}" class=" form-control btn btn-outline-primary mt-2">View Details</a>
                 </div>
 
               </div>
@@ -108,6 +116,12 @@ $(function () {
     });
   }
 
+  mapboxgl.setRTLTextPlugin(
+    'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js',
+    null,
+    true // تحميل فقط عند الحاجة (lazy load)
+  );
+
   // دالة لتحميل الخريطة باستخدام Mapbox
   function initMapForAd(adId, location) {
     let mapContainer = document.getElementById(`map-${adId}`);
@@ -120,7 +134,7 @@ $(function () {
       container: mapContainer,
       style: 'mapbox://styles/' + mapsConfig.style, // اختر الأسلوب الذي تفضله
       center: [location[0], location[1]], // الموقع الأول (longitude, latitude)
-      zoom: 12
+      zoom: 13
     });
 
     // إضافة مؤشر على الخريطة

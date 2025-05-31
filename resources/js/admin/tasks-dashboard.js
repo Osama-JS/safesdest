@@ -351,6 +351,16 @@ $(function () {
                <button id="close-task-details" class="btn btn-sm  mb-3">
                   <i class="ti ti-x"></i>
                 </button>
+                <div class="dropdown ">
+                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
+
+                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
+
+                  </ul>
+              </div>
 
             </div>
           `);
@@ -406,7 +416,7 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Pickup Reference Image</strong>
-                  <img style=" width: 100px;" src="${baseUrl + task.data.pickup.image || '—'}" >
+                  ${task.data.pickup.image ? ` <img style=" width: 100px;" src="${baseUrl + task.data.pickup.image || '—'}" >` : ''}
                 </li>
                 </ul>
 
@@ -444,7 +454,7 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong> Reference Image</strong>
-                  <img style=" width: 100px;" src="${baseUrl + task.data.delivery.image || '—'}" >
+                  ${task.data.delivery.image ? ` <img style=" width: 100px;" src="${baseUrl + task.data.delivery.image || '—'}" >` : ''}
                 </li>
 
 

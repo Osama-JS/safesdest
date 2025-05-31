@@ -1497,4 +1497,35 @@ class TasksController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
+
+  public function taskTracking($id)
+  {
+    try {
+      $task = Task::findOrFail($id);
+      if ($task->closed) {
+        return redirect()->back();
+      }
+      $pickup = [
+        'lat' => $task->pickup->latitude,
+        'lng' => $task->pickup->longitude,
+      ];
+
+      $dropoff = [
+        'lat' => $task->delivery->latitude,
+        'lng' => $task->delivery->longitude,
+      ];
+
+      $driver = null;
+      if ($task->driver_id && $task->driver) {
+        $driver = [
+          'lat' => $task->driver->altitude,
+          'lng' => $task->driver->longitude,
+        ];
+      }
+      return view('admin.tasks.tracking', compact('task', 'pickup', 'dropoff', 'driver'));
+    } catch (Exception $ex) {
+      return redirect()->back();
+    }
+  }
 }

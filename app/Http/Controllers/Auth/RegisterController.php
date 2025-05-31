@@ -159,6 +159,8 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'c_name'         => 'nullable|string|max:255',
       'c_address'      => 'nullable|string|max:255',
+      'g-recaptcha-response' => 'required|recaptcha',
+
     ]);
 
     if ($req->filled('template')) {
@@ -291,6 +293,8 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'address'        => 'required|string|max:255',
       'vehicle'        => 'nullable|string|max:255',
+      'g-recaptcha-response' => 'required|recaptcha',
+
     ]);
 
     if ($req->filled('template')) {

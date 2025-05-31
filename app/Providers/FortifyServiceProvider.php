@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Actions\Fortify\CreateNewUser;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Validator;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use Illuminate\Support\Facades\RateLimiter;
@@ -42,6 +43,16 @@ class FortifyServiceProvider extends ServiceProvider
     // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
     Fortify::authenticateUsing(function (Request $request) {
+      $validator = Validator::make($request->all(), [
+        'g-recaptcha-response' => 'required|recaptcha',
+      ]);
+
+      if ($validator->fails()) {
+        throw ValidationException::withMessages([
+          'email' => ['reCAPTCHA verification failed.'],
+          'recaptcha' => ['reCAPTCHA verification failed.'],
+        ]);
+      }
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');

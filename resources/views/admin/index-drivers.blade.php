@@ -86,6 +86,8 @@
 
 
 @endsection
+@section('dashboard-isactive', 'active')
+
 
 <!-- Page Scripts -->
 @section('page-script')

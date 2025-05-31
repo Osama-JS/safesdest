@@ -81,6 +81,18 @@
                             @enderror
                         </div>
 
+                        <div class="mb-6">
+                            @error('recaptcha')
+                                <span class="invalid-feedback" role="alert">
+                                    <span class="fw-medium">{{ $message }}</span>
+                                </span>
+                            @enderror
+                            <label class="form-label" for="login-password">confirm that you ar not a robot</label>
+                            {!! htmlFormSnippet() !!}
+
+                        </div>
+
+
 
 
                         <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
@@ -91,4 +103,5 @@
             <!-- /Login -->
         </div>
     </div>
+    {!! htmlScriptTagJsApi() !!}
 @endsection

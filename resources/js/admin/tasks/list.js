@@ -269,12 +269,21 @@ $(function () {
       },
       buttons: [
         `<label class='me-2'>
-          <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="verified">Unverified</option>
-            <option value="blocked">Blocked</option>
-          </select>
+          <select id="statusFilter" class="form-select d-inline-block w-auto ms-2 mt-5">
+        <option value="">All Status</option>
+        <option value="advertised">Advertised</option>
+        <option value="in_progress">In Progress</option>
+        <option value="assign">Assign</option>
+        <option value="started">Started</option>
+        <option value="in pickup point">In Pickup Point</option>
+        <option value="loading">Loading</option>
+        <option value="in the way">In The Way</option>
+        <option value="in delivery point">In Delivery Point</option>
+        <option value="unloading">Unloading</option>
+        <option value="completed">Completed</option>
+        <option value="canceld">Canceld</option>
+      </select>
+
         </label>`,
         ` <label class="me-2">
               <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search Tasks" />
@@ -314,6 +323,20 @@ $(function () {
 
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
+
+  document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+
+    setTimeout(() => {
+      $('#paymentModal').modal('hide');
+      $('#checkPaymentModal').modal('hide');
+      $('#assignTitle').html('');
+    }, 2000);
+
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
 
   $('#owner-fillter').on('change', function () {
     dt_data.draw();

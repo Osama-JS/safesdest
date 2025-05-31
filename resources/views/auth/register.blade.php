@@ -221,6 +221,16 @@
                                             </div> --}}
                                         </div>
                                     </div>
+                                    <div class="mb-6">
+
+                                        <label class="form-label" for="login-password">confirm that you ar not a
+                                            robot</label>
+                                        {!! htmlFormSnippet() !!}
+                                        <span class="g-recaptcha-response-error text-danger text-error"></span>
+
+
+                                    </div>
+
 
                                     <!-- Terms -->
                                     <div id="additional-form" class="row mt-4">
@@ -356,6 +366,15 @@
 
 
                                     </div>
+                                    <div class="mb-6">
+
+                                        <label class="form-label" for="login-password">confirm that you ar not a
+                                            robot</label>
+                                        {!! htmlFormSnippet() !!}
+                                        <span class="g-recaptcha-response-error text-danger text-error"></span>
+
+
+                                    </div>
 
                                     <!-- Terms -->
                                     <div id="additional-form" class="row mt-4">
@@ -401,4 +420,6 @@
             <!-- /Register -->
         </div>
     </div>
+    {!! htmlScriptTagJsApi() !!}
+
 @endsection

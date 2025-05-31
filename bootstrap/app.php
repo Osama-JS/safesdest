@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+
 use App\Http\Middleware\EnsureCorrectGuard;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -9,6 +12,8 @@ use App\Schedule\DriverScheduler;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Spatie\Permission\Middlewares\RoleMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
+
+
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
       'guard.strict' => \App\Http\Middleware\EnsureUserIsAuthenticatedWithCorrectGuard::class,
       'permission' => Spatie\Permission\Middleware\PermissionMiddleware::class,
       'role'       => \Spatie\Permission\Middleware\RoleMiddleware::class,
+      'rate.limit' => \App\Http\Middleware\GlobalRateLimit::class,
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

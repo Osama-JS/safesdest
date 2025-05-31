@@ -349,6 +349,7 @@ $(function () {
                     <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" >Edit Task</a></li>
                     ${task.data.status !== 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" >Edit Task Pricing</a></li>` : ``}
                     ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" >Edit Task Ad</a></li>` : ``}
+                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
                   </ul>
@@ -407,7 +408,8 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Pickup Reference Image</strong>
-                  <img style=" width: 100px;" src="${baseUrl + task.data.pickup.image || '—'}" >
+                  ${task.data.pickup.image ? ` <img style=" width: 100px;" src="${baseUrl + task.data.pickup.image || '—'}" >` : ''}
+
                 </li>
                 </ul>
 
@@ -445,7 +447,7 @@ $(function () {
 
                 <li class="list-group-item d-flex justify-content-between">
                   <strong> Reference Image</strong>
-                  <img style=" width: 100px;" src="${baseUrl + task.data.delivery.image || '—'}" >
+                  ${task.data.delivery.image ? ` <img style=" width: 100px;" src="${baseUrl + task.data.delivery.image || '—'}" >` : ''}
                 </li>
 
 

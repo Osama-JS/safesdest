@@ -184,9 +184,11 @@ class RegisterController extends Controller
           case 'number':
             $rules[$fieldKey][] = 'numeric';
             break;
-
+          case 'url':
+            $rules[$fieldKey][] = 'url';
           case 'date':
             $rules[$fieldKey][] = 'date';
+
             break;
           case 'file':
             $rules[$fieldKey][] = 'file';
@@ -197,6 +199,19 @@ class RegisterController extends Controller
             $rules[$fieldKey][] = 'image';
             $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
             $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+          case 'file_expiration_date':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_expiration'][] = 'date';
+
+            // إذا الحقل مطلوب، نضيف required حسب الحاجة
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
+              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            }
             break;
 
           default:
@@ -238,7 +253,30 @@ class RegisterController extends Controller
           $fieldName = $field->name;
           $fieldType = $field->type;
 
-          if (in_array($fieldType, ['file', 'image'])) {
+          if ($field->type === 'file_expiration_date' && !$req->filled('id')) {
+            $fileFieldName = $fieldName . '_file';
+            $expirationFieldName = $fieldName . '_expiration';
+
+            // معالجة الملف
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
+
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => $path,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $field->type,
+              ];
+            } elseif ($req->filled("additional_fields.$expirationFieldName")) {
+              // إذا لم يتم رفع الملف لكن تم إدخال تاريخ الانتهاء فقط
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => null,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $field->type,
+              ];
+            }
+          } else if (in_array($fieldType, ['file', 'image'])) {
             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'customers/files');
             $structuredFields[$fieldName] = [
               'label' => $field->label,
@@ -318,6 +356,9 @@ class RegisterController extends Controller
           case 'number':
             $rules[$fieldKey][] = 'numeric';
             break;
+          case 'url':
+            $rules[$fieldKey][] = 'url';
+            break;
 
           case 'date':
             $rules[$fieldKey][] = 'date';
@@ -331,6 +372,19 @@ class RegisterController extends Controller
             $rules[$fieldKey][] = 'image';
             $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
             $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+          case 'file_expiration_date':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_expiration'][] = 'date';
+
+            // إذا الحقل مطلوب، نضيف required حسب الحاجة
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
+              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            }
             break;
 
           default:
@@ -373,7 +427,30 @@ class RegisterController extends Controller
           $fieldName = $field->name;
           $fieldType = $field->type;
 
-          if (in_array($fieldType, ['file', 'image'])) {
+          if ($field->type === 'file_expiration_date' && !$req->filled('id')) {
+            $fileFieldName = $fieldName . '_file';
+            $expirationFieldName = $fieldName . '_expiration';
+
+            // معالجة الملف
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
+
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => $path,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $field->type,
+              ];
+            } elseif ($req->filled("additional_fields.$expirationFieldName")) {
+              // إذا لم يتم رفع الملف لكن تم إدخال تاريخ الانتهاء فقط
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => null,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $field->type,
+              ];
+            }
+          } else if (in_array($fieldType, ['file', 'image'])) {
             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'drivers/files');
             $structuredFields[$fieldName] = [
               'label' => $field->label,

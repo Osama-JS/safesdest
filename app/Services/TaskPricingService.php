@@ -26,9 +26,9 @@ class TaskPricingService
   }
 
   // check the inputs
-  public function validateRequest($request)
+  public function validateRequest($request, $type = '')
   {
-    $rules = $this->buildValidationRules($request);
+    $rules = $this->buildValidationRules($request, $type);
     $validator = Validator::make($request->all(), $rules);
 
     if ($validator->fails()) {
@@ -44,7 +44,7 @@ class TaskPricingService
     return ['status' => true];
   }
 
-  protected function buildValidationRules($request)
+  protected function buildValidationRules($request, $type)
   {
     $rules = [
       'owner' => 'required|in:admin,customer',
@@ -95,7 +95,16 @@ class TaskPricingService
 
         // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
         if (!$request->filled('id') && $field->required) {
-          $rules[$fieldKey][] = 'required';
+          if (in_array($field->type, ['file', 'image', 'file_expiration_date']) && $type === 'update') {
+            $rules[$fieldKey][] = 'nullable';
+          } else {
+            if ($field->type == "file_expiration_date") {
+              $rules[$fieldKey . '_file'][] = 'required';
+              $rules[$fieldKey . '_expiration'][] = 'required';
+            } else {
+              $rules[$fieldKey][] = 'required';
+            }
+          }
         }
 
         // إضافة قواعد بناءً على نوع الحقل
@@ -106,8 +115,10 @@ class TaskPricingService
 
           case 'number':
             $rules[$fieldKey][] = 'numeric';
-            break;
 
+            break;
+          case 'url':
+            $rules[$fieldKey][] = 'url';
           case 'date':
             $rules[$fieldKey][] = 'date';
             break;
@@ -122,6 +133,23 @@ class TaskPricingService
             $rules[$fieldKey][] = 'image';
             $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
             $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          case 'file_expiration_date':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_expiration'][] = 'date';
+
+            // إذا الحقل مطلوب، نضيف required حسب الحاجة
+            if ($type !== 'update') {
+              if ($field->required) {
+                $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
+                $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+              }
+            }
+
             break;
 
           default:

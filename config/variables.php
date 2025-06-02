@@ -1,13 +1,13 @@
 <?php
 // Variables
 return [
-  "creatorName" => "Osama",
-  "creatorUrl" => "https://pixinvent.com",
+  "creatorName" => "SafeDests",
+  "creatorUrl" => "https://safedest.com",
   "templateName" => "Safedest",
   "templateSuffix" => "Logistic",
   "templateVersion" => "2.0.0",
   "templateFree" => false,
-  "templateDescription" => "Start your development with a Dashboard for Bootstrap 5",
+  "templateDescription" => "SafeDests",
   "templateKeyword" => "dashboard, bootstrap 5 dashboard, bootstrap 5 design, bootstrap 5",
   "licenseUrl" => "https://themeforest.net/licenses/standard",
   "livePreview" => "https://demos.pixinvent.com/vuexy-html-admin-template/landing/",

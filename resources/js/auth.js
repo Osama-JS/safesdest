@@ -186,6 +186,15 @@ export function generateFields(fields, generateSection) {
         case 'file':
           inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" ${field.required ? 'required' : ''}>`;
           break;
+        case 'file_expiration_date':
+          inputField = `
+    <input type="file" name="additional_fields[${field.name}_file]" class="form-control" ${field.required ? 'required' : ''}>
+    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control mt-2" ${field.required ? 'required' : ''}>
+  `;
+          break;
+        case 'url':
+          inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+          break;
         case 'image':
           inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
           break;

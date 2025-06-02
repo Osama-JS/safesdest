@@ -225,7 +225,12 @@ class CustomersController extends Controller
 
         // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
         if (!$req->filled('id') && $field->required) {
-          $rules[$fieldKey][] = 'required';
+          if ($field->type == "file_expiration_date") {
+            $rules[$fieldKey . '_file'][] = 'required';
+            $rules[$fieldKey . '_expiration'][] = 'required';
+          } else {
+            $rules[$fieldKey][] = 'required';
+          }
         }
 
         // إضافة قواعد بناءً على نوع الحقل
@@ -237,7 +242,9 @@ class CustomersController extends Controller
           case 'number':
             $rules[$fieldKey][] = 'numeric';
             break;
-
+          case 'url':
+            $rules[$fieldKey][] = 'url';
+            break;
           case 'date':
             $rules[$fieldKey][] = 'date';
             break;
@@ -252,6 +259,20 @@ class CustomersController extends Controller
             $rules[$fieldKey][] = 'image';
             $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
             $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          case 'file_expiration_date':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_expiration'][] = 'date';
+
+            // إذا الحقل مطلوب، نضيف required حسب الحاجة
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
+              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            }
             break;
 
           default:
@@ -316,7 +337,34 @@ class CustomersController extends Controller
           $fieldName = $field->name;
           $fieldType = $field->type;
 
-          if (in_array($fieldType, ['file', 'image'])) {
+          if ($field->type === 'file_expiration_date') {
+            $fileFieldName = $fieldName . '_file';
+            $expirationFieldName = $fieldName . '_expiration';
+
+            // معالجة الملف
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              // حذف الملف القديم إذا موجود
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+              }
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'  => $field->type,
+              ];
+            } else {
+              // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث تاريخ الانتهاء إذا تم تغييره
+              if (isset($oldAdditionalData[$fieldName])) {
+                $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                if ($req->filled("additional_fields.$expirationFieldName")) {
+                  $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+                }
+              }
+            }
+          } else if (in_array($fieldType, ['file', 'image'])) {
             if ($req->hasFile("additional_fields.$fieldName")) {
               if (isset($oldAdditionalData[$fieldName]['value'])) {
                 $filesToDelete[] = $oldAdditionalData[$fieldName]['value']; // حذف لاحقًا

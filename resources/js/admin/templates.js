@@ -214,7 +214,9 @@ $(function () {
                         <option value="email">email</option>
                         <option value="date">date</option>
                         <option value="file">file</option>
+                        <option value="file_expiration_date">file with expiration date</option>
                         <option value="image">image</option>
+                        <option value="url">url</option>
                         <option value="select">select</option>
                     </select>
                   <span class="field-${fieldIndex}-type-error text-danger text-error"></span>

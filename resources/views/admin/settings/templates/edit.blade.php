@@ -133,7 +133,11 @@
                                         </option>
                                         <option value="date" {{ $fieldType == 'date' ? 'selected' : '' }}>date</option>
                                         <option value="file" {{ $fieldType == 'file' ? 'selected' : '' }}>file</option>
+                                        <option value="file_expiration_date"
+                                            {{ $fieldType == 'file_expiration_date' ? 'selected' : '' }}>file with
+                                            expiration date</option>
                                         <option value="image" {{ $fieldType == 'image' ? 'selected' : '' }}>image</option>
+                                        <option value="url" {{ $fieldType == 'url' ? 'selected' : '' }}>url</option>
                                         <option value="select" {{ $fieldType == 'select' ? 'selected' : '' }}>select
                                         </option>
                                     </select>
@@ -471,7 +475,8 @@
                         <div class="mb-3">
                             <div class="divider text-start">
                                 <div class="divider-text">
-                                    <strong>{{ __('Dynamic Pricing Based on Field Values') }}</strong></div>
+                                    <strong>{{ __('Dynamic Pricing Based on Field Values') }}</strong>
+                                </div>
                             </div>
                             <div>
                                 <div class="row g-2 mb-2 field-pricing-row">

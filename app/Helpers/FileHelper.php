@@ -47,4 +47,19 @@ class FileHelper
       Storage::disk('public')->delete($filePath);
     }
   }
+
+  public static function duplicateFile($originalPath, $destinationDir)
+  {
+    $fileName = basename($originalPath);
+    $newFileName = uniqid() . '_' . $fileName;
+    $newPath = $destinationDir . '/' . $newFileName;
+
+    // تأكد أن الملف موجود
+    if (Storage::disk('public')->exists($originalPath)) {
+      Storage::disk('public')->copy($originalPath, $newPath);
+      return $newPath;
+    }
+
+    return null; // أو يمكنك رمي Exception إذا أردت معرفة السبب
+  }
 }

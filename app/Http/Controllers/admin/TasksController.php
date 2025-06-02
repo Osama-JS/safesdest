@@ -333,15 +333,330 @@ class TasksController extends Controller
   }
 
 
+  // public function store(Request $req, TaskPricingService $pricingService)
+  // {
+  //   // التحقق من الطلب
+  //   $validation = $pricingService->validateRequest($req);
+  //   if (!$validation['status']) {
+  //     return response()->json(['status' => 0, 'error' => $validation['errors']]);
+  //   }
+
+  //   // حساب السعر
+  //   try {
+  //     $pricing = $pricingService->calculatePricing($req);
+  //   } catch (\Exception $e) {
+  //     return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+  //   }
+
+  //   if (!$pricing['status']) {
+  //     return response()->json(['status' => 2, 'error' => $pricing['errors']]);
+  //   }
+
+  //   DB::beginTransaction();
+  //   try {
+  //     $userIp = IpHelper::getUserIpAddress();
+  //     $data     = $pricing['data'];
+  //     $taskData = $pricing['task'];
+  //     $ad = [];
+  //     $history = [];
+
+  //     $task = [
+  //       'total_price'      => $data['total_price'] ?? 0,
+  //       'form_template_id' => $req->template,
+  //       'user_id'          => Auth::id(),
+  //       'pricing_id'       => $taskData['pricing'],
+  //       'vehicle_size_id' => $taskData['vehicles'][0]
+  //     ];
+
+
+  //     if ($req->filled('owner') && $req->owner === 'customer') {
+  //       if (!Auth::user()->can('mange_customers')) {
+  //         $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
+
+  //         if (!$ownsCustomer) {
+  //           return response()->json([
+  //             'status' => 2,
+  //             'error' => ['You do not have permission to create task for this customer']
+  //           ]);
+  //         }
+  //       }
+  //       $task['customer_id'] = $req->customer;
+  //     }
+
+  //     $history = [
+  //       [
+  //         'action_type' => 'created',
+  //         'description' => 'Create Task',
+  //         'ip' => $userIp,
+  //         'user_id' => Auth::user()->id
+  //       ],
+  //       [
+  //         'action_type' => 'in_progress',
+  //         'description' => 'Task in progress',
+  //         'ip' => $userIp,
+  //         'user_id' => Auth::user()->id
+  //       ]
+  //     ];
+
+
+
+  //     if ($req->filled('manual_total_pricing')) {
+  //       $task['total_price'] = $req->manual_total_pricing;
+  //       $task['pricing_type'] = 'manual';
+  //       $data['manual_pricing'] = $req->manual_total_pricing;
+  //     }
+
+
+
+  //     if ($req->filled('task_driver')) {
+  //       $task['driver_id'] = $req->task_driver;
+  //       $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
+  //       // نحسب العمولة
+
+  //       $task['commission'] =  $driver->calculateCommission($task['total_price']);
+  //       // تحديث الحالة وإضافة السجل في التاريخ
+  //       $task['status'] = 'assign';
+  //       $history[] = [
+  //         'action_type' => 'assigned',
+  //         'description' => 'assign task manual ',
+  //         'ip' => $userIp,
+  //         'user_id' => Auth::id(),
+  //         'driver_id' => $req->task_driver
+  //       ];
+  //     }
+
+  //     if ($req->filled('manual_commission')) {
+  //       if ($req->manual_commission > $task['total_price']) {
+  //         DB::rollBack();
+  //         return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+  //       }
+  //       $task['commission_type'] = 'manual';
+  //       $task['commission'] = $req->manual_commission;
+  //       $data['manual_commission'] = $req->manual_commission;
+  //     }
+
+  //     if ($req->filled('pricing_details')) {
+  //       $details = $req->pricing_details ?? [];
+  //       $sumDetails = collect($req->input('pricing_details', []))
+  //         ->sum(function ($item) {
+  //           return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+  //         });
+  //       if ($sumDetails > $task['total_price']) {
+  //         DB::rollBack();
+  //         return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
+  //       }
+  //       $task['pricing_details'] = $details;
+  //     }
+
+
+
+  //     if ($taskData['method'] == 0) {
+  //       if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
+  //         DB::rollBack();
+  //         return response()->json(['status' => 2, 'error' => __('You can create Task AD for just one task')]);
+  //       }
+  //       if ($req->filled('task_driver')) {
+  //         DB::rollBack();
+  //         return response()->json(['status' => 2, 'error' => __('You can not assign driver to advertised Task')]);
+  //       }
+  //       $task['total_price']  = 0;
+  //       $task['pricing_type'] = 'manual';
+  //       $task['status']       = 'advertised';
+  //       $ad = [
+  //         'highest_price' => $req->max_price,
+  //         'lowest_price' => $req->min_price,
+  //         'description' =>  $req->note_price,
+  //       ];
+  //       $history[] = [
+  //         'action_type' => 'advertised',
+  //         'description' => 'set as Advertised',
+  //         'ip' => $userIp,
+  //         'user_id' => Auth::user()->id,
+  //       ];
+
+  //       $task['driver_id'] = null;
+  //     }
+
+
+
+  //     if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
+  //       $order = Order::create([
+  //         'customer_id' => $task['customer_id'] ?? null,
+  //         'user_id'     => Auth::id(),
+  //       ]);
+
+  //       if (!$order) {
+  //         DB::rollBack();
+  //         return response()->json(['status' => 2, 'error' => 'Errors to create the tasks Collection']);
+  //       }
+
+  //       $task['order_id'] = $order->id;
+  //     }
+
+  //     // additional fields
+  //     $structuredFields   = [];
+  //     $oldAdditionalData  = [];
+  //     $filesToDelete      = [];
+
+  //     if ($req->filled('template')) {
+  //       $data['form_template_id'] = $req->template;
+
+  //       $template = Form_Template::with('fields')->find($req->input('template'));
+
+  //       foreach ($template->fields as $field) {
+  //         $fieldName = $field->name;
+  //         $fieldType = $field->type;
+
+
+  //         if ($field->type === 'file_expiration_date') {
+  //           $fileFieldName = $fieldName . '_file';
+  //           $expirationFieldName = $fieldName . '_expiration';
+
+  //           // معالجة الملف
+  //           if ($req->hasFile("additional_fields.$fileFieldName")) {
+  //             // حذف الملف القديم إذا موجود
+  //             if (isset($oldAdditionalData[$fieldName]['value'])) {
+  //               $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+  //             }
+  //             $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
+
+  //             $structuredFields[$fieldName] = [
+  //               'label' => $field->label,
+  //               'value' => $path,
+  //               'expiration' => $req->input("additional_fields.$expirationFieldName"),
+  //               'type'  => $field->type,
+  //             ];
+  //           } else {
+  //             // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث تاريخ الانتهاء إذا تم تغييره
+  //             if (isset($oldAdditionalData[$fieldName])) {
+  //               $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+  //               if ($req->filled("additional_fields.$expirationFieldName")) {
+  //                 $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+  //               }
+  //             }
+  //           }
+  //         } else if (in_array($fieldType, ['file', 'image'])) {
+  //           if ($req->hasFile("additional_fields.$fieldName")) {
+  //             if (isset($oldAdditionalData[$fieldName]['value'])) {
+  //               $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+  //             }
+
+  //             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
+
+  //             $filesToDelete[] = $path; // لتتمكن من حذفه لاحقًا عند الفشل
+
+  //             $structuredFields[$fieldName] = [
+  //               'label' => $field->label,
+  //               'value' => $path,
+  //               'type'  => $fieldType,
+  //             ];
+  //           } elseif (isset($oldAdditionalData[$fieldName])) {
+  //             $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+  //           }
+  //         } else {
+  //           if ($req->has("additional_fields.$fieldName")) {
+  //             $structuredFields[$fieldName] = [
+  //               'label' => $field->label,
+  //               'value' => $req->input("additional_fields.$fieldName"),
+  //               'type'  => $fieldType,
+  //             ];
+  //           }
+  //         }
+  //       }
+
+  //       $task['additional_data'] = $structuredFields;
+  //     }
+
+  //     // نقطة الالتقاط
+  //     $pickup_point = [
+  //       'type'           => 'pickup',
+  //       'sequence'       => 1,
+  //       'contact_name'   => $req->pickup_name,
+  //       'contact_phone'  => $req->pickup_phone,
+  //       'contact_emil'   => $req->pickup_email,
+  //       'address'        => $req->pickup_address,
+  //       'latitude'       => $req->pickup_latitude,
+  //       'longitude'      => $req->pickup_longitude,
+  //       'scheduled_time' => $req->pickup_before,
+  //       'note'           => $req->pickup_note,
+  //     ];
+
+  //     if ($req->hasFile('pickup_image')) {
+  //       $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
+  //     }
+
+  //     // نقطة التسليم
+  //     $delivery_point = [
+  //       'type'           => 'delivery',
+  //       'sequence'       => 1,
+  //       'contact_name'   => $req->delivery_name,
+  //       'contact_phone'  => $req->delivery_phone,
+  //       'contact_emil'   => $req->delivery_email,
+  //       'address'        => $req->delivery_address,
+  //       'latitude'       => $req->delivery_latitude,
+  //       'longitude'      => $req->delivery_longitude,
+  //       'scheduled_time' => $req->delivery_before,
+  //       'note'           => $req->delivery_note,
+  //     ];
+
+  //     if ($req->hasFile('delivery_image')) {
+  //       $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
+  //     }
+
+  //     // إنشاء المهام بعدد المركبات المطلوبة
+  //     $number = $taskData['vehicles_quantity'] ?? 1;
+
+
+  //     $task['pricing_history'] = $data;
+  //     $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
+  //       $newTask = Task::create($task);
+  //       $newTask->point()->create($pickup_point);
+  //       $newTask->point()->create($delivery_point);
+  //       $newTask->history()->createMany($history);
+  //       if ($newTask->status === 'advertised') {
+  //         $newTask->ad()->create($ad);
+  //       }
+  //       return $newTask;
+  //     });
+
+
+  //     DB::commit();
+
+  //     return response()->json([
+  //       'status'  => 1,
+  //       'success' => "{$number} Tasks created successfully.",
+  //     ]);
+  //   } catch (Exception $ex) {
+  //     DB::rollBack();
+
+  //     foreach ($filesToDelete ?? [] as $file) {
+  //       FileHelper::deleteFileIfExists($file);
+  //     }
+
+  //     if ($req->hasFile('pickup_image') && isset($pickup_point['image'])) {
+  //       unlink($pickup_point['image']);
+  //     }
+
+  //     if ($req->hasFile('delivery_image') && isset($delivery_point['image'])) {
+  //       unlink($delivery_point['image']);
+  //     }
+
+  //     return response()->json([
+  //       'status' => 2,
+  //       'error'  => $ex->getMessage(),
+  //     ]);
+  //   }
+  // }
+
+
+
   public function store(Request $req, TaskPricingService $pricingService)
   {
-    // التحقق من الطلب
     $validation = $pricingService->validateRequest($req);
     if (!$validation['status']) {
       return response()->json(['status' => 0, 'error' => $validation['errors']]);
     }
 
-    // حساب السعر
     try {
       $pricing = $pricingService->calculatePricing($req);
     } catch (\Exception $e) {
@@ -365,14 +680,12 @@ class TasksController extends Controller
         'form_template_id' => $req->template,
         'user_id'          => Auth::id(),
         'pricing_id'       => $taskData['pricing'],
-        'vehicle_size_id' => $taskData['vehicles'][0]
+        'vehicle_size_id'  => $taskData['vehicles'][0]
       ];
-
 
       if ($req->filled('owner') && $req->owner === 'customer') {
         if (!Auth::user()->can('mange_customers')) {
           $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
-
           if (!$ownsCustomer) {
             return response()->json([
               'status' => 2,
@@ -398,23 +711,16 @@ class TasksController extends Controller
         ]
       ];
 
-
-
       if ($req->filled('manual_total_pricing')) {
         $task['total_price'] = $req->manual_total_pricing;
         $task['pricing_type'] = 'manual';
         $data['manual_pricing'] = $req->manual_total_pricing;
       }
 
-
-
       if ($req->filled('task_driver')) {
         $task['driver_id'] = $req->task_driver;
-        $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
-        // نحسب العمولة
-
-        $task['commission'] =  $driver->calculateCommission($task['total_price']);
-        // تحديث الحالة وإضافة السجل في التاريخ
+        $driver = Driver::findOrFail($task['driver_id']);
+        $task['commission'] = $driver->calculateCommission($task['total_price']);
         $task['status'] = 'assign';
         $history[] = [
           'action_type' => 'assigned',
@@ -437,18 +743,15 @@ class TasksController extends Controller
 
       if ($req->filled('pricing_details')) {
         $details = $req->pricing_details ?? [];
-        $sumDetails = collect($req->input('pricing_details', []))
-          ->sum(function ($item) {
-            return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
-          });
+        $sumDetails = collect($details)->sum(function ($item) {
+          return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+        });
         if ($sumDetails > $task['total_price']) {
           DB::rollBack();
           return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
         }
         $task['pricing_details'] = $details;
       }
-
-
 
       if ($taskData['method'] == 0) {
         if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
@@ -473,57 +776,65 @@ class TasksController extends Controller
           'ip' => $userIp,
           'user_id' => Auth::user()->id,
         ];
-
         $task['driver_id'] = null;
       }
-
-
 
       if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
         $order = Order::create([
           'customer_id' => $task['customer_id'] ?? null,
           'user_id'     => Auth::id(),
         ]);
-
         if (!$order) {
           DB::rollBack();
           return response()->json(['status' => 2, 'error' => 'Errors to create the tasks Collection']);
         }
-
         $task['order_id'] = $order->id;
       }
 
-      // additional fields
-      $structuredFields   = [];
-      $oldAdditionalData  = [];
-      $filesToDelete      = [];
+      $structuredFields = [];
+      $filesToDelete = [];
+      $origenToDelete = [];
 
       if ($req->filled('template')) {
         $data['form_template_id'] = $req->template;
-
         $template = Form_Template::with('fields')->find($req->input('template'));
 
         foreach ($template->fields as $field) {
           $fieldName = $field->name;
           $fieldType = $field->type;
 
-          if (in_array($fieldType, ['file', 'image'])) {
+          if ($fieldType === 'file_expiration_date') {
+            $fileFieldName = $fieldName . '_file';
+            $expirationFieldName = $fieldName . '_expiration';
+
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
+              $origenToDelete[] = $path;
+              $filesToDelete[] = $path;
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => $path,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $fieldType,
+              ];
+            } elseif ($req->filled("additional_fields.$expirationFieldName")) {
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => null,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $fieldType,
+              ];
+            }
+          } elseif (in_array($fieldType, ['file', 'image'])) {
             if ($req->hasFile("additional_fields.$fieldName")) {
-              if (isset($oldAdditionalData[$fieldName]['value'])) {
-                $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
-              }
-
               $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
-
-              $filesToDelete[] = $path; // لتتمكن من حذفه لاحقًا عند الفشل
-
+              $origenToDelete[] = $path;
+              $filesToDelete[] = $path;
               $structuredFields[$fieldName] = [
                 'label' => $field->label,
                 'value' => $path,
                 'type'  => $fieldType,
               ];
-            } elseif (isset($oldAdditionalData[$fieldName])) {
-              $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
             }
           } else {
             if ($req->has("additional_fields.$fieldName")) {
@@ -535,11 +846,9 @@ class TasksController extends Controller
             }
           }
         }
-
         $task['additional_data'] = $structuredFields;
       }
 
-      // نقطة الالتقاط
       $pickup_point = [
         'type'           => 'pickup',
         'sequence'       => 1,
@@ -552,12 +861,6 @@ class TasksController extends Controller
         'scheduled_time' => $req->pickup_before,
         'note'           => $req->pickup_note,
       ];
-
-      if ($req->hasFile('pickup_image')) {
-        $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
-      }
-
-      // نقطة التسليم
       $delivery_point = [
         'type'           => 'delivery',
         'sequence'       => 1,
@@ -571,32 +874,64 @@ class TasksController extends Controller
         'note'           => $req->delivery_note,
       ];
 
+      if ($req->hasFile('pickup_image')) {
+        $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
+      }
+
       if ($req->hasFile('delivery_image')) {
         $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
       }
 
-      // إنشاء المهام بعدد المركبات المطلوبة
       $number = $taskData['vehicles_quantity'] ?? 1;
-
-
       $task['pricing_history'] = $data;
+
       $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
-        $newTask = Task::create($task);
+        $newAdditionalData = [];
+
+        foreach ($task['additional_data'] as $key => $field) {
+          if (in_array($field['type'], ['file', 'image', 'file_expiration_date']) && !empty($field['value'])) {
+            $newFilePath = FileHelper::duplicateFile($field['value'], 'tasks/c/files');
+
+            $newAdditionalData[$key] = [
+              'label' => $field['label'],
+              'value' => $newFilePath,
+              'type'  => $field['type'],
+            ];
+
+            if (isset($field['expiration'])) {
+              $newAdditionalData[$key]['expiration'] = $field['expiration'];
+            }
+          } else {
+            $newAdditionalData[$key] = $field;
+          }
+        }
+
+        // 🟢 استخدم نسخة جديدة من $task
+        $taskCopy = $task;
+        $taskCopy['additional_data'] = $newAdditionalData;
+
+        $newTask = Task::create($taskCopy);
         $newTask->point()->create($pickup_point);
         $newTask->point()->create($delivery_point);
         $newTask->history()->createMany($history);
+
         if ($newTask->status === 'advertised') {
           $newTask->ad()->create($ad);
         }
+
         return $newTask;
       });
 
 
+
+      foreach ($origenToDelete ?? [] as $file) {
+        FileHelper::deleteFileIfExists($file);
+      }
       DB::commit();
 
       return response()->json([
         'status'  => 1,
-        'success' => "{$number} Tasks created successfully.",
+        'success' => "$number Tasks created successfully.",
       ]);
     } catch (Exception $ex) {
       DB::rollBack();
@@ -619,6 +954,7 @@ class TasksController extends Controller
       ]);
     }
   }
+
 
 
 
@@ -672,7 +1008,7 @@ class TasksController extends Controller
     }
 
     // التحقق من الطلب
-    $validation = $pricingService->validateRequest($req);
+    $validation = $pricingService->validateRequest($req, "update");
     if (!$validation['status']) {
       return response()->json(['status' => 0, 'error' => $validation['errors']]);
     }
@@ -824,9 +1160,43 @@ class TasksController extends Controller
           $fieldName = $field->name;
           $fieldType = $field->type;
 
-          if (in_array($fieldType, ['file', 'image'])) {
-            if ($req->hasFile("additional_fields.$fieldName")) {
+          if ($fieldType === 'file_expiration_date') {
+            $fileFieldName = $fieldName . '_file';
+            $expirationFieldName = $fieldName . '_expiration';
+
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
               // حذف الملف القديم إن وجد
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
+              }
+
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
+
+              $structuredFields[$fieldName] = [
+                'label'      => $field->label,
+                'value'      => $path,
+                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                'type'       => $fieldType,
+              ];
+            } elseif (isset($oldAdditionalData[$fieldName])) {
+              // لم يتم رفع ملف جديد، نحافظ على الملف القديم مع تحديث تاريخ الانتهاء إذا تم تعديله
+              $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+              if ($req->filled("additional_fields.$expirationFieldName")) {
+                $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+              }
+            } else {
+              // لم يتم رفع ملف جديد ولا يوجد ملف قديم، لكن قد يكون هناك تاريخ انتهاء فقط
+              if ($req->filled("additional_fields.$expirationFieldName")) {
+                $structuredFields[$fieldName] = [
+                  'label'      => $field->label,
+                  'value'      => null,
+                  'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                  'type'       => $fieldType,
+                ];
+              }
+            }
+          } elseif (in_array($fieldType, ['file', 'image'])) {
+            if ($req->hasFile("additional_fields.$fieldName")) {
               if (isset($oldAdditionalData[$fieldName]['value'])) {
                 FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
               }
@@ -839,7 +1209,6 @@ class TasksController extends Controller
                 'type'  => $fieldType,
               ];
             } elseif (isset($oldAdditionalData[$fieldName])) {
-              // لم يتم تعديل الملف، نعيد حفظه كما هو
               $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
             }
           } else {
@@ -850,7 +1219,6 @@ class TasksController extends Controller
                 'type'  => $fieldType,
               ];
             } elseif (isset($oldAdditionalData[$fieldName])) {
-              // الحقل لم يُعدّل، نحتفظ بالقيمة القديمة
               $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
             }
           }
@@ -858,6 +1226,7 @@ class TasksController extends Controller
 
         $task['additional_data'] = $structuredFields;
       }
+
 
       $imageForDelete = [];
       // نقطة الالتقاط
@@ -962,12 +1331,69 @@ class TasksController extends Controller
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-      foreach ($fields as $key) {
-        if ($key->required) {
-          $rules['additional_fields.' . $key->name] = 'required';
+
+      foreach ($fields as $field) {
+        $fieldKey = 'additional_fields.' . $field->name;
+        $rules[$fieldKey] = [];
+        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        if (!$req->filled('id') && $field->required) {
+          if ($field->type == "file_expiration_date") {
+            $rules[$fieldKey . '_file'][] = 'required';
+            $rules[$fieldKey . '_expiration'][] = 'required';
+          } else {
+            $rules[$fieldKey][] = 'required';
+          }
+        }
+
+        // إضافة قواعد بناءً على نوع الحقل
+        switch ($field->type) {
+          case 'text':
+            $rules[$fieldKey][] = 'string';
+            break;
+
+          case 'number':
+            $rules[$fieldKey][] = 'numeric';
+            break;
+          case 'url':
+            $rules[$fieldKey][] = 'url';
+            break;
+          case 'date':
+            $rules[$fieldKey][] = 'date';
+            break;
+
+          case 'file':
+            $rules[$fieldKey][] = 'file';
+            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            break;
+
+          case 'image':
+            $rules[$fieldKey][] = 'image';
+            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            break;
+
+          case 'file_expiration_date':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_expiration'][] = 'date';
+
+            // إذا الحقل مطلوب، نضيف required حسب الحاجة
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
+              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            }
+            break;
+
+          default:
+            $rules[$fieldKey][] = 'string';
+            break;
         }
       }
     }
+
 
     $validator = Validator::make($req->all(), $rules);
 

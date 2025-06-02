@@ -284,7 +284,7 @@ export function generateFields(fields, storedData = {}) {
   fields.forEach(field => {
     var inputField = '';
     const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المخزنة إذا وجدت
-
+    console.log(storedData);
     switch (field.type) {
       case 'string':
         inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
@@ -304,9 +304,20 @@ export function generateFields(fields, storedData = {}) {
       case 'file':
         inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
+      case 'file_expiration_date':
+        inputField = `
+    <input type="file" name="additional_fields[${field.name}_file]" class="form-control" ${field.required ? 'required' : ''}>
+    <label class="p-0">expiration date</label>
+    <input type="date" name="additional_fields[${field.name}_expiration]" value="${storedData[field.name]?.expiration}" class="form-control mt-" ${field.required ? 'required' : ''}>
+  `;
+        break;
+      case 'url':
+        inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+        break;
       case 'image':
         inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
+
       case 'select':
         inputField = `<select name="additional_fields[${field.name}]" class="form-select" ${field.required ? 'required' : ''}>
           ${(() => {

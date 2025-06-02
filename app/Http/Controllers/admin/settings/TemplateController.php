@@ -168,7 +168,7 @@ class TemplateController extends Controller
       'fields' => 'required|array|min:1',
       'fields.*.name' => 'required|string',
       'fields.*.label' => 'required|string',
-      'fields.*.type' => 'required|in:string,number,email,date,select,file,image',
+      'fields.*.type' => 'required|in:string,number,email,date,select,file,image,file_expiration_date,url',
       'fields.*.required' => 'required|boolean',
       'fields.*.value' => 'nullable|string',
       'fields.*.driver_can' => 'required|in:hidden,read,write',

@@ -15,7 +15,7 @@ return new class extends Migration
       $table->id();
       $table->string('name');
       $table->string('label');
-      $table->enum('type', ['number', 'string', 'email', 'select', 'date', 'file', 'image']);
+      $table->string('type'); //['number', 'string', 'email', 'select', 'date', 'file', 'image', 'file with date]
       $table->text('value')->nullable();
       $table->boolean('required')->default(1);
       $table->enum('driver_can', ['write', 'read', 'hidden']);

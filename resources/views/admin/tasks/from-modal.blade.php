@@ -14,7 +14,7 @@
                     @csrf
                     <div class="row">
                         <div class="col-md-5">
-                            <input type="text" name="id" id="task-id">
+                            <input type="hidden" name="id" id="task-id">
 
                             <ul class="nav nav-tabs" id="taskTabs" role="tablist">
                                 <li class="nav-item" role="presentation">
@@ -548,7 +548,7 @@
                                         <div class="mb-3">
                                             <div class="form-group border p-3 rounded ">
                                                 @include('admin.tasks.pricing-section')
-                                                <div class="form-group">
+                                                {{-- <div class="form-group">
                                                     <label
                                                         for="">{{ __('Set the total price Manual') }}</label>
                                                     <input type="number" id="total-price" step="any"
@@ -571,7 +571,7 @@
                                                         {{ __('Add Details') }}
                                                     </button>
                                                     <div id="pricing-details-container"></div>
-                                                </div>
+                                                </div> --}}
                                             </div>
                                         </div>
                                         <div class="mb-3">

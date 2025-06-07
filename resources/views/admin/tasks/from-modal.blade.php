@@ -177,8 +177,8 @@
                                                                             {{ __('Email') }}</label>
                                                                         <input type="email" id="pickup-email"
                                                                             name="pickup_email" class="form-control"
-                                                                            placeholder="{{ __('Email') }}" required
-                                                                            value="osama@mail.com" />
+                                                                            placeholder="{{ __('Email') }}"
+                                                                            required />
                                                                         <span
                                                                             class="pickup_email-error text-danger text-error"></span>
                                                                     </div>
@@ -201,8 +201,7 @@
                                                                     {{ __('Address') }}</label>
                                                                 <input type="text" id="pickup-address"
                                                                     name="pickup_address" class="form-control"
-                                                                    placeholder="{{ __('Enter pickup address') }}"
-                                                                    required value="الرياض" />
+                                                                    placeholder="{{ __('Enter pickup address') }}" />
                                                                 <span
                                                                     class="pickup_address-error text-danger text-error"></span>
                                                             </div>

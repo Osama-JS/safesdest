@@ -43,16 +43,16 @@ class FortifyServiceProvider extends ServiceProvider
     // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
     Fortify::authenticateUsing(function (Request $request) {
-      // $validator = Validator::make($request->all(), [
-      //   'g-recaptcha-response' => 'nullable|recaptcha',
-      // ]);
+      $validator = Validator::make($request->all(), [
+        'g-recaptcha-response' => 'nullable|recaptcha',
+      ]);
 
-      // if ($validator->fails()) {
-      //   throw ValidationException::withMessages([
-      //     'email' => ['reCAPTCHA verification failed.'],
-      //     'recaptcha' => ['reCAPTCHA verification failed.'],
-      //   ]);
-      // }
+      if ($validator->fails()) {
+        throw ValidationException::withMessages([
+          'email' => ['reCAPTCHA verification failed.'],
+          'recaptcha' => ['reCAPTCHA verification failed.'],
+        ]);
+      }
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');

@@ -80,17 +80,6 @@
                     </a>
                 </div>
                 <div class="card-body">
-                    <!-- معلومات المالك -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <strong class="text-muted">{{ __('Owner') }}:</strong><br>
-                            <span>{{ $task->owner == 'admin' ? $task->user->name : $task->customer->name }}</span>
-                        </div>
-                        <div class="col-md-6">
-                            <strong class="text-muted">{{ __('Phone') }}:</strong><br>
-                            <span>{{ $task->owner == 'admin' ? $task->user->phone : $task->customer->phone }}</span>
-                        </div>
-                    </div>
 
                     <!-- معلومات الأسعار والحالة -->
                     <div class="border rounded p-3 d-flex flex-wrap gap-4 justify-content-between mb-4 shadow-sm">
@@ -204,7 +193,7 @@
                     <div class="card-body mt-3">
                         @if (is_array($task->additional_data) && count($task->additional_data) > 0)
                             <div class="row">
-                                @foreach ($task->additional_data as $key => $field)
+                                @foreach ($task->driver_visible_additional_data as $key => $field)
                                     <div class="col-md-6 mb-4">
                                         <div class="border rounded p-3 h-100">
                                             <h6 class="text-muted mb-2">{{ $field['label'] }}</h6>
@@ -242,7 +231,15 @@
                                                         <span class="text-truncate">{{ basename($field['value']) }}</span>
                                                     </a>
                                                     @break
+                                                    @case('file_expiration_date')
+                                                    <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                       class="d-flex align-items-center text-decoration-none mt-1">
+                                                        <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                        <span class="text-truncate">{{ basename($field['value']) }}</span>
+                                                    </a>
+                                                    <p class="mt-3">expiration date: {{ $field['expiration'] }}</p>
 
+                                                    @break
                                                 @default
                                                     <p class="mb-0">{{ $field['value'] }}</p>
                                             @endswitch
@@ -263,18 +260,39 @@
         <div class="col-md-5">
             <div class="card mb-5" style="min-height: 80vh">
                 <div class="card-header border-bottom  mb-4 d-flex justify-content-between">
-                  <strong>{{ __('Submitted Offers') }} (<span id="total-offers-counter">0</span>)</strong>
-                  <button  class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                            data-bs-target="#offerModal">
-                        <i class="bx bx-arrow-back"></i>{{ $offer ? __('Update your offer') : __('Add your offer') }}
-                </button>
+                       <strong>{{ __('Submitted Offers') }} (<span id="total-offers-counter">0</span>)</strong>
+
+                 @if ($offer && !$offer->accepted)
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#offerModal">
+                        <i class="bx bx-arrow-back"></i>
+                        {{ __('Update your offer') }}
+                    </button>
+                @elseif (!$offer)
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#offerModal">
+                        <i class="bx bx-arrow-back"></i>
+                        {{ __('Add your offer') }}
+                    </button>
+                @endif
+
+
+
+                </div>
+                <div class="mt-2 px-2">
+                  @if ($offer && $offer->accepted)
+                    <div class="rounded border p-2">
+                      <div class="alert alert-success">Your offer has been accepted</div>
+                      <strong>Price: {{ $offer->price }} SAR</strong>
+                      <br>
+                      <strong>Note: {{ $offer->description }} </strong>
+                      <button id="accept-task" class="btn btn-primary form-control mt-3" data-id="{{ $offer->id }}">Confirm task acceptance</button>
+                    </div>
+                  @endif
                 </div>
                 <div class="card-body" id="offers-container">
+
                     <div class="text-center text-muted" >جارٍ تحميل العروض...</div>
                 </div>
             </div>
-
-
         </div>
     </div>
 </div>

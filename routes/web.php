@@ -142,6 +142,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/ads/show/{id}', [App\Http\Controllers\driver\TasksAdsController::class, 'show'])->name('driver.ads.show');
         Route::get('/ads/offers/show/', [App\Http\Controllers\driver\TasksAdsController::class, 'getOffers'])->name('driver.offers.data');
         Route::post('/ads/offers/store/', [App\Http\Controllers\driver\TasksAdsController::class, 'storeOffers'])->name('driver.offers.store');
+        Route::get('/ads/offers/accept/task/{id}', [App\Http\Controllers\driver\TasksAdsController::class, 'assignTaskByOffer'])->name('driver.offers.assign');
       });
     });
 
@@ -346,6 +347,7 @@ Route::middleware('rate.limit')->group(function () {
 
         Route::get('/ads/offers/show/', [TasksAdsController::class, 'getOffers'])->name('ads.offers.data');
         Route::get('/ads/offers/accept/{id}', [TasksAdsController::class, 'acceptOffer'])->name('ads.offers.accept');
+        Route::get('/ads/offers/retract/{id}', [TasksAdsController::class, 'retractOffer'])->name('ads.offers.retract');
       });
     });
   });

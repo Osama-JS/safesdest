@@ -317,10 +317,10 @@ $(function () {
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 
-      await delay(300);
+      await delay(1000);
       $('.vehicle-type-select').val(data.vehicle_type).trigger('change');
 
-      await delay(300);
+      await delay(1000);
       $('.vehicle-size-select').val(data.vehicle_size_id).trigger('change');
 
       if (data.img !== null) {

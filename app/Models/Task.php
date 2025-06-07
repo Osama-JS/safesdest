@@ -117,4 +117,17 @@ class Task extends Model
   {
     return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
   }
+
+  public function getDriverVisibleAdditionalDataAttribute()
+  {
+    if (!is_array($this->additional_data)) return [];
+
+    $formFields = $this->formTemplate?->fields ?? collect();
+
+    return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+      return $formFields->contains(function ($field) use ($item) {
+        return $field->label === $item['label'] && $field->driver_can;
+      });
+    })->values()->all(); // إعادة ترقيم المفاتيح
+  }
 }

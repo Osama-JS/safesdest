@@ -202,6 +202,28 @@ $(function () {
   let coords = [];
   let preventClick = false;
 
+  // get coordinates   by searching address
+  const geocoder = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    mapboxgl: mapboxgl,
+    placeholder: 'Search for the location...',
+    marker: false,
+    flyTo: false
+  });
+
+  // add the geocoder to html dev
+  geocoder.addTo(`#point-geocoder`);
+  $(`#point-geocoder .mapboxgl-ctrl-geocoder`).css('width', '100%');
+  geocoder.on('result', function (e) {
+    const flayCoords = e.result.geometry.coordinates;
+    showMap(flayCoords);
+  });
+
+  function showMap(coords = [46.6753, 24.7136]) {
+    map.resize();
+    map.flyTo({ center: coords, zoom: 14 });
+  }
+
   // تحديث حقل الإحداثيات
   function updateCoordinatesInput() {
     const input = document.getElementById('coordinates');
@@ -389,6 +411,49 @@ $(function () {
       await drawLine();
     }
   });
+
+  $(`#point-getCurrentLocation`).on('click', function () {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        showMap([lng, lat]);
+      });
+    } else {
+      showAlert('error', 'the Browser dose not support th GPS', 3000, true);
+    }
+  });
+
+  $('#point-toggle-link-input').on('click', function () {
+    $('#point-link-input-wrapper').slideToggle();
+  });
+
+  $(`#point-parse-link`).on('click', function () {
+    const link = $(`#point-map-link`).val().trim();
+    const areaCoords = extractCoordinatesFromLink(link);
+    if (areaCoords) {
+      showMap(areaCoords);
+    } else {
+      showAlert('error', 'تعذر استخراج الإحداثيات من الرابط', 3000, true);
+    }
+  });
+
+  function extractCoordinatesFromLink(link) {
+    // 1. regex to match lat,lng in URL
+    const regex = /([-+]?\d{1,3}(?:\.\d+)?),\s*([-+]?\d{1,3}(?:\.\d+)?)/;
+
+    const match = link.match(regex);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lng, lat]; // Mapbox expects [lng, lat]
+      }
+    }
+    return null;
+  }
 
   /* ==================== Actions  Control   ======================== */
   document.addEventListener('formSubmitted', function (event) {

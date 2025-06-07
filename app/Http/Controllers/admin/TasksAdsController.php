@@ -112,6 +112,29 @@ class TasksAdsController extends Controller
     return response()->json(['message' => 'Offer accepted successfully.', 'offer' => $offer]);
   }
 
+  public function retractOffer($id)
+  {
+    $offer = Task_Offire::with('ad.task')->findOrFail($id);
+    if ($offer->ad && $offer->ad->task && $offer->ad->task->user_id !== Auth::id()) {
+      return response()->json([
+        'status' => 2,
+        'error' => 'You do not have the right permission to do this action'
+      ]);
+    }
+
+    if (!$offer->accepted) {
+      return response()->json(['status' => 2, 'error' => 'This offer is already Retracted']);
+    }
+
+    Task_Offire::where('task_ad_id', $offer->ad_id)->update(['accepted' => true]);
+
+    $offer->accepted = false;
+    $offer->save();
+    return response()->json(['status' => 1, 'success' => __('The Offer accepted successfully')]);
+
+    return response()->json(['message' => 'Offer accepted successfully.', 'offer' => $offer]);
+  }
+
 
 
 

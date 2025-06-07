@@ -301,6 +301,41 @@ $(function () {
     });
   }
 
+  $('#point-toggle-link-input').on('click', function () {
+    $('#point-link-input-wrapper').slideToggle();
+  });
+
+  $(`#point-parse-link`).on('click', function () {
+    console.log('google');
+    const link = $(`#point-map-link`).val().trim();
+    const coords = extractCoordinatesFromLink(link);
+
+    if (coords) {
+      selectedCoords = coords;
+      $(`#point-latitude`).val(selectedCoords[1]);
+      $(`#point-longitude`).val(selectedCoords[0]);
+      showMap(coords);
+    } else {
+      showAlert('error', 'تعذر استخراج الإحداثيات من الرابط', 3000, true);
+    }
+  });
+  function extractCoordinatesFromLink(link) {
+    // 1. regex to match lat,lng in URL
+    const regex = /([-+]?\d{1,3}(?:\.\d+)?),\s*([-+]?\d{1,3}(?:\.\d+)?)/;
+
+    const match = link.match(regex);
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lng, lat]; // Mapbox expects [lng, lat]
+      }
+    }
+
+    return null;
+  }
+
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
 

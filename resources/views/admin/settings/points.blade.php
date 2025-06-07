@@ -91,6 +91,10 @@
                                             <div class="input-group mb-2">
                                                 <div class="form-control p-0" id="point-geocoder">
                                                 </div>
+                                                <button type="button" title="تحليل رابط موقع" id="point-toggle-link-input"
+                                                    class="input-group-text bg-white">
+                                                    <i class="fas fa-link text-secondary"></i>
+                                                </button>
                                                 <button type="button" title="إدخال يدوي" id="point-manual-btn"
                                                     class="input-group-text bg-white">
                                                     <i class="fas fa-globe text-secondary"></i>
@@ -100,7 +104,15 @@
                                                     <i class="fas fa-location-crosshairs text-secondary"></i>
                                                 </button>
                                             </div>
-
+                                            <div id="point-link-input-wrapper" class="mt-2" style="display: none;">
+                                                <div class="input-group">
+                                                    <input type="text" id="point-map-link" class="form-control"
+                                                        placeholder="ألصق رابط الموقع هنا" />
+                                                    <button type="button" id="point-parse-link" class="btn btn-secondary">
+                                                        تحليل الرابط
+                                                    </button>
+                                                </div>
+                                            </div>
                                             <!-- Map Container -->
                                             <div id="point-map-container"
                                                 class="position-relative rounded overflow-hidden border"

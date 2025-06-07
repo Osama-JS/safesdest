@@ -73,11 +73,21 @@ $(function () {
                 <span class="badge badge-ownership">My Ad</span>
               `;
           }
+          if (ad.status === 'running') {
+            adStatus = `
+                <span class="badge badge-ownership">Running</span>
+              `;
+          } else {
+            adStatus = `
+                <span class="badge badge-ownership">Closed</span>
+              `;
+          }
 
           let cardHtml = `
             <div class="col-md-3 col-sm-6 col-12 mb-4 ">
               <div class="card">
               ${ownershipBadge}
+              ${adStatus}
                 <div class="map-container" id="map-${ad.id}"></div>
 
                 <div class="card-body">

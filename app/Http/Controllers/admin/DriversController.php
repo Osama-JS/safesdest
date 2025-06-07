@@ -252,7 +252,7 @@ class DriversController extends Controller
             $rules[$fieldKey . '_expiration'][] = 'date';
 
             // إذا الحقل مطلوب، نضيف required حسب الحاجة
-            if ($field->required) {
+            if (!$req->filled('id') && $field->required) {
               $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
               $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
             }

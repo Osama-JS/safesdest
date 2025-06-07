@@ -67,16 +67,17 @@ $(function () {
             priceHtml = '<span>Price not specified</span>';
           }
 
+          //  <div class="d-flex align-items-center mb-3">
+          //       ${avatarHtml}
+          //       <h5 class="card-title">${ad.customer.name}</h5>
+          //  </div>
           let cardHtml = `
             <div class="col-md-3 col-sm-6 col-12 mb-4">
               <div class="card">
                 <div class="map-container" id="map-${ad.id}"></div>
 
                 <div class="card-body">
-                 <div class="d-flex align-items-center mb-3">
-                    ${avatarHtml}
-                       <h5 class="card-title">${ad.customer.name}</h5>
-                  </div>
+
                   <div class="row">
                       <div class="col-6">
                        <p><strong>From:</strong> ${ad.from_address}</p>
@@ -157,31 +158,4 @@ $(function () {
   });
 
   loadAds();
-
-  function loadOffers() {
-    const taskId = $('input[name="task_id"]').val();
-    $.get(`${baseUrl}driver/offers/${taskId}`, function (html) {
-      $('#offers-container').html(html);
-    });
-  }
-
-  loadOffers();
-
-  $('#offer-form').on('submit', function (e) {
-    e.preventDefault();
-    const formData = $(this).serialize();
-
-    $.ajax({
-      url: `${baseUrl}driver/offers/store-or-update`,
-      type: 'POST',
-      data: formData,
-      success: function (res) {
-        loadOffers();
-        alert('تم حفظ العرض بنجاح');
-      },
-      error: function () {
-        alert('حدث خطأ أثناء إرسال العرض');
-      }
-    });
-  });
 });

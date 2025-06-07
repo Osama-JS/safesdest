@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { deleteRecord } from '../ajax';
+import { deleteRecord, showAlert, showFormModal } from '../ajax';
 import { mapsConfig } from '../mapbox-helper';
 
 // Datatable (jquery)
@@ -39,7 +39,7 @@ $(function () {
           const card = `
           <div class=" mb-3 border-bottom rounded overflow-hidden">
             <div class="d-flex gap-3 p-2 rounded border border-success" >
-              <img src="${driver.image ? baseUrl + driver.image : 'https://via.placeholder.com/80'}" alt="${driver.name}"
+              <img src="${driver.image ? baseUrl + driver.image : baseUrl + 'assets/img/person.png'}" alt="${driver.name}"
                    class="rounded-circle border" style="width: 60px; height: 60px; object-fit: cover;">
 
               <div class="flex-grow-1">
@@ -72,4 +72,51 @@ $(function () {
   }
 
   loadOffers();
+
+  $(document).on('click', '#accept-task', function () {
+    var id = $(this).data('id');
+    Swal.fire({
+      title: `Confirm task acceptance ? `,
+      text: 'You will not be able to undo this action!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Accept it!',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      },
+      buttonsStyling: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: ` ${baseUrl}driver/ads/offers/accept/task/${id}`,
+          type: 'GET',
+          success: function (response) {
+            if (response.status === 1) {
+              showAlert('success', response.success, 10000, true);
+              loadOffers();
+            } else {
+              showAlert('error', response.error, 10000, true);
+            }
+          },
+          error: function () {
+            showAlert('error', 'Field to Accept the Task', 10000, true);
+          }
+        });
+      }
+    });
+  });
+
+  document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+    setTimeout(() => {
+      $('#offerModal').modal('hide');
+    }, 2000);
+
+    loadOffers();
+  });
+
+  document.addEventListener('deletedSuccess', function (event) {
+    loadOffers();
+  });
 });

@@ -51,7 +51,7 @@ $(document)
             if (data.status === 0) {
               console.log(data.error);
               handleErrors(data.error);
-              showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
+              showBlockAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة');
             } else if (data.status === 1) {
               resetCKEditor(contentElement, contentResetElement);
               resetImage(imgElement);
@@ -283,43 +283,50 @@ $('#select-template')
 export function generateFields(fields, storedData = {}) {
   fields.forEach(field => {
     var inputField = '';
+    var inputSpan = '';
     const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المخزنة إذا وجدت
     console.log(storedData);
     switch (field.type) {
       case 'string':
-        inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+        inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
         break;
       case 'number':
-        inputField = `<input type="number" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+        inputField = `<input type="number" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
         break;
       case 'email':
-        inputField = `<input type="email" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+        inputField = `<input type="email" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
         break;
       case 'date':
-        inputField = `<input type="date" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" ${field.required ? 'required' : ''}>`;
+        inputField = `<input type="date" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control">`;
         break;
       case 'textarea':
-        inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>${storedValue}</textarea>`;
+        inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" >${storedValue}</textarea>`;
         break;
       case 'file':
-        inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+        inputField = `
+        <a href="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
+
+        <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
       case 'file_expiration_date':
         inputField = `
-    <input type="file" name="additional_fields[${field.name}_file]" class="form-control" ${field.required ? 'required' : ''}>
-    <label class="p-0">expiration date</label>
-    <input type="date" name="additional_fields[${field.name}_expiration]" value="${storedData[field.name]?.expiration}" class="form-control mt-" ${field.required ? 'required' : ''}>
-  `;
+        <a href="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
+        <input type="file" name="additional_fields[${field.name}_file]" class="form-control" >
+        <label class="p-0">expiration date</label>
+        <input type="date" name="additional_fields[${field.name}_expiration]" value="${storedData[field.name]?.expiration}" class="form-control mt-" >
+      `;
         break;
       case 'url':
-        inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+        inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" >`;
         break;
       case 'image':
-        inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+        inputField = `
+        <img src="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
+        <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
 
       case 'select':
-        inputField = `<select name="additional_fields[${field.name}]" class="form-select" ${field.required ? 'required' : ''}>
+        inputField = `<select name="additional_fields[${field.name}]" class="form-select">
           ${(() => {
             try {
               const options = JSON.parse(field.value || '[]');
@@ -340,11 +347,17 @@ export function generateFields(fields, storedData = {}) {
         break;
     }
 
+    if (field.type === 'file_expiration_date') {
+      inputSpan = `<span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>`;
+      inputSpan = `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
+    } else {
+      inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
+    }
     $('#additional-form').append(`
       <div class="mb-3 col-md-6">
         <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
         ${inputField}
-        <span class="additional_fields-${field.name}-error text-danger text-error"></span>
+        ${inputSpan}
       </div>
     `);
   });

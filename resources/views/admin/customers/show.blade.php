@@ -95,11 +95,7 @@
                                 <span>{{ $data->role }}</span>
                             </li>
                         </ul>
-                        <div class="d-flex justify-content-center">
-                            <a href="javascript:;" class="btn btn-primary me-4" data-bs-target="#editUser"
-                                data-bs-toggle="modal">{{ __('Edit') }}</a>
-                            <a href="javascript:;" class="btn btn-label-danger suspend-user">{{ __('Suspend') }}</a>
-                        </div>
+
                     </div>
                 </div>
             </div>

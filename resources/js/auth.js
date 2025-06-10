@@ -164,7 +164,8 @@ if (DriverTemplate != null) {
 
 export function generateFields(fields, generateSection) {
   fields.forEach(field => {
-    var inputField = '';
+    var inputField = '',
+      inputSpan = '';
 
     if (field.driver_can == 'write' || field.customer_can == 'write') {
       switch (field.type) {
@@ -189,7 +190,9 @@ export function generateFields(fields, generateSection) {
         case 'file_expiration_date':
           inputField = `
     <input type="file" name="additional_fields[${field.name}_file]" class="form-control" ${field.required ? 'required' : ''}>
-    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control mt-2" ${field.required ? 'required' : ''}>
+            <label class="p-0">expiration date</label>
+
+    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control " ${field.required ? 'required' : ''}>
   `;
           break;
         case 'url':

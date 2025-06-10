@@ -23,6 +23,7 @@ return new class extends Migration
       $table->string('payment_paid')->default('pending'); // ['all', 'just_commission', 'pending']
       $table->decimal('payment_pending_amount', 10, 2)->nullable();
       $table->boolean('closed')->default(0);
+      $table->string('delivery_note')->nullable();
       $table->timestamp('completed_at')->nullable();
       $table->timestamp('closed_at')->nullable();
       $table->jsonb('additional_data')->nullable();

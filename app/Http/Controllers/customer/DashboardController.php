@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
 use App\Models\Customer;
+use App\Models\Settings;
+use App\Models\Vehicle;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -17,7 +19,9 @@ class DashboardController extends Controller
 {
   public function index()
   {
-    return view('customers.index');
+    $vehicles = Vehicle::all();
+    $task_template = Settings::where('key', 'task_template')->first();
+    return view('customers.index', compact('vehicles', 'task_template'));
   }
 
   public function profile()

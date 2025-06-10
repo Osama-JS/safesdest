@@ -329,6 +329,7 @@ $(function () {
 
     setTimeout(() => {
       $('#paymentModal').modal('hide');
+      $('#closedModal').modal('hide');
       $('#checkPaymentModal').modal('hide');
       $('#assignTitle').html('');
     }, 2000);
@@ -384,12 +385,12 @@ $(function () {
           <p>Amount: <span class="px-3 py-0 bg-info text-white rounded">${data.data.amount} SAR </span></p>
           <p>Payment Method: <span class="px-3 py-0 bg-info text-white rounded"> ${data.data.payment_type} </span></p>
           <p>Payment Status: <span class="px-3 py-0 bg-warning text-white rounded">${data.data.status}</span></p>
-          <p>Payment Receipt: </p>
+          <p>Payment Receipt: <span class="px-3 py-0 bg-info text-white rounded">${data.data.receipt_number}</span></p>
           <img src="${baseUrl + data.data.receipt_image}" alt="Receipt" class="img-fluid mb-2" style="max-width: 100%; height: auto; "/>
 
-          <p>Payment Note: ${data.data.note}</p>
-          <p>Payment Created At: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user}</span></p>
-          <p>Payment Created By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.created_at}</span></p>
+          <p>Payment Note: <span class="px-3 py-0 bg-info text-white rounded">${data.data.note}</span></p>
+          <p>Payment Created At: <span class="px-3 py-0 bg-info text-white rounded">${data.data.created_at}</span></p>
+          <p>Payment Checked By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user.name || 'not checked yet'}</span></p>
 
           <div>
             ${checkButtons}
@@ -426,6 +427,7 @@ $(function () {
       .then(data => {
         if (data.status === 1) {
           showAlert('success', data.message, 5000, true);
+          $('#checkPaymentModal').modal('hide');
           dt_data.draw();
         } else {
           showAlert('danger', data.message, 5000, true);
@@ -574,35 +576,8 @@ $(function () {
 
   $(document).on('click', '.closed-record', function () {
     var id = $(this).data('id');
-    Swal.fire({
-      title: `Close Task #${id} ?`,
-      text: 'You will not be able to undo this action!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, Close it!',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
-        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
-      },
-      buttonsStyling: false
-    }).then(result => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: ` ${baseUrl}admin/tasks/close/${id}`,
-          type: 'GET',
-          success: function (response) {
-            if (response.status === 1) {
-              showAlert('success', response.success, 10000, true);
-              dt_data.draw();
-            } else {
-              showAlert('error', response.error, 10000, true);
-            }
-          },
-          error: function () {
-            showAlert('error', 'Field to Close the Task', 10000, true);
-          }
-        });
-      }
-    });
+    $('#task-id').val(id);
+    $('#modelTitle').html('#' + id);
+    $('#closedModal').modal('show');
   });
 });

@@ -1624,7 +1624,7 @@ class TasksController extends Controller
         ]);
       }
       if ($data->payment_status !== 'waiting') {
-        $transiction = Transaction::where('reference_id', $data->id)->first();
+        $transiction = Transaction::with('user')->where('reference_id', $data->id)->first();
         return response()->json([
           'status' => 3,
           'message' => __('This task has already make payment request and it is ' . $data->payment_status),
@@ -1674,8 +1674,6 @@ class TasksController extends Controller
         $data->update([
           'payment_status' => 'completed'
         ]);
-
-
 
         DB::commit();
         return response()->json([
@@ -1771,11 +1769,23 @@ class TasksController extends Controller
     return view('admin.tasks.show', compact('task'));
   }
 
-  public function closeTask($id)
+  public function closeTask(Request $req)
   {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:tasks,id',
+      'file' => 'required|mimes:jpeg,png,jpg,webp|max:2048',
+    ], [
+      'id.required'  => __('Can not find the selected Task'),
+      'id.exists'  => __('Can not find the selected Task'),
+      'file.required' => __('The Delivery note is required.'),
+      'file.mimes' => __('The file Delivery note must be a file of type: jpeg, png, jp'),
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'error' => $validator->errors()]);
+    }
     DB::beginTransaction();
     try {
-      $task = Task::findOrFail($id);
+      $task = Task::findOrFail($req->id);
       $user = auth()->user();
       if (!$user || !$user->checkTask($task->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
@@ -1806,7 +1816,9 @@ class TasksController extends Controller
         ]);
       }
 
-      $task->update(['closed' => 'true']);
+      $deliveryNote = (new FunctionsController)->convert($req->file, 'tasks/deliveryNotes');
+
+      $task->update(['closed' => 'true', '' => $deliveryNote]);
       $task->history()->create([
         'action_type' => 'closed',
         'description' => 'Task closed by admin',
@@ -1835,6 +1847,9 @@ class TasksController extends Controller
       return response()->json(['status' => 1, 'success' => __('Task closed successfully')]);
     } catch (Exception $e) {
       DB::rollBack();
+      if ($deliveryNote) {
+        unlink($deliveryNote);
+      }
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
     }
   }

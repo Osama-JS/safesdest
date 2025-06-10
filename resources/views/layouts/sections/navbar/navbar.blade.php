@@ -473,7 +473,13 @@
                                         John Doe
                                     @endif
                                 </h6>
-                                <small class="text-muted">Admin</small>
+                                <small class="text-muted">
+                                    @if (Auth::check())
+                                        {{ Auth::user()->role?->name }}
+                                    @else
+                                        John Doe
+                                    @endif
+                                </small>
                             </div>
                         </div>
                     </a>

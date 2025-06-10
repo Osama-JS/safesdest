@@ -219,9 +219,16 @@ export function generateFields(fields, generateSection) {
         </select>`;
           break;
       }
+      if (field.type === 'file_expiration_date') {
+        inputSpan = `<span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>`;
+        inputSpan = `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
+      } else {
+        inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
+      }
       $(`#${generateSection}`).append(`
         <div class="mb-4  col-md-6">
           <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
+          ${inputSpan}
           ${inputField}
           <span class="additional_fields-${field.name}-error text-danger text-error"></span>
         </div>

@@ -21,6 +21,7 @@ class Task extends Model
     'additional_data',
     'distribution_attempts',
     'last_attempt_at',
+    'delivery_note',
     'pending_driver_id',
     'pricing_history',
     'pricing_details',
@@ -126,7 +127,7 @@ class Task extends Model
 
     return collect($this->additional_data)->filter(function ($item) use ($formFields) {
       return $formFields->contains(function ($field) use ($item) {
-        return $field->label === $item['label'] && $field->driver_can;
+        return $field->label === $item['label'] && ($field->driver_can === 'read' || $field->driver_can === 'write');
       });
     })->values()->all(); // إعادة ترقيم المفاتيح
   }

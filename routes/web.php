@@ -318,7 +318,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
         Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
         Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
-        Route::get('/tasks/close/{id}', [TasksController::class, 'closeTask'])->name('teams.close');
+        Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');
         Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
         Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
         Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');

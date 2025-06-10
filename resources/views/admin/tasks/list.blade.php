@@ -235,4 +235,50 @@
     </div>
 
 
+    <div class="modal fade " id="closedModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="closeTitle">{{ __('Close Task') }} <span id="modelTitle"
+                            class="bg-success text-white rounded p-0 px-2 "></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('tasks.close') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="col-xl-12">
+                            <div class="nav-align-top">
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active">
+                                        <input type="hidden" name="id" id="task-id">
+                                        <div class="alert alert-info">
+                                            You need To Upload the Delivery Note of the task to close it
+                                        </div>
+                                        <span class="id-error text-danger text-error"></span>
+
+
+                                        <span class="id-error text-danger text-error"></span>
+                                        <div class="form-group">
+                                            <label for="">* Delivery Note</label>
+                                            <input type="file" name="file" class="form-control" id="delivery_note"
+                                                required>
+                                            <span class="file-error text-danger text-error"></span>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
 @endsection

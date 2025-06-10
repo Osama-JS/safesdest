@@ -53,10 +53,6 @@
                     </div>
 
                     <div class="card-body mt-3">
-                        <p><strong>{{ __('owner') }}:</strong>
-                            {{ $task->owner == 'admin' ? $task->user->name : $task->customer->name }}</p>
-                        <p><strong>{{ __('phone') }}:</strong>
-                            {{ $task->owner == 'admin' ? $task->user->phone : $task->customer->phone }}</p>
                         <div
                             class="border rounded p-3 d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 shadow-sm border">
 
@@ -124,7 +120,7 @@
                                         <li><strong>Address:</strong> {{ optional($task->pickup)->address }}</li>
                                         <li><strong>Contact Name:</strong> {{ optional($task->pickup)->contact_name }}</li>
                                         <li><strong>Phone:</strong> {{ optional($task->pickup)->contact_phone }}</li>
-                                        <li><strong>Email:</strong> {{ optional($task->pickup)->contact_email }}</li>
+                                        <li><strong>Email:</strong> {{ optional($task->pickup)->email }}</li>
                                         <li><strong>Notes:</strong> {{ optional($task->pickup)->note }}</li>
                                         @if (optional($task->pickup)->scheduled_time)
                                             <li><strong>Pickup Before:</strong>
@@ -166,7 +162,7 @@
                                         <li><strong>Contact Name:</strong> {{ optional($task->delivery)->contact_name }}
                                         </li>
                                         <li><strong>Phone:</strong> {{ optional($task->delivery)->contact_phone }}</li>
-                                        <li><strong>Email:</strong> {{ optional($task->delivery)->contact_email }}</li>
+                                        <li><strong>Email:</strong> {{ optional($task->delivery)->email }}</li>
                                         <li><strong>Notes:</strong> {{ optional($task->delivery)->note }}</li>
                                         @if (optional($task->delivery)->scheduled_time)
                                             <li><strong>Delivery Before:</strong>
@@ -202,14 +198,10 @@
                         <div class="card-body mt-3">
                             @if (is_array($task->additional_data) && count($task->additional_data) > 0)
                                 <div class="row">
-                                    @foreach ($task->additional_data as $key => $field)
+                                    @foreach ($task->driver_visible_additional_data as $key => $field)
                                         <div class="col-md-6 mb-4">
-                                            <div class="border rounded p-3 h-100 ">
-                                                <h6 class="text-muted mb-2">
-
-                                                    {{ $field['label'] }}
-                                                </h6>
-
+                                            <div class="border rounded p-3 h-100">
+                                                <h6 class="text-muted mb-2">{{ $field['label'] }}</h6>
                                                 @switch($field['type'])
                                                     @case('text')
                                                     @case('string')
@@ -240,12 +232,20 @@
                                                             ];
                                                             $iconClass = $icons[$ext] ?? 'ti ti-file';
                                                         @endphp
-
                                                         <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
                                                             class="d-flex align-items-center text-decoration-none mt-1">
                                                             <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
                                                             <span class="text-truncate">{{ basename($field['value']) }}</span>
                                                         </a>
+                                                    @break
+
+                                                    @case('file_expiration_date')
+                                                        <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                            class="d-flex align-items-center text-decoration-none mt-1">
+                                                            <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                            <span class="text-truncate">{{ basename($field['value']) }}</span>
+                                                        </a>
+                                                        <p class="mt-3">expiration date: {{ $field['expiration'] }}</p>
                                                     @break
 
                                                     @default

@@ -9,7 +9,28 @@
 @section('title', 'Customer Dashboard')
 
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss', 'resources/assets/vendor/libs/swiper/swiper.scss', 'resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-checkboxes-jquery/datatables.checkboxes.scss'])
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css"
+        rel="stylesheet" />
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+    @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss')
+
+    @vite(['resources/css/app.css'])
+    <style>
+        .tab-content,
+        .nav-tabs {
+
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* Internet Explorer 10+ */
+        }
+
+        .tab-content::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari */
+        }
+    </style>
 @endsection
 
 @section('page-style')
@@ -18,19 +39,29 @@
 @endsection
 
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/apex-charts/apexcharts.js', 'resources/assets/vendor/libs/swiper/swiper.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js'])
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 @endsection
 
 @section('page-script')
-    @vite(['resources/assets/js/dashboards-analytics.js'])
+    <script>
+        const taskTemplate = {!! json_encode($task_template) !!}
+    </script>
 
+
+    @vite(['resources/js/customer/tasks.js'])
+    @vite(['resources/js/ajax.js'])
+    @vite(['resources/js/spical.js'])
 @endsection
 
 @section('content')
 
     <div class="row">
         <!-- User Sidebar -->
-        <div class="col-xl-4 col-lg-5 order-1 order-md-0">
+        <div class="col-xl-3 col-lg-4 order-1 order-md-0">
             <!-- User Card -->
             <div class="card mb-6">
                 <div class="card-body pt-12">
@@ -74,10 +105,7 @@
                     <h5 class="pb-4 border-bottom mb-4">{{ __('Details') }}</h5>
                     <div class="info-container">
                         <ul class="list-unstyled mb-6">
-                            <li class="mb-2">
-                                <span class="h6">{{ __('username') }}:</span>
-                                <span>{{ auth()->user()->username }}</span>
-                            </li>
+
                             <li class="mb-2">
                                 <span class="h6">{{ __('Phone') }}:</span>
                                 <span>{{ auth()->user()->phone }}</span>
@@ -109,8 +137,19 @@
         </div>
         <!--/ User Sidebar -->
 
+        <div class="col-xl-9 col-lg-8 ">
+            <div class="py-3">
+                <button class="btn btn-primary  mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#submitModal">
+                    <i class="ti ti-plus me-1"></i>
+                    {{ __('Add New Task') }}
+                </button>
+            </div>
+            <div class="py-3"></div>
+        </div>
 
 
     </div>
+
+    @include('customers.tasks.from-modal')
 
 @endsection

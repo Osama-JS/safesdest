@@ -9,7 +9,6 @@ import { mapsConfig } from '../../mapbox-helper';
 $(function () {
   let pointIndex = 0;
   if (templateId != null) {
-    console.log(templateId);
     $('#select-template').val(templateId).trigger('change');
   }
   /* ===========  MapBox  accessToken   ===========*/

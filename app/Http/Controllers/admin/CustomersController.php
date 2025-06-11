@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
 use App\Models\Task;
+use App\Models\Wallet;
 
 class CustomersController extends Controller
 {
@@ -188,14 +189,15 @@ class CustomersController extends Controller
       if ($find->wallet) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => 'Wallet already exists']);
       }
-
+      $wallet = Wallet::where('user_type', 'customer')->where('customer_id', $req->id)->first();
+      if ($wallet) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'this wallet already exist']);
+      }
       $done = (new WalletsController)->store('customer', $req->id, true);
 
-      if ($done == 1) {
-        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'wrong type']);
-      }
 
-      if ($done == 2) {
+
+      if (!$done) {
         return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to create Wallet']);
       }
       return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Wallet created successfully']);

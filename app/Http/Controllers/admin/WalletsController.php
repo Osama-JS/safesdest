@@ -142,7 +142,7 @@ class WalletsController extends Controller
       $type = strtolower($type);
       $wallet = Wallet::where('user_type', $type)->where('customer_id', $id)->orWhere('driver_id', $id)->first();
       if ($wallet) {
-        return false;
+        return 1;
       }
       $wallet = new Wallet();
       $wallet->user_type = $type;
@@ -151,9 +151,9 @@ class WalletsController extends Controller
       $wallet->status = $status;
       $wallet->preview = 0;
       $wallet->save();
-      return true;
+      return 0;
     } catch (Exception $ex) {
-      return  false;
+      return  2;
     }
   }
 

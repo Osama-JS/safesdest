@@ -139,7 +139,7 @@ class WalletsController extends Controller
   public function store($type, $id, $status = true)
   {
     try {
-      $type = strtolower($type);
+
       $wallet = Wallet::where('user_type', $type)->where('customer_id', $id)->orWhere('driver_id', $id)->first();
       if ($wallet) {
         return 1;

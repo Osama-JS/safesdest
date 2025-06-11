@@ -191,7 +191,11 @@ class CustomersController extends Controller
 
       $done = (new WalletsController)->store('customer', $req->id, true);
 
-      if (!$done) {
+      if ($done == 1) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'wrong type']);
+      }
+
+      if ($done == 2) {
         return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to create Wallet']);
       }
       return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Wallet created successfully']);

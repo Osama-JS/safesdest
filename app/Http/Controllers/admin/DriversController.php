@@ -249,6 +249,7 @@ class DriversController extends Controller
             $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
             $rules[$fieldKey . '_file'][] = 'max:10240';
 
+            $rules[$fieldKey . '_expiration'][] = 'nullable';
             $rules[$fieldKey . '_expiration'][] = 'date';
 
             // إذا الحقل مطلوب، نضيف required حسب الحاجة

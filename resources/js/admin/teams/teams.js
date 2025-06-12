@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { deleteRecord } from '../ajax';
+import { deleteRecord } from '../../ajax';
 
 // Datatable (jquery)
 $(function () {

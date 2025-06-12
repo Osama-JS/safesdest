@@ -188,16 +188,15 @@
                 </div>
                 <div class="info-item">
                     <span class="label">{{ __('customer name') }}</span>
-                    <span class="value ">{{ $task->pickup->contact_name }}</span>
+                    <span class="value ">{{ $task->customer?->company_name }}</span>
                 </div>
                 <div class="info-item">
-                    <span class="label">{{ __('email') }}</span>
-                    <span class="value ">{{ $task->pickup->contact_emil }}</span>
+                    <span class="label">{{ __('status') }}</span>
+                    <span class="value ">{{ $task->status }}</span>
                 </div>
-                <div class="info-item">
-                    <span class="label">{{ __('phone number') }}</span>
-                    <span class="value ">{{ $task->pickup?->contact_phone }}</span>
-                </div>
+                <div class="info-item"><span class="label">{{ __('Vehicle') }}</span><span class="value">
+                        {{ $task->vehicle_size?->type?->vehicle->name }} ({{ $task->vehicle_size?->type->name }})
+                        ({{ $task->vehicle_size?->name }})</span></div>
                 <div class="info-item">
                     <span class="label">{{ __('Start before') }}</span>
                     <span class="value ">{{ $task->pickup->scheduled_time }}</span>
@@ -206,33 +205,81 @@
                     <span class="label">{{ __('complete before') }}</span>
                     <span class="value ">{{ $task->delivery->scheduled_time }}</span>
                 </div>
-                <div class="info-item">
-                    <span class="label">{{ __('status') }}</span>
-                    <span class="value ">{{ $task->status }}</span>
-                </div>
-                <div class="info-item"><span class="label">{{ __('Address') }}</span><span
-                        class="value">{{ $task->pickup?->address }}</span></div>
-                <div class="info-item"><span class="label">{{ __('Address') }}</span><span class="value">
-                        {{ $task->vehicle_size?->type?->vehicle->name }} ({{ $task->vehicle_size?->type->name }})
-                        ({{ $task->vehicle_size?->name }})</span></div>
+
             </div>
         </div>
 
         <div class="section">
-            <div class="section-title">{{ __('Description') }}</div>
-            <p>{{ $task->pickup->note ?? __('no description or notes has set') }}</p>
+            <div class="section-title">{{ __('Pickup Point') }}</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">{{ __('Name') }}</span>
+                    <span class="value ">{{ $task->pickup->contact_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">{{ __('phone number') }}</span>
+                    <span class="value ">{{ $task->pickup?->contact_phone }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">{{ __('email') }}</span>
+                    <span class="value ">{{ $task->pickup->contact_emil }}</span>
+                </div>
+
+                <div class="info-item"><span class="label">{{ __('Address') }}</span><span
+                        class="value">{{ $task->pickup?->address }}</span></div>
+                @if ($task->pickup?->note)
+                    <div class="info-item">
+                        <span class="label">{{ __('Notes') }}</span>
+                        <span class="value">{{ $task->pickup?->note }}</span>
+                    </div>
+                @endif
+                @if ($task->pickup->image)
+                    <div class="info-item">
+                        <span class="label">{{ __('Reference Image') }}</span>
+                        <span class="value ">
+                            <img src="{{ asset($task->pickup?->image) }}" alt="" style="width: 50px">
+                        </span>
+                    </div>
+                @endif
+            </div>
         </div>
 
         <div class="section">
-            <div class="section-title">{{ __('Reference Images') }}</div>
-            <p>
-                @if ($task->pickup->image)
-                    <img src="{{ asset($task->pickup->image) }}" alt="" style="width: 50px">
-                @else
-                    {{ __('no images has set') }}
+            <div class="section-title">{{ __('Delivery Point') }}</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">{{ __('Name') }}</span>
+                    <span class="value ">{{ $task->delivery?->contact_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">{{ __('phone number') }}</span>
+                    <span class="value ">{{ $task->delivery?->contact_phone }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">{{ __('email') }}</span>
+                    <span class="value ">{{ $task->delivery->contact_emil }}</span>
+                </div>
+
+                <div class="info-item"><span class="label">{{ __('Address') }}</span><span
+                        class="value">{{ $task->delivery?->address }}</span></div>
+                @if ($task->delivery?->note)
+                    <div class="info-item">
+                        <span class="label">{{ __('Notes') }}</span>
+                        <span class="value">{{ $task->delivery?->note }}</span>
+                    </div>
                 @endif
-            </p>
+                @if ($task->delivery?->image)
+                    <div class="info-item">
+                        <span class="label">{{ __('Reference Image') }}</span>
+                        <span class="value ">
+                            <img src="{{ asset($task->delivery?->image) }}" alt="" style="width: 50px">
+                        </span>
+                    </div>
+                @endif
+            </div>
         </div>
+
+
 
         <div class="section">
             <div class="section-title">{{ __('Driver Information') }}</div>

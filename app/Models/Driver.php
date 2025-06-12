@@ -60,7 +60,7 @@ class Driver extends Authenticatable
 
   public function tasks()
   {
-    return $this->belongsTo(Task::class, 'driver_id');
+    return $this->hasMany(Task::class, 'driver_id');
   }
 
   public function possible_tasks()

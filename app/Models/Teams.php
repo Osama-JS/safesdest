@@ -25,4 +25,9 @@ class Teams extends Model
   {
     return $this->hasMany(Driver::class, 'team_id');
   }
+
+  public function tasks()
+  {
+    return $this->hasManyThrough(Task::class, Driver::class, 'team_id', 'driver_id');
+  }
 }

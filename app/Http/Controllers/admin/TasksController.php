@@ -29,6 +29,7 @@ use App\Models\Pricing_Customer;
 use App\Models\Pricing_Geofence;
 use App\Models\Pricing_Template;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Http\Controllers\Controller;
 use App\Services\TaskPricingService;
@@ -1768,6 +1769,15 @@ class TasksController extends Controller
 
     return view('admin.tasks.show', compact('task'));
   }
+
+
+  public function downloadTaskReport($id)
+  {
+    $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($id);
+
+    return view('admin.tasks.report', compact('task'));
+  }
+
 
   public function closeTask(Request $req)
   {

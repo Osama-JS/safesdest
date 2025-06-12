@@ -349,7 +349,7 @@ export function generateFields(fields, storedData = {}) {
 
     if (field.type === 'file_expiration_date') {
       inputSpan = `<span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>`;
-      inputSpan = `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
+      inputSpan += `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
     } else {
       inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
     }

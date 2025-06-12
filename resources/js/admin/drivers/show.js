@@ -66,7 +66,7 @@ $(function () {
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.price}</span>`;
+            return `<span>${full.total_price - full.commission}</span>`;
           }
         },
         {
@@ -83,12 +83,10 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
-                  <i class="ti ti-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.task_id}">
-                  <i class="ti ti-trash"></i>
-                </button>
+                <a href="${baseUrl}admin/tasks/list/show/${full.id}" class="btn btn-sm btn-icon edit-record " >
+                  <i class="ti ti-eye"></i>
+                </a>
+
               </div>`;
           }
         }
@@ -118,13 +116,21 @@ $(function () {
         `<label class='me-2'>
           <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
             <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="verified">Unverified</option>
-            <option value="blocked">Blocked</option>
+             <option value="advertised">Advertised</option>
+            <option value="in_progress">In Progress</option>
+            <option value="assign">Assign</option>
+            <option value="started">Started</option>
+            <option value="in pickup point">In Pickup Point</option>
+            <option value="loading">Loading</option>
+            <option value="in the way">In The Way</option>
+            <option value="in delivery point">In Delivery Point</option>
+            <option value="unloading">Unloading</option>
+            <option value="completed">Completed</option>
+            <option value="canceled">canceled</option>
           </select>
         </label>`,
         ` <label class="me-2">
-              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search driver" />
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search Task" />
           </label>`
       ],
       responsive: {

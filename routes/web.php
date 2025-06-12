@@ -30,7 +30,7 @@ use App\Http\Middleware\EnsureCorrectGuard;
 use App\Http\Middleware\EnsureGuardIs;
 
 
-Route::get('/lang/{locale}', [LanguageController::class, 'swap']);
+Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
 
 Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
@@ -296,12 +296,13 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');
         Route::get('/drivers/git', [DriversController::class, 'getDrivers'])->name('drivers.git');
         Route::post('/drivers/status', [DriversController::class, 'chang_status'])->name('drivers.status');
-        Route::get('/drivers/edit/{id}', [DriversController::class, 'edit'])->name('drivers.show');
+        Route::get('/drivers/edit/{id}', [DriversController::class, 'edit'])->name('drivers.edit');
         Route::delete('/drivers/delete/{id}', [DriversController::class, 'destroy'])->name('drivers.delete');
 
 
         Route::get('/teams', [TeamsController::class, 'index'])->name('teams.teams');
         Route::post('/teams', [TeamsController::class, 'store'])->name('teams.store');
+        Route::get('/teams/details/{id}', [TeamsController::class, 'show'])->name('teams.show');
         Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.show');
         Route::post('/teams/edit', [TeamsController::class, 'update'])->name('teams.edit');
         Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
@@ -336,6 +337,8 @@ Route::middleware('rate.limit')->group(function () {
 
         Route::get('tasks/tracking/{id}', [TasksController::class, 'taskTracking'])->name('tasks.tracking');
 
+
+        Route::get('/task/{id}/report', [TasksController::class, 'downloadTaskReport'])->name('tasks.report');
 
 
         Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');

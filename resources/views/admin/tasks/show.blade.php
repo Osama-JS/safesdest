@@ -37,6 +37,13 @@
         }
     </style>
 @endsection
+@section('page-script')
+    <script>
+        function openReport() {
+            const reportWindow = window.open('{{ route('tasks.report', $task->id) }}', '_blank');
+        }
+    </script>
+@endsection
 @section('task-isactive', 'active')
 @section('content')
     <div class="container my-4">
@@ -47,9 +54,15 @@
                     <div class="card-header border-bottom text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">{{ __('Task Details') }} #{{ $task->id }}</h5>
 
-                        <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bx bx-arrow-back"></i> {{ __('Back to Tasks') }}
-                        </a>
+                        <div>
+                            <a href="#" class="mx-2" onclick="openReport()">download task status report</a>
+
+                            <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bx bx-arrow-back"></i> {{ __('Back to Tasks') }}
+                            </a>
+
+                        </div>
+
                     </div>
 
                     <div class="card-body mt-3">

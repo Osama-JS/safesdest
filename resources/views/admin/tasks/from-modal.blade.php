@@ -546,7 +546,6 @@
                                     <div id="assign-section" style="display: none">
                                         <div class="mb-3">
                                             <div class="form-group border p-3 rounded ">
-                                                @include('admin.tasks.pricing-section')
                                                 {{-- <div class="form-group">
                                                     <label
                                                         for="">{{ __('Set the total price Manual') }}</label>

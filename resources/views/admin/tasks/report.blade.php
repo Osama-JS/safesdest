@@ -164,7 +164,7 @@
         <div class="platform-info">
             <div><strong>{{ __('Safe Dest') }}</strong></div>
             <div>{{ __('info@safedest.com') }}</div>
-            <div>{{ __('0096755545677') }}</div>
+            <div>{{ __('+966556978782') }}</div>
         </div>
         <div class="logo">
             <img src="{{ url(asset('assets/img/logo.png')) }}" alt="Logo" />

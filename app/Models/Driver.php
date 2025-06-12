@@ -115,4 +115,17 @@ class Driver extends Authenticatable
 
     return 0;
   }
+
+  public function getDriverVisibleAdditionalDataAttribute()
+  {
+    if (!is_array($this->additional_data)) return [];
+
+    $formFields = $this->formTemplate?->fields ?? collect();
+
+    return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+      return $formFields->contains(function ($field) use ($item) {
+        return $field->label === $item['label'] && ($field->customer_can === 'read' || $field->customer_can === 'write');
+      });
+    })->values()->all(); // إعادة ترقيم المفاتيح
+  }
 }

@@ -281,7 +281,7 @@ $(function () {
         <option value="in delivery point">In Delivery Point</option>
         <option value="unloading">Unloading</option>
         <option value="completed">Completed</option>
-        <option value="canceld">Canceld</option>
+        <option value="canceleds">canceled</option>
       </select>
 
         </label>`,

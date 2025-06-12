@@ -526,7 +526,7 @@ $(function () {
         $('#task-form').unblock({
           onUnblock: function () {
             if (data.status == 0) {
-              showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+              showAlert('error', 'يجب عليك التأكد من جميع البيانات المدخلة', 10000, true);
               console.log(data.error);
               handleErrors(data.error);
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
@@ -677,7 +677,7 @@ $(function () {
           onUnblock: function () {
             if (data.status == 0) {
               console.log(data.error);
-              showAlert('error', 'يرجى تصحيح الأخطاء قبل المتابعة', 10000, true);
+              showAlert('error', 'يجب عليك التأكد من جميع البيانات المدخلة', 10000, true);
               handleErrors(data.error);
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
             } else if (data.status == 1) {

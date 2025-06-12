@@ -241,11 +241,10 @@
                         class="value">{{ $task->driver?->name }}</span></div>
                 <div class="info-item"><span class="label">{{ __('Phone number') }}</span><span
                         class="value">{{ $task->driver?->phone }}</span></div>
-                @if ($task->additional_data)
 
-                    @if (is_array($task->driver->additional_data) && count($task->driver->additional_data) > 0)
-
-                        @foreach ($task->driver->driver_visible_additional_data as $key => $field)
+                @if ($task->driver?->additional_data && is_array($task->driver->driver_visible_additional_data))
+                    @foreach ($task->driver->driver_visible_additional_data as $key => $field)
+                        @if (isset($field['label'], $field['value'], $field['type']))
                             <div class="info-item">
                                 <span class="label">{{ $field['label'] }}</span>
                                 @switch($field['type'])
@@ -258,7 +257,8 @@
 
                                     @case('image')
                                         <img src="{{ asset('storage/' . $field['value']) }}" alt="{{ $field['label'] }}"
-                                            class="img-fluid rounded border" style="max-height: 200px; object-fit: cover;">
+                                            class="img-fluid rounded border"
+                                            style="max-height: 200px; max-width: 100%; object-fit: cover;">
                                     @break
 
                                     @case('file')
@@ -283,22 +283,26 @@
                                     @break
 
                                     @case('file_expiration_date')
+                                        @php
+                                            $ext = strtolower(pathinfo($field['value'], PATHINFO_EXTENSION));
+                                            $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                        @endphp
                                         <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
                                             class="d-flex align-items-center text-decoration-none mt-1">
                                             <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
                                             <span class="text-truncate">{{ basename($field['value']) }}</span>
                                         </a>
-                                        <p class="mt-3">expiration date: {{ $field['expiration'] }}</p>
+                                        <p class="mt-3">expiration date: {{ $field['expiration'] ?? '-' }}</p>
                                     @break
 
                                     @default
                                         <p class="mb-0">{{ $field['value'] }}</p>
                                 @endswitch
                             </div>
-                        @endforeach
-                    @endif
-
+                        @endif
+                    @endforeach
                 @endif
+
 
             </div>
         </div>

@@ -116,6 +116,11 @@ class Driver extends Authenticatable
     return 0;
   }
 
+  public function formTemplate()
+  {
+    return $this->belongsTo(Form_Template::class, 'form_template_id');
+  }
+
   public function getDriverVisibleAdditionalDataAttribute()
   {
     if (!is_array($this->additional_data)) return [];
@@ -124,8 +129,9 @@ class Driver extends Authenticatable
 
     return collect($this->additional_data)->filter(function ($item) use ($formFields) {
       return $formFields->contains(function ($field) use ($item) {
-        return $field->label === $item['label'] && ($field->customer_can === 'read' || $field->customer_can === 'write');
+        return $field->label == $item['label'] &&
+          in_array($field->customer_can, ['read', 'write']);
       });
-    })->values()->all(); // إعادة ترقيم المفاتيح
+    })->values()->all();
   }
 }

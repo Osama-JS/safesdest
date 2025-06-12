@@ -4,14 +4,20 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 
+use App\Models\Team;
 use App\Models\Teams;
+use App\Models\Driver;
+use App\Models\Vehicle;
+use App\Models\Settings;
 use Illuminate\Http\Request;
+use App\Models\Form_Template;
+use Illuminate\Http\JsonResponse;
+use Spatie\Permission\Models\Role;
+
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Models\Driver;
-use App\Models\Team;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Http\JsonResponse;
 
 class TeamsController extends Controller
 {
@@ -59,7 +65,12 @@ class TeamsController extends Controller
     if (!$data) {
       return redirect()->back();
     }
-    return view('admin.teams.show', compact('data'));
+    $templates = Form_Template::all();
+    $teams = Teams::all();
+    $roles = Role::where('guard_name', 'driver')->get();
+    $vehicles = Vehicle::all();
+    $driver_template = Settings::where('key', 'driver_template')->first();
+    return view('admin.teams.show', compact('data', 'templates', 'teams', 'roles', 'vehicles', 'driver_template'));
   }
 
 
@@ -85,6 +96,12 @@ class TeamsController extends Controller
     $search = $request->input('search');
     $statusFilter = $request->input('status');
     $team = $request->input('team');
+
+    $user = auth()->user();
+    if (!$user || !$user->checkCustomer($team)) {
+      return [];
+    }
+
 
     $totalData = Driver::where('team_id', $team)->count();
     $totalFiltered = $totalData;
@@ -134,20 +151,12 @@ class TeamsController extends Controller
       ];
     }
 
-
     return response()->json([
       'draw'            => intval($request->input('draw')),
       'recordsTotal'    => $totalData,
       'recordsFiltered' => $totalFiltered,
       'code'            => 200,
       'data'            => $data,
-      'summary' => [
-        'total' => Driver::count(),
-        'total_active' => Driver::where('status', 'active')->count(),
-        'total_verified' => Driver::where('status', 'verified')->count(),
-        'total_pending' => Driver::where('status', 'pending')->count(),
-        'total_blocked' => Driver::where('status', 'blocked')->count(),
-      ]
     ]);
   }
 

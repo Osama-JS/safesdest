@@ -303,8 +303,8 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/teams', [TeamsController::class, 'index'])->name('teams.teams');
         Route::post('/teams', [TeamsController::class, 'store'])->name('teams.store');
         Route::get('/teams/details/{id}', [TeamsController::class, 'show'])->name('teams.show');
-        Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.show');
-        Route::post('/teams/edit', [TeamsController::class, 'update'])->name('teams.edit');
+        Route::get('/teams/drivers/', [TeamsController::class, 'getTeamDrivers'])->name('teams.drivers');
+        Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.edit');
         Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
         Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
 

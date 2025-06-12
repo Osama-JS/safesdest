@@ -14,7 +14,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
-    @vite(['resources/js/admin/teams.js'])
+    @vite(['resources/js/admin/teams/teams.js'])
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])

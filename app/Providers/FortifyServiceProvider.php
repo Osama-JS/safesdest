@@ -44,16 +44,15 @@ class FortifyServiceProvider extends ServiceProvider
 
     Fortify::authenticateUsing(function (Request $request) {
       // ✅ تحقق من كود الكابتشا قبل لمس الجلسة
-      $validator = Validator::make($request->all(), [
-        'g-recaptcha-response' => 'nullable|recaptcha',
-      ]);
+      // $validator = Validator::make($request->all(), [
+      //   'g-recaptcha-response' => 'nullable|recaptcha',
+      // ]);
 
-      if ($validator->fails()) {
-        throw ValidationException::withMessages([
-          'email' => ['reCAPTCHA verification failed.'],
-          'recaptcha' => ['reCAPTCHA verification failed.'],
-        ]);
-      }
+      // if ($validator->fails()) {
+      //   throw ValidationException::withMessages([
+      //     'recaptcha' => ['reCAPTCHA verification failed.'],
+      //   ]);
+      // }
 
 
 

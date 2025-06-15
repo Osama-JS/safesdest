@@ -356,9 +356,8 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-
                     ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
-
+                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}">download task status report</a></li>
                   </ul>
               </div>
 
@@ -644,6 +643,10 @@ $(function () {
 
   loadTasks();
 
+  $(document).on('click', '.task-report', function () {
+    const id = $(this).data('id');
+    const reportWindow = window.open(`${baseUrl}admin/task/${id}/report`, '_blank');
+  });
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
     setTimeout(() => {

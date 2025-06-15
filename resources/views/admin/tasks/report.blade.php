@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ __('Task Status Report') }} {{ $task->id }}</title>
+    <title># {{ $task->id }}</title>
     <style>
         @font-face {
             font-family: 'Tajawal';
@@ -177,7 +177,7 @@
     </header>
 
     <main>
-        <h1>{{ __('Task Status Report') }}</h1>
+        <h1>{{ __('Task Status Report') }} #{{ $task->id }}</h1>
 
         <div class="section">
             <div class="section-title">{{ __('task information') }}</div>

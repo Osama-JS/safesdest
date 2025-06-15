@@ -9,8 +9,8 @@
             </div>
 
             <div class="modal-body">
-                <form class="form_submit pt-0 " id="task-form" method="POST" action="{{ route('tasks.create') }}"
-                    enctype="multipart/form-data">
+                <form class="form_submit pt-0 " id="task-form" method="POST"
+                    action="{{ route('customer.task.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row">
                         <div class="col-md-5">
@@ -47,9 +47,7 @@
                                             <!-- سيتم توليد السطور ديناميكيًا هنا -->
                                         </div>
 
-                                        {{-- <button type="button" id="add-vehicle-btn" class="btn btn-sm border mt-2">
-                                          <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> Add Another Vehicle
-                                      </button> --}}
+
                                     </div>
 
                                     <div class="mb-3">
@@ -509,58 +507,7 @@
                                         <div id="taskFinalDetails">
                                         </div>
                                     </div>
-                                    <div id="assign-section" style="display: none">
-                                        <div class="mb-3">
-                                            <div class="form-group border p-3 rounded ">
-                                                @include('admin.tasks.pricing-section')
-                                                {{-- <div class="form-group">
-                                                    <label
-                                                        for="">{{ __('Set the total price Manual') }}</label>
-                                                    <input type="number" id="total-price" step="any"
-                                                        name="manual_total_pricing" class="form-control">
-                                                    <span class="owner-error text-danger text-error"></span>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label
-                                                        for="">{{ __('Set the The commission Manual') }}</label>
-                                                    <input type="number" id="task-commission" step="any"
-                                                        min="0.00" name="manual_commission" class="form-control"
-                                                        placeholder="0.00">
-                                                    <span class="owner-error text-danger text-error"></span>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label>{{ __('Add the details of the Price') }}</label>
-                                                    <br>
-                                                    <button type="button" class="btn btn-light btn-sm mb-2"
-                                                        id="add-pricing-details">
-                                                        {{ __('Add Details') }}
-                                                    </button>
-                                                    <div id="pricing-details-container"></div>
-                                                </div> --}}
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="form-group">
-                                                <label for="">{{ __('Assign Driver') }}</label>
-                                                <div class="row">
-                                                    <div class="com-md-6">
-                                                        <input type="checkbox" id="driver-manual"
-                                                            name="driver_assign_type" value="manual"
-                                                            class="form-checkbox">
-                                                        <label for="driver-manual">{{ __('Assign Manually') }}</label>
-                                                        <div>
-                                                            <select id="task-driver-select" name="task_driver"
-                                                                class="form-select select2">
-                                                                <!-- سيتم تعبئته باسائقين من ال js -->
-                                                            </select>
-                                                        </div>
-                                                    </div>
 
-                                                </div>
-                                                <span class="owner-error text-danger text-error"></span>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <button type="button" id="back-to-step2" class="btn btn-light mt-3"><i
                                             class="ti ti-arrow-left"></i>{{ __('Back') }}
                                     </button>

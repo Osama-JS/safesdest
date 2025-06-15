@@ -13,6 +13,7 @@ class Wallet_Transaction extends Model
     'transaction_type',
     'description',
     'image',
+    'status',
     'wallet_id',
     'maturity_time',
     'sequence',

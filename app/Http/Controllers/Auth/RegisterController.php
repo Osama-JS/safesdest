@@ -159,8 +159,11 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'c_name'         => 'nullable|string|max:255',
       'c_address'      => 'nullable|string|max:255',
-      'g-recaptcha-response' => 'required|recaptcha',
+      // 'g-recaptcha-response' => 'required|recaptcha',
+      'captcha' => 'required|captcha',
 
+    ], [
+      'captcha.captcha' => 'The verification code is invalid',
     ]);
 
     if ($req->filled('template')) {
@@ -331,10 +334,12 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'address'        => 'required|string|max:255',
       'vehicle'        => 'nullable|string|max:255',
-      'g-recaptcha-response' => 'required|recaptcha',
+      // 'g-recaptcha-response' => 'required|recaptcha',
+      'captcha' => 'required|captcha',
 
+    ], [
+      'captcha.captcha' => 'The verification code is invalid',
     ]);
-
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
 

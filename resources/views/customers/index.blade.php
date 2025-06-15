@@ -48,7 +48,50 @@
 
 @section('page-script')
     <script>
-        const taskTemplate = {!! json_encode($task_template) !!}
+        const taskTemplate = {!! json_encode($template_fields) !!}
+    </script>
+    <script type="text/template" id="vehicle-row-template">
+      <div class="row vehicle-row mb-3 " data-index="{index}">
+        <div class="col-md-4">
+          <label class="form-label">* Vehicle</label>
+          <select class="form-select vehicle-select" name="vehicles[{index}][vehicle]">
+            <option value="">Select a vehicle</option>
+            @foreach ($vehicles as $vehicle)
+              <option value="{{ $vehicle->id }}">{{ $vehicle->name }}</option>
+            @endforeach
+          </select>
+          <span class="vehicles-{index}-vehicle-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">* Vehicle Type</label>
+          <select class="form-select vehicle-type-select" name="vehicles[{index}][vehicle_type]" disabled>
+            <option value="">Select a vehicle type</option>
+          </select>
+          <span class="vehicles-{index}-vehicle_type-error text-danger text-error"></span>
+
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">* Vehicle Size</label>
+          <select class="form-select vehicle-size-select" name="vehicles[{index}][vehicle_size]" disabled>
+            <option value="">Select a vehicle size</option>
+          </select>
+          <span class="vehicles-{index}-vehicle_size-error text-danger text-error"></span>
+
+        </div>
+        @can('tasks_meltable')
+          <div class="col-md-2 vehicle-quantity">
+            <label class="form-label">* Quantity</label>
+            <input type="number" class="form-control vehicle-quantity" name="vehicles[{index}][quantity]" min="1" value="1" />
+            <span class="vehicles-{index}-quantity-error text-danger text-error"></span>
+          </div>
+         @endcan
+
+        {{-- <div class="col-md-1 d-flex ">
+          <button type="button" class="btn text-danger btn-icon btn-sm remove-vehicle-btn"><i
+            class="ti ti-trash"></i></button>
+        </div> --}}
+      </div>
     </script>
 
 
@@ -144,7 +187,9 @@
                     {{ __('Add New Task') }}
                 </button>
             </div>
-            <div class="py-3"></div>
+            <div class="py-3">
+                <div id="tasks-container"></div>
+            </div>
         </div>
 
 

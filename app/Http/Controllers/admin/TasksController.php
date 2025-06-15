@@ -1332,7 +1332,6 @@ class TasksController extends Controller
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
-
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];

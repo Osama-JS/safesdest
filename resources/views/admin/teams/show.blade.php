@@ -63,7 +63,7 @@
 @section('content')
 
     @php
-        $balance = $totals['debit'] ?? (0 + $totals['credit'] ?? 0);
+        $balance = ($totals['debit'] ?? 0) + ($totals['credit'] ?? 0);
         $credit = $totals['credit'] ?? 0;
         $debit = $totals['debit'] ?? 0;
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 
+use Carbon\Carbon;
 use App\Models\Team;
 use App\Models\Teams;
 use App\Models\Driver;
@@ -12,9 +13,9 @@ use App\Models\Settings;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use Illuminate\Http\JsonResponse;
-use Spatie\Permission\Models\Role;
 
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -70,7 +71,12 @@ class TeamsController extends Controller
     $roles = Role::where('guard_name', 'driver')->get();
     $vehicles = Vehicle::all();
     $driver_template = Settings::where('key', 'driver_template')->first();
-    return view('admin.teams.show', compact('data', 'templates', 'teams', 'roles', 'vehicles', 'driver_template'));
+    $totals = $data->walletTransactions()
+      ->select('transaction_type', DB::raw('SUM(amount) as total_amount'))
+      ->groupBy('transaction_type')
+      ->pluck('total_amount', 'transaction_type');
+
+    return view('admin.teams.show', compact('data', 'templates', 'teams', 'roles', 'vehicles', 'driver_template', 'totals'));
   }
 
 
@@ -148,6 +154,173 @@ class TeamsController extends Controller
         'role'       => $val->role->name ?? "",
         'created_at' => $val->created_at->format('Y-m-d H:i'),
         'status'     => $val->status,
+      ];
+    }
+
+    return response()->json([
+      'draw'            => intval($request->input('draw')),
+      'recordsTotal'    => $totalData,
+      'recordsFiltered' => $totalFiltered,
+      'code'            => 200,
+      'data'            => $data,
+    ]);
+  }
+
+  public function getTeamTasks(Request $request)
+  {
+    $columns = [
+      1 => 'id',
+      2 => 'address',
+      3 => 'driver',
+      4 => 'start',
+      5 => 'complete',
+      6 => 'status',
+      7 => 'created_at'
+    ];
+
+    $limit     = $request->input('length');
+    $start     = $request->input('start');
+    $order     = $columns[$request->input('order.0.column')] ?? 'id';
+    $dir       = $request->input('order.0.dir') ?? 'desc';
+
+    $fromDate  = $request->input('from_date');
+    $toDate    = $request->input('to_date');
+
+
+    $team = Teams::find($request->input('team'));
+    if (!$team) {
+      return response()->json([
+        'draw'            => intval($request->input('draw')),
+        'recordsTotal'    => 0,
+        'recordsFiltered' => 0,
+        'code'            => 200,
+        'data'            => [],
+      ]);
+    }
+
+    $totalData = $team->tasks->count();
+    $query =  $team->tasks();
+
+    // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
+    if ($fromDate && $toDate) {
+      $query->whereBetween('created_at', [
+        Carbon::parse($fromDate)->startOfDay(),
+        Carbon::parse($toDate)->endOfDay()
+      ]);
+    }
+
+    $totalFiltered = $query->count();
+
+    $tasks = $query
+      ->offset($start)
+      ->limit($limit)
+      ->orderBy($order, $dir)
+      ->get();
+
+    $data = [];
+    foreach ($tasks as $task) {
+      $data[] = [
+        'id'         => $task->id,
+        'driver'     => $task->driver->name,
+        'owner_phone'     => $task->owner == "admin" ? $task->user->phone : $task->customer->phone,
+        'address'    => $task->pickup->address ?? "-",
+        'price'    => $task->total_price ? number_format($task->total_price - $task->commission, 2) : "0.00",
+        'closed'     => $task->closed ? "Closed" : "Open",
+        'start'      => ($task->pickup && $task->pickup->scheduled_time)
+          ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
+          : "",
+        'complete'   => ($task->delivery && $task->delivery->scheduled_time)
+          ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
+          : "",
+        'status'     => $task->status,
+        'created_at' => $task->created_at->format('Y-m-d H:i'),
+      ];
+    }
+    return response()->json([
+      'draw'            => intval($request->input('draw')),
+      'recordsTotal'    => $totalData,
+      'recordsFiltered' => $totalFiltered,
+      'code'            => 200,
+      'data'            => $data,
+    ]);
+  }
+
+  public function getTeamTransactions(Request $request)
+  {
+    $columns = [
+      1 => 'id',
+      2 => 'amount',
+      3 => 'driver',
+      4 => 'description',
+      5 => 'maturity',
+      6 => 'task',
+      7 => 'user',
+      8 => 'created_at',
+    ];
+
+    $search = $request->input('search');
+    $type = $request->input('status');
+
+    $team = Teams::find($request->input('team'));
+
+    if (!$team) {
+      return response()->json([
+        'draw'            => intval($request->input('draw')),
+        'recordsTotal'    => 0,
+        'recordsFiltered' => 0,
+        'code'            => 200,
+        'data'            => [],
+      ]);
+    }
+
+
+    $totalData =  $team->walletTransactions()->count();
+    $totalFiltered = $totalData;
+
+    $limit  = $request->input('length');
+    $start  = $request->input('start');
+    $order  = $columns[$request->input('order.0.column')] ?? 'id';
+    $dir    = $request->input('order.0.dir') ?? 'desc';
+
+
+    $query = $team->walletTransactions();
+
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('sequence', 'LIKE', "%{$search}%")->orWhere('description', 'LIKE', "%{$search}%");
+        $q->orWhere('amount', 'LIKE', "%{$search}%");
+      });
+    }
+
+    if (!empty($type) && $type != 'all') {
+      $query->where('transaction_type', $type);
+    }
+
+    $totalFiltered = $query->count();
+    $wallets = $query
+      ->offset($start)
+      ->limit($limit)
+      ->orderBy($order, $dir)
+      ->get();
+
+    $data = [];
+    $fakeId = $start;
+
+    foreach ($wallets as $val) {
+      $data[] = [
+        'id'         => $val->id,
+        'fake_id'    => ++$fakeId,
+        'amount'     => $val->amount,
+        'driver'     => '[' . $val->wallet_id . '] ' .  $val->wallet->driver->name,
+        'type'       => $val->transaction_type,
+        'description'     => $val->description,
+        'maturity'    => $val->maturity_time ?? '',
+        'user'    => $val->user->name ?? 'automatic',
+        'task'    => $val->task_id ?? '',
+        'image'   => $val->image,
+        'status'   => $val->status,
+        'sequence'    => $val->sequence,
+        'created_at' => $val->created_at->format('Y-m-d H:i'),
       ];
     }
 

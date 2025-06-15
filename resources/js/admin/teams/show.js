@@ -9,6 +9,7 @@ import { deleteRecord, showAlert, generateFields, showFormModal } from '../../aj
 $(function () {
   var dt_data_table = $('.datatables-users'),
     dt_task_table = $('.datatables-tasks'),
+    dt_transaction_table = $('.datatables-transactions'),
     userView = baseUrl + 'admin/drivers/account/';
   console.log(templateId);
 
@@ -28,11 +29,12 @@ $(function () {
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/tasks/list/data',
+        url: baseUrl + 'admin/teams/tasks',
         data: function (d) {
           d.owner = $('#owner-fillter').val();
-          d.team = $('#team-fillter').val();
           d.driver = $('#driver-fillter').val();
+
+          d.team = teamID;
         }
       },
 
@@ -40,6 +42,7 @@ $(function () {
         { data: '' }, // للـ control (responsive)
         { data: 'id' }, // الترقيم التسلسلي
         { data: 'price' }, // الحالة
+        { data: 'driver' }, // الحالة
         { data: 'address' }, // الحالة
         { data: 'start' }, // الحالة
         { data: 'complete' }, // الحالة
@@ -74,11 +77,10 @@ $(function () {
             return `<span class="border px-3 rounded text-primary"><b>${full.price} ${__('SAR')}</b></span>`;
           }
         },
-
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.owner}</span><br><span>${__('phone')} : ${full.owner_phone}</span>`;
+            return `<span>${full.driver}</span>`;
           }
         },
         {
@@ -159,7 +161,7 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                  <a href="${baseUrl}driver/task/list/show/${full.id}" class="btn btn-sm btn-icon  " >
+                  <a href="${baseUrl}admin/teams/tasks/show/${full.id}" class="btn btn-sm btn-icon  " >
                     <i class="ti ti-help"></i>
                   </a>
               </div>`;
@@ -187,23 +189,26 @@ $(function () {
           previous: '<i class="ti ti-chevron-left"></i>'
         }
       },
-      buttons: [
-        `<label class='me-2'>
-          <select id="statusFilter" class="form-select d-inline-block w-auto ms-2 mt-5">
-        <option value="">All Status</option>
-        <option value="advertised">Advertised</option>
-        <option value="in_progress">In Progress</option>
-        <option value="assign">Assign</option>
-        <option value="started">Started</option>
-        <option value="in pickup point">In Pickup Point</option>
-        <option value="loading">Loading</option>
-        <option value="in the way">In The Way</option>
-        <option value="in delivery point">In Delivery Point</option>
-        <option value="unloading">Unloading</option>
-        <option value="completed">Completed</option>
-        <option value="canceleds">canceled</option>
-      </select>
 
+      buttons: [
+        ` <div class="mt-5 mx-2">
+            <input type="text" id="dateRange" class="form-control" placeholder="Select Date Range">
+        </div>`,
+        `<label class='me-2'>
+          <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+            <option value="">All Status</option>
+            <option value="advertised">Advertised</option>
+            <option value="in_progress">In Progress</option>
+            <option value="assign">Assign</option>
+            <option value="started">Started</option>
+            <option value="in pickup point">In Pickup Point</option>
+            <option value="loading">Loading</option>
+            <option value="in the way">In The Way</option>
+            <option value="in delivery point">In Delivery Point</option>
+            <option value="unloading">Unloading</option>
+            <option value="completed">Completed</option>
+            <option value="canceleds">canceled</option>
+          </select>
         </label>`,
         ` <label class="me-2">
               <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search Tasks" />
@@ -234,11 +239,11 @@ $(function () {
     });
 
     $('#statusFilter').on('change', function () {
-      dt_data.draw();
+      dt_task.draw();
     });
 
     $('#searchFilter').on('input', function () {
-      dt_data.draw();
+      dt_task.draw();
     });
 
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
@@ -477,6 +482,181 @@ $(function () {
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
+  if (dt_transaction_table.length) {
+    var dt_trans = dt_transaction_table.DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: baseUrl + 'admin/teams/transactions',
+        data: function (d) {
+          d.search = $('#tranSearchFilter').val();
+          d.status = $('#tranStatusFilter').val();
+          d.team = teamID;
+        }
+      },
+      columns: [
+        { data: '' },
+        { data: 'fake_id' },
+        { data: 'amount' },
+        { data: 'driver' },
+        { data: 'description' },
+        { data: 'maturity' },
+        { data: 'task' },
+        { data: 'status' },
+        { data: 'created_at' }
+      ],
+      columnDefs: [
+        {
+          className: 'control',
+          searchable: false,
+          orderable: false,
+          responsivePriority: 1,
+          targets: 0,
+          render: function () {
+            return '';
+          }
+        },
+        {
+          targets: 1,
+          searchable: false,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return `<span>${full.sequence} </span>`;
+          }
+        },
+        {
+          targets: 2,
+          render: function (data, type, full, meta) {
+            return `<b><span class="${full.type === 'debit' ? 'text-danger' : 'text-success'} border px-3 rounded ">${full.amount} SAR</span><b>`;
+          }
+        },
+        {
+          targets: 3,
+          searchable: false,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return `<span>${full.driver} </span>`;
+          }
+        },
+        {
+          targets: 4,
+          render: function (data, type, full, meta) {
+            let imageBtn = '';
+            if (full.image) {
+              imageBtn = `
+                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="عرض الصورة">
+                  <i class="ti ti-photo"></i>
+                </button>
+              `;
+            }
+
+            return `
+              <span>${full.description}</span>
+              ${imageBtn}
+            `;
+          }
+        },
+
+        {
+          targets: 5,
+          render: function (data, type, full, meta) {
+            return `<span>${full.maturity}</span>`;
+          }
+        },
+        {
+          targets: 6,
+          render: function (data, type, full, meta) {
+            return `<span>${full.task}</span>`;
+          }
+        },
+
+        {
+          targets: 7,
+          render: function (data, type, full, meta) {
+            return `<b><span class="${full.status ? 'bg-success' : 'bg-danger'}  text-white rounded px-3 ">${full.status ? 'Paid' : 'Not Paid'}</span><b>`;
+          }
+        },
+
+        {
+          targets: 8,
+          render: function (data, type, full, meta) {
+            return `<span>${full.created_at}</span>`;
+          }
+        }
+      ],
+      createdRow: function (row, data, dataIndex) {
+        if (data.task !== '') {
+          $(row).addClass('table-');
+        }
+      },
+      order: [[1, 'asc']],
+      dom:
+        '<"row"' +
+        '<"col-md-2"l>' +
+        '<"col-md-10 d-flex justify-content-end"fB>' +
+        '>t' +
+        '<"row mt-3"' +
+        '<"col-md-6"i>' +
+        '<"col-md-6"p>' +
+        '>',
+      lengthMenu: [10, 25, 50, 100],
+      language: {
+        sLengthMenu: '_MENU_',
+        search: '',
+        searchPlaceholder: 'Search...',
+        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        paginate: {
+          next: '<i class="ti ti-chevron-right"></i>',
+          previous: '<i class="ti ti-chevron-left"></i>'
+        }
+      },
+      buttons: [
+        `<label class='me-2'>
+        <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+          <option value="all">All</option>
+          <option value="credit">Credit</option>
+          <option value="debit">Debit</option>
+        </select>
+      </label>`,
+        ` <label class="me-2">
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search..." />
+          </label>`
+      ],
+      responsive: {
+        details: {
+          display: $.fn.dataTable.Responsive.display.modal({
+            header: function (row) {
+              var data = row.data();
+              return 'Details of ' + data.name;
+            }
+          }),
+          type: 'column',
+          renderer: function (api, rowIdx, columns) {
+            var data = $.map(columns, function (col) {
+              return col.title
+                ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                      <td>${col.title}:</td>
+                      <td>${col.data}</td>
+                   </tr>`
+                : '';
+            }).join('');
+            return $('<table class="table"/><tbody />').append(data);
+          }
+        }
+      }
+    });
+
+    $('#statusFilter').on('change', function () {
+      dt_trans.draw();
+    });
+
+    $('#tranStatusFilter').on('input', function () {
+      dt_trans.draw();
+    });
+
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_trans }));
+  }
+
   $('.dataTables_filter').hide();
 
   document.addEventListener('formSubmitted', function (event) {
@@ -605,22 +785,39 @@ $(function () {
 
       if (targetId === '#navs-drivers') {
         dt_data.draw();
-        dt_task.draw();
       }
 
       if (targetId === '#navs-tasks') {
         dt_task.draw();
-        dt_data.draw();
       }
 
       if (targetId === '#navs-wallet') {
-        console.log('Wallet tab opened');
+        dt_trans.draw();
         // كود خاص بالمحفظة
       }
     });
   });
 });
 
+$('#dateRange').daterangepicker(
+  {
+    opens: 'left',
+    locale: {
+      format: 'DD MMM YYYY',
+      cancelLabel: 'Cancel',
+      applyLabel: 'Apply'
+    },
+    startDate: moment().startOf('month'),
+    endDate: moment().endOf('month')
+  },
+  function (start, end, label) {
+    const startDate = start.format('YYYY-MM-DD');
+    const endDate = end.format('YYYY-MM-DD');
+    start_from = startDate;
+    end_to = endDate;
+    dt_task.draw();
+  }
+);
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;
 const selectedTypes = new Set();

@@ -25,6 +25,7 @@ use App\Http\Controllers\admin\settings\GeofencesController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\TasksAdsController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Middleware\EnsureCorrectGuard;
 use App\Http\Middleware\EnsureGuardIs;
@@ -34,6 +35,8 @@ Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.sw
 
 Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
+
+Route::get('/refresh-captcha', [CaptchaController::class, 'refresh'])->name('captcha.refresh');
 
 
 Route::middleware('rate.limit')->group(function () {
@@ -134,6 +137,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/task/list/data', [App\Http\Controllers\driver\TasksController::class, 'getData'])->name('driver.task.data');
         Route::get('/task/list/show/{id}', [App\Http\Controllers\driver\TasksController::class, 'show'])->name('driver.task.show');
 
+
         Route::get('/wallet', [App\Http\Controllers\driver\WalletController::class, 'index'])->name('driver.wallet.wallet');
         Route::get('/wallet/data', [App\Http\Controllers\driver\WalletController::class, 'getData'])->name('driver.wallet.data');
 
@@ -154,6 +158,15 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/dashboard',  [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
         Route::get('/profile', [App\Http\Controllers\customer\DashboardController::class, 'profile'])->name('customer.profile');
         Route::post('/profile/update', [App\Http\Controllers\customer\DashboardController::class, 'updateProfile'])->name('customer.profile.update');
+
+        Route::post('/tasks/validate-step1', [App\Http\Controllers\customer\TasksController::class, 'validateStep1'])->name('customer.task.validateStep1');
+        Route::post('/tasks/validate-step2', [App\Http\Controllers\customer\TasksController::class, 'validateStep2'])->name('customer.task.validateStep2');
+        Route::post('/tasks/store', [App\Http\Controllers\customer\TasksController::class, 'store'])->name('customer.task.store');
+        Route::get('tasks/edit/{id}', [App\Http\Controllers\customer\TasksController::class, 'edit'])->name('customer.tasks.edit');
+        Route::post('tasks/edit', [App\Http\Controllers\customer\TasksController::class, 'update'])->name('customer.tasks.update');
+
+        Route::get('/tasks/get/tasks', [App\Http\Controllers\customer\DashboardController::class, 'getTasks'])->name('customer.task.get');
+        Route::get('tasks/tracking/{id}', [App\Http\Controllers\customer\TasksController::class, 'taskTracking'])->name('customer.tasks.tracking');
       });
     });
 
@@ -304,9 +317,13 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/teams', [TeamsController::class, 'store'])->name('teams.store');
         Route::get('/teams/details/{id}', [TeamsController::class, 'show'])->name('teams.show');
         Route::get('/teams/drivers/', [TeamsController::class, 'getTeamDrivers'])->name('teams.drivers');
+        Route::get('/teams/tasks/', [TeamsController::class, 'getTeamTasks'])->name('teams.tasks');
+        Route::get('/teams/transactions/', [TeamsController::class, 'getTeamTransactions'])->name('teams.transactions');
         Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.edit');
         Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
         Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
+        Route::get('/teams/tasks/show/{id}', [App\Http\Controllers\driver\TasksController::class, 'show'])->name('teams.task.show');
+
 
         Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');
         Route::get('/tasks/data', [TasksController::class, 'getData'])->name('tasks.data');

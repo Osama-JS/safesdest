@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
 use App\Models\Customer;
+use App\Models\Form_Field;
 use App\Models\Settings;
 use App\Models\Vehicle;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,8 @@ class DashboardController extends Controller
   {
     $vehicles = Vehicle::all();
     $task_template = Settings::where('key', 'task_template')->first();
-    return view('customers.index', compact('vehicles', 'task_template'));
+    $template_fields = Form_Field::where('form_template_id', $task_template->value)->get();
+    return view('customers.index', compact('vehicles', 'template_fields'));
   }
 
   public function profile()
@@ -92,5 +94,11 @@ class DashboardController extends Controller
     } catch (\Exception $ex) {
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
+  }
+
+  public function getTasks()
+  {
+    $tasks = Task::with('driver', 'pickup', 'delivery')->where('customer_id', Auth::user()->id)->whereNotIn('status', ['completed', 'canceled'])->get();
+    return response()->json(['data' => $tasks]);
   }
 }

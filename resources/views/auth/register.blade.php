@@ -32,7 +32,6 @@
               <option value="{{ $vehicle->id }}">{{ $vehicle->name }}</option>
             @endforeach
           </select>
-          <span class="vehicles-{index}-vehicle-error text-danger text-error"></span>
 
         </div>
         <div class="col-md-4">
@@ -40,7 +39,6 @@
           <select class="form-select vehicle-type-select" name="vehicles[{index}][vehicle_type]" disabled>
             <option value="">Select a vehicle type</option>
           </select>
-          <span class="vehicles-{index}-vehicle_type-error text-danger text-error"></span>
 
         </div>
         <div class="col-md-4">
@@ -48,11 +46,9 @@
           <select class="form-select vehicle-size-select" name="vehicle" disabled>
             <option value="">Select a vehicle size</option>
           </select>
-          <span class="vehicles-{index}-vehicle_size-error text-danger text-error"></span>
+          <span class="vehicle-error text-danger text-error"></span>
 
         </div>
-
-
       </div>
     </script>
 @endsection
@@ -223,11 +219,21 @@
                                     </div>
                                     <div class="mb-6">
 
-                                        <label class="form-label" for="login-password">confirm that you ar not a
-                                            robot</label>
-                                        {!! htmlFormSnippet() !!}
-                                        <span class="g-recaptcha-response-error text-danger text-error"></span>
+                                        <div class="form-group">
+                                            <label class="form-label" for="login-password">Enter the code in the
+                                                image</label>
+                                            <div class="captcha mb-2">
+                                                <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
+                                                    style="height: 60px;">
+                                                <button type="button"
+                                                    class="btn btn-outline-seconde btn-refresh">↻</button>
+                                            </div>
 
+
+                                            <input type="text" class="form-control" name="captcha" required>
+                                            <span class="captcha-error text-danger text-error"></span>
+
+                                        </div>
 
                                     </div>
 
@@ -368,11 +374,21 @@
                                     </div>
                                     <div class="mb-6">
 
-                                        <label class="form-label" for="login-password">confirm that you ar not a
-                                            robot</label>
-                                        {!! htmlFormSnippet() !!}
-                                        <span class="g-recaptcha-response-error text-danger text-error"></span>
+                                        <div class="form-group">
+                                            <label class="form-label" for="login-password">Enter the code in the
+                                                image</label>
+                                            <div class="captcha mb-2">
+                                                <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
+                                                    style="height: 60px;">
+                                                <button type="button"
+                                                    class="btn btn-outline-seconde btn-refresh">↻</button>
+                                            </div>
 
+
+                                            <input type="text" class="form-control" name="captcha" required>
+                                            <span class="captcha-error text-danger text-error"></span>
+
+                                        </div>
 
                                     </div>
 

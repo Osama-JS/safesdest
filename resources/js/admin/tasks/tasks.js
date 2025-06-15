@@ -578,78 +578,6 @@ $(function () {
     });
   });
 
-  function setupMethodSelection(methods) {
-    const methodsMap = {};
-
-    methods.forEach(method => {
-      methodsMap[method.id] = method;
-    });
-
-    // حدث تغيير اختيار الميثود
-    $('#pricing-method-select')
-      .off('change')
-      .on('change', function () {
-        console.log('change');
-        const selectedId = $(this).val();
-        const selectedMethod = methodsMap[selectedId];
-
-        $('#params-select-wrapper').remove(); // إزالة أي اختيار سابق
-
-        if (selectedMethod && selectedMethod.type === 'points' && selectedMethod.params.length > 0) {
-          let selectHTML = `
-          <div id="params-select-wrapper" class="mt-3">
-
-            <select class="form-select" name="params_select" id="params-select">
-              <option value="">-- Choose the path --</option>`;
-
-          selectedMethod.params.forEach((param, index) => {
-            selectHTML += `
-            <option value="${param.param}"
-              data-from-lat="${param.from_point.latitude}"
-              data-from-lng="${param.from_point.longitude}"
-              data-to-lat="${param.to_point.latitude}"
-              data-to-lng="${param.to_point.longitude}"
-              ${$('#task-id').val() !== '' ? (param.param == $('#task-id').attr('data-point') ? 'selected' : '') : ''}>
-              من ${param.from_point.name} إلى ${param.to_point.name} - السعر: ${parseFloat(param.price).toFixed(0)} ريال
-            </option>`;
-          });
-
-          selectHTML += `</select>
-            <span class="params_select-error text-danger text-error"></span>
-
-
-          </div>`;
-
-          $('#pricing-method-select').after(selectHTML);
-          $('#params-select').trigger('change');
-          $('#delivery-map-section').hide();
-          $('#pickup-map-section').hide();
-        } else {
-          $('#delivery-map-section').show();
-          $('#pickup-map-section').show();
-
-          if ($('#task-id').val() === '') {
-            $('#pickup-latitude').val('');
-            $('#pickup-longitude').val('');
-            $('#delivery-latitude').val('');
-            $('#delivery-longitude').val('');
-          }
-        }
-      });
-
-    // حدث تغيير اختيار param لتحديث الإحداثيات
-    $(document)
-      .off('change', '#params-select')
-      .on('change', '#params-select', function () {
-        const selectedOption = $(this).find('option:selected');
-
-        $('#pickup-latitude').val(selectedOption.data('from-lat'));
-        $('#pickup-longitude').val(selectedOption.data('from-lng'));
-        $('#delivery-latitude').val(selectedOption.data('to-lat'));
-        $('#delivery-longitude').val(selectedOption.data('to-lng'));
-      });
-  }
-
   $('#go-to-step3').on('click', function () {
     $('#task-form').block({
       message:
@@ -871,3 +799,75 @@ $('#driver-manual').on('change', function () {
     $('#task-driver-select').val('').trigger('change');
   }
 });
+
+export function setupMethodSelection(methods) {
+  const methodsMap = {};
+
+  methods.forEach(method => {
+    methodsMap[method.id] = method;
+  });
+
+  // حدث تغيير اختيار الميثود
+  $('#pricing-method-select')
+    .off('change')
+    .on('change', function () {
+      console.log('change');
+      const selectedId = $(this).val();
+      const selectedMethod = methodsMap[selectedId];
+
+      $('#params-select-wrapper').remove(); // إزالة أي اختيار سابق
+
+      if (selectedMethod && selectedMethod.type === 'points' && selectedMethod.params.length > 0) {
+        let selectHTML = `
+          <div id="params-select-wrapper" class="mt-3">
+
+            <select class="form-select" name="params_select" id="params-select">
+              <option value="">-- Choose the path --</option>`;
+
+        selectedMethod.params.forEach((param, index) => {
+          selectHTML += `
+            <option value="${param.param}"
+              data-from-lat="${param.from_point.latitude}"
+              data-from-lng="${param.from_point.longitude}"
+              data-to-lat="${param.to_point.latitude}"
+              data-to-lng="${param.to_point.longitude}"
+              ${$('#task-id').val() !== '' ? (param.param == $('#task-id').attr('data-point') ? 'selected' : '') : ''}>
+              من ${param.from_point.name} إلى ${param.to_point.name} - السعر: ${parseFloat(param.price).toFixed(0)} ريال
+            </option>`;
+        });
+
+        selectHTML += `</select>
+            <span class="params_select-error text-danger text-error"></span>
+
+
+          </div>`;
+
+        $('#pricing-method-select').after(selectHTML);
+        $('#params-select').trigger('change');
+        $('#delivery-map-section').hide();
+        $('#pickup-map-section').hide();
+      } else {
+        $('#delivery-map-section').show();
+        $('#pickup-map-section').show();
+
+        if ($('#task-id').val() === '') {
+          $('#pickup-latitude').val('');
+          $('#pickup-longitude').val('');
+          $('#delivery-latitude').val('');
+          $('#delivery-longitude').val('');
+        }
+      }
+    });
+
+  // حدث تغيير اختيار param لتحديث الإحداثيات
+  $(document)
+    .off('change', '#params-select')
+    .on('change', '#params-select', function () {
+      const selectedOption = $(this).find('option:selected');
+
+      $('#pickup-latitude').val(selectedOption.data('from-lat'));
+      $('#pickup-longitude').val(selectedOption.data('from-lng'));
+      $('#delivery-latitude').val(selectedOption.data('to-lat'));
+      $('#delivery-longitude').val(selectedOption.data('to-lng'));
+    });
+}

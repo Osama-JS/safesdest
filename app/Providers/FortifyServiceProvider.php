@@ -43,16 +43,21 @@ class FortifyServiceProvider extends ServiceProvider
     // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
     Fortify::authenticateUsing(function (Request $request) {
-      $validator = Validator::make($request->all(), [
-        'g-recaptcha-response' => 'nullable|recaptcha',
-      ]);
+      // ✅ تحقق من كود الكابتشا قبل لمس الجلسة
+      // $validator = Validator::make($request->all(), [
+      //   'captcha' => 'required',
+      // ]);
 
-      if ($validator->fails()) {
-        throw ValidationException::withMessages([
-          'email' => ['reCAPTCHA verification failed.'],
-          'recaptcha' => ['reCAPTCHA verification failed.'],
-        ]);
-      }
+      // if ($request->input('captcha') !== session('captcha')) {
+      //   throw ValidationException::withMessages([
+      //     'captcha' => ['The verification code is invalid'],
+      //   ]);
+      // }
+
+
+
+      // لا تعبث بالجلسة هنا بعد، انتظر حتى يتم التحقق من المستخدم
+
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');
@@ -60,7 +65,6 @@ class FortifyServiceProvider extends ServiceProvider
       switch ($guard) {
         case 'driver':
           $user = Driver::where('email', $email)->first();
-
           break;
         case 'customer':
           $user = Customer::where('email', $email)->first();
@@ -69,7 +73,6 @@ class FortifyServiceProvider extends ServiceProvider
           $user = User::where('email', $email)->first();
           break;
       }
-
 
       if (!$user || !Hash::check($password, $user->password)) {
         throw ValidationException::withMessages([
@@ -95,6 +98,10 @@ class FortifyServiceProvider extends ServiceProvider
         ]);
       }
 
+      // ✅ الآن يمكنك التلاعب بالجلسة بعد نجاح التحقق من الكابتشا
+      $request->session()->regenerateToken();
+      $request->session()->put('captcha', true);
+
       if ($guard == 'customer') {
         Auth::guard('web')->logout();
         Auth::guard('driver')->logout();
@@ -114,6 +121,7 @@ class FortifyServiceProvider extends ServiceProvider
 
       return $user;
     });
+
 
 
     RateLimiter::for('login', function (Request $request) {

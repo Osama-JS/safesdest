@@ -10,13 +10,15 @@ use App\Models\Pricing_Method;
 use App\Models\Pricing_Geofence;
 use App\Models\Pricing_Parametar;
 use App\Models\Pricing_Template;
+use App\Models\Settings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Services\MapboxService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 
-class TaskPricingService
+class CustomerTaskPricingService
 {
   protected $mapbox;
 
@@ -47,13 +49,11 @@ class TaskPricingService
   protected function buildValidationRules($request, $type)
   {
     $rules = [
-      'owner' => 'required|in:admin,customer',
-      'customer' => 'required_if:owner,customer',
-      'template' => 'required|exists:form_templates,id',
+
       'vehicles.*.vehicle' => 'required|exists:vehicles,id',
       'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
       'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
-      'vehicles.*.quantity' => 'required|integer|min:1',
+      'vehicles.*.quantity' => 'nullable|integer|min:1',
       'pricing_method' => [
         'required',
         function ($attribute, $value, $fail) {
@@ -86,8 +86,11 @@ class TaskPricingService
       $rules['params_select'] = 'required|exists:pricing_parametars,id';
     }
 
-    if ($request->filled('template')) {
-      $fields = Form_Field::where('form_template_id', $request->template)->get();
+    $task_template = Settings::where('key', 'task_template')->first();
+    $template_id = $task_template->value;
+
+    if ($task_template) {
+      $fields = Form_Field::where('form_template_id', $template_id)->get();
 
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
@@ -95,7 +98,7 @@ class TaskPricingService
 
         // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
         if (!$request->filled('id') && $field->required) {
-          if (in_array($field->type, ['file', 'image', 'file_expiration_date']) && $type === 'update') {
+          if (in_array($field->type, ['file', 'image', 'file_expiration_date'])) {
             $rules[$fieldKey][] = 'nullable';
           } else {
             if ($field->type == "file_expiration_date") {
@@ -157,24 +160,8 @@ class TaskPricingService
         }
       }
     }
-    if ($request->filled('manual_total_pricing')) {
-      $rules['manual_total_pricing'] = 'required|numeric|min:0';
-    } else {
-      $rules['manual_total_pricing'] = 'nullable|numeric|min:0';
-    }
-
-    if ($request->filled('manual_commission')) {
-      $rules['manual_commission'] = 'required|numeric|min:0';
-    } else {
-      $rules['manual_commission'] = 'nullable|numeric|min:0';
-    }
 
 
-    if ($request->filled('pricing_details')) {
-      $rules['pricing_details'] = 'nullable|array';
-      $rules['pricing_details.*.label'] = 'required_with:pricing_details.*.amount|string';
-      $rules['pricing_details.*.amount'] = 'required_with:pricing_details.*.label|numeric';
-    }
 
     return $rules;
   }
@@ -193,10 +180,13 @@ class TaskPricingService
   public function calculatePricing($request)
   {
 
+    $task_template = Settings::where('key', 'task_template')->first();
+    $template_id = $task_template->value;
+
     $sizes = collect($request->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
     $pricingTemplate = Pricing_Template::availableForCustomer(
-      $request->template,
-      $request->customer ?? null,
+      $template_id,
+      Auth::user()->id,
       $sizes
     )->first();
 
@@ -260,18 +250,20 @@ class TaskPricingService
       $data['total_price'] = $totalPrice;
     }
 
-
-    $vehicles = array_column($request->vehicles, 'quantity');
-    $totalVehicles = array_sum($vehicles);
-
-    if ($totalVehicles > 1) {
-      $data['vehicles'] = "You want {$totalVehicles} vehicles, so we will create {$totalVehicles} tasks with the same information.";
+    if (Auth::user()->can('tasks_meltable')) {
+      $vehicles = array_column($request->vehicles, 'quantity');
+      $totalVehicles = array_sum($vehicles);
+      if ($totalVehicles > 1) {
+        $data['vehicles'] = "You want {$totalVehicles} vehicles, so we will create {$totalVehicles} tasks with the same information.";
+      }
+      $taskData['vehicles_quantity'] = $totalVehicles;
+    } else {
+      $taskData['vehicles_quantity'] = 1;
     }
 
-    $taskData['vehicles_quantity'] = $totalVehicles;
 
-    $drivers = Driver::select('id', 'name')->whereIn('vehicle_size_id', $sizes)->get();
-    $data['drivers'] = $drivers;
+
+
 
     return ['status' => true, 'data' => $data, 'task' => $taskData];
   }

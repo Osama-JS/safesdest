@@ -352,6 +352,8 @@ $(function () {
                     ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
+                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}">download task status report</a></li>
+
                   </ul>
               </div>
             </div>
@@ -725,6 +727,11 @@ $(function () {
       $('#adModal').modal('show');
       $('#adTitle').html(`Edit Task Ad: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
     });
+  });
+
+  $(document).on('click', '.task-report', function () {
+    const id = $(this).data('id');
+    const reportWindow = window.open(`${baseUrl}admin/task/${id}/report`, '_blank');
   });
 
   function delay(ms) {

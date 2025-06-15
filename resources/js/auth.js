@@ -170,29 +170,29 @@ export function generateFields(fields, generateSection) {
     if (field.driver_can == 'write' || field.customer_can == 'write') {
       switch (field.type) {
         case 'string':
-          inputField = `<input type="text" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="text" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" }>`;
           break;
         case 'number':
-          inputField = `<input type="number" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="number" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" }>`;
           break;
         case 'email':
-          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}"}>`;
           break;
         case 'date':
-          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" }>`;
           break;
         case 'textarea':
-          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}></textarea>`;
+          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" }></textarea>`;
           break;
         case 'file':
-          inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" }>`;
           break;
         case 'file_expiration_date':
           inputField = `
-    <input type="file" name="additional_fields[${field.name}_file]" class="form-control" ${field.required ? 'required' : ''}>
+    <input type="file" name="additional_fields[${field.name}_file]" class="form-control"}>
             <label class="p-0">expiration date</label>
 
-    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control " ${field.required ? 'required' : ''}>
+    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control " }>
   `;
           break;
         case 'url':
@@ -202,7 +202,7 @@ export function generateFields(fields, generateSection) {
           inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
           break;
         case 'select':
-          inputField = `<select name="additional_fields[${field.name}]" class="form-select" ${field.required ? 'required' : ''}>
+          inputField = `<select name="additional_fields[${field.name}]" class="form-select"}>
           ${(() => {
             try {
               const options = JSON.parse(field.value || '[]');

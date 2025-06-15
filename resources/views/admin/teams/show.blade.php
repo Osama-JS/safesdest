@@ -62,6 +62,17 @@
 
 @section('content')
 
+    @php
+        $balance = $totals['debit'] ?? (0 + $totals['credit'] ?? 0);
+        $credit = $totals['credit'] ?? 0;
+        $debit = $totals['debit'] ?? 0;
+
+        $balanceClass = $balance < 0 ? 'text-danger' : 'text-success';
+        $balanceSign = $balance < 0 ? '-' : '+';
+
+    @endphp
+
+
     <div class="mb-4">
         <h5>{{ $data->name }} [{{ $data->id }}]</h5>
         <p>
@@ -76,6 +87,32 @@
             <i class=" tf-icons ti ti-truck-delivery"></i>
             <b>{{ $data->drivers->count() }}</b>
         </span>
+        <div class="d-flex flex-column flex-sm-row gap-3 text-nowrap mt-3">
+
+            <!-- Balance -->
+            <div class="d-flex align-items-center">
+                <i class="ti ti-wallet me-2 fs-5 {{ $balanceClass }}"></i>
+                <span class="fw-semibold">{{ __('Balance') }}:</span>
+                <span class="ms-1 fw-bold {{ $balanceClass }}">
+                    {{ $balanceSign }}{{ number_format(abs($balance), 2) }}
+                </span>
+            </div>
+
+            <!-- Credit -->
+            <div class="d-flex align-items-center">
+                <i class="ti ti-arrow-up-right text-success me-2 fs-5"></i>
+                <span class="fw-semibold">{{ __('Credit') }}:</span>
+                <span class="ms-1 fw-bold text-success">{{ number_format($credit, 2) }}</span>
+            </div>
+
+            <!-- Debit -->
+            <div class="d-flex align-items-center">
+                <i class="ti ti-arrow-down-left text-danger me-2 fs-5"></i>
+                <span class="fw-semibold">{{ __('Debit') }}:</span>
+                <span class="ms-1 fw-bold text-danger">{{ number_format($debit, 2) }}</span>
+            </div>
+        </div>
+
     </div>
     <div class="mt-3">
         <div class="nav-align-top nav-tabs-shadow mb-6">
@@ -105,7 +142,7 @@
                 <div class="tab-pane fade show active" id="navs-drivers" role="tabpanel">
                     <div class="card-datatable table-responsive">
                         <table class="datatables-users table">
-                            <thead class="border-top">
+                            <thead class="table-light">
                                 <tr>
                                     <th></th>
                                     <th>#</th>
@@ -126,13 +163,13 @@
                 </div>
                 <div class="tab-pane fade" id="navs-tasks" role="tabpanel">
                     <div class="card-datatable table-responsive">
-                        <table class="datatables-tasks table ">
-                            <thead class="border ">
+                        <table class="datatables-tasks table table-hover align-middle mb-0  ">
+                            <thead class="table-light ">
                                 <tr>
                                     <th></th>
                                     <th>{{ __('task id') }}</th>
                                     <th>{{ __('price') }}</th>
-                                    <th>{{ __('owner') }}</th>
+                                    <th>{{ __('driver') }}</th>
                                     <th>{{ __('pickup address') }}</th>
                                     <th>{{ __('start before') }}</th>
                                     <th>{{ __('complete before') }}</th>
@@ -145,19 +182,24 @@
                     </div>
                 </div>
                 <div class="tab-pane fade" id="navs-wallet" role="tabpanel">
-                    <p>
-                        Oat cake chupa chups dragée donut toffee. Sweet cotton candy jelly beans macaroon gummies cupcake
-                        gummi
-                        bears
-                        cake chocolate.
-                    </p>
-                    <p class="mb-0">
-                        Cake chocolate bar cotton candy apple pie tootsie roll ice cream apple pie brownie cake. Sweet roll
-                        icing
-                        sesame snaps caramels danish toffee. Brownie biscuit dessert dessert. Pudding jelly jelly-o tart
-                        brownie
-                        jelly.
-                    </p>
+                    <div class="card-datatable table-responsive">
+                        <table class="table table-hover align-middle mb-0 datatables-transactions">
+                            <thead class="table-light">
+                                <tr>
+                                    <th></th>
+                                    <th>#</th>
+                                    <th>{{ __('Amount') }}</th>
+                                    <th>{{ __('Driver') }}</th>
+                                    <th>{{ __('Description') }}</th>
+                                    <th>{{ __('Maturity') }}</th>
+                                    <th>{{ __('Task') }}</th>
+                                    <th>{{ __('status') }}</th>
+                                    <th>{{ __('Created At') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

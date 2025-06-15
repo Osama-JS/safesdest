@@ -83,7 +83,7 @@ class WalletsController extends Controller
       $data[] = [
         'id'         => $val->id,
         'fake_id'    => ++$fakeId,
-        'name'       => "[ " . $val->id . " ] " . ($val->customer_id ? $val->customer->name : ($val->driver_id ? $val->driver->name : 'N/A')),
+        'name'       => "[ " . $val->id . " ] " . ($val->customer_id ? $val->customer?->name : ($val->driver_id ? $val->driver?->name : 'N/A')),
         'type'       => $val->user_type,
         'balance'       => $val->balance,
         'debt_ceiling'       => $val->debt_ceiling,

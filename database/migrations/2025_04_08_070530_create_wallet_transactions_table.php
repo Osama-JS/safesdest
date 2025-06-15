@@ -18,6 +18,7 @@ return new class extends Migration
       $table->enum('transaction_type', ['credit', 'debit']);
       $table->string('description');
       $table->string('image')->nullable();
+      $table->boolean('status')->default(0);
       $table->timestamp('maturity_time')->nullable();
       $table->unsignedBigInteger('wallet_id');
       $table->foreign('wallet_id')->references('id')->on('wallets')->onDelete('restrict');

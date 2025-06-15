@@ -272,6 +272,7 @@ $('#select-template')
         data: { id: templateId },
         success: function (response) {
           generateFields(response.fields);
+          console.log(response.fields);
         },
         error: function () {
           console.log('Error loading template fields.');

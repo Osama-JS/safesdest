@@ -139,7 +139,8 @@
                                                                     <div class="col-md-6">
                                                                         <label for="pickup-email">*
                                                                             {{ __('Email') }}</label>
-                                                                        <input type="email" id="pickup-email"
+                                                                        <input type="email"
+                                                                            id="pickup-contact-email"
                                                                             name="pickup_email" class="form-control"
                                                                             placeholder="{{ __('Email') }}"
                                                                             required />

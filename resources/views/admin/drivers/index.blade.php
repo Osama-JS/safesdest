@@ -343,7 +343,7 @@
                                                         <div class="mb-6">
                                                             <label class="form-label" for="driver-team">*
                                                                 {{ __('Team') }}</label>
-                                                            <select id="driver-role" class="form-select" name="team">
+                                                            <select id="driver-team" class="form-select" name="team">
                                                                 <option value="">-- {{ __('Select Team') }}</option>
                                                                 @foreach ($teams as $key)
                                                                     <option value="{{ $key->id }}">

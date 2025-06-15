@@ -310,7 +310,7 @@ $(function () {
       $('#driver-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
       $('#driver-role').val(data.role_id);
-      $('#driver-team').val(data.time_id);
+      $('#driver-team').val(data.time_id).trigger('change');
       $('#driver-address').val(data.address);
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);

@@ -157,21 +157,32 @@
                             </div>
 
                             <div class="mb-6">
+                                @error('recaptcha')
+                                    <span class="invalid-feedback" role="alert">
+                                        <span class="fw-medium">{{ $message }}</span>
+                                    </span>
+                                @enderror
+                                <label class="form-label" for="login-password">confirm that you ar not a robot</label>
+                                {!! htmlFormSnippet() !!}
+
+                            </div>
+                            {{-- <div class="mb-6">
                                 <div class="form-group">
-                                <label class="form-label" for="login-password">Enter the code in the image</label>
-                                <div class="captcha mb-2">
-                                    <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image" style="height: 60px;">
-                                    <button type="button" class="btn btn-outline-seconde btn-refresh">↻</button>
+                                    <label class="form-label" for="login-password">Enter the code in the image</label>
+                                    <div class="captcha mb-2">
+                                        <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
+                                            style="height: 60px;">
+                                        <button type="button" class="btn btn-outline-seconde btn-refresh">↻</button>
+                                    </div>
+
+
+                                    <input type="text" class="form-control" name="captcha" required>
+                                    @error('captcha')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
-
-                                <input type="text" class="form-control" name="captcha" required>
-                                @error('captcha')
-                                    <span class="text-danger">{{ $message }}</span>
-                                @enderror
-                            </div>
-
-                            </div>
+                            </div> --}}
 
 
 
@@ -205,19 +216,20 @@
             </div>
         </div>
     </div>
-      <script>
-        document.querySelector('.btn-refresh').addEventListener('click', function () {
+    {!! htmlScriptTagJsApi() !!}
+
+    {{-- <script>
+        document.querySelector('.btn-refresh').addEventListener('click', function() {
             fetch("{{ route('captcha.refresh') }}", {
-    headers: {
-        'Accept': 'application/json'
-    }
-})
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
                 .then(res => res.json()) // ← يتوقع JSON
                 .then(data => {
                     document.getElementById('captcha-image').src = data.captcha + '?' + Date.now();
                 });
         });
-
-    </script>
+    </script> --}}
 
 @endsection

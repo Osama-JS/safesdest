@@ -287,10 +287,13 @@ class DriversController extends Controller
         'address'         => $req->address,
         'vehicle_size_id' => $req->vehicle,
         'role_id'         => $req->role ?? null,
-        'team_id'         => $req->team ?? null,
         'commission_type' => $req->commission_type,
         'commission'      => $req->commission,
       ];
+
+      if ($req->filled('team')) {
+        $data['team_id'] = $req->team;
+      }
 
       if ($req->filled('password')) {
         $data['password'] = Hash::make($req->password);

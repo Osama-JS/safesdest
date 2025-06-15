@@ -495,6 +495,7 @@ class CustomersController extends Controller
 
 
       $done = Customer::where('id', $req->id)->delete();
+      $find->wallet->delete();
       if (!$done) {
         DB::rollBack();
         return response()->json(['status' => 2, 'error' => __('Error to delete Customer')]);

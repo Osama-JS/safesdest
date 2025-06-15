@@ -362,9 +362,7 @@ $(function () {
       $('#submitModal').modal('hide');
     }, 2000);
 
-    if (dt_data) {
-      dt_data.draw();
-    }
+    loadTasks();
   });
 
   document.addEventListener('deletedSuccess', function (event) {
@@ -709,7 +707,7 @@ $(function () {
         showAlert('error', data.error);
         return;
       }
-      $('#task-form').attr('action', `${baseUrl}admin/tasks/edit`);
+      $('#task-form').attr('action', `${baseUrl}customer/tasks/edit`);
 
       $('#modelTitle').html(`Edit Task: <span class="bg-info text-white px-2 rounded">#${taskId}</span>`);
       // get data
@@ -761,21 +759,7 @@ $(function () {
       $('#delivery-latitude').val(data.delivery.latitude);
       $('#delivery-note').val(data.delivery.note);
 
-      if (data.pricing_type === 'manual') {
-        $('#total-price').val(data.total_price);
-        $(`<span  class="ms-2 badge bg-success task-priceing-hint">${__('the price set manual')}</span>`).insertAfter(
-          '#total-price'
-        );
-      }
-      if (data.commission_type === 'manual') {
-        $('#task-commission').val(data.commission);
-        $(
-          `<span class="ms-2 badge bg-success task-priceing-hint">${__('the commission set manual')}</span>`
-        ).insertAfter('#task-commission');
-      }
       renderPricingDetails(data.pricing_details);
-
-      console.log(data);
     });
   });
 

@@ -1710,7 +1710,7 @@ class TasksController extends Controller
           'error' => __('This task cannot be Payed in its current state'),
         ]);
       }
-      if ($data->payment_status !== 'pending') {
+      if ($data->payment_status === 'pending') {
         $transaction = Transaction::where('reference_id', $data->id)->first();
         if (!$transaction) {
           return response()->json([
@@ -1731,13 +1731,13 @@ class TasksController extends Controller
         DB::commit();
         return response()->json([
           'status' => 1,
-          'message' => __('Payment has been canceled for task') . ' #' . $data->is,
+          'message' => __('Payment has been canceled for task') . ' #' . $data->id,
         ]);
       }
       DB::rollBack();
       return response()->json([
         'status' => 2,
-        'message' => __('You can not cancel payment for this task'),
+        'message' => __('You can not cancel payment for this task ' . $data->payment_status),
       ]);
     } catch (Exception $e) {
       DB::rollBack();

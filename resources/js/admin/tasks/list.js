@@ -385,12 +385,20 @@ $(function () {
           <p>Amount: <span class="px-3 py-0 bg-info text-white rounded">${data.data.amount} SAR </span></p>
           <p>Payment Method: <span class="px-3 py-0 bg-info text-white rounded"> ${data.data.payment_type} </span></p>
           <p>Payment Status: <span class="px-3 py-0 bg-warning text-white rounded">${data.data.status}</span></p>
-          <p>Payment Receipt: <span class="px-3 py-0 bg-info text-white rounded">${data.data.receipt_number}</span></p>
+              <p>Payment Status: <span class="px-3 py-0 bg-warning text-white rounded">${data.data.status}</span></p>
+          ${
+            data.data.payment_type !== 'credit'
+              ? `
+             <p>Payment Receipt: <span class="px-3 py-0 bg-info text-white rounded">${data.data.receipt_number}</span></p>
           <img src="${baseUrl + data.data.receipt_image}" alt="Receipt" class="img-fluid mb-2" style="max-width: 100%; height: auto; "/>
+
+            `
+              : ''
+          }
 
           <p>Payment Note: <span class="px-3 py-0 bg-info text-white rounded">${data.data.note}</span></p>
           <p>Payment Created At: <span class="px-3 py-0 bg-info text-white rounded">${data.data.created_at}</span></p>
-          <p>Payment Checked By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user.name || 'not checked yet'}</span></p>
+          <p>Payment Checked By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user ? data.data.user.name : 'not checked yet'}</span></p>
 
           <div>
             ${checkButtons}
@@ -452,6 +460,7 @@ $(function () {
       .then(data => {
         if (data.status === 1) {
           showAlert('success', data.message, 5000, true);
+          $('#checkPaymentModal').modal('hide');
           dt_data.draw();
         } else {
           showAlert('danger', data.message, 5000, true);
@@ -554,6 +563,9 @@ $(function () {
                   setTimeout(function () {
                     window.location.href = data.url;
                   }, 2000);
+                } else {
+                  dt_data.draw();
+                  $('.payment_submit').trigger('reset');
                 }
               } else if (data.status === 2) {
                 showAlert('error', data.error, 10000, true);

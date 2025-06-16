@@ -218,6 +218,17 @@
                                         </div>
                                     </div>
                                     <div class="mb-6">
+                                        @error('recaptcha')
+                                            <span class="invalid-feedback" role="alert">
+                                                <span class="fw-medium">{{ $message }}</span>
+                                            </span>
+                                        @enderror
+                                        <label class="form-label" for="login-password">confirm that you ar not a
+                                            robot</label>
+                                        {!! htmlFormSnippet() !!}
+
+                                    </div>
+                                    {{-- <div class="mb-6">
 
                                         <div class="form-group">
                                             <label class="form-label" for="login-password">Enter the code in the
@@ -235,7 +246,7 @@
 
                                         </div>
 
-                                    </div>
+                                    </div> --}}
 
 
                                     <!-- Terms -->
@@ -373,6 +384,17 @@
 
                                     </div>
                                     <div class="mb-6">
+                                        @error('recaptcha')
+                                            <span class="invalid-feedback" role="alert">
+                                                <span class="fw-medium">{{ $message }}</span>
+                                            </span>
+                                        @enderror
+                                        <label class="form-label" for="login-password">confirm that you ar not a
+                                            robot</label>
+                                        {!! htmlFormSnippet() !!}
+
+                                    </div>
+                                    {{-- <div class="mb-6">
 
                                         <div class="form-group">
                                             <label class="form-label" for="login-password">Enter the code in the
@@ -390,7 +412,7 @@
 
                                         </div>
 
-                                    </div>
+                                    </div> --}}
 
                                     <!-- Terms -->
                                     <div id="additional-form" class="row mt-4">

@@ -334,8 +334,8 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'address'        => 'required|string|max:255',
       'vehicle'        => 'nullable|string|max:255',
-      // 'g-recaptcha-response' => 'required|recaptcha',
-      'captcha' => 'required|captcha',
+      'g-recaptcha-response' => 'required|recaptcha',
+      // 'captcha' => 'required|captcha',
 
     ], [
       'captcha.captcha' => 'The verification code is invalid',

@@ -104,6 +104,7 @@ class TasksController extends Controller
     foreach ($tasks as $task) {
       $customer = $task->customer;
       $user = $task->user;
+      $driver = $task->driver;
 
       $avatar = $customer && $customer->avatar
         ? asset('storage/' . $customer->avatar)
@@ -117,6 +118,17 @@ class TasksController extends Controller
         'avatar' => $avatar,
         'point' => $task->point()->where('type', 'pickup')->first()
       ];
+
+      if ($driver) {
+        $item['driver'] = [
+          'id' => $driver->id,
+          'name' => $driver->name,
+          'phone' => $driver->phone,
+          'phone_code' => $driver->phone_code,
+          'avatar' => $driver->image ? asset('storage/' . $driver->image) : asset('assets/img/person.png'),
+          'team' => $driver->team ? $driver->team->name : null,
+        ];
+      }
 
       if (in_array($task->status, $unassignedStatuses)) {
         $grouped['unassigned'][] = $item;
@@ -165,6 +177,14 @@ class TasksController extends Controller
           'email'  => $task->owner == "customer" ? optional($task->customer)->email : optional($task->user)->email,
           'address'  => $task->owner == "customer" ? optional($task->customer)->company_address : '',
         ],
+
+        'driver' => $task->driver ? [
+          'name'   => optional($task->driver)->name,
+          'phone'  => optional($task->driver)->phone_code . optional($task->driver)->phone,
+          'email'  => optional($task->driver)->email,
+          'image'  => optional($task->driver)->image,
+        ] : null,
+
         'history' => $task->history
           ->sortByDesc('id') // ✅ الترتيب بحسب ID من الأعلى إلى الأدنى
           ->map(function ($val) {
@@ -334,320 +354,7 @@ class TasksController extends Controller
   }
 
 
-  // public function store(Request $req, TaskPricingService $pricingService)
-  // {
-  //   // التحقق من الطلب
-  //   $validation = $pricingService->validateRequest($req);
-  //   if (!$validation['status']) {
-  //     return response()->json(['status' => 0, 'error' => $validation['errors']]);
-  //   }
 
-  //   // حساب السعر
-  //   try {
-  //     $pricing = $pricingService->calculatePricing($req);
-  //   } catch (\Exception $e) {
-  //     return response()->json(['status' => 0, 'error' => $e->getMessage()]);
-  //   }
-
-  //   if (!$pricing['status']) {
-  //     return response()->json(['status' => 2, 'error' => $pricing['errors']]);
-  //   }
-
-  //   DB::beginTransaction();
-  //   try {
-  //     $userIp = IpHelper::getUserIpAddress();
-  //     $data     = $pricing['data'];
-  //     $taskData = $pricing['task'];
-  //     $ad = [];
-  //     $history = [];
-
-  //     $task = [
-  //       'total_price'      => $data['total_price'] ?? 0,
-  //       'form_template_id' => $req->template,
-  //       'user_id'          => Auth::id(),
-  //       'pricing_id'       => $taskData['pricing'],
-  //       'vehicle_size_id' => $taskData['vehicles'][0]
-  //     ];
-
-
-  //     if ($req->filled('owner') && $req->owner === 'customer') {
-  //       if (!Auth::user()->can('mange_customers')) {
-  //         $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
-
-  //         if (!$ownsCustomer) {
-  //           return response()->json([
-  //             'status' => 2,
-  //             'error' => ['You do not have permission to create task for this customer']
-  //           ]);
-  //         }
-  //       }
-  //       $task['customer_id'] = $req->customer;
-  //     }
-
-  //     $history = [
-  //       [
-  //         'action_type' => 'created',
-  //         'description' => 'Create Task',
-  //         'ip' => $userIp,
-  //         'user_id' => Auth::user()->id
-  //       ],
-  //       [
-  //         'action_type' => 'in_progress',
-  //         'description' => 'Task in progress',
-  //         'ip' => $userIp,
-  //         'user_id' => Auth::user()->id
-  //       ]
-  //     ];
-
-
-
-  //     if ($req->filled('manual_total_pricing')) {
-  //       $task['total_price'] = $req->manual_total_pricing;
-  //       $task['pricing_type'] = 'manual';
-  //       $data['manual_pricing'] = $req->manual_total_pricing;
-  //     }
-
-
-
-  //     if ($req->filled('task_driver')) {
-  //       $task['driver_id'] = $req->task_driver;
-  //       $driver = Driver::findOrFail($task['driver_id']); // توقف التنفيذ هنا إذا لم يوجد السائق
-  //       // نحسب العمولة
-
-  //       $task['commission'] =  $driver->calculateCommission($task['total_price']);
-  //       // تحديث الحالة وإضافة السجل في التاريخ
-  //       $task['status'] = 'assign';
-  //       $history[] = [
-  //         'action_type' => 'assigned',
-  //         'description' => 'assign task manual ',
-  //         'ip' => $userIp,
-  //         'user_id' => Auth::id(),
-  //         'driver_id' => $req->task_driver
-  //       ];
-  //     }
-
-  //     if ($req->filled('manual_commission')) {
-  //       if ($req->manual_commission > $task['total_price']) {
-  //         DB::rollBack();
-  //         return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
-  //       }
-  //       $task['commission_type'] = 'manual';
-  //       $task['commission'] = $req->manual_commission;
-  //       $data['manual_commission'] = $req->manual_commission;
-  //     }
-
-  //     if ($req->filled('pricing_details')) {
-  //       $details = $req->pricing_details ?? [];
-  //       $sumDetails = collect($req->input('pricing_details', []))
-  //         ->sum(function ($item) {
-  //           return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
-  //         });
-  //       if ($sumDetails > $task['total_price']) {
-  //         DB::rollBack();
-  //         return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
-  //       }
-  //       $task['pricing_details'] = $details;
-  //     }
-
-
-
-  //     if ($taskData['method'] == 0) {
-  //       if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
-  //         DB::rollBack();
-  //         return response()->json(['status' => 2, 'error' => __('You can create Task AD for just one task')]);
-  //       }
-  //       if ($req->filled('task_driver')) {
-  //         DB::rollBack();
-  //         return response()->json(['status' => 2, 'error' => __('You can not assign driver to advertised Task')]);
-  //       }
-  //       $task['total_price']  = 0;
-  //       $task['pricing_type'] = 'manual';
-  //       $task['status']       = 'advertised';
-  //       $ad = [
-  //         'highest_price' => $req->max_price,
-  //         'lowest_price' => $req->min_price,
-  //         'description' =>  $req->note_price,
-  //       ];
-  //       $history[] = [
-  //         'action_type' => 'advertised',
-  //         'description' => 'set as Advertised',
-  //         'ip' => $userIp,
-  //         'user_id' => Auth::user()->id,
-  //       ];
-
-  //       $task['driver_id'] = null;
-  //     }
-
-
-
-  //     if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
-  //       $order = Order::create([
-  //         'customer_id' => $task['customer_id'] ?? null,
-  //         'user_id'     => Auth::id(),
-  //       ]);
-
-  //       if (!$order) {
-  //         DB::rollBack();
-  //         return response()->json(['status' => 2, 'error' => 'Errors to create the tasks Collection']);
-  //       }
-
-  //       $task['order_id'] = $order->id;
-  //     }
-
-  //     // additional fields
-  //     $structuredFields   = [];
-  //     $oldAdditionalData  = [];
-  //     $filesToDelete      = [];
-
-  //     if ($req->filled('template')) {
-  //       $data['form_template_id'] = $req->template;
-
-  //       $template = Form_Template::with('fields')->find($req->input('template'));
-
-  //       foreach ($template->fields as $field) {
-  //         $fieldName = $field->name;
-  //         $fieldType = $field->type;
-
-
-  //         if ($field->type === 'file_expiration_date') {
-  //           $fileFieldName = $fieldName . '_file';
-  //           $expirationFieldName = $fieldName . '_expiration';
-
-  //           // معالجة الملف
-  //           if ($req->hasFile("additional_fields.$fileFieldName")) {
-  //             // حذف الملف القديم إذا موجود
-  //             if (isset($oldAdditionalData[$fieldName]['value'])) {
-  //               $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
-  //             }
-  //             $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
-
-  //             $structuredFields[$fieldName] = [
-  //               'label' => $field->label,
-  //               'value' => $path,
-  //               'expiration' => $req->input("additional_fields.$expirationFieldName"),
-  //               'type'  => $field->type,
-  //             ];
-  //           } else {
-  //             // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث تاريخ الانتهاء إذا تم تغييره
-  //             if (isset($oldAdditionalData[$fieldName])) {
-  //               $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
-  //               if ($req->filled("additional_fields.$expirationFieldName")) {
-  //                 $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
-  //               }
-  //             }
-  //           }
-  //         } else if (in_array($fieldType, ['file', 'image'])) {
-  //           if ($req->hasFile("additional_fields.$fieldName")) {
-  //             if (isset($oldAdditionalData[$fieldName]['value'])) {
-  //               $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
-  //             }
-
-  //             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
-
-  //             $filesToDelete[] = $path; // لتتمكن من حذفه لاحقًا عند الفشل
-
-  //             $structuredFields[$fieldName] = [
-  //               'label' => $field->label,
-  //               'value' => $path,
-  //               'type'  => $fieldType,
-  //             ];
-  //           } elseif (isset($oldAdditionalData[$fieldName])) {
-  //             $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
-  //           }
-  //         } else {
-  //           if ($req->has("additional_fields.$fieldName")) {
-  //             $structuredFields[$fieldName] = [
-  //               'label' => $field->label,
-  //               'value' => $req->input("additional_fields.$fieldName"),
-  //               'type'  => $fieldType,
-  //             ];
-  //           }
-  //         }
-  //       }
-
-  //       $task['additional_data'] = $structuredFields;
-  //     }
-
-  //     // نقطة الالتقاط
-  //     $pickup_point = [
-  //       'type'           => 'pickup',
-  //       'sequence'       => 1,
-  //       'contact_name'   => $req->pickup_name,
-  //       'contact_phone'  => $req->pickup_phone,
-  //       'contact_emil'   => $req->pickup_email,
-  //       'address'        => $req->pickup_address,
-  //       'latitude'       => $req->pickup_latitude,
-  //       'longitude'      => $req->pickup_longitude,
-  //       'scheduled_time' => $req->pickup_before,
-  //       'note'           => $req->pickup_note,
-  //     ];
-
-  //     if ($req->hasFile('pickup_image')) {
-  //       $pickup_point['image'] = (new FunctionsController)->convert($req->pickup_image, 'tasks/points');
-  //     }
-
-  //     // نقطة التسليم
-  //     $delivery_point = [
-  //       'type'           => 'delivery',
-  //       'sequence'       => 1,
-  //       'contact_name'   => $req->delivery_name,
-  //       'contact_phone'  => $req->delivery_phone,
-  //       'contact_emil'   => $req->delivery_email,
-  //       'address'        => $req->delivery_address,
-  //       'latitude'       => $req->delivery_latitude,
-  //       'longitude'      => $req->delivery_longitude,
-  //       'scheduled_time' => $req->delivery_before,
-  //       'note'           => $req->delivery_note,
-  //     ];
-
-  //     if ($req->hasFile('delivery_image')) {
-  //       $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
-  //     }
-
-  //     // إنشاء المهام بعدد المركبات المطلوبة
-  //     $number = $taskData['vehicles_quantity'] ?? 1;
-
-
-  //     $task['pricing_history'] = $data;
-  //     $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
-  //       $newTask = Task::create($task);
-  //       $newTask->point()->create($pickup_point);
-  //       $newTask->point()->create($delivery_point);
-  //       $newTask->history()->createMany($history);
-  //       if ($newTask->status === 'advertised') {
-  //         $newTask->ad()->create($ad);
-  //       }
-  //       return $newTask;
-  //     });
-
-
-  //     DB::commit();
-
-  //     return response()->json([
-  //       'status'  => 1,
-  //       'success' => "{$number} Tasks created successfully.",
-  //     ]);
-  //   } catch (Exception $ex) {
-  //     DB::rollBack();
-
-  //     foreach ($filesToDelete ?? [] as $file) {
-  //       FileHelper::deleteFileIfExists($file);
-  //     }
-
-  //     if ($req->hasFile('pickup_image') && isset($pickup_point['image'])) {
-  //       unlink($pickup_point['image']);
-  //     }
-
-  //     if ($req->hasFile('delivery_image') && isset($delivery_point['image'])) {
-  //       unlink($delivery_point['image']);
-  //     }
-
-  //     return response()->json([
-  //       'status' => 2,
-  //       'error'  => $ex->getMessage(),
-  //     ]);
-  //   }
-  // }
 
 
 
@@ -976,9 +683,6 @@ class TasksController extends Controller
       ]);
     }
 
-
-    // $data->pickup->scheduled_time = $data->pickup->scheduled_time->format('Y-m-d\TH:i');
-    // $data->delivery->scheduled_time = $data->delivery->scheduled_time->format('Y-m-d\TH:i');
     $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
     $data->vehicle = $data->vehicle_size->type->vehicle_id;
     $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
@@ -1525,9 +1229,10 @@ class TasksController extends Controller
     $columns = [
       1 => 'id',
       2 => 'order',
+      2 => 'price',
       3 => 'team',
       4 => 'driver',
-      5 => 'adress',
+      5 => 'address',
       6 => 'start',
       7 => 'complete',
       8 => 'status',
@@ -1586,9 +1291,15 @@ class TasksController extends Controller
       $data[] = [
         'id'         => $task->id,
         'order'      => $task->order->id ?? "-",
+        'price'      => $task->total_price,
         'team'       => $task->driver->team->name ?? "-",
         'driver'     => $task->driver ?? '-',
         'owner'     => $task->owner ?? "-",
+        'owner_info' => match ($task->owner) {
+          'admin' => $task->user->name ?? '-',
+          'customer' => $task->customer->name ?? '-',
+          default => '-',
+        },
         'address'    => $task->pickup->address ?? "-",
         'start'      => ($task->pickup && $task->pickup->scheduled_time)
           ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
@@ -1872,10 +1583,10 @@ class TasksController extends Controller
       if (!$user || !$user->checkTask($data->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
-      if ($data->closed) {
+      if ($data->closed && Auth::user()->role_id !== 1) {
         return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
       }
-      if ($data->payment_status !== 'waiting') {
+      if ($data->payment_status !== 'waiting'  && Auth::user()->role_id !== 1) {
         return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as it has already been paid for')]);
       }
       return response()->json(['status' => 1, 'data' => $data]);
@@ -1905,7 +1616,7 @@ class TasksController extends Controller
       if (!$user || !$user->checkTask($find->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
-      if ($find->closed) {
+      if ($find->closed && Auth::user()->role_id !== 1) {
         return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
       }
       $details = $req->pricing_details ?? [];

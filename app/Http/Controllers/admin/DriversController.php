@@ -532,7 +532,8 @@ class DriversController extends Controller
       $data[] = [
         'task_id'    => $item->id,
         'status'     => $item->status,
-        'price'       => $item->name,
+        'price'       => $item->total_price,
+        'commission'       => $item->commission,
         'created_at' => $item->created_at->format('Y-m-d H:i'),
       ];
     }

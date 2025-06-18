@@ -60,13 +60,13 @@ $(function () {
         {
           targets: 2,
           render: function (data, type, full, meta) {
-            return `<span>${full.status}</span>`;
+            return `<span class="bg-primary text-white rounded px-2">${full.status}</span>`;
           }
         },
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.total_price - full.commission}</span>`;
+            return `<span class="text-primary border border-primary rounded px-2">${(full.price - full.commission).toFixed(2)} SAR</span>`;
           }
         },
         {

@@ -19,7 +19,7 @@ use App\Actions\Fortify\UpdateUserPassword;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use App\Actions\Fortify\UpdateUserProfileInformation;
-
+use Illuminate\Support\Facades\Log;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -44,15 +44,19 @@ class FortifyServiceProvider extends ServiceProvider
 
     Fortify::authenticateUsing(function (Request $request) {
       // ✅ تحقق من كود الكابتشا قبل لمس الجلسة
-      // $validator = Validator::make($request->all(), [
-      //   'g-recaptcha-response' => 'nullable|recaptcha',
-      // ]);
+      Log::info('Validating reCAPTCHA...');
 
-      // if ($validator->fails()) {
-      //   throw ValidationException::withMessages([
-      //     'recaptcha' => ['reCAPTCHA verification failed.'],
-      //   ]);
-      // }
+      $validator = Validator::make($request->all(), [
+        'g-recaptcha-response' => 'required|recaptcha',
+      ]);
+
+      if ($validator->fails()) {
+        throw ValidationException::withMessages([
+          'recaptcha' => ['reCAPTCHA verification failed.'],
+        ]);
+      }
+
+      Log::info('Captcha validated successfully');
 
 
 
@@ -61,6 +65,7 @@ class FortifyServiceProvider extends ServiceProvider
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');
+
 
       switch ($guard) {
         case 'driver':
@@ -73,6 +78,8 @@ class FortifyServiceProvider extends ServiceProvider
           $user = User::where('email', $email)->first();
           break;
       }
+
+
 
       if (!$user || !Hash::check($password, $user->password)) {
         throw ValidationException::withMessages([

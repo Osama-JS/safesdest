@@ -252,7 +252,6 @@
                     </div>
                 @endforeach
             </div>
-            {{ auth()->user()->tasks }}
 
             @foreach ($data as $task)
                 <div class="mb-5">

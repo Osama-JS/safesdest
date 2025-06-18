@@ -75,6 +75,7 @@ class DashboardController extends Controller
           'phone' => $driver->phone,
           'phone_code' => $driver->phone_code,
           'avatar' => $driver->image ? asset('storage/' . $driver->image) : asset('assets/img/person.png'),
+          'team' => $driver->team ? $driver->team->name : null,
         ];
       }
 

@@ -80,7 +80,6 @@
                                 </span>
                             @enderror
                         </div>
-
                         <div class="mb-6">
                             @error('recaptcha')
                                 <span class="invalid-feedback" role="alert">
@@ -89,7 +88,6 @@
                             @enderror
                             <label class="form-label" for="login-password">confirm that you ar not a robot</label>
                             {!! htmlFormSnippet() !!}
-
                         </div>
 
                         {{-- <div class="mb-6">
@@ -125,6 +123,7 @@
     </div>
 
     {!! htmlScriptTagJsApi() !!}
+
 
     {{-- <script>
         document.querySelector('.btn-refresh').addEventListener('click', function() {

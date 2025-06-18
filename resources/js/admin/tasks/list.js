@@ -84,6 +84,7 @@ $(function () {
         { data: '' }, // للـ control (responsive)
         { data: 'id' }, // الترقيم التسلسلي
         { data: 'order' }, // الاسم مع الأفاتار
+        { data: 'price' }, // الاسم مع الأفاتار
         { data: 'team' }, // البريد
         { data: 'driver' }, // الجوال
         { data: 'address' }, // الحالة
@@ -109,6 +110,7 @@ $(function () {
           targets: 1,
           searchable: false,
           orderable: false,
+          responsivePriority: 1,
           render: function (data, type, full, meta) {
             return `<span>${full.id}</span>`;
           }
@@ -121,12 +123,21 @@ $(function () {
         },
         {
           targets: 3,
+          responsivePriority: 2,
+          className: 'text-nowrap w-auto',
+          render: function (data, type, full, meta) {
+            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
+          }
+        },
+        {
+          targets: 4,
           render: function (data, type, full, meta) {
             return `<span>${full.team}</span>`;
           }
         },
         {
-          targets: 4,
+          targets: 5,
+          responsivePriority: 7,
           render: function (data, type, full, meta) {
             return full.driver === '-'
               ? `<span>-</span>`
@@ -139,31 +150,32 @@ $(function () {
           }
         },
         {
-          targets: 5,
-          render: function (data, type, full, meta) {
-            return `<span>${full.owner}</span>`;
-          }
-        },
-        {
           targets: 6,
           render: function (data, type, full, meta) {
-            return `<span>${full.address}</span>`;
+            return `<span>${full.owner} <br> (${full.owner_info})</span>`;
           }
         },
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            return `<span>${full.start}</span>`;
+            return `<span>${full.address}</span>`;
           }
         },
         {
           targets: 8,
           render: function (data, type, full, meta) {
-            return `<span>${full.complete}</span>`;
+            return `<span>${full.start}</span>`;
           }
         },
         {
           targets: 9,
+          render: function (data, type, full, meta) {
+            return `<span>${full.complete}</span>`;
+          }
+        },
+        {
+          targets: 10,
+          responsivePriority: 4,
           render: function (data, type, full, meta) {
             let colorClass = '';
 
@@ -197,7 +209,8 @@ $(function () {
           }
         },
         {
-          targets: 10,
+          targets: 11,
+          responsivePriority: 5,
           render: function (data, type, full, meta) {
             let colorClass = '';
             switch (full.payment) {
@@ -218,16 +231,18 @@ $(function () {
           }
         },
         {
-          targets: 11,
+          targets: 12,
+          responsivePriority: 6,
           render: function (data, type, full, meta) {
             return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span>` : `<span class="px-2 rounded bg-success text-white">Open</span>`}`;
           }
         },
         {
-          targets: 12,
+          targets: 13,
           title: 'Actions',
           searchable: false,
           orderable: false,
+          responsivePriority: 3,
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">

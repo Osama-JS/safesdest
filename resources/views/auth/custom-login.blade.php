@@ -75,7 +75,6 @@
 
 @section('page-script')
     @vite(['resources/assets/js/pages-auth.js'])
-    @vite(['resources/js/auth.js'])
 @endsection
 
 @section('content')

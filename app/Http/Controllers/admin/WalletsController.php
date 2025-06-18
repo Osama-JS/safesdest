@@ -11,7 +11,7 @@ use App\Models\Wallet_Transaction;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
-use Illuminate\Container\Attributes\Auth;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class WalletsController extends Controller
@@ -301,13 +301,15 @@ class WalletsController extends Controller
     }
 
     try {
-      $done = null;
       $wallet = Wallet::findOrFail($req->wallet);
-      $existingTransaction = null;
       $adjustedBalance = $wallet->balance;
+      $existingTransaction = null;
 
+      // التعديل على معاملة سابقة
       if ($req->filled('id')) {
         $existingTransaction = Wallet_Transaction::findOrFail($req->id);
+
+        // إرجاع المبلغ القديم للحساب
         if ($existingTransaction->transaction_type === 'credit') {
           $adjustedBalance -= $existingTransaction->amount;
         } elseif ($existingTransaction->transaction_type === 'debit') {
@@ -315,6 +317,7 @@ class WalletsController extends Controller
         }
       }
 
+      // تطبيق المعاملة الجديدة
       if ($req->type === 'credit') {
         $adjustedBalance += $req->amount;
       } elseif ($req->type === 'debit') {
@@ -328,56 +331,62 @@ class WalletsController extends Controller
         ]);
       }
 
+      DB::beginTransaction();
 
+      $data = [
+        'amount' => $req->amount,
+        'description' => $req->description,
+        'transaction_type' => $req->type,
+        'maturity_time' => $req->type === 'credit' ? null : $req->maturity,
+      ];
 
-      DB::transaction(function () use ($req, &$done) {
-        $data = [
-          'amount'              => $req->amount,
-          'description'         => $req->description,
-          'transaction_type'    => $req->type,
-          'maturity_time'       => $req->maturity,
-        ];
+      if ($req->hasFile('image')) {
+        $data['image'] = (new FunctionsController)->convert($req->image, 'wallets/transactions');
+      }
 
-        if ($req->hasFile('image')) {
-          $data['image'] = (new FunctionsController)->convert($req->image, 'wallets/transactions');
+      $oldImage = null;
+
+      if ($existingTransaction) {
+        $user = Auth::user();
+
+        if ($existingTransaction->task_id && $user->role_id !== 1) {
+          DB::rollBack();
+          return response()->json([
+            'status' => 2,
+            'error'  => __('You can not edit this transaction')
+          ]);
         }
-        $oldImage = null;
 
-        if ($req->filled('id')) {
-          $find = Wallet_Transaction::findOrFail($req->id);
-          if ($req->type === 'credit') {
-            $data['maturity_time'] = null;
-          }
-          if ($find->task_id) {
-            return response()->json([
-              'status' => 2,
-              'error'  => __('You can not edit this transaction')
-            ]);
-          }
-          if ($req->hasFile('image') && $find->image) {
-            $oldImage = $find->image;
-          }
-          $done = $find->update($data);
-        } else {
-          $data['wallet_id'] = $req->wallet;
-          $data['user_id'] = auth()->id();
-          $data['task_id'] = $req->task_id;
-          $done = Wallet_Transaction::create($data);
+
+        if ($req->hasFile('image') && $existingTransaction->image) {
+          $oldImage = $existingTransaction->image;
         }
-        if ($oldImage) {
-          unlink($oldImage);
-        }
-      });
 
+        $existingTransaction->update($data);
+      } else {
+        $data['wallet_id'] = $req->wallet;
+        $data['user_id'] = auth()->id();
+        $data['task_id'] = $req->task_id;
+        Wallet_Transaction::create($data);
+      }
 
-      return response()->json(['status' => 1, 'success' => __('Transaction created successfully')]);
-    } catch (Exception $ex) {
+      if ($oldImage && file_exists($oldImage)) {
+        unlink($oldImage);
+      }
+
+      DB::commit();
+
+      return response()->json(['status' => 1, 'success' => __('Transaction Saved successfully')]);
+    } catch (\Exception $ex) {
+      DB::rollBack();
+
       return response()->json([
         'status' => 2,
         'error'  => __('Error creating transaction: ') . $ex->getMessage()
       ]);
     }
   }
+
 
 
   public function destroy(Request $req)

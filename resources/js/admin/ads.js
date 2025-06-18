@@ -52,6 +52,7 @@ $(function () {
           }
 
           let priceHtml = '';
+          let adStatus = '';
 
           // التحقق من السعر الأدنى والأعلى
           if (ad.low_price > 0 && ad.high_price > 0) {

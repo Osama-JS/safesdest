@@ -124,6 +124,24 @@ $(function () {
 
     tasks.forEach(task => {
       const statusClass = getStatusBadgeClass(task.status);
+      const driverHtml = task.driver
+        ? `<div class="mt-2 text-muted small text-white  ">
+            <i class="bi bi-truck"></i> Driver: ${task.driver.name} (${task.driver.phone_code} ${task.driver.phone})
+         </div>`
+        : '';
+      const teamHtml =
+        task.driver && task.driver.team
+          ? `<div class="mt-2 text-muted small text-white  ">
+        <i class="bi bi-truck"></i> Team: ${task.driver.team}
+     </div>`
+          : '';
+
+      const completeAt = task.complete_at
+        ? `
+        <div class='mt-2 text-muted small text-white  '>
+          <i class='bi bi-truck'></i> Complete At: ${task.complete_at}
+        </div>`
+        : '';
 
       const card = `
         <div class="mb-4">
@@ -134,6 +152,9 @@ $(function () {
                 <div class="px-3">
                   <h6 class="mb-1">${task.name}</h6>
                   <p>${task.point.address || ''} (${task.point.longitude} - ${task.point.latitude})</p>
+                   ${driverHtml}
+                ${teamHtml}
+                ${completeAt}
                 </div>
               </div>
               <div class="d-flex align-items-center gap-50">
@@ -359,6 +380,26 @@ $(function () {
             </div>
           `);
 
+        const driverInfo = task.data.driver
+          ? `
+               <div class="divider text-start">
+                      <div class="divider-text"><strong>Driver info</strong></div>
+                  </div>
+              <div class=" d-flex align-items-center">
+                <img src="${baseUrl}${task.data.driver.image || 'assets/img/person.png'}"
+                    alt="Driver Image"
+                    class="rounded-circle me-3 border"
+                    style="width: 70px; height: 70px; object-fit: cover;">
+                <ul class="list-unstyled mb-0">
+                  <li><strong>Name:</strong> ${task.data.driver.name}</li>
+                  <li class="my-2"><strong>Phone:</strong> ${task.data.driver.phone}</li>
+                  <li><strong>Email:</strong> ${task.data.driver.email}</li>
+                </ul>
+              </div>
+
+            `
+          : '';
+
         const htmlDetails = `
           <div class="card shadow-sm ">
             <div class="card-body">
@@ -376,6 +417,7 @@ $(function () {
                   <strong>Created At</strong>
                   <span>${task.data.created_at || '—'}</span>
                 </li>
+                ${driverInfo}
                 </ul>
                  <div class="divider text-start">
                       <div class="divider-text"><strong>Pickup info</strong></div>

@@ -142,16 +142,18 @@ $(function () {
               <div class="text-end">
                 ${
                   full.task !== ''
-                    ? ''
-                    : `  <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}"  >
+                    ? `
+                    <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}"  >
+                  <i class="ti ti-edit"></i>
+                </button>
+                    `
+                    : `<button class="btn btn-sm btn-icon edit-record " data-id="${full.id}"  >
                   <i class="ti ti-edit"></i>
                 </button>
                 <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.sequence}">
                   <i class="ti ti-trash"></i>
                 </button>`
                 }
-
-
 
               </div>`;
           }
@@ -297,13 +299,14 @@ $(function () {
       $('#image').attr('src', baseUrl + (data.data.image || 'assets/img/placeholder.jpg'));
       $('#trans_amount').val(data.data.amount);
       $('#trans_description').val(data.data.description);
-      $('#trans_maturity').val(data.data.maturity_time);
       if (data.data.transaction_type === 'credit') {
         $('#credit').prop('checked', true);
         $('.btn-credit').addClass('btn-success').removeClass('btn-outline-success');
         $('.btn-debit').addClass('btn-outline-danger').removeClass('btn-danger');
         $('#maturity-time-group').hide();
       } else {
+        $('#trans_maturity').val(data.data.maturity_time);
+
         $('#debit').prop('checked', true);
         $('.btn-credit').addClass('btn-outline-success').removeClass('btn-success');
         $('.btn-debit').addClass('btn-danger').removeClass('btn-outline-danger');

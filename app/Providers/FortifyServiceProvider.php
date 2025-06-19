@@ -43,29 +43,30 @@ class FortifyServiceProvider extends ServiceProvider
     // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
     Fortify::authenticateUsing(function (Request $request) {
-      // ✅ تحقق من كود الكابتشا قبل لمس الجلسة
-      Log::info('Validating reCAPTCHA...');
+      // تحقق من الـ captcha فقط إذا لم يتم التحقق منه في هذا الطلب
+      if (!$request->attributes->get('captcha_validated')) {
+        Log::info('Validating reCAPTCHA - First attempt...');
 
-      $validator = Validator::make($request->all(), [
-        'g-recaptcha-response' => 'required|recaptcha',
-      ]);
-
-      if ($validator->fails()) {
-        throw ValidationException::withMessages([
-          'recaptcha' => ['reCAPTCHA verification failed.'],
+        $validator = Validator::make($request->all(), [
+          'g-recaptcha-response' => 'required|recaptcha',
         ]);
+
+        if ($validator->fails()) {
+          throw ValidationException::withMessages([
+            'recaptcha' => ['reCAPTCHA verification failed.'],
+          ]);
+        }
+
+        Log::info('Captcha validated successfully');
+        // ضع علامة في الـ request attributes أن الـ captcha تم التحقق منه
+        $request->attributes->set('captcha_validated', true);
+      } else {
+        Log::info('Captcha already validated in this request, skipping validation');
       }
-
-      Log::info('Captcha validated successfully');
-
-
-
-      // لا تعبث بالجلسة هنا بعد، انتظر حتى يتم التحقق من المستخدم
 
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');
-
 
       switch ($guard) {
         case 'driver':
@@ -78,8 +79,6 @@ class FortifyServiceProvider extends ServiceProvider
           $user = User::where('email', $email)->first();
           break;
       }
-
-
 
       if (!$user || !Hash::check($password, $user->password)) {
         throw ValidationException::withMessages([
@@ -105,10 +104,11 @@ class FortifyServiceProvider extends ServiceProvider
         ]);
       }
 
-      // ✅ الآن يمكنك التلاعب بالجلسة بعد نجاح التحقق من الكابتشا
+      // تجديد الـ session token وإعداد الـ captcha flag
       $request->session()->regenerateToken();
       $request->session()->put('captcha', true);
 
+      // تسجيل الدخول بالـ guard المناسب
       if ($guard == 'customer') {
         Auth::guard('web')->logout();
         Auth::guard('driver')->logout();

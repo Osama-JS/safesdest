@@ -125,13 +125,13 @@ $(function () {
     tasks.forEach(task => {
       const statusClass = getStatusBadgeClass(task.status);
       const driverHtml = task.driver
-        ? `<div class="mt-2 text-muted small text-white  ">
+        ? `<div class="mt-2  small bg-primary  text-white p-1 rounded ">
             <i class="bi bi-truck"></i> Driver: ${task.driver.name} (${task.driver.phone_code} ${task.driver.phone})
          </div>`
         : '';
       const teamHtml =
         task.driver && task.driver.team
-          ? `<div class="mt-2 text-muted small text-white  ">
+          ? `<div class="mt-2  small text-white bg-success p-1 rounded  ">
         <i class="bi bi-truck"></i> Team: ${task.driver.team}
      </div>`
           : '';
@@ -649,7 +649,12 @@ $(function () {
       case 'assign':
       case 'accepted':
         return 'primary';
-      case 'start':
+      case 'started':
+      case 'in pickup point':
+      case 'loading':
+      case 'in the way':
+      case 'in delivery point':
+      case 'unloading':
         return 'dark';
       case 'completed':
         return 'success';

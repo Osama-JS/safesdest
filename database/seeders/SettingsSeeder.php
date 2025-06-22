@@ -18,22 +18,32 @@ class SettingsSeeder extends Seeder
       [
         'key' => 'customer_template',
         'value' => null,
-        'description' => "This is a default Template form customers",
+        'description' => "This is a default Template for customers",
       ],
       [
         'key' => 'driver_template',
         'value' => null,
-        'description' => "This is a default Template form drivers",
+        'description' => "This is a default Template for drivers",
       ],
       [
         'key' => 'user_template',
         'value' => null,
-        'description' => "This is a default Template form users",
+        'description' => "This is a default Template for users",
       ],
       [
         'key' => 'task_template',
         'value' => null,
-        'description' => "This is a default Template form tasks",
+        'description' => "This is a default Template for tasks",
+      ],
+      [
+        'key' => 'task_from_port_template',
+        'value' => null,
+        'description' => "This is a default Template for tasks From Port",
+      ],
+      [
+        'key' => 'task_to_port_template',
+        'value' => null,
+        'description' => "This is a default Template for tasks To Port",
       ],
       [
         'key' => 'commission_type',

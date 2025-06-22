@@ -187,11 +187,7 @@
 
                             <div class="my-8">
                                 <div class="d-flex justify-content-between">
-                                    <div class="form-check mb-0 ms-2">
-                                        <input class="form-check-input" type="checkbox" id="remember-me" name="remember"
-                                            {{ old('remember') ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="remember-me">Remember Me</label>
-                                    </div>
+
                                     @if (Route::has('password.request'))
                                         <a href="{{ route('password.request') }}">
                                             <p class="mb-0">Forgot Password?</p>

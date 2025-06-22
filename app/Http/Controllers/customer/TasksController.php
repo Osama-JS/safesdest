@@ -438,7 +438,6 @@ class TasksController extends Controller
           'action_type' => 'advertised',
           'description' => 'set as Advertised',
           'ip' => $userIp,
-          'user_id' => Auth::user()->id,
         ];
         $task['driver_id'] = null;
       }
@@ -742,7 +741,6 @@ class TasksController extends Controller
           'action_type' => 'advertised',
           'description' => 'set as Advertised',
           'ip' => $userIp,
-          'user_id' => Auth::user()->id,
         ];
 
         $task['driver_id'] = null;

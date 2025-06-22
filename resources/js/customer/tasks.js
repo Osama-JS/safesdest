@@ -44,6 +44,8 @@ $(function () {
 
   /* ================  Render Tasks   =============== */
   function loadTasks() {
+    $('#tasks-container').html('');
+
     $.ajax({
       url: baseUrl + 'customer/tasks/get/tasks',
       type: 'GET',
@@ -54,7 +56,28 @@ $(function () {
           return;
         }
 
+        console.log(response.data);
+
         response.data.forEach(task => {
+          const driverInfo = task.driver
+            ? `
+               <div class="divider text-start">
+                      <div class="divider-text"><strong>Driver info</strong></div>
+                  </div>
+              <div class=" d-flex align-items-center">
+                <img src="${baseUrl}${task.driver.image || 'assets/img/person.png'}"
+                    alt="Driver Image"
+                    class="rounded-circle me-3 border"
+                    style="width: 70px; height: 70px; object-fit: cover;">
+                <ul class="list-unstyled mb-0">
+                  <li><strong>Name:</strong> ${task.driver.name}</li>
+                  <li class="my-2"><strong>Phone:</strong> ${task.driver.phone}</li>
+                  <li><strong>Email:</strong> ${task.driver.email}</li>
+                </ul>
+              </div>
+
+            `
+            : '';
           let taskCard = `
               <div class="mb-4">
                   <div class="card p-3 shadow-sm">
@@ -123,6 +146,7 @@ $(function () {
                                 </div>
                             </div>
                       </div>
+                      ${driverInfo}
                   </div>
               </div>
           `;
@@ -778,4 +802,24 @@ $(function () {
   });
 });
 
+$(document).on('click', '.task_type_template', function () {
+  const type = $(this).data('template');
+  $('#additional-form').html('');
+  switch (type) {
+    case 'normal':
+      generateFields(taskTemplate);
+      break;
+    case 'task_from':
+      generateFields(taskTemplateFrom);
+      break;
+    case 'task_to':
+      generateFields(taskTemplateTo);
+      break;
+    default:
+      generateFields(taskTemplate);
+      break;
+  }
+  $('#taskTypeModal').modal('hide');
+  $('#submitModal').modal('show');
+});
 generateFields(taskTemplate);

@@ -800,6 +800,14 @@ $('#driver-manual').on('change', function () {
   }
 });
 
+$(document).on('click', '.task_type_template', function () {
+  const id = $(this).data('template');
+
+  $('#select-template').val(id).trigger('change');
+  $('#taskTypeModal').modal('hide');
+  $('#submitModal').modal('show');
+});
+
 export function setupMethodSelection(methods) {
   const methodsMap = {};
 

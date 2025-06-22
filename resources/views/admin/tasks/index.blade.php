@@ -184,7 +184,7 @@
                         <h5 class="card-title mb-0">{{ __('Tasks') }}</h5>
 
                         <button class="btn btn-outline-secondary btn-sm mt-2 mt-sm-0" data-bs-toggle="modal"
-                            data-bs-target="#submitModal">
+                            data-bs-target="#taskTypeModal">
                             <i class="ti ti-plus me-1"></i>
                             {{ __('Add New Task') }}
                         </button>

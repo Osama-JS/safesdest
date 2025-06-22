@@ -68,7 +68,9 @@ class TasksController extends Controller
     $vehicles = Vehicle::all();
     $templates = Form_Template::all();
     $task_template = Settings::where('key', 'task_template')->first();
-    return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'task_template'));
+    $task_from_template = Settings::where('key', 'task_from_port_template')->first();
+    $task_to_template = Settings::where('key', 'task_to_port_template')->first();
+    return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'task_template', 'task_from_template', 'task_to_template'));
   }
 
   public function getData(Request $request)

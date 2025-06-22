@@ -106,6 +106,36 @@
                         <span class="task-error text-danger"></span>
                     </div>
 
+                    <div class="form-group mb-9">
+                        <label for="task-template" class="mb-2">{{ __('Default Task (From Port) Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="task_from_port_template"
+                            id="task-from-port-template">
+                            <option value="">{{ __('--- Select Template') }}</option>
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['task_from_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="task-error text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-9">
+                        <label for="task-template" class="mb-2">{{ __('Default Task (To Port) Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="task_to_port_template"
+                            id="task-to-port-template">
+                            <option value="">{{ __('--- Select Template') }}</option>
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['task_to_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="task-error text-danger"></span>
+                    </div>
+
                 </div>
             </div>
         </div>

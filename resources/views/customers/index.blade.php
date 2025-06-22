@@ -49,6 +49,8 @@
 @section('page-script')
     <script>
         const taskTemplate = {!! json_encode($template_fields) !!}
+        const taskTemplateFrom = {!! json_encode($template_from_fields) !!}
+        const taskTemplateTo = {!! json_encode($template_to_fields) !!}
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
@@ -182,7 +184,7 @@
 
         <div class="col-xl-9 col-lg-8 ">
             <div class="py-3">
-                <button class="btn btn-primary  mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#submitModal">
+                <button class="btn btn-primary  mt-2 mt-sm-0" data-bs-toggle="modal" data-bs-target="#taskTypeModal">
                     <i class="ti ti-plus me-1"></i>
                     {{ __('Add New Task') }}
                 </button>

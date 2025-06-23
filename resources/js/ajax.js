@@ -229,6 +229,16 @@ export function handleErrors(errors, prefix = '') {
       return;
     }
 
+    // التعامل مع حقول file_expiration_date بشكل خاص
+    const fileExpirationMatch = key.match(/^additional_fields\.(.+)_(file|expiration)$/);
+    if (fileExpirationMatch) {
+      const fieldName = fileExpirationMatch[1];
+      const fieldType = fileExpirationMatch[2];
+      const selector = 'span.additional_fields-' + fieldName + '_' + fieldType + '-error';
+      $(selector).text(val[0]);
+      return;
+    }
+
     // التعامل مع params.2.0.price أو أي تركيبة مشابهة
     const parts = key.split('.');
     if (parts.length >= 2) {
@@ -310,12 +320,65 @@ export function generateFields(fields, storedData = {}) {
         <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
       case 'file_expiration_date':
+        const currentFile = storedData[field.name]?.value || '';
+        const currentExpiration = storedData[field.name]?.expiration || '';
+        const fileDisplay = currentFile
+          ? `<div class="mb-2">
+            <small class="text-muted">Current file:</small><br>
+            <a href="${baseUrl + 'storage/' + currentFile}" target="_blank" class="text-primary">
+              <i class="ti ti-file me-1"></i>${currentFile.split('/').pop()}
+            </a>
+          </div>`
+          : '';
+
+        // استخدام حقل value كعنوان للتاريخ إذا كان متوفراً
+        const expirationLabel = field.value && field.value.trim() !== '' ? field.value : 'Expiration Date';
+
         inputField = `
-        <a href="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
-        <input type="file" name="additional_fields[${field.name}_file]" class="form-control" >
-        <label class="p-0">expiration date</label>
-        <input type="date" name="additional_fields[${field.name}_expiration]" value="${storedData[field.name]?.expiration}" class="form-control mt-" >
-      `;
+          ${fileDisplay}
+          <div class="mb-3">
+            <label class="form-label">Upload File</label>
+            <input type="file" name="additional_fields[${field.name}_file]" class="form-control"
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpeg,.png,.jpg,.webp,.gif">
+            <small class="text-muted">Max size: 10MB. Allowed types: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, Images</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">${expirationLabel}</label>
+            <input type="date" name="additional_fields[${field.name}_expiration]"
+                   value="${currentExpiration}" class="form-control" min="${new Date().toISOString().split('T')[0]}"
+                   placeholder="Enter ${expirationLabel.toLowerCase()}">
+          </div>
+        `;
+        break;
+      case 'file_with_text':
+        const currentFileWithText = storedData[field.name]?.value || '';
+        const currentText = storedData[field.name]?.text || '';
+        const fileWithTextDisplay = currentFileWithText
+          ? `<div class="mb-2">
+            <small class="text-muted">Current file:</small><br>
+            <a href="${baseUrl + 'storage/' + currentFileWithText}" target="_blank" class="text-primary">
+              <i class="ti ti-file me-1"></i>${currentFileWithText.split('/').pop()}
+            </a>
+          </div>`
+          : '';
+
+        // استخدام حقل value كعنوان للنص إذا كان متوفراً
+        const textLabel = field.value && field.value.trim() !== '' ? field.value : 'Text/Number';
+
+        inputField = `
+          ${fileWithTextDisplay}
+          <div class="mb-3">
+            <label class="form-label">Upload File</label>
+            <input type="file" name="additional_fields[${field.name}_file]" class="form-control"
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpeg,.png,.jpg,.webp,.gif">
+            <small class="text-muted">Max size: 10MB. Allowed types: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, Images</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">${textLabel}</label>
+            <input type="text" name="additional_fields[${field.name}_text]"
+                   value="${currentText}" class="form-control" placeholder="Enter ${textLabel.toLowerCase()}">
+          </div>
+        `;
         break;
       case 'url':
         inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" >`;
@@ -349,8 +412,15 @@ export function generateFields(fields, storedData = {}) {
     }
 
     if (field.type === 'file_expiration_date') {
-      inputSpan = `<span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>`;
-      inputSpan += `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
+      inputSpan = `
+        <span class="additional_fields-${field.name}_file-error text-danger text-error d-block"></span>
+        <span class="additional_fields-${field.name}_expiration-error text-danger text-error d-block"></span>
+      `;
+    } else if (field.type === 'file_with_text') {
+      inputSpan = `
+        <span class="additional_fields-${field.name}_file-error text-danger text-error d-block"></span>
+        <span class="additional_fields-${field.name}_text-error text-danger text-error d-block"></span>
+      `;
     } else {
       inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
     }

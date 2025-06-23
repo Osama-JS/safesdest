@@ -126,6 +126,38 @@
                                                         @elseif($field['type'] === 'file')
                                                             <a href="{{ asset('storage/' . $field['value']) }}"
                                                                 target="_blank">{{ basename($field['value']) }}</a>
+                                                        @elseif($field['type'] === 'file_with_text')
+                                                            @if ($field['value'])
+                                                                <div class="mb-2">
+                                                                    <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                        target="_blank">
+                                                                        {{ basename($field['value']) }}
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                            @if (isset($field['text']) && $field['text'])
+                                                                <div class="mt-1">
+                                                                    <small class="text-muted">Info:</small>
+                                                                    <p class="mb-0">{{ $field['text'] }}</p>
+                                                                </div>
+                                                            @endif
+                                                        @elseif($field['type'] === 'file_expiration_date')
+                                                            @if ($field['value'])
+                                                                <div class="mb-2">
+                                                                    <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                        target="_blank">
+                                                                        {{ basename($field['value']) }}
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                            @if (isset($field['expiration']) && $field['expiration'])
+                                                                <div class="mt-1">
+                                                                    <small class="text-muted">Expires:</small>
+                                                                    <p class="mb-0">
+                                                                        {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
+                                                                    </p>
+                                                                </div>
+                                                            @endif
                                                         @else
                                                             <p>{{ $field['value'] }}</p>
                                                         @endif

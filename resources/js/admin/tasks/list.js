@@ -78,6 +78,11 @@ $(function () {
           d.owner = $('#owner-fillter').val();
           d.team = $('#team-fillter').val();
           d.driver = $('#driver-fillter').val();
+          d.status_filter = $('#statusFilter').val();
+          // البحث من الحقل المخصص
+          if ($('#searchFilter').val()) {
+            d.search = { value: $('#searchFilter').val() };
+          }
         }
       },
       columns: [
@@ -244,6 +249,13 @@ $(function () {
           orderable: false,
           responsivePriority: 3,
           render: function (data, type, full, meta) {
+            // تحديد إمكانية الحذف بناءً على الحالة
+            const canDelete =
+              ['in_progress', 'advertised'].includes(full.status) &&
+              full.payment !== 'completed' &&
+              full.payment !== 'pending' &&
+              !full.closed;
+
             return `
               <div class="d-flex align-items-center gap-2">
 
@@ -255,6 +267,7 @@ $(function () {
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}">Payment Task</a></li>
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
+                    ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>
                 </div>
               </div>`;
@@ -605,5 +618,147 @@ $(function () {
     $('#task-id').val(id);
     $('#modelTitle').html('#' + id);
     $('#closedModal').modal('show');
+  });
+
+  // 🗑️ معالج حذف المهمة باستخدام SweetAlert2
+  $(document).on('click', '.delete-task', function () {
+    const taskId = $(this).data('id');
+    const taskStatus = $(this).data('status');
+    const paymentStatus = $(this).data('payment');
+
+    // استخدام SweetAlert2 للتأكيد
+    Swal.fire({
+      title: `Delete Task #${taskId}?`,
+      html: `
+        <div class="text-start">
+          <p><strong>Task Details:</strong></p>
+          <ul class="list-unstyled">
+            <li><i class="ti ti-id me-2"></i><strong>Task ID:</strong> #${taskId}</li>
+            <li><i class="ti ti-activity me-2"></i><strong>Status:</strong> <span class="badge bg-primary">${taskStatus}</span></li>
+            <li><i class="ti ti-credit-card me-2"></i><strong>Payment:</strong> <span class="badge bg-info">${paymentStatus}</span></li>
+          </ul>
+          <div class="alert alert-warning">
+            <i class="ti ti-alert-triangle me-2"></i>
+            <strong>Warning:</strong> This action cannot be undone and will remove:
+            <ul class="mt-2 mb-0">
+              <li>All task data and history</li>
+              <li>Related files and documents</li>
+              <li>Task points and images</li>
+              <li>Associated ads and offers</li>
+            </ul>
+          </div>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: '<i class="ti ti-trash me-1"></i>Yes, delete it!',
+      cancelButtonText: '<i class="ti ti-x me-1"></i>Cancel',
+      customClass: {
+        confirmButton: 'btn btn-danger me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      },
+      buttonsStyling: false,
+      allowOutsideClick: false,
+      allowEscapeKey: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        // إظهار loading مع SweetAlert2
+        Swal.fire({
+          title: 'Deleting Task...',
+          html: `
+            <div class="text-center">
+              <div class="spinner-border text-danger mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p>Please wait while we delete Task #${taskId} and all related data...</p>
+            </div>
+          `,
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          showCancelButton: false,
+          showCloseButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        // إرسال طلب الحذف
+        $.ajax({
+          url: baseUrl + 'admin/tasks/delete',
+          method: 'DELETE',
+          data: {
+            id: taskId,
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            if (response.status === 1) {
+              // نجح الحذف
+              Swal.fire({
+                title: 'Deleted!',
+                html: `
+                  <div class="text-center">
+                    <i class="ti ti-check-circle text-success" style="font-size: 3rem;"></i>
+                    <p class="mt-3">Task #${taskId} has been successfully deleted.</p>
+                    <p class="text-muted">All related data and files have been removed.</p>
+                  </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'OK',
+                customClass: {
+                  confirmButton: 'btn btn-success waves-effect waves-light'
+                },
+                buttonsStyling: false
+              });
+
+              // إعادة تحميل الجدول
+              dt_data.draw();
+            } else {
+              // فشل الحذف
+              Swal.fire({
+                title: 'Deletion Failed!',
+                html: `
+                  <div class="text-center">
+                    <i class="ti ti-x-circle text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3"><strong>Error:</strong> ${response.error}</p>
+                    <p class="text-muted">Task #${taskId} could not be deleted.</p>
+                  </div>
+                `,
+                icon: 'error',
+                confirmButtonText: 'OK',
+                customClass: {
+                  confirmButton: 'btn btn-danger waves-effect waves-light'
+                },
+                buttonsStyling: false
+              });
+            }
+          },
+          error: function (xhr, status, error) {
+            let errorMessage = 'Error deleting task';
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              errorMessage = xhr.responseJSON.error;
+            }
+
+            // خطأ في الشبكة أو الخادم
+            Swal.fire({
+              title: 'Connection Error!',
+              html: `
+                <div class="text-center">
+                  <i class="ti ti-wifi-off text-warning" style="font-size: 3rem;"></i>
+                  <p class="mt-3"><strong>Network Error:</strong> ${errorMessage}</p>
+                  <p class="text-muted">Please check your connection and try again.</p>
+                </div>
+              `,
+              icon: 'error',
+              confirmButtonText: 'OK',
+              customClass: {
+                confirmButton: 'btn btn-warning waves-effect waves-light'
+              },
+              buttonsStyling: false
+            });
+          }
+        });
+      }
+    });
   });
 });

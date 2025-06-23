@@ -215,9 +215,39 @@ class RegisterController extends Controller
               $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
               $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
             }
+
+            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_expiration'][] = 'required';
+            }
+
+            break;
+
+          case 'file_with_text':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required';
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
             break;
 
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }
@@ -277,6 +307,20 @@ class RegisterController extends Controller
                 'value'      => null,
                 'expiration' => $req->input("additional_fields.$expirationFieldName"),
                 'type'       => $field->type,
+              ];
+            }
+          } else if ($field->type === 'file_with_text') {
+            $fileFieldName = $fieldName . '_file';
+            $textFieldName = $fieldName . '_text';
+
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'text' => $req->input("additional_fields.$textFieldName"),
+                'type'  => $field->type,
               ];
             }
           } else if (in_array($fieldType, ['file', 'image'])) {
@@ -392,7 +436,31 @@ class RegisterController extends Controller
             }
             break;
 
+          case 'file_with_text':
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            if ($field->required) {
+              $rules[$fieldKey . '_file'][] = 'required';
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
+            break;
+
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }
@@ -453,6 +521,20 @@ class RegisterController extends Controller
                 'value'      => null,
                 'expiration' => $req->input("additional_fields.$expirationFieldName"),
                 'type'       => $field->type,
+              ];
+            }
+          } else if ($field->type === 'file_with_text') {
+            $fileFieldName = $fieldName . '_file';
+            $textFieldName = $fieldName . '_text';
+
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'drivers/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'text' => $req->input("additional_fields.$textFieldName"),
+                'type'  => $field->type,
               ];
             }
           } else if (in_array($fieldType, ['file', 'image'])) {

@@ -31,7 +31,8 @@ class CustomerTaskPricingService
   public function validateRequest($request, $type = '')
   {
     $rules = $this->buildValidationRules($request, $type);
-    $validator = Validator::make($request->all(), $rules);
+    $customMessages = $this->buildCustomMessages($request);
+    $validator = Validator::make($request->all(), $rules, $customMessages);
 
     if ($validator->fails()) {
       return ['status' => false, 'errors' => $validator->errors()];
@@ -96,17 +97,12 @@ class CustomerTaskPricingService
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];
 
-        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
-        if (!$request->filled('id') && $field->required) {
-          if (in_array($field->type, ['file', 'image', 'file_expiration_date'])) {
+        // لا نضع required للحقول من نوع file_expiration_date هنا
+        if (!$request->filled('id') && $field->required && $field->type !== 'file_expiration_date') {
+          if (in_array($field->type, ['file', 'image'])) {
             $rules[$fieldKey][] = 'nullable';
           } else {
-            if ($field->type == "file_expiration_date") {
-              $rules[$fieldKey . '_file'][] = 'required';
-              $rules[$fieldKey . '_expiration'][] = 'required';
-            } else {
-              $rules[$fieldKey][] = 'required';
-            }
+            $rules[$fieldKey][] = 'required';
           }
         }
 
@@ -139,17 +135,33 @@ class CustomerTaskPricingService
             break;
 
           case 'file_expiration_date':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
             $rules[$fieldKey . '_file'][] = 'file';
             $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
             $rules[$fieldKey . '_file'][] = 'max:10240';
 
+            // قواعد تاريخ الانتهاء
+            $rules[$fieldKey . '_expiration'] = [];
+            $rules[$fieldKey . '_expiration'][] = 'nullable';
             $rules[$fieldKey . '_expiration'][] = 'date';
+            $rules[$fieldKey . '_expiration'][] = 'after_or_equal:today';
 
-            // إذا الحقل مطلوب، نضيف required حسب الحاجة
-            if (!$request->filled('id') && $field->required) {
-
-              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
-              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$request->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_expiration'][] = 'required';
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، تاريخ الانتهاء مطلوب
+                if ($request->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_expiration'][] = 'required';
+                }
+              }
             }
 
             break;
@@ -164,6 +176,35 @@ class CustomerTaskPricingService
 
 
     return $rules;
+  }
+
+  protected function buildCustomMessages($request)
+  {
+    $customMessages = [];
+
+    $task_template = Settings::where('key', 'task_template')->first();
+    $template_id = $task_template->value;
+
+    if ($task_template) {
+      $fields = Form_Field::where('form_template_id', $template_id)->get();
+
+      foreach ($fields as $field) {
+        if ($field->type === 'file_expiration_date') {
+          $fieldKey = 'additional_fields.' . $field->name;
+          $customMessages = array_merge($customMessages, [
+            $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+            $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+            $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+            $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+          ]);
+        }
+      }
+    }
+
+    return $customMessages;
   }
 
   protected function validateVehicleSizes($vehicles)

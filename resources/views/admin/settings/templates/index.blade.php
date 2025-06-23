@@ -39,6 +39,7 @@
                         <th>#</th>
                         <th>{{ __('Name') }}</th>
                         <th>{{ __('Description') }}</th>
+                        <th>{{ __('Usage') }}</th>
                         <th>{{ __('Created At') }}</th>
                         <th>{{ __('Actions') }}</th>
                     </tr>

@@ -185,6 +185,42 @@
                                                         </a>
                                                     @break
 
+                                                    @case('file_with_text')
+                                                        @if ($field['value'])
+                                                            <div class="mb-2">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                                    class="text-decoration-none">
+                                                                    <i class="ti ti-file me-1"></i>{{ basename($field['value']) }}
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                        @if (isset($field['text']) && $field['text'])
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">Info:</small>
+                                                                <p class="card-text fw-medium">{{ $field['text'] }}</p>
+                                                            </div>
+                                                        @endif
+                                                    @break
+
+                                                    @case('file_expiration_date')
+                                                        @if ($field['value'])
+                                                            <div class="mb-2">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                                    class="text-decoration-none">
+                                                                    <i class="ti ti-file me-1"></i>{{ basename($field['value']) }}
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                        @if (isset($field['expiration']) && $field['expiration'])
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">Expires:</small>
+                                                                <p class="card-text fw-medium">
+                                                                    {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
+                                                                </p>
+                                                            </div>
+                                                        @endif
+                                                    @break
+
                                                     @default
                                                         <p class="card-text">{{ $field['value'] }}</p>
                                                 @endswitch

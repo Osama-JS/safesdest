@@ -59,4 +59,6 @@ class FormTemplateController extends Controller
     ]);
     return response()->json(['status' => 1, 'msg' => 'Form Template Created Successfully']);
   }
+
+  
 }

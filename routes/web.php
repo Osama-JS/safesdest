@@ -268,6 +268,8 @@ Route::middleware('rate.limit')->group(function () {
           Route::post('/templates', [TemplateController::class, 'store'])->name('settings.templates.store');
           Route::get('/templates/edit/{id}', [TemplateController::class, 'edit'])->name('settings.templates.edit');
           Route::post('/templates/update/', [TemplateController::class, 'update'])->name('settings.templates.update');
+          Route::post('/templates/duplicate/{id}', [TemplateController::class, 'duplicate'])->name('settings.templates.duplicate');
+          Route::delete('/templates/delete/{id}', [TemplateController::class, 'destroy'])->name('settings.templates.delete');
 
           Route::post('/template/pricing', [PricingTemplateController::class, 'store'])->name('settings.templates.pricing.store');
           Route::get('/templates/pricing/data/{id}', [PricingTemplateController::class, 'getData'])->name('settings.templates.pricing.data');
@@ -337,6 +339,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
         Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
         Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');
+        Route::delete('/tasks/delete', [TasksController::class, 'destroy'])->name('tasks.delete');
         Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
         Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
         Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');

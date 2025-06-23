@@ -234,7 +234,8 @@ class UsersController extends Controller
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];
 
-        if (!$req->filled('id') && $field->required) {
+        // لا نضع required للحقول المركبة هنا
+        if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
           $rules[$fieldKey][] = 'required';
           $messages["$fieldKey.required"] = __('The :label field is required.', ['label' => $field->label]);
         }
@@ -263,19 +264,105 @@ class UsersController extends Controller
             $rules[$fieldKey][] = 'max:5120';
             break;
           case 'file_expiration_date':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
             $rules[$fieldKey . '_file'][] = 'file';
             $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
             $rules[$fieldKey . '_file'][] = 'max:10240';
 
+            // قواعد تاريخ الانتهاء
+            $rules[$fieldKey . '_expiration'] = [];
+            $rules[$fieldKey . '_expiration'][] = 'nullable';
             $rules[$fieldKey . '_expiration'][] = 'date';
+            $rules[$fieldKey . '_expiration'][] = 'after_or_equal:today';
 
-            // إذا الحقل مطلوب، نضيف required حسب الحاجة
-            if (!$req->filled('id') && $field->required) {
-              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
-              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$req->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_expiration'][] = 'required';
+                $messages[$fieldKey . '_file.required'] = __('The :label file is required.', ['label' => $field->label]);
+                $messages[$fieldKey . '_expiration.required'] = __('The expiration date for :label is required.', ['label' => $field->label]);
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، تاريخ الانتهاء مطلوب
+                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_expiration'][] = 'required';
+                  $messages[$fieldKey . '_expiration.required'] = __('The expiration date for :label is required.', ['label' => $field->label]);
+                }
+              }
             }
+
+            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_expiration'][] = 'required';
+              $messages[$fieldKey . '_expiration.required'] = __('The expiration date for :label is required when file is uploaded.', ['label' => $field->label]);
+            }
+
+            // إضافة رسائل إضافية
+            $messages[$fieldKey . '_file.file'] = __('The :label must be a valid file.', ['label' => $field->label]);
+            $messages[$fieldKey . '_file.mimes'] = __('The :label must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['label' => $field->label]);
+            $messages[$fieldKey . '_file.max'] = __('The :label file size must not exceed 10MB.', ['label' => $field->label]);
+            $messages[$fieldKey . '_expiration.date'] = __('The expiration date for :label must be a valid date.', ['label' => $field->label]);
+            $messages[$fieldKey . '_expiration.after_or_equal'] = __('The expiration date for :label must be today or a future date.', ['label' => $field->label]);
+
             break;
+
+          case 'file_with_text':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            // قواعد النص/الرقم
+            $rules[$fieldKey . '_text'] = [];
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$req->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_text'][] = 'required';
+                $messages[$fieldKey . '_file.required'] = __('The :label file is required.', ['label' => $field->label]);
+                $messages[$fieldKey . '_text.required'] = __('The text field for :label is required.', ['label' => $field->label]);
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، النص مطلوب
+                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_text'][] = 'required';
+                  $messages[$fieldKey . '_text.required'] = __('The text field for :label is required.', ['label' => $field->label]);
+                }
+              }
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+              $messages[$fieldKey . '_text.required'] = __('The text field for :label is required when file is uploaded.', ['label' => $field->label]);
+            }
+
+            // إضافة رسائل إضافية
+            $messages[$fieldKey . '_file.file'] = __('The :label must be a valid file.', ['label' => $field->label]);
+            $messages[$fieldKey . '_file.mimes'] = __('The :label must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['label' => $field->label]);
+            $messages[$fieldKey . '_file.max'] = __('The :label file size must not exceed 10MB.', ['label' => $field->label]);
+            $messages[$fieldKey . '_text.string'] = __('The text field for :label must be a valid text.', ['label' => $field->label]);
+            $messages[$fieldKey . '_text.max'] = __('The text field for :label must not exceed 255 characters.', ['label' => $field->label]);
+
+            break;
+
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }
@@ -356,6 +443,33 @@ class UsersController extends Controller
                 $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
                 if ($req->filled("additional_fields.$expirationFieldName")) {
                   $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+                }
+              }
+            }
+          } else if ($field->type === 'file_with_text') {
+            $fileFieldName = $fieldName . '_file';
+            $textFieldName = $fieldName . '_text';
+
+            // معالجة الملف
+            if ($req->hasFile("additional_fields.$fileFieldName")) {
+              // حذف الملف القديم إذا موجود
+              if (isset($oldAdditionalData[$fieldName]['value'])) {
+                $filesToDelete[] = $oldAdditionalData[$fieldName]['value'];
+              }
+              $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'users/files');
+
+              $structuredFields[$fieldName] = [
+                'label' => $field->label,
+                'value' => $path,
+                'text' => $req->input("additional_fields.$textFieldName"),
+                'type'  => $field->type,
+              ];
+            } else {
+              // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث النص إذا تم تغييره
+              if (isset($oldAdditionalData[$fieldName])) {
+                $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                if ($req->filled("additional_fields.$textFieldName")) {
+                  $structuredFields[$fieldName]['text'] = $req->input("additional_fields.$textFieldName");
                 }
               }
             }

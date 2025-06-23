@@ -29,6 +29,7 @@ use App\Models\Pricing_Customer;
 use App\Models\Pricing_Geofence;
 use App\Models\Pricing_Template;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Http\Controllers\Controller;
@@ -1041,14 +1042,9 @@ class TasksController extends Controller
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];
-        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
-        if (!$req->filled('id') && $field->required) {
-          if ($field->type == "file_expiration_date") {
-            $rules[$fieldKey . '_file'][] = 'required';
-            $rules[$fieldKey . '_expiration'][] = 'required';
-          } else {
-            $rules[$fieldKey][] = 'required';
-          }
+        // لا نضع required للحقول المركبة هنا
+        if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
+          $rules[$fieldKey][] = 'required';
         }
 
         // إضافة قواعد بناءً على نوع الحقل
@@ -1080,28 +1076,123 @@ class TasksController extends Controller
             break;
 
           case 'file_expiration_date':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
             $rules[$fieldKey . '_file'][] = 'file';
             $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
             $rules[$fieldKey . '_file'][] = 'max:10240';
 
+            // قواعد تاريخ الانتهاء
+            $rules[$fieldKey . '_expiration'] = [];
+            $rules[$fieldKey . '_expiration'][] = 'nullable';
             $rules[$fieldKey . '_expiration'][] = 'date';
+            $rules[$fieldKey . '_expiration'][] = 'after_or_equal:today';
 
-            // إذا الحقل مطلوب، نضيف required حسب الحاجة
-            if (!$req->filled('id') && $field->required) {
-              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
-              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$req->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_expiration'][] = 'required';
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، تاريخ الانتهاء مطلوب
+                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_expiration'][] = 'required';
+                }
+              }
             }
+
+            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_expiration'][] = 'required';
+            }
+
+            break;
+
+          case 'file_with_text':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            // قواعد النص/الرقم
+            $rules[$fieldKey . '_text'] = [];
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$req->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_text'][] = 'required';
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، النص مطلوب
+                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_text'][] = 'required';
+                }
+              }
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
             break;
 
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }
       }
     }
 
+    // إنشاء رسائل خطأ مخصصة لحقول file_expiration_date
+    $customMessages = [];
+    if ($req->filled('template')) {
+      $template = Form_Template::with('fields')->find($req->template);
+      foreach ($template->fields as $field) {
+        if ($field->type === 'file_expiration_date') {
+          $fieldKey = 'additional_fields.' . $field->name;
+          $customMessages = array_merge($customMessages, [
+            $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+            $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+            $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+            $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+            $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+          ]);
+        }
 
-    $validator = Validator::make($req->all(), $rules);
+        if ($field->type === 'file_with_text') {
+          $fieldKey = 'additional_fields.' . $field->name;
+          $customMessages = array_merge($customMessages, [
+            $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+            $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+            $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+            $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+            $fieldKey . '_text.required' => __('The text field for :attribute is required.', ['attribute' => $field->label]),
+            $fieldKey . '_text.string' => __('The text field for :attribute must be a valid text.', ['attribute' => $field->label]),
+            $fieldKey . '_text.max' => __('The text field for :attribute must not exceed 255 characters.', ['attribute' => $field->label]),
+          ]);
+        }
+      }
+    }
+
+    $validator = Validator::make($req->all(), $rules, $customMessages);
 
     if ($validator->fails()) {
       return response()->json([
@@ -1252,6 +1343,8 @@ class TasksController extends Controller
     $owner    = $request->input('owner');
     $team    = $request->input('team');
     $driver    = $request->input('driver');
+    $search    = $request->input('search.value'); // البحث من DataTables
+    $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
     $query = Task::query();
 
@@ -1279,6 +1372,36 @@ class TasksController extends Controller
       $query->where('driver_id', $driver);
     }
 
+    // 🔍 إضافة البحث
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'LIKE', "%{$search}%")
+          ->orWhereHas('order', function ($orderQuery) use ($search) {
+            $orderQuery->where('id', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('customer', function ($customerQuery) use ($search) {
+            $customerQuery->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('email', 'LIKE', "%{$search}%")
+              ->orWhere('phone', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('driver', function ($driverQuery) use ($search) {
+            $driverQuery->where('name', 'LIKE', "%{$search}%")
+              ->orWhere('email', 'LIKE', "%{$search}%")
+              ->orWhere('username', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('pickup', function ($pickupQuery) use ($search) {
+            $pickupQuery->where('address', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('delivery', function ($deliveryQuery) use ($search) {
+            $deliveryQuery->where('address', 'LIKE', "%{$search}%");
+          });
+      });
+    }
+
+    // 🔍 فلتر الحالة
+    if (!empty($statusFilter)) {
+      $query->where('status', $statusFilter);
+    }
 
     $totalFiltered = $query->count();
 
@@ -1488,6 +1611,257 @@ class TasksController extends Controller
     $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($id);
 
     return view('admin.tasks.report', compact('task'));
+  }
+
+  /**
+   * حذف مهمة مع مراعاة جميع الحالات والبيانات المرتبطة
+   *
+   * @param Request $req
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function destroy(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:tasks,id',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'status' => 2,
+        'error' => __('Invalid task ID')
+      ]);
+    }
+
+    DB::beginTransaction();
+
+    try {
+      // جلب المهمة مع جميع العلاقات المرتبطة
+      $task = Task::with([
+        'payments',
+        'points',
+        'history',
+        'ad',
+        'customer.wallet.transactions',
+        'driver.wallet.transactions'
+      ])->findOrFail($req->id);
+
+      // 🚫 فحص الحالات التي تمنع الحذف
+      $deletionChecks = $this->validateTaskDeletion($task);
+      if (!$deletionChecks['canDelete']) {
+        DB::rollBack();
+        return response()->json([
+          'status' => 2,
+          'error' => $deletionChecks['reason']
+        ]);
+      }
+
+      // 📁 جمع جميع الملفات المرتبطة بالمهمة
+      $filesToDelete = $this->collectTaskFiles($task);
+
+      // 🗑️ حذف البيانات المرتبطة بالترتيب الصحيح
+      $this->deleteRelatedData($task);
+
+      // 🗑️ حذف المهمة نفسها
+      $task->delete();
+
+      DB::commit();
+
+      // 🧹 حذف الملفات بعد نجاح العملية
+      $this->deleteTaskFiles($filesToDelete);
+
+      return response()->json([
+        'status' => 1,
+        'success' => __('Task deleted successfully')
+      ]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json([
+        'status' => 2,
+        'error' => __('Error deleting task: ') . $ex->getMessage()
+      ]);
+    }
+  }
+
+  /**
+   * التحقق من إمكانية حذف المهمة
+   *
+   * @param Task $task
+   * @return array
+   */
+  private function validateTaskDeletion($task)
+  {
+    // 🚫 لا يمكن حذف المهام المكتملة
+    if (in_array($task->status, ['completed', 'canceled'])) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Cannot delete completed or canceled tasks')
+      ];
+    }
+
+    // 🚫 لا يمكن حذف المهام المدفوعة
+    if (in_array($task->payment_status, ['completed', 'pending'])) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Cannot delete tasks with completed or pending payments')
+      ];
+    }
+
+    // 🚫 لا يمكن حذف المهام التي لها معاملات محفظة
+    $walletTransactions = \App\Models\Wallet_Transaction::where('task_id', $task->id)->count();
+    if ($walletTransactions > 0) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Cannot delete tasks with wallet transactions')
+      ];
+    }
+
+    // 🚫 لا يمكن حذف المهام التي لها معاملات دفع
+    if ($task->payments && $task->payments->count() > 0) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Cannot delete tasks with payment records')
+      ];
+    }
+
+    // 🚫 لا يمكن حذف المهام المغلقة
+    if ($task->closed) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Cannot delete closed tasks')
+      ];
+    }
+
+    // ✅ يمكن حذف المهام في الحالات المسموحة فقط
+    $allowedStatuses = ['in_progress', 'advertised'];
+    if (!in_array($task->status, $allowedStatuses)) {
+      return [
+        'canDelete' => false,
+        'reason' => __('Can only delete tasks in progress or advertised status')
+      ];
+    }
+
+    return [
+      'canDelete' => true,
+      'reason' => null
+    ];
+  }
+
+  /**
+   * جمع جميع الملفات المرتبطة بالمهمة
+   *
+   * @param Task $task
+   * @return array
+   */
+  private function collectTaskFiles($task)
+  {
+    $filesToDelete = [];
+
+    // 📁 ملفات من additional_data
+    if ($task->additional_data && is_array($task->additional_data)) {
+      foreach ($task->additional_data as $fieldName => $fieldData) {
+        if (isset($fieldData['type']) && isset($fieldData['value'])) {
+          $fieldType = $fieldData['type'];
+          $fieldValue = $fieldData['value'];
+
+          // ملفات من الحقول المركبة والعادية
+          if (in_array($fieldType, ['file', 'image', 'file_expiration_date', 'file_with_text']) && !empty($fieldValue)) {
+            $filesToDelete[] = $fieldValue;
+          }
+        }
+      }
+    }
+
+    // 📁 ملفات من task history
+    if ($task->history) {
+      foreach ($task->history as $historyRecord) {
+        if (!empty($historyRecord->file_path)) {
+          $filesToDelete[] = $historyRecord->file_path;
+        }
+      }
+    }
+
+    // 📁 ملفات من task points (images)
+    if ($task->points) {
+      foreach ($task->points as $point) {
+        if (!empty($point->image)) {
+          $filesToDelete[] = $point->image;
+        }
+      }
+    }
+
+    // 📁 ملف delivery note
+    if (!empty($task->delivery_note)) {
+      $filesToDelete[] = $task->delivery_note;
+    }
+
+    return array_filter(array_unique($filesToDelete));
+  }
+
+  /**
+   * حذف البيانات المرتبطة بالمهمة بالترتيب الصحيح
+   *
+   * @param Task $task
+   * @return void
+   */
+  private function deleteRelatedData($task)
+  {
+    // 🗑️ حذف معاملات المحفظة المرتبطة بالمهمة (إذا لم تكن مكتملة)
+    \App\Models\Wallet_Transaction::where('task_id', $task->id)
+      ->where('status', 0) // فقط المعاملات غير المكتملة
+      ->delete();
+
+    // 🗑️ حذف العروض المرتبطة بإعلان المهمة
+    if ($task->ad) {
+      \App\Models\Task_Offire::where('task_ad_id', $task->ad->id)->delete();
+      $task->ad->delete();
+    }
+
+    // 🗑️ حذف تاريخ المهمة
+    $task->history()->delete();
+
+    // 🗑️ حذف نقاط المهمة
+    $task->points()->delete();
+
+    // 🗑️ حذف المدفوعات المرتبطة (إذا كانت في حالة pending فقط)
+    $task->payments()->where('status', 'pending')->delete();
+
+    // 🗑️ حذف المعاملات المرتبطة بالمهمة من جدول transactions
+    if ($task->customer) {
+      $task->customer->transactions()
+        ->where('reference_id', $task->id)
+        ->where('type', 'delivery')
+        ->where('status', '!=', 'completed')
+        ->delete();
+    }
+
+    if ($task->driver) {
+      $task->driver->transactions()
+        ->where('reference_id', $task->id)
+        ->where('type', 'delivery')
+        ->where('status', '!=', 'completed')
+        ->delete();
+    }
+  }
+
+  /**
+   * حذف الملفات المرتبطة بالمهمة
+   *
+   * @param array $filesToDelete
+   * @return void
+   */
+  private function deleteTaskFiles($filesToDelete)
+  {
+    foreach ($filesToDelete as $filePath) {
+      if (!empty($filePath)) {
+        try {
+          // استخدام FileHelper للحذف الآمن
+          FileHelper::deleteFileIfExists($filePath);
+        } catch (Exception $e) {
+          // تسجيل الخطأ ولكن لا نوقف العملية
+          Log::warning("Failed to delete file: {$filePath}. Error: " . $e->getMessage());
+        }
+      }
+    }
   }
 
 

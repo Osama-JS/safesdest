@@ -28,7 +28,7 @@ return new class extends Migration
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('cascade');
       $table->timestamps();
 
-      $table->unique('name', 'form_template_id');
+      $table->unique(['name', 'form_template_id']);
     });
   }
 

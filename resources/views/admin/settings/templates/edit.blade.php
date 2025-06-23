@@ -136,6 +136,9 @@
                                         <option value="file_expiration_date"
                                             {{ $fieldType == 'file_expiration_date' ? 'selected' : '' }}>file with
                                             expiration date</option>
+                                        <option value="file_with_text"
+                                            {{ $fieldType == 'file_with_text' ? 'selected' : '' }}>file with text/number
+                                        </option>
                                         <option value="image" {{ $fieldType == 'image' ? 'selected' : '' }}>image</option>
                                         <option value="url" {{ $fieldType == 'url' ? 'selected' : '' }}>url</option>
                                         <option value="select" {{ $fieldType == 'select' ? 'selected' : '' }}>select
@@ -145,8 +148,21 @@
 
                                 </td>
                                 <td>
+                                    @php
+                                        $placeholder = 'Default value or placeholder text';
+                                        if ($field->type === 'file_expiration_date') {
+                                            $placeholder =
+                                                'Label for expiration date (e.g., "Expiry Date", "Valid Until")';
+                                        } elseif ($field->type === 'file_with_text') {
+                                            $placeholder =
+                                                'Label for text field (e.g., "License Number", "Document ID")';
+                                        } elseif ($field->type === 'select') {
+                                            $placeholder = 'Select options managed below';
+                                        }
+                                    @endphp
                                     <input type="text" class="form-control field-value-input"
-                                        value="{{ $fieldType == 'select' ? '' : $field->value }}">
+                                        value="{{ $fieldType == 'select' ? '' : $field->value }}"
+                                        placeholder="{{ $placeholder }}">
                                     <span class="field-{{ $key }}-value-error text-danger text-error"></span>
 
                                 </td>

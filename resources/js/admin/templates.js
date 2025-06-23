@@ -30,6 +30,7 @@ $(function () {
         { data: 'id' },
         { data: 'name' },
         { data: 'description' },
+        { data: 'usage_summary' },
         { data: 'created_at' },
         { data: null }
       ],
@@ -67,6 +68,32 @@ $(function () {
             return full['description'];
           }
         },
+        {
+          // Usage column
+          targets: 4,
+          title: __('Usage'),
+          searchable: false,
+          orderable: true,
+          render: function (data, type, full, meta) {
+            if (type === 'display') {
+              let badgeClass = 'badge-light-secondary';
+              if (full['total_usage'] > 0) {
+                badgeClass = 'badge-light-success';
+              }
+
+              return `
+                <div class="d-flex flex-column">
+                  <span class="badge ${badgeClass} mb-1">
+                    <i class="ti ti-chart-bar me-1"></i>
+                    ${__('Total')}: ${full['total_usage']}
+                  </span>
+                  <small class="text-muted">${full['usage_summary']}</small>
+                </div>
+              `;
+            }
+            return full['total_usage'];
+          }
+        },
 
         {
           // Actions
@@ -79,6 +106,7 @@ $(function () {
               '<div class="d-flex align-items-center gap-50">' +
               `<a href="${baseUrl + 'admin/settings/templates/edit/' + full['id']}" class="btn btn-sm btn-icon  btn-text-secondary rounded-pill waves-effect"  ><i class="ti ti-eye"></i></a>` +
               `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"  data-description="${full['description']}"  ><i class="ti ti-edit"></i></button>` +
+              `<button class="btn btn-sm btn-icon duplicate-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}" title="Duplicate Template"><i class="ti ti-copy"></i></button>` +
               `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button> </div>`
             );
           }
@@ -151,6 +179,10 @@ $(function () {
     }, 2000);
   });
 
+  document.addEventListener('deletedSuccess', function (event) {
+    dt_data.draw();
+  });
+
   $(document).on('click', '.edit-record', function () {
     var id = $(this).data('id'),
       name = $(this).data('name'),
@@ -159,14 +191,61 @@ $(function () {
     $('#modelTitle').html(`Edit Template: <span class="bg-info text-white px-2 rounded">${name}</span>`);
     $('#submitModal').modal('show');
 
-    $('#pricing_id').val(id);
+    $('#template_id').val(id);
     $('#template-name').val(name);
     $('#template-description').val(description);
   });
 
   $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/settings/template/delete/' + $(this).data('id');
+    let url = baseUrl + 'admin/settings/templates/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
+  });
+
+  $(document).on('click', '.duplicate-record', function () {
+    let templateId = $(this).data('id');
+    let templateName = $(this).data('name');
+
+    // Show confirmation dialog
+    Swal.fire({
+      title: __('Duplicate Template'),
+      text: `Are you sure you want to duplicate "${templateName}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: __('Yes, duplicate it!'),
+      customClass: {
+        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      }
+    }).then(result => {
+      if (result.isConfirmed) {
+        // Show loading
+        showAlert('info', 'Duplicating Template...');
+        // Make AJAX request to duplicate
+        $.ajax({
+          url: baseUrl + 'admin/settings/templates/duplicate/' + templateId,
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            if (response.status === 1) {
+              showAlert('success', response.success, 10000, true);
+              dt_data.draw();
+            } else {
+              showAlert('error', response.error, 10000, true);
+            }
+          },
+          error: function (xhr) {
+            Swal.fire({
+              title: __('Error!'),
+              text: __('An error occurred while duplicating the template'),
+              icon: 'error',
+              confirmButtonText: __('OK')
+            });
+          }
+        });
+      }
+    });
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {
@@ -215,6 +294,7 @@ $(function () {
                         <option value="date">date</option>
                         <option value="file">file</option>
                         <option value="file_expiration_date">file with expiration date</option>
+                        <option value="file_with_text">file with text/number</option>
                         <option value="image">image</option>
                         <option value="url">url</option>
                         <option value="select">select</option>
@@ -223,7 +303,7 @@ $(function () {
 
                 </td>
                 <td>
-                  <input type="text" class="form-control field-value-input">
+                  <input type="text" class="form-control field-value-input" placeholder="For composite fields: label for companion field">
                   <span class="field-${fieldIndex}-value-error text-danger text-error"></span>
                 </td>
                 <td>
@@ -282,8 +362,21 @@ $(function () {
     $(document).on('change', '.field-type-select', function () {
       let row = $(this).closest('tr');
       let nextRow = row.next('.select-values-table');
+      let valueInput = row.find('.field-value-input');
+      let fieldType = $(this).val();
 
-      if ($(this).val() === 'select') {
+      // تحديث placeholder حسب نوع الحقل
+      if (fieldType === 'file_expiration_date') {
+        valueInput.attr('placeholder', 'Label for expiration date (e.g., "Expiry Date", "Valid Until")');
+      } else if (fieldType === 'file_with_text') {
+        valueInput.attr('placeholder', 'Label for text field (e.g., "License Number", "Document ID")');
+      } else if (fieldType === 'select') {
+        valueInput.attr('placeholder', 'Select options will be managed below');
+      } else {
+        valueInput.attr('placeholder', 'Default value or placeholder text');
+      }
+
+      if (fieldType === 'select') {
         if (nextRow.length === 0) {
           row.after(`
                   <tr class="select-values-table connected-row">

@@ -348,6 +348,82 @@
                                                         </a>
                                                     @break
 
+                                                    @case('file_with_text')
+                                                        @if ($field['value'])
+                                                            @php
+                                                                $ext = strtolower(
+                                                                    pathinfo($field['value'], PATHINFO_EXTENSION),
+                                                                );
+                                                                $icons = [
+                                                                    'pdf' => 'ti ti-file-text',
+                                                                    'doc' => 'ti ti-file-description',
+                                                                    'docx' => 'ti ti-file-description',
+                                                                    'xls' => 'ti ti-file-spreadsheet',
+                                                                    'xlsx' => 'ti ti-file-spreadsheet',
+                                                                    'ppt' => 'ti ti-presentation',
+                                                                    'pptx' => 'ti ti-presentation',
+                                                                ];
+                                                                $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                                            @endphp
+
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                    target="_blank"
+                                                                    class="d-flex align-items-center text-decoration-none">
+                                                                    <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                                    <span
+                                                                        class="text-truncate">{{ basename($field['value']) }}</span>
+                                                                </a>
+                                                            </div>
+                                                        @endif
+
+                                                        @if (isset($field['text']) && $field['text'])
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">Additional Info:</small>
+                                                                <p class="mb-0 fw-medium">{{ $field['text'] }}</p>
+                                                            </div>
+                                                        @endif
+                                                    @break
+
+                                                    @case('file_expiration_date')
+                                                        @if ($field['value'])
+                                                            @php
+                                                                $ext = strtolower(
+                                                                    pathinfo($field['value'], PATHINFO_EXTENSION),
+                                                                );
+                                                                $icons = [
+                                                                    'pdf' => 'ti ti-file-text',
+                                                                    'doc' => 'ti ti-file-description',
+                                                                    'docx' => 'ti ti-file-description',
+                                                                    'xls' => 'ti ti-file-spreadsheet',
+                                                                    'xlsx' => 'ti ti-file-spreadsheet',
+                                                                    'ppt' => 'ti ti-presentation',
+                                                                    'pptx' => 'ti ti-presentation',
+                                                                ];
+                                                                $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                                            @endphp
+
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                    target="_blank"
+                                                                    class="d-flex align-items-center text-decoration-none">
+                                                                    <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                                    <span
+                                                                        class="text-truncate">{{ basename($field['value']) }}</span>
+                                                                </a>
+                                                            </div>
+                                                        @endif
+
+                                                        @if (isset($field['expiration']) && $field['expiration'])
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">Expires:</small>
+                                                                <p class="mb-0 fw-medium">
+                                                                    {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
+                                                                </p>
+                                                            </div>
+                                                        @endif
+                                                    @break
+
                                                     @default
                                                         <p class="mb-0">{{ $field['value'] }}</p>
                                                 @endswitch

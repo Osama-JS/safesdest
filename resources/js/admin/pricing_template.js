@@ -176,7 +176,7 @@ $(function () {
   let groupedOptionsHTML = ''; // HTML كامل يستخدم داخل كل select
 
   function fetchPoints(customerIds = []) {
-    $.ajax({
+    return $.ajax({
       url: `${baseUrl}admin/settings/points/get`,
       type: 'POST',
       data: {
@@ -276,21 +276,29 @@ $(function () {
       $('#tagsSelect').prop('disabled', !data.use_tags).val(data.tags).trigger('change');
       $('#customersSelect').prop('disabled', !data.use_customers).val(data.customers).trigger('change');
 
-      fetchPoints(data.customers);
-      // تفعيل الميثودات
-      // تفريغ وتفعيل الـ methods
-      $('.toggle-method').prop('checked', false); // reset
+      // تحميل النقاط أولاً ثم معالجة الـ params
+      fetchPoints(data.customers).then(() => {
+        // معالجة الـ params بعد تحميل النقاط
+        processMethodParams(data);
+      });
+    });
+  });
 
-      if (Array.isArray(data.methods)) {
-        data.methods.forEach(methodId => {
-          // تفعيل الـ checkbox
-          const $checkbox = $(`#method_${methodId}`);
-          $checkbox.prop('checked', true);
-          const status = data.method_status.find(item => item.method_id === methodId);
+  function processMethodParams(data) {
+    // تفعيل الميثودات
+    // تفريغ وتفعيل الـ methods
+    $('.toggle-method').prop('checked', false); // reset
 
-          // توليد الحاوية يدويًا لو مش موجودة
-          if (!$(`#params_${methodId}`).length) {
-            const block = `
+    if (Array.isArray(data.methods)) {
+      data.methods.forEach(methodId => {
+        // تفعيل الـ checkbox
+        const $checkbox = $(`#method_${methodId}`);
+        $checkbox.prop('checked', true);
+        const status = data.method_status.find(item => item.method_id === methodId);
+
+        // توليد الحاوية يدويًا لو مش موجودة
+        if (!$(`#params_${methodId}`).length) {
+          const block = `
         <div class="method-parameters mb-3 p-3 border rounded" id="params_${methodId}">
           <label><strong>Set Parameters for Method #${methodId}</strong></label>
           <label class="switch switch-success">
@@ -307,28 +315,28 @@ $(function () {
           <div class="parameter-rows" data-method="${methodId}" data-type="${status.type}"></div>
         </div>
       `;
-            $checkbox.closest('.form-check').after(block);
-          }
+          $checkbox.closest('.form-check').after(block);
+        }
 
-          // تحميل الـ params الخاصة بهذا method
-          const container = $(`#params_${methodId} .parameter-rows`);
-          container.empty();
-          pricingParamsIndex = 0;
-          pricingPoints = 0;
+        // تحميل الـ params الخاصة بهذا method
+        const container = $(`#params_${methodId} .parameter-rows`);
+        container.empty();
+        pricingParamsIndex = 0;
+        pricingPoints = 0;
 
-          if (Array.isArray(data.params)) {
-            const flatParams = data.params.reduce((acc, val) => acc.concat(val), []);
-            const params = flatParams.filter(p => String(p.method_id) === String(methodId));
+        if (Array.isArray(data.params)) {
+          const flatParams = data.params.reduce((acc, val) => acc.concat(val), []);
+          const params = flatParams.filter(p => String(p.method_id) === String(methodId));
 
-            if (params.length) {
-              params.forEach((param, index) => {
-                const actionButton =
-                  index === 0
-                    ? `<button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>`
-                    : `<button type="button" class="btn btn-sm btn-icon text-danger remove-row"><i class="ti ti-trash"></i></button>`;
-                let fields = '';
-                if (status.type === 'distance') {
-                  fields = `
+          if (params.length) {
+            params.forEach((param, index) => {
+              const actionButton =
+                index === 0
+                  ? `<button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>`
+                  : `<button type="button" class="btn btn-sm btn-icon text-danger remove-row"><i class="ti ti-trash"></i></button>`;
+              let fields = '';
+              if (status.type === 'distance') {
+                fields = `
                     <div class="col-md-3">
                       <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]"  class="form-control from-input" value="${param.from_val}" placeholder="From">
                       <span class="params-${methodId}-${pricingParamsIndex}-from_val-error text-danger text-error"></span>
@@ -340,10 +348,10 @@ $(function () {
 
                     </div>
                   `;
-                  pricingParamsIndex++;
-                } else if (status.type === 'points') {
-                  console.log(groupedOptionsHTML);
-                  fields = `
+                pricingParamsIndex++;
+              } else if (status.type === 'points') {
+                console.log(groupedOptionsHTML);
+                fields = `
                     <div class="col-md-3">
                       <select name="params[${methodId}][${pricingPoints}][from_val]" class="form-select point-select from-input">
                         <option value="">From Point</option>${groupedOptionsHTML}
@@ -359,26 +367,49 @@ $(function () {
 
                     </div>
                   `;
-                  waitForSelect(`select[name="params[${methodId}][${pricingPoints}][from_val]"]`).then($select => {
+                // تعيين القيم للـ select بناءً على الـ ID المحفوظ
+                waitForSelect(`select[name="params[${methodId}][${pricingPoints}][from_val]"]`).then($select => {
+                  // البحث عن النقطة في allPoints بناءً على الـ ID
+                  const fromPoint = allPoints.find(point => point.id == param.from_val);
+                  if (fromPoint) {
+                    // إذا وجدت النقطة، تأكد من وجود option بالـ ID والاسم الصحيح
+                    if ($select.find(`option[value="${fromPoint.id}"]`).length === 0) {
+                      $select.append(new Option(fromPoint.name, fromPoint.id));
+                    }
+                    $select.val(fromPoint.id).trigger('change');
+                  } else {
+                    // إذا لم توجد النقطة، أضف option مؤقت بالـ ID
                     if ($select.find(`option[value="${param.from_val}"]`).length === 0) {
-                      $select.append(new Option(param.from_val, param.from_val));
+                      $select.append(new Option(`Point ID: ${param.from_val}`, param.from_val));
                     }
                     $select.val(param.from_val).trigger('change');
-                  });
+                  }
+                });
 
-                  waitForSelect(`select[name="params[${methodId}][${pricingPoints}][to_val]"]`).then($select => {
+                waitForSelect(`select[name="params[${methodId}][${pricingPoints}][to_val]"]`).then($select => {
+                  // البحث عن النقطة في allPoints بناءً على الـ ID
+                  const toPoint = allPoints.find(point => point.id == param.to_val);
+                  if (toPoint) {
+                    // إذا وجدت النقطة، تأكد من وجود option بالـ ID والاسم الصحيح
+                    if ($select.find(`option[value="${toPoint.id}"]`).length === 0) {
+                      $select.append(new Option(toPoint.name, toPoint.id));
+                    }
+                    $select.val(toPoint.id).trigger('change');
+                  } else {
+                    // إذا لم توجد النقطة، أضف option مؤقت بالـ ID
                     if ($select.find(`option[value="${param.to_val}"]`).length === 0) {
-                      $select.append(new Option(param.to_val, param.to_val));
+                      $select.append(new Option(`Point ID: ${param.to_val}`, param.to_val));
                     }
                     $select.val(param.to_val).trigger('change');
-                  });
+                  }
+                });
 
-                  console.log(param.from_val);
-                  console.log(param.to_val);
-                  pricingPoints++;
-                }
+                console.log(param.from_val);
+                console.log(param.to_val);
+                pricingPoints++;
+              }
 
-                const row = `
+              const row = `
                   <div class="row g-2 parameter-row mt-2">
                     <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
                     ${fields}
@@ -392,18 +423,18 @@ $(function () {
                   </div>
                 `;
 
-                container.append(row);
-              });
-            }
+              container.append(row);
+            });
           }
-        });
-      }
+        }
+      });
+    }
 
-      ///////////////
-      $('#field-pricing-wrapper').html('');
-      if (Array.isArray(data.field_pricing)) {
-        data.field_pricing.forEach(item => {
-          $('#field-pricing-wrapper').append(`
+    ///////////////
+    $('#field-pricing-wrapper').html('');
+    if (Array.isArray(data.field_pricing)) {
+      data.field_pricing.forEach(item => {
+        $('#field-pricing-wrapper').append(`
     <div class="row g-2 mb-2 field-pricing-row">
       <div class="col-md-3">
         <select name="field_pricing[${fieldPricingIndex}][field_id]" class="form-select field-select">
@@ -447,15 +478,15 @@ $(function () {
       </div>
     </div>
   `);
-          fieldPricingIndex++;
-        });
-      }
+        fieldPricingIndex++;
+      });
+    }
 
-      // ✅ تعبئة الجيوفينس
-      $('#geofence-pricing-wrapper').html('');
-      if (Array.isArray(data.geofence_pricing)) {
-        data.geofence_pricing.forEach(item => {
-          $('#geofence-pricing-wrapper').append(`
+    // ✅ تعبئة الجيوفينس
+    $('#geofence-pricing-wrapper').html('');
+    if (Array.isArray(data.geofence_pricing)) {
+      data.geofence_pricing.forEach(item => {
+        $('#geofence-pricing-wrapper').append(`
       <div class="row g-2 mb-2 geofence-pricing-row">
         <div class="col-md-4">
           <select name="geofence_pricing[${geofencePricingIndex}][geofence_id]" class="form-select geofence-select">
@@ -482,23 +513,22 @@ $(function () {
         </div>
       </div>
     `);
-          geofencePricingIndex++;
-          updateGeofenceButtons();
-        });
-      }
+        geofencePricingIndex++;
+        updateGeofenceButtons();
+      });
+    }
 
-      // ✅ تفعيل checkbox الأحجام (sizes)
-      $('.size-checkbox').prop('checked', false);
-      if (Array.isArray(data.sizes)) {
-        data.sizes.forEach(id => {
-          $(`#size_${id}`).prop('checked', true);
-        });
-      }
+    // ✅ تفعيل checkbox الأحجام (sizes)
+    $('.size-checkbox').prop('checked', false);
+    if (Array.isArray(data.sizes)) {
+      data.sizes.forEach(id => {
+        $(`#size_${id}`).prop('checked', true);
+      });
+    }
 
-      // تغيير عنوان المودال
-      $('#modelTitle').html(`Edit Template: <span class="bg-info text-white px-2 rounded">${data.rule_name}</span>`);
-    });
-  });
+    // تغيير عنوان المودال
+    $('#modelTitle').html(`Edit Template: <span class="bg-info text-white px-2 rounded">${data.rule_name}</span>`);
+  }
 
   /* ====================== Change Status Action Button  =============================== */
   $(document).on('change', '.edit_status', function () {

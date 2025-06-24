@@ -79,4 +79,27 @@ class Customer extends Authenticatable
   {
     return $this->hasOne(Wallet::class, 'customer_id');
   }
+
+  public function formTemplate()
+  {
+    return $this->belongsTo(Form_Template::class, 'form_template_id');
+  }
+
+  /**
+   * Get additional data that customer is allowed to see
+   * Similar to driver's getDriverVisibleAdditionalDataAttribute
+   */
+  public function getCustomerVisibleAdditionalDataAttribute()
+  {
+    if (!is_array($this->additional_data)) return [];
+
+    $formFields = $this->formTemplate?->fields ?? collect();
+
+    return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+      return $formFields->contains(function ($field) use ($item) {
+        return $field->label == $item['label'] &&
+          in_array($field->customer_can, ['read', 'write']);
+      });
+    })->values()->all();
+  }
 }

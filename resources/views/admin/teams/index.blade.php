@@ -23,7 +23,10 @@
 @section('content')
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Teams') }}</h5>
+            <h5 class="card-title mb-2">
+                <i class="tf-icons ti ti-users-group me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                {{ __('Teams') }}
+            </h5>
             <p>Organize your Manager into logical groups to efficiently manage your field operations. You may group them on
                 the basis of location, geography, type of service and so on and so forth.</p>
 
@@ -125,6 +128,21 @@
                                             <textarea name="note" id="team-note" class="form-control" cols="30" rows="3"></textarea>
 
                                             <span class="note-error text-danger text-error"></span>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="is_public"
+                                                    id="team-is-public" value="1" checked>
+                                                <label class="form-check-label" for="team-is-public">
+                                                    <i class="ti ti-eye me-1"></i>{{ __('Public Team') }}
+                                                </label>
+                                                <small class="form-text text-muted d-block">
+                                                    <i class="ti ti-info-circle me-1"></i>
+                                                    {{ __('Public teams appear in driver registration form. Private teams are only visible to admins.') }}
+                                                </small>
+                                            </div>
+                                            <span class="is_public-error text-danger text-error"></span>
                                         </div>
                                     </div>
 

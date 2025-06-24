@@ -28,58 +28,121 @@ class PointsController extends Controller
 
   public function getData(Request $request)
   {
-    $columns = [
-      1 => 'id',
-      2 => 'name',
-      3 => 'address',
-      6 => 'status',
-    ];
-
-
-    $totalData = Point::count();
-    $totalFiltered = $totalData;
-
-    $limit = $request->input('length', 10);
-    $start = $request->input('start', 0);
-    $orderColumnIndex = $request->input('order.0.column', 1);
-    $order = $columns[$orderColumnIndex] ?? 'id';
-    $dir = $request->input('order.0.dir', 'asc');
-
     $search = $request->input('search');
 
-    // تجهيز الاستعلام الرئيسي
-    $query = Point::query();
+    // جلب جميع النقاط مع العملاء
+    $query = Point::with('customer');
 
     if (!empty($search)) {
-      $query->where('id', 'LIKE', "%{$search}%")
-        ->orWhere('name', 'LIKE', "%{$search}%")
-        ->orWhere('address', 'LIKE', "%{$search}%");
+      $query->where(function ($q) use ($search) {
+        $q->where('name', 'LIKE', "%{$search}%")
+          ->orWhere('address', 'LIKE', "%{$search}%")
+          ->orWhereHas('customer', function ($customerQuery) use ($search) {
+            $customerQuery->where('name', 'LIKE', "%{$search}%");
+          });
+      });
     }
 
-    $totalFiltered = $query->count(); // ✅ حساب العدد بعد البحث
-
-    // تنفيذ جلب البيانات مع الفلترة والتقسيم
-    $methods = $query->offset($start)
-      ->limit($limit)
-      ->orderBy($order, $dir)
+    $points = $query->orderBy('customer_id', 'asc')
+      ->orderBy('name', 'asc')
       ->get();
 
-    $data = [];
+    // تجميع النقاط حسب العملاء
+    $generalPoints = [];
+    $customerGroups = [];
 
-    if (!empty($methods)) {
-      $ids = $start;
-
-      foreach ($methods as $method) {
-        $nestedData['id'] = $method->id;
-        $nestedData['fake_id'] = ++$ids;
-        $nestedData['name'] = $method->name;
-        $nestedData['address'] = $method->address;
-        $nestedData['customer'] = $method->customer ? $method->customer->name : "";
-        $nestedData['status'] = $method->status;
-
-        $data[] = $nestedData;
+    foreach ($points as $point) {
+      if ($point->customer_id) {
+        if (!isset($customerGroups[$point->customer_id])) {
+          $customerGroups[$point->customer_id] = [
+            'customer' => $point->customer,
+            'points' => []
+          ];
+        }
+        $customerGroups[$point->customer_id]['points'][] = $point;
+      } else {
+        $generalPoints[] = $point;
       }
     }
+
+    $data = [];
+    $fakeId = 0;
+
+    // إضافة مجموعات العملاء
+    foreach ($customerGroups as $customerId => $group) {
+      $customer = $group['customer'];
+      $customerPoints = $group['points'];
+
+      // إضافة الصف الرئيسي للعميل
+      $data[] = [
+        'id' => 'customer-' . $customerId,
+        'fake_id' => ++$fakeId,
+        'name' => $customer->name,
+        'address' => '',
+        'customer' => '',
+        'status' => '',
+        'is_parent' => true,
+        'parent_type' => 'customer',
+        'points_count' => count($customerPoints),
+        'customer_id' => $customerId,
+        'customer_name' => $customer->name
+      ];
+
+      // إضافة النقاط التابعة للعميل
+      foreach ($customerPoints as $point) {
+        $data[] = [
+          'id' => $point->id,
+          'fake_id' => ++$fakeId,
+          'name' => $point->name,
+          'address' => $point->address,
+          'customer' => $customer->name,
+          'status' => $point->status,
+          'is_parent' => false,
+          'parent_id' => 'customer-' . $customerId,
+          'contact_name' => $point->contact_name,
+          'contact_phone' => $point->contact_phone,
+          'latitude' => $point->latitude,
+          'longitude' => $point->longitude
+        ];
+      }
+    }
+
+    // إضافة النقاط العامة
+    if (!empty($generalPoints)) {
+      // إضافة الصف الرئيسي للنقاط العامة
+      $data[] = [
+        'id' => 'general',
+        'fake_id' => ++$fakeId,
+        'name' => __('General Points'),
+        'address' => '',
+        'customer' => '',
+        'status' => '',
+        'is_parent' => true,
+        'parent_type' => 'general',
+        'points_count' => count($generalPoints)
+      ];
+
+      // إضافة النقاط العامة
+      foreach ($generalPoints as $point) {
+        $data[] = [
+          'id' => $point->id,
+          'fake_id' => ++$fakeId,
+          'name' => $point->name,
+          'address' => $point->address,
+          'customer' => __('General'),
+          'status' => $point->status,
+          'is_parent' => false,
+          'parent_id' => 'general',
+          'contact_name' => $point->contact_name,
+          'contact_phone' => $point->contact_phone,
+          'latitude' => $point->latitude,
+          'longitude' => $point->longitude
+        ];
+      }
+    }
+
+    $totalData = Point::count();
+    $totalFiltered = $points->count();
 
     return response()->json([
       'draw' => intval($request->input('draw')),

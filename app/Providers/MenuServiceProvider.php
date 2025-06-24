@@ -22,20 +22,37 @@ class MenuServiceProvider extends ServiceProvider
    */
   public function boot(): void
   {
-    $guards = ['driver', 'customer', 'web'];
-    $menus = [];
+    // استخدام View Composer لتحديد القائمة حسب الـ guard
+    View::composer('layouts.sections.menu.verticalMenu', function ($view) {
+      // تحديد الـ guard الحالي
+      $currentGuard = 'web'; // default
+      foreach (['driver', 'customer', 'web'] as $g) {
+        if (auth($g)->check()) {
+          $currentGuard = $g;
+          break;
+        }
+      }
 
-    foreach ($guards as $guard) {
-      $verticalPath = base_path("resources/menu/{$guard}/verticalMenu.json");
-      $horizontalPath = base_path("resources/menu/{$guard}/horizontalMenu.json");
+      // تحميل القوائم للـ guard الحالي
+      $verticalPath = base_path("resources/menu/{$currentGuard}/verticalMenu.json");
+      $verticalData = file_exists($verticalPath) ? json_decode(file_get_contents($verticalPath)) : null;
 
-      $menus[$guard] = [
-        'vertical' => file_exists($verticalPath) ? json_decode(file_get_contents($verticalPath)) : null,
-        'horizontal' => file_exists($horizontalPath) ? json_decode(file_get_contents($horizontalPath)) : null,
-      ];
-    }
+      // تحميل القائمة الأفقية العامة
+      $horizontalPath = base_path("resources/menu/horizontalMenu.json");
+      $horizontalData = file_exists($horizontalPath) ? json_decode(file_get_contents($horizontalPath)) : null;
 
-    // مشاركة كل القوائم مع جميع الـ views
-    $this->app->make('view')->share('menuData', $menus);
+      // تمرير البيانات بالشكل المتوقع
+      $menuData = [$verticalData, $horizontalData];
+      $view->with('menuData', $menuData);
+    });
+
+    // View Composer للقائمة الأفقية
+    View::composer('layouts.sections.menu.horizontalMenu', function ($view) {
+      $horizontalPath = base_path("resources/menu/horizontalMenu.json");
+      $horizontalData = file_exists($horizontalPath) ? json_decode(file_get_contents($horizontalPath)) : null;
+
+      $menuData = [null, $horizontalData];
+      $view->with('menuData', $menuData);
+    });
   }
 }

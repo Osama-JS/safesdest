@@ -22,7 +22,11 @@
 @section('content')
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Vehicles') }}</h5>
+            <h5 class="card-title mb-2">
+                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+
+                {{ __('Settings') }} | {{ __('Vehicles') }}
+            </h5>
             <p>{{ __('Managing the types of vehicles and trucks that will provide delivery services on the platform') }}</p>
         </div>
     </div>

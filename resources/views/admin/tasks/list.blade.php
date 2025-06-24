@@ -244,7 +244,8 @@
                             class="bg-success text-white rounded p-0 px-2 "></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('tasks.close') }}">
+                <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('tasks.close') }}"
+                    enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         <div class="col-xl-12">
@@ -253,17 +254,39 @@
                                     <div class="tab-pane fade show active">
                                         <input type="hidden" name="id" id="task-id">
                                         <div class="alert alert-info">
-                                            You need To Upload the Delivery Note of the task to close it
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            {{ __('You need to upload the delivery note and optionally provide delivery number to close this task') }}
                                         </div>
                                         <span class="id-error text-danger text-error"></span>
 
+                                        <!-- حقل رقم مذكرة التوصيل -->
+                                        <div class="form-group mb-3">
+                                            <label for="delivery_number" class="form-label">
+                                                <i class="fas fa-hashtag me-1"></i>
+                                                {{ __('Delivery Number') }} ({{ __('Optional') }})
+                                            </label>
+                                            <input type="text" name="delivery_number" class="form-control"
+                                                id="delivery_number"
+                                                placeholder="{{ __('Enter delivery number if available') }}">
+                                            <span class="delivery_number-error text-danger text-error"></span>
+                                        </div>
 
-                                        <span class="id-error text-danger text-error"></span>
-                                        <div class="form-group">
-                                            <label for="">* Delivery Note</label>
-                                            <input type="file" name="file" class="form-control" id="delivery_note"
-                                                required>
-                                            <span class="file-error text-danger text-error"></span>
+                                        <!-- حقل ملف مذكرة التوصيل -->
+                                        <div class="form-group mb-3">
+                                            <label for="delivery_note" class="form-label">
+                                                <i class="fas fa-file-upload me-1"></i>
+                                                * {{ __('Delivery Note File') }}
+                                            </label>
+                                            <input type="file" name="delivery_note" class="form-control"
+                                                id="delivery_note"
+                                                accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx,.txt,.csv" required>
+                                            <div class="form-text text-muted mt-1">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    {{ __('Supported formats: Images (JPEG, PNG, WebP), Documents (PDF, DOC, DOCX), Text files (TXT, CSV). Max size: 10MB') }}
+                                                </small>
+                                            </div>
+                                            <span class="delivery_note-error text-danger text-error"></span>
                                         </div>
 
                                     </div>

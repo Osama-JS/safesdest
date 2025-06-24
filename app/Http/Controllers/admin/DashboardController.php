@@ -124,6 +124,8 @@ class DashboardController extends Controller
         'name' => $driver->name,
         'phone' => $driver->phone,
         'phone_code' => $driver->phone_code,
+        'whatsapp' => $driver->full_whatsapp_number,
+        'whatsapp_display' => $driver->whatsapp_display,
         'online' => $driver->online,
         'avatar' => $avatar,
         'last_seen_at' => $driver->last_seen_at,

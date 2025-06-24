@@ -13,7 +13,8 @@ class Teams extends Model
     'note',
     'team_commission_type',
     'team_commission_value',
-    'location_update_interval'
+    'location_update_interval',
+    'is_public'
   ];
 
   public function users()
@@ -34,6 +35,22 @@ class Teams extends Model
   public function wallets()
   {
     return $this->hasManyThrough(Task::class, Driver::class, 'team_id', 'driver_id');
+  }
+
+  /**
+   * Scope للحصول على الفرق العامة فقط
+   */
+  public function scopePublic($query)
+  {
+    return $query->where('is_public', true);
+  }
+
+  /**
+   * Scope للحصول على الفرق الخاصة فقط
+   */
+  public function scopePrivate($query)
+  {
+    return $query->where('is_public', false);
   }
 
   public function walletTransactions()

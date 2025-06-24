@@ -167,6 +167,23 @@ Route::middleware('rate.limit')->group(function () {
 
         Route::get('/tasks/get/tasks', [App\Http\Controllers\customer\DashboardController::class, 'getTasks'])->name('customer.task.get');
         Route::get('tasks/tracking/{id}', [App\Http\Controllers\customer\TasksController::class, 'taskTracking'])->name('customer.tasks.tracking');
+
+        // Customer Tasks Management
+        Route::get('/tasks', [App\Http\Controllers\customer\TasksController::class, 'index'])->name('customer.tasks.index');
+        Route::get('/tasks/data', [App\Http\Controllers\customer\TasksController::class, 'getData'])->name('customer.tasks.data');
+        Route::get('/tasks/show/{id}', [App\Http\Controllers\customer\TasksController::class, 'show'])->name('customer.tasks.show');
+        Route::get('/tasks/track/{id}', [App\Http\Controllers\customer\TasksController::class, 'track'])->name('customer.tasks.track');
+
+        // Customer Wallet Management
+        Route::get('/wallet', [App\Http\Controllers\customer\WalletController::class, 'index'])->name('customer.wallet.index');
+        Route::get('/wallet/data', [App\Http\Controllers\customer\WalletController::class, 'getData'])->name('customer.wallet.data');
+
+        // Customer Ads Management
+        Route::get('/ads', [App\Http\Controllers\customer\AdsController::class, 'index'])->name('customer.ads.index');
+        Route::get('/ads/data', [App\Http\Controllers\customer\AdsController::class, 'getData'])->name('customer.ads.data');
+        Route::get('/ads/show/{id}', [App\Http\Controllers\customer\AdsController::class, 'show'])->name('customer.ads.show');
+        Route::post('/ads/{ad}/offers/{offer}/accept', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.accept-offer');
+        Route::post('/ads/{ad}/offers/{offer}/reject', [App\Http\Controllers\customer\AdsController::class, 'rejectOffer'])->name('customer.ads.reject-offer');
       });
     });
 
@@ -293,6 +310,7 @@ Route::middleware('rate.limit')->group(function () {
 
         Route::get('/wallets', [WalletsController::class, 'index'])->name('wallets.wallets');
         Route::get('/wallets/data', [WalletsController::class, 'getData'])->name('wallets.data');
+        Route::get('/wallets/statistics', [WalletsController::class, 'getStatistics'])->name('wallets.statistics');
         Route::post('/wallets/update', [WalletsController::class, 'update'])->name('wallets.update');
         Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
         Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');

@@ -10,6 +10,7 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2M
 
 $(function () {
   var dt_data_table = $('.datatables-users');
+  var isInitialLoad = true;
 
   $.ajaxSetup({
     headers: {
@@ -71,7 +72,10 @@ $(function () {
           orderable: false,
           responsivePriority: 1,
           targets: 0,
-          render: function () {
+          render: function (data, type, full, meta) {
+            if (full.is_parent) {
+              return `<i class="fas fa-chevron-down toggle-icon text-primary" style="cursor: pointer; transition: transform 0.3s ease;"></i>`;
+            }
             return '';
           }
         },
@@ -80,30 +84,60 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            if (full.is_parent) {
+              return '-';
+            }
             return `<span>${full.fake_id}</span>`;
           }
         },
         {
           targets: 2,
           render: function (data, type, full, meta) {
-            return `<span>${full.name}</span>`;
+            if (full.is_parent) {
+              if (full.parent_type === 'customer') {
+                return `<div class="customer-badge">
+                  <i class="fas fa-building"></i>
+                  ${full.name}
+                  <span class="points-count">${full.points_count} ${__('points')}</span>
+                </div>`;
+              } else {
+                return `<div class="general-badge">
+                  <i class="fas fa-globe"></i>
+                  ${full.name}
+                  <span class="points-count">${full.points_count} ${__('points')}</span>
+                </div>`;
+              }
+            }
+            return `<div class="point-name">${full.name}</div>`;
           }
         },
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.address}</span>`;
+            if (full.is_parent) {
+              return '';
+            }
+            return `<div class="point-address">
+              <i class="fas fa-map-marker-alt text-muted me-1"></i>
+              ${full.address}
+            </div>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
+            if (full.is_parent) {
+              return '';
+            }
             return `<span>${full.customer}</span>`;
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
+            if (full.is_parent) {
+              return '-';
+            }
             var html = `<label class="switch switch-success">
               <input type="checkbox" class="switch-input edit_status" data-id=${full['id']} ${full['status'] == 1 ? 'checked' : ''} />
               <span class="switch-toggle-slider">
@@ -118,19 +152,21 @@ $(function () {
             return html;
           }
         },
-
         {
           targets: 6,
           title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            if (full.is_parent) {
+              return '-';
+            }
             return `
               <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
+                <button class="btn btn-sm btn-icon edit-record" data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
                   <i class="ti ti-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.name}">
+                <button class="btn btn-sm btn-icon delete-record" data-id="${full.id}" data-name="${full.name}">
                   <i class="ti ti-trash"></i>
                 </button>
               </div>`;
@@ -189,6 +225,95 @@ $(function () {
 
     $('#searchFilter').on('input', function () {
       dt_data.draw();
+    });
+
+    // إضافة وظائف التوسيع والطي للصفوف الهرمية
+    dt_data_table.on('click', '.toggle-icon', function (e) {
+      e.stopPropagation();
+
+      var icon = $(this);
+      var row = icon.closest('tr');
+      var rowData = dt_data.row(row).data();
+
+      if (rowData && rowData.is_parent) {
+        var parentId = rowData.id;
+
+        // البحث عن جميع الصفوف التابعة لهذا الصف الرئيسي
+        var childRows = $();
+        dt_data.rows().every(function () {
+          var currentRowData = this.data();
+          if (currentRowData && currentRowData.parent_id === parentId) {
+            childRows = childRows.add($(this.node()));
+          }
+        });
+
+        // تبديل حالة الرؤية
+        if (icon.hasClass('collapsed')) {
+          // توسيع الصفوف - إظهار الصفوف المخفية
+          childRows.show();
+          icon.removeClass('collapsed');
+          icon.css('transform', 'rotate(0deg)');
+        } else {
+          // طي الصفوف - إخفاء الصفوف الظاهرة
+          childRows.hide();
+          icon.addClass('collapsed');
+          icon.css('transform', 'rotate(-90deg)');
+        }
+      }
+    });
+
+    // إضافة وظيفة النقر على الصف الرئيسي بالكامل
+    dt_data_table.on('click', '.parent-row', function (e) {
+      // تجنب التفعيل المزدوج إذا تم النقر على الأيقونة مباشرة
+      if ($(e.target).hasClass('toggle-icon')) {
+        return;
+      }
+
+      var toggleIcon = $(this).find('.toggle-icon');
+      if (toggleIcon.length) {
+        toggleIcon.trigger('click');
+      }
+    });
+
+    // تطبيق التنسيق على الصفوف بعد رسم الجدول
+    dt_data_table.on('draw.dt', function () {
+      var api = dt_data;
+
+      api.rows().every(function () {
+        var data = this.data();
+        var node = $(this.node());
+
+        if (data.is_parent) {
+          node.addClass('parent-row');
+          node.css({
+            'background-color': '#f8f9fa',
+            'font-weight': 'bold',
+            cursor: 'pointer',
+            'border-left': '4px solid #0d6efd'
+          });
+        } else {
+          node.addClass('child-row');
+          node.css({
+            'background-color': '#ffffff',
+            'border-left': '4px solid #dee2e6'
+          });
+          // إضافة padding للصف الفرعي
+          node.find('td:first-child').css('padding-right', '40px');
+        }
+      });
+
+      // بدء الجدول مع جميع المجموعات مطوية (فقط في التحميل الأولي)
+      if (isInitialLoad) {
+        setTimeout(function () {
+          dt_data_table.find('.toggle-icon').each(function () {
+            var icon = $(this);
+            if (!icon.hasClass('collapsed')) {
+              icon.trigger('click');
+            }
+          });
+          isInitialLoad = false;
+        }, 100);
+      }
     });
 
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
@@ -356,6 +481,12 @@ $(function () {
 
   $(document).on('change', '.edit_status', function () {
     var Id = $(this).data('id');
+
+    // التأكد من أن المعرف رقمي (ليس صف رئيسي)
+    if (isNaN(Id) || Id.toString().includes('customer-') || Id === 'general') {
+      return;
+    }
+
     $.ajax({
       url: `${baseUrl}admin/settings/points/status/${Id}`,
       type: 'post',
@@ -374,6 +505,12 @@ $(function () {
   $(document).on('click', '.edit-record', function () {
     var data_id = $(this).data('id'),
       dtrModal = $('.dtr-bs-modal.show');
+
+    // التأكد من أن المعرف رقمي (ليس صف رئيسي)
+    if (isNaN(data_id) || data_id.toString().includes('customer-') || data_id === 'general') {
+      return;
+    }
+
     if (dtrModal.length) {
       dtrModal.modal('hide');
     }
@@ -389,14 +526,23 @@ $(function () {
       $('#point-latitude').val(data.latitude);
       console.log('data', data);
 
-      var newOption = new Option(data.customer.name, data.customer_id, true, true);
-      $('#point-customer').append(newOption).trigger('change');
+      if (data.customer && data.customer.name) {
+        var newOption = new Option(data.customer.name, data.customer_id, true, true);
+        $('#point-customer').append(newOption).trigger('change');
+      }
       $('#modelTitle').html(`Edit Point: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
   });
 
   $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/settings/points/delete/' + $(this).data('id');
+    var data_id = $(this).data('id');
+
+    // التأكد من أن المعرف رقمي (ليس صف رئيسي)
+    if (isNaN(data_id) || data_id.toString().includes('customer-') || data_id === 'general') {
+      return;
+    }
+
+    let url = baseUrl + 'admin/settings/points/delete/' + data_id;
     deleteRecord($(this).data('name'), url);
   });
 

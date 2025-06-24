@@ -84,7 +84,11 @@
 @section('content')
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Geo-fence') }}</h5>
+            <h5 class="card-title mb-2">
+                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+
+                {{ __('Settings') }} | {{ __('Geo-fence') }}
+            </h5>
             <p>{{ __('It allows you to categorize Manager and simplifies the process of task assignment by letting you create virtual boundaries.') }}
             </p>
 

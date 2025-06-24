@@ -124,7 +124,10 @@
      <!-- Users List Table -->
      <div class="card">
          <div class="card-header border-bottom">
-             <h5 class="card-title mb-0">{{ __('Customers') }}</h5>
+             <h5 class="card-title mb-0">
+                 <i class="tf-icons ti ti-user-circle me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                 {{ __('Customers') }}
+             </h5>
              <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
                  data-bs-target="#submitModal">
                  <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>

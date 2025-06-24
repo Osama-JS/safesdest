@@ -2,17 +2,9 @@
     use Illuminate\Support\Facades\Route;
     $configData = Helper::appClasses();
 
-    // تحديد الـ guard الحالي
-    $currentGuard = null;
-    foreach (['driver', 'customer', 'web'] as $g) {
-        if (auth($g)->check()) {
-            $currentGuard = $g;
-            break;
-        }
-    }
+    // استخدام البيانات المرسلة من MenuServiceProvider
+    $menuSet = isset($menuData[0]) && isset($menuData[0]->menu) ? $menuData[0]->menu : [];
 
-    // اختيار قائمة الـ menu حسب الـ guard
-    $menuSet = $menuData[$currentGuard]['vertical']->menu ?? [];
 @endphp
 
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">

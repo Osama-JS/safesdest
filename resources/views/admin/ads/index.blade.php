@@ -114,7 +114,9 @@
 @section('content')
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Tasks Ads') }}</h5>
+            <h5 class="card-title mb-2">
+                               <i class="tf-icons ti ti-speakerphone me-2 fs-3 text-white bg-primary rounded p-1"></i>
+              {{ __('Tasks Ads') }}</h5>
             {{-- <p>Organize your Manager into logical groups to efficiently manage your field operations. You may group them on
                 the basis of location, geography, type of service and so on and so forth.</p> --}}
 

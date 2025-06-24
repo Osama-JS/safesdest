@@ -36,12 +36,14 @@ class TasksController extends Controller
   {
     $columns = [
       1 => 'id',
-      2 => 'order',
-      3 => 'adress',
-      4 => 'start',
-      5 => 'complete',
-      6 => 'status',
-      7 => 'created_at'
+      2 => 'id',
+      3 => 'pickup_address',
+      4 => 'delivery_address',
+      5 => 'driver_name',
+      6 => 'vehicle_info',
+      7 => 'total_price',
+      8 => 'status',
+      9 => 'created_at'
     ];
 
     $totalData = Task::where('customer_id', auth()->user()->id)->count();
@@ -52,16 +54,22 @@ class TasksController extends Controller
 
     $fromDate  = $request->input('from_date');
     $toDate    = $request->input('to_date');
+    $status    = $request->input('status');
 
+    $query = Task::with(['driver', 'pickup', 'delivery', 'vehicle_size.type.vehicle'])
+      ->where('customer_id', auth()->user()->id);
 
-    $query = Task::where('customer_id', auth()->user()->id);
-
-    // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
+    // فلترة بالتاريخ
     if ($fromDate && $toDate) {
       $query->whereBetween('created_at', [
         Carbon::parse($fromDate)->startOfDay(),
         Carbon::parse($toDate)->endOfDay()
       ]);
+    }
+
+    // فلترة بالحالة
+    if ($status) {
+      $query->where('status', $status);
     }
 
     $totalFiltered = $query->count();
@@ -73,22 +81,38 @@ class TasksController extends Controller
       ->get();
 
     $data = [];
+    $fakeId = $start;
+
     foreach ($tasks as $task) {
+      // تحديد معلومات المركبة
+      $vehicleInfo = '';
+      if ($task->vehicle_size && $task->vehicle_size->type && $task->vehicle_size->type->vehicle) {
+        $vehicleInfo = $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->name;
+      }
+
+      // تحديد إمكانية التتبع
+      $canTrack = !$task->closed && in_array($task->status, [
+        'assign',
+        'started',
+        'in pickup point',
+        'loading',
+        'in the way',
+        'in delivery point',
+        'unloading'
+      ]);
+
       $data[] = [
-        'id'         => $task->id,
-        'order'      => $task->order->id ?? "-",
-        'driver'     => $task->driver ?? '-',
-        'address'    => $task->pickup->address ?? "-",
-        'start'      => ($task->pickup && $task->pickup->scheduled_time)
-          ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
-          : "",
-        'complete'   => ($task->delivery && $task->delivery->scheduled_time)
-          ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
-          : "",
-        'status'     => $task->status,
-        'closed'     => $task->closed,
-        'payment'     => $task->payment_status,
-        'created_at' => $task->created_at->format('Y-m-d H:i'),
+        'id'               => $task->id,
+        'fake_id'          => ++$fakeId,
+        'pickup_address'   => $task->pickup->address ?? 'N/A',
+        'delivery_address' => $task->delivery->address ?? 'N/A',
+        'driver_name'      => $task->driver->name ?? null,
+        'vehicle_info'     => $vehicleInfo,
+        'total_price'      => $task->total_price ? number_format($task->total_price, 2) . ' SAR' : 'N/A',
+        'status'           => $task->status,
+        'created_at'       => $task->created_at->format('Y-m-d H:i'),
+        'can_track'        => $canTrack,
+        'closed'           => $task->closed,
       ];
     }
 
@@ -134,7 +158,7 @@ class TasksController extends Controller
     }
   }
 
-  public function showDetails($id)
+  public function show($id)
   {
     $task = Task::with([
       'customer',
@@ -145,17 +169,37 @@ class TasksController extends Controller
       'points',
       'payments',
       'order',
-      'formTemplate',
+      'formTemplate.fields',
       'pricingTemplate',
-      'vehicle_size',
+      'vehicle_size.type.vehicle',
       'history.user',
       'history.driver',
     ])->findOrFail($id);
 
     if ($task->customer_id !== Auth::user()->id) {
-      return redirect()->back();
+      return redirect()->back()->with('error', 'Unauthorized access.');
     }
-    return view('admin.tasks.show', compact('task'));
+
+    return view('customers.tasks.show', compact('task'));
+  }
+
+  public function track($id)
+  {
+    $task = Task::with([
+      'pickup',
+      'delivery',
+      'driver',
+      'history' => function ($query) {
+        $query->orderBy('created_at', 'desc');
+      }
+    ])->where('customer_id', Auth::user()->id)->findOrFail($id);
+
+    // Check if task can be tracked
+    if ($task->closed || !in_array($task->status, ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'])) {
+      return redirect()->route('customer.tasks.show', $id)->with('error', 'This task cannot be tracked.');
+    }
+
+    return view('customers.tasks.track', compact('task'));
   }
 
 

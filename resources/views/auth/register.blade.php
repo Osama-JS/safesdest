@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Facades\Route;
+    use Illuminate\Support\Str;
     $configData = Helper::appClasses();
     $customizerHidden = 'customizer-hide';
     $configData = Helper::appClasses();
@@ -364,6 +365,82 @@
                                                         id="driver-address"
                                                         placeholder="{{ __('enter home address') }}" />
                                                     <span class="address-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Team Selection -->
+                                            <div class="col-md-12">
+                                                <div class="mb-4">
+                                                    <label class="form-label" for="driver-team">
+                                                        <i class="ti ti-users me-1"></i>{{ __('Select Team') }}
+                                                    </label>
+                                                    <select name="team_id" class="form-select" id="driver-team">
+                                                        <option value="">{{ __('Choose a team (Optional)') }}
+                                                        </option>
+                                                        @foreach ($public_teams as $team)
+                                                            <option value="{{ $team->id }}">
+                                                                {{ $team->name }}
+                                                                @if ($team->address)
+                                                                    - {{ Str::limit($team->address, 30) }}
+                                                                @endif
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    <small class="form-text text-muted">
+                                                        <i class="ti ti-info-circle me-1"></i>
+                                                        {{ __('You can join a team now or later from your profile.') }}
+                                                    </small>
+                                                    <span class="team_id-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- WhatsApp Section -->
+                                            <div class="col-md-12">
+                                                <div class="mb-4">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            name="phone_is_whatsapp" id="phone-is-whatsapp-reg"
+                                                            value="1">
+                                                        <label class="form-check-label" for="phone-is-whatsapp-reg">
+                                                            <i class="ti ti-brand-whatsapp me-1 text-success"></i>
+                                                            {{ __('My phone number is also my WhatsApp number') }}
+                                                        </label>
+                                                    </div>
+                                                    <small class="form-text text-muted">
+                                                        <i class="ti ti-info-circle me-1"></i>
+                                                        {{ __('Check this if your phone number above is also your WhatsApp number') }}
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-12" id="whatsapp-fields-reg">
+                                                <div class="mb-4">
+                                                    <label class="form-label" for="whatsapp-number-reg">
+                                                        <i class="ti ti-brand-whatsapp me-1 text-success"></i>
+                                                        {{ __('WhatsApp Number') }}
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <select id="whatsapp-country-code-reg"
+                                                            name="whatsapp_country_code" class="form-select"
+                                                            style="max-width: 120px;">
+                                                            <option value="">{{ __('Code') }}</option>
+                                                            <option value="+966">🇸🇦 +966</option>
+                                                            <option value="+971">🇦🇪 +971</option>
+                                                            <option value="+20">🇪🇬 +20</option>
+                                                            <option value="+1">🇺🇸 +1</option>
+                                                        </select>
+                                                        <input type="tel" id="whatsapp-number-reg"
+                                                            class="form-control"
+                                                            placeholder="{{ __('Enter WhatsApp number') }}"
+                                                            name="whatsapp_number" />
+                                                    </div>
+                                                    <small class="form-text text-muted">
+                                                        <i class="ti ti-info-circle me-1"></i>
+                                                        {{ __('Enter your WhatsApp number if different from phone number') }}
+                                                    </small>
+                                                    <span class="whatsapp_number-error text-danger text-error"></span>
+                                                    <span
+                                                        class="whatsapp_country_code-error text-danger text-error"></span>
                                                 </div>
                                             </div>
 

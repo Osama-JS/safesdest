@@ -85,7 +85,30 @@
                             </li>
                             <li class="mb-2">
                                 <span class="h6">{{ __('Phone') }}:</span>
-                                <span>{{ $data->phone }}</span>
+                                <span>{{ $data->phone_code }} {{ $data->phone }}</span>
+                            </li>
+                            <li class="mb-2">
+                                <span class="h6">
+                                    <i class="ti ti-brand-whatsapp text-success me-1"></i>{{ __('WhatsApp') }}:
+                                </span>
+                                <span>
+                                    @if ($data->full_whatsapp_number)
+                                        <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $data->full_whatsapp_number) }}"
+                                            target="_blank" class="text-success text-decoration-none">
+                                            {{ $data->whatsapp_display }}
+                                            <i class="ti ti-external-link ms-1"></i>
+                                        </a>
+                                        @if ($data->phone_is_whatsapp)
+                                            <small class="text-muted d-block">
+                                                <i class="ti ti-info-circle me-1"></i>Same as phone number
+                                            </small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">
+                                            <i class="ti ti-minus me-1"></i>Not provided
+                                        </span>
+                                    @endif
+                                </span>
                             </li>
                             <li class="mb-2">
                                 <span class="h6">{{ __('Email') }}:</span>
@@ -200,8 +223,8 @@
                                                     @case('file_with_text')
                                                         @if ($field['value'])
                                                             <div class="mb-2">
-                                                                <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
-                                                                    class="text-decoration-none">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                    target="_blank" class="text-decoration-none">
                                                                     <i class="ti ti-file me-1"></i>{{ basename($field['value']) }}
                                                                 </a>
                                                             </div>
@@ -217,8 +240,8 @@
                                                     @case('file_expiration_date')
                                                         @if ($field['value'])
                                                             <div class="mb-2">
-                                                                <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
-                                                                    class="text-decoration-none">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}"
+                                                                    target="_blank" class="text-decoration-none">
                                                                     <i class="ti ti-file me-1"></i>{{ basename($field['value']) }}
                                                                 </a>
                                                             </div>

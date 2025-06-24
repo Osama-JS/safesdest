@@ -182,7 +182,10 @@
     <!-- Users List Table -->
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-0">{{ __('Drivers') }}</h5>
+            <h5 class="card-title mb-0">
+                <i class="tf-icons ti ti-steering-wheel me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                {{ __('Drivers') }}
+            </h5>
             <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
                 data-bs-target="#submitModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
@@ -199,6 +202,8 @@
                         <th>{{ __('username') }}</th>
                         <th>{{ __('email') }}</th>
                         <th>{{ __('phone') }}</th>
+                        <th><i class="ti ti-brand-whatsapp text-success me-1"></i>{{ __('WhatsApp') }}</th>
+                        <th>{{ __('team') }}</th>
                         <th>{{ __('role') }}</th>
                         <th>{{ __('tags') }}</th>
                         <th>{{ __('status') }}</th>
@@ -317,6 +322,53 @@
                                                             <span class="phone-error text-danger text-error"></span>
                                                             <span
                                                                 class="phone_code_code-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- WhatsApp Section -->
+                                                    <div class="col-md-12">
+                                                        <div class="mb-4">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                    name="phone_is_whatsapp" id="phone-is-whatsapp"
+                                                                    value="1">
+                                                                <label class="form-check-label" for="phone-is-whatsapp">
+                                                                    <i class="ti ti-brand-whatsapp me-1 text-success"></i>
+                                                                    {{ __('Phone number is WhatsApp number') }}
+                                                                </label>
+                                                            </div>
+                                                            <small class="form-text text-muted">
+                                                                <i class="ti ti-info-circle me-1"></i>
+                                                                {{ __('Check this if the phone number above is also the WhatsApp number') }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6" id="whatsapp-fields">
+                                                        <div class="mb-6">
+                                                            <label class="form-label" for="whatsapp-number">
+                                                                <i class="ti ti-brand-whatsapp me-1 text-success"></i>
+                                                                {{ __('WhatsApp Number') }}
+                                                            </label>
+                                                            <div class="input-group">
+                                                                <select id="whatsapp-country-code"
+                                                                    name="whatsapp_country_code" class="form-select"
+                                                                    style="max-width: 120px;">
+                                                                    <option value="">{{ __('Code') }}</option>
+                                                                    <option value="+966">🇸🇦 +966</option>
+                                                                    <option value="+971">🇦🇪 +971</option>
+                                                                    <option value="+20">🇪🇬 +20</option>
+                                                                    <option value="+1">🇺🇸 +1</option>
+                                                                </select>
+                                                                <input type="tel" id="whatsapp-number"
+                                                                    class="form-control"
+                                                                    placeholder="{{ __('Enter WhatsApp number') }}"
+                                                                    name="whatsapp_number" />
+                                                            </div>
+                                                            <span
+                                                                class="whatsapp_number-error text-danger text-error"></span>
+                                                            <span
+                                                                class="whatsapp_country_code-error text-danger text-error"></span>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">

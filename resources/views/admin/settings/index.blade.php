@@ -23,7 +23,11 @@
 @section('content')
     <div class="card mb-3">
         <div class="card-header border-bottom">
-            <h5 class="card-title ">{{ __('Settings') }} | {{ __('General Settings') }}</h5>
+            <h5 class="card-title ">
+                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+
+                {{ __('Settings') }} | {{ __('General Settings') }}
+            </h5>
             <p>{{ __('You can manage the main and vital settings of the platform from here, so be careful.') }}</p>
         </div>
     </div>

@@ -1,10 +1,31 @@
-{
+﻿{
   "menu": [
     {
       "url": "/",
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
       "slug": "customer.dashboard"
+    },
+    {
+      "url": "tasks",
+      "icon": "menu-icon tf-icons ti ti-clipboard-list",
+      "name": "My Tasks",
+      "slug": "customer.tasks",
+      "isactive": "tasks-isactive"
+    },
+    {
+      "url": "wallet",
+      "icon": "menu-icon tf-icons ti ti-wallet",
+      "name": "My Wallet",
+      "slug": "customer.wallet",
+      "isactive": "wallet-isactive"
+    },
+    {
+      "url": "ads",
+      "icon": "menu-icon tf-icons ti ti-speakerphone",
+      "name": "Task Ads",
+      "slug": "customer.ads",
+      "isactive": "ads-isactive"
     }
   ]
 }

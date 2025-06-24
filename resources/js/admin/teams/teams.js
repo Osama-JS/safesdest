@@ -130,11 +130,10 @@ $(function () {
   loadTeams();
 
   document.addEventListener('formSubmitted', function (event) {
-    $('.form_submit').trigger('reset');
-
     loadTeams();
     setTimeout(() => {
       $('#submitModal').modal('hide');
+      $('.form_submit').trigger('reset');
     }, 2000);
   });
 
@@ -159,6 +158,27 @@ $(function () {
       $('#team-commission-type').val(data.team_commission_type);
       $('#team-commission').val(data.team_commission_value);
       $('#team-note').val(data.note);
+
+      // إصلاح تعيين حالة is_public - معالجة جميع الحالات المحتملة
+      console.log('is_public value:', data.is_public, 'type:', typeof data.is_public);
+
+      let isPublic = false;
+      if (data.is_public !== undefined && data.is_public !== null) {
+        // تحويل القيمة إلى boolean بشكل صحيح
+        if (typeof data.is_public === 'boolean') {
+          isPublic = data.is_public;
+        } else if (typeof data.is_public === 'string') {
+          isPublic = data.is_public.toLowerCase() === 'true' || data.is_public === '1';
+        } else if (typeof data.is_public === 'number') {
+          isPublic = data.is_public === 1;
+        }
+      } else {
+        // القيمة الافتراضية إذا كانت null أو undefined
+        isPublic = true;
+      }
+
+      $('#team-is-public').prop('checked', isPublic);
+      console.log('Setting switch to:', isPublic);
     });
   });
 
@@ -172,5 +192,7 @@ $(function () {
     $('.text-error').html('');
     $('#team_id').val('');
     $('#modelTitle').html('Add New Team');
+    // إعادة تعيين is_public إلى القيمة الافتراضية (true)
+    $('#team-is-public').prop('checked', true);
   });
 });

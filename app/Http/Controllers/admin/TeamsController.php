@@ -341,6 +341,7 @@ class TeamsController extends Controller
       'address' => 'required',
       'commission_type' => 'nullable|in:fixed,rate,subscription',
       'commission' => 'required_with:commission_type|min:0',
+      'is_public' => 'nullable|boolean',
 
     ]);
     if ($validator->fails()) {
@@ -355,7 +356,8 @@ class TeamsController extends Controller
           'team_commission_type' =>   $req->commission_type,
           'team_commission_value' =>  $req->commission,
           'location_update_interval' => $req->location_update,
-          'note' =>  $req->note
+          'note' =>  $req->note,
+          'is_public' => $req->is_public ?? false
         ]);
       } else {
 
@@ -365,7 +367,8 @@ class TeamsController extends Controller
           'team_commission_type' =>   $req->commission_type,
           'team_commission_value' =>  $req->commission,
           'location_update_interval' => $req->location_update ?? 30,
-          'note' =>  $req->note
+          'note' =>  $req->note,
+          'is_public' => $req->is_public ?? false
         ]);
       }
 
@@ -385,7 +388,12 @@ class TeamsController extends Controller
   public function edit($id): JsonResponse
   {
     $team = Teams::findOrFail($id);
-    return response()->json($team);
+
+    // تأكد من إرجاع is_public كـ boolean صريح
+    $teamData = $team->toArray();
+    $teamData['is_public'] = (bool) $team->is_public;
+
+    return response()->json($teamData);
   }
 
 

@@ -139,6 +139,18 @@ $(function () {
               <div class="px-3">
                 <h6 class="mb-1">${driver.name}</h6>
                 <p class="mb-1">📞 ${driver.phone_code} ${driver.phone}</p>
+                ${
+                  driver.whatsapp
+                    ? `
+                  <p class="mb-1">
+                    <a href="https://wa.me/${driver.whatsapp.replace(/[+\s-]/g, '')}" target="_blank" class="text-success text-decoration-none">
+                      📱 ${driver.whatsapp_display}
+                      <i class="ti ti-external-link ms-1" style="font-size: 0.8rem;"></i>
+                    </a>
+                  </p>
+                `
+                    : ''
+                }
                 <p class="mb-1 text-muted small">📍 ${driver.location.longitude} - ${driver.location.altitude}</p>
                 <p class="mb-1 text-muted small">🕒 Last seen: ${driver.last_seen_at || 'غير متوفر'}</p>
               </div>

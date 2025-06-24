@@ -11,6 +11,29 @@ $(function () {
     userView = baseUrl + 'admin/drivers/account/';
   console.log(templateId);
 
+  // WhatsApp functionality
+  function toggleWhatsAppFields() {
+    const isPhoneWhatsApp = $('#phone-is-whatsapp').is(':checked');
+    const whatsappFields = $('#whatsapp-fields');
+
+    if (isPhoneWhatsApp) {
+      whatsappFields.hide();
+      // Clear WhatsApp fields when phone is WhatsApp
+      $('#whatsapp-country-code').val('');
+      $('#whatsapp-number').val('');
+    } else {
+      whatsappFields.show();
+    }
+  }
+
+  // Initialize WhatsApp fields visibility
+  toggleWhatsAppFields();
+
+  // Handle WhatsApp toggle
+  $('#phone-is-whatsapp').on('change', function () {
+    toggleWhatsAppFields();
+  });
+
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
   }
@@ -54,6 +77,8 @@ $(function () {
         { data: 'username' },
         { data: 'email' },
         { data: 'phone' },
+        { data: 'whatsapp' },
+        { data: 'team' },
         { data: 'role' },
         { data: 'tags' },
         { data: 'status' },
@@ -130,17 +155,39 @@ $(function () {
         {
           targets: 6,
           render: function (data, type, full, meta) {
-            return `<span>${full.role}</span>`;
+            if (full.whatsapp && full.whatsapp !== 'Not provided') {
+              const cleanNumber = full.whatsapp.replace(/[+\s-]/g, '');
+              return `
+                <a href="https://wa.me/${cleanNumber}" target="_blank" class="text-success text-decoration-none">
+                  <i class="ti ti-brand-whatsapp me-1"></i>${full.whatsapp}
+                  <i class="ti ti-external-link ms-1" style="font-size: 0.8rem;"></i>
+                </a>
+              `;
+            } else {
+              return `<span class="text-muted"><i class="ti ti-minus me-1"></i>Not provided</span>`;
+            }
           }
         },
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            return `<span>${full.tags || ''}</span>`;
+            return `<span class="badge bg-label-info">${full.team || 'No Team'}</span>`;
           }
         },
         {
           targets: 8,
+          render: function (data, type, full, meta) {
+            return `<span>${full.role}</span>`;
+          }
+        },
+        {
+          targets: 9,
+          render: function (data, type, full, meta) {
+            return `<span>${full.tags || ''}</span>`;
+          }
+        },
+        {
+          targets: 10,
           className: 'text-center',
           render: function (data, type, full, meta) {
             let icon = '';
@@ -164,13 +211,13 @@ $(function () {
           }
         },
         {
-          targets: 9,
+          targets: 11,
           render: function (data, type, full, meta) {
             return full.created_at;
           }
         },
         {
-          targets: 10,
+          targets: 12,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -302,6 +349,7 @@ $(function () {
     $.get(`${baseUrl}admin/drivers/edit/${data_id}`, async function (data) {
       $('.form_submit').trigger('reset');
       $('.text-error').html('');
+      console.log(data);
 
       $('#driver_id').val(data.id);
       $('#driver-fullname').val(data.name);
@@ -310,10 +358,18 @@ $(function () {
       $('#driver-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
       $('#driver-role').val(data.role_id);
-      $('#driver-team').val(data.time_id).trigger('change');
+      $('#driver-team').val(data.team_id).trigger('change');
       $('#driver-address').val(data.address);
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);
+
+      // Load WhatsApp data
+      $('#phone-is-whatsapp').prop('checked', data.phone_is_whatsapp == 1 || data.phone_is_whatsapp === true);
+      $('#whatsapp-country-code').val(data.whatsapp_country_code || '');
+      $('#whatsapp-number').val(data.whatsapp_number || '');
+
+      // Update WhatsApp fields visibility
+      toggleWhatsAppFields();
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 
@@ -384,6 +440,12 @@ $(function () {
     $('#modelTitle').html('Add New Driver');
     $('#additional-form').html('');
     $('#select-template').val(templateId).trigger('change');
+
+    // Reset WhatsApp fields
+    $('#phone-is-whatsapp').prop('checked', false);
+    $('#whatsapp-country-code').val('');
+    $('#whatsapp-number').val('');
+    toggleWhatsAppFields();
   });
 });
 /* ================  Select Vehicles Code   =============== */

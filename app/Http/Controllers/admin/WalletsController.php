@@ -84,6 +84,7 @@ class WalletsController extends Controller
         'id'         => $val->id,
         'fake_id'    => ++$fakeId,
         'name'       => "[ " . $val->id . " ] " . ($val->customer_id ? $val->customer?->name : ($val->driver_id ? $val->driver?->name : 'N/A')),
+        'team'       => $val->customer_id ? '' : ($val->driver_id ? ($val->driver->team_id ? $val->driver->team->name : '') : ''),
         'type'       => $val->user_type,
         'balance'       => $val->balance,
         'debt_ceiling'       => $val->debt_ceiling,
@@ -100,6 +101,39 @@ class WalletsController extends Controller
       'recordsFiltered' => $totalFiltered,
       'code'            => 200,
       'data'            => $data,
+    ]);
+  }
+
+  public function getStatistics(Request $request)
+  {
+    $type = $request->input('status') ?? 'customer';
+    $search = $request->input('search');
+
+    $query = Wallet::query();
+
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'LIKE', "%{$search}%");
+      });
+    }
+    if (!empty($type)) {
+      $query->where('user_type', $type);
+    }
+
+    // حساب الإحصائيات
+    $wallets = $query->get();
+
+    $creditTotal = $wallets->where('balance', '>', 0)->sum('balance');
+    $debitTotal = abs($wallets->where('balance', '<', 0)->sum('balance'));
+    $netTotal = $creditTotal - $debitTotal;
+
+    return response()->json([
+      'credit_total' => $creditTotal,
+      'debit_total' => $debitTotal,
+      'net_total' => $netTotal,
+      'credit_count' => $wallets->where('balance', '>', 0)->count(),
+      'debit_count' => $wallets->where('balance', '<', 0)->count(),
+      'total_count' => $wallets->count()
     ]);
   }
 

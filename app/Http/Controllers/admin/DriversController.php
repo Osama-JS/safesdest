@@ -69,10 +69,12 @@ class DriversController extends Controller
       3 => 'name',
       4 => 'email',
       5 => 'phone',
-      6 => 'role',
-      7 => 'tags',
-      8 => 'status',
-      9 => 'created_at'
+      6 => 'whatsapp',
+      7 => 'team',
+      8 => 'role',
+      9 => 'tags',
+      10 => 'status',
+      11 => 'created_at'
     ];
 
 
@@ -105,6 +107,7 @@ class DriversController extends Controller
     $totalFiltered = $query->count();
 
     $drivers = $query
+      ->with(['team', 'role', 'tags.tag'])
       ->offset($start)
       ->limit($limit)
       ->orderBy($order, $dir)
@@ -124,7 +127,9 @@ class DriversController extends Controller
         'image'      => $val->image ? url($val->image) : null,
         'username' => $val->username,
         'email' => $val->email,
-        'phone' => $val->phone,
+        'phone' => $val->phone_code . ' ' . $val->phone,
+        'whatsapp'   => $val->full_whatsapp_number ? str_replace('+', '', $val->full_whatsapp_number) : 'Not provided',
+        'team'       => $val->team->name ?? 'No Team',
         'tags'       => $val->tags->pluck('tag.name')->implode(', '),
         'role'       => $val->role->name ?? "",
         'created_at' => $val->created_at->format('Y-m-d H:i'),
@@ -208,6 +213,10 @@ class DriversController extends Controller
       'commission_type' => 'nullable|in:fixed,rate,subscription',
       'commission'      => 'required_with:commission_type|min:0',
       'image'           => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+      // WhatsApp validation rules
+      'phone_is_whatsapp'       => 'nullable|boolean',
+      'whatsapp_country_code'   => 'nullable|string|max:10',
+      'whatsapp_number'         => 'nullable|string|max:20',
     ];
 
     if ($req->filled('template')) {
@@ -386,7 +395,20 @@ class DriversController extends Controller
         'role_id'         => $req->role ?? null,
         'commission_type' => $req->commission_type,
         'commission'      => $req->commission,
+        // WhatsApp data processing
+        'phone_is_whatsapp' => $req->has('phone_is_whatsapp') ? (bool)$req->phone_is_whatsapp : false,
       ];
+
+      // Handle WhatsApp number logic
+      if ($req->has('phone_is_whatsapp') && $req->phone_is_whatsapp) {
+        // If phone is WhatsApp, copy phone data to WhatsApp fields
+        $data['whatsapp_country_code'] = $req->phone_code;
+        $data['whatsapp_number'] = $req->phone;
+      } else {
+        // Use separate WhatsApp fields
+        $data['whatsapp_country_code'] = $req->whatsapp_country_code;
+        $data['whatsapp_number'] = $req->whatsapp_number;
+      }
 
       if ($req->filled('team')) {
         $data['team_id'] = $req->team;

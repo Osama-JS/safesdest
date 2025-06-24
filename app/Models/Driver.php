@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role;
+
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
@@ -36,7 +38,10 @@ class Driver extends Authenticatable
     'form_template_id',
     'team_id',
     'vehicle_size_id',
-    'role_id'
+    'role_id',
+    'whatsapp_country_code',
+    'whatsapp_number',
+    'phone_is_whatsapp'
   ];
   protected $casts = [
     'additional_data' => 'array',
@@ -53,6 +58,10 @@ class Driver extends Authenticatable
     return $this->hasMany(Tag_Drivers::class, 'driver_id');
   }
 
+  public function role()
+  {
+    return $this->belongsTo(Role::class, 'role_id');
+  }
   public function vehicle_size()
   {
     return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
@@ -133,5 +142,48 @@ class Driver extends Authenticatable
           in_array($field->customer_can, ['read', 'write']);
       });
     })->values()->all();
+  }
+
+  /**
+   * Get full WhatsApp number with country code
+   */
+  public function getFullWhatsappNumberAttribute()
+  {
+    if ($this->phone_is_whatsapp) {
+      return $this->phone_code . $this->phone;
+    }
+
+    if ($this->whatsapp_country_code && $this->whatsapp_number) {
+      return $this->whatsapp_country_code . $this->whatsapp_number;
+    }
+
+    return null;
+  }
+
+  /**
+   * Get WhatsApp number for display
+   */
+  public function getWhatsappDisplayAttribute()
+  {
+    if ($this->phone_is_whatsapp) {
+      return $this->phone_code . ' ' . $this->phone . ' (Same as phone)';
+    }
+
+    if ($this->whatsapp_country_code && $this->whatsapp_number) {
+      return $this->whatsapp_country_code . ' ' . $this->whatsapp_number;
+    }
+
+    return 'Not provided';
+  }
+
+  /**
+   * Set WhatsApp data based on phone_is_whatsapp flag
+   */
+  public function setWhatsappFromPhone()
+  {
+    if ($this->phone_is_whatsapp) {
+      $this->whatsapp_country_code = $this->phone_code;
+      $this->whatsapp_number = $this->phone;
+    }
   }
 }

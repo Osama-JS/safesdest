@@ -22,6 +22,7 @@ class Task extends Model
     'distribution_attempts',
     'last_attempt_at',
     'delivery_note',
+    'delivery_number',
     'pending_driver_id',
     'pricing_history',
     'pricing_details',
@@ -117,6 +118,23 @@ class Task extends Model
   public function vehicle_size()
   {
     return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
+  }
+
+  /**
+   * Get additional data that customer is allowed to see
+   */
+  public function getCustomerVisibleAdditionalDataAttribute()
+  {
+    if (!is_array($this->additional_data)) return [];
+
+    $formFields = $this->formTemplate?->fields ?? collect();
+
+    return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+      return $formFields->contains(function ($field) use ($item) {
+        return $field->label == $item['label'] &&
+          in_array($field->customer_can, ['read', 'write']);
+      });
+    })->values()->all();
   }
 
   public function getDriverVisibleAdditionalDataAttribute()

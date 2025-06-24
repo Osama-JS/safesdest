@@ -12,6 +12,7 @@ use App\Models\Email_Verification_Resends;
 use App\Models\Email_Verifications;
 use App\Models\Form_Field;
 use App\Models\Form_Template;
+use App\Models\Teams;
 use App\Models\Settings;
 use Carbon\Carbon;
 use Exception;
@@ -34,8 +35,10 @@ class RegisterController extends Controller
     $customer_template = Form_Field::where('form_template_id', $customer->value)->get();
     $driver_template = Form_Field::where('form_template_id', $driver->value)->get();
 
+    // جلب الفرق العامة فقط للظهور في نموذج تسجيل السائقين
+    $public_teams = Teams::public()->orderBy('name')->get();
 
-    return view('auth.register', compact('vehicles', 'customer_template', 'driver_template', 'customer', 'driver'));
+    return view('auth.register', compact('vehicles', 'customer_template', 'driver_template', 'customer', 'driver', 'public_teams'));
   }
 
   function createVerificationToken($user)
@@ -378,6 +381,11 @@ class RegisterController extends Controller
       'password'       => 'required|same:confirm-password',
       'address'        => 'required|string|max:255',
       'vehicle'        => 'nullable|string|max:255',
+      'team_id'        => 'nullable|exists:teams,id',
+      // WhatsApp validation
+      'phone_is_whatsapp'       => 'nullable|boolean',
+      'whatsapp_country_code'   => 'nullable|string|max:10',
+      'whatsapp_number'         => 'nullable|string|max:20',
       'g-recaptcha-response' => 'required|recaptcha',
       // 'captcha' => 'required|captcha',
 
@@ -487,7 +495,21 @@ class RegisterController extends Controller
         'password' => Hash::make($req->password),
         'address' => $req->address,
         'vehicle_size_id' => $req->vehicle,
+        'team_id' => $req->team_id, // إضافة الفريق المختار
+        // WhatsApp data processing
+        'phone_is_whatsapp' => $req->has('phone_is_whatsapp') ? (bool)$req->phone_is_whatsapp : false,
       ];
+
+      // Handle WhatsApp number logic
+      if ($req->has('phone_is_whatsapp') && $req->phone_is_whatsapp) {
+        // If phone is WhatsApp, copy phone data to WhatsApp fields
+        $data['whatsapp_country_code'] = $req->phone_code;
+        $data['whatsapp_number'] = $req->phone;
+      } else {
+        // Use separate WhatsApp fields
+        $data['whatsapp_country_code'] = $req->whatsapp_country_code;
+        $data['whatsapp_number'] = $req->whatsapp_number;
+      }
 
       $structuredFields = [];
 

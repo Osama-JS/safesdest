@@ -29,7 +29,11 @@
 @section('content')
     <div class="card">
         <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">{{ __('Settings') }} | {{ __('Blockages') }}</h5>
+            <h5 class="card-title mb-2">
+                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+
+                {{ __('Settings') }} | {{ __('Blockages') }}
+            </h5>
             {{-- <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p> --}}
             <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
                 data-bs-target="#submitModal">

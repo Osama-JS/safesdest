@@ -35,6 +35,60 @@
             background: #0d6efd;
             border-radius: 50%;
         }
+
+        .info-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .status-badge {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+        }
+
+        .delivery-note-preview {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .delivery-note-preview:hover {
+            transform: scale(1.05);
+        }
+
+        .file-icon {
+            font-size: 3rem;
+            color: #6c757d;
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-header-custom {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            color: white;
+        }
+
+        .delivery-section {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            border: none;
+            color: white;
+        }
     </style>
 @endsection
 @section('page-script')
@@ -50,19 +104,24 @@
         <div class="row">
             <!-- تفاصيل المهمة -->
             <div class="col-lg-8 col-md-12">
-                <div class="card mb-4">
-                    <div class="card-header border-bottom text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">{{ __('Task Details') }} #{{ $task->id }}</h5>
+                <div class="card mb-4 info-card">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">
+                            <i class="fas fa-tasks me-2 text-primary"></i>
+                            {{ __('Task Details') }} #{{ $task->id }}
+                        </h5>
 
-                        <div>
-                            <a href="#" class="mx-2" onclick="openReport()">download task status report</a>
-
-                            <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bx bx-arrow-back"></i> {{ __('Back to Tasks') }}
+                        <div class="d-flex gap-2">
+                            <a href="#" class="btn btn-sm btn-primary" onclick="openReport()">
+                                <i class="fas fa-download me-1"></i>
+                                {{ __('Download Report') }}
                             </a>
 
+                            <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                {{ __('Back to Tasks') }}
+                            </a>
                         </div>
-
                     </div>
 
                     <div class="card-body mt-3">
@@ -76,12 +135,12 @@
                         @if ($task->driver_id && $task->driver)
                             <div class="card mb-4 shadow-sm">
                                 <div
-                                    class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0 text-white">
-                                        <i class="fas fa-user me-2 "></i> {{ __('Assigned Driver') }}
+                                    class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-dark">
+                                        <i class="fas fa-user me-2 text-primary"></i> {{ __('Assigned Driver') }}
                                     </h6>
                                     <a href="{{ route('drivers.show', [$task->driver->id, $task->driver->name]) }}"
-                                        class="btn btn-light btn-sm">
+                                        class="btn btn-primary btn-sm">
                                         {{ __('View Profile') }}
                                     </a>
                                 </div>
@@ -147,60 +206,68 @@
                         @endif
 
 
-                        <div
-                            class="border rounded p-3 d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 shadow-sm border">
-
-                            {{-- Price --}}
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fas fa-dollar-sign text-success fs-5"></i>
-                                <div>
-                                    <small class="text-muted d-block">{{ __('Price') }}</small>
-                                    <strong class="text-success">
-                                        {{ $task->total_price ? number_format($task->total_price, 2) : '0.00' }}
-                                        SAR
-                                    </strong>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fas fa-dollar-sign text-primary fs-5"></i>
-                                <div>
-                                    <small class="text-muted d-block">{{ __('Commission') }}</small>
-                                    <strong class="text-primary">
-                                        {{ $task->total_price ? number_format($task->commission, 2) : '0.00' }}
-                                        SAR
-                                    </strong>
+                        <!-- إحصائيات المهمة -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3 col-sm-6">
+                                <div class="card stats-card text-white h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-dollar-sign fs-2 mb-2"></i>
+                                        <h6 class="card-title">{{ __('Total Price') }}</h6>
+                                        <h4 class="mb-0">
+                                            {{ $task->total_price ? number_format($task->total_price, 2) : '0.00' }} SAR
+                                        </h4>
+                                    </div>
                                 </div>
                             </div>
 
-                            {{-- Status --}}
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fas fa-info-circle text-primary fs-5"></i>
-                                <div>
-                                    <small class="text-muted d-block">{{ __('Status') }}</small>
-                                    <span class="badge bg-primary">{{ ucfirst($task->status) }}</span>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="card bg-warning text-white h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-percentage fs-2 mb-2"></i>
+                                        <h6 class="card-title">{{ __('Commission') }}</h6>
+                                        <h4 class="mb-0">
+                                            {{ $task->commission ? number_format($task->commission, 2) : '0.00' }} SAR
+                                        </h4>
+                                    </div>
                                 </div>
                             </div>
 
-                            {{-- Closed --}}
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fas fa-lock{{ $task->closed ? '' : '-open' }} text-danger fs-5"></i>
-                                <div>
-                                    <small class="text-muted d-block">{{ __('Closed?') }}</small>
-                                    <span class="badge bg-{{ $task->closed ? 'danger' : 'success' }}">
-                                        {{ $task->closed ? __('Yes') : __('No') }}
-                                    </span>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="card bg-info text-white h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-info-circle fs-2 mb-2"></i>
+                                        <h6 class="card-title">{{ __('Status') }}</h6>
+                                        <span class="status-badge bg-white text-info fw-bold">
+                                            {{ ucfirst($task->status) }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
+                            <div class="col-md-3 col-sm-6">
+                                <div class="card bg-{{ $task->closed ? 'danger' : 'success' }} text-white h-100">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-lock{{ $task->closed ? '' : '-open' }} fs-2 mb-2"></i>
+                                        <h6 class="card-title">{{ __('Task Status') }}</h6>
+                                        <span
+                                            class="status-badge bg-white text-{{ $task->closed ? 'danger' : 'success' }} fw-bold">
+                                            {{ $task->closed ? __('Closed') : __('Open') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
                 </div>
 
                 <!-- نقطة الاستلام والتسليم -->
-                <div class="card mb-4">
-                    <div class="card-header border-bottom text-white">
-                        <h6 class="mb-0">{{ 'Pickup & Delivery Points' }}</h6>
+                <div class="card mb-4 info-card">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-dark">
+                            <i class="fas fa-route me-2 text-primary"></i>
+                            {{ __('Pickup & Delivery Points') }}
+                        </h5>
                     </div>
                     <div class="card-body mt-4">
                         <div class="row g-4">
@@ -290,12 +357,169 @@
                     </div>
                 </div>
 
+                <!-- مذكرة التوصيل -->
+                @if ($task->closed && ($task->delivery_note || $task->delivery_number))
+                    <div class="card mb-4 info-card">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0 text-dark">
+                                <i class="fas fa-file-invoice me-2 text-primary"></i>
+                                {{ __('Delivery Note') }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                @if ($task->delivery_number)
+                                    <div class="col-md-6">
+                                        <div class="border rounded p-3 h-100 bg-light">
+                                            <h6 class="text-primary mb-3">
+                                                <i class="fas fa-hashtag me-1"></i>
+                                                {{ __('Delivery Number') }}
+                                            </h6>
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary text-white rounded-circle p-2 me-3">
+                                                    <i class="fas fa-barcode"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="mb-0 text-primary fw-bold">{{ $task->delivery_number }}
+                                                    </h4>
+                                                    <small class="text-muted">{{ __('Reference Number') }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if ($task->delivery_note)
+                                    <div class="col-md-{{ $task->delivery_number ? '6' : '12' }}">
+                                        <div class="border rounded p-3 h-100 bg-light">
+                                            <h6 class="text-success mb-3">
+                                                <i class="fas fa-file-alt me-1"></i>
+                                                {{ __('Delivery Note File') }}
+                                            </h6>
+
+                                            @php
+                                                $filePath = $task->delivery_note;
+                                                $fileName = basename($filePath);
+                                                $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                                                $isImage = in_array($fileExtension, [
+                                                    'jpg',
+                                                    'jpeg',
+                                                    'png',
+                                                    'gif',
+                                                    'webp',
+                                                ]);
+
+                                                $fileIcons = [
+                                                    'pdf' => ['icon' => 'fas fa-file-pdf', 'color' => 'text-danger'],
+                                                    'doc' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
+                                                    'docx' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
+                                                    'txt' => ['icon' => 'fas fa-file-alt', 'color' => 'text-secondary'],
+                                                    'csv' => ['icon' => 'fas fa-file-csv', 'color' => 'text-success'],
+                                                ];
+
+                                                $fileIcon = $fileIcons[$fileExtension] ?? [
+                                                    'icon' => 'fas fa-file',
+                                                    'color' => 'text-muted',
+                                                ];
+                                            @endphp
+
+                                            @if ($isImage)
+                                                <div class="text-center">
+                                                    <img src="{{ asset('storage/' . $filePath) }}"
+                                                        alt="{{ __('Delivery Note') }}"
+                                                        class="delivery-note-preview img-fluid border shadow-sm"
+                                                        data-bs-toggle="modal" data-bs-target="#deliveryNoteModal"
+                                                        style="cursor: pointer;">
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">{{ $fileName }}</small>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <div class="text-center">
+                                                    <div class="mb-3">
+                                                        <i
+                                                            class="{{ $fileIcon['icon'] }} file-icon {{ $fileIcon['color'] }}"></i>
+                                                    </div>
+                                                    <h6 class="mb-2">{{ $fileName }}</h6>
+                                                    <a href="{{ asset('storage/' . $filePath) }}" target="_blank"
+                                                        class="btn btn-outline-primary btn-sm">
+                                                        <i class="fas fa-download me-1"></i>
+                                                        {{ __('Download File') }}
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            @if ($task->delivery_note && $task->delivery_number)
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="alert alert-success d-flex align-items-center">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            <div>
+                                                <strong>{{ __('Task Completed Successfully') }}</strong><br>
+                                                <small>{{ __('Delivery completed with reference number') }}:
+                                                    <strong>{{ $task->delivery_number }}</strong></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Modal لعرض الصورة -->
+                    @if (
+                        $task->delivery_note &&
+                            in_array(strtolower(pathinfo($task->delivery_note, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp']))
+                        <div class="modal fade" id="deliveryNoteModal" tabindex="-1"
+                            aria-labelledby="deliveryNoteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="deliveryNoteModalLabel">
+                                            <i class="fas fa-file-invoice me-2"></i>
+                                            {{ __('Delivery Note') }} - {{ __('Task') }} #{{ $task->id }}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body text-center">
+                                        <img src="{{ asset('storage/' . $task->delivery_note) }}"
+                                            alt="{{ __('Delivery Note') }}" class="img-fluid rounded shadow">
+                                        @if ($task->delivery_number)
+                                            <div class="mt-3">
+                                                <span class="badge bg-primary fs-6">
+                                                    {{ __('Reference') }}: {{ $task->delivery_number }}
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a href="{{ asset('storage/' . $task->delivery_note) }}" target="_blank"
+                                            class="btn btn-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i>
+                                            {{ __('Open in New Tab') }}
+                                        </a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            {{ __('Close') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                @endif
+
                 <!-- بيانات إضافية -->
                 @if ($task->additional_data)
-                    <div class="card mb-4">
-                        <div class="card-header border-bottom ">
+                    <div class="card mb-4 info-card">
+                        <div class="card-header bg-white border-bottom">
                             <h5 class="mb-0 text-dark">
-                                <i class="fas fa-layer-group me-2 text-primary"></i> {{ __('Additional Data') }}
+                                <i class="fas fa-layer-group me-2 text-primary"></i>
+                                {{ __('Additional Data') }}
                             </h5>
                         </div>
 
@@ -447,9 +671,12 @@
 
             <!-- سجل الأحداث -->
             <div class="col-lg-4 col-md-12">
-                <div class="card">
-                    <div class="card-header border-bottom bg-info ">
-                        <h5 class="mb-0 text-white">{{ __('Task History') }}</h5>
+                <div class="card info-card">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 text-dark">
+                            <i class="fas fa-history me-2 text-primary"></i>
+                            {{ __('Task History') }}
+                        </h5>
                     </div>
                     <div class="card-body">
                         @if ($task->history->count())

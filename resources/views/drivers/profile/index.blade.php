@@ -70,6 +70,25 @@
                             {{ $data->username }}</li>
                         <li class="mb-2"><i class="ti ti-phone-call me-2"></i><strong>Phone:</strong>
                             {{ $data->phone_code }} {{ $data->phone }}</li>
+                        <li class="mb-2">
+                            <i class="ti ti-brand-whatsapp text-success me-2"></i><strong>WhatsApp:</strong>
+                            @if ($data->full_whatsapp_number)
+                                <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $data->full_whatsapp_number) }}"
+                                    target="_blank" class="text-success text-decoration-none">
+                                    {{ $data->whatsapp_display }}
+                                    <i class="ti ti-external-link ms-1"></i>
+                                </a>
+                                @if ($data->phone_is_whatsapp)
+                                    <small class="text-muted d-block ms-4">
+                                        <i class="ti ti-info-circle me-1"></i>Same as phone number
+                                    </small>
+                                @endif
+                            @else
+                                <span class="text-muted">
+                                    <i class="ti ti-minus me-1"></i>Not provided
+                                </span>
+                            @endif
+                        </li>
                         <li class="mb-2"><i class="ti ti-mail me-2"></i><strong>Email:</strong> {{ $data->email }}</li>
                         <li class="mb-2"><i class="ti ti-circle-check me-2"></i><strong>Status:</strong> <span
                                 class="badge bg-{{ $data->status == 'active' ? 'success' : 'secondary' }}">{{ $data->status }}</span>

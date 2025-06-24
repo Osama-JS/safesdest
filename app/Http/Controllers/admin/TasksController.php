@@ -1869,41 +1869,55 @@ class TasksController extends Controller
   {
     $validator = Validator::make($req->all(), [
       'id' => 'required|exists:tasks,id',
-      'file' => 'required|mimes:jpeg,png,jpg,webp|max:2048',
+      'delivery_number' => 'nullable|string|max:255',
+      'delivery_note' => 'required|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx,txt,csv|max:10240',
     ], [
       'id.required'  => __('Can not find the selected Task'),
       'id.exists'  => __('Can not find the selected Task'),
-      'file.required' => __('The Delivery note is required.'),
-      'file.mimes' => __('The file Delivery note must be a file of type: jpeg, png, jp'),
+      'delivery_number.string' => __('The delivery number must be a valid text.'),
+      'delivery_number.max' => __('The delivery number may not be greater than 255 characters.'),
+      'delivery_note.required' => __('The delivery note file is required.'),
+      'delivery_note.file' => __('The delivery note must be a valid file.'),
+      'delivery_note.mimes' => __('The delivery note must be a file of type: jpeg, png, jpg, webp, pdf, doc, docx, txt, csv.'),
+      'delivery_note.max' => __('The delivery note file size must not exceed 10MB.'),
     ]);
+
     if ($validator->fails()) {
       return response()->json(['status' => 0, 'error' => $validator->errors()]);
     }
+
     DB::beginTransaction();
+    $deliveryNotePath = null;
+
     try {
       $task = Task::findOrFail($req->id);
       $user = auth()->user();
+
       if (!$user || !$user->checkTask($task->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
+
       if ($task->closed) {
         return response()->json([
           'status' => 2,
           'error' => __('This Task already closed'),
         ]);
       }
+
       if ($task->status !== 'completed') {
         return response()->json([
           'status' => 2,
           'error' => __('This task cannot be closed in its current state'),
         ]);
       }
+
       if ($task->payment_status !== 'completed') {
         return response()->json([
           'status' => 2,
           'error' => __('This transaction cannot be closed until the payment is completed.'),
         ]);
       }
+
       $driver = Driver::find($task->driver_id);
       if (!$driver) {
         return response()->json([
@@ -1912,12 +1926,26 @@ class TasksController extends Controller
         ]);
       }
 
-      $deliveryNote = (new FunctionsController)->convert($req->file, 'tasks/deliveryNotes');
+      // حذف الملف القديم إذا كان موجوداً
+      if ($task->delivery_note) {
+        FileHelper::deleteFileIfExists($task->delivery_note);
+      }
 
-      $task->update(['closed' => 'true', '' => $deliveryNote]);
+      // رفع الملف الجديد باستخدام FileHelper
+      $deliveryNotePath = FileHelper::uploadFile($req->file('delivery_note'), 'tasks/deliveryNotes');
+
+      // تحديث المهمة مع رقم مذكرة التوصيل والملف
+      $updateData = [
+        'closed' => true,
+        'delivery_note' => $deliveryNotePath,
+        'delivery_number' => $req->delivery_number
+      ];
+
+      $task->update($updateData);
+
       $task->history()->create([
         'action_type' => 'closed',
-        'description' => 'Task closed by admin',
+        'description' => 'Task closed by admin' . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
         'ip' => IpHelper::getUserIpAddress(),
         'user_id' => Auth::id(),
       ]);
@@ -1929,23 +1957,28 @@ class TasksController extends Controller
           'error' => __('This Task cannot be closed due to a wallet issue'),
         ]);
       }
+
       $data = [
         'amount'              => $task->total_price - $task->commission,
-        'description'         => 'Delivery Amount for Task  #' . $task->id,
+        'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
         'transaction_type'    => 'credit',
         'wallet_id'           => $wallet->id,
         'maturity_time'       => Carbon::now()->copy()->addDays(3),
         'task_id'             => $task->id,
       ];
-      $done = Wallet_Transaction::create($data);
+
+      Wallet_Transaction::create($data);
 
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Task closed successfully')]);
     } catch (Exception $e) {
       DB::rollBack();
-      if ($deliveryNote) {
-        unlink($deliveryNote);
+
+      // حذف الملف في حالة حدوث خطأ
+      if ($deliveryNotePath) {
+        FileHelper::deleteFileIfExists($deliveryNotePath);
       }
+
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
     }
   }

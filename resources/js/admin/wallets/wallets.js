@@ -58,19 +58,19 @@ $(function () {
         {
           targets: 2,
           render: function (data, type, full, meta) {
-            return `<span>${full.name}</span>`;
+            return `<span>${full.name}</span></br><span class="text-primary mt-2">${full.team}</span>`;
           }
         },
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span class="${full.balance < 0 ? 'text-danger' : 'text-success'}">${full.balance}</span>`;
+            return `<span class="${full.balance < 0 ? 'text-danger' : 'text-success'}">${full.balance} SAR</span>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span>${full.debt_ceiling}</span>`;
+            return `<span>${full.debt_ceiling} SAR</span>`;
           }
         },
         {
@@ -193,16 +193,94 @@ $(function () {
 
     $('#statusFilter').on('change', function () {
       dt_data.draw();
+      updateStatistics();
     });
 
     $('#searchFilter').on('input', function () {
       dt_data.draw();
+      updateStatistics();
     });
 
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
+
+    // تحديث الإحصائيات عند تحميل الصفحة
+    updateStatistics();
   }
 
   $('.dataTables_filter').hide();
+
+  // دالة تحديث الإحصائيات
+  function updateStatistics() {
+    const status = $('#statusFilter').val();
+    const search = $('#searchFilter').val();
+
+    // إضافة تأثير التحميل
+    $('#wallet-statistics').addClass('statistics-loading');
+
+    $.ajax({
+      url: baseUrl + 'admin/wallets/statistics',
+      type: 'GET',
+      data: {
+        status: status,
+        search: search
+      },
+      success: function (response) {
+        // تحديث قيم Credit
+        $('#credit-total').text(formatNumber(response.credit_total) + ' SAR');
+        $('#credit-count').text(response.credit_count);
+
+        // تحديث قيم Debit
+        $('#debit-total').text(formatNumber(response.debit_total) + ' SAR');
+        $('#debit-count').text(response.debit_count);
+
+        // تحديث الإجمالي الصافي
+        const netTotal = response.net_total;
+        $('#net-total').text(formatNumber(Math.abs(netTotal)) + ' SAR');
+        $('#total-count').text(response.total_count);
+
+        // تغيير لون وأيقونة الإجمالي الصافي حسب القيمة
+        const netIcon = $('#net-icon');
+        const netDescription = $('#net-description');
+        const netTotalElement = $('#net-total');
+
+        if (netTotal > 0) {
+          netIcon.removeClass('bg-danger bg-warning').addClass('bg-success');
+          netIcon.find('i').removeClass('ti-trending-down ti-calculator').addClass('ti-trending-up');
+          netTotalElement.removeClass('text-danger text-warning').addClass('text-success');
+          netDescription.removeClass('text-danger text-warning').addClass('text-success');
+          netDescription.find('i').removeClass('ti-arrow-down ti-minus').addClass('ti-arrow-up');
+        } else if (netTotal < 0) {
+          netIcon.removeClass('bg-success bg-warning').addClass('bg-danger');
+          netIcon.find('i').removeClass('ti-trending-up ti-calculator').addClass('ti-trending-down');
+          netTotalElement.removeClass('text-success text-warning').addClass('text-danger');
+          netDescription.removeClass('text-success text-warning').addClass('text-danger');
+          netDescription.find('i').removeClass('ti-arrow-up ti-minus').addClass('ti-arrow-down');
+        } else {
+          netIcon.removeClass('bg-success bg-danger').addClass('bg-warning');
+          netIcon.find('i').removeClass('ti-trending-up ti-trending-down').addClass('ti-calculator');
+          netTotalElement.removeClass('text-success text-danger').addClass('text-warning');
+          netDescription.removeClass('text-success text-danger').addClass('text-warning');
+          netDescription.find('i').removeClass('ti-arrow-up ti-arrow-down').addClass('ti-minus');
+        }
+
+        // إزالة تأثير التحميل
+        $('#wallet-statistics').removeClass('statistics-loading');
+      },
+      error: function () {
+        console.error('Error loading wallet statistics');
+        // إزالة تأثير التحميل حتى في حالة الخطأ
+        $('#wallet-statistics').removeClass('statistics-loading');
+      }
+    });
+  }
+
+  // دالة تنسيق الأرقام
+  function formatNumber(num) {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  }
 
   $(document).on('click', '.edit-record', function () {
     const id = $(this).data('id');

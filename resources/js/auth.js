@@ -39,6 +39,9 @@ $(document)
             $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
             if (data.status === 0) {
               handleErrors(data.error);
+              console.log(data.error);
+              showAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة', 5000, true);
+
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
             } else if (data.status === 1) {
               showBlockAlert('success', data.success, 1700);
@@ -239,3 +242,28 @@ export function generateFields(fields, generateSection) {
     }
   });
 }
+
+// WhatsApp functionality for registration form
+$(document).ready(function () {
+  function toggleWhatsAppFieldsReg() {
+    const isPhoneWhatsApp = $('#phone-is-whatsapp-reg').is(':checked');
+    const whatsappFields = $('#whatsapp-fields-reg');
+
+    if (isPhoneWhatsApp) {
+      whatsappFields.hide();
+      // Clear WhatsApp fields when phone is WhatsApp
+      $('#whatsapp-country-code-reg').val('');
+      $('#whatsapp-number-reg').val('');
+    } else {
+      whatsappFields.show();
+    }
+  }
+
+  // Initialize WhatsApp fields visibility
+  toggleWhatsAppFieldsReg();
+
+  // Handle WhatsApp toggle
+  $('#phone-is-whatsapp-reg').on('change', function () {
+    toggleWhatsAppFieldsReg();
+  });
+});

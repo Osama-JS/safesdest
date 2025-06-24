@@ -338,12 +338,12 @@ $(function () {
               if (status.type === 'distance') {
                 fields = `
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]"  class="form-control from-input" value="${param.from_val}" placeholder="From">
+                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]"  class="form-control from-input" min="0" step="any" value="${param.from_val}" placeholder="From">
                       <span class="params-${methodId}-${pricingParamsIndex}-from_val-error text-danger text-error"></span>
 
                     </div>
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][to_val]" class="form-control to-input"  value="${param.to_val}" placeholder="To">
+                      <input type="number" name="params[${methodId}][${pricingParamsIndex}][to_val]" class="form-control to-input" min="0" step="any" value="${param.to_val}" placeholder="To">
                       <span class="params-${methodId}-${pricingParamsIndex}-to_val-error text-danger text-error"></span>
 
                     </div>
@@ -414,7 +414,7 @@ $(function () {
                     <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
                     ${fields}
                     <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${index}][price]" step="any" class="form-control" placeholder="Price" value="${param.price}">
+                      <input type="number" name="params[${methodId}][${index}][price]" min="0" step="any" class="form-control" placeholder="Price" value="${param.price}">
                       <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
                     </div>
                     <div class="col-md-3">
@@ -469,7 +469,7 @@ $(function () {
 
       </div>
       <div class="col-md-2">
-        <input type="number" step="0.01" value=${item.amount} name="field_pricing[${fieldPricingIndex}][amount]" class="form-control">
+        <input type="number" min="0" step="any" value=${item.amount} name="field_pricing[${fieldPricingIndex}][amount]" class="form-control">
         <span class="field_pricing-${fieldPricingIndex}-amount-error text-danger text-error"></span>
 
       </div>
@@ -504,7 +504,7 @@ $(function () {
 
         </div>
         <div class="col-md-3">
-          <input type="number" step="0.01" value=${item.amount} name="geofence_pricing[${geofencePricingIndex}][amount]" class="form-control">
+          <input type="number" min="0" step="any" value=${item.amount} name="geofence_pricing[${geofencePricingIndex}][amount]" class="form-control">
         <span class="geofence_pricing-${geofencePricingIndex}-amount-error text-danger text-error"></span>
 
         </div>
@@ -629,7 +629,7 @@ $(function () {
                 <input type="hidden" name="params[${methodId}][0][method_id]" value="${methodId}">
                 ${fields}
                 <div class="col-md-3">
-                  <input type="number" name="params[${methodId}][0][price]" class="form-control" placeholder="Price" value="0.00">
+                  <input type="number" name="params[${methodId}][0][price]" min="0" step="any" class="form-control" placeholder="Price" value="0.00">
                 </div>
                 <div class="col-md-3">
                   <button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>

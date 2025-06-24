@@ -1,6 +1,6 @@
 @extends('layouts.layoutMaster')
 
-@section('title', 'تفاصيل المهمة')
+@section('title', 'Task Details')
 
 @section('page-style')
     <style>

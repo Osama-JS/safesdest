@@ -158,7 +158,7 @@ $(function () {
             return `
               <div class="d-flex align-items-center gap-2">
                   <a href="${baseUrl}driver/task/list/show/${full.id}" class="btn btn-sm btn-icon  " >
-                    <i class="ti ti-help"></i>
+                    <i class="ti ti-help"></i>${full.id}
                   </a>
               </div>`;
           }

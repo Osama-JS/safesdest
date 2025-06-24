@@ -83,7 +83,7 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                <a href="${baseUrl}admin/tasks/list/show/${full.id}" class="btn btn-sm btn-icon edit-record " >
+                <a href="${baseUrl}admin/tasks/list/show/${full.task_id}" class="btn btn-sm btn-icon edit-record " >
                   <i class="ti ti-eye"></i>
                 </a>
 

@@ -19,6 +19,32 @@
         .drag-handle:active {
             cursor: grabbing;
         }
+
+        /* Service Commission Fields Styling */
+        #service_commission_fields {
+            transition: all 0.3s ease;
+            border-left: 3px solid #007bff;
+            padding-left: 15px;
+            margin-top: 15px;
+            background-color: #f8f9ff;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        #service_commission_fields.hidden {
+            display: none !important;
+        }
+
+        .form-check-input:checked {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .commission-type-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
     </style>
 @endsection
 
@@ -533,9 +559,37 @@
 
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">{{ __('Service Tax Commission') }}</label>
+                                    <!-- Service Commission Status Switch -->
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('Service Commission Status') }}</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                id="service_commission_status" name="service_commission_status"
+                                                value="1" checked>
+                                            <label class="form-check-label" for="service_commission_status">
+                                                {{ __('Enable Service Commission') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Service Commission Fields (shown when switch is enabled) -->
+                            <div id="service_commission_fields" class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ __('Service Commission Type') }}</label>
+                                    <select name="service_commission_type" class="form-select"
+                                        id="service_commission_type">
+                                        <option value="percentage">{{ __('Percentage') }}</option>
+                                        <option value="fixed">{{ __('Fixed Amount') }}</option>
+                                    </select>
+                                    <span class="service_commission_type-error text-danger text-error"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"
+                                        id="service_commission_label">{{ __('Service Tax Commission (%)') }}</label>
                                     <input type="number" name="service_commission" class="form-control" min="0.00"
-                                        placeholder="0.00">
+                                        placeholder="0.00" id="service_commission_input">
                                     <span class="service_commission-error text-danger text-error"></span>
                                 </div>
                             </div>

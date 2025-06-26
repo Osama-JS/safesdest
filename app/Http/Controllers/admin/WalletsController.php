@@ -109,31 +109,56 @@ class WalletsController extends Controller
     $type = $request->input('status') ?? 'customer';
     $search = $request->input('search');
 
-    $query = Wallet::query();
+    // بناء استعلام المحافظ مع الفلاتر
+    $walletQuery = Wallet::query();
 
     if (!empty($search)) {
-      $query->where(function ($q) use ($search) {
+      $walletQuery->where(function ($q) use ($search) {
         $q->where('id', 'LIKE', "%{$search}%");
       });
     }
     if (!empty($type)) {
-      $query->where('user_type', $type);
+      $walletQuery->where('user_type', $type);
     }
 
-    // حساب الإحصائيات
-    $wallets = $query->get();
+    // الحصول على IDs المحافظ المفلترة
+    $walletIds = $walletQuery->pluck('id')->toArray();
 
-    $creditTotal = $wallets->where('balance', '>', 0)->sum('balance');
-    $debitTotal = abs($wallets->where('balance', '<', 0)->sum('balance'));
+    // حساب إجمالي Credit من جميع المعاملات
+    $creditTotal = Wallet_Transaction::whereIn('wallet_id', $walletIds)
+      ->where('transaction_type', 'credit')
+      ->sum('amount');
+
+    // حساب إجمالي Debit من جميع المعاملات
+    $debitTotal = Wallet_Transaction::whereIn('wallet_id', $walletIds)
+      ->where('transaction_type', 'debit')
+      ->sum('amount');
+
+    // حساب الصافي
     $netTotal = $creditTotal - $debitTotal;
 
+    // حساب عدد المحافظ التي لها معاملات Credit
+    $creditWalletsCount = Wallet_Transaction::whereIn('wallet_id', $walletIds)
+      ->where('transaction_type', 'credit')
+      ->distinct('wallet_id')
+      ->count('wallet_id');
+
+    // حساب عدد المحافظ التي لها معاملات Debit
+    $debitWalletsCount = Wallet_Transaction::whereIn('wallet_id', $walletIds)
+      ->where('transaction_type', 'debit')
+      ->distinct('wallet_id')
+      ->count('wallet_id');
+
+    // إجمالي عدد المحافظ المفلترة
+    $totalWalletsCount = count($walletIds);
+
     return response()->json([
-      'credit_total' => $creditTotal,
-      'debit_total' => $debitTotal,
-      'net_total' => $netTotal,
-      'credit_count' => $wallets->where('balance', '>', 0)->count(),
-      'debit_count' => $wallets->where('balance', '<', 0)->count(),
-      'total_count' => $wallets->count()
+      'credit_total' => round($creditTotal, 2),
+      'debit_total' => round($debitTotal, 2),
+      'net_total' => round($netTotal, 2),
+      'credit_count' => $creditWalletsCount,
+      'debit_count' => $debitWalletsCount,
+      'total_count' => $totalWalletsCount
     ]);
   }
 

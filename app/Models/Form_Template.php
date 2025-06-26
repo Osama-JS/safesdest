@@ -11,7 +11,7 @@ class Form_Template extends Model
 
   public function fields()
   {
-    return $this->hasMany(Form_Field::class, 'form_template_id');
+    return $this->hasMany(Form_Field::class, 'form_template_id')->orderBy('order', 'ASC');
   }
 
   public function pricing_templates()

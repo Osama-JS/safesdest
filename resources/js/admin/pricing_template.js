@@ -44,6 +44,48 @@ $(function () {
     });
   }
 
+  /* ====================== Service Commission Control  =============================== */
+  function toggleServiceCommissionFields() {
+    const isEnabled = $('#service_commission_status').is(':checked');
+    const fieldsContainer = $('#service_commission_fields');
+    const commissionInput = $('#service_commission_input');
+    const commissionType = $('#service_commission_type');
+    const commissionLabel = $('#service_commission_label');
+
+    if (isEnabled) {
+      fieldsContainer.show();
+      commissionInput.prop('required', true);
+      updateCommissionLabel();
+    } else {
+      fieldsContainer.hide();
+      commissionInput.prop('required', false);
+      commissionInput.val('0');
+    }
+  }
+
+  function updateCommissionLabel() {
+    const type = $('#service_commission_type').val();
+    const label = $('#service_commission_label');
+    const input = $('#service_commission_input');
+
+    if (type === 'percentage') {
+      label.text('Service Tax Commission (%)');
+      input.attr('max', '100');
+      input.attr('step', '0.01');
+    } else {
+      label.text('Service Tax Commission (SAR)');
+      input.removeAttr('max');
+      input.attr('step', '0.01');
+    }
+  }
+
+  // Event handlers
+  $('#service_commission_status').on('change', toggleServiceCommissionFields);
+  $('#service_commission_type').on('change', updateCommissionLabel);
+
+  // Initialize on page load
+  toggleServiceCommissionFields();
+
   /* ====================== DataTable Configuration  =============================== */
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
@@ -264,8 +306,16 @@ $(function () {
       $('input[name="distance_fare"]').val(data.distance_fare);
       $('input[name="waiting_fare"]').val(data.waiting_fare);
       $('input[name="vat_commission"]').val(data.vat_commission);
+
+      // Service Commission Fields
+      $('#service_commission_status').prop('checked', data.service_commission_status);
+      $('#service_commission_type').val(data.service_commission_type || 'percentage');
       $('input[name="service_commission"]').val(data.service_commission);
+
       $('input[name="discount"]').val(data.discount);
+
+      // Update commission fields visibility and labels
+      toggleServiceCommissionFields();
 
       // تحديد حالة checkboxes
       $('#allCustomers').prop('checked', data.all_customers);
@@ -564,6 +614,12 @@ $(function () {
     handleSelection('all');
     tagsSelect.val('').trigger('change');
     customersSelect.val('').trigger('change');
+
+    // Reset service commission fields to default values
+    $('#service_commission_status').prop('checked', true);
+    $('#service_commission_type').val('percentage');
+    toggleServiceCommissionFields();
+
     $('#modelTitle').html('Add New Pricing Role');
   });
 

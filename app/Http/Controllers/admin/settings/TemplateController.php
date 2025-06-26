@@ -122,7 +122,7 @@ class TemplateController extends Controller
 
   public function getFields(Request $req)
   {
-    $data = Form_Field::where('form_template_id', $req->id)->get();
+    $data = Form_Field::where('form_template_id', $req->id)->orderBy('order', 'ASC')->get();
     if ($data->count() <= 0) {
       return response()->json(['status' => 2, 'error' => __('no fields in this template')]);
     }
@@ -359,8 +359,8 @@ class TemplateController extends Controller
       Form_Field::where('form_template_id', $request->id)->whereNotIn('id', $existingFieldIds)->delete();
 
       $done = $request->fields;
-      // تحديث أو إضافة الحقول الجديدة
-      foreach ($request->fields as $field) {
+      // تحديث أو إضافة الحقول الجديدة مع ترتيبها حسب موقعها في المصفوفة
+      foreach ($request->fields as $index => $field) {
         $data = [
           'name' => $field['name'],
           'label' => $field['label'],
@@ -369,6 +369,7 @@ class TemplateController extends Controller
           'value' => $field['value'],
           'driver_can' => $field['driver_can'],
           'customer_can' => $field['customer_can'],
+          'order' => $index + 1, // ترتيب الحقل حسب موقعه في المصفوفة (يبدأ من 1)
         ];
         if (isset($field['id'])) {
           $done = Form_Field::where('id', $field['id'])->update($data);

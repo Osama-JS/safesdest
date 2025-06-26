@@ -275,18 +275,34 @@ class CustomerTaskPricingService
     $totalPrice += $this->calculateDistancePricing($pricing, $method->type ?? 'manual', $request, $data);
 
     if ($request->pricing_method != 0) {
-      if ($method->type !== 'points') {
-        $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data, $totalPrice);
-        $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
-        $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
-        $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
-        $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
+      $totalPrice = $this->calculateFieldsPricing($pricingTemplate, $request, $data, $totalPrice);
 
-        $data['vat_commission'] = $pricingTemplate->vat_commission;
+      $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
+
+
+      if ($pricingTemplate->service_commission_status) {
+        if ($pricingTemplate->service_commission_type === 'fixed') {
+          $totalPrice += $pricingTemplate->service_tax_commission;
+          $serviceCommission = $pricingTemplate->service_tax_commission;
+        } else if ($pricingTemplate->service_commission_type === 'percentage') {
+          $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+          $serviceCommission = $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+        }
+        $data['service_commission_type'] = $pricingTemplate->service_commission_type;
         $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
-        $data['discount_percentage'] = $pricingTemplate->discount_percentage;
+        $data['service_commission'] =  $serviceCommission;
       }
 
+
+
+
+      $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
+      $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
+
+
+      $data['vat_commission'] = $pricingTemplate->vat_commission;
+
+      $data['discount_percentage'] = $pricingTemplate->discount_percentage;
 
       $data['total_price'] = $totalPrice;
     }

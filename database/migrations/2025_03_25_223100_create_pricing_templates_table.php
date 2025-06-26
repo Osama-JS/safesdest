@@ -23,6 +23,8 @@ return new class extends Migration
       $table->decimal('discount_percentage', 10, 2);
       $table->decimal('vat_commission', 10, 2);
       $table->decimal('service_tax_commission', 10, 2);
+      $table->boolean('service_commission_status')->default(true);
+      $table->enum('service_commission_type', ['fixed', 'percentage'])->default('percentage');
       $table->boolean('all_customer')->default(0);
       $table->unsignedBigInteger('form_template_id');
       $table->foreign('form_template_id')->references('id')->on('form_templates')->onDelete('cascade');

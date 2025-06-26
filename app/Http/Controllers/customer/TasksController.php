@@ -492,6 +492,17 @@ class TasksController extends Controller
         ]
       ];
 
+      if ($data['service_commission']) {
+        if ($data['service_commission'] > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+        }
+        $task['commission_type'] = 'manual';
+        $task['commission'] = $data['service_commission'];
+        $data['manual_commission'] = $data['service_commission'];
+      }
+
+
       if ($taskData['method'] == 0) {
         if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
           DB::rollBack();

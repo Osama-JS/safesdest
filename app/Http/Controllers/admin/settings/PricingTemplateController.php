@@ -108,6 +108,8 @@ class PricingTemplateController extends Controller
       'waiting_fare' => $data->waiting_fare,
       'vat_commission' => $data->vat_commission,
       'service_commission' => $data->service_tax_commission,
+      'service_commission_status' => (bool) $data->service_commission_status,
+      'service_commission_type' => $data->service_commission_type,
       'discount' => $data->discount_percentage,
       'all_customers' =>  (bool) $data->all_customer,
       'use_tags' => (bool) $data->tags->count() > 0 ? true : false,
@@ -169,7 +171,20 @@ class PricingTemplateController extends Controller
       'methods' => 'array',
       'methods.*' => 'integer|exists:pricing_methods,id',
       'vat_commission' => 'required|numeric|min:0|max:100',
-      'service_commission' => 'required|numeric|min:0|max:100',
+      'service_commission' => [
+        'required_if:service_commission_status,true',
+        'numeric',
+        'min:0',
+        function ($attribute, $value, $fail) use ($req) {
+          if ($req->filled('service_commission_status') && $req->service_commission_status) {
+            if ($req->service_commission_type === 'percentage' && $value > 100) {
+              $fail('Service commission percentage cannot exceed 100%.');
+            }
+          }
+        }
+      ],
+      'service_commission_status' => 'nullable|boolean',
+      'service_commission_type' => 'required_if:service_commission_status,true|in:fixed,percentage',
       'discount' => 'nullable|numeric|min:0|max:100',
     ];
 
@@ -296,7 +311,9 @@ class PricingTemplateController extends Controller
         'distance_fare'          => $req->distance_fare,
         'discount_percentage'    => $req->discount,
         'vat_commission'         => $req->vat_commission,
-        'service_tax_commission' => $req->service_commission,
+        'service_tax_commission' => $req->filled('service_commission_status') && $req->service_commission_status ? $req->service_commission : 0,
+        'service_commission_status' => $req->filled('service_commission_status') ? (bool)$req->service_commission_status : false,
+        'service_commission_type' => $req->filled('service_commission_status') && $req->service_commission_status ? $req->service_commission_type : 'percentage',
         'form_template_id'       => $req->form_id,
         'all_customer'          => $req->filled('all_customers') ? $req->all_customers : false,
       ];

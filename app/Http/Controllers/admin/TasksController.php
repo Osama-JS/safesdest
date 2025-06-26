@@ -184,6 +184,7 @@ class TasksController extends Controller
         'driver' => $task->driver ? [
           'name'   => optional($task->driver)->name,
           'phone'  => optional($task->driver)->phone_code . optional($task->driver)->phone,
+          'whatsapp'  => $task->driver->phone_is_whatsapp ? optional($task->driver)->phone_code . optional($task->driver)->phone : optional($task->driver)->whatsapp_country_code . optional($task->driver)->whatsapp_number,
           'email'  => optional($task->driver)->email,
           'image'  => optional($task->driver)->image,
         ] : null,
@@ -428,6 +429,9 @@ class TasksController extends Controller
         $data['manual_pricing'] = $req->manual_total_pricing;
       }
 
+
+
+
       if ($req->filled('task_driver')) {
         $task['driver_id'] = $req->task_driver;
         $driver = Driver::findOrFail($task['driver_id']);
@@ -442,6 +446,18 @@ class TasksController extends Controller
         ];
       }
 
+      if ($data['service_commission']) {
+        if ($data['service_commission'] > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+        }
+        $task['commission_type'] = 'manual';
+        $task['commission'] = $data['service_commission'];
+        $data['manual_commission'] = $data['service_commission'];
+      }
+
+
+
       if ($req->filled('manual_commission')) {
         if ($req->manual_commission > $task['total_price']) {
           DB::rollBack();
@@ -451,6 +467,7 @@ class TasksController extends Controller
         $task['commission'] = $req->manual_commission;
         $data['manual_commission'] = $req->manual_commission;
       }
+
 
       if ($req->filled('pricing_details')) {
         $details = $req->pricing_details ?? [];
@@ -592,6 +609,7 @@ class TasksController extends Controller
       if ($req->hasFile('delivery_image')) {
         $delivery_point['image'] = (new FunctionsController)->convert($req->delivery_image, 'tasks/points');
       }
+
 
       $number = $taskData['vehicles_quantity'] ?? 1;
       $task['pricing_history'] = $data;
@@ -800,6 +818,16 @@ class TasksController extends Controller
           'user_id' => Auth::id(),
           'driver_id' => $req->task_driver
         ];
+      }
+
+      if ($data['service_commission']) {
+        if ($data['service_commission'] > $task['total_price']) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+        }
+        $task['commission_type'] = 'manual';
+        $task['commission'] = $data['service_commission'];
+        $data['manual_commission'] = $data['service_commission'];
       }
 
       if ($req->filled('manual_commission')) {

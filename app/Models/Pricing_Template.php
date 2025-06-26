@@ -20,6 +20,8 @@ class Pricing_Template extends Model
     'discount_percentage',
     'vat_commission',
     'service_tax_commission',
+    'service_commission_status',
+    'service_commission_type',
     'all_customer',
     'form_template_id'
   ];

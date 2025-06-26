@@ -670,16 +670,16 @@ function renderPricingDetails(data) {
     html += `<div class="mb-2"><strong>Distance Total price:</strong> ${parseFloat(data.distance_price).toFixed(2)} ريال</div>`;
   }
 
-  if (data.vat_commission) {
-    html += `<div class="mb-2"><strong>VAT commission:</strong> ${parseFloat(data.vat_commission).toFixed(2)} %</div>`;
-  }
-
   if (data.service_tax_commission) {
-    html += `<div class="mb-2"><strong>Service tax commission:</strong> ${parseFloat(data.service_tax_commission).toFixed(2)} %</div>`;
+    html += `<div class="mb-2"><strong>Service commission:</strong> ${parseFloat(data.service_tax_commission).toFixed(2)} ${data.service_commission_type === 'percentage' ? '%' : 'SAR'}</div>`;
   }
 
   if (data.discount_percentage) {
     html += `<div class="mb-2"><strong>Discount Percentage:</strong> ${parseFloat(data.discount_percentage).toFixed(2)} %</div>`;
+  }
+
+  if (data.vat_commission) {
+    html += `<div class="mb-2"><strong>VAT commission:</strong> ${parseFloat(data.vat_commission).toFixed(2)} %</div>`;
   }
 
   if (data.points) {

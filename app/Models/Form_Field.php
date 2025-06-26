@@ -15,7 +15,8 @@ class Form_Field extends Model
     'required',
     'value',
     'driver_can',
-    'customer_can'
+    'customer_can',
+    'order'
   ];
 
   public function form_template()

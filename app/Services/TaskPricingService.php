@@ -89,18 +89,12 @@ class TaskPricingService
 
     if ($request->filled('template')) {
       $fields = Form_Field::where('form_template_id', $request->template)->get();
-
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];
-
-        // لا نضع required للحقول من نوع file_expiration_date هنا
-        if (!$request->filled('id') && $field->required && $field->type !== 'file_expiration_date') {
-          if (in_array($field->type, ['file', 'image']) && $type === 'update') {
-            $rules[$fieldKey][] = 'nullable';
-          } else {
-            $rules[$fieldKey][] = 'required';
-          }
+        // لا نضع required للحقول المركبة هنا
+        if (!$request->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
+          $rules[$fieldKey][] = 'required';
         }
 
         // إضافة قواعد بناءً على نوع الحقل
@@ -111,10 +105,10 @@ class TaskPricingService
 
           case 'number':
             $rules[$fieldKey][] = 'numeric';
-
             break;
           case 'url':
             $rules[$fieldKey][] = 'url';
+            break;
           case 'date':
             $rules[$fieldKey][] = 'date';
             break;
@@ -161,9 +155,54 @@ class TaskPricingService
               }
             }
 
+            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+            if ($request->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_expiration'][] = 'required';
+            }
+
+            break;
+
+          case 'file_with_text':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            // قواعد النص/الرقم
+            $rules[$fieldKey . '_text'] = [];
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$request->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_text'][] = 'required';
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، النص مطلوب
+                if ($request->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_text'][] = 'required';
+                }
+              }
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($request->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
             break;
 
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }
@@ -280,20 +319,35 @@ class TaskPricingService
     }
 
     $totalPrice += $this->calculateDistancePricing($pricing, $method->type ?? 'manual', $request, $data);
-
     if ($request->pricing_method != 0) {
-      if ($method->type !== 'points') {
-        $totalPrice += $this->calculateFieldsPricing($pricingTemplate, $request, $data, $totalPrice);
-        $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
-        $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
-        $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
-        $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
+      $totalPrice = $this->calculateFieldsPricing($pricingTemplate, $request, $data, $totalPrice);
 
-        $data['vat_commission'] = $pricingTemplate->vat_commission;
+      $totalPrice += $this->calculateGeofencePricing($pricingTemplate, $request, $data);
+
+
+      if ($pricingTemplate->service_commission_status) {
+        if ($pricingTemplate->service_commission_type === 'fixed') {
+          $totalPrice += $pricingTemplate->service_tax_commission;
+          $serviceCommission = $pricingTemplate->service_tax_commission;
+        } else if ($pricingTemplate->service_commission_type === 'percentage') {
+          $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+          $serviceCommission = $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+        }
+        $data['service_commission_type'] = $pricingTemplate->service_commission_type;
         $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
-        $data['discount_percentage'] = $pricingTemplate->discount_percentage;
+        $data['service_commission'] =  $serviceCommission;
       }
 
+
+
+
+      $totalPrice -= $totalPrice * ($pricingTemplate->discount_percentage / 100);
+      $totalPrice += $totalPrice * ($pricingTemplate->vat_commission / 100);
+
+
+      $data['vat_commission'] = $pricingTemplate->vat_commission;
+
+      $data['discount_percentage'] = $pricingTemplate->discount_percentage;
 
       $data['total_price'] = $totalPrice;
     }

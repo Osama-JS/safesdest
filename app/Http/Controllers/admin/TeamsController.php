@@ -12,6 +12,7 @@ use App\Models\Vehicle;
 use App\Models\Settings;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
+use App\Models\Wallet_Transaction;
 use Illuminate\Http\JsonResponse;
 
 use Illuminate\Support\Facades\DB;
@@ -417,6 +418,166 @@ class TeamsController extends Controller
     } catch (Exception $ex) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
+  public function processTeamPayment(Request $request, $teamId)
+  {
+    $validator = Validator::make($request->all(), [
+      'team_id' => 'required|exists:teams,id',
+      'total_amount' => 'required|numeric|min:0.01',
+      'transactions' => 'required|array|min:1',
+      'transactions.*.id' => 'required|exists:wallet_transactions,id',
+      'transactions.*.original_amount' => 'required|numeric|min:0',
+      'transactions.*.payment_amount' => 'required|numeric|min:0',
+      'notes' => 'nullable|string|max:1000'
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Validation failed',
+        'errors' => $validator->errors()
+      ], 422);
+    }
+
+    $team = Teams::find($teamId);
+    if (!$team) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Team not found'
+      ], 404);
+    }
+
+    DB::beginTransaction();
+    try {
+      $transactionIds = collect($request->transactions)->pluck('id')->toArray();
+
+      // Verify all transactions belong to this team and are unpaid
+      $walletTransactions = Wallet_Transaction::whereIn('id', $transactionIds)
+        ->whereIn('wallet_id', function ($query) use ($teamId) {
+          $query->select('id')
+            ->from('wallets')
+            ->whereIn('driver_id', function ($query) use ($teamId) {
+              $query->select('id')
+                ->from('drivers')
+                ->where('team_id', $teamId);
+            });
+        })
+        ->where('status', 0) // Only unpaid transactions
+        ->get();
+
+      if ($walletTransactions->count() !== count($transactionIds)) {
+        throw new \Exception('Some transactions are invalid or already paid');
+      }
+
+      // Apply sequential distribution like frontend
+      $remainingAmount = $request->total_amount;
+      $processedTransactions = [];
+
+      // Sort transactions by the order they were sent (to match frontend logic)
+      $sortedTransactions = collect($request->transactions)->sortBy(function ($item, $key) {
+        return $key; // Maintain original order
+      });
+
+      foreach ($sortedTransactions as $transactionData) {
+        if ($remainingAmount <= 0) {
+          break; // No more money to distribute
+        }
+
+        $walletTransaction = $walletTransactions->where('id', $transactionData['id'])->first();
+
+        if (!$walletTransaction) {
+          throw new \Exception("Transaction {$transactionData['id']} not found");
+        }
+
+        $originalAmount = $walletTransaction->amount;
+        $paymentAmount = 0;
+        $paymentStatus = 'unpaid';
+
+        // Sequential allocation logic (same as frontend)
+        if ($remainingAmount >= $originalAmount) {
+          // Full payment
+          $paymentAmount = $originalAmount;
+          $remainingAmount -= $originalAmount;
+          $paymentStatus = 'full';
+
+          $walletTransaction->update([
+            'status' => 1,
+            'user_id' => auth()->id()
+          ]);
+
+          $paymentDescription = "دفعة فريق (كاملة) للمعاملة رقم #{$walletTransaction->sequence}";
+        } else if ($remainingAmount > 0) {
+          // Partial payment
+          $paymentAmount = $remainingAmount;
+          $remainingTransactionAmount = $originalAmount - $paymentAmount;
+          $remainingAmount = 0;
+          $paymentStatus = 'partial';
+
+          // Update original transaction to paid amount
+          $walletTransaction->update([
+            'status' => 1,
+            'amount' => $paymentAmount,
+            'user_id' => auth()->id()
+          ]);
+
+          // Create new transaction for remaining amount with clear description
+          Wallet_Transaction::create([
+            'wallet_id' => $walletTransaction->wallet_id,
+            'amount' => $remainingTransactionAmount,
+            'transaction_type' => $walletTransaction->transaction_type,
+            'description' => "المبلغ المتبقي من المعاملة #{$walletTransaction->sequence} - تم دفع {$paymentAmount} من أصل {$originalAmount} ريال",
+            'status' => 0,
+            'user_id' => auth()->id(),
+            'maturity_time' => $walletTransaction->maturity_time,
+            'task_id' => $walletTransaction->task_id,
+            'image' => $walletTransaction->image
+          ]);
+
+          $paymentDescription = "دفعة فريق (جزئية: {$paymentAmount} من {$originalAmount}) للمعاملة رقم #{$walletTransaction->sequence}";
+        }
+
+        // Only create payment record if there's an actual payment
+        if ($paymentAmount > 0) {
+          // Create debit transaction (money owed by driver, not to driver)
+          Wallet_Transaction::create([
+            'wallet_id' => $walletTransaction->wallet_id,
+            'amount' => $paymentAmount,
+            'transaction_type' => 'debit', // Changed from 'credit' to 'debit'
+            'description' => $paymentDescription . ($request->notes ? " - ملاحظات: {$request->notes}" : ""),
+            'status' => 1,
+            'user_id' => auth()->id(),
+            'maturity_time' => now()
+          ]);
+
+          $processedTransactions[] = [
+            'id' => $walletTransaction->id,
+            'original_amount' => $originalAmount,
+            'payment_amount' => $paymentAmount,
+            'status' => $paymentStatus
+          ];
+        }
+      }
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Payment processed successfully',
+        'data' => [
+          'processed_transactions' => $processedTransactions,
+          'total_amount' => $request->total_amount,
+          'transactions_count' => count($processedTransactions)
+        ]
+      ]);
+    } catch (\Exception $e) {
+      DB::rollback();
+
+      return response()->json([
+        'success' => false,
+        'message' => $e->getMessage()
+      ], 500);
     }
   }
 }

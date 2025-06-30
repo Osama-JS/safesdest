@@ -1,6 +1,9 @@
 $(function () {
   'use strict';
 
+  var start_from = moment().startOf('month').format('YYYY-MM-DD');
+  var end_to = moment().endOf('month').format('YYYY-MM-DD');
+
   var dt_tasks_table = $('.datatables-tasks'),
     userView = baseUrl + 'customer/tasks/show/';
 
@@ -10,9 +13,10 @@ $(function () {
       ajax: {
         url: baseUrl + 'customer/tasks/data',
         data: function (d) {
-          d.from_date = $('#from_date').val();
-          d.to_date = $('#to_date').val();
-          d.status = $('#status_filter').val();
+          d.from_date = start_from;
+          d.to_date = end_to;
+          d.status = $('#statusFilter').val();
+          d.search_term = $('#searchFilter').val();
         }
       },
       columns: [
@@ -84,12 +88,12 @@ $(function () {
           targets: 8,
           render: function (data, type, full, meta) {
             var statusObj = {
-              'in_progress': { title: 'In Progress', class: 'bg-label-warning' },
-              'advertised': { title: 'Advertised', class: 'bg-label-info' },
-              'assign': { title: 'Assigned', class: 'bg-label-primary' },
-              'started': { title: 'Started', class: 'bg-label-warning' },
-              'completed': { title: 'Completed', class: 'bg-label-success' },
-              'cancelled': { title: 'Cancelled', class: 'bg-label-danger' }
+              in_progress: { title: 'In Progress', class: 'bg-label-warning' },
+              advertised: { title: 'Advertised', class: 'bg-label-info' },
+              assign: { title: 'Assigned', class: 'bg-label-primary' },
+              started: { title: 'Started', class: 'bg-label-warning' },
+              completed: { title: 'Completed', class: 'bg-label-success' },
+              cancelled: { title: 'Cancelled', class: 'bg-label-danger' }
             };
             return (
               '<span class="badge ' +
@@ -118,7 +122,7 @@ $(function () {
                   <i class="ti ti-eye ti-sm me-2"></i>
                 </a>
             `;
-            
+
             if (full.can_track) {
               actions += `
                 <a href="${baseUrl}customer/tasks/track/${full.id}" class="text-warning">
@@ -126,7 +130,7 @@ $(function () {
                 </a>
               `;
             }
-            
+
             actions += `</div>`;
             return actions;
           }
@@ -136,142 +140,33 @@ $(function () {
       dom: '<"row mx-2"<"col-md-2"<"me-3"l>><"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0"fB>>>t<"row mx-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 10,
       lengthMenu: [10, 25, 50, 75, 100],
+
       buttons: [
-        {
-          extend: 'collection',
-          className: 'btn btn-label-secondary dropdown-toggle mx-3',
-          text: '<i class="ti ti-screen-share me-1 ti-xs"></i>Export',
-          buttons: [
-            {
-              extend: 'print',
-              text: '<i class="ti ti-printer me-2" ></i>Print',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              },
-              customize: function (win) {
-                $(win.document.body)
-                  .css('color', headingColor)
-                  .css('border-color', borderColor)
-                  .css('background-color', bodyBg);
-                $(win.document.body)
-                  .find('table')
-                  .addClass('compact')
-                  .css('color', 'inherit')
-                  .css('border-color', 'inherit')
-                  .css('background-color', 'inherit');
-              }
-            },
-            {
-              extend: 'csv',
-              text: '<i class="ti ti-file-text me-2" ></i>Csv',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'excel',
-              text: '<i class="ti ti-file-spreadsheet me-2"></i>Excel',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'pdf',
-              text: '<i class="ti ti-file-code-2 me-2"></i>Pdf',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'copy',
-              text: '<i class="ti ti-copy me-2" ></i>Copy',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            }
-          ]
-        }
+        ` <div class="mt-5 mx-2">
+            <input type="text" id="dateRange" class="form-control" placeholder="Select Date Range">
+        </div>`,
+        `<label class='me-2'>
+          <select id="statusFilter" class="form-select d-inline-block w-auto ms-2 mt-5">
+        <option value="">All Status</option>
+        <option value="advertised">Advertised</option>
+        <option value="in_progress">In Progress</option>
+        <option value="assign">Assign</option>
+        <option value="started">Started</option>
+        <option value="in pickup point">In Pickup Point</option>
+        <option value="loading">Loading</option>
+        <option value="in the way">In The Way</option>
+        <option value="in delivery point">In Delivery Point</option>
+        <option value="unloading">Unloading</option>
+        <option value="completed">Completed</option>
+        <option value="canceleds">canceled</option>
+      </select>
+
+        </label>`,
+        ` <label class="me-2">
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search Tasks" />
+          </label>`
       ],
+
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
@@ -305,19 +200,40 @@ $(function () {
         }
       }
     });
+
+    $('#statusFilter').on('change', function () {
+      console.log($('#statusFilter').val());
+      dt_tasks.draw();
+    });
+
+    $('#searchFilter').on('input', function () {
+      console.log($('#searchFilter').val());
+
+      dt_tasks.draw();
+    });
+    $('.dataTables_filter').hide();
   }
 
-  // Date range picker
-  $('#from_date, #to_date').datepicker({
-    format: 'yyyy-mm-dd',
-    autoclose: true,
-    todayHighlight: true
-  });
-
-  // Filter handlers
-  $('#from_date, #to_date, #status_filter').on('change', function () {
-    dt_tasks.draw();
-  });
+  $('#dateRange').daterangepicker(
+    {
+      opens: 'left',
+      locale: {
+        format: 'DD MMM YYYY',
+        cancelLabel: 'Cancel',
+        applyLabel: 'Apply'
+      },
+      startDate: moment().startOf('month'),
+      endDate: moment().endOf('month')
+    },
+    function (start, end, label) {
+      const startDate = start.format('YYYY-MM-DD');
+      const endDate = end.format('YYYY-MM-DD');
+      console.log('oo');
+      start_from = startDate;
+      end_to = endDate;
+      dt_tasks.draw();
+    }
+  );
 
   // Load statistics
   loadTaskStatistics();
@@ -328,15 +244,26 @@ $(function () {
     dt_tasks.on('draw', function () {
       var info = dt_tasks.page.info();
       $('#total-tasks').text(info.recordsTotal);
-      
+
       // Count active tasks (you might want to get this from server)
       var activeCount = 0;
       var completedCount = 0;
       var totalSpent = 0;
-      
+
       dt_tasks.rows().every(function () {
         var data = this.data();
-        if (['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'].includes(data.status)) {
+        if (
+          [
+            'in_progress',
+            'assign',
+            'started',
+            'in pickup point',
+            'loading',
+            'in the way',
+            'in delivery point',
+            'unloading'
+          ].includes(data.status)
+        ) {
           activeCount++;
         }
         if (data.status === 'completed') {
@@ -346,7 +273,7 @@ $(function () {
           totalSpent += parseFloat(data.total_price.replace(/[^\d.-]/g, ''));
         }
       });
-      
+
       $('#active-tasks').text(activeCount);
       $('#completed-tasks').text(completedCount);
       $('#total-spent').text(totalSpent.toFixed(2) + ' SAR');

@@ -62,8 +62,110 @@
 
 @section('content')
 
+    <style>
+        /* Payment Controls Styling */
+        #payment-controls {
+            border-left: 4px solid #28a745;
+            box-shadow: 0 2px 10px rgba(40, 167, 69, 0.1);
+        }
+
+        #payment-controls .badge {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+
+        /* Checkbox Styling */
+        .transaction-checkbox {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .transaction-checkbox:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        /* Modal Styling */
+        #paymentModal .modal-content {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+
+
+        /* Payment Summary Card */
+        #paymentModal .card.bg-light {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+        }
+
+        /* Selected Transactions Table */
+        #selectedTransactionsTable {
+            font-size: 0.875rem;
+        }
+
+        #selectedTransactionsTable th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        #selectedTransactionsTable .payment-amount {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        /* Button Styling */
+        .remove-transaction {
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+
+        /* Loading Animation */
+        .ti-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive Improvements */
+        @media (max-width: 768px) {
+            #payment-controls .row {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            #payment-controls .text-end {
+                text-align: start !important;
+            }
+
+            #selectedTransactionsTable {
+                font-size: 0.75rem;
+            }
+
+            .modal-lg {
+                max-width: 95%;
+            }
+        }
+    </style>
+
     @php
-        $balance = ($totals['debit'] ?? 0) + ($totals['credit'] ?? 0);
+        $balance = ($totals['debit'] ?? 0) - ($totals['credit'] ?? 0);
         $credit = $totals['credit'] ?? 0;
         $debit = $totals['debit'] ?? 0;
 
@@ -182,10 +284,39 @@
                     </div>
                 </div>
                 <div class="tab-pane fade" id="navs-wallet" role="tabpanel">
+                    <!-- Payment Controls -->
+                    <div class="card mb-3" id="payment-controls" style="display: none;">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <i class="ti ti-check-box text-primary me-2 fs-4"></i>
+                                        <span class="fw-semibold">{{ __('Selected Transactions') }}:</span>
+                                        <span class="badge bg-primary ms-2" id="selected-count">0</span>
+                                        <span class="fw-semibold ms-3">{{ __('Total Amount') }}:</span>
+                                        <span class="badge bg-success ms-2" id="selected-total">0.00 SAR</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button type="button" class="btn btn-outline-secondary me-2" id="clear-selection">
+                                        <i class="ti ti-x me-1"></i>{{ __('Clear Selection') }}
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="process-payment"
+                                        data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                        <i class="ti ti-credit-card me-1"></i>{{ __('Process Payment') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card-datatable table-responsive">
                         <table class="table table-hover align-middle mb-0 datatables-transactions">
                             <thead class="table-light">
                                 <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="select-all-transactions" class="form-check-input">
+                                    </th>
                                     <th></th>
                                     <th>#</th>
                                     <th>{{ __('Amount') }}</th>
@@ -437,6 +568,107 @@
                     </div>
                 </form>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">
+                        <i class="ti ti-credit-card me-2"></i>{{ __('Process Team Payment') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        @csrf
+                        <input type="hidden" name="team_id" value="{{ $data->id }}">
+                        <!-- Total Amount Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="totalPaymentAmount" class="form-label fw-semibold">
+                                    <i class="ti ti-calculator me-1"></i>{{ __('Total Payment Amount') }}
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="totalPaymentAmount"
+                                        name="total_amount" step="0.01" min="0" required>
+                                    <span class="input-group-text">SAR</span>
+                                </div>
+                                <small class="text-muted">{{ __('Maximum amount') }}: <span id="maxAmountDisplay"
+                                        class="fw-bold text-primary">0.00 SAR</span></small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">{{ __('Payment Summary') }}</label>
+                                <div class="card ">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ __('Selected Transactions') }}:</span>
+                                            <span class="fw-bold" id="modal-selected-count">0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ __('Original Total') }}:</span>
+                                            <span class="fw-bold" id="modal-original-total">0.00 SAR</span>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="fw-semibold">{{ __('Payment Amount') }}:</span>
+                                            <span class="fw-bold text-success" id="modal-payment-total">0.00 SAR</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected Transactions Table -->
+                        <div class="mb-4">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="ti ti-list me-1"></i>{{ __('Selected Transactions for Payment') }}
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="60">#</th>
+                                            <th>{{ __('Driver') }}</th>
+                                            <th>{{ __('Description') }}</th>
+                                            <th>{{ __('Original Amount') }}</th>
+                                            <th>{{ __('Payment Amount') }}</th>
+                                            <th width="60">{{ __('Action') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selectedTransactionsTable">
+                                        <!-- Dynamic content will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Payment Notes -->
+                        <div class="mb-3">
+                            <label for="paymentNotes" class="form-label">
+                                <i class="ti ti-note me-1"></i>{{ __('Payment Notes') }}
+                                <small class="text-muted">({{ __('Optional') }})</small>
+                            </label>
+                            <textarea class="form-control" id="paymentNotes" name="notes" rows="3"
+                                placeholder="{{ __('Add any notes about this payment (e.g., payment method, reference number, special instructions)...') }}"></textarea>
+                            <small class="text-muted">
+                                <i class="ti ti-info-circle me-1"></i>
+                                {{ __('These notes will be included in the payment description for each driver\'s wallet transaction') }}
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="ti ti-x me-1"></i>{{ __('Cancel') }}
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmPayment">
+                        <i class="ti ti-check me-1"></i>{{ __('Confirm Payment') }}
+                    </button>
+                </div>
             </div>
         </div>
     </div>

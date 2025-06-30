@@ -27,19 +27,16 @@ class VehiclesController extends Controller
 
   public function getData(Request $req)
   {
-    $vehicles = Vehicle::with('types.sizes')->get();
+    // Get pagination parameters
+    $page = $req->get('page', 1);
+    $perPage = $req->get('per_page', 10);
+    $tab = $req->get('tab', 'vehicles'); // vehicles, types, sizes
 
-    $types = Vehicle_Type::with('sizes');
-    if ($req->has('vehicle') && !empty($req->vehicle)) {
-      $types->where('vehicle_id', $req->vehicle);
-    }
-
-    $sizes = Vehicle_Size::with('type.vehicle');
-    if ($req->has('type') && !empty($req->type)) {
-      $sizes->where('vehicle_type_id', $req->type);
-    }
     $data = [];
-    $data['vehicles'] = $vehicles->map(function ($item) {
+
+    // Always get all vehicles for dropdowns
+    $allVehicles = Vehicle::with('types.sizes')->get();
+    $data['all_vehicles'] = $allVehicles->map(function ($item) {
       return [
         'id' => $item->id,
         'name' => $item->name,
@@ -48,27 +45,105 @@ class VehiclesController extends Controller
       ];
     });
 
-    $data['types'] = $types->get()->map(function ($item) {
-      return [
-        'id' => $item->id,
-        'name' => $item->name,
-        'en_name' => $item->en_name,
-        'vehicle_id' => $item->vehicle_id,
-        'vehicle' => $item->vehicle->name . '-' . $item->vehicle->en_name,
-        'sizes' => $item->sizes->count(),
-      ];
-    });
+    // Vehicles with pagination
+    if ($tab === 'vehicles' || $tab === 'all') {
+      $vehiclesQuery = Vehicle::with('types.sizes');
+      $vehiclesPaginated = $vehiclesQuery->paginate($perPage, ['*'], 'vehicles_page', $page);
 
-    $data['sizes'] = $sizes->get()->map(function ($item) {
-      return [
-        'id' => $item->id,
-        'name' => $item->name,
-        'type_id' => $item->vehicle_type_id,
-        'vehicle_id' => $item->type->vehicle_id,
-        'type' => $item->type->name . '-' . $item->type->en_name,
-        'vehicle' => $item->type->vehicle->name . '-' . $item->type->vehicle->en_name,
+      $data['vehicles'] = [
+        'data' => $vehiclesPaginated->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'en_name' => $item->en_name,
+            'types' => $item->types->count(),
+          ];
+        }),
+        'pagination' => [
+          'current_page' => $vehiclesPaginated->currentPage(),
+          'last_page' => $vehiclesPaginated->lastPage(),
+          'per_page' => $vehiclesPaginated->perPage(),
+          'total' => $vehiclesPaginated->total(),
+          'from' => $vehiclesPaginated->firstItem(),
+          'to' => $vehiclesPaginated->lastItem(),
+        ]
       ];
-    });
+    }
+
+    // Types with pagination and filtering
+    if ($tab === 'types' || $tab === 'all') {
+      $typesQuery = Vehicle_Type::with('sizes', 'vehicle');
+      if ($req->has('vehicle') && !empty($req->vehicle)) {
+        $typesQuery->where('vehicle_id', $req->vehicle);
+      }
+
+      $typesPaginated = $typesQuery->paginate($perPage, ['*'], 'types_page', $page);
+
+      $data['types'] = [
+        'data' => $typesPaginated->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'en_name' => $item->en_name,
+            'vehicle_id' => $item->vehicle_id,
+            'vehicle' => $item->vehicle->name . '-' . $item->vehicle->en_name,
+            'sizes' => $item->sizes->count(),
+          ];
+        }),
+        'pagination' => [
+          'current_page' => $typesPaginated->currentPage(),
+          'last_page' => $typesPaginated->lastPage(),
+          'per_page' => $typesPaginated->perPage(),
+          'total' => $typesPaginated->total(),
+          'from' => $typesPaginated->firstItem(),
+          'to' => $typesPaginated->lastItem(),
+        ]
+      ];
+    }
+
+    // Sizes with pagination and filtering
+    if ($tab === 'sizes' || $tab === 'all') {
+      $sizesQuery = Vehicle_Size::with('type.vehicle');
+      if ($req->has('type') && !empty($req->type)) {
+        $sizesQuery->where('vehicle_type_id', $req->type);
+      }
+      if ($req->has('vehicle') && !empty($req->vehicle)) {
+        $sizesQuery->whereHas('type', function ($q) use ($req) {
+          $q->where('vehicle_id', $req->vehicle);
+        });
+      }
+
+      $sizesPaginated = $sizesQuery->paginate($perPage, ['*'], 'sizes_page', $page);
+
+      $data['sizes'] = [
+        'data' => $sizesPaginated->map(function ($item) {
+          return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'type_id' => $item->vehicle_type_id,
+            'vehicle_id' => $item->type->vehicle_id,
+            'type' => $item->type->name . '-' . $item->type->en_name,
+            'vehicle' => $item->type->vehicle->name . '-' . $item->type->vehicle->en_name,
+          ];
+        }),
+        'pagination' => [
+          'current_page' => $sizesPaginated->currentPage(),
+          'last_page' => $sizesPaginated->lastPage(),
+          'per_page' => $sizesPaginated->perPage(),
+          'total' => $sizesPaginated->total(),
+          'from' => $sizesPaginated->firstItem(),
+          'to' => $sizesPaginated->lastItem(),
+        ]
+      ];
+    }
+
+    // Statistics for counters
+    $data['statistics'] = [
+      'total_vehicles' => Vehicle::count(),
+      'total_types' => Vehicle_Type::count(),
+      'total_sizes' => Vehicle_Size::count(),
+    ];
+
     return response()->json(['status' => 1, 'data' => $data]);
   }
 

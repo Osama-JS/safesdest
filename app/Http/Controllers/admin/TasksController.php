@@ -68,15 +68,16 @@ class TasksController extends Controller
     }
     $vehicles = Vehicle::all();
     $templates = Form_Template::all();
+    $teams = Teams::all(); // Add teams for filtering
     $task_template = Settings::where('key', 'task_template')->first();
     $task_from_template = Settings::where('key', 'task_from_port_template')->first();
     $task_to_template = Settings::where('key', 'task_to_port_template')->first();
-    return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'task_template', 'task_from_template', 'task_to_template'));
+    return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'teams', 'task_template', 'task_from_template', 'task_to_template'));
   }
 
   public function getData(Request $request)
   {
-    $query = Task::with('points', 'customer', 'user');
+    $query = Task::with('points', 'customer', 'user', 'driver', 'driver.team');
 
     if ($request->has('search') && !empty($request->search)) {
       $search = $request->search;
@@ -85,11 +86,37 @@ class TasksController extends Controller
       });
     }
 
-    if ($request->has('filter') && !empty($request->filter)) {
-      $searchDate = $request->filter;
-      $query->whereDate('created_at', $searchDate);
+    // Date range filter (replaces single date filter)
+    if (
+      $request->has('from_date') && $request->has('to_date') &&
+      !empty($request->from_date) && !empty($request->to_date)
+    ) {
+      $query->whereBetween('created_at', [
+        Carbon::parse($request->from_date)->startOfDay(),
+        Carbon::parse($request->to_date)->endOfDay()
+      ]);
     }
 
+    // Owner type filter
+    if ($request->has('owner') && !empty($request->owner)) {
+      if ($request->owner === 'admin') {
+        $query->whereNotNull('user_id')->whereNull('customer_id');
+      } elseif ($request->owner === 'customer') {
+        $query->whereNotNull('customer_id');
+      }
+    }
+
+    // Team filter
+    if ($request->has('team') && !empty($request->team)) {
+      $query->whereHas('driver', function ($q) use ($request) {
+        $q->where('team_id', $request->team);
+      });
+    }
+
+    // Driver filter
+    if ($request->has('driver') && !empty($request->driver)) {
+      $query->where('driver_id', $request->driver);
+    }
 
     $query->orderBy('id', 'DESC');
     $tasks = $query->get();

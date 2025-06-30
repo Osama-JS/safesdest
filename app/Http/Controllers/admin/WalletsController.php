@@ -84,7 +84,7 @@ class WalletsController extends Controller
         'id'         => $val->id,
         'fake_id'    => ++$fakeId,
         'name'       => "[ " . $val->id . " ] " . ($val->customer_id ? $val->customer?->name : ($val->driver_id ? $val->driver?->name : 'N/A')),
-        'team'       => $val->customer_id ? '' : ($val->driver_id ? ($val->driver->team_id ? $val->driver->team->name : '') : ''),
+        'team'       => $val->customer_id ? '' : ($val->driver?->team?->name ?? ''),
         'type'       => $val->user_type,
         'balance'       => $val->balance,
         'debt_ceiling'       => $val->debt_ceiling,
@@ -242,10 +242,159 @@ class WalletsController extends Controller
   public function show($id, $name)
   {
     $data = Wallet::findOrFail($id);
+
+    // If it's a driver wallet, redirect to driver-specific view
+    if ($data->user_type === 'driver') {
+      return redirect()->route('wallets.driver.show', $id);
+    }
+
     return view('admin.wallets.show', compact('data'));
   }
 
-  public function getDataTransactions(Request $request)
+  public function driverShow($id)
+  {
+    $data = Wallet::where('user_type', 'driver')->findOrFail($id);
+    return view('admin.wallets.driver-show', compact('data'));
+  }
+
+  public function processDriverPayment(Request $request)
+  {
+    $request->validate([
+      'wallet_id' => 'required|exists:wallets,id',
+      'total_amount' => 'required|numeric|min:0.01',
+      'transactions' => 'required|array|min:1',
+      'transactions.*.id' => 'required|exists:wallet_transactions,id',
+      'transactions.*.payment_amount' => 'required|numeric|min:0',
+      'notes' => 'nullable|string|max:500'
+    ]);
+
+    DB::beginTransaction();
+    try {
+      $wallet = Wallet::where('user_type', 'driver')->findOrFail($request->wallet_id);
+      $transactionIds = collect($request->transactions)->pluck('id')->toArray();
+
+      // Get wallet transactions for this specific driver wallet
+      $walletTransactions = Wallet_Transaction::whereIn('id', $transactionIds)
+        ->where('wallet_id', $wallet->id)
+        ->where('transaction_type', 'credit') // Credit transactions (money owed TO driver)
+        ->where('status', 0) // Only unpaid transactions
+        ->get();
+
+      if ($walletTransactions->count() !== count($transactionIds)) {
+        throw new \Exception('Some transactions are invalid or already paid');
+      }
+
+      // Apply sequential distribution like frontend
+      $remainingAmount = $request->total_amount;
+      $processedTransactions = [];
+
+      // Sort transactions by the order they were sent
+      $sortedTransactions = collect($request->transactions)->sortBy(function ($item, $key) {
+        return $key;
+      });
+
+      foreach ($sortedTransactions as $transactionData) {
+        if ($remainingAmount <= 0) {
+          break;
+        }
+
+        $walletTransaction = $walletTransactions->where('id', $transactionData['id'])->first();
+
+        if (!$walletTransaction) {
+          throw new \Exception("Transaction {$transactionData['id']} not found");
+        }
+
+        $originalAmount = $walletTransaction->amount;
+        $paymentAmount = 0;
+        $paymentStatus = 'unpaid';
+
+        // Sequential allocation logic
+        if ($remainingAmount >= $originalAmount) {
+          // Full payment
+          $paymentAmount = $originalAmount;
+          $remainingAmount -= $originalAmount;
+          $paymentStatus = 'full';
+
+          $walletTransaction->update([
+            'status' => 1,
+            'user_id' => auth()->id()
+          ]);
+
+          $paymentDescription = "دفع مستحقات سائق (كامل) للمعاملة رقم #{$walletTransaction->sequence}";
+        } else if ($remainingAmount > 0) {
+          // Partial payment
+          $paymentAmount = $remainingAmount;
+          $remainingTransactionAmount = $originalAmount - $paymentAmount;
+          $remainingAmount = 0;
+          $paymentStatus = 'partial';
+
+          // Update original transaction to paid amount
+          $walletTransaction->update([
+            'status' => 1,
+            'amount' => $paymentAmount,
+            'user_id' => auth()->id()
+          ]);
+
+          // Create new transaction for remaining amount
+          Wallet_Transaction::create([
+            'wallet_id' => $walletTransaction->wallet_id,
+            'amount' => $remainingTransactionAmount,
+            'transaction_type' => $walletTransaction->transaction_type,
+            'description' => "المبلغ المتبقي من المعاملة #{$walletTransaction->sequence} - تم دفع {$paymentAmount} من أصل {$originalAmount} ريال",
+            'status' => 0,
+            'user_id' => auth()->id(),
+            'maturity_time' => $walletTransaction->maturity_time,
+            'task_id' => $walletTransaction->task_id,
+            'image' => $walletTransaction->image
+          ]);
+
+          $paymentDescription = "دفع مستحقات سائق (جزئي: {$paymentAmount} من {$originalAmount}) للمعاملة رقم #{$walletTransaction->sequence}";
+        }
+
+        // Only create payment record if there's an actual payment
+        if ($paymentAmount > 0) {
+          // Create debit transaction (payment made to driver - reduces company balance)
+          Wallet_Transaction::create([
+            'wallet_id' => $walletTransaction->wallet_id,
+            'amount' => $paymentAmount,
+            'transaction_type' => 'debit',
+            'description' => $paymentDescription . ($request->notes ? " - ملاحظات: {$request->notes}" : ""),
+            'status' => 1, // Debit transactions are immediately processed
+            'user_id' => auth()->id(),
+            'maturity_time' => now()
+          ]);
+
+          $processedTransactions[] = [
+            'id' => $walletTransaction->id,
+            'original_amount' => $originalAmount,
+            'payment_amount' => $paymentAmount,
+            'status' => $paymentStatus
+          ];
+        }
+      }
+
+      DB::commit();
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Payment processed successfully',
+        'data' => [
+          'processed_transactions' => $processedTransactions,
+          'total_amount' => $request->total_amount,
+          'transactions_count' => count($processedTransactions)
+        ]
+      ]);
+    } catch (\Exception $e) {
+      DB::rollback();
+
+      return response()->json([
+        'success' => false,
+        'message' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  public function getDataTransactions(Request $request, $id = null)
   {
     $columns = [
       1 => 'id',
@@ -257,9 +406,8 @@ class WalletsController extends Controller
       7 => 'created_at',
     ];
 
-
-
-    $wallet = $request->input('wallet');
+    // Get wallet ID from URL parameter or request input
+    $wallet = $id ?? $request->input('wallet');
     $fromDate  = $request->input('from_date');
     $toDate    = $request->input('to_date');
     $search = $request->input('search');
@@ -284,10 +432,11 @@ class WalletsController extends Controller
       ]);
     }
 
-    if (!empty($search)) {
+
+    if (!empty($search->value)) {
       $query->where(function ($q) use ($search) {
-        $q->where('sequence', 'LIKE', "%{$search}%")->orWhere('description', 'LIKE', "%{$search}%");
-        $q->orWhere('amount', 'LIKE', "%{$search}%");
+        $q->where('sequence', 'LIKE', "%" . $search . "%")->orWhere('description', 'LIKE', "%" . $search . "%");
+        $q->orWhere('amount', 'LIKE', "%" . $search . "%");
       });
     }
 
@@ -297,6 +446,7 @@ class WalletsController extends Controller
 
     $totalFiltered = $query->count();
     $wallets = $query
+      ->with(['user', 'task']) // Eager load relationships
       ->offset($start)
       ->limit($limit)
       ->orderBy($order, $dir)
@@ -309,15 +459,16 @@ class WalletsController extends Controller
       $data[] = [
         'id'         => $val->id,
         'fake_id'    => ++$fakeId,
-        'amount'     => $val->amount,
+        'amount'     => (float) $val->amount,
         'type'       => $val->transaction_type,
-        'description'     => $val->description,
-        'maturity'    => $val->maturity_time ?? '',
-        'user'    => $val->user->name ?? 'automatic',
-        'task'    => $val->task_id ?? '',
-        'image'   => $val->image,
+        'description' => $val->description ?? '',
+        'maturity'    => $val->maturity_time ? $val->maturity_time : '',
+        'user'        => $val->user ? $val->user->name : 'automatic',
+        'task'        => $val->task_id ? $val->task_id : '',
+        'image'       => $val->image ?? '',
         'sequence'    => $val->sequence,
-        'created_at' => $val->created_at->format('Y-m-d H:i'),
+        'status'      => (int) $val->status, // Ensure it's integer
+        'created_at'  => $val->created_at->format('Y-m-d H:i'),
       ];
     }
 

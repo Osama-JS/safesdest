@@ -7,6 +7,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css"
         rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss')
 
@@ -73,7 +74,7 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
 
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 
     <script>
@@ -156,7 +157,8 @@
     </script>
 @endsection
 @section('navbar-custom-nav')
-    <div class="btn-group col" role="group" aria-label="Map and Table toggle">
+    <!-- Toggle Buttons -->
+    <div class="btn-group me-3 my-2" role="group" aria-label="Map and Table toggle">
         <a href="{{ route('tasks.tasks') }}" class="btn btn-secondary" title="{{ __('View Map Layout') }}">
             <i class="fas fa-map-marked-alt mx-1"></i> {{ __('Map') }}
         </a>
@@ -165,9 +167,39 @@
         </a>
     </div>
 
-    <div class="col">
-        <input class="form-control w-auto mx-2" type="date" value="{{ now()->format('Y-m-d') }}" id="filter-by-day">
+    <!-- Filters Section -->
+    <div class="d-flex flex-wrap align-items-center gap-2 my-2">
+        <!-- Date Range -->
+        <div>
+            <input type="text" id="dateRange" class="form-control" placeholder="Select Date Range">
+        </div>
 
+        <!-- Owner Type Dropdown -->
+        <div>
+            <select class="form-select" id="owner-fillter">
+                <option value="">All</option>
+                <option value="admin">Admin</option>
+                <option value="customer">Customer</option>
+            </select>
+        </div>
+
+        <!-- Teams Dropdown -->
+        <div>
+            <select class="form-select task-teams-select2" id="team-fillter">
+                <option value="">All Teams</option>
+                @foreach ($teams as $key)
+                    <option value="{{ $key->id }}">{{ $key->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <!-- Drivers Dropdown -->
+        <div>
+            <select class="form-select task-drivers-select2" id="driver-fillter">
+                <option value="">All Driver</option>
+                {{-- Populate via JS if needed --}}
+            </select>
+        </div>
     </div>
 @endsection
 @section('content')

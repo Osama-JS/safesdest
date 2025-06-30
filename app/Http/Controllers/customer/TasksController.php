@@ -55,6 +55,8 @@ class TasksController extends Controller
     $fromDate  = $request->input('from_date');
     $toDate    = $request->input('to_date');
     $status    = $request->input('status');
+    $search    = $request->input('search_term');
+
 
     $query = Task::with(['driver', 'pickup', 'delivery', 'vehicle_size.type.vehicle'])
       ->where('customer_id', auth()->user()->id);
@@ -68,6 +70,23 @@ class TasksController extends Controller
     }
 
     // فلترة بالحالة
+    if ($search) {
+      $query->where('id', 'LIKE', '%' . $search . '%');
+    }
+
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'like', "%{$search}%")
+          ->orWhereHas('pickup', function ($q) use ($search) {
+            $q->where('address', 'like', "%{$search}%");
+          })
+          ->orWhereHas('delivery', function ($q) use ($search) {
+            $q->where('address', 'like', "%{$search}%");
+          })
+          ->orWhere('status', 'like', "%{$search}%");
+      });
+    }
+
     if ($status) {
       $query->where('status', $status);
     }
@@ -217,14 +236,12 @@ class TasksController extends Controller
     $task_template = Settings::where('key', 'task_template')->first();
     $template_id = $task_template->value;
     if ($task_template) {
-      $fields = Form_Field::where('form_template_id', $template_id)->get();
-
+      $fields = Form_Field::where('form_template_id', $req->template)->get();
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
         $rules[$fieldKey] = [];
-
-        // لا نضع required للحقول من نوع file_expiration_date هنا
-        if (!$req->filled('id') && $field->required && $field->type !== 'file_expiration_date') {
+        // لا نضع required للحقول المركبة هنا
+        if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
           $rules[$fieldKey][] = 'required';
         }
 
@@ -236,10 +253,10 @@ class TasksController extends Controller
 
           case 'number':
             $rules[$fieldKey][] = 'numeric';
-
             break;
           case 'url':
             $rules[$fieldKey][] = 'url';
+            break;
           case 'date':
             $rules[$fieldKey][] = 'date';
             break;
@@ -286,9 +303,54 @@ class TasksController extends Controller
               }
             }
 
+            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_expiration'][] = 'required';
+            }
+
+            break;
+
+          case 'file_with_text':
+            // إزالة القاعدة العامة للحقل الأساسي
+            unset($rules[$fieldKey]);
+
+            // قواعد الملف
+            $rules[$fieldKey . '_file'] = [];
+            $rules[$fieldKey . '_file'][] = 'file';
+            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $rules[$fieldKey . '_file'][] = 'max:10240';
+
+            // قواعد النص/الرقم
+            $rules[$fieldKey . '_text'] = [];
+            $rules[$fieldKey . '_text'][] = 'nullable';
+            $rules[$fieldKey . '_text'][] = 'string';
+            $rules[$fieldKey . '_text'][] = 'max:255';
+
+            // إذا الحقل مطلوب
+            if ($field->required) {
+              if (!$req->filled('id')) {
+                // عند الإنشاء: الملف مطلوب
+                $rules[$fieldKey . '_file'][] = 'required';
+                $rules[$fieldKey . '_text'][] = 'required';
+              } else {
+                // عند التحديث: إذا تم رفع ملف جديد، النص مطلوب
+                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                  $rules[$fieldKey . '_text'][] = 'required';
+                }
+              }
+            }
+
+            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+            if ($req->hasFile("additional_fields.{$field->name}_file")) {
+              $rules[$fieldKey . '_text'][] = 'required';
+            }
+
             break;
 
           default:
+            if (!$field->required) {
+              $rules[$fieldKey][] = 'nullable';
+            }
             $rules[$fieldKey][] = 'string';
             break;
         }

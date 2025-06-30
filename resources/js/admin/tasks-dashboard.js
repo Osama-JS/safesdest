@@ -386,7 +386,7 @@ $(function () {
                   <li><strong>Name:</strong> ${task.data.driver.name}</li>
                   <li class="my-2"><strong>Phone:</strong> ${task.data.driver.phone}</li>
                   <li><strong>Email:</strong> ${task.data.driver.email}</li>
-                  <li><a href="https://wa.me/${task.data.whatsapp}" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
+                  <li><a href="https://wa.me/${task.data.driver.whatsapp}" target="_blam" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
 
                 </ul>
               </div>

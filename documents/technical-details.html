@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التفاصيل التقنية الشاملة</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-section {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .tech-card {
+            border-left: 4px solid #6c757d;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .tech-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        .file-tree {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        .file-tree .folder {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .file-tree .file {
+            color: #17a2b8;
+        }
+        .file-tree .modified {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .file-tree .new {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .nav-breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .method-signature {
+            background: #e9ecef;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <nav class="nav-breadcrumb mb-3">
+                <a href="index.html" class="text-white text-decoration-none">
+                    <i class="bi bi-house me-1"></i>الرئيسية
+                </a>
+                <span class="text-white mx-2">/</span>
+                <span class="text-white">التفاصيل التقنية</span>
+            </nav>
+            <h1 class="display-4">
+                <i class="bi bi-code-slash me-3"></i>
+                التفاصيل التقنية الشاملة
+            </h1>
+            <p class="lead">دليل شامل للملفات المعدلة والدوال المضافة والتقنيات المستخدمة</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- هيكل الملفات -->
+        <div class="card tech-card">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-folder me-2"></i>هيكل الملفات المعدلة
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="file-tree">
+<span class="folder">📁 app/</span>
+├── <span class="folder">📁 Http/</span>
+│   └── <span class="folder">📁 Controllers/</span>
+│       └── <span class="folder">📁 admin/</span>
+│           ├── <span class="file modified">📄 TasksController.php</span> <span class="badge bg-warning">معدل</span>
+│           ├── <span class="file modified">📄 TeamsController.php</span> <span class="badge bg-warning">معدل</span>
+│           └── <span class="file modified">📄 WalletsController.php</span> <span class="badge bg-warning">معدل</span>
+
+<span class="folder">📁 resources/</span>
+├── <span class="folder">📁 views/</span>
+│   └── <span class="folder">📁 admin/</span>
+│       ├── <span class="folder">📁 tasks/</span>
+│       │   └── <span class="file modified">📄 index.blade.php</span> <span class="badge bg-warning">معدل</span>
+│       ├── <span class="folder">📁 teams/</span>
+│       │   └── <span class="file modified">📄 show.blade.php</span> <span class="badge bg-warning">معدل</span>
+│       └── <span class="folder">📁 wallets/</span>
+│           └── <span class="file new">📄 driver-show.blade.php</span> <span class="badge bg-danger">جديد</span>
+└── <span class="folder">📁 js/</span>
+    └── <span class="folder">📁 admin/</span>
+        ├── <span class="folder">📁 tasks/</span>
+        │   └── <span class="file modified">📄 tasks.js</span> <span class="badge bg-warning">معدل</span>
+        ├── <span class="folder">📁 teams/</span>
+        │   └── <span class="file modified">📄 team-show.js</span> <span class="badge bg-warning">معدل</span>
+        └── <span class="folder">📁 wallets/</span>
+            └── <span class="file new">📄 driver-show.js</span> <span class="badge bg-danger">جديد</span>
+
+<span class="folder">📁 routes/</span>
+└── <span class="file modified">📄 web.php</span> <span class="badge bg-warning">معدل</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controllers -->
+        <div class="card tech-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Controllers - الدوال المضافة والمعدلة
+                </h4>
+            </div>
+            <div class="card-body">
+                <h5>📁 TasksController.php</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">index()</div></td>
+                                <td><span class="badge bg-warning">معدلة</span></td>
+                                <td>إضافة بيانات Teams للفلترة</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">getData(Request $request)</div></td>
+                                <td><span class="badge bg-warning">معدلة</span></td>
+                                <td>إضافة فلاتر متقدمة (تاريخ، مالك، فريق، سائق)</td>
+                                <td>Request</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mt-4">📁 TeamsController.php</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">processTeamPayment(Request $request)</div></td>
+                                <td><span class="badge bg-warning">معدلة</span></td>
+                                <td>إصلاح التوزيع التسلسلي والدفع الجزئي</td>
+                                <td>Request</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">processMultiplePayments(Request $request)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>معالجة الدفع المتعدد للمعاملات</td>
+                                <td>Request</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">validatePaymentData(Request $request)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>التحقق من صحة بيانات الدفع</td>
+                                <td>Request</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mt-4">📁 WalletsController.php</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">showDriverWallet($id)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>عرض صفحة محفظة السائق</td>
+                                <td>$id (Driver ID)</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">getDriverTransactions($id, Request $request)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>جلب معاملات محفظة السائق مع DataTable</td>
+                                <td>$id, Request</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">processDriverPayment(Request $request)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>معالجة دفع مستحقات السائق</td>
+                                <td>Request</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">validateDriverPayment(Request $request)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>التحقق من صحة بيانات دفع السائق</td>
+                                <td>Request</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">getDataTransactions($id, Request $request)</div></td>
+                                <td><span class="badge bg-warning">معدلة</span></td>
+                                <td>تحسين جلب البيانات مع eager loading</td>
+                                <td>$id, Request</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- JavaScript Functions -->
+        <div class="card tech-card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-filetype-js me-2"></i>JavaScript - الدوال المضافة
+                </h4>
+            </div>
+            <div class="card-body">
+                <h5>📁 team-show.js</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">updatePaymentSummary()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث ملخص الدفع والمجموع الإجمالي</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">distributePaymentAmountSequential(totalAmount)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>توزيع المبلغ تسلسلياً على المعاملات</td>
+                                <td>totalAmount</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">updateSelectedTransactionsTable()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث جدول المعاملات المحددة</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">removeSelectedTransaction(transactionId)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>إزالة معاملة من القائمة المحددة</td>
+                                <td>transactionId</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">updateSelectAllCheckbox()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث حالة checkbox "تحديد الكل"</td>
+                                <td>لا توجد</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mt-4">📁 driver-show.js (جديد)</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">updatePaymentSummary()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث ملخص دفع السائق</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">distributePaymentAmountSequential(totalAmount)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>توزيع مبلغ دفع السائق تسلسلياً</td>
+                                <td>totalAmount</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">updateSelectedTransactionsTable()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث جدول معاملات السائق المحددة</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">removeSelectedTransaction(transactionId)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>إزالة معاملة سائق من القائمة</td>
+                                <td>transactionId</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mt-4">📁 tasks.js</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>الدالة</th>
+                                <th>النوع</th>
+                                <th>الوظيفة</th>
+                                <th>المعاملات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="method-signature">loadTasksWithFilters()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحميل المهام مع الفلاتر المحددة</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">updateMapWithTasks(tasksData)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديث الخريطة بالمهام المفلترة</td>
+                                <td>tasksData</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">getMarkerColor(status)</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تحديد لون العلامة حسب حالة المهمة</td>
+                                <td>status</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">initializeDateRangePicker()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تهيئة منتقي نطاق التاريخ</td>
+                                <td>لا توجد</td>
+                            </tr>
+                            <tr>
+                                <td><div class="method-signature">initializeSelect2Filters()</div></td>
+                                <td><span class="badge bg-success">جديدة</span></td>
+                                <td>تهيئة فلاتر Select2</td>
+                                <td>لا توجد</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routes -->
+        <div class="card tech-card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-signpost me-2"></i>Routes المضافة
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="code-block">
+// في web.php - Routes للفرق
+Route::post('/teams/{team}/process-payment', [TeamsController::class, 'processTeamPayment'])->name('teams.process-payment');
+Route::post('/teams/{team}/process-multiple-payments', [TeamsController::class, 'processMultiplePayments'])->name('teams.process-multiple-payments');
+
+// Routes لمحافظ السائقين
+Route::get('/wallets/driver/{driver}', [WalletsController::class, 'showDriverWallet'])->name('wallets.driver.show');
+Route::get('/wallets/driver/{driver}/transactions', [WalletsController::class, 'getDriverTransactions'])->name('wallets.driver.transactions');
+Route::post('/wallets/driver/process-payment', [WalletsController::class, 'processDriverPayment'])->name('wallets.driver.process-payment');
+
+// Routes للمهام (معدلة لدعم الفلاتر)
+Route::get('/tasks/data', [TasksController::class, 'getData'])->name('tasks.data'); // محسنة لدعم الفلاتر الجديدة
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Changes -->
+        <div class="card tech-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-database me-2"></i>تغييرات قاعدة البيانات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle me-2"></i>ملاحظة مهمة:</h5>
+                    <p class="mb-0">لم يتم إجراء أي تغييرات على بنية قاعدة البيانات. جميع التحسينات تمت على مستوى التطبيق فقط.</p>
+                </div>
+
+                <h5>📊 الجداول المستخدمة:</h5>
+                <ul>
+                    <li><strong>wallet_transactions:</strong> جدول المعاملات الرئيسي</li>
+                    <li><strong>wallets:</strong> جدول المحافظ</li>
+                    <li><strong>teams:</strong> جدول الفرق</li>
+                    <li><strong>drivers:</strong> جدول السائقين</li>
+                    <li><strong>tasks:</strong> جدول المهام</li>
+                </ul>
+
+                <h5>🔗 العلاقات المستخدمة:</h5>
+                <ul>
+                    <li><strong>Driver → Team:</strong> belongsTo relationship</li>
+                    <li><strong>Task → Driver:</strong> belongsTo relationship</li>
+                    <li><strong>Task → Customer:</strong> belongsTo relationship</li>
+                    <li><strong>Wallet_Transaction → Wallet:</strong> belongsTo relationship</li>
+                    <li><strong>Wallet_Transaction → User:</strong> belongsTo relationship</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Technologies Used -->
+        <div class="card tech-card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-stack me-2"></i>التقنيات والمكتبات المستخدمة
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🖥️ Backend Technologies</h5>
+                        <ul>
+                            <li><strong>Laravel Framework:</strong> PHP framework</li>
+                            <li><strong>Eloquent ORM:</strong> Database relationships</li>
+                            <li><strong>Carbon:</strong> Date manipulation</li>
+                            <li><strong>Database Transactions:</strong> Data consistency</li>
+                            <li><strong>Request Validation:</strong> Input validation</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🎨 Frontend Technologies</h5>
+                        <ul>
+                            <li><strong>jQuery:</strong> DOM manipulation</li>
+                            <li><strong>Bootstrap 5:</strong> UI framework</li>
+                            <li><strong>DataTables:</strong> Advanced tables</li>
+                            <li><strong>Select2:</strong> Enhanced dropdowns</li>
+                            <li><strong>DateRangePicker:</strong> Date selection</li>
+                            <li><strong>Moment.js:</strong> Date formatting</li>
+                            <li><strong>Mapbox GL JS:</strong> Interactive maps</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">📦 مكتبات JavaScript المضافة:</h5>
+                <div class="code-block">
+// في package.json أو CDN
+"daterangepicker": "^3.1.0",
+"moment": "^2.29.4",
+"select2": "^4.1.0",
+"datatables.net": "^1.13.0",
+"mapbox-gl": "^2.15.0"
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="advanced-filtering.html" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-1"></i>السابق: الفلترة المتقدمة
+            </a>
+            <a href="comprehensive-summary.html" class="btn btn-primary">
+                التالي: الملخص الشامل <i class="bi bi-arrow-left ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@ $(function () {
   var dt_data_table = $('.datatables-users'),
     dt_task_table = $('.datatables-tasks'),
     dt_transaction_table = $('.datatables-transactions'),
+    dt_trans, // Define dt_trans in global scope
     userView = baseUrl + 'admin/drivers/account/';
   console.log(templateId);
 
@@ -483,7 +484,8 @@ $(function () {
   }
 
   if (dt_transaction_table.length) {
-    var dt_trans = dt_transaction_table.DataTable({
+    console.log('Initializing transactions DataTable'); // Debug log
+    dt_trans = dt_transaction_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
@@ -495,6 +497,7 @@ $(function () {
         }
       },
       columns: [
+        { data: 'checkbox' },
         { data: '' },
         { data: 'fake_id' },
         { data: 'amount' },
@@ -507,17 +510,38 @@ $(function () {
       ],
       columnDefs: [
         {
+          targets: 0,
+          searchable: false,
+          orderable: false,
+          responsivePriority: 1,
+          render: function (data, type, full, meta) {
+            // Only show checkbox for unpaid transactions (status = 0)
+            console.log('Rendering checkbox for transaction:', full.id, 'status:', full.status); // Debug log
+            if (full.status == 0 || full.status === false || full.status === '0') {
+              console.log('Creating checkbox for transaction:', full.id); // Debug log
+              return `<input type="checkbox" class="form-check-input transaction-checkbox"
+                             value="${full.id}"
+                             data-amount="${full.amount}"
+                             data-driver="${full.driver}"
+                             data-description="${full.description}"
+                             data-sequence="${full.sequence}">`;
+            }
+            console.log('No checkbox for transaction:', full.id, 'because status is:', full.status); // Debug log
+            return '';
+          }
+        },
+        {
           className: 'control',
           searchable: false,
           orderable: false,
           responsivePriority: 1,
-          targets: 0,
+          targets: 1,
           render: function () {
             return '';
           }
         },
         {
-          targets: 1,
+          targets: 2,
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -525,13 +549,13 @@ $(function () {
           }
         },
         {
-          targets: 2,
+          targets: 3,
           render: function (data, type, full, meta) {
             return `<b><span class="${full.type === 'debit' ? 'text-danger' : 'text-success'} border px-3 rounded ">${full.amount} SAR</span><b>`;
           }
         },
         {
-          targets: 3,
+          targets: 4,
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -539,7 +563,7 @@ $(function () {
           }
         },
         {
-          targets: 4,
+          targets: 5,
           render: function (data, type, full, meta) {
             let imageBtn = '';
             if (full.image) {
@@ -558,27 +582,36 @@ $(function () {
         },
 
         {
-          targets: 5,
+          targets: 6,
           render: function (data, type, full, meta) {
             return `<span>${full.maturity}</span>`;
           }
         },
         {
-          targets: 6,
+          targets: 7,
           render: function (data, type, full, meta) {
             return `<span>${full.task}</span>`;
           }
         },
 
         {
-          targets: 7,
+          targets: 8,
           render: function (data, type, full, meta) {
-            return `<b><span class="${full.status ? 'bg-success' : 'bg-danger'}  text-white rounded px-3 ">${full.status ? 'Paid' : 'Not Paid'}</span><b>`;
+            if (full.type === 'credit') {
+              if (full.status == 1) {
+                return '<span class="badge bg-success">paid</span>';
+              } else {
+                return '<span class="badge bg-danger">not paid</span>';
+              }
+            } else if (full.type === 'debit') {
+              return '<span class="badge bg-info">pay</span>';
+            }
+            return '<span class="badge bg-secondary">undefined</span>';
           }
         },
 
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             return `<span>${full.created_at}</span>`;
           }
@@ -655,6 +688,31 @@ $(function () {
     });
 
     document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_trans }));
+
+    // Check for checkboxes after DataTable is loaded
+    dt_trans.on('draw', function () {
+      console.log('DataTable drawn, checking for checkboxes...'); // Debug log
+      const checkboxes = $('.transaction-checkbox');
+      console.log('Found', checkboxes.length, 'checkboxes'); // Debug log
+
+      // Also check all input elements
+      const allInputs = $('input[type="checkbox"]');
+      console.log('Found', allInputs.length, 'total checkboxes'); // Debug log
+
+      // Check if payment controls exist
+      const paymentControls = $('#payment-controls');
+      console.log('Payment controls element exists:', paymentControls.length > 0); // Debug log
+
+      // Add a test checkbox to verify event delegation
+      // if (checkboxes.length === 0) {
+      //   console.log('No checkboxes found, adding test checkbox'); // Debug log
+      //   const testCheckbox =
+      //     '<input type="checkbox" class="form-check-input transaction-checkbox test-checkbox" value="test" data-amount="100" data-driver="Test Driver" data-description="Test Description" data-sequence="1">';
+      //   $('.datatables-transactions tbody').append(
+      //     '<tr><td>' + testCheckbox + '</td><td colspan="9">Test Row</td></tr>'
+      //   );
+      // }
+    });
   }
 
   $('.dataTables_filter').hide();
@@ -799,25 +857,25 @@ $(function () {
   });
 });
 
-$('#dateRange').daterangepicker(
-  {
-    opens: 'left',
-    locale: {
-      format: 'DD MMM YYYY',
-      cancelLabel: 'Cancel',
-      applyLabel: 'Apply'
-    },
-    startDate: moment().startOf('month'),
-    endDate: moment().endOf('month')
-  },
-  function (start, end, label) {
-    const startDate = start.format('YYYY-MM-DD');
-    const endDate = end.format('YYYY-MM-DD');
-    start_from = startDate;
-    end_to = endDate;
-    dt_task.draw();
-  }
-);
+// $('#dateRange').daterangepicker(
+//   {
+//     opens: 'left',
+//     locale: {
+//       format: 'DD MMM YYYY',
+//       cancelLabel: 'Cancel',
+//       applyLabel: 'Apply'
+//     },
+//     startDate: moment().startOf('month'),
+//     endDate: moment().endOf('month')
+//   },
+//   function (start, end, label) {
+//     const startDate = start.format('YYYY-MM-DD');
+//     const endDate = end.format('YYYY-MM-DD');
+//     start_from = startDate;
+//     end_to = endDate;
+//     dt_task.draw();
+//   }
+// );
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;
 const selectedTypes = new Set();
@@ -867,3 +925,419 @@ function updateVehicleRowEvents($row) {
 const $newRow = $(createVehicleRow(vehicleIndex++));
 $('#vehicle-selection-container').append($newRow);
 updateVehicleRowEvents($newRow);
+
+// Payment System Variables
+let selectedTransactions = [];
+let originalTotal = 0;
+
+console.log('Payment system initialized'); // Debug log
+
+// Update selected transactions display
+function updateSelectedDisplay() {
+  console.log('updateSelectedDisplay called, selectedTransactions:', selectedTransactions); // Debug log
+  const count = selectedTransactions.length;
+  const total = selectedTransactions.reduce((sum, trans) => sum + parseFloat(trans.amount), 0);
+
+  console.log('Count:', count, 'Total:', total); // Debug log
+
+  $('#selected-count').text(count);
+  $('#selected-total').text(total.toFixed(2) + ' SAR');
+
+  // Show/hide payment controls
+  if (count > 0) {
+    $('#payment-controls').show();
+    console.log('Showing payment controls'); // Debug log
+  } else {
+    $('#payment-controls').hide();
+    console.log('Hiding payment controls'); // Debug log
+  }
+
+  originalTotal = total;
+}
+
+// Handle individual checkbox change
+console.log('Setting up checkbox event listener'); // Debug log
+$(document).on('change', '.transaction-checkbox', function () {
+  console.log('Checkbox changed!'); // Debug log
+  const checkbox = $(this);
+  const transactionId = checkbox.val();
+  const amount = parseFloat(checkbox.data('amount'));
+  const driver = checkbox.data('driver');
+  const description = checkbox.data('description');
+  const sequence = checkbox.data('sequence');
+
+  console.log('Transaction data:', { transactionId, amount, driver, description, sequence }); // Debug log
+
+  if (checkbox.is(':checked')) {
+    // Add to selected transactions
+    selectedTransactions.push({
+      id: transactionId,
+      amount: amount,
+      driver: driver,
+      description: description,
+      sequence: sequence
+    });
+  } else {
+    // Remove from selected transactions
+    selectedTransactions = selectedTransactions.filter(trans => trans.id !== transactionId);
+  }
+
+  updateSelectedDisplay();
+  updateSelectAllCheckbox();
+});
+
+// Handle select all checkbox
+$('#select-all-transactions').on('change', function () {
+  console.log('chec all');
+  const isChecked = $(this).is(':checked');
+
+  $('.transaction-checkbox').each(function () {
+    const checkbox = $(this);
+    const transactionId = checkbox.val();
+    const amount = parseFloat(checkbox.data('amount'));
+    const driver = checkbox.data('driver');
+    const description = checkbox.data('description');
+    const sequence = checkbox.data('sequence');
+
+    if (isChecked && !checkbox.is(':checked')) {
+      checkbox.prop('checked', true);
+      selectedTransactions.push({
+        id: transactionId,
+        amount: amount,
+        driver: driver,
+        description: description,
+        sequence: sequence
+      });
+    } else if (!isChecked && checkbox.is(':checked')) {
+      checkbox.prop('checked', false);
+      selectedTransactions = selectedTransactions.filter(trans => trans.id !== transactionId);
+    }
+  });
+
+  updateSelectedDisplay();
+});
+
+// Update select all checkbox state
+function updateSelectAllCheckbox() {
+  const totalCheckboxes = $('.transaction-checkbox').length;
+  const checkedCheckboxes = $('.transaction-checkbox:checked').length;
+
+  if (checkedCheckboxes === 0) {
+    $('#select-all-transactions').prop('indeterminate', false).prop('checked', false);
+  } else if (checkedCheckboxes === totalCheckboxes) {
+    $('#select-all-transactions').prop('indeterminate', false).prop('checked', true);
+  } else {
+    $('#select-all-transactions').prop('indeterminate', true);
+  }
+}
+
+// Clear selection
+$('#clear-selection').on('click', function () {
+  $('.transaction-checkbox').prop('checked', false);
+  $('#select-all-transactions').prop('checked', false).prop('indeterminate', false);
+  selectedTransactions = [];
+  updateSelectedDisplay();
+});
+
+// Handle payment modal opening
+$('#process-payment').on('click', function () {
+  if (selectedTransactions.length === 0) {
+    showAlert('warning', 'يرجى تحديد معاملات للدفع', 5000);
+    return;
+  }
+
+  // Update modal summary
+  $('#modal-selected-count').text(selectedTransactions.length);
+  $('#modal-original-total').text(originalTotal.toFixed(2) + ' SAR');
+  $('#maxAmountDisplay').text(originalTotal.toFixed(2) + ' SAR');
+  $('#totalPaymentAmount').val(originalTotal.toFixed(2)).attr('max', originalTotal.toFixed(2));
+  $('#modal-payment-total').text(originalTotal.toFixed(2) + ' SAR');
+
+  // Populate selected transactions table
+  updateSelectedTransactionsTable();
+});
+
+// Update selected transactions table in modal
+function updateSelectedTransactionsTable() {
+  const tableBody = $('#selectedTransactionsTable');
+  tableBody.empty();
+
+  selectedTransactions.forEach((trans, index) => {
+    const row = `
+      <tr data-transaction-id="${trans.id}">
+        <td>${trans.sequence}</td>
+        <td>${trans.driver}</td>
+        <td>${trans.description}</td>
+        <td>${trans.amount.toFixed(2)} SAR</td>
+        <td class="payment-amount">${trans.amount.toFixed(2)} SAR</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-danger remove-transaction"
+                  data-transaction-id="${trans.id}">
+            <i class="ti ti-x"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+    tableBody.append(row);
+  });
+}
+
+// Handle total amount change
+$('#totalPaymentAmount').on('input', function () {
+  const newTotal = parseFloat($(this).val()) || 0;
+  const maxAmount = originalTotal;
+
+  // Validate amount doesn't exceed maximum
+  if (newTotal > maxAmount) {
+    $(this).val(maxAmount.toFixed(2));
+    showAlert('error', `المبلغ لا يمكن أن يتجاوز ${maxAmount.toFixed(2)} SAR`, 5000);
+    return;
+  }
+
+  $('#modal-payment-total').text(newTotal.toFixed(2) + ' SAR');
+
+  // Distribute the new amount using sequential allocation
+  distributePaymentAmountSequential(newTotal);
+});
+
+// Sequential distribution: fill transactions in order, mark partial if needed
+function distributePaymentAmountSequential(totalAmount) {
+  if (selectedTransactions.length === 0) return;
+
+  let remainingAmount = totalAmount;
+  let transactionsToRemove = [];
+
+  selectedTransactions.forEach((trans, index) => {
+    let distributedAmount = 0;
+    let status = 'unpaid'; // unpaid, partial, full
+
+    if (remainingAmount > 0) {
+      if (remainingAmount >= trans.amount) {
+        // Full payment for this transaction
+        distributedAmount = trans.amount;
+        remainingAmount -= trans.amount;
+        status = 'full';
+      } else {
+        // Partial payment for this transaction
+        distributedAmount = remainingAmount;
+        remainingAmount = 0;
+        status = 'partial';
+      }
+    } else {
+      // No amount left for this transaction
+      status = 'unpaid';
+      transactionsToRemove.push(trans.id);
+    }
+
+    // Update the table display with status indication
+    const statusBadge =
+      status === 'full'
+        ? '<span class="badge bg-success">مدفوع كاملاً</span>'
+        : status === 'partial'
+          ? '<span class="badge bg-warning">مدفوع جزئياً</span>'
+          : '<span class="badge bg-danger">غير مدفوع</span>';
+
+    $(`tr[data-transaction-id="${trans.id}"] .payment-amount`).html(
+      `${distributedAmount.toFixed(2)} SAR ${statusBadge}`
+    );
+  });
+
+  // Show warning for unpaid transactions
+  if (transactionsToRemove.length > 0) {
+    const message = `تحذير: ${transactionsToRemove.length} معاملة لم يتم تخصيص أي مبلغ لها. يرجى إزالتها من التحديد أو زيادة المبلغ الإجمالي.`;
+    $('#paymentWarning').remove(); // Remove existing warning
+    $('#selectedTransactionsTable').after(`
+      <div id="paymentWarning" class="alert alert-warning mt-3">
+        <i class="ti ti-alert-triangle me-2"></i>${message}
+        <button type="button" class="btn btn-sm btn-outline-warning ms-2" id="removeUnpaidTransactions">
+          إزالة المعاملات غير المدفوعة
+        </button>
+      </div>
+    `);
+  } else {
+    $('#paymentWarning').remove();
+  }
+}
+
+// Handle removing unpaid transactions
+$(document).on('click', '#removeUnpaidTransactions', function () {
+  const totalAmount = parseFloat($('#totalPaymentAmount').val()) || 0;
+  let remainingAmount = totalAmount;
+  let transactionsToKeep = [];
+
+  // Keep only transactions that can be paid (fully or partially)
+  selectedTransactions.forEach(trans => {
+    if (remainingAmount > 0) {
+      transactionsToKeep.push(trans);
+      if (remainingAmount >= trans.amount) {
+        remainingAmount -= trans.amount;
+      } else {
+        remainingAmount = 0;
+      }
+    } else {
+      // Remove checkbox from main table
+      $(`.transaction-checkbox[value="${trans.id}"]`).prop('checked', false);
+    }
+  });
+
+  // Update selected transactions
+  selectedTransactions = transactionsToKeep;
+
+  // Update displays
+  updateSelectedDisplay();
+  updateSelectAllCheckbox();
+  updateSelectedTransactionsTable();
+
+  // Recalculate distribution
+  distributePaymentAmountSequential(totalAmount);
+
+  // Update modal summary
+  const newTotal = selectedTransactions.reduce((sum, trans) => sum + trans.amount, 0);
+  $('#modal-original-total').text(newTotal.toFixed(2) + ' SAR');
+  $('#maxAmountDisplay').text(newTotal.toFixed(2) + ' SAR');
+  $('#modal-selected-count').text(selectedTransactions.length);
+});
+
+// Remove transaction from modal
+$(document).on('click', '.remove-transaction', function () {
+  const transactionId = $(this).data('transaction-id');
+
+  console.log('Removing transaction:', transactionId); // Debug log
+
+  // Remove from selectedTransactions array
+  const originalLength = selectedTransactions.length;
+  selectedTransactions = selectedTransactions.filter(trans => trans.id != transactionId);
+
+  console.log('Transactions before removal:', originalLength, 'after removal:', selectedTransactions.length); // Debug log
+
+  // Uncheck the checkbox in main table
+  $(`.transaction-checkbox[value="${transactionId}"]`).prop('checked', false);
+
+  // Update displays
+  updateSelectedDisplay();
+  updateSelectAllCheckbox();
+
+  // Recalculate total and update modal
+  const newTotal = selectedTransactions.reduce((sum, trans) => sum + trans.amount, 0);
+  originalTotal = newTotal; // Update original total for validation
+
+  $('#totalPaymentAmount').val(newTotal.toFixed(2)).attr('max', newTotal.toFixed(2));
+  $('#modal-original-total').text(newTotal.toFixed(2) + ' SAR');
+  $('#maxAmountDisplay').text(newTotal.toFixed(2) + ' SAR');
+  $('#modal-payment-total').text(newTotal.toFixed(2) + ' SAR');
+  $('#modal-selected-count').text(selectedTransactions.length);
+
+  // Update selected transactions table
+  updateSelectedTransactionsTable();
+
+  // Recalculate distribution with new total
+  distributePaymentAmountSequential(newTotal);
+
+  // If no transactions left, close modal
+  if (selectedTransactions.length === 0) {
+    showAlert('info', 'تم إزالة جميع المعاملات. سيتم إغلاق نافذة الدفع.', 3000);
+    setTimeout(() => {
+      $('#paymentModal').modal('hide');
+    }, 1500);
+  } else {
+    showAlert('success', `تم إزالة المعاملة بنجاح. المتبقي: ${selectedTransactions.length} معاملة`, 3000);
+  }
+});
+
+// Handle payment confirmation
+$('#confirmPayment').on('click', function () {
+  const totalAmount = parseFloat($('#totalPaymentAmount').val());
+  const notes = $('#paymentNotes').val();
+
+  if (!totalAmount || totalAmount <= 0) {
+    showAlert('error', 'يرجى إدخال مبلغ دفع صحيح', 5000);
+    return;
+  }
+
+  if (selectedTransactions.length === 0) {
+    showAlert('error', 'لا توجد معاملات محددة للدفع', 5000);
+    return;
+  }
+
+  // Prepare payment data
+  const paymentData = {
+    team_id: teamID,
+    total_amount: totalAmount,
+    notes: notes,
+    transactions: []
+  };
+
+  // Calculate distributed amounts for each transaction
+  const originalSum = selectedTransactions.reduce((sum, trans) => sum + trans.amount, 0);
+  const ratio = totalAmount / originalSum;
+  let distributedTotal = 0;
+
+  selectedTransactions.forEach((trans, index) => {
+    let distributedAmount;
+
+    if (index === selectedTransactions.length - 1) {
+      // Last transaction gets the remainder
+      distributedAmount = totalAmount - distributedTotal;
+    } else {
+      distributedAmount = Math.round(trans.amount * ratio * 100) / 100;
+      distributedTotal += distributedAmount;
+    }
+
+    paymentData.transactions.push({
+      id: trans.id,
+      original_amount: trans.amount,
+      payment_amount: distributedAmount
+    });
+  });
+
+  // Show loading state
+  $('#confirmPayment').prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>Processing...');
+
+  // Send payment request
+  $.ajax({
+    url: `${baseUrl}admin/teams/${teamID}/pay-transactions`,
+    method: 'POST',
+    data: paymentData,
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    success: function (response) {
+      if (response.success) {
+        // Show success message
+        showAlert('success', 'تم معالجة الدفع بنجاح!', 5000);
+
+        // Close modal
+        $('#paymentModal').modal('hide');
+
+        // Clear selections
+        selectedTransactions = [];
+        $('.transaction-checkbox').prop('checked', false);
+        $('#select-all-transactions').prop('checked', false).prop('indeterminate', false);
+        updateSelectedDisplay();
+
+        // Reload transactions table
+        if (dt_trans) {
+          dt_trans.ajax.reload();
+        }
+
+        // Reset form
+        $('#paymentForm')[0].reset();
+      } else {
+        showAlert('error', 'خطأ: ' + (response.message || 'فشل في معالجة الدفع'), 7000);
+      }
+    },
+    error: function (xhr) {
+      let errorMessage = 'فشل في معالجة الدفع';
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        errorMessage = xhr.responseJSON.message;
+      } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+        errorMessage = Object.values(xhr.responseJSON.errors).flat().join('\n');
+      }
+      showAlert('error', 'خطأ: ' + errorMessage, 7000);
+    },
+    complete: function () {
+      // Reset button state
+      $('#confirmPayment').prop('disabled', false).html('<i class="ti ti-check me-1"></i>Confirm Payment');
+    }
+  });
+});

@@ -82,7 +82,16 @@ $(function () {
     $.ajax({
       url: baseUrl + 'admin/tasks/data',
       type: 'GET',
-      data: { search: search, filter: filter, page: page },
+      data: {
+        from_date: start_from,
+        to_date: end_to,
+        owner: $('#owner-fillter').val(),
+        team: $('#team-fillter').val(),
+        driver: $('#driver-fillter').val(),
+        search: search,
+        filter: filter,
+        page: page
+      },
       success: function (response) {
         $('.body-container-block').unblock({
           onUnblock: function () {
@@ -394,7 +403,7 @@ $(function () {
                   <li><strong>Name:</strong> ${task.data.driver.name}</li>
                   <li class="my-2"><strong>Phone:</strong> ${task.data.driver.phone}</li>
                   <li><strong>Email:</strong> ${task.data.driver.email}</li>
-                  <li><a href="https://wa.me/${task.data.whatsapp}" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
+                  <li><a href="https://wa.me/${task.data.driver.whatsapp}" target="_blank" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
                 </ul>
               </div>
 
@@ -668,6 +677,111 @@ $(function () {
 
   $('#search-team').on('input', function () {
     loadTasks(1, $(this).val());
+  });
+
+  /* ===========  Advanced Filtering System   ===========*/
+
+  // Initialize filtering variables
+  let start_from = moment().startOf('day').format('YYYY-MM-DD');
+  let end_to = moment().endOf('day').format('YYYY-MM-DD');
+
+  // Initialize date range picker
+  $('#dateRange').daterangepicker(
+    {
+      startDate: start_from,
+      endDate: end_to,
+      locale: {
+        format: 'YYYY-MM-DD',
+        separator: ' to ',
+        applyLabel: 'Apply',
+        cancelLabel: 'Cancel',
+        fromLabel: 'From',
+        toLabel: 'To',
+        customRangeLabel: 'Custom',
+        weekLabel: 'W',
+        daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+        monthNames: [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December'
+        ],
+        firstDay: 1
+      },
+      ranges: {
+        Today: [moment(), moment()],
+        Yesterday: [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+        'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+        'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+        'This Month': [moment().startOf('month'), moment().endOf('month')],
+        'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+      }
+    },
+    function (start, end, label) {
+      start_from = start.format('YYYY-MM-DD');
+      end_to = end.format('YYYY-MM-DD');
+      console.log('Date range changed:', start_from, 'to', end_to);
+
+      // Reload map data with new filters
+      loadTasks();
+    }
+  );
+
+  // Initialize Select2 for drivers dropdown
+  var select_driver = $('.task-drivers-select2');
+  if (select_driver.length) {
+    var $this = select_driver;
+
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'All drivers',
+      dropdownParent: $this.parent(),
+      closeOnSelect: false,
+      ajax: {
+        url: baseUrl + 'admin/drivers/git',
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return {
+            search: params.term
+          };
+        },
+        processResults: function (data) {
+          console.log(data);
+          return {
+            results: data.map(driver => ({
+              id: driver.id,
+              text: driver.name
+            }))
+          };
+        },
+        cache: true
+      }
+    });
+  }
+
+  // Initialize Select2 for teams dropdown
+  var select_team = $('.task-teams-select2');
+  if (select_team.length) {
+    select_team.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: 'All teams',
+      dropdownParent: select_team.parent()
+    });
+  }
+
+  // Filter change handlers
+  $('#owner-fillter, #team-fillter, #driver-fillter').on('change', function () {
+    console.log('Filter changed:', $(this).attr('id'), $(this).val());
+    loadTasks();
   });
 
   loadTasks();

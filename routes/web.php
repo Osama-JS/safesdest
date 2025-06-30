@@ -315,6 +315,9 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
         Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');
         Route::get('/wallets/transaction/show/{id}/{name}', [WalletsController::class, 'show'])->name('wallets.transaction');
+        Route::get('/wallets/driver/show/{id}', [WalletsController::class, 'driverShow'])->name('wallets.driver.show');
+        Route::post('/wallets/driver/payment', [WalletsController::class, 'processDriverPayment'])->name('wallets.driver.payment');
+        Route::get('/wallets/transactions/{id}', [WalletsController::class, 'getDataTransactions'])->name('wallets.transactions');
         Route::get('/wallets/transaction/data', [WalletsController::class, 'getDataTransactions'])->name('wallets.transaction.data');
         Route::post('/wallets/transaction/store', [WalletsController::class, 'storeTransaction'])->name('wallets.transaction.store');
         Route::get('/wallets/transaction/edit/{id}', [WalletsController::class, 'editTransaction'])->name('wallets.transaction.edit');
@@ -339,6 +342,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/teams/drivers/', [TeamsController::class, 'getTeamDrivers'])->name('teams.drivers');
         Route::get('/teams/tasks/', [TeamsController::class, 'getTeamTasks'])->name('teams.tasks');
         Route::get('/teams/transactions/', [TeamsController::class, 'getTeamTransactions'])->name('teams.transactions');
+        Route::post('/teams/{team}/pay-transactions', [TeamsController::class, 'processTeamPayment'])->name('teams.pay.transactions');
         Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.edit');
         Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
         Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');

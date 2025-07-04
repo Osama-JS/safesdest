@@ -69,6 +69,8 @@ class WalletController extends Controller
     }
 
     $totalFiltered = $query->count();
+
+
     $wallets = $query
       ->offset($start)
       ->limit($limit)

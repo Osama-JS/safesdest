@@ -182,8 +182,9 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/ads', [App\Http\Controllers\customer\AdsController::class, 'index'])->name('customer.ads.index');
         Route::get('/ads/data', [App\Http\Controllers\customer\AdsController::class, 'getData'])->name('customer.ads.data');
         Route::get('/ads/show/{id}', [App\Http\Controllers\customer\AdsController::class, 'show'])->name('customer.ads.show');
-        Route::post('/ads/{ad}/offers/{offer}/accept', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.accept-offer');
-        Route::post('/ads/{ad}/offers/{offer}/reject', [App\Http\Controllers\customer\AdsController::class, 'rejectOffer'])->name('customer.ads.reject-offer');
+        Route::get('/ads/offers/show/', [App\Http\Controllers\customer\AdsController::class, 'getOffers'])->name('customer.offers.data');
+        Route::get('/ads/offers/accept/{id}', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.offers.accept');
+        Route::get('/ads/offers/retract/{id}', [App\Http\Controllers\customer\AdsController::class, 'retractOffer'])->name('customer.ads.offers.retract');
       });
     });
 

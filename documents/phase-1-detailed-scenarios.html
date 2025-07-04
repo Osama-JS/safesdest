@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سيناريوهات إغلاق الإعلانات وإدارة المهام - خطة محدثة</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+      }
+
+      .main-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header-section {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+      }
+
+      .content-section {
+        padding: 2rem;
+      }
+
+      .question-badge {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 1rem;
+      }
+
+      .section-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-left: 5px solid #3498db;
+        transition: transform 0.3s ease;
+      }
+
+      .section-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-card.question {
+        border-left-color: #e74c3c;
+      }
+
+      .section-card.answer {
+        border-left-color: #27ae60;
+      }
+
+      .section-card.proposal {
+        border-left-color: #f39c12;
+      }
+
+      .section-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .section-title i {
+        margin-left: 0.5rem;
+      }
+
+      .scenario-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #3498db;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .scenario-item.option1 {
+        border-left-color: #e74c3c;
+      }
+
+      .scenario-item.option2 {
+        border-left-color: #f39c12;
+      }
+
+      .scenario-item.recommended {
+        border-left-color: #27ae60;
+        background: #f8fff8;
+      }
+
+      .code-block {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 1.5rem;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        margin: 1rem 0;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+
+      .code-block .comment {
+        color: #68d391;
+      }
+
+      .code-block .keyword {
+        color: #63b3ed;
+      }
+
+      .code-block .string {
+        color: #fbb6ce;
+      }
+
+      .workflow-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .workflow-number {
+        background: #3498db;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-left: 1rem;
+        flex-shrink: 0;
+      }
+
+      .comparison-table {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .comparison-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .comparison-table tbody tr:hover {
+        background-color: #f8f9fa;
+      }
+
+      .pros-cons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      .pros {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 10px;
+        padding: 1rem;
+      }
+
+      .cons {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 10px;
+        padding: 1rem;
+      }
+
+      .notification-flow {
+        background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 1rem 0;
+      }
+
+      .updated-plan {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        margin: 2rem 0;
+      }
+
+      .approval-section {
+        background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-container">
+        <!-- Header -->
+        <div class="header-section">
+          <div class="question-badge">
+            <i class="bi bi-question-circle-fill me-2"></i>
+            أسئلة مهمة تحتاج إجابات
+          </div>
+          <h1 class="mb-3">
+            <i class="bi bi-diagram-3-fill me-3"></i>
+            سيناريوهات إغلاق الإعلانات وإدارة المهام
+          </h1>
+          <h3 class="mb-0 opacity-75">تحليل مفصل للسيناريوهات المختلفة وخطة التنفيذ المحدثة</h3>
+          <p class="mt-3 mb-0">
+            <i class="bi bi-lightbulb me-2"></i>
+            إجابات شاملة على الأسئلة المطروحة مع اقتراحات محسنة
+          </p>
+        </div>
+
+        <!-- Content -->
+        <div class="content-section">
+          <!-- Question 1 -->
+          <div class="section-card question">
+            <h3 class="section-title">
+              <i class="bi bi-1-circle-fill text-danger"></i>
+              السؤال الأول: ماذا يحدث للمهمة عند إغلاق الإعلان يدوياً؟
+            </h3>
+
+            <div class="alert alert-info">
+              <h6><i class="bi bi-info-circle me-2"></i>السيناريو الحالي:</h6>
+              <p class="mb-0">
+                عند قبول عرض → تحديث حالة المهمة إلى 'assign' → وضع السعر → بدء تنفيذ المهمة
+                <br />
+                <strong>السؤال:</strong> ماذا يحدث عند الإغلاق اليدوي للإعلان؟
+              </p>
+            </div>
+          </div>
+
+          <!-- Answer 1 -->
+          <div class="section-card answer">
+            <h3 class="section-title">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              الإجابة والتحليل: اقتراحك ممتاز ومنطقي
+            </h3>
+
+            <div class="alert alert-success">
+              <h6><i class="bi bi-thumbs-up me-2"></i>تقييم اقتراحك:</h6>
+              <p class="mb-0">
+                اقتراحك بمنح خيارين لصاحب المهمة عند الإغلاق اليدوي هو <strong>ممتاز ومنطقي جداً</strong>
+                ويغطي جميع الحالات المحتملة بطريقة مرنة وعملية.
+              </p>
+            </div>
+
+            <h5>الخيارات المقترحة (موافق عليها):</h5>
+
+            <div class="scenario-item option1">
+              <h6><i class="bi bi-x-circle me-2"></i>الخيار الأول: إلغاء المهمة</h6>
+              <ul>
+                <li><strong>الحالة الجديدة:</strong> 'cancelled'</li>
+                <li><strong>المعنى:</strong> المهمة ملغية نهائياً</li>
+                <li><strong>الاستخدام:</strong> عندما لا تعود المهمة مطلوبة</li>
+                <li><strong>التسجيل:</strong> في history مع سبب الإلغاء</li>
+              </ul>
+            </div>
+
+            <div class="scenario-item option2">
+              <h6><i class="bi bi-clock me-2"></i>الخيار الثاني: تعليق المهمة</h6>
+              <ul>
+                <li><strong>الحالة الجديدة:</strong> 'pending'</li>
+                <li><strong>المعنى:</strong> المهمة معلقة مؤقتاً</li>
+                <li><strong>الاستخدام:</strong> عندما تحتاج تعديل التسعير أو الشروط</li>
+                <li><strong>المتطلب:</strong> إعادة تحديد طريقة التسعير</li>
+                <li><strong>التسجيل:</strong> في history مع سبب التعليق</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Enhanced Proposal -->
+          <div class="section-card proposal">
+            <h3 class="section-title">
+              <i class="bi bi-lightbulb-fill text-warning"></i>
+              اقتراح محسن: إضافة خيار ثالث
+            </h3>
+
+            <div class="scenario-item recommended">
+              <h6><i class="bi bi-arrow-repeat me-2"></i>الخيار الثالث المقترح: إعادة الإعلان</h6>
+              <ul>
+                <li><strong>الحالة الجديدة:</strong> 'advertised' (مع إعادة فتح الإعلان)</li>
+                <li><strong>المعنى:</strong> إعادة فتح الإعلان بنفس الشروط أو شروط معدلة</li>
+                <li><strong>الاستخدام:</strong> عندما لا تعجب العروض الحالية</li>
+                <li>
+                  <strong>المميزات:</strong>
+                  <ul>
+                    <li>إمكانية تعديل نطاق الأسعار</li>
+                    <li>إمكانية تعديل وصف الإعلان</li>
+                    <li>إعادة تعيين تاريخ انتهاء جديد</li>
+                    <li>حذف العروض السابقة أو الاحتفاظ بها</li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pros-cons">
+              <div class="pros">
+                <h6><i class="bi bi-check-lg me-2"></i>مميزات الخيار الثالث:</h6>
+                <ul class="mb-0">
+                  <li>مرونة أكبر في إدارة الإعلانات</li>
+                  <li>عدم فقدان المهمة</li>
+                  <li>إمكانية تحسين شروط الإعلان</li>
+                  <li>جذب عروض أفضل</li>
+                </ul>
+              </div>
+              <div class="cons">
+                <h6><i class="bi bi-x-lg me-2"></i>اعتبارات:</h6>
+                <ul class="mb-0">
+                  <li>قد يطيل عملية إنجاز المهمة</li>
+                  <li>يحتاج واجهة إضافية للتعديل</li>
+                  <li>قد يربك السائقين</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Implementation Code -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-code-slash"></i>
+              كود التنفيذ المقترح
+            </h3>
+
+            <div class="code-block">
+              <span class="comment">// وظيفة إغلاق الإعلان مع الخيارات</span>
+              <span class="keyword">public function</span> closeAd(Request $request, $id) { $validator =
+              Validator::make($request->all(), [ '<span class="string">action</span>' => '<span class="string"
+                >required|in:cancel,pending,re_advertise</span
+              >', '<span class="string">reason</span>' => '<span class="string">required|string|max:500</span>', '<span
+                class="string"
+                >new_min_price</span
+              >' => '<span class="string">nullable|numeric|min:1</span>', '<span class="string">new_max_price</span>' =>
+              '<span class="string">nullable|numeric|min:1</span>', '<span class="string">new_description</span>' =>
+              '<span class="string">nullable|string|max:1000</span>' ]); DB::beginTransaction();
+              <span class="keyword">try</span> { $ad = Task_Ad::with('<span class="string">task</span
+              >')->findOrFail($id); $task = $ad->task;
+
+              <span class="keyword">switch</span> ($request->action) { <span class="keyword">case</span> '<span
+                class="string"
+                >cancel</span
+              >': $task->update(['<span class="string">status</span>' => '<span class="string">cancelled</span>']);
+              $ad->update([ '<span class="string">status</span>' => '<span class="string">closed</span>', '<span
+                class="string"
+                >closure_reason</span
+              >' => '<span class="string">cancelled_by_owner</span>' ]); <span class="keyword">break</span>;
+
+              <span class="keyword">case</span> '<span class="string">pending</span>': $task->update(['<span
+                class="string"
+                >status</span
+              >' => '<span class="string">pending</span>']); $ad->update([ '<span class="string">status</span>' =>
+              '<span class="string">closed</span>', '<span class="string">closure_reason</span>' => '<span
+                class="string"
+                >pending_for_modification</span
+              >' ]); <span class="keyword">break</span>;
+
+              <span class="keyword">case</span> '<span class="string">re_advertise</span>':
+              <span class="comment">// تحديث الإعلان بالشروط الجديدة</span>
+              $updateData = [ '<span class="string">status</span>' => '<span class="string">running</span>', '<span
+                class="string"
+                >expires_at</span
+              >' => Carbon::now()->addHours(24) ];
+
+              <span class="keyword">if</span> ($request->new_min_price) { $updateData['<span class="string"
+                >lowest_price</span
+              >'] = $request->new_min_price; } <span class="keyword">if</span> ($request->new_max_price) {
+              $updateData['<span class="string">highest_price</span>'] = $request->new_max_price; }
+              <span class="keyword">if</span> ($request->new_description) { $updateData['<span class="string"
+                >description</span
+              >'] = $request->new_description; } $ad->update($updateData); $task->update(['<span class="string"
+                >status</span
+              >' => '<span class="string">advertised</span>']); <span class="keyword">break</span>; }
+
+              <span class="comment">// تسجيل في التاريخ</span>
+              $task->history()->create([ '<span class="string">action_type</span>' => '<span class="string"
+                >ad_closed</span
+              >', '<span class="string">description</span>' => "Ad closed with action: {$request->action}. Reason:
+              {$request->reason}", '<span class="string">ip</span>' => IpHelper::getUserIpAddress(), '<span
+                class="string"
+                >user_id</span
+              >' => Auth::id() ]); DB::commit(); <span class="keyword">return</span> response()->json(['<span
+                class="string"
+                >status</span
+              >' => 1, '<span class="string">success</span>' => __('<span class="string">Ad closed successfully</span
+              >')]); } <span class="keyword">catch</span> (Exception $ex) { DB::rollBack();
+              <span class="keyword">return</span> response()->json(['<span class="string">status</span>' => 2, '<span
+                class="string"
+                >error</span
+              >' => $ex->getMessage()]); } }
+            </div>
+          </div>
+
+          <!-- Question 2 -->
+          <div class="section-card question">
+            <h3 class="section-title">
+              <i class="bi bi-2-circle-fill text-danger"></i>
+              السؤال الثاني: ماذا يحدث للإعلانات بعد الإغلاق والإشعارات؟
+            </h3>
+
+            <div class="alert alert-info">
+              <h6><i class="bi bi-info-circle me-2"></i>الأسئلة المطروحة:</h6>
+              <ul class="mb-0">
+                <li>ماذا يحدث للإعلانات بعد إغلاقها (يدوي/تلقائي)؟</li>
+                <li>كيف يتم إشعار أصحاب العروض بالقبول/الرفض؟</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Answer 2 -->
+          <div class="section-card answer">
+            <h3 class="section-title">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              الإجابة: استراتيجية شاملة لإدارة الإعلانات والإشعارات
+            </h3>
+
+            <h5>1. ما يحدث للإعلانات بعد الإغلاق:</h5>
+
+            <div class="workflow-step">
+              <div class="workflow-number">1</div>
+              <div>
+                <h6>الاحتفاظ بالبيانات للأرشفة</h6>
+                <ul>
+                  <li>عدم حذف الإعلان أو العروض</li>
+                  <li>تغيير الحالة إلى 'closed'</li>
+                  <li>تسجيل تاريخ ووقت الإغلاق</li>
+                  <li>تسجيل سبب الإغلاق</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="workflow-number">2</div>
+              <div>
+                <h6>تحديث حالات العروض</h6>
+                <ul>
+                  <li>العرض المقبول: حالة 'accepted'</li>
+                  <li>العروض الأخرى: حالة 'rejected'</li>
+                  <li>تسجيل تاريخ القبول/الرفض</li>
+                  <li>تسجيل سبب الرفض إن وجد</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="workflow-number">3</div>
+              <div>
+                <h6>إرسال الإشعارات</h6>
+                <ul>
+                  <li>إشعار السائق المقبول عرضه</li>
+                  <li>إشعار السائقين المرفوضين</li>
+                  <li>إشعار صاحب المهمة بالإغلاق</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="workflow-number">4</div>
+              <div>
+                <h6>الأرشفة والتقارير</h6>
+                <ul>
+                  <li>نقل البيانات لجداول الأرشيف (اختياري)</li>
+                  <li>إنشاء تقارير الأداء</li>
+                  <li>حفظ الإحصائيات</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+                <!-- Notification System -->
+                <div class="notification-flow">
+                    <h4><i class="bi bi-bell-fill me-2"></i>نظام الإشعارات المقترح</h4>
+
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <h6><i class="bi bi-check-circle me-2"></i>للسائق المقبول:</h6>
+                            <ul>
+                                <li>إشعار فوري (Push/SMS)</li>
+                                <li>إيميل تفصيلي</li>
+                                <li>تفاصيل المهمة كاملة</li>
+                                <li>معلومات التواصل</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="bi bi-x-circle me-2"></i>للسائقين المرفوضين:</h6>
+                            <ul>
+                                <li>إشعار مهذب</li>
+                                <li>شكر على المشاركة</li>
+                                <li>دعوة لإعلانات أخرى</li>
+                                <li>نصائح لتحسين العروض</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="bi bi-person-check me-2"></i>لصاحب المهمة:</h6>
+                            <ul>
+                                <li>تأكيد الإغلاق</li>
+                                <li>ملخص العروض</li>
+                                <li>تفاصيل السائق المختار</li>
+                                <li>الخطوات التالية</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Database Updates -->
+                <div class="section-card">
+                    <h3 class="section-title">
+                        <i class="bi bi-database-fill-add"></i>
+                        تحديثات قاعدة البيانات المطلوبة
+                    </h3>
+
+                    <div class="table-responsive">
+                        <table class="comparison-table table">
+                            <thead>
+                                <tr>
+                                    <th>الجدول</th>
+                                    <th>الحقل الجديد</th>
+                                    <th>النوع</th>
+                                    <th>الوصف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="4">tasks_ads</td>
+                                    <td>expires_at</td>
+                                    <td>timestamp</td>
+                                    <td>تاريخ انتهاء الإعلان</td>
+                                </tr>
+                                <tr>
+                                    <td>closed_at</td>
+                                    <td>timestamp</td>
+                                    <td>تاريخ إغلاق الإعلان</td>
+                                </tr>
+                                <tr>
+                                    <td>closed_by</td>
+                                    <td>bigint unsigned</td>
+                                    <td>معرف من أغلق الإعلان</td>
+                                </tr>
+                                <tr>
+                                    <td>closure_reason</td>
+                                    <td>varchar(255)</td>
+                                    <td>سبب الإغلاق</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="3">tasks_offers</td>
+                                    <td>status</td>
+                                    <td>enum</td>
+                                    <td>pending, accepted, rejected</td>
+                                </tr>
+                                <tr>
+                                    <td>rejected_at</td>
+                                    <td>timestamp</td>
+                                    <td>تاريخ الرفض</td>
+                                </tr>
+                                <tr>
+                                    <td>rejection_reason</td>
+                                    <td>varchar(255)</td>
+                                    <td>سبب الرفض</td>
+                                </tr>
+                                <tr>
+                                    <td>tasks</td>
+                                    <td>status</td>
+                                    <td>enum update</td>
+                                    <td>إضافة 'pending' للحالات الموجودة</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Updated Implementation Plan -->
+                <div class="updated-plan">
+                    <h4><i class="bi bi-calendar-check me-2"></i>الخطة المحدثة للتنفيذ</h4>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>التغييرات الإضافية:</h6>
+                            <ul>
+                                <li>✅ إضافة 3 خيارات لإغلاق الإعلان</li>
+                                <li>✅ نظام إشعارات شامل</li>
+                                <li>✅ تحديث حالات العروض</li>
+                                <li>✅ أرشفة البيانات</li>
+                                <li>✅ واجهة إغلاق محسنة</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>الجدول الزمني المحدث:</h6>
+                            <ul>
+                                <li><strong>اليوم 1-2:</strong> إصلاح الأخطاء الحرجة</li>
+                                <li><strong>اليوم 3-4:</strong> تحديث قاعدة البيانات</li>
+                                <li><strong>اليوم 5-7:</strong> تطوير واجهة الإغلاق</li>
+                                <li><strong>اليوم 8-9:</strong> نظام الإشعارات</li>
+                                <li><strong>اليوم 10:</strong> الاختبار النهائي</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="section-card">
+                    <h3 class="section-title">
+                        <i class="bi bi-table"></i>
+                        مقارنة الخيارات الثلاثة لإغلاق الإعلان
+                    </h3>
+
+                    <div class="table-responsive">
+                        <table class="comparison-table table">
+                            <thead>
+                                <tr>
+                                    <th>الخيار</th>
+                                    <th>حالة المهمة</th>
+                                    <th>حالة الإعلان</th>
+                                    <th>الاستخدام</th>
+                                    <th>المميزات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>إلغاء المهمة</strong></td>
+                                    <td>cancelled</td>
+                                    <td>closed</td>
+                                    <td>عدم الحاجة للمهمة</td>
+                                    <td>إنهاء نهائي، توفير الوقت</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>تعليق المهمة</strong></td>
+                                    <td>pending</td>
+                                    <td>closed</td>
+                                    <td>تعديل الشروط</td>
+                                    <td>مرونة، إمكانية التطوير</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>إعادة الإعلان</strong></td>
+                                    <td>advertised</td>
+                                    <td>running</td>
+                                    <td>عروض غير مناسبة</td>
+                                    <td>عروض أفضل، تحسين الشروط</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Final Approval -->
+                <div class="approval-section">
+                    <h4>
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        الخطة النهائية جاهزة للموافقة
+                    </h4>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>ما تم تحديثه:</h6>
+                            <ul class="text-start">
+                                <li>✅ إجابة شاملة على جميع الأسئلة</li>
+                                <li>✅ تقييم إيجابي لاقتراحاتك</li>
+                                <li>✅ إضافة خيار ثالث محسن</li>
+                                <li>✅ نظام إشعارات متكامل</li>
+                                <li>✅ استراتيجية أرشفة البيانات</li>
+                                <li>✅ خطة تنفيذ محدثة</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>النتائج المتوقعة:</h6>
+                            <ul class="text-start">
+                                <li>🎯 حل جميع المشاكل الحرجة</li>
+                                <li>🔧 نظام إدارة إعلانات متطور</li>
+                                <li>📱 إشعارات فورية للمستخدمين</li>
+                                <li>📊 أرشفة وتقارير شاملة</li>
+                                <li>🚀 أساس قوي للمراحل التالية</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h5 class="text-success">
+                            <i class="bi bi-hand-thumbs-up me-2"></i>
+                            اقتراحاتك ممتازة والخطة محدثة بناءً عليها
+                        </h5>
+                        <p class="mb-0">
+                            <strong>جاهز للبدء فور موافقتك!</strong>
+                            <br>
+                            الخطة تتضمن جميع اقتراحاتك مع تحسينات إضافية لضمان نظام متكامل وفعال.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
+</html>

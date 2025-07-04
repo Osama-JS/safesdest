@@ -37,11 +37,11 @@ class TasksController extends Controller
     $columns = [
       1 => 'id',
       2 => 'id',
-      3 => 'pickup_address',
-      4 => 'delivery_address',
-      5 => 'driver_name',
-      6 => 'vehicle_info',
-      7 => 'total_price',
+      3 => 'total_price',
+      4 => 'pickup_address',
+      5 => 'delivery_address',
+      6 => 'driver_name',
+      7 => 'vehicle_info',
       8 => 'status',
       9 => 'created_at'
     ];
@@ -106,7 +106,7 @@ class TasksController extends Controller
       // تحديد معلومات المركبة
       $vehicleInfo = '';
       if ($task->vehicle_size && $task->vehicle_size->type && $task->vehicle_size->type->vehicle) {
-        $vehicleInfo = $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->name;
+        $vehicleInfo = $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name;
       }
 
       // تحديد إمكانية التتبع
@@ -125,7 +125,7 @@ class TasksController extends Controller
         'fake_id'          => ++$fakeId,
         'pickup_address'   => $task->pickup->address ?? 'N/A',
         'delivery_address' => $task->delivery->address ?? 'N/A',
-        'driver_name'      => $task->driver->name ?? null,
+        'driver'      => $task->driver ?? null,
         'vehicle_info'     => $vehicleInfo,
         'total_price'      => $task->total_price ? number_format($task->total_price, 2) . ' SAR' : 'N/A',
         'status'           => $task->status,
@@ -554,15 +554,22 @@ class TasksController extends Controller
         ]
       ];
 
-      if ($data['service_commission']) {
+
+
+
+      if (isset($data['service_commission']) && $data['service_commission'] !== '') {
         if ($data['service_commission'] > $task['total_price']) {
           DB::rollBack();
           return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
         }
+
         $task['commission_type'] = 'manual';
         $task['commission'] = $data['service_commission'];
         $data['manual_commission'] = $data['service_commission'];
       }
+
+
+
 
 
       if ($taskData['method'] == 0) {

@@ -5,6 +5,27 @@
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
       "slug": "customer.dashboard"
+    },
+    {
+      "url": "customer/tasks",
+      "name": "My Tasks",
+      "icon": "menu-icon tf-icons ti ti-truck-delivery",
+      "slug": "customer.tasks.index",
+      "isactive": "task-isactive"
+    },
+    {
+      "url": "customer/wallet",
+      "name": "My Wallet",
+      "icon": "menu-icon tf-icons ti ti-wallet",
+      "slug": "customer.wallet.index",
+      "isactive": "wallets-isactive"
+    },
+    {
+      "url": "customer/ads",
+      "name": "My Tasks Ads",
+      "icon": "menu-icon tf-icons ti ti-speakerphone",
+      "slug": "customer.ads.index",
+      "isactive": "ad-isactive"
     }
   ]
 }

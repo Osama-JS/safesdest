@@ -1,28 +1,62 @@
+/**
+ * Page User List
+ */
+
+'use strict';
+import { deleteRecord, showFormModal } from '../ajax';
+
 $(function () {
-  'use strict';
+  var dt_data_table = $('.datatables-users');
 
-  var dt_wallet_table = $('.datatables-wallet');
+  function toggleMaturityTime() {
+    if ($('#debit').is(':checked')) {
+      $('.btn-credit').addClass('btn-outline-success').removeClass('btn-success');
+      $('.btn-debit').addClass('btn-danger').removeClass('btn-outline-danger');
 
-  // Wallet Transactions DataTable
-  if (dt_wallet_table.length) {
-    var dt_wallet = dt_wallet_table.DataTable({
+      $('#maturity-time-group').show();
+    } else {
+      $('.btn-credit').addClass('btn-success').removeClass('btn-outline-success');
+      $('.btn-debit').addClass('btn-outline-danger').removeClass('btn-danger');
+
+      $('#maturity-time-group').hide();
+    }
+  }
+
+  $('#credit, #debit').on('change', toggleMaturityTime);
+
+  // استدعاء أولي عند تحميل الصفحة
+  toggleMaturityTime();
+
+  $.ajaxSetup({
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+  });
+
+  var start_from = moment().startOf('month').format('YYYY-MM-DD');
+  var end_to = moment().endOf('month').format('YYYY-MM-DD');
+
+  if (dt_data_table.length) {
+    var dt_data = dt_data_table.DataTable({
+      processing: true,
+      serverSide: true,
       ajax: {
         url: baseUrl + 'customer/wallet/data',
         data: function (d) {
-          d.from_date = $('#from_date').val();
-          d.to_date = $('#to_date').val();
-          d.status = $('#type_filter').val();
+          d.from_date = start_from;
+          d.to_date = end_to;
+          d.search = $('#searchFilter').val();
+          d.status = $('#statusFilter').val();
+          d.wallet = walletId;
         }
       },
       columns: [
         { data: '' },
         { data: 'fake_id' },
         { data: 'amount' },
-        { data: 'transaction_type' },
         { data: 'description' },
-        { data: 'task' },
         { data: 'maturity' },
-        { data: 'status' },
+        { data: 'task' },
         { data: 'created_at' }
       ],
       columnDefs: [
@@ -30,262 +64,162 @@ $(function () {
           className: 'control',
           searchable: false,
           orderable: false,
-          responsivePriority: 2,
+          responsivePriority: 1,
           targets: 0,
-          render: function (data, type, full, meta) {
+          render: function () {
             return '';
           }
         },
         {
           targets: 1,
           searchable: false,
-          visible: false
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return `<span>${full.sequence} </span>`;
+          }
         },
         {
           targets: 2,
           render: function (data, type, full, meta) {
-            var colorClass = full.transaction_type === 'Credit' ? 'text-success' : 'text-danger';
-            return `<span class="${colorClass} fw-bold">${full.amount}</span>`;
+            return `<b><span class="${full.type === 'debit' ? 'text-danger' : 'text-success'}">${full.amount} SAR</span><b>`;
           }
         },
+
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            var badgeClass = full.transaction_type === 'Credit' ? 'bg-label-success' : 'bg-label-danger';
-            var icon = full.transaction_type === 'Credit' ? 'ti-arrow-up' : 'ti-arrow-down';
-            return `<span class="badge ${badgeClass}"><i class="ti ${icon} me-1"></i>${full.transaction_type}</span>`;
+            let imageBtn = '';
+            if (full.image) {
+              imageBtn = `
+                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="عرض الصورة">
+                  <i class="ti ti-photo"></i>
+                </button>
+              `;
+            }
+
+            return `
+              <span>${full.description}</span>
+              ${imageBtn}
+            `;
           }
         },
+
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span class="text-truncate" title="${full.description}">${full.description}</span>`;
+            return `<span>${full.maturity}</span>`;
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            if (full.task && full.task !== 'N/A') {
-              return `<a href="${baseUrl}customer/tasks/show/${full.task.replace('#', '')}" class="text-primary">${full.task}</a>`;
-            }
-            return '<span class="text-muted">N/A</span>';
+            return `<span>${full.task ? '#' + full.task : ''}</span>`;
           }
         },
+
         {
           targets: 6,
           render: function (data, type, full, meta) {
-            return full.maturity || '<span class="text-muted">N/A</span>';
-          }
-        },
-        {
-          targets: 7,
-          render: function (data, type, full, meta) {
-            var statusObj = {
-              'Pending': { title: 'Pending', class: 'bg-label-warning' },
-              'Completed': { title: 'Completed', class: 'bg-label-success' },
-              'Failed': { title: 'Failed', class: 'bg-label-danger' },
-              'Cancelled': { title: 'Cancelled', class: 'bg-label-secondary' }
-            };
-            return (
-              '<span class="badge ' +
-              (statusObj[full.status]?.class || 'bg-label-secondary') +
-              '">' +
-              (statusObj[full.status]?.title || full.status) +
-              '</span>'
-            );
-          }
-        },
-        {
-          targets: 8,
-          render: function (data, type, full, meta) {
-            return full.created_at;
+            return `<span>${full.created_at}</span>`;
           }
         }
       ],
-      order: [[1, 'desc']],
-      dom: '<"row mx-2"<"col-md-2"<"me-3"l>><"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0"fB>>>t<"row mx-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 10,
-      lengthMenu: [10, 25, 50, 75, 100],
-      buttons: [
-        {
-          extend: 'collection',
-          className: 'btn btn-label-secondary dropdown-toggle mx-3',
-          text: '<i class="ti ti-screen-share me-1 ti-xs"></i>Export',
-          buttons: [
-            {
-              extend: 'print',
-              text: '<i class="ti ti-printer me-2" ></i>Print',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              },
-              customize: function (win) {
-                $(win.document.body)
-                  .css('color', headingColor)
-                  .css('border-color', borderColor)
-                  .css('background-color', bodyBg);
-                $(win.document.body)
-                  .find('table')
-                  .addClass('compact')
-                  .css('color', 'inherit')
-                  .css('border-color', 'inherit')
-                  .css('background-color', 'inherit');
-              }
-            },
-            {
-              extend: 'csv',
-              text: '<i class="ti ti-file-text me-2" ></i>Csv',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'excel',
-              text: '<i class="ti ti-file-spreadsheet me-2"></i>Excel',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'pdf',
-              text: '<i class="ti ti-file-code-2 me-2"></i>Pdf',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'copy',
-              text: '<i class="ti ti-copy me-2" ></i>Copy',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            }
-          ]
+      order: [[1, 'asc']],
+      dom:
+        '<"row"' +
+        '<"col-md-2"l>' +
+        '<"col-md-10 d-flex justify-content-end"fB>' +
+        '>t' +
+        '<"row mt-3"' +
+        '<"col-md-6"i>' +
+        '<"col-md-6"p>' +
+        '>',
+      lengthMenu: [10, 25, 50, 100],
+      language: {
+        sLengthMenu: '_MENU_',
+        search: '',
+        searchPlaceholder: 'Search...',
+        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        paginate: {
+          next: '<i class="ti ti-chevron-right"></i>',
+          previous: '<i class="ti ti-chevron-left"></i>'
         }
+      },
+      buttons: [
+        `<label class='me-2'>
+            <input type="text" id="dateRange" class="form-control ms-2 mt-5" placeholder="Select Date Range">
+
+        </label>`,
+        `<label class='me-2'>
+        <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
+          <option value="">All</option>
+          <option value="credit">Credit</option>
+          <option value="debit">Debit</option>
+        </select>
+      </label>`,
+        ` <label class="me-2">
+              <input id="searchFilter" class="form-control d-inline-block w-auto ms-2 mt-5" placeholder="Search..." />
+          </label>`
       ],
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Transaction Details';
+              return 'Details of ' + data.name;
             }
           }),
           type: 'column',
           renderer: function (api, rowIdx, columns) {
-            var data = $.map(columns, function (col, i) {
-              return col.title !== ''
-                ? '<tr data-dt-row="' +
-                    col.rowIndex +
-                    '" data-dt-column="' +
-                    col.columnIndex +
-                    '">' +
-                    '<td>' +
-                    col.title +
-                    ':' +
-                    '</td> ' +
-                    '<td>' +
-                    col.data +
-                    '</td>' +
-                    '</tr>'
+            var data = $.map(columns, function (col) {
+              return col.title
+                ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                      <td>${col.title}:</td>
+                      <td>${col.data}</td>
+                   </tr>`
                 : '';
             }).join('');
-
-            return data ? $('<table class="table"/><tbody />').append(data) : false;
+            return $('<table class="table"/><tbody />').append(data);
           }
         }
       }
     });
+
+    $('#statusFilter').on('change', function () {
+      dt_data.draw();
+    });
+
+    $('#searchFilter').on('input', function () {
+      dt_data.draw();
+    });
+
+    document.dispatchEvent(new CustomEvent('dtUserReady', { detail: dt_data }));
   }
 
-  // Date range picker
-  $('#from_date, #to_date').datepicker({
-    format: 'yyyy-mm-dd',
-    autoclose: true,
-    todayHighlight: true
-  });
+  $('.dataTables_filter').hide();
 
-  // Filter handlers
-  $('#from_date, #to_date, #type_filter').on('change', function () {
-    dt_wallet.draw();
+  $('#dateRange').daterangepicker(
+    {
+      opens: 'left',
+      locale: {
+        format: 'DD MMM YYYY',
+        cancelLabel: 'Cancel',
+        applyLabel: 'Apply'
+      },
+      startDate: moment().startOf('month'),
+      endDate: moment().endOf('month')
+    },
+    function (start, end, label) {
+      const startDate = start.format('YYYY-MM-DD');
+      const endDate = end.format('YYYY-MM-DD');
+      start_from = startDate;
+      end_to = endDate;
+      dt_data.draw();
+    }
+  );
+
+  $(document).on('click', '.show-image', function () {
+    const imageUrl = $(this).data('image');
+    $('#modalImage').attr('src', imageUrl);
   });
 });

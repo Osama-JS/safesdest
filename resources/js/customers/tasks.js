@@ -23,11 +23,11 @@ $(function () {
         { data: '' },
         { data: 'fake_id' },
         { data: 'id' },
+        { data: 'total_price' },
         { data: 'pickup_address' },
         { data: 'delivery_address' },
         { data: 'driver_name' },
         { data: 'vehicle_info' },
-        { data: 'total_price' },
         { data: 'status' },
         { data: 'created_at' },
         { data: null }
@@ -57,33 +57,52 @@ $(function () {
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span class="text-truncate" title="${full.pickup_address}">${full.pickup_address}</span>`;
+            return `<span class="text-primary fw-bold rounded border px-2">${full.total_price}</span>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span class="text-truncate" title="${full.delivery_address}">${full.delivery_address}</span>`;
+            return `<span class="text-truncate" title="${full.pickup_address}">${full.pickup_address}</span>`;
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            return full.driver_name || '<span class="text-muted">Not assigned</span>';
+            return `<span class="text-truncate" title="${full.delivery_address}">${full.delivery_address}</span>`;
           }
         },
         {
           targets: 6,
           render: function (data, type, full, meta) {
-            return `<small class="text-muted">${full.vehicle_info}</small>`;
+            let whatsapp = '';
+            if (full.driver.whatsapp) {
+              const cleanNumber = full.driver.whatsapp.replace(/[+\s-]/g, '');
+              whatsapp = `
+                <a href="https://wa.me/${cleanNumber}" target="_blank" class="text-success text-decoration-none">
+                  <i class="ti ti-brand-whatsapp me-1"></i>${full.driver.whatsapp}
+                  <i class="ti ti-external-link ms-1" style="font-size: 0.8rem;"></i>
+                </a>
+              `;
+            } else {
+              whatsapp = `<span class="text-muted"><i class="ti ti-minus me-1"></i>Not provided</span>`;
+            }
+            return full.driver
+              ? `
+            <p class="p-0 m-0">Name: ${full.driver.name}</p>
+            <p class="p-0 m-0">Email: ${full.driver.email}</p>
+            ${whatsapp}
+            `
+              : '<span class="text-muted">Not assigned</span>';
           }
         },
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            return `<span class="text-success fw-bold">${full.total_price}</span>`;
+            return `<small class="text-muted">${full.vehicle_info}</small>`;
           }
         },
+
         {
           targets: 8,
           render: function (data, type, full, meta) {
@@ -115,24 +134,48 @@ $(function () {
           title: 'Actions',
           searchable: false,
           orderable: false,
+          // render: function (data, type, full, meta) {
+          //   var actions = `
+          //     <div class="d-flex align-items-center">
+          //       <a href="${userView}${full.id}" class="text-body">
+          //         <i class="ti ti-eye ti-sm me-2"></i>
+          //       </a>
+          //   `;
+
+          //   if (full.can_track) {
+          //     actions += `
+          //       <a href="${baseUrl}customer/tasks/track/${full.id}" class="text-warning">
+          //         <i class="ti ti-map-pin ti-sm me-2"></i>
+          //       </a>
+          //     `;
+          //   }
+
+          //   actions += `</div>`;
+          //   return actions;
+          // }
+
           render: function (data, type, full, meta) {
-            var actions = `
-              <div class="d-flex align-items-center">
-                <a href="${userView}${full.id}" class="text-body">
-                  <i class="ti ti-eye ti-sm me-2"></i>
-                </a>
-            `;
+            // تحديد إمكانية الحذف بناءً على الحالة
+            const canDelete =
+              ['in_progress', 'advertised'].includes(full.status) &&
+              full.payment !== 'completed' &&
+              full.payment !== 'pending' &&
+              !full.closed;
 
-            if (full.can_track) {
-              actions += `
-                <a href="${baseUrl}customer/tasks/track/${full.id}" class="text-warning">
-                  <i class="ti ti-map-pin ti-sm me-2"></i>
-                </a>
-              `;
-            }
+            return `
+              <div class="d-flex align-items-center gap-2">
 
-            actions += `</div>`;
-            return actions;
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}">Payment Task</a></li>
+                    <li><a href="${baseUrl}customer/tasks/track/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
+                    ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
+                  </ul>
+                </div>
+              </div>`;
           }
         }
       ],

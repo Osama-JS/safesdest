@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقييم الأمان - SafeDest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-section {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .security-card {
+            border-left: 4px solid #dc3545;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .security-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .vulnerability-high { border-left-color: #dc3545; background: #fff5f5; }
+        .vulnerability-medium { border-left-color: #ffc107; background: #fffbf0; }
+        .vulnerability-low { border-left-color: #28a745; background: #f8fff8; }
+        .security-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+        }
+        .nav-breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .code-snippet {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+        .threat-level-critical { color: #dc3545; }
+        .threat-level-high { color: #fd7e14; }
+        .threat-level-medium { color: #ffc107; }
+        .threat-level-low { color: #28a745; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <nav class="nav-breadcrumb mb-3">
+                <a href="index.html" class="text-white text-decoration-none">
+                    <i class="bi bi-house me-1"></i>التحليل الرئيسي
+                </a>
+                <span class="text-white mx-2">/</span>
+                <span class="text-white">تقييم الأمان</span>
+            </nav>
+            <h1 class="display-4">
+                <i class="bi bi-shield-exclamation me-3"></i>
+                تقييم الأمان الشامل
+            </h1>
+            <p class="lead">تحليل مفصل لنقاط الضعف الأمنية والتهديدات المحتملة</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- Security Score Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="security-score">
+                    <i class="bi bi-shield-check display-4 mb-2"></i>
+                    <h3>65/100</h3>
+                    <p>النتيجة الإجمالية</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="security-score">
+                    <i class="bi bi-exclamation-triangle display-4 mb-2"></i>
+                    <h3>8</h3>
+                    <p>نقاط ضعف مكتشفة</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="security-score">
+                    <i class="bi bi-bug display-4 mb-2"></i>
+                    <h3>3</h3>
+                    <p>مخاطر عالية</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="security-score">
+                    <i class="bi bi-patch-check display-4 mb-2"></i>
+                    <h3>12</h3>
+                    <p>إجراءات أمنية مطبقة</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authentication & Authorization -->
+        <div class="card security-card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-lock me-2"></i>المصادقة والتفويض
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ نقاط القوة</h5>
+                        <ul>
+                            <li><strong>Multi-Guard Authentication:</strong> نظام مصادقة متعدد للمستخدمين</li>
+                            <li><strong>Laravel Fortify:</strong> نظام مصادقة متقدم</li>
+                            <li><strong>Spatie Permissions:</strong> إدارة أذونات متطورة</li>
+                            <li><strong>Session Management:</strong> إدارة جلسات محسنة</li>
+                            <li><strong>Password Hashing:</strong> تشفير كلمات المرور</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚠️ نقاط الضعف</h5>
+                        <div class="alert alert-danger">
+                            <strong class="threat-level-high">خطر عالي:</strong> عدم وجود Two-Factor Authentication إجباري
+                        </div>
+                        <div class="alert alert-warning">
+                            <strong class="threat-level-medium">خطر متوسط:</strong> عدم وجود Account Lockout بعد محاولات فاشلة
+                        </div>
+                        <div class="alert alert-warning">
+                            <strong class="threat-level-medium">خطر متوسط:</strong> عدم تسجيل محاولات الدخول المشبوهة
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Protection -->
+        <div class="card security-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-database-lock me-2"></i>حماية البيانات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🔒 البيانات المشفرة</h5>
+                        <ul>
+                            <li>كلمات المرور (bcrypt)</li>
+                            <li>ملفات تعريف الارتباط</li>
+                            <li>جلسات المستخدمين</li>
+                        </ul>
+                        
+                        <h5 class="mt-3">🗄️ البيانات غير المشفرة</h5>
+                        <div class="alert alert-danger">
+                            <strong>خطر عالي:</strong> البيانات التالية غير مشفرة:
+                            <ul class="mb-0 mt-2">
+                                <li>أرقام الهواتف</li>
+                                <li>العناوين الشخصية</li>
+                                <li>البيانات المالية (المبالغ)</li>
+                                <li>معلومات الشركات</li>
+                                <li>إحداثيات GPS</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>📊 تحليل البيانات الحساسة</h5>
+                        <div class="code-snippet">
+// مثال على بيانات حساسة غير مشفرة
+customers table:
+- phone (أرقام هواتف واضحة)
+- company_address (عناوين شركات)
+- additional_data (بيانات إضافية)
+
+wallet_transactions table:
+- amount (مبالغ مالية واضحة)
+- description (أوصاف المعاملات)
+
+drivers table:
+- longitude, altitude (مواقع GPS)
+- address (عناوين شخصية)
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>توصية:</strong> استخدام Laravel's Encryption للبيانات الحساسة
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Validation -->
+        <div class="card security-card vulnerability-medium">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-check-square me-2"></i>التحقق من صحة المدخلات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ التحقق المطبق</h5>
+                        <ul>
+                            <li>Laravel Form Requests</li>
+                            <li>Validation Rules في Controllers</li>
+                            <li>CSRF Protection</li>
+                            <li>reCAPTCHA Integration</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚠️ نقاط ضعف محتملة</h5>
+                        <div class="alert alert-warning">
+                            <strong>خطر متوسط:</strong> عدم تنظيف المدخلات في بعض النقاط
+                        </div>
+                        <div class="code-snippet">
+// مثال على استعلام محتمل الخطر
+$query->where('name', 'LIKE', "%{$search}%")
+
+// يجب استخدام:
+$query->where('name', 'LIKE', '%' . addslashes($search) . '%')
+                        </div>
+                        <div class="alert alert-info">
+                            <strong>ملاحظة:</strong> Eloquent يوفر حماية من SQL Injection تلقائياً
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session & CSRF -->
+        <div class="card security-card vulnerability-low">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>إدارة الجلسات وحماية CSRF
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ الحماية المطبقة</h5>
+                        <ul>
+                            <li><strong>CSRF Tokens:</strong> في جميع النماذج</li>
+                            <li><strong>Session Regeneration:</strong> عند تسجيل الدخول</li>
+                            <li><strong>Secure Cookies:</strong> تشفير ملفات تعريف الارتباط</li>
+                            <li><strong>Session Timeout:</strong> انتهاء صلاحية تلقائي</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🔧 التحسينات المقترحة</h5>
+                        <div class="alert alert-info">
+                            <strong>تحسين منخفض الأولوية:</strong>
+                            <ul class="mb-0">
+                                <li>إضافة SameSite cookies</li>
+                                <li>تحسين Session Storage</li>
+                                <li>إضافة Session Monitoring</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload Security -->
+        <div class="card security-card vulnerability-high">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-cloud-upload me-2"></i>أمان رفع الملفات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>⚠️ مخاطر مكتشفة</h5>
+                        <div class="alert alert-danger">
+                            <strong class="threat-level-critical">خطر حرج:</strong> عدم وجود فحص شامل لأنواع الملفات
+                        </div>
+                        <div class="alert alert-danger">
+                            <strong class="threat-level-high">خطر عالي:</strong> عدم فحص محتوى الملفات
+                        </div>
+                        <div class="alert alert-warning">
+                            <strong class="threat-level-medium">خطر متوسط:</strong> عدم تحديد حد أقصى لحجم الملفات
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🛡️ التوصيات الأمنية</h5>
+                        <div class="code-snippet">
+// إضافة فحص أنواع الملفات
+$allowedTypes = ['jpg', 'png', 'pdf', 'doc'];
+$fileExtension = $file->getClientOriginalExtension();
+
+if (!in_array($fileExtension, $allowedTypes)) {
+    throw new ValidationException('نوع ملف غير مسموح');
+}
+
+// فحص MIME Type
+$mimeType = $file->getMimeType();
+$allowedMimes = ['image/jpeg', 'image/png', 'application/pdf'];
+
+if (!in_array($mimeType, $allowedMimes)) {
+    throw new ValidationException('نوع MIME غير مسموح');
+}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Security -->
+        <div class="card security-card vulnerability-medium">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-api me-2"></i>أمان API والطلبات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ الحماية الحالية</h5>
+                        <ul>
+                            <li>Laravel Sanctum للـ API tokens</li>
+                            <li>Rate Limiting أساسي</li>
+                            <li>CORS Configuration</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚠️ نقاط التحسين</h5>
+                        <div class="alert alert-warning">
+                            <strong>خطر متوسط:</strong> Rate Limiting غير شامل
+                        </div>
+                        <div class="code-snippet">
+// Rate Limiting الحالي
+RateLimiter::for('global', function () {
+    return Limit::perMinute(60)->by(request()->ip());
+});
+
+// يحتاج تحسين لـ:
+// - Rate limiting per user
+// - Different limits for different endpoints
+// - Burst protection
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Security -->
+        <div class="card security-card vulnerability-low">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-database me-2"></i>أمان قاعدة البيانات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ الحماية المطبقة</h5>
+                        <ul>
+                            <li><strong>Eloquent ORM:</strong> حماية من SQL Injection</li>
+                            <li><strong>Prepared Statements:</strong> استعلامات آمنة</li>
+                            <li><strong>Foreign Key Constraints:</strong> سلامة البيانات</li>
+                            <li><strong>Soft Deletes:</strong> حماية من الحذف العرضي</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🔧 التحسينات المقترحة</h5>
+                        <div class="alert alert-info">
+                            <ul class="mb-0">
+                                <li>إضافة Database Encryption</li>
+                                <li>تحسين Indexing للأداء</li>
+                                <li>إضافة Database Monitoring</li>
+                                <li>تطبيق Database Backup Strategy</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Recommendations -->
+        <div class="card security-card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-list-check me-2"></i>توصيات أمنية فورية
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="threat-level-critical">🚨 أولوية عالية (فورية)</h5>
+                        <ol>
+                            <li><strong>تشفير البيانات الحساسة</strong> في قاعدة البيانات</li>
+                            <li><strong>تحسين أمان رفع الملفات</strong> مع فحص شامل</li>
+                            <li><strong>تطبيق 2FA إجباري</strong> للمديرين</li>
+                            <li><strong>إضافة Account Lockout</strong> بعد محاولات فاشلة</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="threat-level-medium">⚠️ أولوية متوسطة</h5>
+                        <ol>
+                            <li><strong>تحسين Rate Limiting</strong> لجميع endpoints</li>
+                            <li><strong>إضافة Security Headers</strong> (HSTS, CSP)</li>
+                            <li><strong>تطبيق Input Sanitization</strong> شامل</li>
+                            <li><strong>إضافة Security Monitoring</strong> والتنبيهات</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="technologies.html" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-1"></i>السابق: التقنيات والمكتبات
+            </a>
+            <a href="gaps-analysis.html" class="btn btn-primary">
+                التالي: تحليل النواقص <i class="bi bi-arrow-left ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

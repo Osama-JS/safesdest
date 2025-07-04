@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>خطة تنفيذ المرحلة الأولى - إصلاح نظام إعلانات المهام</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+      }
+
+      .main-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header-section {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 3rem 2rem;
+        text-align: center;
+      }
+
+      .content-section {
+        padding: 2rem;
+      }
+
+      .priority-badge {
+        background: linear-gradient(135deg, #ff4757 0%, #c44569 100%);
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 1rem;
+      }
+
+      .section-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-left: 5px solid #007bff;
+        transition: transform 0.3s ease;
+      }
+
+      .section-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+      }
+
+      .section-title i {
+        margin-left: 0.5rem;
+        color: #007bff;
+      }
+
+      .change-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #28a745;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .change-item.critical {
+        border-left-color: #dc3545;
+      }
+
+      .change-item.warning {
+        border-left-color: #ffc107;
+      }
+
+      .change-item.info {
+        border-left-color: #17a2b8;
+      }
+
+      .code-block {
+        background: #2d3748;
+        color: #e2e8f0;
+        padding: 1.5rem;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        margin: 1rem 0;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+
+      .code-block .comment {
+        color: #68d391;
+      }
+
+      .code-block .keyword {
+        color: #63b3ed;
+      }
+
+      .code-block .string {
+        color: #fbb6ce;
+      }
+
+      .file-path {
+        background: #e3f2fd;
+        color: #1565c0;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
+
+      .impact-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .impact-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+      }
+
+      .impact-list li:before {
+        content: '⚡';
+        margin-left: 0.5rem;
+        font-size: 1.2rem;
+      }
+
+      .risk-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .risk-list li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+      }
+
+      .risk-list li:before {
+        content: '⚠️';
+        margin-left: 0.5rem;
+      }
+
+      .timeline-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+
+      .timeline-number {
+        background: #007bff;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-left: 1rem;
+        flex-shrink: 0;
+      }
+
+      .approval-section {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      .approval-section h4 {
+        color: #2d3436;
+        margin-bottom: 1rem;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #007bff;
+      }
+
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+      }
+
+      .table-custom {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .table-custom thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .table-custom tbody tr:hover {
+        background-color: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-container">
+        <!-- Header -->
+        <div class="header-section">
+          <div class="priority-badge">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            أولوية عالية - حرجة
+          </div>
+          <h1 class="mb-3">
+            <i class="bi bi-tools me-3"></i>
+            خطة تنفيذ المرحلة الأولى
+          </h1>
+          <h3 class="mb-0 opacity-75">إصلاح المشاكل الحرجة في نظام إعلانات المهام</h3>
+          <p class="mt-3 mb-0">
+            <i class="bi bi-calendar3 me-2"></i>
+            المدة المقدرة: أسبوع واحد |
+            <i class="bi bi-person-check me-2"></i>
+            يتطلب موافقة قبل البدء
+          </p>
+        </div>
+
+        <!-- Content -->
+        <div class="content-section">
+          <!-- Overview Stats -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">4</div>
+              <div class="stat-label">مشاكل حرجة</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">6</div>
+              <div class="stat-label">ملفات للتعديل</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">2</div>
+              <div class="stat-label">جداول قاعدة بيانات</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">3</div>
+              <div class="stat-label">Controllers للإصلاح</div>
+            </div>
+          </div>
+
+          <!-- Critical Issues to Fix -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-bug-fill"></i>
+              المشاكل الحرجة المطلوب إصلاحها
+            </h3>
+
+            <div class="change-item critical">
+              <h5><i class="bi bi-1-circle-fill me-2"></i>إصلاح خطأ retractOffer</h5>
+              <p>
+                <strong>الملف:</strong> <span class="file-path">app/Http/Controllers/admin/TasksAdsController.php</span>
+              </p>
+              <p>
+                <strong>المشكلة:</strong> منطق خاطئ في إلغاء قبول العروض - يقوم بتعيين accepted = true بدلاً من false
+              </p>
+              <div class="code-block">
+                <span class="comment">// الكود الحالي (خطأ)</span>
+                Task_Offire::where('task_ad_id', $offer->ad_id)->update(['accepted' =>
+                <span class="keyword">true</span>]);
+
+                <span class="comment">// الكود المصحح</span>
+                Task_Offire::where('task_ad_id', $offer->ad_id)->update(['accepted' =>
+                <span class="keyword">false</span>]);
+              </div>
+              <p><strong>التأثير:</strong> يسبب مشاكل في إدارة العروض وقد يؤدي لقبول عروض متعددة</p>
+            </div>
+
+            <div class="change-item critical">
+              <h5><i class="bi bi-2-circle-fill me-2"></i>إصلاح التحقق من الصلاحيات</h5>
+              <p>
+                <strong>الملف:</strong> <span class="file-path">app/Http/Controllers/admin/TasksAdsController.php</span>
+              </p>
+              <p><strong>المشكلة:</strong> استخدام user_id بدلاً من customer_id للمهام التي ينشئها العملاء</p>
+              <div class="code-block">
+                <span class="comment">// الكود الحالي (خطأ)</span>
+                <span class="keyword">if</span> ($offer->ad && $offer->ad->task && $offer->ad->task->user_id !==
+                Auth::id())
+
+                <span class="comment">// الكود المصحح</span>
+                <span class="keyword">if</span> ($offer->ad && $offer->ad->task && (($offer->ad->task->customer_id &&
+                $offer->ad->task->customer_id !== Auth::id()) || ($offer->ad->task->user_id && $offer->ad->task->user_id
+                !== Auth::id())))
+              </div>
+              <p><strong>التأثير:</strong> مشكلة أمنية - قد يسمح للمستخدمين بالوصول لإعلانات ليس لهم صلاحية عليها</p>
+            </div>
+
+            <div class="change-item critical">
+              <h5><i class="bi bi-3-circle-fill me-2"></i>إضافة آلية إغلاق الإعلان يدوياً</h5>
+              <p><strong>الملفات المطلوب تعديلها:</strong></p>
+              <ul>
+                <li><span class="file-path">app/Http/Controllers/customer/TasksAdsController.php</span></li>
+                <li><span class="file-path">app/Http/Controllers/admin/TasksAdsController.php</span></li>
+                <li><span class="file-path">resources/views/customers/ads/show.blade.php</span></li>
+                <li><span class="file-path">resources/views/admin/tasks-ads/show.blade.php</span></li>
+              </ul>
+              <p><strong>المطلوب:</strong> إضافة وظيفة closeAd() وزر إغلاق في الواجهات</p>
+              <p><strong>التأثير:</strong> يحل مشكلة الإعلانات المعلقة التي لا يمكن إغلاقها</p>
+            </div>
+
+            <div class="change-item critical">
+              <h5><i class="bi bi-4-circle-fill me-2"></i>إضافة تاريخ انتهاء للإعلانات</h5>
+              <p><strong>المطلوب:</strong></p>
+              <ul>
+                <li>إضافة حقل expires_at لجدول tasks_ads</li>
+                <li>تعديل Controllers لتعيين تاريخ انتهاء افتراضي</li>
+                <li>إضافة مهمة مجدولة لإغلاق الإعلانات المنتهية</li>
+              </ul>
+              <p><strong>التأثير:</strong> يمنع تراكم الإعلانات القديمة ويحسن أداء النظام</p>
+            </div>
+          </div>
+
+          <!-- Database Changes -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-database-fill-add"></i>
+              تغييرات قاعدة البيانات المطلوبة
+            </h3>
+
+            <div class="change-item info">
+              <h5>إضافة حقول جديدة لجدول tasks_ads</h5>
+              <div class="table-responsive">
+                <table class="table table-custom">
+                  <thead>
+                    <tr>
+                      <th>اسم الحقل</th>
+                      <th>النوع</th>
+                      <th>القيمة الافتراضية</th>
+                      <th>الوصف</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>expires_at</td>
+                      <td>timestamp</td>
+                      <td>NULL</td>
+                      <td>تاريخ انتهاء الإعلان</td>
+                    </tr>
+                    <tr>
+                      <td>closed_at</td>
+                      <td>timestamp</td>
+                      <td>NULL</td>
+                      <td>تاريخ إغلاق الإعلان</td>
+                    </tr>
+                    <tr>
+                      <td>closed_by</td>
+                      <td>bigint unsigned</td>
+                      <td>NULL</td>
+                      <td>معرف من أغلق الإعلان</td>
+                    </tr>
+                    <tr>
+                      <td>closure_reason</td>
+                      <td>varchar(255)</td>
+                      <td>NULL</td>
+                      <td>سبب إغلاق الإعلان</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="code-block">
+                <span class="comment">// Migration file</span>
+                Schema::table('<span class="string">tasks_ads</span>', function (Blueprint $table) {
+                $table->timestamp('<span class="string">expires_at</span>')->nullable(); $table->timestamp('<span
+                  class="string"
+                  >closed_at</span
+                >')->nullable(); $table->unsignedBigInteger('<span class="string">closed_by</span>')->nullable();
+                $table->string('<span class="string">closure_reason</span>')->nullable(); $table->foreign('<span
+                  class="string"
+                  >closed_by</span
+                >')->references('<span class="string">id</span>')->on('<span class="string">users</span>'); });
+              </div>
+            </div>
+          </div>
+
+          <!-- Implementation Timeline -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-calendar-check"></i>
+              الجدول الزمني للتنفيذ
+            </h3>
+
+            <div class="timeline-item">
+              <div class="timeline-number">1</div>
+              <div>
+                <h5>اليوم الأول: إصلاح الأخطاء الحرجة</h5>
+                <ul>
+                  <li>إصلاح خطأ retractOffer</li>
+                  <li>إصلاح التحقق من الصلاحيات</li>
+                  <li>اختبار الإصلاحات</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-number">2</div>
+              <div>
+                <h5>اليوم الثاني-الثالث: تحديث قاعدة البيانات</h5>
+                <ul>
+                  <li>إنشاء migration للحقول الجديدة</li>
+                  <li>تشغيل migration على قاعدة البيانات</li>
+                  <li>تحديث Models</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-number">3</div>
+              <div>
+                <h5>اليوم الرابع-الخامس: إضافة وظيفة الإغلاق</h5>
+                <ul>
+                  <li>إضافة وظيفة closeAd في Controllers</li>
+                  <li>إضافة Routes جديدة</li>
+                  <li>تحديث واجهات المستخدم</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-number">4</div>
+              <div>
+                <h5>اليوم السادس: المهام المجدولة</h5>
+                <ul>
+                  <li>إنشاء Command لإغلاق الإعلانات المنتهية</li>
+                  <li>إضافة المهمة للجدولة</li>
+                  <li>اختبار المهمة المجدولة</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <div class="timeline-number">5</div>
+              <div>
+                <h5>اليوم السابع: الاختبار النهائي</h5>
+                <ul>
+                  <li>اختبار شامل لجميع الوظائف</li>
+                  <li>اختبار الأمان والصلاحيات</li>
+                  <li>توثيق التغييرات</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Risks and Mitigation -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-shield-exclamation"></i>
+              المخاطر وخطط التخفيف
+            </h3>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h5>المخاطر المحتملة:</h5>
+                <ul class="risk-list">
+                  <li>فقدان بيانات أثناء تحديث قاعدة البيانات</li>
+                  <li>تعطل النظام أثناء التطبيق</li>
+                  <li>مشاكل في الصلاحيات بعد التحديث</li>
+                  <li>عدم توافق مع الكود الحالي</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h5>خطط التخفيف:</h5>
+                <ul class="impact-list">
+                  <li>عمل نسخة احتياطية كاملة قبل البدء</li>
+                  <li>اختبار التغييرات على بيئة التطوير أولاً</li>
+                  <li>تطبيق التغييرات تدريجياً</li>
+                  <li>الاحتفاظ بنسخة من الكود القديم</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Expected Impact -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-graph-up-arrow"></i>
+              التأثير المتوقع بعد التنفيذ
+            </h3>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <div class="stat-number">100%</div>
+                  <div class="stat-label">إصلاح الأخطاء الحرجة</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <div class="stat-number">80%</div>
+                  <div class="stat-label">تحسن في الأمان</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="stat-card">
+                  <div class="stat-number">60%</div>
+                  <div class="stat-label">تقليل الإعلانات المعلقة</div>
+                </div>
+              </div>
+            </div>
+
+            <h5 class="mt-4">الفوائد المتوقعة:</h5>
+            <ul class="impact-list">
+              <li>إصلاح جميع المشاكل الحرجة في النظام</li>
+              <li>تحسين الأمان ومنع الوصول غير المصرح</li>
+              <li>إمكانية إدارة أفضل للإعلانات</li>
+              <li>منع تراكم الإعلانات القديمة</li>
+              <li>تحسين تجربة المستخدم</li>
+              <li>أساس قوي للمراحل التالية</li>
+            </ul>
+          </div>
+
+          <!-- Files to be Modified -->
+          <div class="section-card">
+            <h3 class="section-title">
+              <i class="bi bi-file-earmark-code"></i>
+              قائمة الملفات المطلوب تعديلها
+            </h3>
+
+            <div class="table-responsive">
+              <table class="table table-custom">
+                <thead>
+                  <tr>
+                    <th>الملف</th>
+                    <th>نوع التغيير</th>
+                    <th>الوصف</th>
+                    <th>الأولوية</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>app/Http/Controllers/admin/TasksAdsController.php</code></td>
+                    <td>إصلاح + إضافة</td>
+                    <td>إصلاح الأخطاء وإضافة وظيفة الإغلاق</td>
+                    <td><span class="badge bg-danger">حرجة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Http/Controllers/customer/TasksAdsController.php</code></td>
+                    <td>إضافة</td>
+                    <td>إضافة وظيفة الإغلاق</td>
+                    <td><span class="badge bg-danger">حرجة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Http/Controllers/driver/TasksAdsController.php</code></td>
+                    <td>تحسين</td>
+                    <td>إضافة validation للعروض</td>
+                    <td><span class="badge bg-warning">متوسطة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>database/migrations/[new]_add_fields_to_tasks_ads.php</code></td>
+                    <td>إنشاء جديد</td>
+                    <td>إضافة الحقول الجديدة</td>
+                    <td><span class="badge bg-danger">حرجة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Models/Task_Ad.php</code></td>
+                    <td>تحديث</td>
+                    <td>إضافة الحقول الجديدة للـ fillable</td>
+                    <td><span class="badge bg-info">منخفضة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Console/Commands/CloseExpiredAds.php</code></td>
+                    <td>إنشاء جديد</td>
+                    <td>مهمة مجدولة لإغلاق الإعلانات</td>
+                    <td><span class="badge bg-warning">متوسطة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>routes/web.php</code></td>
+                    <td>إضافة</td>
+                    <td>إضافة routes للوظائف الجديدة</td>
+                    <td><span class="badge bg-info">منخفضة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>resources/views/customers/ads/show.blade.php</code></td>
+                    <td>تحديث</td>
+                    <td>إضافة زر الإغلاق</td>
+                    <td><span class="badge bg-warning">متوسطة</span></td>
+                  </tr>
+                  <tr>
+                    <td><code>resources/views/admin/tasks-ads/show.blade.php</code></td>
+                    <td>تحديث</td>
+                    <td>إضافة زر الإغلاق</td>
+                    <td><span class="badge bg-warning">متوسطة</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Approval Section -->
+          <div class="approval-section">
+            <h4>
+              <i class="bi bi-hand-thumbs-up me-2"></i>
+              طلب الموافقة على التنفيذ
+            </h4>
+            <p class="mb-4">
+              تم إعداد خطة مفصلة لإصلاح المشاكل الحرجة في نظام إعلانات المهام.
+              <br />
+              جميع التغييرات مدروسة بعناية ومصممة لتحسين الأمان والاستقرار.
+            </p>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h6>ما يتم ضمانه:</h6>
+                <ul class="text-start">
+                  <li>✅ نسخة احتياطية كاملة قبل البدء</li>
+                  <li>✅ اختبار شامل لكل تغيير</li>
+                  <li>✅ إمكانية التراجع في حالة المشاكل</li>
+                  <li>✅ توثيق كامل للتغييرات</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h6>المطلوب منك:</h6>
+                <ul class="text-start">
+                  <li>📋 مراجعة هذا التقرير</li>
+                  <li>✅ الموافقة على البدء</li>
+                  <li>⏰ تحديد وقت مناسب للتنفيذ</li>
+                  <li>🔄 المتابعة أثناء التنفيذ</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h5 class="text-danger">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                في انتظار موافقتك للبدء بالتنفيذ
+              </h5>
+              <p class="mb-0">يرجى مراجعة التقرير والموافقة على البدء بتنفيذ المرحلة الأولى</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

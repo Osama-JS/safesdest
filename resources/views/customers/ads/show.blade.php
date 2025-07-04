@@ -1,356 +1,330 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Ad Details & Offers'))
+@section('title', __('Tasks Ads'))
 
+<!-- Vendor Styles -->
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/animate-css/animate.scss'])
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css" />
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+    /* تنسيق البطاقة */
+
+
+    <style>
+        .timeline {
+            list-style: none;
+            padding: 0;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ccc;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-point {
+            position: absolute;
+            left: 7px;
+            top: 5px;
+            width: 16px;
+            height: 16px;
+            background: #0d6efd;
+            border-radius: 50%;
+        }
+    </style>
 @endsection
 
+<!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
+<!-- Page Scripts -->
 @section('page-script')
     <script>
-        function acceptOffer(adId, offerId, driverName, price) {
-            Swal.fire({
-                title: '{{ __('Accept Offer?') }}',
-                html: `{{ __('Are you sure you want to accept this offer?') }}<br><br>
-                       <strong>{{ __('Driver') }}:</strong> ${driverName}<br>
-                       <strong>{{ __('Price') }}:</strong> ${price} SAR`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '{{ __('Yes, Accept') }}',
-                cancelButtonText: '{{ __('Cancel') }}',
-                confirmButtonColor: '#28a745',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Submit form to accept offer
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action =
-                        `{{ route('customer.ads.accept-offer', ['ad' => $ad->id, 'offer' => '__OFFER_ID__']) }}`
-                        .replace('__OFFER_ID__', offerId);
-
-                    const csrfToken = document.createElement('input');
-                    csrfToken.type = 'hidden';
-                    csrfToken.name = '_token';
-                    csrfToken.value = '{{ csrf_token() }}';
-                    form.appendChild(csrfToken);
-
-                    const offerInput = document.createElement('input');
-                    offerInput.type = 'hidden';
-                    offerInput.name = 'offer_id';
-                    offerInput.value = offerId;
-                    form.appendChild(offerInput);
-
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-        }
-
-        function rejectOffer(adId, offerId, driverName) {
-            Swal.fire({
-                title: '{{ __('Reject Offer?') }}',
-                html: `{{ __('Are you sure you want to reject this offer from') }} <strong>${driverName}</strong>?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: '{{ __('Yes, Reject') }}',
-                cancelButtonText: '{{ __('Cancel') }}',
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Submit form to reject offer
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action =
-                        `{{ route('customer.ads.reject-offer', ['ad' => $ad->id, 'offer' => '__OFFER_ID__']) }}`
-                        .replace('__OFFER_ID__', offerId);
-
-                    const csrfToken = document.createElement('input');
-                    csrfToken.type = 'hidden';
-                    csrfToken.name = '_token';
-                    csrfToken.value = '{{ csrf_token() }}';
-                    form.appendChild(csrfToken);
-
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            });
-        }
+        const adId = {{ $ad->id }}
     </script>
+    @vite(['resources/js/customers/offers.js'])
+
+    @vite(['resources/js/ajax.js'])
+    @vite(['resources/js/model.js'])
 @endsection
-
+@section('ad-isactive', 'active')
 @section('content')
-    <div class="row">
-        <!-- Ad & Task Information -->
-        <div class="col-xl-8 col-lg-7 col-md-7">
-            <!-- Ad Details -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="ti ti-speakerphone me-2"></i>{{ __('Advertisement Details') }} #{{ $ad->id }}
-                    </h5>
-                    <div>
-                        <span
-                            class="badge bg-label-{{ $ad->task->status === 'completed' ? 'success' : ($ad->task->status === 'advertised' ? 'warning' : 'info') }}">
-                            {{ ucfirst($ad->task->status) }}
-                        </span>
-                        @if ($ad->task->closed)
-                            <span class="badge bg-label-secondary ms-1">{{ __('Closed') }}</span>
-                        @endif
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-muted">{{ __('Task Information') }}</h6>
-                            <ul class="list-unstyled">
-                                <li class="mb-2">
-                                    <span class="h6">{{ __('Task ID') }}:</span>
-                                    <span>#{{ $ad->task->id }}</span>
-                                </li>
-                                <li class="mb-2">
-                                    <span class="h6">{{ __('Vehicle Required') }}:</span>
-                                    <span>
-                                        @if ($ad->task->vehicle_size)
-                                            {{ $ad->task->vehicle_size->type->vehicle->name }} -
-                                            {{ $ad->task->vehicle_size->type->name }} -
-                                            {{ $ad->task->vehicle_size->name }}
-                                        @else
-                                            N/A
-                                        @endif
-                                    </span>
-                                </li>
-                                <li class="mb-2">
-                                    <span class="h6">{{ __('Created At') }}:</span>
-                                    <span>{{ $ad->created_at->format('Y-m-d H:i') }}</span>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted">{{ __('Price Range') }}</h6>
-                            <ul class="list-unstyled">
-                                <li class="mb-2">
-                                    <span class="h6">{{ __('Minimum Price') }}:</span>
-                                    <span class="text-success fw-bold">{{ number_format($ad->lowest_price, 2) }} SAR</span>
-                                </li>
-                                <li class="mb-2">
-                                    <span class="h6">{{ __('Maximum Price') }}:</span>
-                                    <span class="text-danger fw-bold">{{ number_format($ad->highest_price, 2) }} SAR</span>
-                                </li>
-                                @if ($ad->description)
-                                    <li class="mb-2">
-                                        <span class="h6">{{ __('Description') }}:</span>
-                                        <span>{{ $ad->description }}</span>
-                                    </li>
-                                @endif
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pickup & Delivery Points -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="ti ti-map-pins me-2"></i>{{ __('Pickup & Delivery Points') }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Pickup Point -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 mb-3 mb-md-0">
-                                <h6 class="text-success mb-3">
-                                    <i class="ti ti-map-pin me-2"></i>{{ __('Pickup Point') }}
-                                </h6>
-                                @if ($ad->task->pickup)
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <strong>{{ __('Address') }}:</strong><br>
-                                            {{ $ad->task->pickup->address }}
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong>{{ __('Contact') }}:</strong>
-                                            {{ $ad->task->pickup->contact_name ?? 'N/A' }}
-                                        </li>
-                                        @if ($ad->task->pickup->scheduled_time)
-                                            <li class="mb-2">
-                                                <strong>{{ __('Scheduled Time') }}:</strong>
-                                                {{ \Carbon\Carbon::parse($ad->task->pickup->scheduled_time)->format('Y-m-d H:i') }}
-                                            </li>
-                                        @endif
-                                    </ul>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Delivery Point -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3">
-                                <h6 class="text-danger mb-3">
-                                    <i class="ti ti-map-pin me-2"></i>{{ __('Delivery Point') }}
-                                </h6>
-                                @if ($ad->task->delivery)
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <strong>{{ __('Address') }}:</strong><br>
-                                            {{ $ad->task->delivery->address }}
-                                        </li>
-                                        <li class="mb-2">
-                                            <strong>{{ __('Contact') }}:</strong>
-                                            {{ $ad->task->delivery->contact_name ?? 'N/A' }}
-                                        </li>
-                                        @if ($ad->task->delivery->scheduled_time)
-                                            <li class="mb-2">
-                                                <strong>{{ __('Scheduled Time') }}:</strong>
-                                                {{ \Carbon\Carbon::parse($ad->task->delivery->scheduled_time)->format('Y-m-d H:i') }}
-                                            </li>
-                                        @endif
-                                    </ul>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Information (Customer Visible Only) -->
-            @if ($ad->task->customer_visible_additional_data && count($ad->task->customer_visible_additional_data) > 0)
-                <div class="card mb-4">
-                    <div class="card-header">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- الجانب الأيسر: بيانات الإعلان والـ Task -->
+            <div class="col-lg-7 col-md-12">
+                <!-- تفاصيل الإعلان -->
+                <div class="card mb-4 shadow">
+                    <div class="card-header border-bottom mb-3 d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
-                            <i class="ti ti-info-circle me-2"></i>{{ __('Additional Information') }}
+                            <i class="bx bx-bullhorn me-1"></i> {{ __('Ad Details') }}
                         </h5>
+                        <a href="{{ route('customer.ads.index') }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bx bx-arrow-back"></i> {{ __('Back to Tasks Ads') }}
+                        </a>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            @foreach ($ad->task->customer_visible_additional_data as $field)
-                                <div class="col-md-6 mb-3">
-                                    <strong>{{ $field['label'] }}:</strong><br>
-                                    @if ($field['type'] === 'file' || $field['type'] === 'image')
-                                        @if ($field['value'])
-                                            <a href="{{ asset($field['value']) }}" target="_blank"
-                                                class="btn btn-sm btn-outline-primary">
-                                                <i class="ti ti-download me-1"></i>{{ __('Download File') }}
-                                            </a>
-                                        @else
-                                            <span class="text-muted">{{ __('No file uploaded') }}</span>
-                                        @endif
-                                    @elseif($field['type'] === 'file_expiration_date')
-                                        @if ($field['value'])
-                                            <a href="{{ asset($field['value']) }}" target="_blank"
-                                                class="btn btn-sm btn-outline-primary">
-                                                <i class="ti ti-download me-1"></i>{{ __('Download File') }}
-                                            </a>
-                                            @if (isset($field['expiration']))
-                                                <br><small class="text-muted">{{ __('Expires') }}:
-                                                    {{ $field['expiration'] }}</small>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">{{ __('No file uploaded') }}</span>
-                                        @endif
-                                    @else
-                                        <span>{{ $field['value'] ?? 'N/A' }}</span>
-                                    @endif
+                        <!-- معلومات المالك -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <strong class="text-muted">{{ __('Owner') }}:</strong><br>
+                                <span>{{ $task->owner == 'admin' ? $task->user->name : $task->customer->name }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong class="text-muted">{{ __('Phone') }}:</strong><br>
+                                <span>{{ $task->owner == 'admin' ? $task->user->phone : $task->customer->phone }}</span>
+                            </div>
+                        </div>
+
+                        <!-- معلومات الأسعار والحالة -->
+                        <div class="border rounded p-3 d-flex flex-wrap gap-4 justify-content-between mb-4 shadow-sm">
+                            @if ($ad->highest_price)
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="fas fa-arrow-up text-danger fs-4"></i>
+                                    <div>
+                                        <small class="text-muted">{{ __('Highest price') }}</small>
+                                        <div class="fw-bold text-danger">{{ number_format($ad->highest_price, 2) }} SAR
+                                        </div>
+                                    </div>
                                 </div>
-                            @endforeach
+                            @endif
+
+                            @if ($ad->lowest_price)
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="fas fa-arrow-down text-success fs-4"></i>
+                                    <div>
+                                        <small class="text-muted">{{ __('Lowest price') }}</small>
+                                        <div class="fw-bold text-success">{{ number_format($ad->lowest_price, 2) }} SAR
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="fas fa-info-circle text-primary fs-4"></i>
+                                <div>
+                                    <small class="text-muted">{{ __('Status') }}</small><br>
+                                    <span class="badge bg-primary">{{ $ad->status }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- وصف الإعلان -->
+                        <div>
+                            <h6 class="text-muted">{{ __('Notes') }}</h6>
+                            <p class="mb-0">{{ $ad->description }}</p>
                         </div>
                     </div>
                 </div>
-            @endif
-        </div>
 
-        <!-- Driver Offers -->
-        <div class="col-xl-4 col-lg-5 col-md-5">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="ti ti-users me-2"></i>{{ __('Driver Offers') }}
-                    </h5>
-                    <span class="badge bg-label-primary">{{ $ad->offers->count() }} {{ __('Offers') }}</span>
-                </div>
-                <div class="card-body">
-                    @if ($ad->offers && $ad->offers->count() > 0)
-                        @foreach ($ad->offers as $offer)
-                            <div
-                                class="card border mb-3
-                                @if ($offer->status === 'accepted') border-success
-                                @elseif($offer->status === 'rejected') border-danger
-                                @else border-warning @endif">
-                                <div class="card-body p-3">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <div class="avatar avatar-sm me-2">
-                                            <img src="{{ $offer->driver->image ? asset($offer->driver->image) : asset('assets/img/avatars/default-avatar.png') }}"
-                                                alt="Driver Avatar" class="rounded-circle">
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-0">{{ $offer->driver->name }}</h6>
-                                            <small class="text-muted">{{ $offer->driver->phone_code }}
-                                                {{ $offer->driver->phone }}</small>
-                                        </div>
-                                        <span
-                                            class="badge bg-label-{{ $offer->status === 'accepted' ? 'success' : ($offer->status === 'rejected' ? 'danger' : 'warning') }}">
-                                            {{ ucfirst($offer->status) }}
+                <!-- نقطة الاستلام والتسليم -->
+                <div class="card mb-4">
+                    <div class="card-header border-bottom ">
+                        <h6 class="mb-0">{{ __('Pickup & Delivery Points') }}</h6>
+                    </div>
+                    <div class="card-body mt-4">
+                        <div class="row g-4">
+                            <!-- Pickup -->
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100 shadow-sm bg-white">
+                                    <h6 class="mb-3 text-primary d-flex align-items-center justify-content-between">
+                                        <span>
+                                            <i class="fas fa-map-marker-alt me-1"></i> {{ __('Pickup') }}
                                         </span>
-                                    </div>
-
-                                    <div class="mb-2">
-                                        <strong class="text-primary fs-5">{{ number_format($offer->price, 2) }}
-                                            SAR</strong>
-                                    </div>
-
-                                    @if ($offer->message)
-                                        <div class="mb-2">
-                                            <small class="text-muted">{{ __('Message') }}:</small>
-                                            <p class="mb-0 small">{{ $offer->message }}</p>
-                                        </div>
-                                    @endif
-
-                                    <div class="mb-2">
-                                        <small class="text-muted">
-                                            {{ __('Submitted') }}: {{ $offer->created_at->format('M d, H:i') }}
-                                        </small>
-                                    </div>
-
-                                    @if ($offer->driver->full_whatsapp_number)
-                                        <div class="mb-2">
-                                            <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $offer->driver->full_whatsapp_number) }}"
-                                                target="_blank" class="btn btn-sm btn-outline-success">
-                                                <i class="ti ti-brand-whatsapp me-1"></i>{{ __('WhatsApp') }}
+                                        @if (optional($task->pickup)->latitude && optional($task->pickup)->longitude)
+                                            <a href="https://www.google.com/maps?q={{ $task->pickup->latitude }},{{ $task->pickup->longitude }}"
+                                                target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-map-location-dot me-1"></i>
                                             </a>
-                                        </div>
-                                    @endif
-
-                                    @if ($offer->status === 'pending' && $ad->task->status === 'advertised' && !$ad->task->closed)
-                                        <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-success btn-sm flex-grow-1"
-                                                onclick="acceptOffer({{ $ad->id }}, {{ $offer->id }}, '{{ $offer->driver->name }}', '{{ number_format($offer->price, 2) }}')">
-                                                <i class="ti ti-check me-1"></i>{{ __('Accept') }}
-                                            </button>
-                                            <button type="button" class="btn btn-outline-danger btn-sm"
-                                                onclick="rejectOffer({{ $ad->id }}, {{ $offer->id }}, '{{ $offer->driver->name }}')">
-                                                <i class="ti ti-x me-1"></i>{{ __('Reject') }}
-                                            </button>
-                                        </div>
-                                    @endif
+                                        @endif
+                                    </h6>
+                                    <ul class="list-unstyled mb-3">
+                                        <li><strong>Address:</strong> {{ optional($task->pickup)->address }}</li>
+                                        <li><strong>Notes:</strong> {{ optional($task->pickup)->note }}</li>
+                                        @if (optional($task->pickup)->scheduled_time)
+                                            <li><strong>Pickup Before:</strong>
+                                                {{ \Carbon\Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i') }}
+                                            </li>
+                                        @endif
+                                    </ul>
                                 </div>
                             </div>
-                        @endforeach
-                    @else
-                        <div class="text-center py-4">
-                            <i class="ti ti-inbox display-4 text-muted mb-3"></i>
-                            <h6 class="text-muted">{{ __('No Offers Yet') }}</h6>
-                            <p class="text-muted">{{ __('Drivers will submit their offers here. Check back later!') }}</p>
+
+                            <!-- Delivery -->
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100 shadow-sm bg-white">
+                                    <h6 class="mb-3 text-success d-flex align-items-center justify-content-between">
+                                        <span>
+                                            <i class="fas fa-truck me-1"></i> {{ __('Delivery') }}
+                                        </span>
+                                        @if (optional($task->delivery)->latitude && optional($task->delivery)->longitude)
+                                            <a href="https://www.google.com/maps?q={{ $task->delivery->latitude }},{{ $task->delivery->longitude }}"
+                                                target="_blank" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-map-location-dot me-1"></i>
+                                            </a>
+                                        @endif
+                                    </h6>
+                                    <ul class="list-unstyled mb-3">
+                                        <li><strong>Address:</strong> {{ optional($task->delivery)->address }}</li>
+                                        <li><strong>Notes:</strong> {{ optional($task->delivery)->note }}</li>
+                                        @if (optional($task->delivery)->scheduled_time)
+                                            <li><strong>Delivery Before:</strong>
+                                                {{ \Carbon\Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i') }}
+                                            </li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
-                    @endif
+                    </div>
                 </div>
+
+                <!-- بيانات إضافية -->
+                @if ($task->additional_data)
+                    <div class="card mb-4">
+                        <div class="card-header border-bottom">
+                            <h5 class="mb-0 text-dark">
+                                <i class="fas fa-layer-group me-2 text-primary"></i> {{ __('Additional Data') }}
+                            </h5>
+                        </div>
+                        <div class="card-body mt-3">
+                            @if (is_array($task->additional_data) && count($task->additional_data) > 0)
+                                <div class="row">
+                                    @foreach ($task->additional_data as $key => $field)
+                                        <div class="col-md-6 mb-4">
+                                            <div class="border rounded p-3 h-100">
+                                                <h6 class="text-muted mb-2">{{ $field['label'] }}</h6>
+                                                @switch($field['type'])
+                                                    @case('text')
+                                                    @case('string')
+
+                                                    @case('number')
+                                                        <p class="mb-0">{{ $field['value'] }}</p>
+                                                    @break
+
+                                                    @case('image')
+                                                        <img src="{{ asset('storage/' . $field['value']) }}"
+                                                            alt="{{ $field['label'] }}" class="img-fluid rounded border"
+                                                            style="max-height: 200px; object-fit: cover;">
+                                                    @break
+
+                                                    @case('file')
+                                                        @php
+                                                            $ext = strtolower(
+                                                                pathinfo($field['value'], PATHINFO_EXTENSION),
+                                                            );
+                                                            $icons = [
+                                                                'pdf' => 'ti ti-file-text',
+                                                                'doc' => 'ti ti-file-description',
+                                                                'docx' => 'ti ti-file-description',
+                                                                'xls' => 'ti ti-file-spreadsheet',
+                                                                'xlsx' => 'ti ti-file-spreadsheet',
+                                                                'ppt' => 'ti ti-presentation',
+                                                                'pptx' => 'ti ti-presentation',
+                                                            ];
+                                                            $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                                        @endphp
+                                                        <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                            class="d-flex align-items-center text-decoration-none mt-1">
+                                                            <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                            <span class="text-truncate">{{ basename($field['value']) }}</span>
+                                                        </a>
+                                                    @break
+
+                                                    @default
+                                                        <p class="mb-0">{{ $field['value'] }}</p>
+                                                @endswitch
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="alert alert-info" role="alert">
+                                    {{ __('No additional data found for this customer.') }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            <!-- الجانب الأيمن: العروض -->
+            <div class="col-md-5">
+                <div class="card mb-5" style="min-height: 80vh">
+                    <div class="card-header border-bottom  mb-4 d-flex justify-content-between">
+                        <strong>{{ __('Submitted Offers') }} (<span id="total-offers-counter">0</span>)</strong>
+                    </div>
+                    <div class="card-body" id="offers-container">
+                        <div class="text-center text-muted">جارٍ تحميل العروض...</div>
+                    </div>
+                </div>
+
+
             </div>
         </div>
     </div>
+
+    <div class="modal fade " id="offerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modelTitle">{{ $offer ? __('Update your offer') : __('Add your offer') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
+                </div>
+                <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('driver.offers.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <input type="hidden" name="id" value="{{ $offer ? $offer->id : '' }}">
+                        <input type="hidden" name="ad" value="{{ $ad->id }}">
+                        <span class="ad-error text-danger text-error"></span>
+
+                        <div class="mb-2">
+                            <label class="form-label" for="price">* {{ __('Your Price') }}</label>
+
+                            <input type="number" step="any" name="price"
+                                value="{{ $offer ? $offer->price : '' }}" min="0.00" id="offer-price"
+                                class="form-control" placeholder="{{ __('Offer Price') }}">
+                            <span class="price-error text-danger text-error"></span>
+
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label" for="description">* {{ __('Notes') }}</label>
+
+                            <textarea name="description" id="description" class="form-control"
+                                placeholder="{{ __('Write your Notes or Description') }}" rows="2">{{ $offer ? $offer->description : '' }}</textarea>
+                            <span class="description-error text-danger text-error"></span>
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
+
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
 @endsection

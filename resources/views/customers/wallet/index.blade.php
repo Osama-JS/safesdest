@@ -1,247 +1,437 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('My Wallet'))
+@section('title', __('Wallets') . ':' . $data->id)
 
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/bootstrap-datepicker/bootstrap-datepicker.scss'])
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss'])
+
+    <style>
+        .wallet-stat-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .wallet-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .wallet-stat-card.balance-positive {
+            border-left-color: #28a745;
+        }
+
+        .wallet-stat-card.balance-negative {
+            border-left-color: #dc3545;
+        }
+
+        .wallet-stat-card.credit-card {
+            border-left-color: #28a745;
+        }
+
+        .wallet-stat-card.debit-card {
+            border-left-color: #dc3545;
+        }
+
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% {
+                background-position: 1rem 0;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .avatar-initial {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+    </style>
 @endsection
 
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/bootstrap-datepicker/bootstrap-datepicker.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/block-ui/block-ui.js'])
 @endsection
 
 @section('page-script')
+    <script>
+        const walletId = "{{ $data->id }}";
+    </script>
     @vite(['resources/js/customers/wallet.js'])
-@endsection
+    @vite(['resources/js/ajax.js'])
+    @vite(['resources/js/spical.js'])
 
+
+@endsection
+@section('wallets-isactive')
+    active
+@endsection
 @section('content')
-    <!-- Wallet Overview Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <span>{{ __('Current Balance') }}</span>
-                            <div class="d-flex align-items-end mt-2">
-                                <h4 class="mb-0 me-2 text-{{ $data->balance >= 0 ? 'success' : 'danger' }}">
-                                    {{ number_format($data->balance, 2) }} SAR
-                                </h4>
-                            </div>
-                            <small class="text-muted">{{ __('Available Balance') }}</small>
+
+    @php
+        $balance = $data->balance;
+        $credit = $data->credit;
+        $debit = $data->debit;
+        $debtCeiling = $data->debt_ceiling;
+
+        $balanceClass = $balance < 0 ? 'text-danger' : 'text-success';
+        $balanceSign = $balance < 0 ? '-' : '+';
+
+        // نسبة استخدام سقف الدين
+        $usedDebt = abs($balance < 0 ? $balance : 0);
+        $debtPercent = $debtCeiling > 0 ? min(100, round(($usedDebt / $debtCeiling) * 100)) : 0;
+
+        $progressBarClass = $debtPercent < 50 ? 'bg-success' : ($debtPercent < 80 ? 'bg-warning' : 'bg-danger');
+    @endphp
+
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm  ">
+                <div class="card-body py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-lg me-3">
+                            <span class="avatar-initial rounded-circle  ">
+                                <i class="ti ti-wallet fs-2 "></i>
+                            </span>
                         </div>
-                        <span class="badge bg-label-{{ $data->balance >= 0 ? 'success' : 'danger' }} rounded p-2">
-                            <i class="ti ti-wallet ti-sm"></i>
-                        </span>
+                        <div>
+                            <h4 class="card-title mb-1  fw-bold">
+                                {{ __('My Wallet') }}
+                            </h4>
+                            <p class="mb-0 text-black-50">
+                                {{ __('Wallet ID') }}: {{ $data->id }} | {{ $data->owner->name }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
+    </div>
+
+    <!-- Wallet Statistics Cards -->
+    <div class="row mb-4">
+        <!-- Balance Card -->
+        <div class="col-xl-4 col-md-6 mb-3">
+            <div
+                class="card border-0 shadow-sm h-100 wallet-stat-card {{ $balance < 0 ? 'balance-negative' : 'balance-positive' }}">
                 <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <span>{{ __('Debt Ceiling') }}</span>
-                            <div class="d-flex align-items-end mt-2">
-                                <h4 class="mb-0 me-2 text-info">
-                                    {{ number_format($data->debt_ceiling, 2) }} SAR
-                                </h4>
-                            </div>
-                            <small class="text-muted">{{ __('Maximum Credit Limit') }}</small>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span
+                                class="avatar-initial rounded-circle {{ $balance < 0 ? 'bg-label-danger' : 'bg-label-success' }}">
+                                <i class="ti ti-wallet fs-4 {{ $balanceClass }}"></i>
+                            </span>
                         </div>
-                        <span class="badge bg-label-info rounded p-2">
-                            <i class="ti ti-credit-card ti-sm"></i>
-                        </span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Current Balance') }}</h6>
+                                    <h4 class="mb-0 {{ $balanceClass }} fw-bold">
+                                        {{ $balanceSign }}{{ number_format(abs($balance), 2) }}
+                                    </h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
+
+        <!-- Credit Card -->
+        <div class="col-xl-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 wallet-stat-card credit-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <span>{{ __('Available Credit') }}</span>
-                            <div class="d-flex align-items-end mt-2">
-                                @php
-                                    $availableCredit = $data->debt_ceiling + $data->balance;
-                                @endphp
-                                <h4 class="mb-0 me-2 text-{{ $availableCredit >= 0 ? 'success' : 'warning' }}">
-                                    {{ number_format($availableCredit, 2) }} SAR
-                                </h4>
-                            </div>
-                            <small class="text-muted">{{ __('Total Available') }}</small>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded-circle bg-label-success">
+                                <i class="ti ti-arrow-up-right fs-4 text-success"></i>
+                            </span>
                         </div>
-                        <span class="badge bg-label-{{ $availableCredit >= 0 ? 'success' : 'warning' }} rounded p-2">
-                            <i class="ti ti-coins ti-sm"></i>
-                        </span>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Total Credit') }}</h6>
+                                    <h4 class="mb-0 text-success fw-bold">{{ number_format($credit, 2) }}</h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-6 col-md-6">
-            <div class="card">
+
+        <!-- Debit Card -->
+        <div class="col-xl-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 wallet-stat-card debit-card">
                 <div class="card-body">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="content-left">
-                            <span>{{ __('Wallet Status') }}</span>
-                            <div class="d-flex align-items-end mt-2">
-                                <span class="badge bg-label-{{ $data->status ? 'success' : 'danger' }} fs-6">
-                                    {{ $data->status ? __('Active') : __('Inactive') }}
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded-circle bg-label-danger">
+                                <i class="ti ti-arrow-down-left fs-4 text-danger"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Total Debit') }}</h6>
+                                    <h4 class="mb-0 text-danger fw-bold">{{ number_format($debit, 2) }}</h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debt Ceiling Card -->
+    @if ($debtCeiling > 0)
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3">
+                                    <span class="avatar-initial rounded-circle bg-label-warning">
+                                        <i class="ti ti-alert-triangle fs-5 text-warning"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ __('Debt Usage') }}</h6>
+                                    <small class="text-muted">{{ $usedDebt }} / {{ $debtCeiling }}
+                                        {{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span
+                                    class="badge bg-{{ $debtPercent < 50 ? 'success' : ($debtPercent < 80 ? 'warning' : 'danger') }}">
+                                    {{ $debtPercent }}%
                                 </span>
                             </div>
-                            <small class="text-muted">{{ __('Account Status') }}</small>
                         </div>
-                        <span class="badge bg-label-{{ $data->status ? 'success' : 'secondary' }} rounded p-2">
-                            <i class="ti ti-{{ $data->status ? 'check' : 'x' }} ti-sm"></i>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar {{ $progressBarClass }} progress-bar-striped progress-bar-animated"
+                                role="progressbar" style="width: {{ $debtPercent }}%;"
+                                aria-valuenow="{{ $debtPercent }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Transactions Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header  border-bottom">
+            <div
+                class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm me-3">
+                        <span class="avatar-initial rounded-circle bg-label-primary">
+                            <i class="ti ti-list fs-5 text-primary"></i>
                         </span>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Wallet Transactions -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="ti ti-history me-2"></i>{{ __('Transaction History') }}
-            </h5>
-        </div>
-
-        <div class="card-datatable table-responsive">
-            <div class="row mx-2">
-                <div class="col-md-2">
-                    <div class="me-3">
-                        <div class="dataTables_length" id="DataTables_Table_0_length">
-                            <label>{{ __('Show') }}
-                                <select name="DataTables_Table_0_length" aria-controls="DataTables_Table_0"
-                                    class="form-select">
-                                    <option value="10">10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                                {{ __('entries') }}
-                            </label>
-                        </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ __('Transaction History') }}</h5>
+                        <small class="text-muted">{{ __('All wallet transactions') }}</small>
                     </div>
                 </div>
-                <div class="col-md-10">
-                    <div
-                        class="dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0">
-                        <div class="dt-buttons btn-group flex-wrap">
-                            <!-- Date Filter -->
-                            <div class="btn-group mx-2">
-                                <input type="text" class="form-control" id="from_date"
-                                    placeholder="{{ __('From Date') }}" readonly>
-                            </div>
-                            <div class="btn-group mx-2">
-                                <input type="text" class="form-control" id="to_date" placeholder="{{ __('To Date') }}"
-                                    readonly>
-                            </div>
 
-                            <!-- Transaction Type Filter -->
-                            <div class="btn-group mx-2">
-                                <select class="form-select" id="type_filter">
-                                    <option value="">{{ __('All Types') }}</option>
-                                    <option value="credit">{{ __('Credit') }}</option>
-                                    <option value="debit">{{ __('Debit') }}</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-
-            <table class="datatables-wallet table border-top">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>{{ __('#') }}</th>
-                        <th>{{ __('Amount') }}</th>
-                        <th>{{ __('Type') }}</th>
-                        <th>{{ __('Description') }}</th>
-                        <th>{{ __('Task') }}</th>
-                        <th>{{ __('Maturity') }}</th>
-                        <th>{{ __('Status') }}</th>
-                        <th>{{ __('Date') }}</th>
-                    </tr>
-                </thead>
-            </table>
         </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 datatables-users">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 50px;">
+                                <i class="ti ti-hash fs-6 text-muted"></i>
+                            </th>
+                            <th class="text-center" style="width: 80px;">{{ __('ID') }}</th>
+                            <th>
+                                {{ __('Amount') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-file-description me-1"></i>{{ __('Description') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-calendar-due me-1"></i>{{ __('Maturity') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-truck-delivery me-1"></i>{{ __('Task') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-clock me-1"></i>{{ __('Created At') }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+
     </div>
 
-    <!-- Wallet Information -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ti ti-info-circle me-2"></i>{{ __('Wallet Information') }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <span class="h6">{{ __('Wallet ID') }}:</span>
-                            <span>#{{ $data->id }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">{{ __('Account Type') }}:</span>
-                            <span class="badge bg-label-primary">{{ ucfirst($data->user_type) }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">{{ __('Preview Status') }}:</span>
-                            <span class="badge bg-label-{{ $data->preview ? 'success' : 'secondary' }}">
-                                {{ $data->preview ? __('Enabled') : __('Disabled') }}
+
+    <!-- Image Modal -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-sm me-3">
+                            <span class="avatar-initial rounded-circle bg-label-primary">
+                                <i class="ti ti-photo fs-5 text-primary"></i>
                             </span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">{{ __('Created At') }}:</span>
-                            <span>{{ $data->created_at->format('Y-m-d H:i') }}</span>
-                        </li>
-                        <li class="mb-2">
-                            <span class="h6">{{ __('Last Updated') }}:</span>
-                            <span>{{ $data->updated_at->format('Y-m-d H:i') }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="ti ti-help me-2"></i>{{ __('Wallet Help') }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">{{ __('Understanding Your Wallet') }}</h6>
-                        <ul class="mb-0">
-                            <li><strong>{{ __('Current Balance') }}:</strong> {{ __('Your available funds') }}</li>
-                            <li><strong>{{ __('Debt Ceiling') }}:</strong> {{ __('Maximum credit you can use') }}</li>
-                            <li><strong>{{ __('Available Credit') }}:</strong> {{ __('Total funds you can spend') }}</li>
-                            <li><strong>{{ __('Credit Transactions') }}:</strong> {{ __('Money added to your wallet') }}
-                            </li>
-                            <li><strong>{{ __('Debit Transactions') }}:</strong> {{ __('Money spent from your wallet') }}
-                            </li>
-                        </ul>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0" id="imageModalLabel">{{ __('View the image') }}</h5>
+                            <small class="text-muted">{{ __('Transaction attachment') }}</small>
+                        </div>
                     </div>
-
-                    <div class="alert alert-warning">
-                        <h6 class="alert-heading">{{ __('Important Notes') }}</h6>
-                        <ul class="mb-0">
-                            <li>{{ __('Negative balance means you owe money') }}</li>
-                            <li>{{ __('Contact support for wallet issues') }}</li>
-                            <li>{{ __('All transactions are recorded and tracked') }}</li>
-                        </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('close') }}"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="position-relative">
+                        <img id="modalImage" src="" class="img-fluid rounded shadow-sm"
+                            alt="{{ __('image') }}" style="max-height: 500px; object-fit: contain;" />
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <button class="btn btn-sm btn-outline-light" onclick="downloadImage()"
+                                title="{{ __('Download') }}">
+                                <i class="ti ti-download"></i>
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="ti ti-x me-1"></i>{{ __('Close') }}
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="downloadImage()">
+                        <i class="ti ti-download me-1"></i>{{ __('Download') }}
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Enhanced wallet page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter functionality
+            const filterItems = document.querySelectorAll('[data-filter]');
+            filterItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const filter = this.getAttribute('data-filter');
+                    applyFilter(filter);
+                });
+            });
+
+            // Hover effects for stat cards
+            const statCards = document.querySelectorAll('.wallet-stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Update total transactions count when table loads
+            updateTransactionCount();
+        });
+
+        function applyFilter(filterType) {
+            // This function will be enhanced by the existing wallet.js
+            console.log('Applying filter:', filterType);
+            // The actual filtering logic should be in wallet.js
+        }
+
+        function updateTransactionCount() {
+            // Update the total transactions count
+            const totalElement = document.getElementById('total-transactions');
+            if (totalElement) {
+                // This will be updated by DataTables when it loads
+                totalElement.textContent = '...';
+            }
+        }
+
+        function downloadImage() {
+            const modalImage = document.getElementById('modalImage');
+            if (modalImage && modalImage.src) {
+                const link = document.createElement('a');
+                link.href = modalImage.src;
+                link.download = 'transaction-image.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Add smooth scrolling to cards
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        }
+    </script>
+
 @endsection

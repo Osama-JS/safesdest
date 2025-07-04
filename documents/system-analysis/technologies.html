@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التقنيات والمكتبات - SafeDest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-section {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .tech-card {
+            border-left: 4px solid #17a2b8;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .tech-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .tech-stack {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .version-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        .dependency-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .nav-breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .security-level-high { border-left-color: #28a745; }
+        .security-level-medium { border-left-color: #ffc107; }
+        .security-level-low { border-left-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <nav class="nav-breadcrumb mb-3">
+                <a href="index.html" class="text-white text-decoration-none">
+                    <i class="bi bi-house me-1"></i>التحليل الرئيسي
+                </a>
+                <span class="text-white mx-2">/</span>
+                <span class="text-white">التقنيات والمكتبات</span>
+            </nav>
+            <h1 class="display-4">
+                <i class="bi bi-stack me-3"></i>
+                التقنيات والمكتبات المستخدمة
+            </h1>
+            <p class="lead">تحليل شامل للتقنيات، المكتبات، والأدوات المستخدمة في النظام</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- Technology Stack Overview -->
+        <div class="card tech-card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-layers me-2"></i>نظرة عامة على التقنيات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="tech-stack">
+                            <i class="bi bi-server display-4 mb-3"></i>
+                            <h5>Backend</h5>
+                            <p>Laravel 11<br>PHP 8.2+</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tech-stack">
+                            <i class="bi bi-palette display-4 mb-3"></i>
+                            <h5>Frontend</h5>
+                            <p>Bootstrap 5<br>jQuery 3.7</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tech-stack">
+                            <i class="bi bi-database display-4 mb-3"></i>
+                            <h5>Database</h5>
+                            <p>PostgreSQL<br>Eloquent ORM</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="tech-stack">
+                            <i class="bi bi-cloud display-4 mb-3"></i>
+                            <h5>Services</h5>
+                            <p>Mapbox<br>HyperPay</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backend Technologies -->
+        <div class="card tech-card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-server me-2"></i>تقنيات Backend
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🚀 Laravel Framework</h5>
+                        <div class="dependency-item">
+                            <strong>laravel/framework</strong> <span class="version-badge">^11.0</span>
+                            <br><small>إطار العمل الأساسي للنظام</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>laravel/jetstream</strong> <span class="version-badge">^5.3</span>
+                            <br><small>نظام المصادقة والتفويض المتقدم</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>laravel/sanctum</strong> <span class="version-badge">^4.0</span>
+                            <br><small>نظام API tokens والمصادقة</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>livewire/livewire</strong> <span class="version-badge">^3.0</span>
+                            <br><small>مكونات تفاعلية بدون JavaScript</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🔧 مكتبات مساعدة</h5>
+                        <div class="dependency-item">
+                            <strong>spatie/laravel-permission</strong> <span class="version-badge">^6.16</span>
+                            <br><small>إدارة الأذونات والأدوار</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>barryvdh/laravel-snappy</strong> <span class="version-badge">^1.0</span>
+                            <br><small>تحويل HTML إلى PDF</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>mariuzzo/laravel-js-localization</strong> <span class="version-badge">^1.11</span>
+                            <br><small>ترجمة JavaScript</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>devinweb/laravel-hyperpay</strong> <span class="version-badge">^1.2</span>
+                            <br><small>تكامل بوابة الدفع HyperPay</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Frontend Technologies -->
+        <div class="card tech-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-palette me-2"></i>تقنيات Frontend
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🎨 UI Framework</h5>
+                        <div class="dependency-item">
+                            <strong>bootstrap</strong> <span class="version-badge">5.3.3</span>
+                            <br><small>إطار العمل الأساسي للواجهات</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>@fortawesome/fontawesome-free</strong> <span class="version-badge">6.5.2</span>
+                            <br><small>مكتبة الأيقونات</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>animate.css</strong> <span class="version-badge">4.1.1</span>
+                            <br><small>تأثيرات الحركة والانتقالات</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>aos</strong> <span class="version-badge">2.3.4</span>
+                            <br><small>تأثيرات الظهور عند التمرير</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚡ JavaScript Libraries</h5>
+                        <div class="dependency-item">
+                            <strong>jquery</strong> <span class="version-badge">3.7.1</span>
+                            <br><small>مكتبة JavaScript الأساسية</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>datatables.net-bs5</strong> <span class="version-badge">1.13.11</span>
+                            <br><small>جداول البيانات التفاعلية</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>select2</strong> <span class="version-badge">4.0.13</span>
+                            <br><small>قوائم منسدلة محسنة</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>sweetalert2</strong> <span class="version-badge">11.10.8</span>
+                            <br><small>رسائل تنبيه جميلة</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maps and Visualization -->
+        <div class="card tech-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-map me-2"></i>الخرائط والتصور
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🗺️ مكتبات الخرائط</h5>
+                        <div class="dependency-item">
+                            <strong>mapbox-gl</strong> <span class="version-badge">3.0.1</span>
+                            <br><small>خرائط تفاعلية متقدمة من Mapbox</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>leaflet</strong> <span class="version-badge">1.9.4</span>
+                            <br><small>مكتبة خرائط مفتوحة المصدر</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>leaflet-draw</strong> <span class="version-badge">^1.0.4</span>
+                            <br><small>أدوات الرسم على الخرائط</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>📊 مكتبات التصور</h5>
+                        <div class="dependency-item">
+                            <strong>apexcharts-clevision</strong> <span class="version-badge">3.28.5</span>
+                            <br><small>رسوم بيانية تفاعلية</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>chart.js</strong> <span class="version-badge">4.4.3</span>
+                            <br><small>مخططات بيانية بسيطة</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>@fullcalendar/core</strong> <span class="version-badge">6.1.14</span>
+                            <br><small>تقويم تفاعلي</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Technologies -->
+        <div class="card tech-card security-level-medium">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>تقنيات الأمان
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🔐 المصادقة والتفويض</h5>
+                        <div class="dependency-item">
+                            <strong>Laravel Fortify</strong>
+                            <br><small>نظام مصادقة متقدم مع دعم Multi-Guard</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>Spatie Permission</strong>
+                            <br><small>إدارة الأذونات والأدوار المتقدمة</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>Laravel Sanctum</strong>
+                            <br><small>API tokens وحماية SPA</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🛡️ الحماية من الهجمات</h5>
+                        <div class="dependency-item">
+                            <strong>biscolab/laravel-recaptcha</strong> <span class="version-badge">^6.1</span>
+                            <br><small>حماية من البوتات والهجمات الآلية</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>mews/captcha</strong> <span class="version-badge">^3.4</span>
+                            <br><small>نظام CAPTCHA إضافي</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>CSRF Protection</strong>
+                            <br><small>حماية مدمجة من هجمات CSRF</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Development Tools -->
+        <div class="card tech-card">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-tools me-2"></i>أدوات التطوير
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🔧 Build Tools</h5>
+                        <div class="dependency-item">
+                            <strong>vite</strong> <span class="version-badge">5.2.12</span>
+                            <br><small>أداة البناء السريعة</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>laravel-vite-plugin</strong> <span class="version-badge">1.0.1</span>
+                            <br><small>تكامل Vite مع Laravel</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>sass</strong> <span class="version-badge">1.77.4</span>
+                            <br><small>معالج CSS المتقدم</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🧪 Testing & Quality</h5>
+                        <div class="dependency-item">
+                            <strong>phpunit/phpunit</strong> <span class="version-badge">^10.5</span>
+                            <br><small>إطار اختبار PHP</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>laravel/pint</strong> <span class="version-badge">^1.13</span>
+                            <br><small>أداة تنسيق الكود</small>
+                        </div>
+                        <div class="dependency-item">
+                            <strong>eslint</strong> <span class="version-badge">8.57.0</span>
+                            <br><small>فحص جودة JavaScript</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Third-party Services -->
+        <div class="card tech-card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-cloud me-2"></i>الخدمات الخارجية
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>🗺️ خدمات الخرائط</h5>
+                        <div class="alert alert-info">
+                            <strong>Mapbox</strong>
+                            <br>• خرائط تفاعلية عالية الجودة
+                            <br>• حساب المسارات والمسافات
+                            <br>• Geocoding و Reverse Geocoding
+                            <br>• تتبع GPS في الوقت الفعلي
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>💳 بوابات الدفع</h5>
+                        <div class="alert alert-warning">
+                            <strong>HyperPay</strong>
+                            <br>• معالجة المدفوعات الآمنة
+                            <br>• دعم بطاقات متعددة
+                            <br>• تشفير PCI DSS
+                            <br>• تقارير مالية مفصلة
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>🔒 خدمات الأمان</h5>
+                        <div class="alert alert-success">
+                            <strong>Google reCAPTCHA</strong>
+                            <br>• حماية من البوتات
+                            <br>• تحليل سلوك المستخدم
+                            <br>• نظام نقاط الثقة
+                            <br>• تكامل سلس مع النماذج
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technology Assessment -->
+        <div class="card tech-card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>تقييم التقنيات المستخدمة
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>✅ نقاط القوة</h5>
+                        <ul>
+                            <li><strong>Laravel 11:</strong> أحدث إصدار مع ميزات متقدمة</li>
+                            <li><strong>Multi-Guard Auth:</strong> نظام مصادقة مرن</li>
+                            <li><strong>Eloquent ORM:</strong> تفاعل آمن مع قاعدة البيانات</li>
+                            <li><strong>Bootstrap 5:</strong> واجهات حديثة ومتجاوبة</li>
+                            <li><strong>Mapbox:</strong> خرائط عالية الجودة</li>
+                            <li><strong>Vite:</strong> بناء سريع وتطوير محسن</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚠️ نقاط التحسين</h5>
+                        <ul>
+                            <li><strong>اعتماد على jQuery:</strong> يمكن التحديث لـ Vue.js أو React</li>
+                            <li><strong>عدم وجود API منفصل:</strong> لتطبيقات الجوال</li>
+                            <li><strong>نقص في التخزين المؤقت:</strong> Redis أو Memcached</li>
+                            <li><strong>عدم وجود CDN:</strong> لتحسين الأداء</li>
+                            <li><strong>نقص في المراقبة:</strong> أدوات مراقبة الأداء</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="system-architecture.html" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-1"></i>السابق: هيكل النظام
+            </a>
+            <a href="security-assessment.html" class="btn btn-primary">
+                التالي: تقييم الأمان <i class="bi bi-arrow-left ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

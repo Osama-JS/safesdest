@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل وظائف النظام - SafeDest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .function-card {
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .function-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .workflow-diagram {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .user-type-admin { border-left-color: #dc3545; }
+        .user-type-customer { border-left-color: #28a745; }
+        .user-type-driver { border-left-color: #ffc107; }
+        .nav-breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .permission-matrix {
+            font-size: 0.9rem;
+        }
+        .permission-matrix th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .permission-yes { color: #28a745; }
+        .permission-no { color: #dc3545; }
+        .permission-limited { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <nav class="nav-breadcrumb mb-3">
+                <a href="index.html" class="text-white text-decoration-none">
+                    <i class="bi bi-house me-1"></i>التحليل الرئيسي
+                </a>
+                <span class="text-white mx-2">/</span>
+                <span class="text-white">وظائف النظام</span>
+            </nav>
+            <h1 class="display-4">
+                <i class="bi bi-diagram-3 me-3"></i>
+                تحليل وظائف النظام
+            </h1>
+            <p class="lead">تحليل شامل للوظائف الأساسية وتدفق العمليات في نظام SafeDest</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- Core Functions Overview -->
+        <div class="card function-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>الوظائف الأساسية للنظام
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🚚 إدارة المهام (Tasks Management)</h5>
+                        <ul>
+                            <li><strong>إنشاء المهام:</strong> إنشاء مهام نقل جديدة مع تفاصيل كاملة</li>
+                            <li><strong>تعيين السائقين:</strong> تعيين تلقائي أو يدوي للسائقين</li>
+                            <li><strong>تتبع الحالة:</strong> متابعة حالة المهمة من البداية للنهاية</li>
+                            <li><strong>إدارة النقاط:</strong> نقاط الاستلام والتسليم</li>
+                            <li><strong>حساب التسعير:</strong> نظام تسعير ديناميكي ومرن</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>👥 إدارة الفرق (Teams Management)</h5>
+                        <ul>
+                            <li><strong>تنظيم الفرق:</strong> تجميع السائقين في فرق عمل</li>
+                            <li><strong>إدارة العمولات:</strong> حساب وتوزيع العمولات</li>
+                            <li><strong>تتبع الأداء:</strong> مراقبة أداء الفرق والسائقين</li>
+                            <li><strong>إعدادات الفريق:</strong> تخصيص إعدادات كل فريق</li>
+                            <li><strong>التقارير:</strong> تقارير مفصلة لأداء الفرق</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5>💰 النظام المالي (Financial System)</h5>
+                        <ul>
+                            <li><strong>المحافظ:</strong> محافظ منفصلة للعملاء والسائقين</li>
+                            <li><strong>المعاملات:</strong> تتبع جميع المعاملات المالية</li>
+                            <li><strong>الدفع المتعدد:</strong> دفع عدة معاملات في عملية واحدة</li>
+                            <li><strong>التوزيع التسلسلي:</strong> توزيع ذكي للمبالغ</li>
+                            <li><strong>التقارير المالية:</strong> تقارير شاملة للأرباح والخسائر</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🗺️ النظام الجغرافي (Geographic System)</h5>
+                        <ul>
+                            <li><strong>الخرائط التفاعلية:</strong> عرض المهام على الخريطة</li>
+                            <li><strong>تتبع GPS:</strong> تتبع مواقع السائقين في الوقت الفعلي</li>
+                            <li><strong>حساب المسافات:</strong> حساب دقيق للمسافات والأوقات</li>
+                            <li><strong>Geofencing:</strong> مناطق جغرافية محددة للتسعير</li>
+                            <li><strong>التوجيه:</strong> أفضل الطرق للوصول للوجهة</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Types Analysis -->
+        <div class="card function-card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-people me-2"></i>أنواع المستخدمين وواجهاتهم
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Admin Users -->
+                    <div class="col-md-4">
+                        <div class="card user-type-admin h-100">
+                            <div class="card-header bg-danger text-white">
+                                <h5><i class="bi bi-person-gear me-2"></i>المديرين (Admin)</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>الصلاحيات:</h6>
+                                <ul class="small">
+                                    <li>إدارة كاملة للنظام</li>
+                                    <li>إنشاء وتعديل المستخدمين</li>
+                                    <li>إدارة الفرق والسائقين</li>
+                                    <li>معالجة المدفوعات</li>
+                                    <li>عرض جميع التقارير</li>
+                                    <li>إعدادات النظام</li>
+                                </ul>
+                                <h6>الواجهات الرئيسية:</h6>
+                                <ul class="small">
+                                    <li>لوحة التحكم الرئيسية</li>
+                                    <li>إدارة المهام والخرائط</li>
+                                    <li>إدارة المستخدمين</li>
+                                    <li>النظام المالي والمحافظ</li>
+                                    <li>التقارير والإحصائيات</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Users -->
+                    <div class="col-md-4">
+                        <div class="card user-type-customer h-100">
+                            <div class="card-header bg-success text-white">
+                                <h5><i class="bi bi-person-check me-2"></i>العملاء (Customer)</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>الصلاحيات:</h6>
+                                <ul class="small">
+                                    <li>إنشاء مهام نقل جديدة</li>
+                                    <li>تتبع مهامهم الخاصة</li>
+                                    <li>إدارة محفظتهم المالية</li>
+                                    <li>عرض تاريخ المعاملات</li>
+                                    <li>إدارة الملف الشخصي</li>
+                                    <li>إنشاء إعلانات المهام</li>
+                                </ul>
+                                <h6>الواجهات الرئيسية:</h6>
+                                <ul class="small">
+                                    <li>لوحة تحكم العميل</li>
+                                    <li>إنشاء مهمة جديدة</li>
+                                    <li>متابعة المهام</li>
+                                    <li>المحفظة المالية</li>
+                                    <li>إعلانات المهام</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Driver Users -->
+                    <div class="col-md-4">
+                        <div class="card user-type-driver h-100">
+                            <div class="card-header bg-warning text-dark">
+                                <h5><i class="bi bi-truck me-2"></i>السائقين (Driver)</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>الصلاحيات:</h6>
+                                <ul class="small">
+                                    <li>استقبال المهام المعينة</li>
+                                    <li>قبول أو رفض المهام</li>
+                                    <li>تحديث حالة المهمة</li>
+                                    <li>تتبع الأرباح والعمولات</li>
+                                    <li>تحديث الموقع الجغرافي</li>
+                                    <li>التقديم على إعلانات المهام</li>
+                                </ul>
+                                <h6>الواجهات الرئيسية:</h6>
+                                <ul class="small">
+                                    <li>لوحة تحكم السائق</li>
+                                    <li>المهام المتاحة</li>
+                                    <li>المهام الحالية</li>
+                                    <li>المحفظة والأرباح</li>
+                                    <li>إعدادات الملف الشخصي</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Workflow -->
+        <div class="card function-card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-arrow-repeat me-2"></i>تدفق العمليات الرئيسية
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="workflow-diagram">
+                    <h5 class="text-center mb-4">دورة حياة المهمة (Task Lifecycle)</h5>
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-plus-circle display-4 text-primary"></i>
+                                <h6>إنشاء المهمة</h6>
+                                <small>العميل ينشئ مهمة جديدة</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-calculator display-4 text-success"></i>
+                                <h6>حساب التسعير</h6>
+                                <small>النظام يحسب السعر تلقائياً</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-person-plus display-4 text-warning"></i>
+                                <h6>تعيين السائق</h6>
+                                <small>تعيين تلقائي أو يدوي</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-check-circle display-4 text-info"></i>
+                                <h6>قبول المهمة</h6>
+                                <small>السائق يقبل أو يرفض</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-truck display-4 text-primary"></i>
+                                <h6>تنفيذ المهمة</h6>
+                                <small>السائق ينفذ المهمة</small>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-check2-all display-4 text-success"></i>
+                                <h6>إكمال المهمة</h6>
+                                <small>تأكيد الإكمال والدفع</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="workflow-diagram mt-4">
+                    <h5 class="text-center mb-4">تدفق النظام المالي (Financial Flow)</h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-wallet2 display-4 text-success"></i>
+                                <h6>إنشاء المعاملة</h6>
+                                <small>إنشاء معاملة مالية جديدة</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-check-square display-4 text-primary"></i>
+                                <h6>تحديد المعاملات</h6>
+                                <small>اختيار معاملات للدفع</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-arrow-down-up display-4 text-warning"></i>
+                                <h6>التوزيع التسلسلي</h6>
+                                <small>توزيع المبلغ تسلسلياً</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <i class="bi bi-credit-card display-4 text-success"></i>
+                                <h6>معالجة الدفع</h6>
+                                <small>تنفيذ عملية الدفع</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Matrix -->
+        <div class="card function-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>مصفوفة الأذونات والصلاحيات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped permission-matrix">
+                        <thead>
+                            <tr>
+                                <th>الوظيفة</th>
+                                <th class="text-center">Admin</th>
+                                <th class="text-center">Customer</th>
+                                <th class="text-center">Driver</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>إنشاء المهام</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td>العملاء يمكنهم إنشاء مهامهم الخاصة فقط</td>
+                            </tr>
+                            <tr>
+                                <td><strong>عرض جميع المهام</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td>المديرين فقط يمكنهم عرض جميع المهام</td>
+                            </tr>
+                            <tr>
+                                <td><strong>إدارة المستخدمين</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td>صلاحية إدارية فقط</td>
+                            </tr>
+                            <tr>
+                                <td><strong>معالجة المدفوعات</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-limited"><i class="bi bi-dash-circle"></i></td>
+                                <td class="text-center permission-limited"><i class="bi bi-dash-circle"></i></td>
+                                <td>العملاء والسائقين: محافظهم الخاصة فقط</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تتبع الموقع</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-limited"><i class="bi bi-dash-circle"></i></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td>العملاء: مهامهم فقط، السائقين: موقعهم الخاص</td>
+                            </tr>
+                            <tr>
+                                <td><strong>إدارة الفرق</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td class="text-center permission-no"><i class="bi bi-x-circle"></i></td>
+                                <td>صلاحية إدارية فقط</td>
+                            </tr>
+                            <tr>
+                                <td><strong>عرض التقارير</strong></td>
+                                <td class="text-center permission-yes"><i class="bi bi-check-circle"></i></td>
+                                <td class="text-center permission-limited"><i class="bi bi-dash-circle"></i></td>
+                                <td class="text-center permission-limited"><i class="bi bi-dash-circle"></i></td>
+                                <td>العملاء والسائقين: تقاريرهم الشخصية فقط</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3">
+                    <small>
+                        <span class="permission-yes"><i class="bi bi-check-circle me-1"></i>صلاحية كاملة</span> |
+                        <span class="permission-limited"><i class="bi bi-dash-circle me-1"></i>صلاحية محدودة</span> |
+                        <span class="permission-no"><i class="bi bi-x-circle me-1"></i>لا توجد صلاحية</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="index.html" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-1"></i>السابق: الفهرس الرئيسي
+            </a>
+            <a href="system-architecture.html" class="btn btn-primary">
+                التالي: هيكل النظام <i class="bi bi-arrow-left ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

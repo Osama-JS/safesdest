@@ -45,7 +45,7 @@
                             <span>{{ __('Active Tasks') }}</span>
                             <div class="d-flex align-items-end mt-2">
                                 <h4 class="mb-0 me-2" id="active-tasks">0</h4>
-                                <small class="text-warning">({{ __('In Progress') }})</small>
+                                <small class="text-warning">({{ __('On Going') }})</small>
                             </div>
                         </div>
                         <span class="badge bg-label-warning rounded p-2">
@@ -97,7 +97,8 @@
     <div class="card">
         <div class="card-header">
             <h5 class="card-title mb-0">
-                <i class="ti ti-clipboard-list me-2"></i>{{ __('My Tasks') }}
+                <i class="tf-icons ti ti-truck-delivery me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                {{ __('My Tasks') }}
             </h5>
         </div>
 
@@ -110,11 +111,11 @@
                         <th></th>
                         <th>{{ __('#') }}</th>
                         <th>{{ __('Task ID') }}</th>
+                        <th>{{ __('Total Price') }}</th>
                         <th>{{ __('Pickup Address') }}</th>
                         <th>{{ __('Delivery Address') }}</th>
                         <th>{{ __('Driver') }}</th>
                         <th>{{ __('Vehicle') }}</th>
-                        <th>{{ __('Total Price') }}</th>
                         <th>{{ __('Status') }}</th>
                         <th>{{ __('Created At') }}</th>
                         <th>{{ __('Actions') }}</th>

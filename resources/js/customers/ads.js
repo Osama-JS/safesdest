@@ -1,360 +1,224 @@
+/**
+ * Page User List
+ */
+
+'use strict';
+import { deleteRecord } from '../ajax';
+import { mapsConfig } from '../mapbox-helper';
+
+// Datatable (jquery)
 $(function () {
-  'use strict';
+  // ajax setup
+  $.ajaxSetup({
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+  });
 
-  var dt_ads_table = $('.datatables-ads'),
-    adView = baseUrl + 'customer/ads/show/';
+  function loadAds(page = 1, search = '') {
+    $.ajax({
+      url: baseUrl + 'customer/ads/data',
+      type: 'GET',
+      data: { search: search, page: page },
+      success: function (response) {
+        $('#ads-container').html(''); // مسح المحتوى الحالي
 
-  // Ads DataTable
-  if (dt_ads_table.length) {
-    var dt_ads = dt_ads_table.DataTable({
-      ajax: {
-        url: baseUrl + 'customer/ads/data',
-        data: function (d) {
-          d.from_date = $('#from_date').val();
-          d.to_date = $('#to_date').val();
-          d.status = $('#status_filter').val();
+        // التحقق من عدم وجود بيانات
+        if (response.data.data.length === 0) {
+          $('#ads-container').html("<p class='text-center p-5 alert alert-secondary'>No data available</p>");
+          $('#pagination').html(''); // مسح التصفح
+          return;
         }
-      },
-      columns: [
-        { data: '' },
-        { data: 'fake_id' },
-        { data: 'task_id' },
-        { data: 'pickup_address' },
-        { data: 'delivery_address' },
-        { data: 'vehicle_info' },
-        { data: 'lowest_price' },
-        { data: 'offers_count' },
-        { data: 'status' },
-        { data: 'created_at' },
-        { data: null }
-      ],
-      columnDefs: [
-        {
-          className: 'control',
-          searchable: false,
-          orderable: false,
-          responsivePriority: 2,
-          targets: 0,
-          render: function (data, type, full, meta) {
-            return '';
+
+        // تكرار البيانات وإضافة البطاقات
+        response.data.data.forEach(ad => {
+          let avatarHtml = '';
+          let name = ad.customer.name;
+          let initials = name.match(/\b\w/g) || [];
+          initials = (initials.shift() || '') + (initials.pop() || '');
+          let colors = ['success', 'danger', 'warning', 'info', 'dark', 'primary'];
+          let color = colors[Math.floor(Math.random() * colors.length)];
+
+          if (ad.customer.image === null) {
+            avatarHtml = `
+              <div class="avatar bg-label-${color} rounded-circle">
+                <span class="avatar-initial">${initials.toUpperCase()}</span>
+              </div>`;
+          } else {
+            avatarHtml = `
+              <div class="avatar">
+                <img src="${ad.customer.image}" class="rounded-circle object-cover"/>
+              </div>`;
           }
-        },
-        {
-          targets: 1,
-          searchable: false,
-          visible: false
-        },
-        {
-          targets: 2,
-          render: function (data, type, full, meta) {
-            return `<span class="fw-bold">#${full.task_id}</span>`;
+
+          let priceHtml = '';
+          let adStatus = '';
+
+          // التحقق من السعر الأدنى والأعلى
+          if (ad.low_price > 0 && ad.high_price > 0) {
+            priceHtml = `<span>Lowest price: ${ad.low_price} ريال - Highest price: ${ad.high_price} ريال</span>`;
+          } else if (ad.low_price > 0) {
+            priceHtml = `<span>Lowest price: ${ad.low_price} ريال</span>`;
+          } else if (ad.high_price > 0) {
+            priceHtml = `<span>Highest price: ${ad.high_price} ريال</span>`;
           }
-        },
-        {
-          targets: 3,
-          render: function (data, type, full, meta) {
-            return `<span class="text-truncate" title="${full.pickup_address}">${full.pickup_address}</span>`;
+
+          // إذا لم يكن هناك أي سعر متاح، يتم ترك السعر فارغًا
+          if (priceHtml === '') {
+            priceHtml = '<span>Price not specified</span>';
           }
-        },
-        {
-          targets: 4,
-          render: function (data, type, full, meta) {
-            return `<span class="text-truncate" title="${full.delivery_address}">${full.delivery_address}</span>`;
-          }
-        },
-        {
-          targets: 5,
-          render: function (data, type, full, meta) {
-            return `<small class="text-muted">${full.vehicle_info}</small>`;
-          }
-        },
-        {
-          targets: 6,
-          render: function (data, type, full, meta) {
-            return `
-              <div>
-                <span class="text-success fw-bold">${full.lowest_price}</span>
-                <br>
-                <small class="text-muted">to ${full.highest_price}</small>
-              </div>
-            `;
-          }
-        },
-        {
-          targets: 7,
-          render: function (data, type, full, meta) {
-            var badgeClass = full.offers_count > 0 ? 'bg-label-success' : 'bg-label-secondary';
-            return `<span class="badge ${badgeClass}">${full.offers_count} Offers</span>`;
-          }
-        },
-        {
-          targets: 8,
-          render: function (data, type, full, meta) {
-            var statusObj = {
-              'advertised': { title: 'Advertised', class: 'bg-label-warning' },
-              'assign': { title: 'Assigned', class: 'bg-label-primary' },
-              'started': { title: 'Started', class: 'bg-label-info' },
-              'completed': { title: 'Completed', class: 'bg-label-success' },
-              'cancelled': { title: 'Cancelled', class: 'bg-label-danger' }
-            };
-            
-            var statusBadge = `<span class="badge ${statusObj[full.status]?.class || 'bg-label-secondary'}">${statusObj[full.status]?.title || full.status}</span>`;
-            
-            if (full.task_closed) {
-              statusBadge += '<br><small class="text-muted">Closed</small>';
-            }
-            
-            return statusBadge;
-          }
-        },
-        {
-          targets: 9,
-          render: function (data, type, full, meta) {
-            return full.created_at;
-          }
-        },
-        {
-          targets: -1,
-          title: 'Actions',
-          searchable: false,
-          orderable: false,
-          render: function (data, type, full, meta) {
-            var actions = `
-              <div class="d-flex align-items-center">
-                <a href="${adView}${full.id}" class="text-body" title="View Details">
-                  <i class="ti ti-eye ti-sm me-2"></i>
-                </a>
-            `;
-            
-            if (full.offers_count > 0 && full.status === 'advertised' && !full.task_closed) {
-              actions += `
-                <a href="${adView}${full.id}" class="text-success" title="View Offers">
-                  <i class="ti ti-users ti-sm me-2"></i>
-                </a>
+
+          let ownershipBadge = '';
+          if (ad.user === ad.customer.id) {
+            ownershipBadge = `
+                <span class="badge badge-ownership">My Ad</span>
               `;
-            }
-            
-            actions += `</div>`;
-            return actions;
           }
-        }
-      ],
-      order: [[1, 'desc']],
-      dom: '<"row mx-2"<"col-md-2"<"me-3"l>><"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0"fB>>>t<"row mx-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-      displayLength: 10,
-      lengthMenu: [10, 25, 50, 75, 100],
-      buttons: [
-        {
-          extend: 'collection',
-          className: 'btn btn-label-secondary dropdown-toggle mx-3',
-          text: '<i class="ti ti-screen-share me-1 ti-xs"></i>Export',
-          buttons: [
-            {
-              extend: 'print',
-              text: '<i class="ti ti-printer me-2" ></i>Print',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              },
-              customize: function (win) {
-                $(win.document.body)
-                  .css('color', headingColor)
-                  .css('border-color', borderColor)
-                  .css('background-color', bodyBg);
-                $(win.document.body)
-                  .find('table')
-                  .addClass('compact')
-                  .css('color', 'inherit')
-                  .css('border-color', 'inherit')
-                  .css('background-color', 'inherit');
-              }
-            },
-            {
-              extend: 'csv',
-              text: '<i class="ti ti-file-text me-2" ></i>Csv',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'excel',
-              text: '<i class="ti ti-file-spreadsheet me-2"></i>Excel',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'pdf',
-              text: '<i class="ti ti-file-code-2 me-2"></i>Pdf',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            },
-            {
-              extend: 'copy',
-              text: '<i class="ti ti-copy me-2" ></i>Copy',
-              className: 'dropdown-item',
-              exportOptions: {
-                columns: [2, 3, 4, 5, 6, 7, 8, 9],
-                format: {
-                  body: function (inner, coldex, rowdex) {
-                    if (inner.length <= 0) return inner;
-                    var el = $.parseHTML(inner);
-                    var result = '';
-                    $.each(el, function (index, item) {
-                      if (item.classList !== undefined && item.classList.contains('user-name')) {
-                        result = result + item.lastChild.firstChild.textContent;
-                      } else if (item.innerText === undefined) {
-                        result = result + item.textContent;
-                      } else result = result + item.innerText;
-                    });
-                    return result;
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ],
-      responsive: {
-        details: {
-          display: $.fn.dataTable.Responsive.display.modal({
-            header: function (row) {
-              var data = row.data();
-              return 'Details of Ad #' + data['id'];
-            }
-          }),
-          type: 'column',
-          renderer: function (api, rowIdx, columns) {
-            var data = $.map(columns, function (col, i) {
-              return col.title !== ''
-                ? '<tr data-dt-row="' +
-                    col.rowIndex +
-                    '" data-dt-column="' +
-                    col.columnIndex +
-                    '">' +
-                    '<td>' +
-                    col.title +
-                    ':' +
-                    '</td> ' +
-                    '<td>' +
-                    col.data +
-                    '</td>' +
-                    '</tr>'
-                : '';
-            }).join('');
+          if (ad.status === 'running') {
+            adStatus = `
+                <span class="badge badge-ownership">Running</span>
+              `;
+          } else {
+            adStatus = `
+                <span class="badge badge-ownership">Closed</span>
+              `;
+          }
 
-            return data ? $('<table class="table"/><tbody />').append(data) : false;
-          }
-        }
+          let cardHtml = `
+            <div class="col-md-3 col-sm-6 col-12 mb-4 ">
+              <div class="card">
+              ${ownershipBadge}
+              ${adStatus}
+                <div class="map-container" id="map-${ad.id}"></div>
+
+                <div class="card-body">
+                 <div class="d-flex align-items-center mb-3">
+                    ${avatarHtml}
+                       <h5 class="card-title">${ad.customer.name}</h5>
+                  </div>
+                  <div class="row">
+                      <div class="col-6">
+                       <p><strong>From:</strong> ${ad.from_address}</p>
+                      </div>
+                      <div class="col-6">
+                       <p><strong>To:</strong> ${ad.to_address}</p>
+                      </div>
+                  </div>
+
+                  <p class="card-text">${ad.note || 'No description available'}</p>
+
+                </div>
+                <div class="card-footer">
+                  ${priceHtml}
+                  <a href="${baseUrl}customer/ads/show/${ad.id}" class=" form-control btn btn-outline-primary mt-2">View Details</a>
+                </div>
+
+              </div>
+            </div>
+          `;
+          $('#ads-container').append(cardHtml);
+
+          // تحميل الخريطة باستخدام Mapbox
+          initMapForAd(ad.id, ad.from_location);
+        });
+
+        updatePagination(response.data);
       }
     });
   }
 
-  // Date range picker
-  $('#from_date, #to_date').datepicker({
-    format: 'yyyy-mm-dd',
-    autoclose: true,
-    todayHighlight: true
-  });
+  mapboxgl.setRTLTextPlugin(
+    'https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-rtl-text/v0.2.3/mapbox-gl-rtl-text.js',
+    null,
+    true // تحميل فقط عند الحاجة (lazy load)
+  );
 
-  // Filter handlers
-  $('#from_date, #to_date, #status_filter').on('change', function () {
-    dt_ads.draw();
-  });
+  // دالة لتحميل الخريطة باستخدام Mapbox
+  function initMapForAd(adId, location) {
+    let mapContainer = document.getElementById(`map-${adId}`);
 
-  // Load statistics
-  loadAdsStatistics();
+    if (!mapContainer) return;
 
-  function loadAdsStatistics() {
-    // This would typically come from an API endpoint
-    // For now, we'll update after the table loads
-    dt_ads.on('draw', function () {
-      var info = dt_ads.page.info();
-      $('#total-ads').text(info.recordsTotal);
-      
-      // Count statistics
-      var activeCount = 0;
-      var totalOffers = 0;
-      var completedCount = 0;
-      
-      dt_ads.rows().every(function () {
-        var data = this.data();
-        if (data.status === 'advertised') {
-          activeCount++;
-        }
-        if (data.status === 'completed') {
-          completedCount++;
-        }
-        totalOffers += parseInt(data.offers_count) || 0;
-      });
-      
-      $('#active-ads').text(activeCount);
-      $('#total-offers').text(totalOffers);
-      $('#completed-ads').text(completedCount);
+    // إنشاء الخريطة باستخدام Mapbox
+    mapboxgl.accessToken = mapsConfig.token; // استبدل هذا برمز التوثيق الخاص بك
+    let map = new mapboxgl.Map({
+      container: mapContainer,
+      style: 'mapbox://styles/' + mapsConfig.style, // اختر الأسلوب الذي تفضله
+      center: [location[0], location[1]], // الموقع الأول (longitude, latitude)
+      zoom: 13
     });
+
+    // إضافة مؤشر على الخريطة
+    new mapboxgl.Marker().setLngLat([location[0], location[1]]).addTo(map);
   }
+
+  function updatePagination(data) {
+    let totalPages = data.last_page;
+    let currentPage = data.current_page;
+    let paginationHtml = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+      paginationHtml += `
+        <button class="btn btn-link ${i === currentPage ? 'active' : ''}" onclick="loadAds(${i})">${i}</button>
+      `;
+    }
+
+    $('#pagination').html(paginationHtml);
+  }
+
+  $(document).on('click', '.page-link', function (e) {
+    e.preventDefault(); // منع إعادة تحميل الصفحة
+
+    let page = $(this).data('page'); // جلب رقم الصفحة من الزر
+    if (page) {
+      loadAds(page); // استدعاء الدالة مع رقم الصفحة الجديد
+    }
+  });
+
+  loadAds();
+
+  document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+
+    loadAds();
+    setTimeout(() => {
+      $('#submitModal').modal('hide');
+    }, 2000);
+  });
+
+  document.addEventListener('deletedSuccess', function (event) {
+    loadAds();
+  });
+
+  $(document).on('click', '.edit-record', function () {
+    var teamId = $(this).data('id');
+    var teamName = $(this).data('name');
+
+    $('#submitModal').modal('show');
+
+    $('#modelTitle').html(`Edit Team: <span class="bg-info text-white px-2 rounded">${teamName}</span>`);
+
+    // get data
+    $.get(`${baseUrl}admin/teams/edit/${teamId}`, function (data) {
+      $('#team_id').val(data.id);
+      $('#team-name').val(data.name);
+      $('#team-address').val(data.address);
+      $('#team-location_update').val(data.location_update_interval);
+      $('#team-commission-type').val(data.team_commission_type);
+      $('#team-commission').val(data.team_commission_value);
+      $('#team-note').val(data.note);
+    });
+  });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/teams/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
+  });
+
+  $('#submitModal').on('hidden.bs.modal', function () {
+    $('.form_submit').trigger('reset');
+    $('.text-error').html('');
+    $('#team_id').val('');
+    $('#modelTitle').html('Add New Team');
+  });
 });

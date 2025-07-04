@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>هيكل النظام والمكونات - SafeDest</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-section {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 40px 0;
+        }
+        .architecture-card {
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        .architecture-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .database-table {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .relationship-line {
+            border-left: 2px solid #6c757d;
+            padding-left: 15px;
+            margin-left: 10px;
+        }
+        .nav-breadcrumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px 20px;
+        }
+        .mvc-component {
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .mvc-model { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; }
+        .mvc-view { background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; }
+        .mvc-controller { background: linear-gradient(135deg, #45b7d1 0%, #96c93d 100%); color: white; }
+        .file-tree {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .folder { color: #ffc107; font-weight: bold; }
+        .file { color: #17a2b8; }
+        .important-file { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <nav class="nav-breadcrumb mb-3">
+                <a href="index.html" class="text-white text-decoration-none">
+                    <i class="bi bi-house me-1"></i>التحليل الرئيسي
+                </a>
+                <span class="text-white mx-2">/</span>
+                <span class="text-white">هيكل النظام</span>
+            </nav>
+            <h1 class="display-4">
+                <i class="bi bi-building me-3"></i>
+                هيكل النظام والمكونات
+            </h1>
+            <p class="lead">تحليل مفصل لبنية قاعدة البيانات والمكونات الأساسية للنظام</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- Database Structure -->
+        <div class="card architecture-card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-database me-2"></i>بنية قاعدة البيانات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>📊 الجداول الأساسية (Core Tables)</h5>
+                        <div class="database-table">
+                            <strong>users</strong> - المستخدمين الإداريين
+                            <br><small>id, name, email, phone, status, role_id, additional_data</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>customers</strong> - العملاء
+                            <br><small>id, name, email, phone, company_name, status, team_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>drivers</strong> - السائقين
+                            <br><small>id, name, phone, email, team_id, vehicle_size_id, online, free</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>teams</strong> - الفرق
+                            <br><small>id, name, address, commission_type, commission_value, is_public</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🚚 جداول المهام (Task Tables)</h5>
+                        <div class="database-table">
+                            <strong>tasks</strong> - المهام الرئيسية
+                            <br><small>id, status, total_price, commission, payment_method, customer_id, driver_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>tasks_points</strong> - نقاط المهام
+                            <br><small>id, type, contact_name, address, latitude, longitude, task_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>tasks_ads</strong> - إعلانات المهام
+                            <br><small>id, description, status, highest_price, lowest_price, task_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>tasks_offers</strong> - عروض السائقين
+                            <br><small>id, price, description, accepted, task_ad_id, driver_id</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5>💰 الجداول المالية (Financial Tables)</h5>
+                        <div class="database-table">
+                            <strong>wallets</strong> - المحافظ
+                            <br><small>id, user_type, debt_ceiling, status, customer_id, driver_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>wallet_transactions</strong> - المعاملات المالية
+                            <br><small>id, amount, transaction_type, description, status, wallet_id, task_id</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>⚙️ جداول الإعدادات (Settings Tables)</h5>
+                        <div class="database-table">
+                            <strong>form_templates</strong> - قوالب النماذج
+                            <br><small>id, name, description, status</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>form_fields</strong> - حقول النماذج
+                            <br><small>id, name, type, required, form_template_id</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>pricing_templates</strong> - قوالب التسعير
+                            <br><small>id, name, description, status</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>geofences</strong> - المناطق الجغرافية
+                            <br><small>id, name, coordinates, status</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Relationships -->
+        <div class="card architecture-card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-diagram-2 me-2"></i>العلاقات بين الجداول
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🔗 العلاقات الأساسية</h5>
+                        <div class="relationship-line">
+                            <strong>Users → Roles:</strong> belongsTo
+                            <br><small>كل مستخدم ينتمي لدور واحد</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Drivers → Teams:</strong> belongsTo
+                            <br><small>كل سائق ينتمي لفريق واحد</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Teams → Drivers:</strong> hasMany
+                            <br><small>كل فريق يحتوي على عدة سائقين</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Tasks → Customer:</strong> belongsTo
+                            <br><small>كل مهمة تنتمي لعميل واحد</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Tasks → Driver:</strong> belongsTo
+                            <br><small>كل مهمة مُعينة لسائق واحد</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>💰 العلاقات المالية</h5>
+                        <div class="relationship-line">
+                            <strong>Wallets → Customer:</strong> belongsTo
+                            <br><small>كل محفظة تنتمي لعميل أو سائق</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Wallets → Driver:</strong> belongsTo
+                            <br><small>محافظ منفصلة للسائقين</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Wallet_Transactions → Wallet:</strong> belongsTo
+                            <br><small>كل معاملة تنتمي لمحفظة واحدة</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Wallet_Transactions → Task:</strong> belongsTo (nullable)
+                            <br><small>المعاملات قد تكون مرتبطة بمهمة</small>
+                        </div>
+                        <div class="relationship-line">
+                            <strong>Tasks → Wallet_Transactions:</strong> hasMany
+                            <br><small>كل مهمة قد تحتوي على عدة معاملات</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MVC Architecture -->
+        <div class="card architecture-card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-layers me-2"></i>بنية MVC والمكونات
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mvc-component mvc-model">
+                            <h5><i class="bi bi-database me-2"></i>Models</h5>
+                            <ul class="list-unstyled text-start">
+                                <li>• User.php</li>
+                                <li>• Customer.php</li>
+                                <li>• Driver.php</li>
+                                <li>• Task.php</li>
+                                <li>• Teams.php</li>
+                                <li>• Wallet.php</li>
+                                <li>• Wallet_Transaction.php</li>
+                                <li>• Form_Template.php</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mvc-component mvc-view">
+                            <h5><i class="bi bi-eye me-2"></i>Views</h5>
+                            <ul class="list-unstyled text-start">
+                                <li>• admin/ (لوحة الإدارة)</li>
+                                <li>• customer/ (واجهة العملاء)</li>
+                                <li>• driver/ (واجهة السائقين)</li>
+                                <li>• auth/ (المصادقة)</li>
+                                <li>• layouts/ (التخطيطات)</li>
+                                <li>• components/ (المكونات)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mvc-component mvc-controller">
+                            <h5><i class="bi bi-gear me-2"></i>Controllers</h5>
+                            <ul class="list-unstyled text-start">
+                                <li>• TasksController</li>
+                                <li>• TeamsController</li>
+                                <li>• DriversController</li>
+                                <li>• CustomersController</li>
+                                <li>• WalletsController</li>
+                                <li>• DashboardController</li>
+                                <li>• SettingsController</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Structure -->
+        <div class="card architecture-card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-folder me-2"></i>هيكل الملفات الرئيسي
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="file-tree">
+<span class="folder">📁 app/</span>
+├── <span class="folder">📁 Http/</span>
+│   ├── <span class="folder">📁 Controllers/</span>
+│   │   ├── <span class="folder">📁 admin/</span>
+│   │   │   ├── <span class="important-file">📄 TasksController.php</span>
+│   │   │   ├── <span class="important-file">📄 TeamsController.php</span>
+│   │   │   ├── <span class="important-file">📄 DriversController.php</span>
+│   │   │   ├── <span class="important-file">📄 CustomersController.php</span>
+│   │   │   ├── <span class="important-file">📄 WalletsController.php</span>
+│   │   │   └── <span class="folder">📁 settings/</span>
+│   │   ├── <span class="folder">📁 customer/</span>
+│   │   ├── <span class="folder">📁 driver/</span>
+│   │   └── <span class="folder">📁 Auth/</span>
+│   ├── <span class="folder">📁 Middleware/</span>
+│   │   ├── <span class="important-file">📄 EnsureUserIsAuthenticatedWithCorrectGuard.php</span>
+│   │   ├── <span class="file">📄 LocaleMiddleware.php</span>
+│   │   └── <span class="file">📄 GlobalRateLimit.php</span>
+│   └── <span class="folder">📁 Requests/</span>
+├── <span class="folder">📁 Models/</span>
+│   ├── <span class="important-file">📄 User.php</span>
+│   ├── <span class="important-file">📄 Customer.php</span>
+│   ├── <span class="important-file">📄 Driver.php</span>
+│   ├── <span class="important-file">📄 Task.php</span>
+│   ├── <span class="important-file">📄 Teams.php</span>
+│   ├── <span class="important-file">📄 Wallet.php</span>
+│   └── <span class="important-file">📄 Wallet_Transaction.php</span>
+├── <span class="folder">📁 Services/</span>
+│   ├── <span class="important-file">📄 TaskPricingService.php</span>
+│   ├── <span class="important-file">📄 CustomerTaskPricingService.php</span>
+│   └── <span class="file">📄 MapboxService.php</span>
+└── <span class="folder">📁 Helpers/</span>
+    ├── <span class="file">📄 FileHelper.php</span>
+    └── <span class="file">📄 IpHelper.php</span>
+
+<span class="folder">📁 resources/</span>
+├── <span class="folder">📁 views/</span>
+│   ├── <span class="folder">📁 admin/</span>
+│   │   ├── <span class="folder">📁 tasks/</span>
+│   │   ├── <span class="folder">📁 teams/</span>
+│   │   ├── <span class="folder">📁 drivers/</span>
+│   │   ├── <span class="folder">📁 customers/</span>
+│   │   └── <span class="folder">📁 wallets/</span>
+│   ├── <span class="folder">📁 customer/</span>
+│   ├── <span class="folder">📁 driver/</span>
+│   └── <span class="folder">📁 layouts/</span>
+└── <span class="folder">📁 js/</span>
+    ├── <span class="folder">📁 admin/</span>
+    ├── <span class="folder">📁 customer/</span>
+    └── <span class="folder">📁 driver/</span>
+
+<span class="folder">📁 database/</span>
+├── <span class="folder">📁 migrations/</span>
+│   ├── <span class="important-file">📄 create_users_table.php</span>
+│   ├── <span class="important-file">📄 create_customers_table.php</span>
+│   ├── <span class="important-file">📄 create_drivers_table.php</span>
+│   ├── <span class="important-file">📄 create_tasks_table.php</span>
+│   ├── <span class="important-file">📄 create_wallets_table.php</span>
+│   └── <span class="important-file">📄 create_wallet_transactions_table.php</span>
+├── <span class="folder">📁 seeders/</span>
+└── <span class="folder">📁 factories/</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routes Organization -->
+        <div class="card architecture-card">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-signpost me-2"></i>تنظيم المسارات (Routes)
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h5>🔐 مسارات المصادقة</h5>
+                        <ul>
+                            <li><code>/login</code> - تسجيل الدخول</li>
+                            <li><code>/register</code> - التسجيل</li>
+                            <li><code>/logout</code> - تسجيل الخروج</li>
+                            <li><code>/forgot-password</code> - استعادة كلمة المرور</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>👨‍💼 مسارات الإدارة</h5>
+                        <ul>
+                            <li><code>/admin/dashboard</code> - لوحة التحكم</li>
+                            <li><code>/admin/tasks</code> - إدارة المهام</li>
+                            <li><code>/admin/teams</code> - إدارة الفرق</li>
+                            <li><code>/admin/drivers</code> - إدارة السائقين</li>
+                            <li><code>/admin/customers</code> - إدارة العملاء</li>
+                            <li><code>/admin/wallets</code> - إدارة المحافظ</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h5>👥 مسارات المستخدمين</h5>
+                        <ul>
+                            <li><code>/customer/dashboard</code> - لوحة العميل</li>
+                            <li><code>/customer/tasks</code> - مهام العميل</li>
+                            <li><code>/customer/wallet</code> - محفظة العميل</li>
+                            <li><code>/driver/dashboard</code> - لوحة السائق</li>
+                            <li><code>/driver/tasks</code> - مهام السائق</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middleware Analysis -->
+        <div class="card architecture-card">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield me-2"></i>تحليل Middleware والحماية
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>🛡️ Middleware المخصصة</h5>
+                        <div class="database-table">
+                            <strong>EnsureUserIsAuthenticatedWithCorrectGuard</strong>
+                            <br><small>التأكد من استخدام Guard الصحيح للمصادقة</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>LocaleMiddleware</strong>
+                            <br><small>إدارة اللغات المتعددة للنظام</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>GlobalRateLimit</strong>
+                            <br><small>تحديد معدل الطلبات لمنع الإفراط</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🔒 Middleware Laravel الافتراضية</h5>
+                        <div class="database-table">
+                            <strong>VerifyCsrfToken</strong>
+                            <br><small>حماية من هجمات CSRF</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>EncryptCookies</strong>
+                            <br><small>تشفير ملفات تعريف الارتباط</small>
+                        </div>
+                        <div class="database-table">
+                            <strong>AuthenticateSession</strong>
+                            <br><small>التحقق من صحة الجلسات</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="d-flex justify-content-between mt-4">
+            <a href="system-functions.html" class="btn btn-secondary">
+                <i class="bi bi-arrow-right me-1"></i>السابق: وظائف النظام
+            </a>
+            <a href="technologies.html" class="btn btn-primary">
+                التالي: التقنيات والمكتبات <i class="bi bi-arrow-left ms-1"></i>
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -52,7 +52,8 @@
                 <!-- Title -->
                 <div>
                     <h5 class="card-title mb-1 text-primary fw-bold">
-                        <i class="tf-icons ti ti-user-circle me-2"></i>{{ __('Customer Wallet') }}
+                        <i class="tf-icons ti ti-wallet  me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                        {{ __('Wallet') }}
                         <span class="text-muted">| [{{ $data->id }}]</span>
                         <span class="text-dark">{{ $data->owner->name }}</span>
                     </h5>

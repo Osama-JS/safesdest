@@ -244,6 +244,8 @@ $(function () {
 
                         </a>
                     </li>
+                    <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >${__('Create Wallet')}</a></li>
+
                   </ul>
                 </div>
               </div>`;
@@ -435,6 +437,23 @@ $(function () {
       url: `${baseUrl}admin/drivers/status`,
       method: 'POST',
       dataTable: dt_data
+    });
+  });
+
+  $(document).on('click', '.wallet-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+    `;
+
+    showFormModal({
+      title: `Create Wallet For Customer: <h4> <span class="bg-info p-0 px-2 rounded text-white"> ${name} </span> </h4>`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/drivers/wallet/create`,
+      method: 'POST',
+      dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });
   });
 

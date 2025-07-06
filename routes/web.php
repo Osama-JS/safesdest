@@ -336,6 +336,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/drivers/status', [DriversController::class, 'chang_status'])->name('drivers.status');
         Route::get('/drivers/edit/{id}', [DriversController::class, 'edit'])->name('drivers.edit');
         Route::delete('/drivers/delete/{id}', [DriversController::class, 'destroy'])->name('drivers.delete');
+        Route::post('/drivers/wallet/create', [DriversController::class, 'createWallet'])->name('drivers.wallet.create');
 
 
         // Basic Teams CRUD Routes

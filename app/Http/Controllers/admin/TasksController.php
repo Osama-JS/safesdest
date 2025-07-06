@@ -2003,7 +2003,7 @@ class TasksController extends Controller
         'action_type' => 'closed',
         'description' => 'Task closed by admin' . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
         'ip' => IpHelper::getUserIpAddress(),
-        'user_id' => Auth::id(),
+        'user_id' => Auth::user()->id,
       ]);
 
       $wallet = $driver->wallet;

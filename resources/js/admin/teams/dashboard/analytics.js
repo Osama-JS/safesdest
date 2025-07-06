@@ -3,7 +3,7 @@
  */
 
 'use strict';
-import { initDashboard, showAlert, setButtonLoading } from './common.js';
+import { initDashboard, setButtonLoading } from './common.js';
 
 $(function () {
   // Initialize common dashboard functionality

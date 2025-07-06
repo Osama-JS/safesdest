@@ -53,7 +53,9 @@
                         <div class="d-flex align-items-center">
                             <h4 class="mb-0 me-2">{{ $stats['ongoing_tasks'] ?? 0 }}</h4>
                             <small class="text-warning">
-                                %{{ round((($stats['ongoing_tasks'] ?? 0) / $stats['tasks_count']) * 100, 1) }}
+                                %{{ ($stats['tasks_count'] ?? 0) > 0
+                                    ? round((($stats['ongoing_tasks'] ?? 0) / $stats['tasks_count']) * 100, 1)
+                                    : 0 }}
 
                                 {{ __('from total tasks') }}
                             </small>
@@ -84,7 +86,10 @@
                             <h4 class="mb-0 me-2">{{ $stats['completed_tasks'] ?? 0 }}</h4>
                             @if (($stats['tasks_count'] ?? 0) > 0)
                                 <small class="text-success">
-                                    %{{ round((($stats['completed_tasks'] ?? 0) / $stats['tasks_count']) * 100, 1) }}
+                                    %{{ ($stats['tasks_count'] ?? 0) > 0
+                                        ? round((($stats['completed_tasks'] ?? 0) / $stats['tasks_count']) * 100, 1)
+                                        : 0 }}
+
                                     {{ __('from total tasks') }}
                                 </small>
                             @endif

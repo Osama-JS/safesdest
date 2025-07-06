@@ -18,6 +18,7 @@ use App\Http\Controllers\FunctionsController;
 use App\Models\Settings;
 use App\Helpers\FileHelper;
 use App\Models\Task;
+use App\Models\Wallet;
 
 class DriversController extends Controller
 {
@@ -132,7 +133,7 @@ class DriversController extends Controller
         'team'       => $val->team->name ?? 'No Team',
         'tags'       => $val->tags->pluck('tag.name')->implode(', '),
         'role'       => $val->role->name ?? "",
-        'wallet'     => $val->wallet->id,
+        'wallet'     => $val->wallet?->id,
         'created_at' => $val->created_at->format('Y-m-d H:i'),
         'status'     => $val->status,
       ];
@@ -184,6 +185,10 @@ class DriversController extends Controller
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
     }
   }
+
+
+
+
 
   public function edit($id)
   {
@@ -602,6 +607,37 @@ class DriversController extends Controller
 
 
 
+  public function createWallet(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:drivers,id',
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
+    }
+
+    try {
+      $find = Driver::find($req->id);
+      if ($find->status != 'active') {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => 'Drive is not active']);
+      }
+      if ($find->wallet) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => 'Wallet already exists']);
+      }
+      $wallet = Wallet::where('user_type', 'driver')->where('driver_id', $req->id)->first();
+      if ($wallet) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'this wallet already exist']);
+      }
+      $done = (new WalletsController)->store('driver', $req->id, true);
+
+      if (!$done) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to create Wallet']);
+      }
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Wallet created successfully']);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
 
   public function destroy(Request $req)
   {

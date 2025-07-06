@@ -210,8 +210,6 @@ class WalletsController extends Controller
   public function store($type, $id, $status = true)
   {
     try {
-
-
       $wallet = new Wallet();
       $wallet->user_type = $type;
       $wallet->customer_id = $type == 'customer' ? $id : null;

@@ -123,7 +123,7 @@
 
     <!-- Page Header -->
     <div class="row mb-4">
-        <div class="col-12">
+        <div class="col-xl-3 col-md-12 mb-3">
             <div class="card border-0 shadow-sm  ">
                 <div class="card-body py-4">
                     <div class="d-flex align-items-center">
@@ -144,12 +144,8 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Wallet Statistics Cards -->
-    <div class="row mb-4">
         <!-- Balance Card -->
-        <div class="col-xl-4 col-md-6 mb-3">
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
             <div
                 class="card border-0 shadow-sm h-100 wallet-stat-card {{ $balance < 0 ? 'balance-negative' : 'balance-positive' }}">
                 <div class="card-body">
@@ -179,7 +175,7 @@
         </div>
 
         <!-- Credit Card -->
-        <div class="col-xl-4 col-md-6 mb-3">
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
             <div class="card border-0 shadow-sm h-100 wallet-stat-card credit-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -205,7 +201,7 @@
         </div>
 
         <!-- Debit Card -->
-        <div class="col-xl-4 col-md-6 mb-3">
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
             <div class="card border-0 shadow-sm h-100 wallet-stat-card debit-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -229,6 +225,11 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Wallet Statistics Cards -->
+    <div class="row mb-4">
+
     </div>
 
     <!-- Debt Ceiling Card -->

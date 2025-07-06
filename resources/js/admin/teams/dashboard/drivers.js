@@ -1,38 +1,17 @@
 /**
- * Page User List
+ * Team Drivers Management Page
  */
 
 'use strict';
-import { deleteRecord, showAlert, generateFields, showFormModal } from '../../ajax';
+import { deleteRecord, generateFields, showFormModal } from '../../../ajax';
+import { initDashboard, showAlert, setButtonLoading, handleAjaxError, displayFormErrors } from './common.js';
 
 // Datatable (jquery)
 $(function () {
+  // Initialize common dashboard functionality
+  initDashboard();
   var dt_data_table = $('.datatables-users'),
     userView = baseUrl + 'admin/drivers/account/';
-  console.log(templateId);
-
-  // WhatsApp functionality
-  function toggleWhatsAppFields() {
-    const isPhoneWhatsApp = $('#phone-is-whatsapp').is(':checked');
-    const whatsappFields = $('#whatsapp-fields');
-
-    if (isPhoneWhatsApp) {
-      whatsappFields.hide();
-      // Clear WhatsApp fields when phone is WhatsApp
-      $('#whatsapp-country-code').val('');
-      $('#whatsapp-number').val('');
-    } else {
-      whatsappFields.show();
-    }
-  }
-
-  // Initialize WhatsApp fields visibility
-  toggleWhatsAppFields();
-
-  // Handle WhatsApp toggle
-  $('#phone-is-whatsapp').on('change', function () {
-    toggleWhatsAppFields();
-  });
 
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
@@ -45,28 +24,16 @@ $(function () {
     }
   });
 
-  // Users datatable
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: true,
       ajax: {
-        url: baseUrl + 'admin/drivers/data',
+        url: baseUrl + 'admin/teams/drivers',
         data: function (d) {
           d.status = $('#statusFilter').val();
           d.search = $('#searchFilter').val();
-        },
-        dataSrc: function (json) {
-          $('#total').text(json.summary.total);
-          $('#total-active').text(json.summary.total_active);
-          $('#total-active + p').text(`(${((json.summary.total_active / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-verified').text(json.summary.total_verified);
-          $('#total-verified + p').text(`(${((json.summary.total_verified / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-pending').text(json.summary.total_pending);
-          $('#total-pending + p').text(`(${((json.summary.total_pending / json.summary.total) * 100).toFixed(1)})%`);
-          $('#total-blocked').text(json.summary.total_blocked);
-          $('#total-blocked + p').text(`(${((json.summary.total_blocked / json.summary.total) * 100).toFixed(1)})%`);
-          return json.data;
+          d.team = teamID;
         }
       },
       columns: [
@@ -74,11 +41,10 @@ $(function () {
         { data: '' },
         { data: 'fake_id' },
         { data: 'name' },
+        { data: 'balance' },
         { data: 'username' },
         { data: 'email' },
         { data: 'phone' },
-        { data: 'whatsapp' },
-        { data: 'team' },
         { data: 'role' },
         { data: 'tags' },
         { data: 'status' },
@@ -100,7 +66,6 @@ $(function () {
           targets: 1,
           searchable: false,
           orderable: false,
-          responsivePriority: 4,
           render: function (data, type, full, meta) {
             return `<span>${full.fake_id}</span>`;
           }
@@ -138,57 +103,41 @@ $(function () {
         {
           targets: 3,
           render: function (data, type, full, meta) {
-            return `<span>${full.username}</span>`;
+            return `<span class="${full.balance < 0 ? 'text-danger' : 'text-success'}">${full.balance} SAR</span>`;
           }
         },
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span>${full.email}</span>`;
+            return `<span>${full.username}</span>`;
           }
         },
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            return `<span>${full.phone}</span>`;
+            return `<span>${full.email}</span>`;
           }
         },
         {
           targets: 6,
           render: function (data, type, full, meta) {
-            if (full.whatsapp && full.whatsapp !== 'Not provided') {
-              const cleanNumber = full.whatsapp.replace(/[+\s-]/g, '');
-              return `
-                <a href="https://wa.me/${cleanNumber}" target="_blank" class="text-success text-decoration-none">
-                  <i class="ti ti-brand-whatsapp me-1"></i>${full.whatsapp}
-                  <i class="ti ti-external-link ms-1" style="font-size: 0.8rem;"></i>
-                </a>
-              `;
-            } else {
-              return `<span class="text-muted"><i class="ti ti-minus me-1"></i>Not provided</span>`;
-            }
+            return `<span>${full.phone}</span>`;
           }
         },
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            return `<span class="badge bg-label-info">${full.team || 'No Team'}</span>`;
+            return `<span>${full.role}</span>`;
           }
         },
         {
           targets: 8,
           render: function (data, type, full, meta) {
-            return `<span>${full.role}</span>`;
-          }
-        },
-        {
-          targets: 9,
-          render: function (data, type, full, meta) {
             return `<span>${full.tags || ''}</span>`;
           }
         },
         {
-          targets: 10,
+          targets: 9,
           className: 'text-center',
           render: function (data, type, full, meta) {
             let icon = '';
@@ -212,17 +161,16 @@ $(function () {
           }
         },
         {
-          targets: 11,
+          targets: 10,
           render: function (data, type, full, meta) {
             return full.created_at;
           }
         },
         {
-          targets: 12,
+          targets: 11,
           title: 'Actions',
           searchable: false,
           orderable: false,
-          responsivePriority: 3,
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
@@ -239,7 +187,7 @@ $(function () {
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href=${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
-                    <li> <a href="${baseUrl + 'admin/wallets/transaction/show/' + full.wallet + '/' + full.name}" class="dropdown-item" data-id="${full.wallet}"  data-name="${full.name}">
+                     <li> <a href="${baseUrl + 'admin/wallets/transaction/show/' + full.wallet.id + '/' + full.name}" class="dropdown-item" data-id="${full.wallet}"  data-name="${full.name}">
                             View Wallet
 
                         </a>
@@ -344,6 +292,36 @@ $(function () {
     }
   });
 
+  $(document).on('click', '.status-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
+
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+      <select class="form-select" name="status">
+        <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+        <option value="verified" ${status === 'verified' ? 'selected' : ''}>Unverified</option>
+        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+        <option value="blocked" ${status === 'blocked' ? 'selected' : ''}>Blocked</option>
+      </select>
+    `;
+
+    showFormModal({
+      title: `Change Driver: ${name} Status`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/drivers/status`,
+      method: 'POST',
+      dataTable: dt_data
+    });
+  });
+
+  $(document).on('click', '.delete-record', function () {
+    let url = baseUrl + 'admin/drivers/delete/' + $(this).data('id');
+    deleteRecord($(this).data('name'), url);
+  });
+  // Edit record functionality
   $(document).on('click', '.edit-record', async function () {
     var data_id = $(this).data('id'),
       dtrModal = $('.dtr-bs-modal.show');
@@ -356,7 +334,6 @@ $(function () {
     $.get(`${baseUrl}admin/drivers/edit/${data_id}`, async function (data) {
       $('.form_submit').trigger('reset');
       $('.text-error').html('');
-      console.log(data);
 
       $('#driver_id').val(data.id);
       $('#driver-fullname').val(data.name);
@@ -365,18 +342,10 @@ $(function () {
       $('#driver-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
       $('#driver-role').val(data.role_id);
-      $('#driver-team').val(data.team_id).trigger('change');
+      $('#driver-team').val(data.time_id);
       $('#driver-address').val(data.address);
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);
-
-      // Load WhatsApp data
-      $('#phone-is-whatsapp').prop('checked', data.phone_is_whatsapp == 1 || data.phone_is_whatsapp === true);
-      $('#whatsapp-country-code').val(data.whatsapp_country_code || '');
-      $('#whatsapp-number').val(data.whatsapp_number || '');
-
-      // Update WhatsApp fields visibility
-      toggleWhatsAppFields();
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 
@@ -407,54 +376,8 @@ $(function () {
   function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-
-  $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/drivers/delete/' + $(this).data('id');
-    deleteRecord($(this).data('name'), url);
-  });
-
-  $(document).on('click', '.status-record', function () {
-    const id = $(this).data('id');
-    const name = $(this).data('name');
-    const status = $(this).data('status');
-
-    const fields = `
-      <input type="hidden" name="id" value="${id}">
-      <select class="form-select" name="status">
-        <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
-        <option value="verified" ${status === 'verified' ? 'selected' : ''}>Unverified</option>
-        <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
-        <option value="blocked" ${status === 'blocked' ? 'selected' : ''}>Blocked</option>
-      </select>
-    `;
-
-    showFormModal({
-      title: `Change Driver: ${name} Status`,
-      icon: 'info',
-      fields: fields,
-      url: `${baseUrl}admin/drivers/status`,
-      method: 'POST',
-      dataTable: dt_data
-    });
-  });
-
-  $('#submitModal').on('hidden.bs.modal', function () {
-    $('.form_submit').trigger('reset');
-    $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
-
-    $('.text-error').html('');
-    $('#driver_id').val('');
-    $('#modelTitle').html('Add New Driver');
-    $('#additional-form').html('');
-    $('#select-template').val(templateId).trigger('change');
-
-    // Reset WhatsApp fields
-    $('#phone-is-whatsapp').prop('checked', false);
-    $('#whatsapp-country-code').val('');
-    $('#whatsapp-number').val('');
-    toggleWhatsAppFields();
-  });
 });
+
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;
 const selectedTypes = new Set();
@@ -504,3 +427,63 @@ function updateVehicleRowEvents($row) {
 const $newRow = $(createVehicleRow(vehicleIndex++));
 $('#vehicle-selection-container').append($newRow);
 updateVehicleRowEvents($newRow);
+
+/**
+ * Initialize wallet statistics cards with animations
+ */
+function initWalletStatsCards() {
+  // Add hover effects to wallet stats cards
+  $('.wallet-stats-card')
+    .on('mouseenter', function () {
+      $(this).find('.avatar-initial').addClass('animate__animated animate__pulse');
+    })
+    .on('mouseleave', function () {
+      $(this).find('.avatar-initial').removeClass('animate__animated animate__pulse');
+    });
+
+  // Initialize tooltips for wallet stats
+  $('[data-bs-toggle="tooltip"]').tooltip();
+
+  // Add counter animation for numbers
+  animateCounters();
+}
+
+/**
+ * Animate counter numbers
+ */
+function animateCounters() {
+  $('.wallet-stats-card h3').each(function () {
+    const $this = $(this);
+    const countTo = parseFloat($this.text().replace(/[^0-9.-]/g, ''));
+
+    if (!isNaN(countTo)) {
+      $({ countNum: 0 }).animate(
+        {
+          countNum: countTo
+        },
+        {
+          duration: 2000,
+          easing: 'swing',
+          step: function () {
+            $this.text(formatNumber(Math.floor(this.countNum)));
+          },
+          complete: function () {
+            $this.text(formatNumber(countTo));
+          }
+        }
+      );
+    }
+  });
+}
+
+/**
+ * Format number with commas
+ */
+function formatNumber(num) {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Initialize wallet stats when document is ready
+$(document).ready(function () {
+  initWalletStatsCards();
+});

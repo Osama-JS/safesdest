@@ -132,6 +132,7 @@ class DriversController extends Controller
         'team'       => $val->team->name ?? 'No Team',
         'tags'       => $val->tags->pluck('tag.name')->implode(', '),
         'role'       => $val->role->name ?? "",
+        'wallet'     => $val->wallet->id,
         'created_at' => $val->created_at->format('Y-m-d H:i'),
         'status'     => $val->status,
       ];
@@ -599,25 +600,44 @@ class DriversController extends Controller
     }
   }
 
+
+
+
   public function destroy(Request $req)
   {
     DB::beginTransaction();
 
     try {
-      $find = Driver::findOrFail($req->id);
+      $find = Driver::with(['wallet', 'transactions', 'tasks', 'possible_tasks', 'tags'])->findOrFail($req->id);
+
       if (!$find) {
         return response()->json(['status' => 2, 'error' => __('Can not find the selected Driver')]);
       }
+
       $user = auth()->user();
       if (!$user || !$user->checkDriver($find->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
 
-      $done = Driver::where('id', $req->id)->delete();
-      if (!$done) {
-        DB::rollBack();
-        return response()->json(['status' => 2, 'error' => __('Error to delete Driver')]);
+      // حذف المحفظة إن وُجدت
+      if ($find->wallet) {
+        $find->wallet->delete();
       }
+
+      // التحقق من وجود علاقات (نشاطات)
+      $hasRelations =
+        $find->transactions()->exists() ||
+        $find->tasks()->exists() ||
+        $find->possible_tasks()->exists() ||
+        $find->tags()->exists();
+
+      // حذف نهائي إذا لا يوجد علاقات
+      if (!$hasRelations) {
+        $find->forceDelete();
+      } else {
+        $find->delete(); // soft delete
+      }
+
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Driver deleted')]);
     } catch (Exception $ex) {
@@ -625,6 +645,16 @@ class DriversController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
+
+
+
+
+
+
+
+
+
 
   public function show(Request $req)
   {

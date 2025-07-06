@@ -6,26 +6,19 @@
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
     <style>
-        /* Enhanced Vehicle Management Styling */
-        .vehicle-header-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-        }
-
-        .vehicle-header-card .card-title {
-            color: white !important;
-        }
-
-        .vehicle-header-card p {
-            color: rgba(255, 255, 255, 0.9);
-        }
-
         .vehicle-icon {
             background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 8px;
+        }
+
+        .statics {
+            position: sticky;
+            top: 20px;
+            /* المسافة من أعلى الشاشة */
+            z-index: 1000;
+            /* للتأكد أنه فوق العناصر الأخرى إذا لزم */
         }
 
         .nav-pills .nav-link {
@@ -321,6 +314,7 @@
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
     @vite(['resources/js/admin/vehicles.js'])
+
 @endsection
 
 @section('content')
@@ -329,7 +323,8 @@
         <div class="card-header border-0">
             <div class="d-flex align-items-center">
                 <div class="vehicle-icon me-3">
-                    <i class="tf-icons ti ti-truck fs-2"></i>
+                    <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+
                 </div>
                 <div>
                     <h4 class="card-title mb-1">
@@ -344,38 +339,9 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4" id="stats-section">
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="stats-icon vehicle-stats-icon">
-                    <i class="ti ti-truck"></i>
-                </div>
-                <h3 class="mb-1" id="vehicles-count">0</h3>
-                <p class="text-muted mb-0">{{ __('Total Vehicles') }}</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="stats-icon type-stats-icon">
-                    <i class="ti ti-category"></i>
-                </div>
-                <h3 class="mb-1" id="types-count">0</h3>
-                <p class="text-muted mb-0">{{ __('Vehicle Types') }}</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stats-card">
-                <div class="stats-icon size-stats-icon">
-                    <i class="ti ti-dimensions"></i>
-                </div>
-                <h3 class="mb-1" id="sizes-count">0</h3>
-                <p class="text-muted mb-0">{{ __('Vehicle Sizes') }}</p>
-            </div>
-        </div>
-    </div>
 
     <div class="row mt-6">
-        <div class="col-md-8">
+        <div class="col-md-8 order-sm-2">
             <div class="nav-align-top mb-6">
                 <ul class="nav nav-pills mb-4" role="tablist">
                     <li class="nav-item">
@@ -788,6 +754,37 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 order-sm-1 statics">
+            <div class="row mb-4" id="stats-section">
+                <div class="col-md-12 col-sm-4 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon vehicle-stats-icon">
+                            <i class="ti ti-truck"></i>
+                        </div>
+                        <h3 class="mb-1" id="vehicles-count">0</h3>
+                        <p class="text-muted mb-0">{{ __('Total Vehicles') }}</p>
+                    </div>
+                </div>
+                <div class="col-md-12 col-sm-4 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon type-stats-icon">
+                            <i class="ti ti-category"></i>
+                        </div>
+                        <h3 class="mb-1" id="types-count">0</h3>
+                        <p class="text-muted mb-0">{{ __('Vehicle Types') }}</p>
+                    </div>
+                </div>
+                <div class="col-md-12 col-sm-4 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-icon size-stats-icon">
+                            <i class="ti ti-dimensions"></i>
+                        </div>
+                        <h3 class="mb-1" id="sizes-count">0</h3>
+                        <p class="text-muted mb-0">{{ __('Vehicle Sizes') }}</p>
                     </div>
                 </div>
             </div>

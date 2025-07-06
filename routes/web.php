@@ -24,6 +24,7 @@ use App\Http\Controllers\admin\settings\VehiclesController;
 use App\Http\Controllers\admin\settings\GeofencesController;
 use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\TasksAdsController;
+use App\Http\Controllers\admin\TeamWalletController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\PaymentController;
@@ -337,17 +338,45 @@ Route::middleware('rate.limit')->group(function () {
         Route::delete('/drivers/delete/{id}', [DriversController::class, 'destroy'])->name('drivers.delete');
 
 
+        // Basic Teams CRUD Routes
         Route::get('/teams', [TeamsController::class, 'index'])->name('teams.teams');
         Route::post('/teams', [TeamsController::class, 'store'])->name('teams.store');
+        Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
+        Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.edit');
+        Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
+
+        // Legacy route for backward compatibility
         Route::get('/teams/details/{id}', [TeamsController::class, 'show'])->name('teams.show');
+
+        // New Team Dashboard Routes
+        Route::prefix('teams/{team}')->name('teams.dashboard.')->group(function () {
+          Route::get('/dashboard', [TeamsController::class, 'dashboard'])->name('index');
+          Route::get('/drivers', [TeamsController::class, 'driversPage'])->name('drivers');
+          Route::get('/tasks', [TeamsController::class, 'tasksPage'])->name('tasks');
+          Route::get('/wallet', [TeamsController::class, 'walletPage'])->name('wallet');
+          Route::get('/task-distribution', [TeamsController::class, 'taskDistributionPage'])->name('task-distribution');
+          Route::get('/analytics', [TeamsController::class, 'analyticsPage'])->name('analytics');
+        });
+
+        // Team Data API Routes (for DataTables and AJAX)
         Route::get('/teams/drivers/', [TeamsController::class, 'getTeamDrivers'])->name('teams.drivers');
         Route::get('/teams/tasks/', [TeamsController::class, 'getTeamTasks'])->name('teams.tasks');
         Route::get('/teams/transactions/', [TeamsController::class, 'getTeamTransactions'])->name('teams.transactions');
+
+
+        Route::get('/teams/wallet/transactions/data', [TeamWalletController::class, 'getDataTransactions'])->name('teams.wallet.transactions.data');
         Route::post('/teams/{team}/pay-transactions', [TeamsController::class, 'processTeamPayment'])->name('teams.pay.transactions');
-        Route::get('/teams/edit/{id}', [TeamsController::class, 'edit'])->name('teams.edit');
-        Route::get('/teams/data', [TeamsController::class, 'getData'])->name('teams.data');
-        Route::delete('/teams/delete/{id}', [TeamsController::class, 'destroy'])->name('teams.delete');
         Route::get('/teams/tasks/show/{id}', [App\Http\Controllers\driver\TasksController::class, 'show'])->name('teams.task.show');
+
+        // Team Wallet Transaction Routes
+        Route::post('/teams/wallet/transaction/store', [TeamWalletController::class, 'storeTransaction'])->name('teams.wallet.transaction.store');
+        Route::get('/teams/wallet/transaction/edit/{id}', [TeamWalletController::class, 'editTransaction'])->name('teams.wallet.transaction.edit');
+
+
+        Route::delete('/teams/wallet/transaction/delete/{id}', [TeamWalletController::class, 'destroy'])->name('teams.wallet.transaction.delete');
+        Route::get('/teams/wallets/{id}/{name}', [TeamWalletController::class, 'index'])->name('teams.wallet');
+
+
 
 
         Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');
@@ -363,6 +392,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
         Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');
         Route::delete('/tasks/delete', [TasksController::class, 'destroy'])->name('tasks.delete');
+        Route::delete('/tasks/connect/{id}', [TasksController::class, 'connectTeam'])->name('tasks.connect');
         Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
         Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
         Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');

@@ -389,6 +389,7 @@ $(function () {
             </div>
           `);
 
+        console.log(task.data.driver);
         const driverInfo = task.data.driver
           ? `
                <div class="divider text-start">

@@ -4,30 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Wallet_Transaction extends Model
+class Team_Wallet_Transaction extends Model
 {
-  protected $table = 'wallet_transactions';
+  protected $table = 'team_wallet_transactions';
   protected $fillable = [
-    'user_id',
     'amount',
     'transaction_type',
     'description',
     'image',
-    'status',
-    'wallet_id',
-    'team_id',
+    'team_wallet_id',
+    'task_id',
+    'user_id',
     'maturity_time',
     'sequence',
-    'task_id',
-    'team_id',
-
   ];
-
 
   protected static function booted()
   {
     static::creating(function ($transaction) {
-      $last = self::where('wallet_id', $transaction->wallet_id)
+      $last = self::where('team_wallet_id', $transaction->team_wallet_id)
         ->lockForUpdate()
         ->orderByDesc('sequence')
         ->first();
@@ -36,10 +31,11 @@ class Wallet_Transaction extends Model
     });
   }
 
-  public function wallet()
+  public function teamWallet()
   {
-    return $this->belongsTo(Wallet::class, 'wallet_id');
+    return $this->belongsTo(Team_Wallet::class, 'team_wallet_id');
   }
+
   public function task()
   {
     return $this->belongsTo(Task::class, 'task_id');

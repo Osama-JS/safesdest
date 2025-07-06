@@ -125,7 +125,10 @@ class TasksController extends Controller
         'fake_id'          => ++$fakeId,
         'pickup_address'   => $task->pickup->address ?? 'N/A',
         'delivery_address' => $task->delivery->address ?? 'N/A',
-        'driver'      => $task->driver ?? null,
+        'driver'           => $task->driver ?? null,
+        'whatsapp' => ($task->driver && !empty($task->driver->full_whatsapp_number))
+          ? preg_replace('/[+\s-]/', '', $task->driver->full_whatsapp_number)
+          : 'Not provided',
         'vehicle_info'     => $vehicleInfo,
         'total_price'      => $task->total_price ? number_format($task->total_price, 2) . ' SAR' : 'N/A',
         'status'           => $task->status,

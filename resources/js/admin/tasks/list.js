@@ -4,7 +4,7 @@
 
 'use strict';
 import { set } from 'lodash';
-import { deleteRecord, showAlert, showBlockAlert, generateFields, showFormModal } from '../../ajax';
+import { deleteRecord, showAlert, showBlockAlert, generateFields, showFormModal, connectTeam } from '../../ajax';
 
 // Datatable (jquery)
 $(function () {
@@ -62,8 +62,8 @@ $(function () {
     }
   });
 
-  var start_from = moment().startOf('month').format('YYYY-MM-DD');
-  var end_to = moment().endOf('month').format('YYYY-MM-DD');
+  var start_from;
+  var end_to;
 
   // Users datatable
   if (dt_data_table.length) {
@@ -265,6 +265,7 @@ $(function () {
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}">Payment Task</a></li>
+                    <li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
@@ -618,6 +619,11 @@ $(function () {
     $('#task-id').val(id);
     $('#modelTitle').html('#' + id);
     $('#closedModal').modal('show');
+  });
+
+  $(document).on('click', '.connect-task', function () {
+    let url = baseUrl + 'admin/tasks/connect/' + $(this).data('id');
+    connectTeam($(this).data('name'), url);
   });
 
   // 🗑️ معالج حذف المهمة باستخدام SweetAlert2

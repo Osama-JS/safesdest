@@ -60,10 +60,22 @@ class WalletsController extends Controller
     $query = Wallet::query();
 
     if (!empty($search)) {
-      $query->where(function ($q) use ($search) {
+      $query->where(function ($q) use ($search, $type) {
         $q->where('id', 'LIKE', "%{$search}%");
+
+        if ($type === 'customer') {
+          $q->orWhereHas('customer', function ($sub) use ($search) {
+            $sub->where('name', 'LIKE', "%{$search}%");
+          });
+        } elseif ($type === 'driver') {
+          $q->orWhereHas('driver', function ($sub) use ($search) {
+            $sub->where('name', 'LIKE', "%{$search}%");
+          });
+        }
       });
     }
+
+
     if (!empty($type)) {
 
       $query->where('user_type', $type);
@@ -244,9 +256,9 @@ class WalletsController extends Controller
     $data = Wallet::findOrFail($id);
 
     // If it's a driver wallet, redirect to driver-specific view
-    if ($data->user_type === 'driver') {
-      return redirect()->route('wallets.driver.show', $id);
-    }
+    // if ($data->user_type === 'driver') {
+    //   return redirect()->route('wallets.driver.show', $id);
+    // }
 
     return view('admin.wallets.show', compact('data'));
   }

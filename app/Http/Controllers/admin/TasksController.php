@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
+use App\Models\Team_Wallet_Transaction;
 use App\Models\Transaction;
 use App\Models\Wallet_Transaction;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -211,7 +212,7 @@ class TasksController extends Controller
         'driver' => $task->driver ? [
           'name'   => optional($task->driver)->name,
           'phone'  => optional($task->driver)->phone_code . optional($task->driver)->phone,
-          'whatsapp'  => $task->driver->phone_is_whatsapp ? optional($task->driver)->phone_code . optional($task->driver)->phone : optional($task->driver)->whatsapp_country_code . optional($task->driver)->whatsapp_number,
+          'whatsapp'    => $task->driver->full_whatsapp_number ? str_replace('+', '', $task->driver->full_whatsapp_number) : 'Not provided',
           'email'  => optional($task->driver)->email,
           'image'  => optional($task->driver)->image,
         ] : null,
@@ -341,6 +342,7 @@ class TasksController extends Controller
           'error' => __('This task cannot be modified in its current state'),
         ]);
       }
+
       $userIp = IpHelper::getUserIpAddress();
       $history = [
         [
@@ -368,6 +370,10 @@ class TasksController extends Controller
 
       if ($data->commission_type == 'dynamic') {
         $data->commission =  $driver->calculateCommission($data->total_price);
+      }
+
+      if ($driver->team) {
+        $data->team_id = $driver->team_id;
       }
 
       $data->history()->createMany($history);
@@ -473,7 +479,7 @@ class TasksController extends Controller
         ];
       }
 
-      if ($data['service_commission']) {
+      if (isset($data['service_commission']) && $data['service_commission'] !== '') {
         if ($data['service_commission'] > $task['total_price']) {
           DB::rollBack();
           return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
@@ -847,7 +853,7 @@ class TasksController extends Controller
         ];
       }
 
-      if ($data['service_commission']) {
+      if (isset($data['service_commission']) && $data['service_commission'] !== '') {
         if ($data['service_commission'] > $task['total_price']) {
           DB::rollBack();
           return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
@@ -1668,12 +1674,7 @@ class TasksController extends Controller
     return view('admin.tasks.report', compact('task'));
   }
 
-  /**
-   * حذف مهمة مع مراعاة جميع الحالات والبيانات المرتبطة
-   *
-   * @param Request $req
-   * @return \Illuminate\Http\JsonResponse
-   */
+
   public function destroy(Request $req)
   {
     $validator = Validator::make($req->all(), [
@@ -2021,8 +2022,21 @@ class TasksController extends Controller
         'maturity_time'       => Carbon::now()->copy()->addDays(3),
         'task_id'             => $task->id,
       ];
+      if ($driver->team()->exists()) {
+        $data['team_id'] = $driver->team->id;
+      }
 
       Wallet_Transaction::create($data);
+
+      if ($driver->team()->exists()) {
+        Team_Wallet_Transaction::create([
+          'amount'              => $task->total_price - $task->commission,
+          'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
+          'transaction_type'    => 'credit',
+          'team_wallet_id'      => $driver->team->teamWallet->id,
+          'task_id'             => $task->id,
+        ]);
+      }
 
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Task closed successfully')]);
@@ -2151,6 +2165,47 @@ class TasksController extends Controller
       return view('admin.tasks.tracking', compact('task', 'pickup', 'dropoff', 'driver'));
     } catch (Exception $ex) {
       return redirect()->back();
+    }
+  }
+
+  public function connectTeam(Request $req)
+  {
+    DB::beginTransaction();
+    try {
+      $task = Task::findOrFail($req->id);
+      if ($task->team) {
+        return response()->json(['status' => 2, 'error' => __('This task already connected to a team')]);
+      }
+      if (!$task->driver) {
+        return response()->json(['status' => 2, 'error' => __('This task not assign to driver')]);
+      }
+
+      if ($task->driver->team_id) {
+        $task->team_id = $task->driver->team_id;
+        $task->save();
+        if ($task->closed) {
+          $transaction = Wallet_Transaction::where('task_id', $task->id)->where('transaction_type', 'credit')->first();
+          if ($transaction) {
+            Team_Wallet_Transaction::create([
+              'amount'              => $transaction->amount,
+              'description'         => $transaction->description . ' Driver: ' . $task->driver->name,
+              'transaction_type'    => 'credit',
+              'team_wallet_id'      => $task->driver->team->teamWallet->id,
+              'task_id'           => $task->id
+
+            ]);
+          }
+          $transaction->team_id =  $task->driver->team_id;
+          $transaction->save();
+        }
+        DB::commit();
+        return response()->json(['status' => 1, 'success' => __('conected to team seccessfully')]);
+      }
+
+      return response()->json(['status' => 2, 'error' => __('the driver is not connected to a team ')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
 }

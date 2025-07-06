@@ -35,6 +35,7 @@
       "name": "Teams",
       "icon": "menu-icon tf-icons ti ti-users-group",
       "slug": "teams.teams",
+      "isactive": "teams-isactive",
       "permission": "view_teams"
     },
     {

@@ -110,6 +110,40 @@ export function deleteRecord(name, url) {
   });
 }
 
+export function connectTeam(name, url) {
+  Swal.fire({
+    title: `Connect ${name} ?`,
+    text: 'This record will be connected to the team!',
+    icon: 'info',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Connect yo the Team!',
+    customClass: {
+      confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+      cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+    },
+    buttonsStyling: false
+  }).then(result => {
+    if (result.isConfirmed) {
+      $.ajax({
+        url: url,
+        type: 'DELETE',
+
+        success: function (response) {
+          if (response.status === 1) {
+            showAlert('success', response.success, 10000, true);
+            document.dispatchEvent(new CustomEvent('deletedSuccess'));
+          } else {
+            showAlert('error', response.error, 10000, true);
+          }
+        },
+        error: function () {
+          showAlert('error', 'Field to delete the Recode', 10000, true);
+        }
+      });
+    }
+  });
+}
+
 export function showFormModal(options) {
   const {
     title = 'Update Status',

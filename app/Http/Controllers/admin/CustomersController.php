@@ -601,22 +601,37 @@ class CustomersController extends Controller
     DB::beginTransaction();
 
     try {
-      $find = Customer::findOrFail($req->id);
+      $find = Customer::with(['wallet', 'transactions', 'tasks', 'points', 'tags', 'users'])->findOrFail($req->id);
+
       if (!$find) {
         return response()->json(['status' => 2, 'error' => __('Can not find the selected Customer')]);
       }
+
       $user = auth()->user();
       if (!$user || !$user->checkCustomer($find->id)) {
         return response()->json(['status' => 2,  'error' => __('You do not have permission to do actions to this record')]);
       }
 
-
-      $done = Customer::where('id', $req->id)->delete();
-      $find->wallet->delete();
-      if (!$done) {
-        DB::rollBack();
-        return response()->json(['status' => 2, 'error' => __('Error to delete Customer')]);
+      // حذف المحفظة إن وُجدت
+      if ($find->wallet) {
+        $find->wallet->delete();
       }
+
+      // التحقق من النشاطات المرتبطة
+      $hasRelations =
+        $find->transactions()->exists() ||
+        $find->tasks()->exists() ||
+        $find->points()->exists() ||
+        $find->tags()->exists() ||
+        $find->users()->exists();
+
+      // حذف نهائي إذا لا يملك علاقات
+      if (!$hasRelations) {
+        $find->forceDelete();
+      } else {
+        $find->delete(); // soft delete
+      }
+
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Customer deleted')]);
     } catch (Exception $ex) {
@@ -624,6 +639,7 @@ class CustomersController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
 
 
   public function show(Request $req)

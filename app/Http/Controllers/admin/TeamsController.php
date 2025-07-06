@@ -5,11 +5,11 @@ namespace App\Http\Controllers\admin;
 use Exception;
 
 use Carbon\Carbon;
-use App\Models\Team;
 use App\Models\Teams;
 use App\Models\Driver;
 use App\Models\Vehicle;
 use App\Models\Settings;
+use App\Models\Team_Wallet;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use App\Models\Wallet_Transaction;
@@ -18,7 +18,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Wallet;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class TeamsController extends Controller
@@ -35,8 +36,7 @@ class TeamsController extends Controller
 
   public function index()
   {
-    $teams = Teams::paginate(8);
-    return view('admin.teams.index', compact('teams'));
+    return view('admin.teams.index');
   }
 
 
@@ -63,21 +63,312 @@ class TeamsController extends Controller
 
   public function show($id)
   {
-    $data = Teams::find($id);
-    if (!$data) {
-      return redirect()->back();
+    return redirect()->route('teams.dashboard.index', $id);
+  }
+
+  /**
+   * Team Dashboard - Main Overview Page
+   */
+  public function dashboard($id)
+  {
+    $team = Teams::with(['drivers', 'tasks'])->findOrFail($id);
+
+    $teamWallet = Team_Wallet::where('team_id', $team->id)->first();
+    if (!$teamWallet) {
+      $teamWallet = Team_Wallet::create(['team_id' => $team->id]);
     }
-    $templates = Form_Template::all();
-    $teams = Teams::all();
-    $roles = Role::where('guard_name', 'driver')->get();
-    $vehicles = Vehicle::all();
-    $driver_template = Settings::where('key', 'driver_template')->first();
-    $totals = $data->walletTransactions()
+
+    // Calculate wallet totals
+    $walletTotals = $team->walletTransactions()
       ->select('transaction_type', DB::raw('SUM(amount) as total_amount'))
       ->groupBy('transaction_type')
       ->pluck('total_amount', 'transaction_type');
 
-    return view('admin.teams.show', compact('data', 'templates', 'teams', 'roles', 'vehicles', 'driver_template', 'totals'));
+    // Get statistics
+    $stats = [
+      'drivers_count' => $team->drivers()->count(),
+      'active_drivers' => $team->drivers()->where('drivers.status', 'active')->count(),
+      'tasks_count' => $team->tasks()->count(),
+      'ongoing_tasks' => $team->tasks()->whereIn('tasks.status', ['assign', 'in_progress', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading', 'completed'])->where('tasks.closed', false)->count(),
+      'completed_tasks' => $team->tasks()->where('tasks.closed', true)->count(),
+      'wallet_balance' => $team->teamWalletTransactions->balance,
+      'wallet_credit' => $team->teamWalletTransactions->credit ?? 0,
+      'wallet_debit' => $team->teamWalletTransactions->debit ?? 0,
+    ];
+
+    return view('admin.teams.dashboard.index', compact('team', 'teamWallet', 'stats'));
+  }
+
+  /**
+   * Team Drivers Management Page
+   */
+  public function driversPage($id)
+  {
+    $team = Teams::with('drivers')->findOrFail($id);
+    $templates = Form_Template::all();
+    $roles = Role::where('guard_name', 'driver')->get();
+    $vehicles = Vehicle::all();
+    $driver_template = Settings::where('key', 'driver_template')->first();
+
+    // Calculate drivers wallet statistics
+    $driverIds = $team->drivers->pluck('id');
+
+    $walletStats = [
+      'total_credit' => 0,
+      'total_debit' => 0,
+      'net_balance' => 0
+    ];
+
+    if ($driverIds->isNotEmpty()) {
+      // Get all driver wallets for this team using DB query
+      $driverWallets = Wallet::whereIn('driver_id', $driverIds)->pluck('id');
+
+      if ($driverWallets->isNotEmpty()) {
+        // Calculate total credit
+        $walletStats['total_credit'] = DB::table('wallet_transactions')
+          ->whereIn('wallet_id', $driverWallets)
+          ->where('transaction_type', 'credit')
+          ->sum('amount');
+
+        // Calculate total debit
+        $walletStats['total_debit'] = DB::table('wallet_transactions')
+          ->whereIn('wallet_id', $driverWallets)
+          ->where('transaction_type', 'debit')
+          ->sum('amount');
+
+        // Calculate net balance (debit - credit)
+        $walletStats['net_balance'] =  $walletStats['total_credit'] - $walletStats['total_debit'];
+      }
+    }
+
+    return view('admin.teams.dashboard.drivers', compact('team', 'templates', 'roles', 'vehicles', 'driver_template', 'walletStats'));
+  }
+
+  /**
+   * Team Tasks Management Page
+   */
+  public function tasksPage($id)
+  {
+    $team = Teams::with('tasks')->findOrFail($id);
+
+    return view('admin.teams.dashboard.tasks', compact('team'));
+  }
+
+  /**
+   * Team Wallet Management Page
+   */
+  public function walletPage($id)
+  {
+    $team = Teams::findOrFail($id);
+
+    // Get or create team wallet
+    $teamWallet = Team_Wallet::where('team_id', $team->id)->first();
+
+    return view('admin.teams.dashboard.wallet', compact('team', 'teamWallet'));
+  }
+
+  /**
+   * Team Task Distribution Page
+   */
+  public function taskDistributionPage($id)
+  {
+    $team = Teams::with(['drivers' => function ($query) {
+      $query->where('drivers.status', 'active');
+    }])->findOrFail($id);
+
+    return view('admin.teams.dashboard.task-distribution', compact('team'));
+  }
+
+  /**
+   * Team Analytics Page
+   */
+  public function analyticsPage($id)
+  {
+    $team = Teams::with(['drivers', 'tasks'])->findOrFail($id);
+
+    // Get analytics data
+    $analytics = [
+      'monthly_tasks' => $team->tasks()
+        ->selectRaw('MONTH(tasks.created_at) as month, COUNT(*) as count')
+        ->whereYear('tasks.created_at', date('Y'))
+        ->groupBy('month')
+        ->pluck('count', 'month'),
+      'task_status_distribution' => $team->tasks()
+        ->selectRaw('tasks.status, COUNT(*) as count')
+        ->groupBy('tasks.status')
+        ->pluck('count', 'status'),
+      'driver_performance' => $team->drivers()
+        ->withCount(['tasks as completed_tasks' => function ($query) {
+          $query->where('tasks.status', 'completed');
+        }])
+        ->get(),
+    ];
+
+    return view('admin.teams.dashboard.analytics', compact('team', 'analytics'));
+  }
+
+  /**
+   * Get team wallet transactions data for DataTables
+   */
+  public function getWalletTransactions(Request $request)
+  {
+    $wallet = Team_Wallet::where('team_id', $request->wallet)->first();
+
+    if (!$wallet) {
+      return response()->json(['data' => []]);
+    }
+
+    $query = Wallet_Transaction::where('wallet_id', $wallet->id)
+      ->with(['task', 'user']);
+
+    // Apply filters
+    if ($request->filled('status')) {
+      $query->where('transaction_type', $request->status);
+    }
+
+    if ($request->filled('from_date') && $request->filled('to_date')) {
+      $query->whereBetween('wallet_transactions.created_at', [$request->from_date, $request->to_date]);
+    }
+
+    if ($request->filled('min_amount')) {
+      $query->where('wallet_transactions.amount', '>=', $request->min_amount);
+    }
+
+    if ($request->filled('max_amount')) {
+      $query->where('wallet_transactions.amount', '<=', $request->max_amount);
+    }
+
+    $transactions = $query->orderBy('wallet_transactions.created_at', 'desc')->get();
+
+    $data = $transactions->map(function ($transaction) {
+      return [
+        'id' => $transaction->id,
+        'sequence' => $transaction->id,
+        'amount' => number_format($transaction->amount, 2),
+        'transaction_type' => $transaction->transaction_type,
+        'description' => $transaction->description,
+        'maturity_time' => $transaction->maturity_time ? $transaction->maturity_time->format('Y-m-d H:i') : null,
+        'task' => $transaction->task ? [
+          'id' => $transaction->task->id,
+          'title' => $transaction->task->title ?? 'Task #' . $transaction->task->id
+        ] : null,
+        'task_id' => $transaction->task_id,
+        'user' => $transaction->user ? [
+          'name' => $transaction->user->name
+        ] : null,
+        'image' => $transaction->image,
+        'created_at' => $transaction->created_at->format('Y-m-d H:i'),
+        'checkbox' => $transaction->transaction_type === 'debit' && !$transaction->task_id
+      ];
+    });
+
+    return response()->json(['data' => $data]);
+  }
+
+  /**
+   * Store wallet transaction
+   */
+  public function storeWalletTransaction(Request $request)
+  {
+    try {
+      $validatedData = $request->validate([
+        'wallet' => 'required|exists:team_wallets,id',
+        'amount' => 'required|numeric|min:0',
+        'type' => 'required|in:credit,debit',
+        'description' => 'required|string|max:255',
+        'maturity' => 'nullable|date',
+        'image' => 'nullable|image|max:2048'
+      ]);
+
+      $imagePath = null;
+      if ($request->hasFile('image')) {
+        $imagePath = $request->file('image')->store('wallet_transactions', 'public');
+      }
+
+      $transaction = Wallet_Transaction::create([
+        'wallet_id' => $validatedData['wallet'],
+        'amount' => $validatedData['amount'],
+        'transaction_type' => $validatedData['type'],
+        'description' => $validatedData['description'],
+        'maturity_time' => $validatedData['maturity'],
+        'image' => $imagePath,
+        'user_id' => auth()->id(),
+        'status' => 1
+      ]);
+
+      return response()->json([
+        'status' => 1,
+        'success' => 'Transaction created successfully',
+        'data' => $transaction
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'status' => 0,
+        'error' => 'Failed to create transaction: ' . $e->getMessage()
+      ]);
+    }
+  }
+
+  /**
+   * Edit wallet transaction
+   */
+  public function editWalletTransaction($id)
+  {
+    try {
+      $transaction = Wallet_Transaction::findOrFail($id);
+
+      return response()->json([
+        'status' => 1,
+        'data' => [
+          'id' => $transaction->id,
+          'amount' => $transaction->amount,
+          'transaction_type' => $transaction->transaction_type,
+          'description' => $transaction->description,
+          'maturity_time' => $transaction->maturity_time ? $transaction->maturity_time->format('Y-m-d\TH:i') : null,
+          'image' => $transaction->image ? asset('storage/' . $transaction->image) : null
+        ]
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'status' => 0,
+        'error' => 'Transaction not found'
+      ]);
+    }
+  }
+
+  /**
+   * Delete wallet transaction
+   */
+  public function deleteWalletTransaction($id)
+  {
+    try {
+      $transaction = Wallet_Transaction::findOrFail($id);
+
+      // Don't allow deletion of transactions linked to tasks
+      if ($transaction->task_id) {
+        return response()->json([
+          'status' => 0,
+          'error' => 'Cannot delete transaction linked to a task'
+        ]);
+      }
+
+      // Delete image if exists
+      if ($transaction->image && Storage::disk('public')->exists($transaction->image)) {
+        Storage::disk('public')->delete($transaction->image);
+      }
+
+      $transaction->delete();
+
+      return response()->json([
+        'status' => 1,
+        'success' => 'Transaction deleted successfully'
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'status' => 0,
+        'error' => 'Failed to delete transaction'
+      ]);
+    }
   }
 
 
@@ -105,7 +396,7 @@ class TeamsController extends Controller
     $team = $request->input('team');
 
     $user = auth()->user();
-    if (!$user || !$user->checkCustomer($team)) {
+    if (!$user || !$user->checkDriver($team)) {
       return [];
     }
 
@@ -117,15 +408,15 @@ class TeamsController extends Controller
 
     if (!empty($search)) {
       $query->where(function ($q) use ($search) {
-        $q->where('id', 'LIKE', "%{$search}%")
-          ->orWhere('name', 'LIKE', "%{$search}%")
-          ->orWhere('username', 'LIKE', "%{$search}%")
-          ->orWhere('email', 'LIKE', "%{$search}%")
-          ->orWhere('phone', 'LIKE', "%{$search}%");
+        $q->where('drivers.id', 'LIKE', "%{$search}%")
+          ->orWhere('drivers.name', 'LIKE', "%{$search}%")
+          ->orWhere('drivers.username', 'LIKE', "%{$search}%")
+          ->orWhere('drivers.email', 'LIKE', "%{$search}%")
+          ->orWhere('drivers.phone', 'LIKE', "%{$search}%");
       });
     }
     if (!empty($statusFilter)) {
-      $query->where('status', $statusFilter);
+      $query->where('drivers.status', $statusFilter);
     }
 
     $totalFiltered = $query->count();
@@ -153,6 +444,8 @@ class TeamsController extends Controller
         'phone' => $val->phone,
         'tags'       => $val->tags->pluck('tag.name')->implode(', '),
         'role'       => $val->role->name ?? "",
+        'wallet'     => $val->wallet,
+        'balance'     => $val->wallet->balance,
         'created_at' => $val->created_at->format('Y-m-d H:i'),
         'status'     => $val->status,
       ];
@@ -204,7 +497,7 @@ class TeamsController extends Controller
 
     // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
     if ($fromDate && $toDate) {
-      $query->whereBetween('created_at', [
+      $query->whereBetween('tasks.created_at', [
         Carbon::parse($fromDate)->startOfDay(),
         Carbon::parse($toDate)->endOfDay()
       ]);
@@ -288,13 +581,13 @@ class TeamsController extends Controller
 
     if (!empty($search)) {
       $query->where(function ($q) use ($search) {
-        $q->where('sequence', 'LIKE', "%{$search}%")->orWhere('description', 'LIKE', "%{$search}%");
-        $q->orWhere('amount', 'LIKE', "%{$search}%");
+        $q->where('wallet_transactions.sequence', 'LIKE', "%{$search}%")->orWhere('wallet_transactions.description', 'LIKE', "%{$search}%");
+        $q->orWhere('wallet_transactions.amount', 'LIKE', "%{$search}%");
       });
     }
 
     if (!empty($type) && $type != 'all') {
-      $query->where('transaction_type', $type);
+      $query->where('wallet_transactions.transaction_type', $type);
     }
 
     $totalFiltered = $query->count();
@@ -464,7 +757,7 @@ class TeamsController extends Controller
                 ->where('team_id', $teamId);
             });
         })
-        ->where('status', 0) // Only unpaid transactions
+        ->where('wallet_transactions.status', 0) // Only unpaid transactions
         ->get();
 
       if ($walletTransactions->count() !== count($transactionIds)) {

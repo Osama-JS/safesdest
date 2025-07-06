@@ -29,7 +29,7 @@ class Teams extends Model
 
   public function tasks()
   {
-    return $this->hasManyThrough(Task::class, Driver::class, 'team_id', 'driver_id');
+    return $this->hasMany(Task::class,  'team_id');
   }
 
   public function wallets()
@@ -51,6 +51,16 @@ class Teams extends Model
   public function scopePrivate($query)
   {
     return $query->where('is_public', false);
+  }
+
+  public function teamWallet()
+  {
+    return $this->hasOne(Team_Wallet::class, 'team_id');
+  }
+
+  public function teamWalletTransactions()
+  {
+    return $this->teamWallet()->with('transactions');
   }
 
   public function walletTransactions()

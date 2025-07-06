@@ -56,6 +56,7 @@ $(function () {
         },
         {
           targets: 3,
+          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
             return `<span class="text-primary fw-bold rounded border px-2">${full.total_price}</span>`;
           }
@@ -76,11 +77,12 @@ $(function () {
           targets: 6,
           render: function (data, type, full, meta) {
             let whatsapp = '';
-            if (full.driver.whatsapp) {
-              const cleanNumber = full.driver.whatsapp.replace(/[+\s-]/g, '');
+            if (full.driver) {
+              console.log(full.driver);
+              const cleanNumber = full.whatsapp.replace(/[+\s-]/g, '');
               whatsapp = `
                 <a href="https://wa.me/${cleanNumber}" target="_blank" class="text-success text-decoration-none">
-                  <i class="ti ti-brand-whatsapp me-1"></i>${full.driver.whatsapp}
+                  <i class="ti ti-brand-whatsapp me-1"></i>${cleanNumber}
                   <i class="ti ti-external-link ms-1" style="font-size: 0.8rem;"></i>
                 </a>
               `;
@@ -170,7 +172,6 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}">Payment Task</a></li>
                     <li><a href="${baseUrl}customer/tasks/track/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>

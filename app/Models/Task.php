@@ -32,6 +32,7 @@ class Task extends Model
     'order_id',
     'customer_id',
     'driver_id',
+    'team_id',
     'user_id',
     'form_template_id',
     'pricing_id',
@@ -65,6 +66,11 @@ class Task extends Model
   public function driver()
   {
     return $this->belongsTo(Driver::class, 'driver_id');
+  }
+
+  public function team()
+  {
+    return $this->belongsTo(Teams::class, 'team_id');
   }
 
   public function user()

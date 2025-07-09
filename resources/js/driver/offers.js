@@ -29,41 +29,115 @@ $(function () {
         container.empty();
 
         if (response.data.length === 0) {
-          container.html('<div class="text-center text-muted alert alert-info">There are no offers yet</div>');
+          container.html(`
+            <div class="empty-state p-5 text-center">
+              <i class="ti ti-users-off fs-1 text-muted mb-3"></i>
+              <h6 class="text-muted mb-2">No Offers Yet</h6>
+              <p class="text-muted mb-0">Be the first to submit an offer for this task!</p>
+            </div>
+          `);
           return;
         }
 
-        response.data.forEach(offer => {
+        response.data.forEach((offer, index) => {
           const driver = offer.driver;
+          const isAccepted = offer.accepted;
+          const isMyOffer = offer.is_my_offer; // Assuming this field exists
+
+          // Generate driver initials for avatar fallback
+          const driverInitials = driver.name
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join('');
+
+          // Format offer time
+          const offerTime = new Date(offer.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
 
           const card = `
-          <div class=" mb-3 border-bottom rounded overflow-hidden">
-            <div class="d-flex gap-3 p-2 rounded border border-success" >
-              <img src="${driver.image ? baseUrl + driver.image : baseUrl + 'assets/img/person.png'}" alt="${driver.name}"
-                   class="rounded-circle border" style="width: 60px; height: 60px; object-fit: cover;">
-
-              <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                  <div>
-                    <h6 class="mb-1">${driver.name}</h6>
-                    <small class="text-muted">${driver.phone_code} ${driver.phone}</small>
+            <div class="offer-card ${isAccepted ? 'offer-accepted' : ''} ${isMyOffer ? 'my-offer' : ''}" data-offer-id="${offer.id}">
+              <div class="offer-header">
+                <div class="driver-info">
+                  <div class="driver-avatar">
+                    ${
+                      driver.image
+                        ? `<img src="${baseUrl + driver.image}" alt="${driver.name}" class="avatar-img">`
+                        : `<div class="avatar-initial">${driverInitials}</div>`
+                    }
+                    ${isMyOffer ? '<div class="my-offer-badge"><i class="ti ti-user"></i></div>' : ''}
                   </div>
-
+                  <div class="driver-details">
+                    <h6 class="driver-name">${driver.name}</h6>
+                    <div class="driver-contact">
+                      <i class="ti ti-phone me-1"></i>
+                      <span>${driver.phone_code} ${driver.phone}</span>
+                    </div>
+                    <div class="offer-time">
+                      <i class="ti ti-clock me-1"></i>
+                      <span>${offerTime}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="mb-2">
-                  <strong>Price:</strong>
-                  <span class="text-primary fw-bold">${Number(offer.price).toLocaleString()} SAR</span>
-                </div>
-
-                <div class="mb-2">
-                  <strong>Notes:</strong>
-                  <span class="mb-1">${offer.description || 'No notes '}</span>
+                <div class="offer-status">
+                  ${
+                    isAccepted
+                      ? '<div class="status-badge accepted"><i class="ti ti-check-circle me-1"></i>Accepted</div>'
+                      : '<div class="status-badge pending"><i class="ti ti-clock me-1"></i>Pending</div>'
+                  }
+                  ${isMyOffer ? '<div class="my-offer-label">Your Offer</div>' : ''}
                 </div>
               </div>
+
+              <div class="offer-content">
+                <div class="price-section">
+                  <div class="price-label">Offered Price</div>
+                  <div class="price-value">
+                    <span class="amount">${Number(offer.price).toLocaleString()}</span>
+                    <span class="currency">SAR</span>
+                  </div>
+                </div>
+
+                ${
+                  offer.description
+                    ? `
+                  <div class="notes-section">
+                    <div class="notes-label">
+                      <i class="ti ti-notes me-1"></i>Driver Notes
+                    </div>
+                    <div class="notes-content">${offer.description}</div>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+
+              ${
+                driver.rating
+                  ? `
+                <div class="offer-footer">
+                  <div class="driver-rating">
+                    <div class="rating-stars">
+                      ${Array.from(
+                        { length: 5 },
+                        (_, i) =>
+                          `<i class="ti ti-star${i < Math.floor(driver.rating) ? '-filled' : ''} text-warning"></i>`
+                      ).join('')}
+                    </div>
+                    <span class="rating-value">${driver.rating}/5</span>
+                    <span class="rating-count">(${driver.reviews_count || 0} reviews)</span>
+                  </div>
+                </div>
+              `
+                  : ''
+              }
             </div>
-          </div>
-        `;
+          `;
 
           container.append(card);
         });

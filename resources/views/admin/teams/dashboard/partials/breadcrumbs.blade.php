@@ -8,8 +8,8 @@
         'teams.dashboard.drivers' => __('Drivers'),
         'teams.dashboard.tasks' => __('Tasks'),
         'teams.dashboard.wallet' => __('Wallet'),
-        // 'teams.dashboard.task-distribution' => __('Task Distribution'),
-        // 'teams.dashboard.analytics' => __('Analytics'),
+        'teams.dashboard.task-distribution' => __('Task Distribution'),
+        'teams.dashboard.analytics' => __('Analytics'),
     ];
 
     $currentPageTitle = $breadcrumbs[$currentRoute] ?? __('Dashboard');

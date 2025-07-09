@@ -102,9 +102,65 @@ class DashboardController extends Controller
     }
   }
 
-  public function getTasks()
+  public function getTasks(Request $request)
   {
-    $tasks = Task::with('driver', 'pickup', 'delivery')->where('customer_id', Auth::user()->id)->whereNotIn('status', ['completed', 'canceled'])->get();
-    return response()->json(['data' => $tasks]);
+    $perPage = $request->get('per_page', 6);
+    $page = $request->get('page', 1);
+    $search = $request->get('search', '');
+    $status = $request->get('status', '');
+    $date = $request->get('date', '');
+
+    $query = Task::with('driver', 'pickup', 'delivery')
+      ->where('customer_id', Auth::user()->id);
+
+    // Apply search filter
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('id', 'LIKE', "%{$search}%")
+          ->orWhereHas('pickup', function ($pickup) use ($search) {
+            $pickup->where('address', 'LIKE', "%{$search}%")
+              ->orWhere('contact_name', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('delivery', function ($delivery) use ($search) {
+            $delivery->where('address', 'LIKE', "%{$search}%")
+              ->orWhere('contact_name', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('driver', function ($driver) use ($search) {
+            $driver->where('name', 'LIKE', "%{$search}%");
+          });
+      });
+    }
+
+    // Apply status filter
+    if (!empty($status)) {
+      $query->where('status', $status);
+    }
+
+    // Apply date filter
+    if (!empty($date)) {
+      $query->whereDate('created_at', $date);
+    }
+
+    // Order by latest first
+    $query->orderBy('created_at', 'desc');
+
+    // Get paginated results
+    $tasks = $query->paginate($perPage, ['*'], 'page', $page);
+
+    // Transform pagination data
+    $pagination = [
+      'current_page' => $tasks->currentPage(),
+      'last_page' => $tasks->lastPage(),
+      'per_page' => $tasks->perPage(),
+      'total' => $tasks->total(),
+      'from' => $tasks->firstItem(),
+      'to' => $tasks->lastItem(),
+      'has_more_pages' => $tasks->hasMorePages()
+    ];
+
+    return response()->json([
+      'data' => $tasks->items(),
+      'pagination' => $pagination
+    ]);
   }
 }

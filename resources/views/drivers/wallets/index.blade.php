@@ -7,6 +7,94 @@
 
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/spinkit/spinkit.scss'])
 
+    <style>
+        .wallet-stat-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .wallet-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .wallet-stat-card.balance-positive {
+            border-left-color: #28a745;
+        }
+
+        .wallet-stat-card.balance-negative {
+            border-left-color: #dc3545;
+        }
+
+        .wallet-stat-card.credit-card {
+            border-left-color: #28a745;
+        }
+
+        .wallet-stat-card.debit-card {
+            border-left-color: #dc3545;
+        }
+
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% {
+                background-position: 1rem 0;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .avatar-initial {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+
+        /* Driver specific styling */
+        .driver-wallet-header {
+            background: linear-gradient(135deg, #696cff 0%, #5a67d8 100%);
+            color: white;
+        }
+
+        .driver-wallet-header .badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+    </style>
 @endsection
 
 @section('vendor-script')
@@ -44,77 +132,193 @@
         $progressBarClass = $debtPercent < 50 ? 'bg-success' : ($debtPercent < 80 ? 'bg-warning' : 'bg-danger');
     @endphp
 
-    <div class="card shadow-sm border-0 mb-4">
-        <!-- Header -->
-        <div class="card-header  py-4 px-3 border-bottom">
-            <div
-                class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                <!-- Title -->
-                <div>
-                    <h5 class="card-title mb-1 text-primary fw-bold">
-                        {{ __('Wallets') }}
-                        <span class="text-muted">| [{{ $data->id }}]</span>
-                        <span class="text-dark">{{ $data->owner->name }}</span>
-                    </h5>
-                </div>
-
-                <!-- Info Section -->
-                <div class="d-flex flex-column flex-sm-row gap-3 text-nowrap">
-
-                    <!-- Balance -->
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-12 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-4">
                     <div class="d-flex align-items-center">
-                        <i class="ti ti-wallet me-2 fs-5 {{ $balanceClass }}"></i>
-                        <span class="fw-semibold">{{ __('Balance') }}:</span>
-                        <span class="ms-1 fw-bold {{ $balanceClass }}">
-                            {{ $balanceSign }}{{ number_format(abs($balance), 2) }}
-                        </span>
-                    </div>
-
-                    <!-- Credit -->
-                    <div class="d-flex align-items-center">
-                        <i class="ti ti-arrow-up-right text-success me-2 fs-5"></i>
-                        <span class="fw-semibold">{{ __('Credit') }}:</span>
-                        <span class="ms-1 fw-bold text-success">{{ number_format($credit, 2) }}</span>
-                    </div>
-
-                    <!-- Debit -->
-                    <div class="d-flex align-items-center">
-                        <i class="ti ti-arrow-down-left text-danger me-2 fs-5"></i>
-                        <span class="fw-semibold">{{ __('Debit') }}:</span>
-                        <span class="ms-1 fw-bold text-danger">{{ number_format($debit, 2) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Progress Bar for Debt Ceiling -->
-            @if ($debtCeiling > 0)
-                <div class="mt-4">
-                    <small class="text-muted d-block mb-1">
-                        {{ __('Debt Usage') }} ({{ $usedDebt }} / {{ $debtCeiling }}) - {{ $debtPercent }}%
-                    </small>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar {{ $progressBarClass }}" role="progressbar"
-                            style="width: {{ $debtPercent }}%;" aria-valuenow="{{ $debtPercent }}" aria-valuemin="0"
-                            aria-valuemax="100">
+                        <div class="avatar avatar-lg me-3">
+                            <span class="avatar-initial rounded-circle bg-label-primary">
+                                <i class="ti ti-wallet fs-2"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="card-title mb-1 fw-bold">
+                                {{ __('Driver Wallet') }}
+                            </h4>
+                            <p class="mb-0 text-black-50">
+                                {{ __('Wallet ID') }}: {{ $data->id }} | {{ $data->owner->name }}
+                            </p>
                         </div>
                     </div>
                 </div>
-            @endif
+            </div>
+        </div>
+        <!-- Balance Card -->
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
+            <div
+                class="card border-0 shadow-sm h-100 wallet-stat-card {{ $balance < 0 ? 'balance-negative' : 'balance-positive' }}">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span
+                                class="avatar-initial rounded-circle {{ $balance < 0 ? 'bg-label-danger' : 'bg-label-success' }}">
+                                <i class="ti ti-wallet fs-4 {{ $balanceClass }}"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Current Balance') }}</h6>
+                                    <h4 class="mb-0 {{ $balanceClass }} fw-bold">
+                                        {{ $balanceSign }}{{ number_format(abs($balance), 2) }}
+                                    </h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Table -->
+        <!-- Credit Card -->
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm h-100 wallet-stat-card credit-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded-circle bg-label-success">
+                                <i class="ti ti-arrow-up-right fs-4 text-success"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Total Credit') }}</h6>
+                                    <h4 class="mb-0 text-success fw-bold">{{ number_format($credit, 2) }}</h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debit Card -->
+        <div class="col-xl-3 col-md-4 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm h-100 wallet-stat-card debit-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-md me-3">
+                            <span class="avatar-initial rounded-circle bg-label-danger">
+                                <i class="ti ti-arrow-down-left fs-4 text-danger"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-muted">{{ __('Total Debit') }}</h6>
+                                    <h4 class="mb-0 text-danger fw-bold">{{ number_format($debit, 2) }}</h4>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">{{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debt Ceiling Card -->
+    @if ($debtCeiling > 0)
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3">
+                                    <span class="avatar-initial rounded-circle bg-label-warning">
+                                        <i class="ti ti-alert-triangle fs-5 text-warning"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ __('Debt Usage') }}</h6>
+                                    <small class="text-muted">{{ $usedDebt }} / {{ $debtCeiling }}
+                                        {{ __('SAR') }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span
+                                    class="badge bg-{{ $debtPercent < 50 ? 'success' : ($debtPercent < 80 ? 'warning' : 'danger') }}">
+                                    {{ $debtPercent }}%
+                                </span>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar {{ $progressBarClass }} progress-bar-striped progress-bar-animated"
+                                role="progressbar" style="width: {{ $debtPercent }}%;"
+                                aria-valuenow="{{ $debtPercent }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Transactions Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header border-bottom">
+            <div
+                class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm me-3">
+                        <span class="avatar-initial rounded-circle bg-label-primary">
+                            <i class="ti ti-list fs-5 text-primary"></i>
+                        </span>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ __('Transaction History') }}</h5>
+                        <small class="text-muted">{{ __('All wallet transactions') }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 datatables-users">
                     <thead class="table-light">
                         <tr>
-                            <th></th>
-                            <th>#</th>
-                            <th>{{ __('Amount') }}</th>
-                            <th>{{ __('Description') }}</th>
-                            <th>{{ __('Maturity') }}</th>
-                            <th>{{ __('Task') }}</th>
-                            <th>{{ __('Created At') }}</th>
+                            <th class="text-center" style="width: 50px;">
+                                <i class="ti ti-hash fs-6 text-muted"></i>
+                            </th>
+                            <th class="text-center" style="width: 80px;">{{ __('ID') }}</th>
+                            <th>
+                                {{ __('Amount') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-file-description me-1"></i>{{ __('Description') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-calendar-due me-1"></i>{{ __('Maturity') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-truck-delivery me-1"></i>{{ __('Task') }}
+                            </th>
+                            <th>
+                                <i class="ti ti-clock me-1"></i>{{ __('Created At') }}
+                            </th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -124,20 +328,98 @@
     </div>
 
 
+    <!-- Image Modal -->
     <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="imageModalLabel">{{ __('View the image') }}</h5>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-sm me-3">
+                            <span class="avatar-initial rounded-circle bg-label-primary">
+                                <i class="ti ti-photo fs-5 text-primary"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0" id="imageModalLabel">{{ __('View the image') }}</h5>
+                            <small class="text-muted">{{ __('Transaction attachment') }}</small>
+                        </div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="{{ __('close') }}"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <img id="modalImage" src="" class="img-fluid rounded shadow" alt="{{ __('image') }}" />
+                <div class="modal-body text-center p-4">
+                    <div class="position-relative">
+                        <img id="modalImage" src="" class="img-fluid rounded shadow-sm"
+                            alt="{{ __('image') }}" style="max-height: 500px; object-fit: contain;" />
+                        <div class="position-absolute top-0 end-0 m-2">
+                            <button class="btn btn-sm btn-outline-light" onclick="downloadImage()"
+                                title="{{ __('Download') }}">
+                                <i class="ti ti-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="ti ti-x me-1"></i>{{ __('Close') }}
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="downloadImage()">
+                        <i class="ti ti-download me-1"></i>{{ __('Download') }}
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <script>
+        // Enhanced wallet page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hover effects for stat cards
+            const statCards = document.querySelectorAll('.wallet-stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+
+            // Update total transactions count when table loads
+            updateTransactionCount();
+        });
+
+        function updateTransactionCount() {
+            // Update the total transactions count
+            const totalElement = document.getElementById('total-transactions');
+            if (totalElement) {
+                // This will be updated by DataTables when it loads
+                totalElement.textContent = '...';
+            }
+        }
+
+        function downloadImage() {
+            const modalImage = document.getElementById('modalImage');
+            if (modalImage && modalImage.src) {
+                const link = document.createElement('a');
+                link.href = modalImage.src;
+                link.download = 'transaction-image.jpg';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Add smooth scrolling to cards
+        function scrollToSection(sectionId) {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        }
+    </script>
 
 @endsection

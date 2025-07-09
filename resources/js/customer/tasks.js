@@ -42,120 +42,309 @@ $(function () {
     true // تحميل فقط عند الحاجة (lazy load)
   );
 
-  /* ================  Render Tasks   =============== */
-  function loadTasks() {
-    $('#tasks-container').html('');
+  /* ================  Enhanced Render Tasks with Filters and Pagination   =============== */
+  let currentPage = 1;
+  let currentFilters = {
+    search: '',
+    status: '',
+    date: ''
+  };
+
+  function loadTasks(page = 1, filters = {}) {
+    // Show loading state
+    $('#tasks-container').html(`
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>جاري تحميل المهام...</p>
+      </div>
+    `);
+
+    // Clear pagination
+    $('#pagination-container').html('');
 
     $.ajax({
       url: baseUrl + 'customer/tasks/get/tasks',
       type: 'GET',
-      data: { search: '' },
+      data: {
+        page: page,
+        per_page: 6,
+        search: filters.search || '',
+        status: filters.status || '',
+        date: filters.date || ''
+      },
       success: function (response) {
-        if (response.data.length === 0) {
-          $('#tasks-container').html("<p class='text-center p-5 alert alert-secondary'>No data available</p>");
+        $('#tasks-container').html('');
+
+        if (!response.data || response.data.length === 0) {
+          $('#tasks-container').html(`
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i class="ti ti-clipboard-off"></i>
+              </div>
+              <h5>No Tasks Found</h5>
+              <p class="text-muted">No tasks found matching your search criteria</p>
+            </div>
+          `);
           return;
         }
 
-        console.log(response.data);
+        console.log(response);
 
         response.data.forEach(task => {
           const driverInfo = task.driver
             ? `
-               <div class="divider text-start">
-                      <div class="divider-text"><strong>Driver info</strong></div>
-                  </div>
-              <div class=" d-flex align-items-center">
-                <img src="${baseUrl}${task.driver.image || 'assets/img/person.png'}"
-                    alt="Driver Image"
-                    class="rounded-circle me-3 border"
-                    style="width: 70px; height: 70px; object-fit: cover;">
-                <ul class="list-unstyled mb-0">
-                  <li><strong>Name:</strong> ${task.driver.name}</li>
-                  <li class="my-2"><strong>Phone:</strong> ${task.driver.phone}</li>
-                  <li><strong>Email:</strong> ${task.driver.email}</li>
-                </ul>
-              </div>
-
+               <div class="driver-info-section">
+                 <div class="divider text-start mb-3">
+                   <div class="divider-text"><strong><i class="ti ti-user me-2"></i>Driver Information</strong></div>
+                 </div>
+                 <div class="d-flex align-items-center">
+                   <img src="${baseUrl}${task.driver.image || 'assets/img/person.png'}"
+                       alt="Driver Image"
+                       class="driver-avatar me-3">
+                   <div class="flex-grow-1">
+                     <ul class="list-unstyled mb-0">
+                       <li class="mb-2"><strong>Name:</strong> ${task.driver.name}</li>
+                       <li class="mb-2"><strong>Phone:</strong> ${task.driver.phone}</li>
+                       <li class="mb-2"><strong>Email:</strong> ${task.driver.email}</li>
+                     </ul>
+                   </div>
+                   <div class="ms-3">
+                     <a href="https://wa.me/${task.driver.phone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(task.driver.name)},%20I%20am%20contacting%20you%20regarding%20Task%20%23${task.id}"
+                        target="_blank"
+                        class="btn btn-success btn-sm">
+                       <i class="ti ti-brand-whatsapp me-1"></i>
+                       WhatsApp
+                     </a>
+                   </div>
+                 </div>
+               </div>
             `
             : '';
+
+          // Get status class for styling
+          const statusClass = getStatusClass(task.status);
+          const statusText = getStatusText(task.status);
+
           let taskCard = `
-              <div class="mb-4">
-                  <div class="card p-3 shadow-sm">
-                      <div class="d-flex justify-content-between">
-                          <h5>#${task.id}</h5>
-                          <div class="d-flex align-items-center gap-50">
-                             <span class="mx-3 border px-3 py-2 text-success rounded"> ${task.total_price} SAR</span>
-                             <span class="mx-3 bg-secondary px-3 py-2 text-white rounded"> ${task.status} </span>
-                             <div class="d-flex align-items-center gap-50">
-
-                              <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
-                              <div class="dropdown-menu dropdown-menu-end m-0">
-                                  <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.id}" >Edit Task</a></li>
-                                  ${!task.closed ? `<li><a href="${baseUrl}customer/tasks/tracking/${task.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
-                                  <a href="${baseUrl + 'admin/teams/details/' + task.id}" class="dropdown-item">View</a>
+              <div class="task-card fade-in">
+                  <div class="task-card-header">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap">
+                          <div class="task-id">#${task.id}</div>
+                          <div class="d-flex align-items-center gap-3">
+                             <div class="task-price">${task.total_price} ريال</div>
+                             <div class="task-status ${statusClass}">${statusText}</div>
+                             <div class="dropdown">
+                              <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                <i class="ti ti-dots-vertical"></i>
+                              </button>
+                              <div class="dropdown-menu dropdown-menu-end">
+                                  <a href="javascript:;" class="dropdown-item edit-task" data-id="${task.id}">
+                                    <i class="ti ti-edit me-2"></i>Edit Task
+                                  </a>
+                                  ${
+                                    !task.closed
+                                      ? `
+                                    <a href="${baseUrl}customer/tasks/tracking/${task.id}" target="_blank" class="dropdown-item">
+                                      <i class="ti ti-map-pin me-2"></i>Track Task
+                                    </a>
+                                  `
+                                      : ''
+                                  }
+                                  <a href="${baseUrl + 'customer/tasks/details/' + task.id}" class="dropdown-item">
+                                    <i class="ti ti-eye me-2"></i>View Details
+                                  </a>
                               </div>
-                          </div>
+                             </div>
                           </div>
                       </div>
-                      <div class="row mt-3">
-                        <div class="col-md-6">
-                                <div class=" rounded p-3 h-100 shadow-sm bg-white">
-                                    <h6 class="mb-3 text-primary d-flex align-items-center justify-content-between">
-                                        <span>
-                                            <i class="fas fa-map-marker-alt me-1"></i> ${__('Pickup')}
-                                        </span>
-                                            <a href="https://www.google.com/maps?q=${task.pickup.latitude},${task.pickup.longitude}"
-                                                target="_blank" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-map-location-dot me-1"></i>
-                                            </a>
+                  </div>
 
-                                    </h6>
-
-
-                                    <ul class="list-unstyled mb-3">
-                                        <li><strong>Address:</strong>${task.pickup.address}</li>
-                                        <li><strong>Contact Name:</strong>${task.pickup.contact_name} </li>
-                                        <li><strong>Phone:</strong>${task.pickup.contact_phone} </li>
-
-                                    </ul>
-
-
-                                </div>
-                            </div>
-                         <div class="col-md-6">
-                                <div class="border rounded p-3 h-100 shadow-sm bg-white">
-                                    <h6 class="mb-3 text-success d-flex align-items-center justify-content-between">
-                                        <span>
-                                            <i class="fas fa-truck me-1"></i> ${__('Delivery')}
-                                        </span>
-                                            <a href="https://www.google.com/maps?q=${task.delivery.latitude},${task.delivery.longitude}"
-                                                target="_blank" class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-map-location-dot me-1"></i>
-                                            </a>
-                                    </h6>
-
-
-                                    <ul class="list-unstyled mb-3">
-                                        <li><strong>Address:</strong>${task.delivery.address} </li>
-                                        <li><strong>Contact Name:</strong>${task.delivery.contact_name}
-                                        </li>
-                                        <li><strong>Phone:</strong>${task.delivery.contact_phone} </li>
-
-                                    </ul>
-
-                                </div>
-                            </div>
+                  <div class="p-4">
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                          <div class="location-card pickup">
+                              <h6 class="location-title pickup d-flex align-items-center justify-content-between">
+                                  <span>
+                                      <i class="ti ti-map-pin me-2"></i>Pickup Point
+                                  </span>
+                                  <a href="https://www.google.com/maps?q=${task.pickup.latitude},${task.pickup.longitude}"
+                                      target="_blank" class="maps-btn">
+                                      <i class="ti ti-external-link me-1"></i>Map
+                                  </a>
+                              </h6>
+                              <ul class="list-unstyled mb-0">
+                                  <li class="mb-2"><strong>Address:</strong> ${task.pickup.address}</li>
+                                  <li class="mb-2"><strong>Contact Name:</strong> ${task.pickup.contact_name}</li>
+                                  <li><strong>Phone:</strong> ${task.pickup.contact_phone}</li>
+                              </ul>
+                          </div>
                       </div>
-                      ${driverInfo}
+                      <div class="col-md-6 mb-3">
+                          <div class="location-card delivery">
+                              <h6 class="location-title delivery d-flex align-items-center justify-content-between">
+                                  <span>
+                                      <i class="ti ti-truck me-2"></i>Delivery Point
+                                  </span>
+                                  <a href="https://www.google.com/maps?q=${task.delivery.latitude},${task.delivery.longitude}"
+                                      target="_blank" class="maps-btn">
+                                      <i class="ti ti-external-link me-1"></i>Map
+                                  </a>
+                              </h6>
+                              <ul class="list-unstyled mb-0">
+                                  <li class="mb-2"><strong>Address:</strong> ${task.delivery.address}</li>
+                                  <li class="mb-2"><strong>Contact Name:</strong> ${task.delivery.contact_name}</li>
+                                  <li><strong>Phone:</strong> ${task.delivery.contact_phone}</li>
+                              </ul>
+                          </div>
+                      </div>
+                    </div>
+                    ${driverInfo}
                   </div>
               </div>
           `;
           $('#tasks-container').append(taskCard);
         });
+
+        // Render pagination if available
+        if (response.pagination) {
+          renderPagination(response.pagination);
+        }
+      },
+      error: function () {
+        $('#tasks-container').html(`
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <i class="ti ti-alert-circle"></i>
+            </div>
+            <h5>Loading Error</h5>
+            <p class="text-muted">An error occurred while loading tasks. Please try again.</p>
+            <button class="btn btn-primary" onclick="loadTasks()">Retry</button>
+          </div>
+        `);
       }
     });
   }
 
+  // Helper functions for status styling
+  function getStatusClass(status) {
+    const statusClasses = {
+      completed: 'completed',
+      in_progress: 'in_progress',
+      pending: 'pending',
+      canceled: 'canceled'
+    };
+    return statusClasses[status] || 'pending';
+  }
+
+  function getStatusText(status) {
+    const statusTexts = {
+      completed: 'Completed',
+      in_progress: 'In Progress',
+      pending: 'Pending',
+      canceled: 'Canceled'
+    };
+    return statusTexts[status] || status;
+  }
+
+  // Render pagination
+  function renderPagination(pagination) {
+    if (pagination.last_page <= 1) return;
+
+    let paginationHtml = `
+      <div class="pagination-wrapper">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="pagination-info">
+            <span class="text-muted">
+              Showing ${pagination.from} to ${pagination.to} of ${pagination.total} tasks
+            </span>
+          </div>
+          <nav>
+            <ul class="pagination mb-0">
+    `;
+
+    // Previous button
+    if (pagination.current_page > 1) {
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" data-page="${pagination.current_page - 1}">
+            <i class="ti ti-chevron-right"></i>
+          </a>
+        </li>
+      `;
+    }
+
+    // Page numbers
+    for (
+      let i = Math.max(1, pagination.current_page - 2);
+      i <= Math.min(pagination.last_page, pagination.current_page + 2);
+      i++
+    ) {
+      paginationHtml += `
+        <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>
+      `;
+    }
+
+    // Next button
+    if (pagination.current_page < pagination.last_page) {
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" data-page="${pagination.current_page + 1}">
+            <i class="ti ti-chevron-left"></i>
+          </a>
+        </li>
+      `;
+    }
+
+    paginationHtml += `
+            </ul>
+          </nav>
+        </div>
+      </div>
+    `;
+
+    $('#pagination-container').html(paginationHtml);
+  }
+
+  // Filter functionality
+  $('#apply-filters').on('click', function () {
+    currentFilters = {
+      search: $('#search-tasks').val(),
+      status: $('#filter-status').val(),
+      date: $('#filter-date').val()
+    };
+    currentPage = 1;
+    loadTasks(currentPage, currentFilters);
+  });
+
+  $('#clear-filters').on('click', function () {
+    $('#search-tasks').val('');
+    $('#filter-status').val('');
+    $('#filter-date').val('');
+    currentFilters = { search: '', status: '', date: '' };
+    currentPage = 1;
+    loadTasks(currentPage, currentFilters);
+  });
+
+  // Search on Enter key
+  $('#search-tasks').on('keypress', function (e) {
+    if (e.which === 13) {
+      $('#apply-filters').click();
+    }
+  });
+
+  // Pagination click handler
+  $(document).on('click', '.pagination .page-link', function (e) {
+    e.preventDefault();
+    const page = $(this).data('page');
+    if (page) {
+      currentPage = page;
+      loadTasks(currentPage, currentFilters);
+    }
+  });
+
+  // Initialize tasks loading
   loadTasks();
 
   /* ================  Select Vehicles Code   =============== */
@@ -386,7 +575,8 @@ $(function () {
       $('#submitModal').modal('hide');
     }, 2000);
 
-    loadTasks();
+    // Reload tasks with current filters
+    loadTasks(currentPage, currentFilters);
   });
 
   document.addEventListener('deletedSuccess', function (event) {

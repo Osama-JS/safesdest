@@ -8,6 +8,74 @@
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss', 'resources/assets/vendor/libs/flatpickr/flatpickr.scss'])
     @vite(['resources/css/app.css'])
+    <style>
+        /* Custom tooltip styles for charts */
+        .custom-tooltip {
+            background: #fff;
+            border: 1px solid #e7eef7;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-family: 'Inter', sans-serif;
+            min-width: 150px;
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #5a6c7d;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f0f2f5;
+            padding-bottom: 4px;
+        }
+
+        .tooltip-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-label {
+            font-size: 12px;
+            color: #8a92a6;
+        }
+
+        .tooltip-value {
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .tooltip-note {
+            font-size: 11px;
+            color: #95a5a6;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        /* Chart container improvements */
+        .chart-container {
+            position: relative;
+        }
+
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .chart-no-data {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #8a92a6;
+        }
+    </style>
 @endsection
 
 <!-- Vendor Scripts -->
@@ -85,7 +153,8 @@
                                 <small class="text-success">+12%</small>
                             </div>
                             <div class="d-flex align-items-center">
-                                <h4 class="mb-0 me-2">{{ $team->tasks->count() }}</h4>
+                                <h4 class="mb-0 me-2 kpi-total-tasks">
+                                    {{ $analytics['kpis']['total_tasks_this_month'] ?? 0 }}</h4>
                                 <small class="text-muted">{{ __('This Month') }}</small>
                             </div>
                         </div>
@@ -112,13 +181,15 @@
                             </div>
                             <div class="d-flex align-items-center">
                                 @php
-                                    $totalTasks = $team->tasks->count();
-                                    $completedTasks = $team->tasks->where('status', 'completed')->count();
+                                    $totalTasksMonth = $analytics['kpis']['total_tasks_this_month'] ?? 0;
+                                    $completedTasksMonth = $analytics['kpis']['completed_tasks_this_month'] ?? 0;
                                     $completionRate =
-                                        $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100, 1) : 0;
+                                        $totalTasksMonth > 0
+                                            ? round(($completedTasksMonth / $totalTasksMonth) * 100, 1)
+                                            : 0;
                                 @endphp
-                                <h4 class="mb-0 me-2">{{ $completionRate }}%</h4>
-                                <small class="text-muted">{{ $completedTasks }}/{{ $totalTasks }}</small>
+                                <h4 class="mb-0 me-2 kpi-completion-rate">{{ $completionRate }}%</h4>
+                                <small class="text-muted">{{ $completedTasksMonth }}/{{ $totalTasksMonth }}</small>
                             </div>
                         </div>
                     </div>
@@ -144,9 +215,9 @@
                             </div>
                             <div class="d-flex align-items-center">
                                 @php
-                                    $totalRevenue = $team->tasks->where('status', 'completed')->sum('total_price');
+                                    $totalRevenue = $analytics['kpis']['total_revenue_this_month'] ?? 0;
                                 @endphp
-                                <h4 class="mb-0 me-2">{{ number_format($totalRevenue, 0) }}</h4>
+                                <h4 class="mb-0 me-2 kpi-total-revenue">{{ number_format($totalRevenue, 0) }}</h4>
                                 <small class="text-muted">SAR</small>
                             </div>
                         </div>
@@ -162,18 +233,24 @@
                         <div class="flex-shrink-0">
                             <div class="avatar">
                                 <div class="avatar-initial bg-warning rounded">
-                                    <i class="ti ti-clock ti-26px"></i>
+                                    <i class="ti ti-users ti-26px"></i>
                                 </div>
                             </div>
                         </div>
                         <div class="flex-grow-1 ms-3">
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <h6 class="mb-0">{{ __('Avg. Completion Time') }}</h6>
-                                <small class="text-danger">-3%</small>
+                                <h6 class="mb-0">{{ __('Driver Utilization') }}</h6>
+                                <small class="text-success">+7%</small>
                             </div>
                             <div class="d-flex align-items-center">
-                                <h4 class="mb-0 me-2">2.4</h4>
-                                <small class="text-muted">{{ __('Hours') }}</small>
+                                @php
+                                    $activeDrivers = $team->drivers->where('status', 'active')->count();
+                                    $totalDrivers = $team->drivers->count();
+                                    $utilization =
+                                        $totalDrivers > 0 ? round(($activeDrivers / $totalDrivers) * 100, 1) : 0;
+                                @endphp
+                                <h4 class="mb-0 me-2">{{ $utilization }}%</h4>
+                                <small class="text-muted">{{ $activeDrivers }}/{{ $totalDrivers }}</small>
                             </div>
                         </div>
                     </div>
@@ -308,6 +385,74 @@
         </div>
     </div>
 
+    <!-- Vehicle & Geofence Analytics -->
+    <div class="row g-4 mb-6">
+        <!-- Vehicle Utilization -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-truck me-2"></i>{{ __('Vehicle Utilization') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="vehicleUtilizationChart"></div>
+                    <div class="mt-4">
+                        <div class="row text-center">
+                            @php
+                                $vehicleSizes = $team->drivers->groupBy('vehicle_size_id')->map(function ($drivers) {
+                                    return $drivers->count();
+                                });
+                            @endphp
+                            @foreach ($vehicleSizes->take(3) as $sizeId => $count)
+                                <div class="col-4">
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold">{{ $count }}</span>
+                                        <small class="text-muted">Size {{ $sizeId }}</small>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geofence Coverage -->
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-map-pin me-2"></i>{{ __('Geofence Coverage') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if ($team->geofences && $team->geofences->count() > 0)
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="fw-semibold">{{ __('Active Geofences') }}</span>
+                            <span class="badge bg-label-primary">{{ $team->geofences->count() }}</span>
+                        </div>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar bg-success" style="width: 85%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">{{ __('Coverage Rate') }}</small>
+                            <small class="fw-semibold">85%</small>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="ti ti-map-off text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">{{ __('No geofences configured') }}</p>
+                            <button class="btn btn-sm btn-outline-primary">
+                                {{ __('Configure Geofences') }}
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Detailed Analytics Table -->
     <div class="row g-4">
         <div class="col-12">
@@ -316,9 +461,27 @@
                     <h5 class="card-title mb-0">
                         <i class="ti ti-table me-2"></i>{{ __('Detailed Analytics') }}
                     </h5>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="export-analytics">
-                        <i class="ti ti-download me-1"></i>{{ __('Export Report') }}
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="refresh-analytics">
+                            <i class="ti ti-refresh me-1"></i>{{ __('Refresh') }}
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="ti ti-download me-1"></i>{{ __('Export') }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="export-pdf">
+                                        <i class="ti ti-file-type-pdf me-2"></i>{{ __('Export as PDF') }}
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" id="export-excel">
+                                        <i class="ti ti-file-type-xls me-2"></i>{{ __('Export as Excel') }}
+                                    </a></li>
+                                <li><a class="dropdown-item" href="#" id="export-csv">
+                                        <i class="ti ti-file-type-csv me-2"></i>{{ __('Export as CSV') }}
+                                    </a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -333,40 +496,163 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    // Total Tasks Calculations
+                                    $currentTotalTasks = $analytics['kpis']['total_tasks_this_month'] ?? 0;
+                                    $previousTotalTasks =
+                                        $analytics['previous_period_data']['total_tasks_last_month'] ?? 0;
+                                    $totalTasksChange =
+                                        $previousTotalTasks > 0
+                                            ? round(
+                                                (($currentTotalTasks - $previousTotalTasks) / $previousTotalTasks) *
+                                                    100,
+                                                1,
+                                            )
+                                            : 0;
+
+                                    // Completed Tasks Calculations
+                                    $currentCompletedTasks = $analytics['kpis']['completed_tasks_this_month'] ?? 0;
+                                    $previousCompletedTasks =
+                                        $analytics['previous_period_data']['completed_tasks_last_month'] ?? 0;
+                                    $completedTasksChange =
+                                        $previousCompletedTasks > 0
+                                            ? round(
+                                                (($currentCompletedTasks - $previousCompletedTasks) /
+                                                    $previousCompletedTasks) *
+                                                    100,
+                                                1,
+                                            )
+                                            : 0;
+
+                                    // Active Drivers Calculations
+                                    $currentActiveDrivers = $team->drivers->where('status', 'active')->count();
+                                    $previousActiveDrivers =
+                                        $analytics['previous_period_data']['active_drivers_last_month'] ?? 0;
+                                    $activeDriversChange =
+                                        $previousActiveDrivers > 0
+                                            ? round(
+                                                (($currentActiveDrivers - $previousActiveDrivers) /
+                                                    $previousActiveDrivers) *
+                                                    100,
+                                                1,
+                                            )
+                                            : 0;
+
+                                    // Revenue Calculations
+                                    $currentRevenue = $analytics['kpis']['total_revenue_this_month'] ?? 0;
+                                    $previousRevenue =
+                                        $analytics['previous_period_data']['total_revenue_last_month'] ?? 0;
+                                    $revenueChange =
+                                        $previousRevenue > 0
+                                            ? round((($currentRevenue - $previousRevenue) / $previousRevenue) * 100, 1)
+                                            : 0;
+                                @endphp
+
                                 <tr>
                                     <td><strong>{{ __('Total Tasks') }}</strong></td>
-                                    <td>{{ $team->tasks->count() }}</td>
-                                    <td>{{ max(0, $team->tasks->count() - 15) }}</td>
-                                    <td><span class="badge bg-label-success">+12%</span></td>
-                                    <td><i class="ti ti-trending-up text-success"></i></td>
+                                    <td>{{ number_format($currentTotalTasks) }}</td>
+                                    <td>{{ number_format($previousTotalTasks) }}</td>
+                                    <td>
+                                        @if ($totalTasksChange > 0)
+                                            <span class="badge bg-label-success">+{{ $totalTasksChange }}%</span>
+                                        @elseif($totalTasksChange < 0)
+                                            <span class="badge bg-label-danger">{{ $totalTasksChange }}%</span>
+                                        @else
+                                            <span class="badge bg-label-secondary">0%</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($totalTasksChange > 0)
+                                            <i class="ti ti-trending-up text-success"></i>
+                                        @elseif($totalTasksChange < 0)
+                                            <i class="ti ti-trending-down text-danger"></i>
+                                        @else
+                                            <i class="ti ti-minus text-secondary"></i>
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Completed Tasks') }}</strong></td>
-                                    <td>{{ $team->tasks->where('status', 'completed')->count() }}</td>
-                                    <td>{{ max(0, $team->tasks->where('status', 'completed')->count() - 8) }}</td>
-                                    <td><span class="badge bg-label-success">+15%</span></td>
-                                    <td><i class="ti ti-trending-up text-success"></i></td>
+                                    <td>{{ number_format($currentCompletedTasks) }}</td>
+                                    <td>{{ number_format($previousCompletedTasks) }}</td>
+                                    <td>
+                                        @if ($completedTasksChange > 0)
+                                            <span class="badge bg-label-success">+{{ $completedTasksChange }}%</span>
+                                        @elseif($completedTasksChange < 0)
+                                            <span class="badge bg-label-danger">{{ $completedTasksChange }}%</span>
+                                        @else
+                                            <span class="badge bg-label-secondary">0%</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($completedTasksChange > 0)
+                                            <i class="ti ti-trending-up text-success"></i>
+                                        @elseif($completedTasksChange < 0)
+                                            <i class="ti ti-trending-down text-danger"></i>
+                                        @else
+                                            <i class="ti ti-minus text-secondary"></i>
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Active Drivers') }}</strong></td>
-                                    <td>{{ $team->drivers->where('status', 'active')->count() }}</td>
-                                    <td>{{ max(0, $team->drivers->where('status', 'active')->count() - 2) }}</td>
-                                    <td><span class="badge bg-label-info">+8%</span></td>
-                                    <td><i class="ti ti-trending-up text-info"></i></td>
+                                    <td>{{ number_format($currentActiveDrivers) }}</td>
+                                    <td>{{ number_format($previousActiveDrivers) }}</td>
+                                    <td>
+                                        @if ($activeDriversChange > 0)
+                                            <span class="badge bg-label-success">+{{ $activeDriversChange }}%</span>
+                                        @elseif($activeDriversChange < 0)
+                                            <span class="badge bg-label-danger">{{ $activeDriversChange }}%</span>
+                                        @else
+                                            <span class="badge bg-label-secondary">0%</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($activeDriversChange > 0)
+                                            <i class="ti ti-trending-up text-success"></i>
+                                        @elseif($activeDriversChange < 0)
+                                            <i class="ti ti-trending-down text-danger"></i>
+                                        @else
+                                            <i class="ti ti-minus text-secondary"></i>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>{{ __('Total Revenue') }}</strong></td>
+                                    <td>{{ number_format($currentRevenue, 0) }} SAR</td>
+                                    <td>{{ number_format($previousRevenue, 0) }} SAR</td>
+                                    <td>
+                                        @if ($revenueChange > 0)
+                                            <span class="badge bg-label-success">+{{ $revenueChange }}%</span>
+                                        @elseif($revenueChange < 0)
+                                            <span class="badge bg-label-danger">{{ $revenueChange }}%</span>
+                                        @else
+                                            <span class="badge bg-label-secondary">0%</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($revenueChange > 0)
+                                            <i class="ti ti-trending-up text-success"></i>
+                                        @elseif($revenueChange < 0)
+                                            <i class="ti ti-trending-down text-danger"></i>
+                                        @else
+                                            <i class="ti ti-minus text-secondary"></i>
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Average Rating') }}</strong></td>
-                                    <td>4.7</td>
-                                    <td>4.5</td>
-                                    <td><span class="badge bg-label-success">+4%</span></td>
-                                    <td><i class="ti ti-trending-up text-success"></i></td>
+                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="badge bg-label-secondary">N/A</span></td>
+                                    <td><i class="ti ti-clock text-muted"></i></td>
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Customer Satisfaction') }}</strong></td>
-                                    <td>92%</td>
-                                    <td>89%</td>
-                                    <td><span class="badge bg-label-success">+3%</span></td>
-                                    <td><i class="ti ti-trending-up text-success"></i></td>
+                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="badge bg-label-secondary">N/A</span></td>
+                                    <td><i class="ti ti-clock text-muted"></i></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -375,4 +661,26 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('page-script')
+    <script>
+        const teamID = {{ $team->id }};
+        const baseUrl = '{{ url('/') }}/';
+
+        // Pass analytics data to JavaScript
+        const analyticsData = {
+            monthly_tasks: @json($analytics['monthly_tasks'] ?? []),
+            task_status_distribution: @json($analytics['task_status_distribution'] ?? []),
+            revenue_data: @json($analytics['revenue_data'] ?? []),
+            daily_tasks: @json($analytics['daily_tasks'] ?? []),
+            driver_performance: @json($analytics['driver_performance'] ?? []),
+            kpis: @json($analytics['kpis'] ?? []),
+            previous_period_data: @json($analytics['previous_period_data'] ?? [])
+        };
+
+        // Make data available globally
+        window.analyticsData = analyticsData;
+    </script>
+    @vite(['resources/js/admin/teams/dashboard/analytics.js'])
 @endsection

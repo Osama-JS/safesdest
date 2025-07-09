@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تقرير مفصل - صفحة إحصائيات الفريق</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+      }
+      .main-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .header {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      .section-header {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        padding: 15px 20px;
+        margin: 20px 0 0 0;
+        border-radius: 8px;
+        font-weight: bold;
+      }
+      .kpi-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 15px 0;
+        transition: transform 0.3s ease;
+      }
+      .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+      .kpi-title {
+        color: #2c3e50;
+        font-weight: bold;
+        font-size: 1.2em;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+      }
+      .kpi-icon {
+        margin-left: 10px;
+        color: #3498db;
+      }
+      .data-source {
+        background: #e8f4f8;
+        border-right: 4px solid #3498db;
+        padding: 10px 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .calculation {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 10px 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-family: 'Courier New', monospace;
+      }
+      .chart-info {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 8px;
+      }
+      .feature-list {
+        list-style: none;
+        padding: 0;
+      }
+      .feature-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .feature-list li:before {
+        content: '✓';
+        color: #27ae60;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: 'Courier New', monospace;
+        margin: 10px 0;
+        overflow-x: auto;
+      }
+      .table-custom {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 15px 0;
+      }
+      .table-custom th {
+        background: #34495e;
+        color: white;
+        padding: 12px;
+        text-align: right;
+      }
+      .table-custom td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #ddd;
+      }
+      .table-custom tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+      .badge-custom {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+      .badge-primary {
+        background: #3498db;
+        color: white;
+      }
+      .badge-success {
+        background: #27ae60;
+        color: white;
+      }
+      .badge-warning {
+        background: #f39c12;
+        color: white;
+      }
+      .badge-info {
+        background: #17a2b8;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+          <h1><i class="fas fa-chart-line"></i> تقرير مفصل - صفحة إحصائيات الفريق</h1>
+          <p class="mb-0">دليل شامل لجميع الإحصائيات والمؤشرات المعروضة في لوحة تحكم الفريق</p>
+        </div>
+
+        <div class="p-4">
+          <!-- مقدمة -->
+          <div class="section-header"><i class="fas fa-info-circle"></i> نظرة عامة على النظام</div>
+          <div class="row">
+            <div class="col-12">
+              <p class="lead">
+                صفحة إحصائيات الفريق هي لوحة تحكم شاملة تعرض جميع المؤشرات الأساسية لأداء الفريق، وتتضمن إحصائيات
+                المهام، الإيرادات، أداء السائقين، واستخدام المركبات. جميع البيانات يتم استخراجها من قاعدة البيانات
+                PostgreSQL باستخدام استعلامات محسنة.
+              </p>
+            </div>
+          </div>
+
+          <!-- مؤشرات الأداء الرئيسية -->
+          <div class="section-header"><i class="fas fa-tachometer-alt"></i> مؤشرات الأداء الرئيسية (KPIs)</div>
+
+          <!-- إجمالي المهام -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-tasks kpi-icon"></i>
+              إجمالي المهام الشهرية
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>الوصف:</h4>
+                <p>يعرض العدد الإجمالي للمهام التي تم إنشاؤها خلال الشهر الحالي لهذا الفريق.</p>
+
+                <div class="data-source"><strong>مصدر البيانات:</strong> جدول <code>tasks</code></div>
+
+                <div class="calculation">
+                  <strong>طريقة الحساب:</strong><br />
+                  SELECT COUNT(*) FROM tasks<br />
+                  WHERE team_id = {team_id}<br />
+                  AND EXTRACT(MONTH FROM created_at) = CURRENT_MONTH<br />
+                  AND EXTRACT(YEAR FROM created_at) = CURRENT_YEAR
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>الاستخدام:</h4>
+                <ul>
+                  <li>مراقبة حجم العمل الشهري</li>
+                  <li>مقارنة الأداء بين الأشهر</li>
+                  <li>تخطيط الموارد المطلوبة</li>
+                  <li>تقييم نمو الأعمال</li>
+                </ul>
+
+                <div class="alert alert-info">
+                  <strong>ملاحظة:</strong> يتم تحديث هذا المؤشر في الوقت الفعلي مع كل مهمة جديدة.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- معدل الإنجاز -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-check-circle kpi-icon"></i>
+              معدل إنجاز المهام
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>الوصف:</h4>
+                <p>نسبة المهام المكتملة من إجمالي المهام خلال الشهر الحالي، معبر عنها كنسبة مئوية.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong> جدول <code>tasks</code> مع حالة <code>status = 'completed'</code>
+                </div>
+
+                <div class="calculation">
+                  <strong>طريقة الحساب:</strong><br />
+                  معدل الإنجاز = (المهام المكتملة ÷ إجمالي المهام) × 100<br /><br />
+                  completed_tasks = COUNT(*) WHERE status = 'completed'<br />
+                  total_tasks = COUNT(*)<br />
+                  completion_rate = (completed_tasks / total_tasks) * 100
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>المؤشرات المرتبطة:</h4>
+                <ul>
+                  <li><span class="badge-success badge-custom">90%+</span> أداء ممتاز</li>
+                  <li><span class="badge-warning badge-custom">70-89%</span> أداء جيد</li>
+                  <li><span class="badge-warning badge-custom">50-69%</span> يحتاج تحسين</li>
+                  <li><span class="badge-warning badge-custom">&lt;50%</span> أداء ضعيف</li>
+                </ul>
+
+                <h4>العوامل المؤثرة:</h4>
+                <ul>
+                  <li>كفاءة السائقين</li>
+                  <li>صعوبة المهام</li>
+                  <li>توفر المركبات</li>
+                  <li>الظروف الخارجية</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- إجمالي الإيرادات -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-money-bill-wave kpi-icon"></i>
+              إجمالي الإيرادات الشهرية
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>الوصف:</h4>
+                <p>مجموع الإيرادات المحققة من المهام المكتملة خلال الشهر الحالي، محسوبة بالريال السعودي.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong> حقل <code>total_price</code> من جدول <code>tasks</code>
+                </div>
+
+                <div class="calculation">
+                  <strong>طريقة الحساب:</strong><br />
+                  SELECT SUM(total_price) FROM tasks<br />
+                  WHERE status = 'completed'<br />
+                  AND team_id = {team_id}<br />
+                  AND EXTRACT(MONTH FROM created_at) = CURRENT_MONTH
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>التحليل المالي:</h4>
+                <ul>
+                  <li>تتبع الأداء المالي الشهري</li>
+                  <li>مقارنة الإيرادات بين الفترات</li>
+                  <li>حساب متوسط قيمة المهمة</li>
+                  <li>تقييم ربحية الفريق</li>
+                </ul>
+
+                <div class="alert alert-warning">
+                  <strong>تنبيه:</strong> يتم احتساب الإيرادات فقط للمهام ذات الحالة "مكتملة".
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- معدل استخدام السائقين -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-users kpi-icon"></i>
+              معدل استخدام السائقين
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>الوصف:</h4>
+                <p>نسبة السائقين النشطين من إجمالي السائقين في الفريق، مما يوضح مدى استغلال الموارد البشرية.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong> جدول <code>drivers</code> مع حقل <code>status</code>
+                </div>
+
+                <div class="calculation">
+                  <strong>طريقة الحساب:</strong><br />
+                  active_drivers = COUNT(*) WHERE status = 'active'<br />
+                  total_drivers = COUNT(*)<br />
+                  utilization = (active_drivers / total_drivers) * 100
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>مستويات الاستخدام:</h4>
+                <ul>
+                  <li><span class="badge-success badge-custom">85%+</span> استخدام مثالي</li>
+                  <li><span class="badge-info badge-custom">70-84%</span> استخدام جيد</li>
+                  <li><span class="badge-warning badge-custom">50-69%</span> استخدام متوسط</li>
+                  <li><span class="badge-warning badge-custom">&lt;50%</span> استخدام منخفض</li>
+                </ul>
+
+                <h4>التحسينات المقترحة:</h4>
+                <ul>
+                  <li>إعادة توزيع المهام</li>
+                  <li>تدريب السائقين غير النشطين</li>
+                  <li>مراجعة جداول العمل</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- الرسوم البيانية والتصورات -->
+          <div class="section-header"><i class="fas fa-chart-bar"></i> الرسوم البيانية والتصورات</div>
+
+          <!-- رسم بياني للمهام الشهرية -->
+          <div class="chart-info">
+            <h4><i class="fas fa-line-chart"></i> رسم بياني للمهام الشهرية</h4>
+            <div class="row">
+              <div class="col-md-8">
+                <p>
+                  <strong>الغرض:</strong> عرض اتجاه المهام على مدار الأشهر لتحديد الأنماط الموسمية وتوقع الأحمال
+                  المستقبلية.
+                </p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong>
+                  <pre class="code-block">
+SELECT EXTRACT(MONTH FROM created_at) as month, COUNT(*) as count
+FROM tasks
+WHERE team_id = {team_id}
+AND EXTRACT(YEAR FROM created_at) = CURRENT_YEAR
+GROUP BY month
+ORDER BY month</pre
+                  >
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h5>المعلومات المعروضة:</h5>
+                <ul class="feature-list">
+                  <li>عدد المهام لكل شهر</li>
+                  <li>الاتجاه العام للنمو</li>
+                  <li>الذروات والانخفاضات</li>
+                  <li>المقارنة بين الأشهر</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- رسم دائري لتوزيع حالات المهام -->
+          <div class="chart-info">
+            <h4><i class="fas fa-pie-chart"></i> رسم دائري لتوزيع حالات المهام</h4>
+            <div class="row">
+              <div class="col-md-8">
+                <p>
+                  <strong>الغرض:</strong> إظهار التوزيع النسبي لحالات المهام المختلفة لفهم تدفق العمل وتحديد الاختناقات.
+                </p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong>
+                  <pre class="code-block">
+SELECT status, COUNT(*) as count
+FROM tasks
+WHERE team_id = {team_id}
+GROUP BY status</pre
+                  >
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h5>الحالات المتتبعة:</h5>
+                <ul class="feature-list">
+                  <li><span class="badge-success badge-custom">مكتملة</span> completed</li>
+                  <li><span class="badge-warning badge-custom">قيد التنفيذ</span> in_progress</li>
+                  <li><span class="badge-info badge-custom">معينة</span> assigned</li>
+                  <li><span class="badge-warning badge-custom">ملغية</span> canceled</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- رسم بياني للإيرادات -->
+          <div class="chart-info">
+            <h4><i class="fas fa-area-chart"></i> رسم بياني للإيرادات الشهرية</h4>
+            <div class="row">
+              <div class="col-md-8">
+                <p><strong>الغرض:</strong> تتبع الأداء المالي للفريق عبر الزمن وتحديد الاتجاهات المالية.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong>
+                  <pre class="code-block">
+SELECT EXTRACT(MONTH FROM created_at) as month,
+       SUM(COALESCE(total_price, 0)) as revenue
+FROM tasks
+WHERE team_id = {team_id}
+AND status = 'completed'
+AND EXTRACT(YEAR FROM created_at) = CURRENT_YEAR
+GROUP BY month
+ORDER BY month</pre
+                  >
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h5>المؤشرات المالية:</h5>
+                <ul class="feature-list">
+                  <li>الإيرادات الشهرية</li>
+                  <li>معدل النمو</li>
+                  <li>متوسط الإيرادات</li>
+                  <li>التوقعات المستقبلية</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- رسم بياني لاستخدام المركبات -->
+          <div class="chart-info">
+            <h4><i class="fas fa-truck"></i> رسم دائري لاستخدام المركبات</h4>
+            <div class="row">
+              <div class="col-md-8">
+                <p><strong>الغرض:</strong> عرض توزيع أحجام المركبات في الفريق لتحسين إدارة الأسطول.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong>
+                  <pre class="code-block">
+SELECT vehicle_size_id, COUNT(*) as count
+FROM drivers
+WHERE team_id = {team_id}
+GROUP BY vehicle_size_id</pre
+                  >
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h5>أحجام المركبات:</h5>
+                <ul class="feature-list">
+                  <li><span class="badge-success badge-custom">صغيرة</span> Small Vehicles</li>
+                  <li><span class="badge-warning badge-custom">متوسطة</span> Medium Vehicles</li>
+                  <li><span class="badge-info badge-custom">كبيرة</span> Large Vehicles</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- الجداول التفصيلية -->
+          <div class="section-header"><i class="fas fa-table"></i> الجداول التفصيلية والتحليلات</div>
+
+          <!-- جدول أداء السائقين -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-user-check kpi-icon"></i>
+              جدول أداء السائقين
+            </div>
+            <div class="row">
+              <div class="col-12">
+                <p><strong>الوصف:</strong> جدول مفصل يعرض إحصائيات كل سائق في الفريق مع مؤشرات الأداء الفردية.</p>
+
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>البيان</th>
+                      <th>مصدر البيانات</th>
+                      <th>طريقة الحساب</th>
+                      <th>الاستخدام</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>اسم السائق</strong></td>
+                      <td>drivers.name</td>
+                      <td>استعلام مباشر</td>
+                      <td>التعرف على السائق</td>
+                    </tr>
+                    <tr>
+                      <td><strong>المهام المكتملة</strong></td>
+                      <td>tasks.status = 'completed'</td>
+                      <td>COUNT(*) WHERE driver_id = {id}</td>
+                      <td>قياس الإنتاجية</td>
+                    </tr>
+                    <tr>
+                      <td><strong>إجمالي المهام</strong></td>
+                      <td>tasks.driver_id</td>
+                      <td>COUNT(*) WHERE driver_id = {id}</td>
+                      <td>حجم العمل المخصص</td>
+                    </tr>
+                    <tr>
+                      <td><strong>معدل النجاح</strong></td>
+                      <td>حساب مشتق</td>
+                      <td>(المكتملة ÷ الإجمالي) × 100</td>
+                      <td>تقييم الكفاءة</td>
+                    </tr>
+                    <tr>
+                      <td><strong>حجم المركبة</strong></td>
+                      <td>drivers.vehicle_size_id</td>
+                      <td>JOIN مع جدول vehicle_sizes</td>
+                      <td>تصنيف القدرات</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- تحليل المناطق الجغرافية -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-map-marked-alt kpi-icon"></i>
+              تحليل التغطية الجغرافية
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>الوصف:</h4>
+                <p>تحليل مناطق العمل المخصصة للفريق وتقييم التغطية الجغرافية من خلال الـ Geofences.</p>
+
+                <div class="data-source">
+                  <strong>مصدر البيانات:</strong>
+                  <ul>
+                    <li>جدول <code>geofence_teams</code></li>
+                    <li>جدول <code>geofences</code></li>
+                    <li>إحداثيات المهام من <code>task_points</code></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>المؤشرات المحسوبة:</h4>
+                <ul class="feature-list">
+                  <li>عدد المناطق المخصصة</li>
+                  <li>معدل التغطية الجغرافية</li>
+                  <li>المهام داخل/خارج المناطق</li>
+                  <li>كفاءة التوزيع الجغرافي</li>
+                </ul>
+
+                <div class="calculation">
+                  <strong>حساب التغطية:</strong><br />
+                  ST_Contains(geofence.coordinates, <br />
+                  ST_GeomFromText('POINT(longitude latitude)'))
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- الميزات التقنية والوظائف المتقدمة -->
+          <div class="section-header"><i class="fas fa-cogs"></i> الميزات التقنية والوظائف المتقدمة</div>
+
+          <!-- خيارات التصدير -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-download kpi-icon"></i>
+              خيارات التصدير والتقارير
+            </div>
+            <div class="row">
+              <div class="col-md-4">
+                <h5><i class="fas fa-file-pdf"></i> تصدير PDF</h5>
+                <ul class="feature-list">
+                  <li>تقرير مطبوع احترافي</li>
+                  <li>يتضمن جميع المؤشرات</li>
+                  <li>تنسيق مناسب للطباعة</li>
+                  <li>شعار الشركة والتاريخ</li>
+                </ul>
+              </div>
+              <div class="col-md-4">
+                <h5><i class="fas fa-file-excel"></i> تصدير Excel</h5>
+                <ul class="feature-list">
+                  <li>بيانات قابلة للتحليل</li>
+                  <li>جداول منظمة</li>
+                  <li>صيغ حسابية</li>
+                  <li>رسوم بيانية تفاعلية</li>
+                </ul>
+              </div>
+              <div class="col-md-4">
+                <h5><i class="fas fa-file-csv"></i> تصدير CSV</h5>
+                <ul class="feature-list">
+                  <li>بيانات خام للتحليل</li>
+                  <li>متوافق مع جميع الأنظمة</li>
+                  <li>سهولة الاستيراد</li>
+                  <li>حجم ملف صغير</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- التحديث والتفاعل -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-sync-alt kpi-icon"></i>
+              التحديث التلقائي والتفاعل
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>ميزات التحديث:</h4>
+                <ul class="feature-list">
+                  <li>تحديث البيانات في الوقت الفعلي</li>
+                  <li>زر تحديث يدوي</li>
+                  <li>تحديث تلقائي كل 5 دقائق</li>
+                  <li>إشعارات التغييرات المهمة</li>
+                </ul>
+
+                <div class="calculation">
+                  <strong>آلية التحديث:</strong><br />
+                  AJAX Call → Controller → Database → JSON Response → Chart Update
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4>التفاعل مع الرسوم البيانية:</h4>
+                <ul class="feature-list">
+                  <li>تكبير وتصغير الرسوم</li>
+                  <li>إخفاء/إظهار البيانات</li>
+                  <li>تفاصيل عند التمرير</li>
+                  <li>تصدير الرسوم كصور</li>
+                </ul>
+
+                <div class="alert alert-info">
+                  <strong>مكتبة الرسوم:</strong> ApexCharts.js للرسوم التفاعلية عالية الجودة
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- فلترة البيانات -->
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-filter kpi-icon"></i>
+              خيارات الفلترة والتخصيص
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>فلاتر التاريخ:</h4>
+                <ul class="feature-list">
+                  <li>اليوم الحالي</li>
+                  <li>آخر 7 أيام</li>
+                  <li>آخر 30 يوم</li>
+                  <li>الشهر الحالي</li>
+                  <li>الشهر الماضي</li>
+                  <li>نطاق تاريخ مخصص</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h4>فلاتر المحتوى:</h4>
+                <ul class="feature-list">
+                  <li>حالة المهام</li>
+                  <li>نوع المركبة</li>
+                  <li>السائق المحدد</li>
+                  <li>المنطقة الجغرافية</li>
+                  <li>نطاق الإيرادات</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- الأمان وصلاحيات الوصول -->
+          <div class="section-header"><i class="fas fa-shield-alt"></i> الأمان وصلاحيات الوصول</div>
+
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-lock kpi-icon"></i>
+              نظام الصلاحيات والأمان
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>مستويات الوصول:</h4>
+                <table class="table-custom">
+                  <thead>
+                    <tr>
+                      <th>المستوى</th>
+                      <th>الصلاحيات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="badge-success badge-custom">مدير النظام</span></td>
+                      <td>وصول كامل لجميع الفرق والإحصائيات</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge-info badge-custom">مدير الفريق</span></td>
+                      <td>وصول لإحصائيات فريقه فقط</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge-warning badge-custom">مشرف</span></td>
+                      <td>عرض الإحصائيات بدون تعديل</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge-warning badge-custom">سائق</span></td>
+                      <td>عرض إحصائياته الشخصية فقط</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h4>إجراءات الأمان:</h4>
+                <ul class="feature-list">
+                  <li>تشفير البيانات الحساسة</li>
+                  <li>تسجيل جميع العمليات</li>
+                  <li>مصادقة ثنائية العامل</li>
+                  <li>انتهاء صلاحية الجلسة</li>
+                  <li>حماية من هجمات CSRF</li>
+                  <li>تحديد معدل الطلبات</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- الخلاصة والتوصيات -->
+          <div class="section-header"><i class="fas fa-lightbulb"></i> الخلاصة والتوصيات</div>
+
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-chart-line kpi-icon"></i>
+              ملخص النظام والتوصيات
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <h4>نقاط القوة:</h4>
+                <ul class="feature-list">
+                  <li>واجهة مستخدم بديهية وسهلة الاستخدام</li>
+                  <li>بيانات دقيقة ومحدثة في الوقت الفعلي</li>
+                  <li>رسوم بيانية تفاعلية ومتقدمة</li>
+                  <li>خيارات تصدير متنوعة ومرنة</li>
+                  <li>نظام أمان قوي ومتعدد المستويات</li>
+                  <li>تصميم متجاوب يعمل على جميع الأجهزة</li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <h4>التحسينات المقترحة:</h4>
+                <ul class="feature-list">
+                  <li>إضافة تنبيهات ذكية للأداء المنخفض</li>
+                  <li>تطوير تطبيق جوال مخصص</li>
+                  <li>إضافة ميزة التنبؤ بالاتجاهات</li>
+                  <li>تحسين سرعة تحميل البيانات</li>
+                  <li>إضافة المزيد من خيارات التخصيص</li>
+                  <li>تطوير API للتكامل مع أنظمة خارجية</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="alert alert-success mt-4">
+              <h5><i class="fas fa-check-circle"></i> الخلاصة النهائية</h5>
+              <p class="mb-0">
+                صفحة إحصائيات الفريق تمثل حلاً شاملاً ومتقدماً لمراقبة وتحليل أداء الفرق في نظام SafeDests. تجمع الصفحة
+                بين الدقة في البيانات والسهولة في الاستخدام، مما يوفر للمديرين والمشرفين أدوات قوية لاتخاذ قرارات مدروسة
+                وتحسين الأداء العام للفريق.
+              </p>
+            </div>
+          </div>
+
+          <!-- معلومات تقنية إضافية -->
+          <div class="section-header"><i class="fas fa-code"></i> المعلومات التقنية</div>
+
+          <div class="kpi-card">
+            <div class="kpi-title">
+              <i class="fas fa-server kpi-icon"></i>
+              التقنيات المستخدمة
+            </div>
+            <div class="row">
+              <div class="col-md-4">
+                <h5>Backend:</h5>
+                <ul class="feature-list">
+                  <li>Laravel Framework</li>
+                  <li>PostgreSQL Database</li>
+                  <li>PostGIS للبيانات الجغرافية</li>
+                  <li>Eloquent ORM</li>
+                </ul>
+              </div>
+              <div class="col-md-4">
+                <h5>Frontend:</h5>
+                <ul class="feature-list">
+                  <li>Bootstrap 5</li>
+                  <li>ApexCharts.js</li>
+                  <li>jQuery</li>
+                  <li>Tabler Icons</li>
+                </ul>
+              </div>
+              <div class="col-md-4">
+                <h5>الأمان:</h5>
+                <ul class="feature-list">
+                  <li>CSRF Protection</li>
+                  <li>XSS Prevention</li>
+                  <li>SQL Injection Protection</li>
+                  <li>Rate Limiting</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

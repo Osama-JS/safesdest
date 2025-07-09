@@ -363,6 +363,8 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/teams/drivers/', [TeamsController::class, 'getTeamDrivers'])->name('teams.drivers');
         Route::get('/teams/tasks/', [TeamsController::class, 'getTeamTasks'])->name('teams.tasks');
         Route::get('/teams/transactions/', [TeamsController::class, 'getTeamTransactions'])->name('teams.transactions');
+        Route::get('/teams/{team}/filtered-tasks', [TeamsController::class, 'getFilteredTasks'])->name('teams.filtered-tasks');
+        Route::get('/teams/{team}/analytics-data', [TeamsController::class, 'getAnalyticsData'])->name('teams.analytics-data');
 
 
         Route::get('/teams/wallet/transactions/data', [TeamWalletController::class, 'getDataTransactions'])->name('teams.wallet.transactions.data');

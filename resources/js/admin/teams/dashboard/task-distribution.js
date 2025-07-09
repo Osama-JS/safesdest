@@ -1,314 +1,222 @@
-/**
- * Team Task Distribution Page
- */
-
-'use strict';
-import { initDashboard, showAlert, setButtonLoading, validateForm, resetFormValidation } from './common.js';
+import { showAlert } from '../../../ajax.js';
 
 $(function () {
-  // Initialize common dashboard functionality
-  initDashboard();
-  // Initialize Select2
-  $('.select2').select2({
-    placeholder: 'Choose a driver...',
-    allowClear: true
-  });
-
-  // ajax setup
+  /* ===========  AJAX Setup   ===========*/
   $.ajaxSetup({
     headers: {
       'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     }
   });
 
-  // Assignment type change handler
-  $('#assignment-type').on('change', function () {
-    const assignmentType = $(this).val();
+  /* ===========  Initialize   ===========*/
+  loadFilteredTasks();
 
-    if (assignmentType === 'specific') {
-      $('#specific-driver-section').show();
-      $('#selected-driver').prop('required', true);
-    } else {
-      $('#specific-driver-section').hide();
-      $('#selected-driver').prop('required', false);
-      $('#selected-driver').val('').trigger('change');
-    }
+  /* ===========  Event Handlers   ===========*/
+
+  // Refresh tasks button
+  $('#refresh-tasks').on('click', function () {
+    loadFilteredTasks();
   });
 
-  // Form validation and submission
-  $('#taskDistributionForm').on('submit', function (e) {
-    e.preventDefault();
+  // Assign task button click
+  $(document).on('click', '.assign-task', function () {
+    const taskId = $(this).data('id');
+    const vehicleSizeId = $(this).data('vehicle-size-id');
 
-    if (!validateForm('#taskDistributionForm')) {
+    // Get drivers with matching vehicle size
+    const matchingDrivers = availableDrivers.filter(driver => driver.vehicle_size_id == vehicleSizeId);
+
+    if (matchingDrivers.length === 0) {
+      showAlert('error', 'No drivers available with matching vehicle size for this task.');
       return;
     }
 
-    const formData = new FormData(this);
-    const submitBtn = $(this).find('button[type="submit"]');
+    // Show assignment modal
+    $('#assignModal').modal('show');
+    $('#assignTitle').html(`Assign Task: <span class="bg-info text-white px-2 rounded">#${taskId}</span>`);
+    $('#task-assign-id').val(taskId);
 
-    setButtonLoading(submitBtn, true, 'Assigning...');
+    // Populate driver dropdown
+    let driverOptions = '<option value="">Select Driver</option>';
+    matchingDrivers.forEach(driver => {
+      // Check if driver has active tasks (simplified check)
+      const hasActiveTasks = driver.active_tasks_count > 0;
+      const warningIcon = hasActiveTasks ? ' ⚠️' : '';
+      const warningClass = hasActiveTasks ? 'text-warning' : '';
 
-    // Simulate task assignment (replace with actual API call)
+      driverOptions += `<option value="${driver.id}" class="${warningClass}">
+        ${driver.name}${warningIcon}
+        ${hasActiveTasks ? ' (Has active tasks)' : ''}
+      </option>`;
+    });
+
+    $('#task-driver').html(driverOptions);
+  });
+
+  // Form submission handler (reuse existing form submission logic)
+  document.addEventListener('formSubmitted', function (event) {
     setTimeout(() => {
-      showAlert('success', 'Task has been assigned successfully', 'Success!');
-      resetForm();
-      setButtonLoading(submitBtn, false);
+      $('#assignModal').modal('hide');
+      loadFilteredTasks(); // Refresh tasks after assignment
     }, 2000);
   });
 
-  // Reset form
-  $('#reset-form').on('click', function () {
-    resetForm();
-  });
+  /* ===========  Functions   ===========*/
 
-  // Preview task
-  $('#preview-task').on('click', function () {
-    if (!validateForm('#taskDistributionForm')) {
-      showAlert('warning', 'Please fill in all required fields before previewing', 'Validation Error');
+  function loadFilteredTasks() {
+    showLoading(true);
+
+    $.ajax({
+      url: `${baseUrl}admin/teams/${teamID}/filtered-tasks`,
+      type: 'GET',
+      success: function (response) {
+        showLoading(false);
+
+        if (response.success) {
+          updateTeamInfo(response.team_info);
+          renderTasks(response.data);
+          updateTasksCount(response.total_tasks);
+        } else {
+          showAlert('error', response.message || 'Failed to load tasks');
+          showNoTasksMessage();
+        }
+      },
+      error: function (xhr, status, error) {
+        showLoading(false);
+        console.error('Error loading tasks:', error);
+        showAlert('error', 'Failed to load tasks. Please try again.');
+        showNoTasksMessage();
+      }
+    });
+  }
+
+  function updateTeamInfo(teamInfo) {
+    $('#team-geofences-count').text(teamInfo.geofence_count || 0);
+    $('#vehicle-sizes-count').text(teamInfo.driver_vehicle_sizes ? teamInfo.driver_vehicle_sizes.length : 0);
+  }
+
+  function updateTasksCount(count) {
+    $('#available-tasks-count').text(count);
+  }
+
+  function renderTasks(tasks) {
+    const container = $('#tasks-container');
+    container.empty();
+
+    if (!tasks || tasks.length === 0) {
+      showNoTasksMessage();
       return;
     }
 
-    generateTaskPreview();
-    $('#taskPreviewModal').modal('show');
-  });
+    $('#no-tasks-message').hide();
 
-  // Confirm assignment from preview
-  $('#confirm-assignment').on('click', function () {
-    $('#taskPreviewModal').modal('hide');
-    $('#taskDistributionForm').submit();
-  });
+    tasks.forEach(task => {
+      const taskCard = createTaskCard(task);
+      container.append(taskCard);
+    });
+  }
 
-  // Real-time driver status updates (simulate)
-  setInterval(updateDriverStatus, 30000); // Update every 30 seconds
+  function createTaskCard(task) {
+    const pickupAddress = task.pickup_location.address || 'Address not available';
+    const deliveryAddress = task.delivery_location.address || 'Address not available';
+    const vehicleSizeName = task.vehicle_size_name || 'Unknown';
+    const totalPrice = task.total_price || '0';
+    const createdAt = new Date(task.created_at).toLocaleDateString();
 
-  // Form field validations
-  $('#task-price').on('input', function () {
-    const price = parseFloat($(this).val());
-    if (price < 0) {
-      $(this).val(0);
-    }
-  });
+    return `
+      <div class="mb-4">
+        <div class="card p-3 shadow-sm task-card" data-task-id="${task.id}">
+          <div class="d-flex justify-content-between">
+            <div class="d-flex align-items-start flex-grow-1">
+              <div class="avatar avatar-sm me-3">
+                <div class="avatar-initial bg-label-primary rounded">
+                  <i class="ti ti-truck-delivery"></i>
+                </div>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="mb-0">Task #${task.id}</h6>
+                  <span class="badge bg-warning text-capitalize">${task.status.replace('_', ' ')}</span>
+                </div>
 
-  // Auto-suggest based on assignment type
-  $('#assignment-type').on('change', function () {
-    const type = $(this).val();
+                <div class="row g-2 mb-2">
+                  <div class="col-md-6">
+                    <small class="text-muted d-block">
+                      <i class="ti ti-map-pin me-1"></i><strong>Pickup:</strong>
+                    </small>
+                    <small class="text-truncate d-block" title="${pickupAddress}">
+                      ${pickupAddress}
+                    </small>
+                  </div>
+                  <div class="col-md-6">
+                    <small class="text-muted d-block">
+                      <i class="ti ti-map-pin-filled me-1"></i><strong>Delivery:</strong>
+                    </small>
+                    <small class="text-truncate d-block" title="${deliveryAddress}">
+                      ${deliveryAddress}
+                    </small>
+                  </div>
+                </div>
 
-    if (type === 'auto') {
-      suggestBestDriver();
-    }
-  });
-});
-
-/**
- * Reset form to initial state
- */
-function resetForm() {
-  $('#taskDistributionForm')[0].reset();
-  resetFormValidation('#taskDistributionForm');
-  $('#selected-driver').val('').trigger('change');
-  $('#assignment-type').trigger('change');
-
-  // Reset datetime inputs to current time + 1 hour
-  const now = new Date();
-  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-  $('#start-time').val(formatDateTimeLocal(oneHourLater));
-  $('#complete-time').val(formatDateTimeLocal(twoHoursLater));
-}
-
-/**
- * Generate task preview
- */
-function generateTaskPreview() {
-  const formData = new FormData($('#taskDistributionForm')[0]);
-  const assignmentType = formData.get('assignment_type');
-  const selectedDriverId = formData.get('driver_id');
-
-  let driverInfo = '';
-  if (assignmentType === 'specific' && selectedDriverId) {
-    const driver = availableDrivers.find(d => d.id == selectedDriverId);
-    if (driver) {
-      driverInfo = `
-        <div class="alert alert-info">
-          <h6><i class="ti ti-user me-2"></i>Assigned Driver</h6>
-          <p class="mb-0"><strong>${driver.name}</strong> - ${driver.email}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="d-flex gap-2">
+                    <span class="badge bg-label-info">
+                      <i class="ti ti-truck me-1"></i>${vehicleSizeName}
+                    </span>
+                    <span class="badge bg-label-success">
+                      <i class="ti ti-currency-riyal me-1"></i>${totalPrice} SAR
+                    </span>
+                    <small class="text-muted">
+                      <i class="ti ti-calendar me-1"></i>${createdAt}
+                    </small>
+                  </div>
+                  <button type="button"
+                          class="btn btn-sm btn-primary assign-task"
+                          data-id="${task.id}"
+                          data-vehicle-size-id="${task.vehicle_size_id}">
+                    <i class="ti ti-user-plus me-1"></i>Assign
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      `;
-    }
-  } else if (assignmentType === 'broadcast') {
-    driverInfo = `
-      <div class="alert alert-warning">
-        <h6><i class="ti ti-speakerphone me-2"></i>Broadcast Assignment</h6>
-        <p class="mb-0">This task will be sent to all available drivers in the team</p>
-      </div>
-    `;
-  } else if (assignmentType === 'auto') {
-    driverInfo = `
-      <div class="alert alert-success">
-        <h6><i class="ti ti-robot me-2"></i>Auto Assignment</h6>
-        <p class="mb-0">System will automatically assign to the best available driver</p>
       </div>
     `;
   }
 
-  const previewContent = `
-    <div class="row">
-      <div class="col-md-6">
-        <h6>Task Information</h6>
-        <table class="table table-borderless">
-          <tr><td><strong>Title:</strong></td><td>${formData.get('title')}</td></tr>
-          <tr><td><strong>Priority:</strong></td><td><span class="badge bg-label-${getPriorityColor(formData.get('priority'))}">${formData.get('priority')}</span></td></tr>
-          <tr><td><strong>Price:</strong></td><td>${formData.get('price')} SAR</td></tr>
-          <tr><td><strong>Payment:</strong></td><td>${formData.get('payment_method')}</td></tr>
-        </table>
-      </div>
-      <div class="col-md-6">
-        <h6>Timing</h6>
-        <table class="table table-borderless">
-          <tr><td><strong>Start Before:</strong></td><td>${formData.get('start_before') || 'Not specified'}</td></tr>
-          <tr><td><strong>Complete Before:</strong></td><td>${formData.get('complete_before') || 'Not specified'}</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <div class="row mt-3">
-      <div class="col-md-6">
-        <h6>Pickup Location</h6>
-        <p class="text-muted">${formData.get('pickup_address')}</p>
-      </div>
-      <div class="col-md-6">
-        <h6>Delivery Location</h6>
-        <p class="text-muted">${formData.get('delivery_address')}</p>
-      </div>
-    </div>
-
-    <div class="mt-3">
-      <h6>Description</h6>
-      <p class="text-muted">${formData.get('description')}</p>
-    </div>
-
-    ${
-      formData.get('notes')
-        ? `
-      <div class="mt-3">
-        <h6>Additional Notes</h6>
-        <p class="text-muted">${formData.get('notes')}</p>
-      </div>
-    `
-        : ''
-    }
-
-    ${driverInfo}
-  `;
-
-  $('#task-preview-content').html(previewContent);
-}
-
-/**
- * Get priority color class
- */
-function getPriorityColor(priority) {
-  switch (priority) {
-    case 'urgent':
-      return 'danger';
-    case 'high':
-      return 'warning';
-    case 'normal':
-      return 'info';
-    default:
-      return 'secondary';
-  }
-}
-
-/**
- * Format date for datetime-local input
- */
-function formatDateTimeLocal(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-/**
- * Update driver status (simulate real-time updates)
- */
-function updateDriverStatus() {
-  // This would typically make an AJAX call to get updated driver statuses
-  // For now, we'll just add a visual indicator
-  $('.badge').css('opacity', '0.7');
-  setTimeout(() => {
-    $('.badge').css('opacity', '1');
-  }, 500);
-}
-
-/**
- * Suggest best driver for auto-assignment
- */
-function suggestBestDriver() {
-  // Simple algorithm to suggest best driver
-  // In a real implementation, this would consider factors like:
-  // - Driver location
-  // - Current workload
-  // - Performance rating
-  // - Availability
-
-  const onlineDrivers = availableDrivers.filter(driver => driver.status === 'active' && driver.online);
-
-  if (onlineDrivers.length > 0) {
-    // For demo, just pick the first online driver
-    const suggestedDriver = onlineDrivers[0];
-
-    Swal.fire({
-      title: 'Driver Suggestion',
-      html: `
-        <p>Based on current availability and location, we suggest:</p>
-        <div class="alert alert-info">
-          <strong>${suggestedDriver.name}</strong><br>
-          <small class="text-muted">${suggestedDriver.email}</small>
-        </div>
-        <p>Would you like to assign this task to ${suggestedDriver.name}?</p>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, assign to this driver',
-      cancelButtonText: 'No, keep auto-assignment'
-    }).then(result => {
-      if (result.isConfirmed) {
-        $('#assignment-type').val('specific').trigger('change');
-        $('#selected-driver').val(suggestedDriver.id).trigger('change');
-      }
-    });
-  } else {
-    Swal.fire({
-      title: 'No Available Drivers',
-      text: 'No drivers are currently online and available for assignment.',
-      icon: 'warning'
-    });
-  }
-}
-
-/**
- * Validate form fields in real-time
- */
-function setupRealTimeValidation() {
-  $('#task-title, #task-description, #pickup-address, #delivery-address, #task-price').on('blur', function () {
-    if ($(this).val().trim() === '') {
-      $(this).addClass('is-invalid');
+  function showLoading(show) {
+    if (show) {
+      $('#tasks-loading').show();
+      $('#tasks-container').hide();
+      $('#no-tasks-message').hide();
     } else {
-      $(this).removeClass('is-invalid').addClass('is-valid');
+      $('#tasks-loading').hide();
+      $('#tasks-container').show();
     }
+  }
+
+  function showNoTasksMessage() {
+    $('#tasks-container').hide();
+    $('#no-tasks-message').show();
+  }
+
+  function getStatusBadgeClass(status) {
+    const statusClasses = {
+      in_progress: 'warning',
+      assign: 'info',
+      started: 'primary',
+      completed: 'success',
+      canceled: 'danger',
+      advertised: 'secondary'
+    };
+    return statusClasses[status] || 'secondary';
+  }
+
+  // Initialize Select2 for driver dropdown
+  $('#task-driver').select2({
+    dropdownParent: $('#assignModal'),
+    placeholder: 'Select Driver',
+    allowClear: true
   });
-}
-
-// Initialize real-time validation
-setupRealTimeValidation();
-
-// Initialize form with default values
-$(document).ready(function () {
-  resetForm();
 });

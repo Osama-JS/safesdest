@@ -23,12 +23,113 @@ class TasksAdsController extends Controller
 
   public function getData(Request $request)
   {
-    $query = Task_Ad::query();
-    // ترتيب البيانات حسب الـ id بشكل تنازلي
-    $query->orderBy('id', 'DESC');
+    $query = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery']);
 
-    // إضافة التصفية عن طريق pagination مباشرة
-    $products = $query->paginate(9); // 9 منتجات لكل صفحة
+    // Search filter
+    if ($request->has('search') && !empty($request->search)) {
+      $search = $request->search;
+      $query->whereHas('task', function ($q) use ($search) {
+        $q->whereHas('customer', function ($customerQuery) use ($search) {
+          $customerQuery->where('name', 'ILIKE', '%' . $search . '%');
+        })->orWhereHas('user', function ($userQuery) use ($search) {
+          $userQuery->where('name', 'ILIKE', '%' . $search . '%');
+        })->orWhereHas('pickup', function ($pickupQuery) use ($search) {
+          $pickupQuery->where('address', 'ILIKE', '%' . $search . '%');
+        })->orWhereHas('delivery', function ($deliveryQuery) use ($search) {
+          $deliveryQuery->where('address', 'ILIKE', '%' . $search . '%');
+        });
+      })->orWhere('description', 'ILIKE', '%' . $search . '%');
+    }
+
+    // Status filter
+    if ($request->has('status') && !empty($request->status)) {
+      $query->where('status', $request->status);
+    }
+
+    // Price range filter
+    if ($request->has('price_range') && !empty($request->price_range)) {
+      $priceRange = $request->price_range;
+      switch ($priceRange) {
+        case '0-100':
+          $query->where(function ($q) {
+            $q->whereBetween('lowest_price', [0, 100])
+              ->orWhereBetween('highest_price', [0, 100]);
+          });
+          break;
+        case '100-500':
+          $query->where(function ($q) {
+            $q->whereBetween('lowest_price', [100, 500])
+              ->orWhereBetween('highest_price', [100, 500]);
+          });
+          break;
+        case '500-1000':
+          $query->where(function ($q) {
+            $q->whereBetween('lowest_price', [500, 1000])
+              ->orWhereBetween('highest_price', [500, 1000]);
+          });
+          break;
+        case '1000+':
+          $query->where(function ($q) {
+            $q->where('lowest_price', '>=', 1000)
+              ->orWhere('highest_price', '>=', 1000);
+          });
+          break;
+      }
+    }
+
+    // Date filter
+    if ($request->has('date') && !empty($request->date)) {
+      $dateFilter = $request->date;
+      switch ($dateFilter) {
+        case 'today':
+          $query->whereDate('created_at', today());
+          break;
+        case 'week':
+          $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+          break;
+        case 'month':
+          $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+          break;
+      }
+    }
+
+    // Owner filter
+    if ($request->has('owner') && !empty($request->owner)) {
+      $ownerType = $request->owner;
+      if ($ownerType === 'customer') {
+        $query->whereHas('task', function ($q) {
+          $q->whereNotNull('customer_id');
+        });
+      } elseif ($ownerType === 'admin') {
+        $query->whereHas('task', function ($q) {
+          $q->whereNotNull('user_id');
+        });
+      }
+    }
+
+    // Sorting
+    $sort = $request->get('sort', 'newest');
+    switch ($sort) {
+      case 'oldest':
+        $query->orderBy('created_at', 'ASC');
+        break;
+      case 'price_high':
+        $query->orderBy('highest_price', 'DESC');
+        break;
+      case 'price_low':
+        $query->orderBy('lowest_price', 'ASC');
+        break;
+      default: // newest
+        $query->orderBy('created_at', 'DESC');
+        break;
+    }
+
+    // Pagination
+    $perPage = $request->get('per_page', 9);
+    $products = $query->paginate($perPage);
+
+    // Calculate stats
+    $stats = $this->calculateStats();
 
     // إضافة المعالجة المخصصة داخل صفحة البيانات
     $products->getCollection()->transform(function ($ad) {
@@ -56,7 +157,34 @@ class TasksAdsController extends Controller
     });
 
     // إرجاع النتيجة مع التعداد (count) و pagination
-    return response()->json(['data' => $products, 'count' => $products->total()]);
+    return response()->json([
+      'data' => $products,
+      'count' => $products->total(),
+      'stats' => $stats
+    ]);
+  }
+
+  /**
+   * Calculate statistics for ads
+   */
+  private function calculateStats()
+  {
+    $totalAds = Task_Ad::count();
+    $runningAds = Task_Ad::where('status', 'running')->count();
+    $closedAds = Task_Ad::where('status', 'closed')->count();
+
+    // Calculate average price
+    $avgPrice = Task_Ad::whereNotNull('lowest_price')
+      ->whereNotNull('highest_price')
+      ->selectRaw('AVG((lowest_price + highest_price) / 2) as avg_price')
+      ->value('avg_price');
+
+    return [
+      'total' => $totalAds,
+      'running' => $runningAds,
+      'closed' => $closedAds,
+      'avg_price' => round($avgPrice ?: 0, 0)
+    ];
   }
 
   public function show($id)
@@ -99,6 +227,11 @@ class TasksAdsController extends Controller
       ]);
     }
 
+    if ($offer->ad->status !== 'running') {
+      return response()->json(['status' => 2, 'error' => 'This Task ad is already closed']);
+    }
+
+
     if ($offer->accepted) {
       return response()->json(['status' => 2, 'error' => 'This offer is already accepted']);
     }
@@ -120,6 +253,10 @@ class TasksAdsController extends Controller
         'status' => 2,
         'error' => 'You do not have the right permission to do this action'
       ]);
+    }
+
+    if ($offer->ad->status !== 'running') {
+      return response()->json(['status' => 2, 'error' => 'This Task ad is already closed']);
     }
 
     if (!$offer->accepted) {

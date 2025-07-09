@@ -20,16 +20,61 @@ class AdsController extends Controller
 
   public function getData(Request $request)
   {
-    $taskIds = Task::where('customer_id', Auth::user()->id)->pluck('id');
-    $query = Task_Ad::whereIn('task_id', $taskIds)->orderBy('id', 'DESC');
+    $perPage = $request->get('per_page', 8);
+    $page = $request->get('page', 1);
+    $search = $request->get('search', '');
+    $status = $request->get('status', '');
+    $price = $request->get('price', '');
 
-    // ترتيب البيانات حسب الـ id بشكل تنازلي
+    $taskIds = Task::where('customer_id', Auth::user()->id)->pluck('id');
+    $query = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
+      ->whereIn('task_id', $taskIds);
+
+    // Apply search filter
+    if (!empty($search)) {
+      $query->where(function ($q) use ($search) {
+        $q->where('description', 'LIKE', "%{$search}%")
+          ->orWhereHas('task.pickup', function ($pickup) use ($search) {
+            $pickup->where('address', 'LIKE', "%{$search}%");
+          })
+          ->orWhereHas('task.delivery', function ($delivery) use ($search) {
+            $delivery->where('address', 'LIKE', "%{$search}%");
+          });
+      });
+    }
+
+    // Apply status filter
+    if (!empty($status)) {
+      $query->where('status', $status);
+    }
+
+    // Apply price filter
+    if (!empty($price)) {
+      if ($price === '0-100') {
+        $query->where(function ($q) {
+          $q->where('lowest_price', '<=', 100)
+            ->orWhere('highest_price', '<=', 100);
+        });
+      } elseif ($price === '100-500') {
+        $query->where(function ($q) {
+          $q->whereBetween('lowest_price', [100, 500])
+            ->orWhereBetween('highest_price', [100, 500]);
+        });
+      } elseif ($price === '500+') {
+        $query->where(function ($q) {
+          $q->where('lowest_price', '>=', 500)
+            ->orWhere('highest_price', '>=', 500);
+        });
+      }
+    }
+
+    // Order by latest first
     $query->orderBy('id', 'DESC');
 
-    // إضافة التصفية عن طريق pagination مباشرة
-    $products = $query->paginate(9); // 9 منتجات لكل صفحة
+    // Get paginated results
+    $products = $query->paginate($perPage, ['*'], 'page', $page);
 
-    // إضافة المعالجة المخصصة داخل صفحة البيانات
+    // Transform data for enhanced display
     $products->getCollection()->transform(function ($ad) {
       return [
         'id' => $ad->id,
@@ -54,8 +99,25 @@ class AdsController extends Controller
       ];
     });
 
-    // إرجاع النتيجة مع التعداد (count) و pagination
-    return response()->json(['data' => $products, 'count' => $products->total()]);
+    // Transform pagination data
+    $pagination = [
+      'current_page' => $products->currentPage(),
+      'last_page' => $products->lastPage(),
+      'per_page' => $products->perPage(),
+      'total' => $products->total(),
+      'from' => $products->firstItem(),
+      'to' => $products->lastItem(),
+      'has_more_pages' => $products->hasMorePages()
+    ];
+
+    // Return enhanced response with pagination
+    return response()->json([
+      'data' => [
+        'data' => $products->items(),
+        'pagination' => $pagination
+      ],
+      'count' => $products->total()
+    ]);
   }
 
   public function show($id)
@@ -98,7 +160,9 @@ class AdsController extends Controller
         'error' => 'You do not have the right permission to do this action'
       ]);
     }
-
+    if ($offer->ad->status !== 'running') {
+      return response()->json(['status' => 2, 'error' => 'This Task ad is already closed']);
+    }
     if ($offer->accepted) {
       return response()->json(['status' => 2, 'error' => 'This offer is already accepted']);
     }
@@ -122,9 +186,13 @@ class AdsController extends Controller
       ]);
     }
 
+    if ($offer->ad->status !== 'running') {
+      return response()->json(['status' => 2, 'error' => 'This Task ad is already closed']);
+    }
     if (!$offer->accepted) {
       return response()->json(['status' => 2, 'error' => 'This offer is already Retracted']);
     }
+
 
     Task_Offire::where('task_ad_id', $offer->ad_id)->update(['accepted' => true]);
 

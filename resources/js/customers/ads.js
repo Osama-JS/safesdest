@@ -15,22 +15,54 @@ $(function () {
     }
   });
 
-  function loadAds(page = 1, search = '') {
+  // Enhanced loadAds function with filters and pagination
+  let currentPage = 1;
+  let currentFilters = {
+    search: '',
+    status: '',
+    price: ''
+  };
+
+  function loadAds(page = 1, filters = {}) {
+    // Show loading state
+    $('#ads-container').html(`
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading ads...</p>
+      </div>
+    `);
+
+    // Clear pagination
+    $('#pagination-container').html('');
+
     $.ajax({
       url: baseUrl + 'customer/ads/data',
       type: 'GET',
-      data: { search: search, page: page },
+      data: {
+        page: page,
+        per_page: 8,
+        search: filters.search || '',
+        status: filters.status || '',
+        price: filters.price || ''
+      },
       success: function (response) {
-        $('#ads-container').html(''); // مسح المحتوى الحالي
+        $('#ads-container').html('');
 
-        // التحقق من عدم وجود بيانات
-        if (response.data.data.length === 0) {
-          $('#ads-container').html("<p class='text-center p-5 alert alert-secondary'>No data available</p>");
-          $('#pagination').html(''); // مسح التصفح
+        // Check if no data available
+        if (!response.data.data || response.data.data.length === 0) {
+          $('#ads-container').html(`
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <i class="ti ti-speakerphone-off"></i>
+              </div>
+              <h5>No Ads Found</h5>
+              <p class="text-muted">No ads found matching your search criteria</p>
+            </div>
+          `);
           return;
         }
 
-        // تكرار البيانات وإضافة البطاقات
+        // Enhanced card rendering
         response.data.data.forEach(ad => {
           let avatarHtml = '';
           let name = ad.customer.name;
@@ -41,88 +73,95 @@ $(function () {
 
           if (ad.customer.image === null) {
             avatarHtml = `
-              <div class="avatar bg-label-${color} rounded-circle">
+              <div class="avatar bg-label-${color}">
                 <span class="avatar-initial">${initials.toUpperCase()}</span>
               </div>`;
           } else {
             avatarHtml = `
               <div class="avatar">
-                <img src="${ad.customer.image}" class="rounded-circle object-cover"/>
+                <img src="${ad.customer.image}" alt="Customer Avatar"/>
               </div>`;
           }
 
           let priceHtml = '';
-          let adStatus = '';
 
-          // التحقق من السعر الأدنى والأعلى
+          // Price display matching admin
           if (ad.low_price > 0 && ad.high_price > 0) {
-            priceHtml = `<span>Lowest price: ${ad.low_price} ريال - Highest price: ${ad.high_price} ريال</span>`;
+            priceHtml = `Lowest price: ${ad.low_price} SAR - Highest price: ${ad.high_price} SAR`;
           } else if (ad.low_price > 0) {
-            priceHtml = `<span>Lowest price: ${ad.low_price} ريال</span>`;
+            priceHtml = `Lowest price: ${ad.low_price} SAR`;
           } else if (ad.high_price > 0) {
-            priceHtml = `<span>Highest price: ${ad.high_price} ريال</span>`;
-          }
-
-          // إذا لم يكن هناك أي سعر متاح، يتم ترك السعر فارغًا
-          if (priceHtml === '') {
-            priceHtml = '<span>Price not specified</span>';
+            priceHtml = `Highest price: ${ad.high_price} SAR`;
+          } else {
+            priceHtml = 'Price not specified';
           }
 
           let ownershipBadge = '';
           if (ad.user === ad.customer.id) {
-            ownershipBadge = `
-                <span class="badge badge-ownership">My Ad</span>
-              `;
+            ownershipBadge = `<span class="badge badge-ownership">My Ad</span>`;
           }
+
+          let statusBadge = '';
           if (ad.status === 'running') {
-            adStatus = `
-                <span class="badge badge-ownership">Running</span>
-              `;
+            statusBadge = `<span class="badge badge-running">Running</span>`;
           } else {
-            adStatus = `
-                <span class="badge badge-ownership">Closed</span>
-              `;
+            statusBadge = `<span class="badge badge-closed">Closed</span>`;
           }
 
           let cardHtml = `
-            <div class="col-md-3 col-sm-6 col-12 mb-4 ">
-              <div class="card">
-              ${ownershipBadge}
-              ${adStatus}
+            <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4 fade-in">
+              <div class="ad-card">
+                ${ownershipBadge}
+                ${statusBadge}
+
                 <div class="map-container" id="map-${ad.id}"></div>
 
                 <div class="card-body">
-                 <div class="d-flex align-items-center mb-3">
+                  <div class="d-flex align-items-center mb-3">
                     ${avatarHtml}
-                       <h5 class="card-title">${ad.customer.name}</h5>
-                  </div>
-                  <div class="row">
-                      <div class="col-6">
-                       <p><strong>From:</strong> ${ad.from_address}</p>
-                      </div>
-                      <div class="col-6">
-                       <p><strong>To:</strong> ${ad.to_address}</p>
-                      </div>
+                    <h5 class="card-title">${ad.customer.name}</h5>
                   </div>
 
-                  <p class="card-text">${ad.note || 'No description available'}</p>
+                  <div class="address-info">
+                    <p><strong>From:</strong> ${ad.from_address}</p>
+                    <p><strong>To:</strong> ${ad.to_address}</p>
+                  </div>
 
+                  ${ad.note ? `<p class="card-text">${ad.note}</p>` : ''}
                 </div>
+
                 <div class="card-footer">
-                  ${priceHtml}
-                  <a href="${baseUrl}customer/ads/show/${ad.id}" class=" form-control btn btn-outline-primary mt-2">View Details</a>
+                  <div class="price-info">${priceHtml}</div>
+                  <a href="${baseUrl}customer/ads/show/${ad.id}" class="btn btn-outline-primary w-100">
+                    <i class="ti ti-eye me-1"></i>
+                    View Details
+                  </a>
                 </div>
-
               </div>
             </div>
           `;
           $('#ads-container').append(cardHtml);
 
-          // تحميل الخريطة باستخدام Mapbox
+          // Initialize map for the ad
           initMapForAd(ad.id, ad.from_location);
         });
 
-        updatePagination(response.data);
+        // Render pagination if available
+        if (response.data.pagination) {
+          renderPagination(response.data.pagination);
+        }
+      },
+      error: function () {
+        $('#ads-container').html(`
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <i class="ti ti-alert-circle"></i>
+            </div>
+            <h5>Loading Error</h5>
+            <p class="text-muted">An error occurred while loading ads. Please try again.</p>
+            <button class="btn btn-primary" onclick="loadAds()">Retry</button>
+          </div>
+        `);
       }
     });
   }
@@ -152,42 +191,120 @@ $(function () {
     new mapboxgl.Marker().setLngLat([location[0], location[1]]).addTo(map);
   }
 
-  function updatePagination(data) {
-    let totalPages = data.last_page;
-    let currentPage = data.current_page;
-    let paginationHtml = '';
+  // Enhanced pagination function
+  function renderPagination(pagination) {
+    if (pagination.last_page <= 1) return;
 
-    for (let i = 1; i <= totalPages; i++) {
+    let paginationHtml = `
+      <div class="pagination-wrapper">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="pagination-info">
+            <span class="text-muted">
+              Showing ${pagination.from} to ${pagination.to} of ${pagination.total} ads
+            </span>
+          </div>
+          <nav>
+            <ul class="pagination mb-0">
+    `;
+
+    // Previous button
+    if (pagination.current_page > 1) {
       paginationHtml += `
-        <button class="btn btn-link ${i === currentPage ? 'active' : ''}" onclick="loadAds(${i})">${i}</button>
+        <li class="page-item">
+          <a class="page-link" href="#" data-page="${pagination.current_page - 1}">
+            <i class="ti ti-chevron-right"></i>
+          </a>
+        </li>
       `;
     }
 
-    $('#pagination').html(paginationHtml);
+    // Page numbers
+    for (
+      let i = Math.max(1, pagination.current_page - 2);
+      i <= Math.min(pagination.last_page, pagination.current_page + 2);
+      i++
+    ) {
+      paginationHtml += `
+        <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+          <a class="page-link" href="#" data-page="${i}">${i}</a>
+        </li>
+      `;
+    }
+
+    // Next button
+    if (pagination.current_page < pagination.last_page) {
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" data-page="${pagination.current_page + 1}">
+            <i class="ti ti-chevron-left"></i>
+          </a>
+        </li>
+      `;
+    }
+
+    paginationHtml += `
+            </ul>
+          </nav>
+        </div>
+      </div>
+    `;
+
+    $('#pagination-container').html(paginationHtml);
   }
 
-  $(document).on('click', '.page-link', function (e) {
-    e.preventDefault(); // منع إعادة تحميل الصفحة
+  // Filter functionality
+  $('#apply-filters').on('click', function () {
+    currentFilters = {
+      search: $('#search-ads').val(),
+      status: $('#filter-status').val(),
+      price: $('#filter-price').val()
+    };
+    currentPage = 1;
+    loadAds(currentPage, currentFilters);
+  });
 
-    let page = $(this).data('page'); // جلب رقم الصفحة من الزر
-    if (page) {
-      loadAds(page); // استدعاء الدالة مع رقم الصفحة الجديد
+  $('#clear-filters').on('click', function () {
+    $('#search-ads').val('');
+    $('#filter-status').val('');
+    $('#filter-price').val('');
+    currentFilters = { search: '', status: '', price: '' };
+    currentPage = 1;
+    loadAds(currentPage, currentFilters);
+  });
+
+  // Search on Enter key
+  $('#search-ads').on('keypress', function (e) {
+    if (e.which === 13) {
+      $('#apply-filters').click();
     }
   });
 
+  // Pagination click handler
+  $(document).on('click', '.pagination .page-link', function (e) {
+    e.preventDefault();
+    const page = $(this).data('page');
+    if (page) {
+      currentPage = page;
+      loadAds(currentPage, currentFilters);
+    }
+  });
+
+  // Initialize ads loading
   loadAds();
 
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
 
-    loadAds();
+    // Reload ads with current filters
+    loadAds(currentPage, currentFilters);
     setTimeout(() => {
       $('#submitModal').modal('hide');
     }, 2000);
   });
 
   document.addEventListener('deletedSuccess', function (event) {
-    loadAds();
+    // Reload ads with current filters
+    loadAds(currentPage, currentFilters);
   });
 
   $(document).on('click', '.edit-record', function () {

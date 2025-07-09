@@ -68,8 +68,9 @@ $(function () {
           targets: 2,
           searchable: false,
           orderable: false,
+          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border px-3 rounded text-primary"><b>${full.price} ${__('SAR')}</b></span>`;
+            return `<span class="price-display">${full.price} ${__('SAR')}</span>`;
           }
         },
 
@@ -100,53 +101,56 @@ $(function () {
         {
           targets: 7,
           render: function (data, type, full, meta) {
-            let colorClass = '';
+            let statusClass = `status-badge ${full.status}`;
+            let statusIcon = '';
 
             switch (full.status) {
               case 'advertised':
-                colorClass = 'badge bg-secondary'; // رمادي
+                statusIcon = '<i class="ti ti-speakerphone me-1"></i>';
                 break;
               case 'in_progress':
-                colorClass = 'badge bg-primary'; // أزرق
+                statusIcon = '<i class="ti ti-clock me-1"></i>';
                 break;
               case 'assign':
-                colorClass = 'badge bg-info'; // سماوي
+                statusIcon = '<i class="ti ti-user-check me-1"></i>';
                 break;
               case 'accepted':
-                colorClass = 'badge bg-warning text-dark'; // أصفر
+                statusIcon = '<i class="ti ti-check me-1"></i>';
                 break;
               case 'start':
-                colorClass = 'badge bg-dark'; // أسود
+                statusIcon = '<i class="ti ti-play me-1"></i>';
                 break;
               case 'completed':
-                colorClass = 'badge bg-success'; // أخضر
+                statusIcon = '<i class="ti ti-circle-check me-1"></i>';
                 break;
               case 'canceled':
-                colorClass = 'badge bg-danger'; // أحمر
+                statusIcon = '<i class="ti ti-x me-1"></i>';
                 break;
               default:
-                colorClass = 'badge bg-light text-dark'; // افتراضي
+                statusIcon = '<i class="ti ti-help me-1"></i>';
             }
 
-            return `<span class="w-100 text-center ${colorClass}">${full.status.replace('_', ' ')}</span>`;
+            return `<span class="${statusClass}">${statusIcon}${full.status.replace('_', ' ')}</span>`;
           }
         },
         {
           targets: 8,
           render: function (data, type, full, meta) {
-            let colorClass = '';
+            let statusClass = `status-badge ${full.closed}`;
+            let statusIcon = '';
+
             switch (full.closed) {
               case 'closed':
-                colorClass = 'badge bg-secondary';
+                statusIcon = '<i class="ti ti-lock me-1"></i>';
                 break;
               case 'open':
-                colorClass = 'badge bg-primary';
+                statusIcon = '<i class="ti ti-lock-open me-1"></i>';
                 break;
               default:
-                colorClass = 'badge bg-light text-dark';
+                statusIcon = '<i class="ti ti-help me-1"></i>';
             }
 
-            return `<span class="w-100 text-center ${colorClass}">${full.closed}</span>`;
+            return `<span class="${statusClass}">${statusIcon}${full.closed}</span>`;
           }
         },
         {
@@ -157,8 +161,9 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                  <a href="${baseUrl}driver/task/list/show/${full.id}" class="btn btn-sm btn-icon  " >
-                    <i class="ti ti-help"></i>${full.id}
+                  <a href="${baseUrl}driver/task/list/show/${full.id}" class="action-btn" title="View Task Details">
+                    <i class="ti ti-eye"></i>
+                    View
                   </a>
               </div>`;
           }

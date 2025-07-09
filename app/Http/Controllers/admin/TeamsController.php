@@ -14,6 +14,9 @@ use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use App\Models\Wallet_Transaction;
 use Illuminate\Http\JsonResponse;
+use App\Models\Task;
+use App\Models\Geofence_Team;
+use App\Models\Team_Wallet_Transaction;
 
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -184,14 +187,15 @@ class TeamsController extends Controller
    */
   public function analyticsPage($id)
   {
-    $team = Teams::with(['drivers', 'tasks'])->findOrFail($id);
+    $team = Teams::with(['drivers', 'tasks', 'geofences'])->findOrFail($id);
 
-    // Get analytics data
+    // Get analytics data with PostgreSQL-compatible syntax
     $analytics = [
       'monthly_tasks' => $team->tasks()
-        ->selectRaw('MONTH(tasks.created_at) as month, COUNT(*) as count')
-        ->whereYear('tasks.created_at', date('Y'))
+        ->selectRaw('EXTRACT(MONTH FROM tasks.created_at) as month, COUNT(*) as count')
+        ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('Y')])
         ->groupBy('month')
+        ->orderBy('month')
         ->pluck('count', 'month'),
       'task_status_distribution' => $team->tasks()
         ->selectRaw('tasks.status, COUNT(*) as count')
@@ -201,175 +205,55 @@ class TeamsController extends Controller
         ->withCount(['tasks as completed_tasks' => function ($query) {
           $query->where('tasks.status', 'completed');
         }])
+        ->withCount(['tasks as total_tasks'])
         ->get(),
+      'revenue_data' => $this->getTeamWalletMonthlyRevenue($team),
+      'daily_tasks' => $team->tasks()
+        ->selectRaw('DATE(tasks.created_at) as date, COUNT(*) as count')
+        ->where('tasks.created_at', '>=', now()->subDays(30))
+        ->groupBy('date')
+        ->orderBy('date')
+        ->pluck('count', 'date'),
+      'kpis' => [
+        'total_tasks_this_month' => $team->tasks()
+          ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n')])
+          ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('Y')])
+          ->count(),
+        'completed_tasks_this_month' => $team->tasks()
+          ->where('tasks.status', 'completed')
+          ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n')])
+          ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('Y')])
+          ->count(),
+        'total_revenue_this_month' => $this->getTeamWalletCurrentMonthRevenue($team),
+        'avg_completion_time' => $team->tasks()
+          ->where('tasks.status', 'completed')
+          ->whereNotNull('tasks.completed_at')
+          ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n')])
+          ->selectRaw('AVG(EXTRACT(EPOCH FROM (tasks.completed_at - tasks.created_at))/3600) as avg_hours')
+          ->value('avg_hours') ?: 0,
+      ],
+      'previous_period_data' => [
+        'total_tasks_last_month' => $team->tasks()
+          ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n') == 1 ? 12 : date('n') - 1])
+          ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('n') == 1 ? date('Y') - 1 : date('Y')])
+          ->count(),
+        'completed_tasks_last_month' => $team->tasks()
+          ->where('tasks.status', 'completed')
+          ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n') == 1 ? 12 : date('n') - 1])
+          ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('n') == 1 ? date('Y') - 1 : date('Y')])
+          ->count(),
+        'active_drivers_last_month' => $team->drivers()
+          ->where('status', 'active')
+          ->whereRaw('EXTRACT(MONTH FROM drivers.created_at) <= ?', [date('n') == 1 ? 12 : date('n') - 1])
+          ->whereRaw('EXTRACT(YEAR FROM drivers.created_at) <= ?', [date('n') == 1 ? date('Y') - 1 : date('Y')])
+          ->count(),
+        'total_revenue_last_month' => $this->getTeamWalletPreviousMonthRevenue($team),
+      ]
     ];
 
     return view('admin.teams.dashboard.analytics', compact('team', 'analytics'));
   }
 
-  /**
-   * Get team wallet transactions data for DataTables
-   */
-  public function getWalletTransactions(Request $request)
-  {
-    $wallet = Team_Wallet::where('team_id', $request->wallet)->first();
-
-    if (!$wallet) {
-      return response()->json(['data' => []]);
-    }
-
-    $query = Wallet_Transaction::where('wallet_id', $wallet->id)
-      ->with(['task', 'user']);
-
-    // Apply filters
-    if ($request->filled('status')) {
-      $query->where('transaction_type', $request->status);
-    }
-
-    if ($request->filled('from_date') && $request->filled('to_date')) {
-      $query->whereBetween('wallet_transactions.created_at', [$request->from_date, $request->to_date]);
-    }
-
-    if ($request->filled('min_amount')) {
-      $query->where('wallet_transactions.amount', '>=', $request->min_amount);
-    }
-
-    if ($request->filled('max_amount')) {
-      $query->where('wallet_transactions.amount', '<=', $request->max_amount);
-    }
-
-    $transactions = $query->orderBy('wallet_transactions.created_at', 'desc')->get();
-
-    $data = $transactions->map(function ($transaction) {
-      return [
-        'id' => $transaction->id,
-        'sequence' => $transaction->id,
-        'amount' => number_format($transaction->amount, 2),
-        'transaction_type' => $transaction->transaction_type,
-        'description' => $transaction->description,
-        'maturity_time' => $transaction->maturity_time ? $transaction->maturity_time->format('Y-m-d H:i') : null,
-        'task' => $transaction->task ? [
-          'id' => $transaction->task->id,
-          'title' => $transaction->task->title ?? 'Task #' . $transaction->task->id
-        ] : null,
-        'task_id' => $transaction->task_id,
-        'user' => $transaction->user ? [
-          'name' => $transaction->user->name
-        ] : null,
-        'image' => $transaction->image,
-        'created_at' => $transaction->created_at->format('Y-m-d H:i'),
-        'checkbox' => $transaction->transaction_type === 'debit' && !$transaction->task_id
-      ];
-    });
-
-    return response()->json(['data' => $data]);
-  }
-
-  /**
-   * Store wallet transaction
-   */
-  public function storeWalletTransaction(Request $request)
-  {
-    try {
-      $validatedData = $request->validate([
-        'wallet' => 'required|exists:team_wallets,id',
-        'amount' => 'required|numeric|min:0',
-        'type' => 'required|in:credit,debit',
-        'description' => 'required|string|max:255',
-        'maturity' => 'nullable|date',
-        'image' => 'nullable|image|max:2048'
-      ]);
-
-      $imagePath = null;
-      if ($request->hasFile('image')) {
-        $imagePath = $request->file('image')->store('wallet_transactions', 'public');
-      }
-
-      $transaction = Wallet_Transaction::create([
-        'wallet_id' => $validatedData['wallet'],
-        'amount' => $validatedData['amount'],
-        'transaction_type' => $validatedData['type'],
-        'description' => $validatedData['description'],
-        'maturity_time' => $validatedData['maturity'],
-        'image' => $imagePath,
-        'user_id' => auth()->id(),
-        'status' => 1
-      ]);
-
-      return response()->json([
-        'status' => 1,
-        'success' => 'Transaction created successfully',
-        'data' => $transaction
-      ]);
-    } catch (\Exception $e) {
-      return response()->json([
-        'status' => 0,
-        'error' => 'Failed to create transaction: ' . $e->getMessage()
-      ]);
-    }
-  }
-
-  /**
-   * Edit wallet transaction
-   */
-  public function editWalletTransaction($id)
-  {
-    try {
-      $transaction = Wallet_Transaction::findOrFail($id);
-
-      return response()->json([
-        'status' => 1,
-        'data' => [
-          'id' => $transaction->id,
-          'amount' => $transaction->amount,
-          'transaction_type' => $transaction->transaction_type,
-          'description' => $transaction->description,
-          'maturity_time' => $transaction->maturity_time ? $transaction->maturity_time->format('Y-m-d\TH:i') : null,
-          'image' => $transaction->image ? asset('storage/' . $transaction->image) : null
-        ]
-      ]);
-    } catch (\Exception $e) {
-      return response()->json([
-        'status' => 0,
-        'error' => 'Transaction not found'
-      ]);
-    }
-  }
-
-  /**
-   * Delete wallet transaction
-   */
-  public function deleteWalletTransaction($id)
-  {
-    try {
-      $transaction = Wallet_Transaction::findOrFail($id);
-
-      // Don't allow deletion of transactions linked to tasks
-      if ($transaction->task_id) {
-        return response()->json([
-          'status' => 0,
-          'error' => 'Cannot delete transaction linked to a task'
-        ]);
-      }
-
-      // Delete image if exists
-      if ($transaction->image && Storage::disk('public')->exists($transaction->image)) {
-        Storage::disk('public')->delete($transaction->image);
-      }
-
-      $transaction->delete();
-
-      return response()->json([
-        'status' => 1,
-        'success' => 'Transaction deleted successfully'
-      ]);
-    } catch (\Exception $e) {
-      return response()->json([
-        'status' => 0,
-        'error' => 'Failed to delete transaction'
-      ]);
-    }
-  }
 
 
   public function getTeamDrivers(Request $request)
@@ -872,5 +756,255 @@ class TeamsController extends Controller
         'message' => $e->getMessage()
       ], 500);
     }
+  }
+
+  /**
+   * Get filtered tasks for a team based on specific requirements
+   *
+   * @param int $teamId
+   * @return JsonResponse
+   */
+  public function getFilteredTasks($teamId): JsonResponse
+  {
+    try {
+      // Find the team with necessary relationships
+      $team = Teams::with(['drivers', 'geofences.geofence'])->findOrFail($teamId);
+
+      // Get vehicle size IDs from team drivers
+      $vehicleSizeIds = $team->drivers->pluck('vehicle_size_id')->filter()->unique()->toArray();
+
+      if (empty($vehicleSizeIds)) {
+        return response()->json([
+          'success' => true,
+          'data' => [],
+          'message' => 'No drivers with vehicle sizes found for this team'
+        ]);
+      }
+
+      // Start building the query for tasks with status 'in_progress' and matching vehicle sizes
+      $tasksQuery = Task::with(['pickup', 'vehicle_size'])
+        ->where('status', 'in_progress')
+        ->whereIn('vehicle_size_id', $vehicleSizeIds);
+
+      // Check if team has associated geofences
+      $teamGeofences = $team->geofences;
+
+      if ($teamGeofences->isNotEmpty()) {
+        // Get geofence IDs associated with this team
+        $geofenceIds = $teamGeofences->pluck('geofence_id')->toArray();
+
+        // Apply geofence filtering using spatial queries
+        $tasksQuery->whereHas('pickup', function ($query) use ($geofenceIds) {
+          $query->whereRaw("
+            EXISTS (
+              SELECT 1 FROM geofences
+              WHERE id IN (" . implode(',', array_fill(0, count($geofenceIds), '?')) . ")
+              AND ST_Contains(coordinates, ST_GeomFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'), 4326))
+            )
+          ", $geofenceIds);
+        });
+
+        // Order by proximity to geofence center (simplified approach)
+        // For more complex sorting, you might want to calculate distance to geofence centroid
+        $tasksQuery->orderBy('created_at', 'desc');
+      } else {
+        // If no geofences, just order by creation date
+        $tasksQuery->orderBy('created_at', 'desc');
+      }
+
+      // Execute the query
+      $tasks = $tasksQuery->get();
+
+      // Transform the data for response
+      $transformedTasks = $tasks->map(function ($task) {
+        return [
+          'id' => $task->id,
+          'status' => $task->status,
+          'vehicle_size_id' => $task->vehicle_size_id,
+          'vehicle_size_name' => $task->vehicle_size->name ?? null,
+          'pickup_location' => [
+            'latitude' => $task->pickup->latitude ?? null,
+            'longitude' => $task->pickup->longitude ?? null,
+            'address' => $task->pickup->address ?? null,
+          ],
+          'delivery_location' => [
+            'latitude' => $task->delivery->latitude ?? null,
+            'longitude' => $task->delivery->longitude ?? null,
+            'address' => $task->delivery->address ?? null,
+          ],
+          'total_price' => $task->total_price,
+          'created_at' => $task->created_at,
+          'additional_data' => $task->additional_data,
+        ];
+      });
+
+      return response()->json([
+        'success' => true,
+        'data' => $transformedTasks,
+        'team_info' => [
+          'id' => $team->id,
+          'name' => $team->name,
+          'has_geofences' => $teamGeofences->isNotEmpty(),
+          'geofence_count' => $teamGeofences->count(),
+          'driver_vehicle_sizes' => $vehicleSizeIds,
+        ],
+        'total_tasks' => $transformedTasks->count(),
+      ]);
+    } catch (Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Error retrieving filtered tasks: ' . $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Get team revenue monthly data for charts (total_price - commission)
+   */
+  private function getTeamWalletMonthlyRevenue($team)
+  {
+    // Calculate revenue from completed tasks (total_price - commission)
+    return $team->tasks()
+      ->selectRaw('EXTRACT(MONTH FROM tasks.created_at) as month, SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as revenue')
+      ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('Y')])
+      ->where('tasks.status', 'completed')
+      ->groupBy('month')
+      ->orderBy('month')
+      ->pluck('revenue', 'month');
+  }
+
+  /**
+   * Get team current month revenue (total_price - commission)
+   */
+  private function getTeamWalletCurrentMonthRevenue($team)
+  {
+    // Calculate current month revenue from completed tasks (total_price - commission)
+    return $team->tasks()
+      ->where('tasks.status', 'completed')
+      ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [date('n')])
+      ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [date('Y')])
+      ->selectRaw('SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as net_revenue')
+      ->value('net_revenue') ?: 0;
+  }
+
+  /**
+   * Get team previous month revenue (total_price - commission)
+   */
+  private function getTeamWalletPreviousMonthRevenue($team)
+  {
+    // Calculate previous month and year
+    $previousMonth = date('n') == 1 ? 12 : date('n') - 1;
+    $previousYear = date('n') == 1 ? date('Y') - 1 : date('Y');
+
+    // Calculate previous month revenue from completed tasks (total_price - commission)
+    return $team->tasks()
+      ->where('tasks.status', 'completed')
+      ->whereRaw('EXTRACT(MONTH FROM tasks.created_at) = ?', [$previousMonth])
+      ->whereRaw('EXTRACT(YEAR FROM tasks.created_at) = ?', [$previousYear])
+      ->selectRaw('SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as net_revenue')
+      ->value('net_revenue') ?: 0;
+  }
+
+  /**
+   * Get analytics data with date range filter
+   */
+  public function getAnalyticsData(Request $request, $teamId)
+  {
+    $team = Teams::with(['drivers', 'tasks', 'geofences'])->findOrFail($teamId);
+
+    // Get date range from request or default to current month
+    $startDate = $request->input('start_date', date('Y-m-01'));
+    $endDate = $request->input('end_date', date('Y-m-t'));
+    $metricType = $request->input('metric_type', 'monthly');
+    $groupBy = $request->input('group_by', 'month');
+
+    // Build analytics data based on filters
+    $analytics = $this->buildFilteredAnalytics($team, $startDate, $endDate, $metricType, $groupBy);
+
+    return response()->json([
+      'success' => true,
+      'data' => $analytics
+    ]);
+  }
+
+  /**
+   * Build filtered analytics data
+   */
+  private function buildFilteredAnalytics($team, $startDate, $endDate, $metricType, $groupBy)
+  {
+    $analytics = [];
+
+    // Tasks data based on grouping
+    if ($groupBy === 'month') {
+      $analytics['monthly_tasks'] = $team->tasks()
+        ->selectRaw('EXTRACT(MONTH FROM tasks.created_at) as month, COUNT(*) as count')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->groupBy('month')
+        ->orderBy('month')
+        ->pluck('count', 'month');
+    } else {
+      $analytics['daily_tasks'] = $team->tasks()
+        ->selectRaw('DATE(tasks.created_at) as date, COUNT(*) as count')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->groupBy('date')
+        ->orderBy('date')
+        ->pluck('count', 'date');
+    }
+
+    // Task status distribution
+    $analytics['task_status_distribution'] = $team->tasks()
+      ->selectRaw('tasks.status, COUNT(*) as count')
+      ->whereBetween('tasks.created_at', [$startDate, $endDate])
+      ->groupBy('tasks.status')
+      ->pluck('count', 'status');
+
+    // Revenue data (total_price - commission)
+    if ($groupBy === 'month') {
+      $analytics['revenue_data'] = $team->tasks()
+        ->selectRaw('EXTRACT(MONTH FROM tasks.created_at) as month, SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as revenue')
+        ->where('tasks.status', 'completed')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->groupBy('month')
+        ->orderBy('month')
+        ->pluck('revenue', 'month');
+    } else {
+      $analytics['revenue_data'] = $team->tasks()
+        ->selectRaw('DATE(tasks.created_at) as date, SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as revenue')
+        ->where('tasks.status', 'completed')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->groupBy('date')
+        ->orderBy('date')
+        ->pluck('revenue', 'date');
+    }
+
+    // Driver performance
+    $analytics['driver_performance'] = $team->drivers()
+      ->withCount(['tasks as completed_tasks' => function ($query) use ($startDate, $endDate) {
+        $query->where('tasks.status', 'completed')
+          ->whereBetween('tasks.created_at', [$startDate, $endDate]);
+      }])
+      ->withCount(['tasks as total_tasks' => function ($query) use ($startDate, $endDate) {
+        $query->whereBetween('tasks.created_at', [$startDate, $endDate]);
+      }])
+      ->get();
+
+    // KPIs for the filtered period
+    $analytics['kpis'] = [
+      'total_tasks' => $team->tasks()
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->count(),
+      'completed_tasks' => $team->tasks()
+        ->where('tasks.status', 'completed')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->count(),
+      'total_revenue' => $team->tasks()
+        ->where('tasks.status', 'completed')
+        ->whereBetween('tasks.created_at', [$startDate, $endDate])
+        ->selectRaw('SUM(COALESCE(tasks.total_price, 0) - COALESCE(tasks.commission, 0)) as net_revenue')
+        ->value('net_revenue') ?: 0,
+      'active_drivers' => $team->drivers->where('status', 'active')->count(),
+    ];
+
+    return $analytics;
   }
 }

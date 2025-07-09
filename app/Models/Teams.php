@@ -75,4 +75,9 @@ class Teams extends Model
         });
     });
   }
+
+  public function geofences()
+  {
+    return $this->hasMany(Geofence_Team::class, 'team_id');
+  }
 }

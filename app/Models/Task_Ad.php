@@ -19,4 +19,9 @@ class Task_Ad extends Model
   {
     return $this->belongsTo(Task::class, 'task_id');
   }
+
+  public function offers()
+  {
+    return $this->hasMany(Task_Offire::class, 'task_ad_id');
+  }
 }

@@ -15,17 +15,42 @@ $(function () {
     }
   });
 
-  function loadAds(page = 1, search = '') {
+  // Global variables for filters
+  let currentFilters = {
+    search: '',
+    status: '',
+    price_range: '',
+    date: '',
+    owner: '',
+    sort: 'newest',
+    per_page: 9
+  };
+
+  function loadAds(page = 1, filters = {}) {
+    // Show loading state
+    showLoadingState();
+
+    // Merge current filters with new ones
+    const requestData = {
+      page: page,
+      ...currentFilters,
+      ...filters
+    };
+
     $.ajax({
       url: baseUrl + 'admin/ads/data',
       type: 'GET',
-      data: { search: search, page: page },
+      data: requestData,
       success: function (response) {
+        hideLoadingState();
         $('#ads-container').html(''); // مسح المحتوى الحالي
+
+        // Update stats
+        updateStats(response.stats || {});
 
         // التحقق من عدم وجود بيانات
         if (response.data.data.length === 0) {
-          $('#ads-container').html("<p class='text-center p-5 alert alert-secondary'>No data available</p>");
+          showEmptyState();
           $('#pagination').html(''); // مسح التصفح
           return;
         }
@@ -71,48 +96,55 @@ $(function () {
           let ownershipBadge = '';
           if (ad.user === ad.customer.id) {
             ownershipBadge = `
-                <span class="badge badge-ownership">My Ad</span>
+                <span class="badge badge-ownership">
+                  <i class="ti ti-user me-1"></i>My Ad
+                </span>
               `;
           }
+
           if (ad.status === 'running') {
             adStatus = `
-                <span class="badge badge-ownership">Running</span>
+                <span class="badge badge-status badge-running">
+                  <i class="ti ti-play me-1"></i>Running
+                </span>
               `;
           } else {
             adStatus = `
-                <span class="badge badge-ownership">Closed</span>
+                <span class="badge badge-status badge-closed">
+                  <i class="ti ti-square me-1"></i>Closed
+                </span>
               `;
           }
 
           let cardHtml = `
-            <div class="col-md-3 col-sm-6 col-12 mb-4 ">
-              <div class="card">
-              ${ownershipBadge}
-              ${adStatus}
+            <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4">
+              <div class="card ad-card h-100">
+                ${ownershipBadge}
+                ${adStatus}
+
                 <div class="map-container" id="map-${ad.id}"></div>
 
-                <div class="card-body">
-                 <div class="d-flex align-items-center mb-3">
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex align-items-center mb-3">
                     ${avatarHtml}
-                       <h5 class="card-title">${ad.customer.name}</h5>
+                    <h5 class="card-title">${ad.customer.name}</h5>
                   </div>
-                  <div class="row">
-                      <div class="col-6">
-                       <p><strong>From:</strong> ${ad.from_address}</p>
-                      </div>
-                      <div class="col-6">
-                       <p><strong>To:</strong> ${ad.to_address}</p>
-                      </div>
+
+                  <div class="address-info">
+                    <p><strong>From:</strong> ${ad.from_address}</p>
+                    <p><strong>To:</strong> ${ad.to_address}</p>
                   </div>
 
                   <p class="card-text">${ad.note || 'No description available'}</p>
-
                 </div>
+
                 <div class="card-footer">
-                  ${priceHtml}
-                  <a href="${baseUrl}admin/ads/show/${ad.id}" class=" form-control btn btn-outline-primary mt-2">View Details</a>
+                  <div class="price-info">${priceHtml}</div>
+                  <a href="${baseUrl}admin/ads/show/${ad.id}" class="btn btn-outline-primary w-100">
+                    <i class="ti ti-eye me-1"></i>
+                    View Details
+                  </a>
                 </div>
-
               </div>
             </div>
           `;
@@ -157,9 +189,64 @@ $(function () {
     let currentPage = data.current_page;
     let paginationHtml = '';
 
-    for (let i = 1; i <= totalPages; i++) {
+    if (totalPages <= 1) {
+      $('#pagination').html('');
+      return;
+    }
+
+    // Previous button
+    if (currentPage > 1) {
       paginationHtml += `
-        <button class="btn btn-link ${i === currentPage ? 'active' : ''}" onclick="loadAds(${i})">${i}</button>
+        <li class="page-item">
+          <a class="page-link" href="#" onclick="loadAds(${currentPage - 1}, currentFilters)">
+            <i class="ti ti-chevron-left"></i>
+          </a>
+        </li>
+      `;
+    }
+
+    // Page numbers
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" onclick="loadAds(1, currentFilters)">1</a>
+        </li>
+      `;
+      if (startPage > 2) {
+        paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      paginationHtml += `
+        <li class="page-item ${i === currentPage ? 'active' : ''}">
+          <a class="page-link" href="#" onclick="loadAds(${i}, currentFilters)">${i}</a>
+        </li>
+      `;
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        paginationHtml += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+      }
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" onclick="loadAds(${totalPages}, currentFilters)">${totalPages}</a>
+        </li>
+      `;
+    }
+
+    // Next button
+    if (currentPage < totalPages) {
+      paginationHtml += `
+        <li class="page-item">
+          <a class="page-link" href="#" onclick="loadAds(${currentPage + 1}, currentFilters)">
+            <i class="ti ti-chevron-right"></i>
+          </a>
+        </li>
       `;
     }
 
@@ -175,11 +262,14 @@ $(function () {
     }
   });
 
+  // Initialize filters functionality
+  initializeFilters();
+
+  // Load initial ads
   loadAds();
 
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
-
     loadAds();
     setTimeout(() => {
       $('#submitModal').modal('hide');
@@ -189,6 +279,106 @@ $(function () {
   document.addEventListener('deletedSuccess', function (event) {
     loadAds();
   });
+
+  // Helper Functions
+  function showLoadingState() {
+    $('#loading-card').show();
+    $('#ads-container').hide();
+    $('#stats-cards').hide();
+  }
+
+  function hideLoadingState() {
+    $('#loading-card').hide();
+    $('#ads-container').show();
+    $('#stats-cards').show();
+  }
+
+  function showEmptyState() {
+    $('#ads-container').html(`
+      <div class="col-12">
+        <div class="empty-state">
+          <i class="ti ti-speakerphone-off"></i>
+          <h5>No advertisements found</h5>
+          <p>Try adjusting your filters or check back later for new ads.</p>
+        </div>
+      </div>
+    `);
+  }
+
+  function updateStats(stats) {
+    $('#total-ads').text(stats.total || 0);
+    $('#running-ads').text(stats.running || 0);
+    $('#closed-ads').text(stats.closed || 0);
+    $('#avg-price').text(stats.avg_price || 0);
+  }
+
+  function initializeFilters() {
+    // Toggle filters card
+    $('#toggle-filters').on('click', function () {
+      $('#filters-card').slideToggle();
+      const icon = $(this).find('i');
+      icon.toggleClass('ti-filter ti-filter-off');
+    });
+
+    // Apply filters
+    $('#apply-filters').on('click', function () {
+      applyFilters();
+    });
+
+    // Clear filters
+    $('#clear-filters').on('click', function () {
+      clearFilters();
+    });
+
+    // Refresh ads
+    $('#refresh-ads').on('click', function () {
+      loadAds(1, currentFilters);
+    });
+
+    // Real-time search
+    let searchTimeout;
+    $('#search-input').on('input', function () {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentFilters.search = $(this).val();
+        loadAds(1, currentFilters);
+      }, 500);
+    });
+  }
+
+  function applyFilters() {
+    currentFilters = {
+      search: $('#search-input').val(),
+      status: $('#status-filter').val(),
+      price_range: $('#price-range-filter').val(),
+      date: $('#date-filter').val(),
+      owner: $('#owner-filter').val(),
+      sort: $('#sort-filter').val(),
+      per_page: $('#per-page-filter').val()
+    };
+
+    loadAds(1, currentFilters);
+    $('#filters-card').slideUp();
+  }
+
+  function clearFilters() {
+    // Reset form
+    $('#filters-form')[0].reset();
+
+    // Reset current filters
+    currentFilters = {
+      search: '',
+      status: '',
+      price_range: '',
+      date: '',
+      owner: '',
+      sort: 'newest',
+      per_page: 9
+    };
+
+    // Reload ads
+    loadAds(1, currentFilters);
+  }
 
   $(document).on('click', '.edit-record', function () {
     var teamId = $(this).data('id');

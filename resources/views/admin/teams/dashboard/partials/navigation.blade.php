@@ -49,9 +49,9 @@
                 <i class="ti ti-wallet ti-sm d-sm-none"></i>
             </a>
         </li>
-        {{-- <li class="nav-item">
+        <li class="nav-item">
             <a href="{{ route('teams.dashboard.task-distribution', $teamId) }}"
-               class="nav-link py-4 {{ $currentRoute === 'teams.dashboard.task-distribution' ? 'active' : '' }}">
+                class="nav-link py-4 {{ $currentRoute === 'teams.dashboard.task-distribution' ? 'active' : '' }}">
                 <span class="d-none d-sm-block">
                     <i class="tf-icons ti ti-send me-1"></i> {{ __('Task Distribution') }}
                 </span>
@@ -60,12 +60,12 @@
         </li>
         <li class="nav-item">
             <a href="{{ route('teams.dashboard.analytics', $teamId) }}"
-               class="nav-link py-4 {{ $currentRoute === 'teams.dashboard.analytics' ? 'active' : '' }}">
+                class="nav-link py-4 {{ $currentRoute === 'teams.dashboard.analytics' ? 'active' : '' }}">
                 <span class="d-none d-sm-block">
                     <i class="tf-icons ti ti-chart-bar me-1"></i> {{ __('Analytics') }}
                 </span>
                 <i class="ti ti-chart-bar ti-sm d-sm-none"></i>
             </a>
-        </li> --}}
+        </li>
     </ul>
 </div>

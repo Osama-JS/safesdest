@@ -18,6 +18,7 @@ use App\Models\Settings;
 use App\Helpers\IpHelper;
 use App\Models\Form_Field;
 use App\Helpers\FileHelper;
+use App\Jobs\SendEmailNotificationJob;
 use App\Models\Tag_Pricing;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
@@ -327,11 +328,11 @@ class TasksController extends Controller
 
     DB::beginTransaction();
     try {
-      $data = Task::find($req->id);
-      $user = auth()->user();
-      if (!$user || !$user->checkTask($req->id)) {
-        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
-      }
+      $data = Task::with(['customer', 'user', 'pickup', 'delivery', 'vehicle_size'])->find($req->id);
+      // $user = auth()->user();
+      // if (!$user || !$user->checkTask($req->id)) {
+      //   return response()->json(['status' => 2,  'error' => __('You do not have permission to do actions to this record')]);
+      // }
       if ($data->closed) {
         return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
       }
@@ -380,7 +381,8 @@ class TasksController extends Controller
 
       $data->save();
 
-
+      // إرسال الإشعارات بالبريد الإلكتروني
+      $this->sendTaskAssignmentNotifications($data, $driver);
 
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('task assigned successfully')]);
@@ -389,10 +391,6 @@ class TasksController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
-
-
-
-
 
 
   public function store(Request $req, TaskPricingService $pricingService)
@@ -460,6 +458,10 @@ class TasksController extends Controller
         $task['total_price'] = $req->manual_total_pricing;
         $task['pricing_type'] = 'manual';
         $data['manual_pricing'] = $req->manual_total_pricing;
+      }
+
+      if ($req->filled('created_at')) {
+        $task['created_at'] = $req->created_at;
       }
 
 
@@ -833,6 +835,11 @@ class TasksController extends Controller
         $task['pricing_type'] = 'manual';
         $data['manual_pricing'] = $req->manual_total_pricing;
       }
+
+      if ($req->filled('created_at')) {
+        $task['created_at'] = $req->created_at;
+      }
+
 
       if ($req->filled('task_driver')) {
 
@@ -2207,5 +2214,131 @@ class TasksController extends Controller
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
+  }
+
+  /**
+   * Send email notifications for task assignment
+   *
+   * @param Task $task
+   * @param Driver $driver
+   * @return void
+   */
+  private function sendTaskAssignmentNotifications($task, $driver)
+  {
+    try {
+      // إعداد بيانات المهمة المشتركة
+      $taskData = [
+        'Task ID' => $task->id,
+        'Task Type' => 'Delivery Task',
+        'Pickup Address' => $task->pickup ? $task->pickup->address : 'Not specified',
+        'Delivery Address' => $task->delivery ? $task->delivery->address : 'Not specified',
+        'Price' => $task->total_price - $task->commission . ' SAR',
+        'Vehicle Size' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - (' . $task->vehicle_size->name . ')' : 'Not specified',
+        'Assignment Date' => now()->format('Y-m-d H:i'),
+        'Status' => 'Assigned'
+      ];
+
+      // إرسال إشعار للسائق
+      $this->sendDriverAssignmentNotification($driver, $task, $taskData);
+      $taskData['Price'] = $task->total_price . ' SAR';
+      // إرسال إشعار لصاحب المهمة (Admin أو Customer)
+      $this->sendTaskOwnerNotification($task, $driver, $taskData);
+    } catch (Exception $e) {
+      // تسجيل الخطأ دون إيقاف العملية الأساسية
+      Log::error('Failed to send task assignment notifications', [
+        'task_id' => $task->id,
+        'driver_id' => $driver->id,
+        'error' => $e->getMessage()
+      ]);
+    }
+  }
+
+  /**
+   * Send assignment notification to driver
+   *
+   * @param Driver $driver
+   * @param Task $task
+   * @param array $taskData
+   * @return void
+   */
+  private function sendDriverAssignmentNotification($driver, $task, $taskData)
+  {
+    if (!$driver->email) {
+      return;
+    }
+
+    $emailData = [
+      'to' => $driver->email,
+      'subject' => 'New Task Assigned to You - Task #' . $task->id,
+      'template' => 'emails.task-assigned',
+      'type' => 'task_assignment',
+      'priority' => 'high',
+      'user_name' => $driver->name,
+      'action_url' => route('driver.task.show', $task->id),
+      'action_text' => 'View Task Details',
+      'additional_data' => array_merge($taskData, [
+        'Driver Name' => $driver->name,
+        'Driver Phone' => $driver->phone,
+        'Instructions' => 'Please check the task details and contact the customer if needed.'
+      ])
+    ];
+
+    dispatch(new SendEmailNotificationJob($emailData));
+  }
+
+  /**
+   * Send notification to task owner (Admin or Customer)
+   *
+   * @param Task $task
+   * @param Driver $driver
+   * @param array $taskData
+   * @return void
+   */
+  private function sendTaskOwnerNotification($task, $driver, $taskData)
+  {
+    $owner = null;
+    $ownerEmail = null;
+    $ownerName = null;
+    $dashboardUrl = null;
+
+    // تحديد صاحب المهمة
+    if ($task->customer_id && $task->customer) {
+      // المهمة تخص عميل
+      $owner = $task->customer;
+      $ownerEmail = $owner->email;
+      $ownerName = $owner->name;
+      $dashboardUrl = route('customer.tasks.show', $task->id);
+    } elseif ($task->user_id && $task->user) {
+      // المهمة تخص مدير
+      $owner = $task->user;
+      $ownerEmail = $owner->email;
+      $ownerName = $owner->name;
+      $dashboardUrl = route('task.show', $task->id);
+    }
+
+    if (!$ownerEmail) {
+      return;
+    }
+
+    $emailData = [
+      'to' => $ownerEmail,
+      'subject' => 'Driver Assigned to Your Task #' . $task->id,
+      'template' => 'emails.notification',
+      'type' => 'task_assignment_owner',
+      'priority' => 'normal',
+      'user_name' => $ownerName,
+      'content' => 'A driver has been assigned to your delivery task. The driver will contact you soon to coordinate the pickup and delivery.',
+      'action_url' => $dashboardUrl,
+      'action_text' => 'View Task Details',
+      'additional_data' => array_merge($taskData, [
+        'Assigned Driver' => $driver->name,
+        'Driver Phone' => $driver->phone,
+        'Driver Vehicle' => $driver->vehicle_size ? $driver->vehicle_size->name : 'Not specified',
+        'Expected Contact' => 'The driver will contact you within 30 minutes',
+        'Support Phone' => config('app.support_phone', 'Contact Support')
+      ])
+    ];
+
+    dispatch(new SendEmailNotificationJob($emailData));
   }
 }

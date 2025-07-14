@@ -12,7 +12,8 @@
       "name": "Tasks",
       "icon": "menu-icon tf-icons ti ti-truck-delivery",
       "slug": "tasks.tasks",
-      "isactive": "task-isactive"
+      "isactive": "task-isactive",
+      "permission": "view_tasks"
     },
     {
       "url": "admin/customers",
@@ -50,7 +51,9 @@
       "url": "admin/ads",
       "name": "Tasks Ads",
       "icon": "menu-icon tf-icons ti ti-speakerphone",
-      "slug": "ads.ads"
+      "slug": "ads.ads",
+      "isactive": "ad-isactive",
+      "permission": "view_ads"
     },
     {
       "name": "Settings",

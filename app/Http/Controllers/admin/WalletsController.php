@@ -253,10 +253,17 @@ class WalletsController extends Controller
   {
     $data = Wallet::findOrFail($id);
 
-    // If it's a driver wallet, redirect to driver-specific view
-    // if ($data->user_type === 'driver') {
-    //   return redirect()->route('wallets.driver.show', $id);
-    // }
+    $user = auth()->user();
+
+    if ($data->user_type === 'driver') {
+      if (!$user || !$user->checkDriver($data->driver_id)) {
+        abort(403);
+      }
+    } else {
+      if (!$user || !$user->checkCustomer($data->customer_id)) {
+        abort(403);
+      }
+    }
 
     return view('admin.wallets.show', compact('data'));
   }

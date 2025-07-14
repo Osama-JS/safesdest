@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دليل حل مشاكل Laravel Queue</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-right: 5px solid #ff6b6b;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h3 {
+            color: #34495e;
+            font-size: 1.4rem;
+            margin: 25px 0 15px 0;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+
+        .step-box {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-right: 4px solid #ff6b6b;
+        }
+
+        .step-box h4 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .command-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .warning-box h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .success-box h4 {
+            color: #155724;
+            margin-bottom: 15px;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .error-box h4 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+
+        .checklist li {
+            padding: 8px 0;
+            position: relative;
+            padding-right: 30px;
+        }
+
+        .checklist li:before {
+            content: "☐";
+            position: absolute;
+            right: 0;
+            font-size: 1.2rem;
+            color: #ff6b6b;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔧 دليل حل مشاكل Laravel Queue</h1>
+            <p>حل مشكلة عدم تشغيل Jobs المخزنة في قاعدة البيانات</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Problem Analysis -->
+            <div class="section">
+                <h2>🔍 تحليل المشكلة</h2>
+                
+                <div class="error-box">
+                    <h4>❌ المشكلة الحالية</h4>
+                    <p>العمليات (Jobs) يتم تخزينها في جدول <code>jobs</code> ولكن الأمر <code>php artisan queue:work</code> لا يقوم بتشغيلها.</p>
+                </div>
+
+                <h3>الأسباب المحتملة:</h3>
+                <ul>
+                    <li>مشكلة في إعدادات Queue</li>
+                    <li>عدم تشغيل Queue Worker بشكل صحيح</li>
+                    <li>مشكلة في أذونات قاعدة البيانات</li>
+                    <li>خطأ في تكوين الـ Jobs</li>
+                    <li>مشكلة في الـ timeout أو memory limit</li>
+                </ul>
+            </div>
+
+            <!-- Step by Step Solution -->
+            <div class="section">
+                <h2>🛠️ الحل خطوة بخطوة</h2>
+                
+                <div class="step-box">
+                    <h4>الخطوة 1: فحص إعدادات Queue</h4>
+                    <p>تأكد من أن إعدادات Queue صحيحة في ملف <code>.env</code>:</p>
+                    <div class="command-box">
+# في ملف .env
+QUEUE_CONNECTION=database
+DB_QUEUE_TABLE=jobs
+DB_QUEUE=default
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <h4>الخطوة 2: فحص جدول Jobs</h4>
+                    <p>تأكد من وجود الجدول وأن البيانات موجودة:</p>
+                    <div class="command-box">
+# فحص الجدول
+php artisan tinker
+>>> DB::table('jobs')->count()
+>>> DB::table('jobs')->get()
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <h4>الخطوة 3: مسح Cache التكوين</h4>
+                    <p>امسح جميع أنواع Cache:</p>
+                    <div class="command-box">
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+php artisan view:clear
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <h4>الخطوة 4: إعادة تشغيل Queue Worker</h4>
+                    <p>أوقف جميع العمليات وأعد التشغيل:</p>
+                    <div class="command-box">
+# إيقاف جميع Workers
+php artisan queue:restart
+
+# تشغيل Worker جديد مع تفاصيل
+php artisan queue:work --verbose --tries=3 --timeout=60
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <h4>الخطوة 5: فحص الأخطاء</h4>
+                    <p>راقب الأخطاء في الوقت الفعلي:</p>
+                    <div class="command-box">
+# مراقبة ملف السجل
+tail -f storage/logs/laravel.log
+
+# فحص Failed Jobs
+php artisan queue:failed
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Troubleshooting -->
+            <div class="section">
+                <h2>🔬 استكشاف الأخطاء المتقدم</h2>
+                
+                <h3>1. فحص تفصيلي للـ Jobs:</h3>
+                <div class="command-box">
+# فحص Jobs في قاعدة البيانات
+php artisan tinker
+>>> $jobs = DB::table('jobs')->get();
+>>> foreach($jobs as $job) {
+...     echo "ID: {$job->id}, Queue: {$job->queue}, Attempts: {$job->attempts}\n";
+...     echo "Available at: " . date('Y-m-d H:i:s', $job->available_at) . "\n";
+...     echo "Created at: " . date('Y-m-d H:i:s', $job->created_at) . "\n\n";
+... }
+                </div>
+
+                <h3>2. اختبار Job بسيط:</h3>
+                <div class="command-box">
+# إنشاء Job اختبار
+php artisan make:job TestJob
+
+# في TestJob.php
+public function handle()
+{
+    \Log::info('Test Job executed successfully!');
+}
+
+# تشغيل Job اختبار
+php artisan tinker
+>>> dispatch(new App\Jobs\TestJob());
+                </div>
+
+                <h3>3. فحص أذونات قاعدة البيانات:</h3>
+                <div class="command-box">
+# اختبار الاتصال بقاعدة البيانات
+php artisan tinker
+>>> DB::connection()->getPdo()
+>>> DB::table('jobs')->insert([
+...     'queue' => 'default',
+...     'payload' => json_encode(['test' => 'data']),
+...     'attempts' => 0,
+...     'reserved_at' => null,
+...     'available_at' => time(),
+...     'created_at' => time()
+... ]);
+                </div>
+            </div>
+
+            <!-- Common Solutions -->
+            <div class="section">
+                <h2>💡 الحلول الشائعة</h2>
+                
+                <div class="warning-box">
+                    <h4>⚠️ مشكلة الوقت (Timezone)</h4>
+                    <p>تأكد من أن التوقيت صحيح في التطبيق:</p>
+                    <div class="command-box">
+# في config/app.php
+'timezone' => 'Asia/Riyadh',
+
+# أو في .env
+APP_TIMEZONE=Asia/Riyadh
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ مشكلة Memory Limit</h4>
+                    <p>زيادة حد الذاكرة:</p>
+                    <div class="command-box">
+# تشغيل مع ذاكرة أكبر
+php -d memory_limit=512M artisan queue:work
+
+# أو في php.ini
+memory_limit = 512M
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ مشكلة Database Connection</h4>
+                    <p>تأكد من استقرار الاتصال:</p>
+                    <div class="command-box">
+# في config/database.php
+'mysql' => [
+    // ...
+    'options' => [
+        PDO::ATTR_EMULATE_PREPARES => true,
+        PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+    ],
+],
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Processing -->
+            <div class="section">
+                <h2>🔄 المعالجة اليدوية</h2>
+                
+                <div class="step-box">
+                    <h4>معالجة Jobs يدوياً</h4>
+                    <p>إذا لم تعمل الطرق السابقة، يمكنك معالجة Jobs يدوياً:</p>
+                    <div class="command-box">
+php artisan tinker
+
+# الحصول على أول Job
+>>> $job = DB::table('jobs')->first();
+
+# فك تشفير البيانات
+>>> $payload = json_decode($job->payload, true);
+>>> $command = unserialize($payload['data']['command']);
+
+# تشغيل Job يدوياً
+>>> $command->handle();
+
+# حذف Job بعد التشغيل
+>>> DB::table('jobs')->where('id', $job->id)->delete();
+                    </div>
+                </div>
+
+                <div class="step-box">
+                    <h4>إعادة جدولة Jobs</h4>
+                    <p>إعادة إنشاء Jobs جديدة:</p>
+                    <div class="command-box">
+# الحصول على جميع Jobs المعلقة
+>>> $jobs = DB::table('jobs')->get();
+
+# إعادة إنشاء كل Job
+>>> foreach($jobs as $job) {
+...     $payload = json_decode($job->payload, true);
+...     $command = unserialize($payload['data']['command']);
+...     dispatch($command);
+... }
+
+# حذف Jobs القديمة
+>>> DB::table('jobs')->truncate();
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prevention -->
+            <div class="section">
+                <h2>🛡️ منع تكرار المشكلة</h2>
+                
+                <h3>قائمة فحص دورية:</h3>
+                <ul class="checklist">
+                    <li>مراقبة عدد Jobs في قاعدة البيانات</li>
+                    <li>فحص ملفات السجل بانتظام</li>
+                    <li>تشغيل Queue Worker كخدمة نظام</li>
+                    <li>إعداد مراقبة تلقائية للـ Queue</li>
+                    <li>اختبار Jobs دورياً</li>
+                    <li>نسخ احتياطية منتظمة لقاعدة البيانات</li>
+                </ul>
+
+                <div class="success-box">
+                    <h4>✅ إعداد Supervisor (موصى به)</h4>
+                    <p>لضمان تشغيل Queue Worker باستمرار:</p>
+                    <div class="command-box">
+# تثبيت Supervisor
+sudo apt-get install supervisor
+
+# إنشاء ملف تكوين
+sudo nano /etc/supervisor/conf.d/laravel-worker.conf
+
+[program:laravel-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/your/project/artisan queue:work --sleep=3 --tries=3
+autostart=true
+autorestart=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/path/to/your/project/storage/logs/worker.log
+
+# إعادة تحميل Supervisor
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start laravel-worker:*
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Commands -->
+            <div class="section">
+                <h2>⚡ أوامر سريعة للاستكشاف</h2>
+                
+                <div class="command-box">
+# فحص سريع للنظام
+php artisan queue:work --once --verbose
+php artisan queue:failed
+php artisan config:cache
+php artisan queue:restart
+
+# مراقبة مباشرة
+watch -n 2 'php artisan tinker --execute="echo DB::table(\"jobs\")->count() . \" jobs pending\n\";"'
+
+# تنظيف شامل
+php artisan queue:flush
+php artisan queue:restart
+php artisan config:clear
+php artisan cache:clear
+
+# اختبار سريع
+php artisan tinker --execute="dispatch(new App\Jobs\SendEmailNotificationJob(['to' => 'test@test.com', 'subject' => 'Test']));"
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2024 دليل حل مشاكل Laravel Queue - فريق التطوير</p>
+            <p>اتبع هذه الخطوات بالترتيب لحل مشكلة Queue بنجاح</p>
+        </div>
+    </div>
+</body>
+</html>

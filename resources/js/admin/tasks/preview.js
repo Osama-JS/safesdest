@@ -56,6 +56,7 @@ $(function () {
 
   // دالة لتحميل المهام
   function loadTasks(page = 1, search = '', retries = 3) {
+    console.log(`loadTasks called - retries left: ${retries}`);
     const filter = $('#filter-by-day').val();
     console.log('run');
     $('.body-container-block').block({
@@ -729,7 +730,6 @@ $(function () {
     function (start, end, label) {
       start_from = start.format('YYYY-MM-DD');
       end_to = end.format('YYYY-MM-DD');
-      console.log('Date range changed:', start_from, 'to', end_to);
 
       // Reload map data with new filters
       loadTasks();
@@ -784,8 +784,6 @@ $(function () {
     console.log('Filter changed:', $(this).attr('id'), $(this).val());
     loadTasks();
   });
-
-  loadTasks();
 
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
@@ -916,6 +914,7 @@ $(function () {
       $('#task-id').val(data.id);
       $('#task-owner').val(data.owner).trigger('change');
       $('#task-customer').val(data.customer_id).trigger('change');
+      $('#task_created_at').val(data.created_at);
       $('.vehicle-quantity').hide();
       $('.vehicle-select').val(data.vehicle).trigger('change');
       $('#submitModal').modal('show');

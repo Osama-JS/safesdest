@@ -76,7 +76,7 @@ class User extends Authenticatable
 
   public function teams()
   {
-    return $this->hasMany(User_Teams::class, 'user_id');
+    return $this->belongsToMany(Teams::class, 'user_has_teams', 'user_id', 'team_id');
   }
 
   protected $guard_name = 'web';
@@ -106,6 +106,15 @@ class User extends Authenticatable
     }
     return $this->teams()->where('team_id', $id)->exists();
   }
+
+  public function checkTeams()
+  {
+    if ($this->can('mange_teams')) {
+      return true;
+    }
+    return false;
+  }
+
 
   public function checkDriver($id)
   {

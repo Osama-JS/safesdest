@@ -32,7 +32,7 @@ $(function () {
 
         response.data.data.forEach(team => {
           // For Avatar badge
-
+          console.log(team);
           let driversHtml = team.drivers
             .slice(0, 5) // عرض أول 5 سائقين فقط
             .map(driver => {
@@ -69,29 +69,34 @@ $(function () {
           }
 
           let teamCard = `
-              <div class="col-md-4 mb-4">
+                <div class="col-md-4 mb-4">
                   <div class="card p-3 shadow-sm">
-                      <div class="d-flex justify-content-between">
-                          <h5>${team.name}</h5>
-                          <div class="d-flex align-items-center gap-50">
-                              <button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${team.id}" data-name="${team.name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>
-                              <button class='btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect' data-id="${team.id}" data-name="${team.name}">
-                                  <i class='ti ti-trash'></i>
-                              </button>
-                              <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
-                              <div class="dropdown-menu dropdown-menu-end m-0">
-                                  <a href="${baseUrl + 'admin/teams/details/' + team.id}" class="dropdown-item">View</a>
-                                  <a href="${baseUrl + 'admin/teams/wallets/' + team.id + '/' + team.name}" class="dropdown-item">Team Wallet</a>
-                              </div>
-                          </div>
+                    <div class="d-flex justify-content-between">
+                      <h5>${team.name}</h5>
+                      <div class="d-flex align-items-center gap-50">
+                        ${team.can_edit ? `<button class="btn btn-sm btn-icon edit-record btn-text-secondary rounded-pill waves-effect" data-id="${team.id}" data-name="${team.name}" data-bs-toggle="modal" data-bs-target="#largeModal"><i class="ti ti-edit"></i></button>` : ''}
+                        ${
+                          team.can_delete
+                            ? `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${team.id}" data-name="${team.name}">
+                          <i class="ti ti-trash"></i>
+                        </button>`
+                            : ''
+                        }
+
+                        <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end m-0">
+                          ${team.can_view ? `<a href="${baseUrl + 'admin/teams/details/' + team.id}" class="dropdown-item">View</a>` : ''}
+                          ${team.wallet ? `<a href="${baseUrl + 'admin/teams/wallets/' + team.id + '/' + team.name}" class="dropdown-item">Team Wallet</a>` : ''}
+                        </div>
                       </div>
-                      <p class="text-muted">Id: ${team.id}</p>
-                      <div class="d-flex flex-wrap">
-                          ${driversHtml}
-                      </div>
+                    </div>
+                    <p class="text-muted">Id: ${team.id}</p>
+                    <div class="d-flex flex-wrap">
+                      ${driversHtml}
+                    </div>
                   </div>
-              </div>
-          `;
+                </div>
+              `;
 
           $('#teams-container').append(teamCard);
 

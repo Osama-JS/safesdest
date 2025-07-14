@@ -17,6 +17,13 @@ use App\Models\Teams;
 
 class TeamWalletController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:wallet_teams', ['only' => ['index']]);
+    $this->middleware('permission:wallet_mange_teams', ['only' => ['editTransaction', 'storeTransaction', 'destroy']]);
+  }
+
   public function index($id, $name)
   {
     $team = Teams::find($id);

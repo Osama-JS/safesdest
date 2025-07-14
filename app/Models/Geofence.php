@@ -26,4 +26,19 @@ class Geofence extends Model
   {
     return $this->hasMany(Geofence_Team::class, 'geofence_id');
   }
+
+  public function containsPoint($latitude, $longitude): bool
+  {
+    // هنا افتراض أنك تستخدم PostGIS وبيانات polygon مخزنة في العمود 'coordinates'
+
+    $pointWKT = "POINT($longitude $latitude)";
+
+    // استعلام بسيط للتحقق داخل قاعدة البيانات مباشرة (مباشر على هذا الجيوفينس)
+    $result = DB::table('geofences')
+      ->where('id', $this->id)
+      ->whereRaw("ST_Contains(coordinates, ST_GeomFromText(? , 4326))", [$pointWKT])
+      ->exists();
+
+    return $result;
+  }
 }

@@ -78,6 +78,18 @@
                                         <div class="divider text-start">
                                             <div class="divider-text"><strong>Task Information</strong></div>
                                         </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="created_at">{{ __('Created At') }}</label>
+                                                    <input type="datetime-local" name="created_at" id="task_created_at"
+                                                        class="form-control" required
+                                                        value="{{ now()->format('Y-m-d\TH:i') }}" />
+                                                    <span class="created_at-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="form-group">
                                             <label for="select-template">{{ __('Select Template') }}</label>
                                             <select name="template" id="select-template" class="form-select w-auto">

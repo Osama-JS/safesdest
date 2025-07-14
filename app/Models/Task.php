@@ -36,7 +36,8 @@ class Task extends Model
     'user_id',
     'form_template_id',
     'pricing_id',
-    'vehicle_size_id'
+    'vehicle_size_id',
+    'created_at'
   ];
 
   protected $casts = [

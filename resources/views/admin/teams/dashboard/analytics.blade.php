@@ -267,6 +267,8 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="ti ti-chart-line me-2"></i>{{ __('Tasks Overview') }}
+                        <span class="text-muted">({{ __('Under Development') }})</span>
+
                     </h5>
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
@@ -291,6 +293,7 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="ti ti-chart-pie me-2"></i>{{ __('Task Status Distribution') }}
+                        <span class="text-muted">({{ __('Under Development') }})</span>
                     </h5>
                 </div>
                 <div class="card-body">
@@ -376,6 +379,8 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="ti ti-chart-bar me-2"></i>{{ __('Monthly Revenue') }}
+                        <span class="text-muted">({{ __('Under Development') }})</span>
+
                     </h5>
                 </div>
                 <div class="card-body">
@@ -393,6 +398,8 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         <i class="ti ti-truck me-2"></i>{{ __('Vehicle Utilization') }}
+                        <span class="text-muted">({{ __('Under Development') }})</span>
+
                     </h5>
                 </div>
                 <div class="card-body">

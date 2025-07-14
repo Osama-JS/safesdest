@@ -33,7 +33,7 @@ class TeamsController extends Controller
     $this->middleware('permission:view_teams', ['only' => ['index', 'getData', 'edit']]);
     $this->middleware('permission:save_teams', ['only' => ['store']]);
     $this->middleware('permission:delete_teams', ['only' => ['destroy']]);
-    $this->middleware('permission:details_teams', ['only' => ['']]);
+    $this->middleware('permission:details_teams', ['only' => ['dashboard', 'driversPage', 'tasksPage', 'walletPage', 'taskDistributionPage', 'analyticsPage', 'getTeamDrivers']]);
   }
 
 
@@ -45,24 +45,54 @@ class TeamsController extends Controller
 
   public function getData(Request $request)
   {
-    $query = Teams::with('drivers');
+    $user = auth()->user();
+    if (!$user) {
+      abort(403);
+    }
 
+    // بناء الاستعلام الأساسي
+    if ($user->checkTeams()) {
+      $query = Teams::with('drivers');
+    } else {
+      $query = Teams::whereHas('users', function ($q) use ($user) {
+        $q->where('user_id', $user->id);
+      })->with('drivers');
+    }
+
+    // البحث
     if ($request->has('search') && !empty($request->search)) {
       $search = $request->search;
       $query->where(function ($q) use ($search) {
         $q->where('name', 'ILIKE', '%' . $search . '%')
-          ->orwhere('id', 'ILIKE', '%' . $search . '%');
+          ->orWhere('id', 'ILIKE', '%' . $search . '%');
       });
     }
+
     $query->orderBy('id', 'DESC');
 
-    $count = $query->count();
+    // تنفيذ pagination
+    $teams = $query->paginate(9);
 
-    // الإرجاع مع Pagination
-    $products = $query->paginate(9); // 20 منتج لكل صفحة
+    // تعديل العناصر داخل الـ pagination باستخدام map
+    $teams->getCollection()->transform(function ($team) {
+      // إضافة البيانات المحقونة
+      $team->driver_count = $team->drivers->count();
+      $team->custom_label = "Team #" . $team->id;
+      $team->can_wallet = auth()->user()->can('wallet_teams');
+      $team->can_edit = auth()->user()->can('save_teams');
+      $team->can_delete = auth()->user()->can('delete_teams');
+      $team->can_view = auth()->user()->can('details_teams');
 
-    return response()->json(['data' => $products, 'count' => $count]);
+      // يمكنك إضافة أي بيانات أخرى هنا حسب الحاجة
+      return $team;
+    });
+
+    return response()->json([
+      'data' => $teams
+    ]);
   }
+
+
 
   public function show($id)
   {
@@ -74,6 +104,10 @@ class TeamsController extends Controller
    */
   public function dashboard($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::with(['drivers', 'tasks'])->findOrFail($id);
 
     $teamWallet = Team_Wallet::where('team_id', $team->id)->first();
@@ -107,6 +141,10 @@ class TeamsController extends Controller
    */
   public function driversPage($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::with('drivers')->findOrFail($id);
     $templates = Form_Template::all();
     $roles = Role::where('guard_name', 'driver')->get();
@@ -152,6 +190,10 @@ class TeamsController extends Controller
    */
   public function tasksPage($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::with('tasks')->findOrFail($id);
 
     return view('admin.teams.dashboard.tasks', compact('team'));
@@ -162,6 +204,10 @@ class TeamsController extends Controller
    */
   public function walletPage($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::findOrFail($id);
 
     // Get or create team wallet
@@ -175,6 +221,10 @@ class TeamsController extends Controller
    */
   public function taskDistributionPage($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::with(['drivers' => function ($query) {
       $query->where('drivers.status', 'active');
     }])->findOrFail($id);
@@ -187,6 +237,10 @@ class TeamsController extends Controller
    */
   public function analyticsPage($id)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($id)) {
+      abort(403);
+    }
     $team = Teams::with(['drivers', 'tasks', 'geofences'])->findOrFail($id);
 
     // Get analytics data with PostgreSQL-compatible syntax
@@ -279,10 +333,10 @@ class TeamsController extends Controller
     $statusFilter = $request->input('status');
     $team = $request->input('team');
 
-    $user = auth()->user();
-    if (!$user || !$user->checkDriver($team)) {
-      return [];
-    }
+    // $user = auth()->user();
+    // if (!$user || !$user->checkDriver($team)) {
+    //   return [];
+    // }
 
 
     $totalData = Driver::where('team_id', $team)->count();
@@ -334,6 +388,8 @@ class TeamsController extends Controller
         'status'     => $val->status,
       ];
     }
+
+
 
     return response()->json([
       'draw'            => intval($request->input('draw')),
@@ -528,6 +584,10 @@ class TeamsController extends Controller
     DB::beginTransaction();
     try {
       if (isset($req->id) && !empty($req->id)) {
+        $user = auth()->user();
+        if (!$user || !$user->checkTeam($req->id)) {
+          return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+        }
         $done = Teams::find($req->id)->update([
           'name' => $req->name,
           'address' => $req->address,
@@ -577,6 +637,10 @@ class TeamsController extends Controller
 
   public function destroy(Request $req)
   {
+    $user = auth()->user();
+    if (!$user || !$user->checkTeam($req->id)) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+    }
     DB::beginTransaction();
 
     try {
@@ -767,10 +831,8 @@ class TeamsController extends Controller
   public function getFilteredTasks($teamId): JsonResponse
   {
     try {
-      // Find the team with necessary relationships
       $team = Teams::with(['drivers', 'geofences.geofence'])->findOrFail($teamId);
 
-      // Get vehicle size IDs from team drivers
       $vehicleSizeIds = $team->drivers->pluck('vehicle_size_id')->filter()->unique()->toArray();
 
       if (empty($vehicleSizeIds)) {
@@ -781,47 +843,46 @@ class TeamsController extends Controller
         ]);
       }
 
-      // Start building the query for tasks with status 'in_progress' and matching vehicle sizes
       $tasksQuery = Task::with(['pickup', 'vehicle_size'])
         ->where('status', 'in_progress')
-        ->whereIn('vehicle_size_id', $vehicleSizeIds);
+        ->whereIn('vehicle_size_id', $vehicleSizeIds)
+        ->orderBy('created_at', 'desc');
 
-      // Check if team has associated geofences
+      $tasks = $tasksQuery->get();
+
       $teamGeofences = $team->geofences;
 
       if ($teamGeofences->isNotEmpty()) {
-        // Get geofence IDs associated with this team
-        $geofenceIds = $teamGeofences->pluck('geofence_id')->toArray();
+        $geofences = $teamGeofences->pluck('geofence')->filter();
 
-        // Apply geofence filtering using spatial queries
-        $tasksQuery->whereHas('pickup', function ($query) use ($geofenceIds) {
-          $query->whereRaw("
-            EXISTS (
-              SELECT 1 FROM geofences
-              WHERE id IN (" . implode(',', array_fill(0, count($geofenceIds), '?')) . ")
-              AND ST_Contains(coordinates, ST_GeomFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'), 4326))
-            )
-          ", $geofenceIds);
+        // دالة لمساعدة التحقق من وجود نقطة داخل أي geofence
+        $isPointInGeofence = function ($latitude, $longitude) use ($geofences) {
+          foreach ($geofences as $geofence) {
+            // هنا يفترض أنك تستخدم مكتبة الجغرافيا للتحقق (مثل grimzy/laravel-mysql-spatial أو غيرها)
+            // أو تستدعي الدالة المناسبة لـ PostGIS أو PHP
+            if ($geofence->containsPoint($latitude, $longitude)) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        // فرز المهام بحيث تكون المهام التي نقطتها داخل geofence في الأعلى
+        $tasks = $tasks->sortByDesc(function ($task) use ($isPointInGeofence) {
+          $pickup = $task->pickup;
+          if (!$pickup || !$pickup->latitude || !$pickup->longitude) {
+            return false;
+          }
+          return $isPointInGeofence($pickup->latitude, $pickup->longitude);
         });
-
-        // Order by proximity to geofence center (simplified approach)
-        // For more complex sorting, you might want to calculate distance to geofence centroid
-        $tasksQuery->orderBy('created_at', 'desc');
-      } else {
-        // If no geofences, just order by creation date
-        $tasksQuery->orderBy('created_at', 'desc');
       }
 
-      // Execute the query
-      $tasks = $tasksQuery->get();
-
-      // Transform the data for response
       $transformedTasks = $tasks->map(function ($task) {
         return [
           'id' => $task->id,
           'status' => $task->status,
           'vehicle_size_id' => $task->vehicle_size_id,
-          'vehicle_size_name' => $task->vehicle_size->name ?? null,
+          'vehicle_size_name' => ($task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - (' . $task->vehicle_size->name . ')') ?? null,
           'pickup_location' => [
             'latitude' => $task->pickup->latitude ?? null,
             'longitude' => $task->pickup->longitude ?? null,
@@ -840,7 +901,7 @@ class TeamsController extends Controller
 
       return response()->json([
         'success' => true,
-        'data' => $transformedTasks,
+        'data' => $transformedTasks->values(),
         'team_info' => [
           'id' => $team->id,
           'name' => $team->name,
@@ -857,6 +918,9 @@ class TeamsController extends Controller
       ], 500);
     }
   }
+
+
+
 
   /**
    * Get team revenue monthly data for charts (total_price - commission)

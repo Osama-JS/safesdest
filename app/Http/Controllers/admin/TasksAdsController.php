@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Validator;
 
 class TasksAdsController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_ads', ['only' => ['index', 'getData', 'edit']]);
+  }
+
   public function index()
   {
 

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعليمات اختبار Email Job</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #28c76f 0%, #20bf6b 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-right: 5px solid #28c76f;
+        }
+
+        .step h2 {
+            color: #2c3e50;
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+        }
+
+        .command-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            direction: ltr;
+            text-align: left;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .success-box {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 تعليمات اختبار Email Job</h1>
+            <p>اختبار شامل لنظام إرسال الإيميلات باستخدام Laravel Queue</p>
+        </div>
+
+        <div class="content">
+            <div class="step">
+                <h2>الخطوة 1: فحص الإعدادات الأساسية</h2>
+                <p>تأكد من أن جميع الإعدادات صحيحة:</p>
+                <div class="command-box">
+php artisan tinker
+>>> config('queue.default')
+>>> config('mail.default')
+>>> DB::table('jobs')->count()
+>>> exit
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 2: إرسال Email Job للاختبار</h2>
+                <p>قم بتشغيل الأوامر التالية في tinker:</p>
+                <div class="command-box">
+php artisan tinker
+
+// فحص عدد Jobs قبل الإرسال
+>>> $jobsBefore = DB::table('jobs')->count();
+>>> echo "Jobs before: $jobsBefore\n";
+
+// إعداد بيانات الإيميل
+>>> $emailData = [
+    'to' => 'osamomy@gmail.com',
+    'subject' => 'Test Email from SafeDests - ' . now()->format('Y-m-d H:i:s'),
+    'template' => 'emails.notification',
+    'type' => 'test_email',
+    'priority' => 'high',
+    'user_name' => 'Test User',
+    'content' => 'This is a test email to verify the email system is working.',
+    'action_url' => 'https://example.com/test',
+    'action_text' => 'Test Action',
+    'additional_data' => [
+        'Test Time' => now()->format('Y-m-d H:i:s'),
+        'Test ID' => uniqid('test_'),
+        'System Status' => 'Testing'
+    ]
+];
+
+// إرسال Job
+>>> dispatch(new App\Jobs\SendEmailNotificationJob($emailData));
+>>> echo "Job dispatched!\n";
+
+// فحص عدد Jobs بعد الإرسال
+>>> $jobsAfter = DB::table('jobs')->count();
+>>> echo "Jobs after: $jobsAfter\n";
+
+>>> exit
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 3: فحص تفاصيل Job</h2>
+                <p>تحقق من أن Job تم إنشاؤه بشكل صحيح:</p>
+                <div class="command-box">
+php artisan tinker
+
+// عرض آخر Job
+>>> $latestJob = DB::table('jobs')->orderBy('id', 'desc')->first();
+>>> if ($latestJob) {
+    echo "Job ID: " . $latestJob->id . "\n";
+    echo "Queue: " . $latestJob->queue . "\n";
+    echo "Available at: " . date('Y-m-d H:i:s', $latestJob->available_at) . "\n";
+    echo "Current time: " . date('Y-m-d H:i:s') . "\n";
+    echo "Ready: " . ($latestJob->available_at <= time() ? 'YES' : 'NO') . "\n";
+}
+
+// فحص محتوى Job
+>>> $payload = json_decode($latestJob->payload, true);
+>>> if (isset($payload['data']['command'])) {
+    echo "Job contains valid command\n";
+    $command = unserialize($payload['data']['command']);
+    echo "Email to: " . $command->emailData['to'] . "\n";
+}
+
+>>> exit
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 4: تشغيل Queue Worker</h2>
+                <p>جرب تشغيل Queue Worker بطرق مختلفة:</p>
+                
+                <h3>الطريقة 1: تشغيل Job واحد</h3>
+                <div class="command-box">
+php artisan queue:work --once --verbose
+                </div>
+
+                <h3>الطريقة 2: تشغيل مع timeout أطول</h3>
+                <div class="command-box">
+php artisan queue:work --verbose --timeout=120 --memory=512
+                </div>
+
+                <h3>الطريقة 3: تحديد queue محدد</h3>
+                <div class="command-box">
+php artisan queue:work database --verbose
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 5: المعالجة اليدوية (إذا لم تعمل الطرق السابقة)</h2>
+                <p>إذا لم يعمل Queue Worker، جرب المعالجة اليدوية:</p>
+                <div class="command-box">
+php artisan tinker
+
+// الحصول على أول Job
+>>> $job = DB::table('jobs')->first();
+>>> if ($job) {
+    echo "Processing job manually...\n";
+    $payload = json_decode($job->payload, true);
+    $command = unserialize($payload['data']['command']);
+    
+    // تشغيل Job
+    $command->handle();
+    echo "Job executed!\n";
+    
+    // حذف Job
+    DB::table('jobs')->where('id', $job->id)->delete();
+    echo "Job removed from queue\n";
+}
+
+>>> exit
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 6: فحص النتائج</h2>
+                
+                <div class="info-box">
+                    <h4>📧 فحص الإيميل</h4>
+                    <ul>
+                        <li>تحقق من صندوق الوارد: <strong>osamomy@gmail.com</strong></li>
+                        <li>تحقق من مجلد الرسائل غير المرغوب فيها</li>
+                        <li>ابحث عن رسالة بعنوان: "Test Email from SafeDests"</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h4>📊 فحص قاعدة البيانات</h4>
+                    <div class="command-box">
+php artisan tinker
+>>> DB::table('jobs')->count()  // يجب أن يكون 0 إذا تم التشغيل
+>>> DB::table('failed_jobs')->count()  // فحص Jobs الفاشلة
+>>> DB::table('email_notifications_log')->count()  // فحص سجل الإيميلات
+>>> exit
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4>📝 فحص السجلات</h4>
+                    <div class="command-box">
+# في terminal منفصل
+tail -f storage/logs/laravel.log
+
+# أو فحص آخر 50 سطر
+tail -50 storage/logs/laravel.log
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 7: استكشاف الأخطاء</h2>
+                
+                <div class="warning-box">
+                    <h4>⚠️ إذا لم يتم إرسال الإيميل</h4>
+                    <p>تحقق من:</p>
+                    <ul>
+                        <li>إعدادات SMTP في ملف .env</li>
+                        <li>أن خدمة البريد الإلكتروني تعمل</li>
+                        <li>أن الإيميل ليس في مجلد الرسائل غير المرغوب فيها</li>
+                        <li>سجلات Laravel للأخطاء</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ إذا لم يتم معالجة Jobs</h4>
+                    <p>جرب:</p>
+                    <ul>
+                        <li>مسح cache: <code>php artisan config:clear</code></li>
+                        <li>إعادة تشغيل queue: <code>php artisan queue:restart</code></li>
+                        <li>فحص أذونات قاعدة البيانات</li>
+                        <li>زيادة memory limit و timeout</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <h4>✅ علامات النجاح</h4>
+                    <ul>
+                        <li>Job تم إضافته لجدول jobs</li>
+                        <li>Queue worker عالج Job بنجاح</li>
+                        <li>Job تم حذفه من جدول jobs</li>
+                        <li>تم تسجيل العملية في email_notifications_log</li>
+                        <li>وصل الإيميل لصندوق الوارد</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step">
+                <h2>الخطوة 8: اختبار تعيين مهمة حقيقية</h2>
+                <p>بعد التأكد من عمل النظام، جرب تعيين مهمة حقيقية:</p>
+                <ol>
+                    <li>اذهب لصفحة المهام في لوحة الإدارة</li>
+                    <li>اختر مهمة في حالة "in_progress" أو "advertised"</li>
+                    <li>قم بتعيين سائق لها</li>
+                    <li>راقب إرسال الإشعارات</li>
+                    <li>تحقق من وصول الإيميلات للسائق وصاحب المهمة</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 اختبار Email Job - فريق التطوير</p>
+            <p>اتبع هذه الخطوات بالترتيب للتأكد من عمل نظام الإشعارات</p>
+        </div>
+    </div>
+</body>
+</html>

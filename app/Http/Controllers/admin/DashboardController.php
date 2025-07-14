@@ -23,8 +23,33 @@ class DashboardController extends Controller
 
   public function getTasksData(Request $request)
   {
-    $query = Task::with('points', 'customer', 'user', 'driver'); // أضفنا driver هنا
+    $user = auth()->user();
 
+    if (!$user) {
+      abort(403);
+    }
+
+    $query = Task::with('points', 'customer', 'user', 'driver');
+
+    // ⛔️ فلترة بناءً على الصلاحيات
+    if (!$user->can('manage_tasks')) {
+      $customerIds = $user->customers()->pluck('customers.id')->toArray();
+      $teamIds = $user->teams()->pluck('teams.id')->toArray();
+
+      $query->where(function ($q) use ($user, $customerIds, $teamIds) {
+        $q->where('user_id', $user->id);
+
+        if (!empty($customerIds)) {
+          $q->orWhereIn('customer_id', $customerIds);
+        }
+
+        if (!empty($teamIds)) {
+          $q->orWhereIn('team_id', $teamIds);
+        }
+      });
+    }
+
+    // 🔍 البحث
     if ($request->has('search') && !empty($request->search)) {
       $search = $request->search;
       $query->where(function ($q) use ($search) {
@@ -32,15 +57,21 @@ class DashboardController extends Controller
       });
     }
 
-    // if ($request->has('filter') && !empty($request->filter)) {
-    //   $searchDate = $request->filter;
-    //   $query->whereDate('created_at', $searchDate);
-    // }
-
+    // 📦 الترتيب وجلب البيانات
     $query->orderBy('id', 'DESC');
     $tasks = $query->get();
 
-    $runningStatuses = ['in_progress', 'assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'];
+    // ✅ التصنيف حسب الحالة
+    $runningStatuses = [
+      'in_progress',
+      'assign',
+      'started',
+      'in pickup point',
+      'loading',
+      'in the way',
+      'in delivery point',
+      'unloading'
+    ];
 
     $grouped = [
       'running' => [],
@@ -49,7 +80,7 @@ class DashboardController extends Controller
 
     foreach ($tasks as $task) {
       $customer = $task->customer;
-      $user = $task->user;
+      $userOwner = $task->user;
       $driver = $task->driver;
 
       $avatar = $customer && $customer->avatar
@@ -57,24 +88,25 @@ class DashboardController extends Controller
         : asset('assets/img/person.png');
 
       $item = [
-        'id'     => $task->id,
-        'name'   => $customer ? $customer->name : ($user->name ?? 'غير معروف'),
-        'owner'  => $customer ? 'customer' : 'admin',
+        'id' => $task->id,
+        'name' => $customer ? $customer->name : ($userOwner->name ?? 'غير معروف'),
+        'owner' => $customer ? 'customer' : 'admin',
         'status' => $task->status,
         'complete_at' => $task->completed_at,
         'avatar' => $avatar,
-        'point'  => $task->point()->where('type', 'pickup')->first(),
+        'point' => $task->point()->where('type', 'pickup')->first(),
         'closed' => $task->closed,
       ];
 
-      // إذا كان هناك سائق مرتبط بالمهمة
       if ($driver) {
         $item['driver'] = [
           'id' => $driver->id,
           'name' => $driver->name,
           'phone' => $driver->phone,
           'phone_code' => $driver->phone_code,
-          'avatar' => $driver->image ? asset('storage/' . $driver->image) : asset('assets/img/person.png'),
+          'avatar' => $driver->image
+            ? asset('storage/' . $driver->image)
+            : asset('assets/img/person.png'),
           'team' => $driver->team ? $driver->team->name : null,
         ];
       }
@@ -89,9 +121,9 @@ class DashboardController extends Controller
     return response()->json(['data' => $grouped]);
   }
 
+
   public function getDriversData(Request $request)
   {
-    // تعريف الحالات النشطة للمهمات
     $runningStatuses = [
       'in_progress',
       'assign',
@@ -104,12 +136,23 @@ class DashboardController extends Controller
       'completed'
     ];
 
-    // الحصول على جميع السائقين مع علاقاتهم
-    $drivers = Driver::with(['tasks' => function ($query) use ($runningStatuses) {
-      $query->whereIn('status', $runningStatuses)->where('closed', false);
-    }])->where('status', 'active')->get();
+    $user = auth()->user();
 
-    // التجميع
+    // بدء الاستعلام الأساسي
+    $driversQuery = Driver::with(['tasks' => function ($query) use ($runningStatuses) {
+      $query->whereIn('status', $runningStatuses)->where('closed', false);
+    }])->where('status', 'active');
+
+    // ✅ فقط إن لم يكن لديه صلاحية إدارة السائقين
+    if (!$user->can('mange_drivers')) {
+      $teamIds = $user->teams->pluck('id')->toArray();
+
+      // جلب السائقين المرتبطين بفرق يديرها المستخدم فقط
+      $driversQuery->whereIn('team_id', $teamIds);
+    }
+
+    $drivers = $driversQuery->get();
+
     $grouped = [
       'online' => [],
       'offline' => [],
@@ -135,7 +178,6 @@ class DashboardController extends Controller
         ],
       ];
 
-      // السائق مشغول إذا كان لديه مهمة غير مكتملة
       if ($driver->tasks?->isNotEmpty()) {
         $grouped['busy'][] = $item;
       } elseif ($driver->online) {

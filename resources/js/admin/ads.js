@@ -139,6 +139,13 @@ $(function () {
                 </div>
 
                 <div class="card-footer">
+                ${
+                  ad.included
+                    ? `
+                  <div class="alert alert-info p-0">VAT and company commission are charged to the driver.</div>
+                  `
+                    : ''
+                }
                   <div class="price-info">${priceHtml}</div>
                   <a href="${baseUrl}admin/ads/show/${ad.id}" class="btn btn-outline-primary w-100">
                     <i class="ti ti-eye me-1"></i>

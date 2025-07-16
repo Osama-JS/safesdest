@@ -710,6 +710,25 @@ function renderPricingDetails(data) {
   if (data.manual) {
     html += `<div class="mb-2">
       <h4>Place your offer</h4>
+     <div class="alert alert-info mb-3 d-flex flex-column" role="alert" style="max-width: 600px;">
+        <div class="form-check mb-2">
+          <input type="checkbox"
+                name="included"
+                id="not-price"
+                class="form-check-input"
+                value="1"
+                ${$('#task-id').data('included') ? 'checked' : ''}>
+          <label class="form-check-label fw-bold" for="not-price">
+            Including VAT and service charge
+          </label>
+        </div>
+
+        <div class="small text-muted">
+If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.        </div>
+
+        <span class="included-error text-danger mt-2"></span>
+      </div>
+
       <div class="mb-3 row">
         <div class="col-md-6">
           <label for="min-price">* Min Price</label>

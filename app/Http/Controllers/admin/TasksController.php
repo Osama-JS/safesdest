@@ -528,11 +528,39 @@ class TasksController extends Controller
         $task['total_price']  = 0;
         $task['pricing_type'] = 'manual';
         $task['status']       = 'advertised';
+
+        if (!$req->filled('max_price') || !$req->filled('min_price')) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('You must set min and max price for advertised task')]);
+        }
+        if ($req->max_price < $req->min_price) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Max price must be greater than min price')]);
+        }
+
+        if ($req->min_price < 0 || $req->max_price < 0) {
+          DB::rollBack();
+          return response()->json(['status' => 2, 'error' => __('Min price must be greater than 0')]);
+        }
+
+
         $ad = [
           'highest_price' => $req->max_price,
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
+          'included' =>  $req->included ?? false,
         ];
+        if (!$req->filled('included')) {
+          if ($data['service_commission_type'] === 'fixed') {
+            $ad['lowest_price'] += $data['service_tax_commission'];
+            $ad['highest_price'] += $data['service_tax_commission'];
+          } else {
+            $ad['lowest_price'] += $ad['lowest_price'] * ($data['service_tax_commission'] / 100);
+            $ad['highest_price'] += $ad['highest_price'] * ($data['service_tax_commission'] / 100);
+          }
+          $ad['lowest_price'] += $ad['lowest_price'] * ($data['vat_commission'] / 100);
+          $ad['highest_price'] += $ad['highest_price'] * ($data['vat_commission'] / 100);
+        }
         $history[] = [
           'action_type' => 'advertised',
           'description' => 'set as Advertised',
@@ -909,11 +937,26 @@ class TasksController extends Controller
         $task['total_price']  = 0;
         $task['pricing_type'] = 'manual';
         $task['status']       = 'advertised';
+
         $ad = [
           'highest_price' => $req->max_price,
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
+          'included' =>  $req->included ?? false,
         ];
+        if (!$req->filled('included')) {
+          if ($data['service_commission_type'] === 'fixed') {
+            $ad['lowest_price'] += $data['service_tax_commission'];
+            $ad['highest_price'] += $data['service_tax_commission'];
+          } else {
+            $ad['lowest_price'] += $ad['lowest_price'] * ($data['service_tax_commission'] / 100);
+            $ad['highest_price'] += $ad['highest_price'] * ($data['service_tax_commission'] / 100);
+          }
+          $ad['lowest_price'] += $ad['lowest_price'] * ($data['vat_commission'] / 100);
+          $ad['highest_price'] += $ad['highest_price'] * ($data['vat_commission'] / 100);
+        }
+
+
         $history[] = [
           'action_type' => 'advertised',
           'description' => 'set as Advertised',

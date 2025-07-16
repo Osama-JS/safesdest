@@ -12,6 +12,8 @@ class Task_Ad extends Model
     'status',
     'highest_price',
     'lowest_price',
+    'included',
+    'closed_at',
     'task_id',
   ];
 

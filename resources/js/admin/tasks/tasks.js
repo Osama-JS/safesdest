@@ -15,8 +15,6 @@ $(function () {
 
   mapboxgl.accessToken = mapsConfig.token;
 
-  console.log('access token: ', mapboxgl.accessToken);
-
   /* ===========  ajax setup   ===========*/
   $.ajaxSetup({
     headers: {
@@ -714,7 +712,7 @@ function renderPricingDetails(data) {
         <div class="form-check mb-2">
           <input type="checkbox"
                 name="included"
-                id="not-price"
+                id="included-price"
                 class="form-check-input"
                 value="1"
                 ${$('#task-id').data('included') ? 'checked' : ''}>
@@ -723,8 +721,15 @@ function renderPricingDetails(data) {
           </label>
         </div>
 
-        <div class="small text-muted">
-If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.        </div>
+        <p class="small text-muted">
+              If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.
+        </p>
+         <p class="small text-muted">
+          This means the following will be added on top of the price you enter:
+          ${data.service_tax_commission ? parseFloat(data.service_tax_commission).toFixed(2) + (data.service_commission_type === 'percentage' ? '% service commission' : ' SAR service commission') : ''}
+          ${data.vat_commission ? parseFloat(data.vat_commission).toFixed(2) + '% VAT (Value Added Tax)' : ''}
+        </p>
+
 
         <span class="included-error text-danger mt-2"></span>
       </div>
@@ -732,18 +737,18 @@ If you do not select this option, both the VAT and the service commission will b
       <div class="mb-3 row">
         <div class="col-md-6">
           <label for="min-price">* Min Price</label>
-          <input type="number" name="min_price"  id="min-price"  class="form-control" step="any" value="${$('#task-id').data('min')}" >
+          <input type="number" name="min_price"  id="min-price"  class="form-control" step="any" value="${$('#task-id').data('min') || 0.0}" >
           <span class="min_price-error text-danger text-error"></span>
         </div>
          <div class="col-md-6">
           <label for="max-price">* Max Price</label>
-          <input type="number" name="max_price" id="max-price"  class="form-control" step="any" value="${$('#task-id').data('max')}" >
+          <input type="number" name="max_price" id="max-price"  class="form-control" step="any" value="${$('#task-id').data('max') || 0.0}" >
           <span class="max_price-error text-danger text-error"></span>
         </div>
       </div>
       <div class="mb-3">
           <label for="not-price">Note</label>
-          <textarea name="note_price" id="not-price" class="form-control">${$('#task-id').data('note')}</textarea>
+          <textarea name="note_price" id="not-price" class="form-control" plaseholder="Write your Notes or Description">${$('#task-id').data('note') || ''}</textarea>
           <span class="note_price-error text-danger text-error"></span>
       </div>
     </div>`;
@@ -775,6 +780,7 @@ If you do not select this option, both the VAT and the service commission will b
   }
 
   html += `</div>`;
+
   document.getElementById('taskFinalDetails').innerHTML = html;
 }
 

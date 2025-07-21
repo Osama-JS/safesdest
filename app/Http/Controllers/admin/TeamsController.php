@@ -920,8 +920,6 @@ class TeamsController extends Controller
   }
 
 
-
-
   /**
    * Get team revenue monthly data for charts (total_price - commission)
    */

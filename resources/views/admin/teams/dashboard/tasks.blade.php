@@ -6,13 +6,13 @@
 @endsection
 <!-- Vendor Styles -->
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/flatpickr/flatpickr.scss'])
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/flatpickr/flatpickr.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
     @vite(['resources/css/app.css'])
 @endsection
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/flatpickr/flatpickr.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/flatpickr/flatpickr.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
     <script>
         const teamID = {{ $team->id }}
     </script>
@@ -174,6 +174,41 @@
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade " id="addNoteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNoteTitle">{{ __('Edit Task Pricing') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('tasks.note') }}" method="POST" class="card shadow-sm p-4 border-0 form_submit"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="task" id="task_note_id">
+                    <span class="task-error text-danger text-error"></span>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{{ __('Add Note') }}</label>
+                        <textarea name="description" id="description" class="form-control" rows="3"
+                            placeholder="{{ __('Type the note here') }}..."></textarea>
+                        <span class="description-error text-danger text-error"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">{{ __('Upload File') }}
+                            ({{ __('optional') }})
+                        </label>
+                        <input type="file" name="file" id="file" class="form-control">
+                        <span class="file-error text-danger text-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">{{ __('Submit') }}</button>
+                </form>
             </div>
         </div>
     </div>

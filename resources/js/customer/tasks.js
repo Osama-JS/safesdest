@@ -860,6 +860,31 @@ $(function () {
     if (data.manual) {
       html += `<div class="mb-2">
       <h4>Place your offer</h4>
+      <div class="alert alert-info mb-3 d-flex flex-column" role="alert" style="max-width: 600px;">
+        <div class="form-check mb-2">
+          <input type="checkbox"
+                name="included"
+                id="included-price"
+                class="form-check-input"
+                value="1"
+                ${$('#task-id').data('included') ? 'checked' : ''}>
+          <label class="form-check-label fw-bold" for="not-price">
+            Including VAT and service charge
+          </label>
+        </div>
+
+        <p class="small text-muted">
+              If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.
+        </p>
+         <p class="small text-muted">
+          This means the following will be added on top of the price you enter:
+          ${data.service_tax_commission ? parseFloat(data.service_tax_commission).toFixed(2) + (data.service_commission_type === 'percentage' ? '% service commission' : ' SAR service commission') : ''}
+          ${data.vat_commission ? parseFloat(data.vat_commission).toFixed(2) + '% VAT (Value Added Tax)' : ''}
+        </p>
+
+
+        <span class="included-error text-danger mt-2"></span>
+      </div>
       <div class="mb-3 row">
         <div class="col-md-6">
           <label for="min-price">* Min Price</label>
@@ -953,6 +978,7 @@ $(function () {
         $('#task-id').attr('data-min', data.ad.lowest_price || 0.0);
         $('#task-id').attr('data-max', data.ad.highest_price || 0.0);
         $('#task-id').attr('data-note', data.ad.description || '');
+        $('#task-id').attr('data-included', data.ad.included || false);
       }
 
       $('#pickup-contact-name').val(data.pickup.contact_name);

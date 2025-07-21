@@ -284,10 +284,22 @@
         <div class="section">
             <div class="section-title">{{ __('Driver Information') }}</div>
             <div class="info-grid">
+                @if ($task->driver->image)
+                    <div class="info-item">
+                        <span class="label">{{ __('Driver Photo') }}</span>
+                        <span class="value ">
+                            <img src="{{ asset($task->driver->image) }}" alt="" style="width: 50px">
+                        </span>
+                    </div>
+                @endif
                 <div class="info-item"><span class="label">{{ __('Driver name') }}</span><span
                         class="value">{{ $task->driver?->name }}</span></div>
                 <div class="info-item"><span class="label">{{ __('Phone number') }}</span><span
                         class="value">{{ $task->driver?->phone }}</span></div>
+                @if ($task->driver->team)
+                    <div class="info-item"><span class="label">{{ __('Team') }}</span><span
+                            class="value">{{ $task->driver?->team?->name }}</span></div>
+                @endif
 
                 @if ($task->driver?->additional_data && is_array($task->driver->driver_visible_additional_data))
                     @foreach ($task->driver->driver_visible_additional_data as $key => $field)

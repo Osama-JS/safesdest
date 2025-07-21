@@ -4,6 +4,7 @@
 
 'use strict';
 import { initDashboard, showAlert } from './common.js';
+import { showFormModal } from '../../../ajax.js';
 
 $(function () {
   // Initialize common dashboard functionality
@@ -347,6 +348,7 @@ $(function () {
           targets: 2,
           searchable: false,
           orderable: false,
+          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
             return `<span class="border px-3 rounded text-primary"><b>${full.price} ${__('SAR')}</b></span>`;
           }
@@ -444,6 +446,16 @@ $(function () {
                   <a href="${baseUrl}admin/teams/tasks/show/${full.id}" class="btn btn-sm btn-icon  " >
                     <i class="ti ti-help"></i>
                   </a>
+                  <div class="dropdown ">
+                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
+                      <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.id}" data-status="${full.status}">Change Status</a></li>
+                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${full.id}" data-name="${full.id}">Add Note</a></li>
+
+                  </ul>
+              </div>
               </div>`;
           }
         }
@@ -552,11 +564,54 @@ $(function () {
   });
 
   // Change status
-  $(document).on('click', '.change-status', function (e) {
-    e.preventDefault();
-    var taskId = $(this).data('id');
-    // Implementation for status change
-    showAlert('info', 'Status change functionality will be implemented');
+  $(document).on('click', '.status-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
+
+    const fields = `
+          <input type="hidden" name="id" value="${id}">
+          <select class="form-select" name="status">
+            <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>in progress</option>
+            <option value="started" ${status === 'started' ? 'selected' : ''}>started</option>
+            <option value="in pickup point" ${status === 'in pickup point' ? 'selected' : ''}>in pickup point</option>
+            <option value="loading" ${status === 'loading' ? 'selected' : ''}>loading</option>
+            <option value="in the way" ${status === 'in the way' ? 'selected' : ''}>in the way</option>
+            <option value="in delivery point" ${status === 'in delivery point' ? 'selected' : ''}>in delivery point</option>
+            <option value="unloading" ${status === 'unloading' ? 'selected' : ''}>unloading</option>
+            <option value="completed" ${status === 'completed' ? 'selected' : ''}>completed</option>
+            <option value="canceled" ${status === 'canceled' ? 'selected' : ''}>canceled</option>
+          </select>
+        `;
+
+    showFormModal({
+      title: `Change Task: ${name} Status`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/tasks/status`,
+      method: 'POST'
+    });
+  });
+
+  document.addEventListener('statusChange', function (event) {
+    dt_task.draw();
+  });
+
+  document.addEventListener('formSubmitted', function (event) {
+    $('.form_submit').trigger('reset');
+    setTimeout(() => {
+      $('#addNoteModal').modal('hide');
+      dt_task.draw();
+    }, 2000);
+  });
+
+  $(document).on('click', '.add-task-note', function () {
+    const id = $(this).data('id');
+
+    $('#addNoteModal').modal('show');
+    $('#addNoteTitle').html(`Add Note to Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+
+    $('#task_note_id').val(id);
   });
 
   // Cancel task

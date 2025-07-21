@@ -39,11 +39,13 @@ class User extends Authenticatable
     'last_login',
     'additional_data',
     'form_template_id',
-    'role_id'
+    'role_id',
+    'is_customs_clearance_agent'
   ];
 
   protected $casts = [
     'additional_data' => 'array',
+    'is_customs_clearance_agent' => 'boolean',
   ];
 
   protected $dates = ['deleted_at'];
@@ -130,14 +132,77 @@ class User extends Authenticatable
 
   public function checkTask($id)
   {
+    // إذا كان المستخدم لديه صلاحية عامة لإدارة المهام
     if ($this->can('manage_tasks')) {
       return true;
     }
-    return $this->tasks()->where('id', $id)->exists();
+
+    // إذا كانت المهمة مرتبطة مباشرة بالمستخدم
+    if ($this->tasks()->where('id', $id)->exists()) {
+      return true;
+    }
+
+    // إذا كانت المهمة مرتبطة بفريق والمستخدم عضو في هذا الفريق
+    $teamIds = $this->teams()->pluck('teams.id'); // الحصول على معرفات الفرق التي ينتمي لها المستخدم
+
+    return Task::where('id', $id)
+      ->whereIn('team_id', $teamIds)
+      ->exists();
   }
+
 
   public function transactions()
   {
     return $this->morphMany(Transaction::class, 'payable');
+  }
+
+  // علاقات التخليص الجمركي
+
+  /**
+   * طلبات التخليص التي أنشأها هذا المستخدم
+   */
+  public function customsClearanceRequests()
+  {
+    return $this->hasMany(CustomsClearance::class, 'user_id');
+  }
+
+  /**
+   * طلبات التخليص المعينة لهذا المستخدم كمخلص
+   */
+  public function assignedCustomsClearances()
+  {
+    return $this->hasMany(CustomsClearance::class, 'clearance_user_id');
+  }
+
+  /**
+   * عروض التخليص المقدمة من هذا المستخدم
+   */
+  public function customsClearanceOffers()
+  {
+    return $this->hasMany(CustomsClearanceOffer::class, 'user_id');
+  }
+
+  /**
+   * تاريخ عمليات التخليص التي قام بها هذا المستخدم
+   */
+  public function customsClearanceHistories()
+  {
+    return $this->hasMany(CustomsClearanceHistory::class, 'user_id');
+  }
+
+  /**
+   * فلترة المستخدمين المخلصين الجمركيين
+   */
+  public function scopeCustomsClearanceAgents($query)
+  {
+    return $query->where('is_customs_clearance_agent', true);
+  }
+
+  /**
+   * التحقق من كون المستخدم مخلص جمركي
+   */
+  public function isCustomsClearanceAgent()
+  {
+    return $this->is_customs_clearance_agent;
   }
 }

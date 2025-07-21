@@ -26,6 +26,30 @@
       "icon": "menu-icon tf-icons ti ti-speakerphone",
       "slug": "driver.ads.ads",
       "isactive": "ad-isactive"
+    },
+    {
+      "name": "Customs Clearance",
+      "icon": "menu-icon tf-icons ti ti-truck-delivery",
+      "slug": "customs-clearance",
+      "permission": "view_customs_clearances_ads",
+      "submenu": [
+        {
+          "url": "driver/customs-clearances-ads",
+          "name": "Available Ads",
+          "icon": "menu-icon tf-icons ti ti-speakerphone",
+          "slug": "driver.customs-clearances-ads.index",
+          "isactive": "customs-clearances-ads-isactive",
+          "permission": "view_customs_clearances_ads"
+        },
+        {
+          "url": "driver/customs-clearances-offers",
+          "name": "My Offers",
+          "icon": "menu-icon tf-icons ti ti-list",
+          "slug": "driver.customs-clearances-offers.index",
+          "isactive": "customs-clearances-offers-isactive",
+          "permission": "view_customs_clearances_offers"
+        }
+      ]
     }
   ]
 }

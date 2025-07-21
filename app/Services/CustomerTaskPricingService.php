@@ -344,6 +344,17 @@ class CustomerTaskPricingService
       $data['discount_percentage'] = $pricingTemplate->discount_percentage;
 
       $data['total_price'] = $totalPrice;
+    } else {
+      if ($pricingTemplate->service_commission_status) {
+        if ($pricingTemplate->service_commission_type === 'fixed') {
+          $totalPrice += $pricingTemplate->service_tax_commission;
+        } else if ($pricingTemplate->service_commission_type === 'percentage') {
+          $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+        }
+        $data['service_commission_type'] = $pricingTemplate->service_commission_type;
+        $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
+      }
+      $data['vat_commission'] = $pricingTemplate->vat_commission;
     }
 
     if (Auth::user()->can('tasks_meltable')) {

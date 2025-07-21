@@ -687,13 +687,18 @@
 <!-- Page Scripts -->
 @section('page-script')
     <script>
-      const adId = {{ $ad->id }}
+      const adId = {{ $ad->id }},
+            adServiceCommissionType = {{ json_encode($ad->service_commission_type ?? false) }},
+            adServiceCommission = {{ $ad->service_commission ?? 0 }},
+            adVatCommission = {{ $ad->vat_commission ?? 0 }};
     </script>
+
     @vite(['resources/js/driver/offers.js'])
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
-@endsection
+
+    @endsection
 @section('ad-isactive', 'active')
 @section('content')
     <div class="container-fluid ad-details-page">
@@ -1044,11 +1049,59 @@
 
                     <!-- Offer Actions -->
                     <div class="p-3 border-bottom">
-                        @if ($offer && !$offer->accepted)
-                            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#offerModal">
+                        @if ($offer)
+                        
+                        <div class="p-3 ">
+                            <div class="offer-alert">
+                              @if ($offer->accepted)
+                                <div class="alert mb-3">
+                                    <i class="ti ti-check-circle me-2"></i>
+                                    Your offer has been accepted!
+                                </div>
+                              @endif
+                                
+                                <div class="mb-3">
+                                    <strong class="d-block mb-1">Accepted Price:</strong>
+                                 @php
+                                    $price = $offer->price;
+                                    $commissionType = $ad->service_commission_type;
+                                    $commissionValue = $ad->service_commission ?? 0;
+                                    $vat = $ad->vat_commission ?? 0;
+
+                                    $commission = $commissionType === 1 ? $commissionValue : ($price * $commissionValue / 100);
+                                    $vatAmount = $price * $vat / 100;
+                                    $deduction = $commission + $vatAmount;
+                                    $net = $price - $deduction;
+                                @endphp
+
+                                <span class="fs-4 fw-bold">{{ number_format($price, 2) }} SAR</span>
+                                <div class="text-muted small mt-1">
+                                    <div>Amount deducted: {{ number_format($deduction, 2) }} SAR</div>
+                                    <div class="fw-semibold text-dark">You will receive: {{ number_format($net, 2) }} SAR</div>
+                                </div>
+
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="d-block mb-1">Your Note:</strong>
+                                    <p class="mb-0 opacity-90">{{ $offer->description }}</p>
+                                </div>
+                                @if ($offer->accepted && $ad->status === 'running')
+                                <button id="accept-task" class="btn btn-light w-100 fw-semibold" data-id="{{ $offer->id }}">
+                                    <i class="ti ti-check me-1"></i>
+                                    Confirm Task Acceptance
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                    
+                        @if (!$offer->accepted)
+                           <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#offerModal">
                                 <i class="ti ti-edit me-1"></i>
                                 {{ __('Update your offer') }}
                             </button>
+                        @endif
+                           
+
                         @elseif (!$offer)
                             <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#offerModal">
                                 <i class="ti ti-plus me-1"></i>
@@ -1058,30 +1111,7 @@
                     </div>
 
                     <!-- Accepted Offer Alert -->
-                    @if ($offer && $offer->accepted)
-                        <div class="p-3 ">
-                            <div class="offer-alert">
-                                <div class="alert mb-3">
-                                    <i class="ti ti-check-circle me-2"></i>
-                                    Your offer has been accepted!
-                                </div>
-                                <div class="mb-3">
-                                    <strong class="d-block mb-1">Accepted Price:</strong>
-                                    <span class="fs-4 fw-bold">{{ number_format($offer->price, 0) }} SAR</span>
-                                </div>
-                                <div class="mb-3">
-                                    <strong class="d-block mb-1">Your Note:</strong>
-                                    <p class="mb-0 opacity-90">{{ $offer->description }}</p>
-                                </div>
-                                @if ($ad->status === 'running')
-                                <button id="accept-task" class="btn btn-light w-100 fw-semibold" data-id="{{ $offer->id }}">
-                                    <i class="ti ti-check me-1"></i>
-                                    Confirm Task Acceptance
-                                </button>
-                                @endif
-                            </div>
-                        </div>
-                    @endif
+                    
 
                     <!-- Offers Container -->
                     <div class="card-body p-0" id="offers-container">
@@ -1115,6 +1145,13 @@
 
                             <input type="number" step="any" name="price" value="{{ $offer ? $offer->price : '' }}" min="0.00" id="offer-price" class="form-control"
                                    placeholder="{{ __('Offer Price') }}">
+                          <span class="mt-2 text-info" id="total-price">
+                              @if ($offer)
+                                  You will receive: {{ number_format($net, 2) }} SAR (after {{ number_format($deduction, 2) }} SAR deductions)
+                              @endif
+                          </span>                            
+
+
                          <span class="price-error text-danger text-error"></span>
 
                         </div>

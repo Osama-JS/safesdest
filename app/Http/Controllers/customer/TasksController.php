@@ -591,6 +591,10 @@ class TasksController extends Controller
           'highest_price' => $req->max_price,
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
+          'included' =>  $req->included ?? false,
+          'service_commission_type' => ($data['service_commission_type'] === 'percentage'  ? 0 : 1) ?? 0,
+          'service_commission' =>  $data['service_tax_commission'] ?? 0,
+          'vat_commission' => $data['vat_commission'] ?? 0,
         ];
         $history[] = [
           'action_type' => 'advertised',
@@ -811,7 +815,7 @@ class TasksController extends Controller
 
     $oldTask = Task::findOrFail($req->id);
     $user = auth()->user();
-    if (!$user || !$user->checkTask($oldTask->id)) {
+    if (!$user || $user->id !== $oldTask->customer_id) {
       return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
     }
 
@@ -894,6 +898,10 @@ class TasksController extends Controller
           'highest_price' => $req->max_price,
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
+          'included' =>  $req->included ?? false,
+          'service_commission_type' => ($data['service_commission_type'] === 'percentage'  ? 0 : 1) ?? 0,
+          'service_commission' =>  $data['service_tax_commission'] ?? 0,
+          'vat_commission' => $data['vat_commission'] ?? 0,
         ];
         $history[] = [
           'action_type' => 'advertised',

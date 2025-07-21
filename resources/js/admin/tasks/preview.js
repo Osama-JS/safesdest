@@ -383,6 +383,7 @@ $(function () {
                     ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
+                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Add Note</a></li>
                     <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}">download task status report</a></li>
 
                   </ul>
@@ -792,6 +793,7 @@ $(function () {
       $('#assignModal').modal('hide');
       $('#adModal').modal('hide');
       $('#pricingModal').modal('hide');
+      $('#addNoteModal').modal('hide');
       loadTasks();
     }, 2000);
   });
@@ -830,6 +832,15 @@ $(function () {
   });
   document.addEventListener('statusChange', function (event) {
     loadTasks();
+  });
+
+  $(document).on('click', '.add-task-note', function () {
+    const id = $(this).data('id');
+
+    $('#addNoteModal').modal('show');
+    $('#addNoteTitle').html(`Add Note to Task: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+
+    $('#task_note_id').val(id);
   });
 
   $(document).on('click', '.assign-task', function () {
@@ -885,6 +896,12 @@ $(function () {
       $('#ad-min-price').val(data.data.lowest_price);
       $('#ad-max-price').val(data.data.highest_price);
       $('#ad-not-price').text(data.data.description);
+      $('#ad-included-price').prop('checked', data.data.included);
+      $('#ad-commission-info').text(`
+         This means the following will be added on top of the price you enter:
+          ${data.data.service_tax_commission ? parseFloat(data.data.service_tax_commission).toFixed(2) + (data.data.service_commission_type === 'percentage' ? '% service commission' : ' SAR service commission') : ''}
+          ${data.data.vat_commission ? parseFloat(data.data.vat_commission).toFixed(2) + '% VAT (Value Added Tax)' : ''}
+        `);
       $('#adModal').modal('show');
       $('#adTitle').html(`Edit Task Ad: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
     });
@@ -914,7 +931,9 @@ $(function () {
       $('#task-id').val(data.id);
       $('#task-owner').val(data.owner).trigger('change');
       $('#task-customer').val(data.customer_id).trigger('change');
-      $('#task_created_at').val(data.created_at);
+      let date = new Date(data.created_at);
+      let formattedDate = date.toISOString().slice(0, 16);
+      $('#task_created_at').val(formattedDate);
       $('.vehicle-quantity').hide();
       $('.vehicle-select').val(data.vehicle).trigger('change');
       $('#submitModal').modal('show');
@@ -940,6 +959,7 @@ $(function () {
         $('#task-id').attr('data-min', data.ad.lowest_price || 0.0);
         $('#task-id').attr('data-max', data.ad.highest_price || 0.0);
         $('#task-id').attr('data-note', data.ad.description || '');
+        $('#task-id').attr('data-included', data.ad.included || false);
       }
 
       $('#pickup-contact-name').val(data.pickup.contact_name);

@@ -30,7 +30,6 @@ class TasksAdsController extends Controller
   public function getData(Request $request)
   {
     $query = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery']);
-
     // Search filter
     if ($request->has('search') && !empty($request->search)) {
       $search = $request->search;
@@ -137,28 +136,56 @@ class TasksAdsController extends Controller
     // Calculate stats
     $stats = $this->calculateStats();
 
+
+
     // إضافة المعالجة المخصصة داخل صفحة البيانات
     $products->getCollection()->transform(function ($ad) {
+      $low_price = $ad->lowest_price;
+      $high_price = $ad->highest_price;
+
+      // تأكد من أن الأسعار أرقام صالحة
+      $low_price = is_numeric($low_price) ? $low_price : 0;
+      $high_price = is_numeric($high_price) ? $high_price : 0;
+
+      if (!$ad->included) {
+        $commission = is_numeric($ad->service_commission) ? $ad->service_commission : 0;
+        $vat = is_numeric($ad->vat_commission) ? $ad->vat_commission : 0;
+
+        if ($ad->service_commission_type === 1) {
+          // مبلغ ثابت
+          $low_price += $commission;
+          $high_price += $commission;
+        } else {
+          // نسبة مئوية
+          $low_price += $low_price * ($commission / 100);
+          $high_price += $high_price * ($commission / 100);
+        }
+
+        $low_price += $low_price * ($vat / 100);
+        $high_price += $high_price * ($vat / 100);
+      }
+
       return [
         'id' => $ad->id,
         'task_id' => $ad->task_id,
-        'low_price' => $ad->lowest_price,
-        'high_price' => $ad->highest_price,
+        'low_price' => round($low_price, 2),
+        'high_price' => round($high_price, 2),
         'note' => $ad->description,
         'status' => $ad->status,
+        'included' => $ad->included,
         'user' => Auth::user()->id,
         'customer' => [
           'owner'  => $ad->task->owner,
-          'id'     => $ad->task->owner == "customer" ? optional($ad->task->customer)->id : optional($ad->task->user)->id,
-          'name'   => $ad->task->owner == "customer" ? optional($ad->task->customer)->name : optional($ad->task->user)->name,
-          'phone'  => $ad->task->owner == "customer" ? optional($ad->task->customer)->phone : optional($ad->task->user)->phone,
-          'email'  => $ad->task->owner == "customer" ? optional($ad->task->customer)->email : optional($ad->task->user)->email,
-          'image'  => $ad->task->owner == "customer" ? optional($ad->task->customer)->image : optional($ad->task->user)->image,
+          'id'     => $ad->task->owner === "customer" ? optional($ad->task->customer)->id : optional($ad->task->user)->id,
+          'name'   => $ad->task->owner === "customer" ? optional($ad->task->customer)->name : optional($ad->task->user)->name,
+          'phone'  => $ad->task->owner === "customer" ? optional($ad->task->customer)->phone : optional($ad->task->user)->phone,
+          'email'  => $ad->task->owner === "customer" ? optional($ad->task->customer)->email : optional($ad->task->user)->email,
+          'image'  => $ad->task->owner === "customer" ? optional($ad->task->customer)->image : optional($ad->task->user)->image,
         ],
-        'from_address' => $ad->task->pickup->address,
-        'to_address' => $ad->task->delivery->address,
-        'from_location' => [$ad->task->pickup->longitude, $ad->task->pickup->latitude],
-        'to_location' => [$ad->task->delivery->longitude, $ad->task->delivery->latitude],
+        'from_address' => optional($ad->task->pickup)->address,
+        'to_address' => optional($ad->task->delivery)->address,
+        'from_location' => [optional($ad->task->pickup)->longitude, optional($ad->task->pickup)->latitude],
+        'to_location' => [optional($ad->task->delivery)->longitude, optional($ad->task->delivery)->latitude],
       ];
     });
 
@@ -311,6 +338,7 @@ class TasksAdsController extends Controller
       'min_price' => 'required|numeric|min:0',
       'max_price' => 'required|numeric|gt:min_price',
       'note_price' => 'nullable|string|max:400',
+      'included' => 'nullable|boolean',
     ]);
 
     if ($validator->fails()) {
@@ -325,6 +353,7 @@ class TasksAdsController extends Controller
         'lowest_price' => $req->min_price,
         'highest_price' => $req->max_price,
         'description' => $req->note_price,
+        'included' => $req->included ?? false,
       ]);
 
       if (!$done) {

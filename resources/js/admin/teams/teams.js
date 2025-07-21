@@ -86,7 +86,7 @@ $(function () {
                         <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
                         <div class="dropdown-menu dropdown-menu-end m-0">
                           ${team.can_view ? `<a href="${baseUrl + 'admin/teams/details/' + team.id}" class="dropdown-item">View</a>` : ''}
-                          ${team.wallet ? `<a href="${baseUrl + 'admin/teams/wallets/' + team.id + '/' + team.name}" class="dropdown-item">Team Wallet</a>` : ''}
+                          ${team.can_wallet ? `<a href="${baseUrl + 'admin/teams/wallets/' + team.id + '/' + team.name}" class="dropdown-item">Team Wallet</a>` : ''}
                         </div>
                       </div>
                     </div>

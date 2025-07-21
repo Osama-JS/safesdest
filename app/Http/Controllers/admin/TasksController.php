@@ -18,30 +18,32 @@ use App\Models\Settings;
 use App\Helpers\IpHelper;
 use App\Models\Form_Field;
 use App\Helpers\FileHelper;
-use App\Jobs\SendEmailNotificationJob;
 use App\Models\Tag_Pricing;
+use App\Models\Transaction;
+use App\Models\Task_History;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use App\Models\Tag_Customers;
 use Ramsey\Uuid\Type\Decimal;
 use App\Models\Pricing_Method;
 use App\Services\MapboxService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Pricing_Customer;
 use App\Models\Pricing_Geofence;
 use App\Models\Pricing_Template;
+use App\Models\Wallet_Transaction;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\Pdf;
-
 use App\Http\Controllers\Controller;
 use App\Services\TaskPricingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use App\Jobs\SendEmailNotificationJob;
+use App\Models\Team_Wallet_Transaction;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
-use App\Models\Team_Wallet_Transaction;
-use App\Models\Transaction;
-use App\Models\Wallet_Transaction;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class TasksController extends Controller
@@ -49,18 +51,17 @@ class TasksController extends Controller
 
   public function __construct()
   {
-    $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'show', 'indexList', 'getListData']]);
+    $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
     $this->middleware('permission:create_tasks', ['only' => ['store']]);
     $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
-    $this->middleware('permission:show_tasks', ['only' => ['showDetails']]);
-    $this->middleware('permission:delete_tasks', ['only' => []]);
-    $this->middleware('permission:status_tasks', ['only' => ['chang_status']]);
+    $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
+    $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
+    $this->middleware('permission:status_tasks', ['only' => ['chang_status', 'taskAddNote']]);
     $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign']]);
     $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
     $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
     $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment']]);
   }
-
 
   public function index()
   {
@@ -267,8 +268,11 @@ class TasksController extends Controller
       if (!$user || !$user->checkTask($req->id)) {
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
+      if ($find->status === 'advertised') {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('This Task is in advertised mode you can not change status')]);
+      }
       if ($find->closed) {
-        return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('This Task is already closed')]);
       }
       $data = [
         'status' => $req->status
@@ -295,6 +299,80 @@ class TasksController extends Controller
       return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Task Status changed']);
     } catch (Exception $ex) {
       return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
+
+  public function taskAddNote(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'description' => 'nullable|string|required_without:file',
+      'file' => 'nullable|file|max:10240|required_without:description',
+      'task' => 'required|exists:tasks,id',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'status' => 0,
+        'error'  => $validator->errors()
+      ]);
+    }
+
+    DB::beginTransaction();
+    try {
+
+      $find = Task::findOrFail($req->task);
+      $user = auth()->user();
+      if (!$user || !$user->checkTask($find->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
+
+      $filePath = null;
+      $fileType = null;
+
+      if ($req->hasFile('file')) {
+        $file = $req->file('file');
+
+        // إنشاء بادئة عشوائية مكونة من أرقام فقط (مثلاً: 4 أرقام)
+        $prefix = rand(1000, 9999);
+
+        // الحصول على الاسم الأصلي للملف
+        $originalName = $file->getClientOriginalName();
+
+        // اسم الملف النهائي: بادئة-الاسم_الأصلي
+        $fileName = $prefix . '-' . $originalName;
+
+        // حفظ الملف في مجلد 'task_histories' داخل التخزين العام
+        $filePath = $file->storeAs('task_histories', $fileName, 'public');
+
+        // استخراج نوع الملف (الامتداد)
+        $fileType = $file->getClientOriginalExtension();
+      }
+
+
+
+      Task_History::create([
+        'task_id' => $req->task,
+        'description' => $req->description,
+        'file_path' => $filePath,
+        'file_type' => $fileType,
+        'user_id' => Auth::user()->id,
+        'action_type' => 'added',
+      ]);
+
+      DB::commit();
+      return response()->json([
+        'status' => 1,
+        'success' => 'Task Note Added Successfully',
+      ]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      if ($req->hasFile('file')) {
+        unlink($filePath);
+      }
+      return response()->json([
+        'status' => 2,
+        'error'  => $ex->getMessage()
+      ]);
     }
   }
 
@@ -329,10 +407,7 @@ class TasksController extends Controller
     DB::beginTransaction();
     try {
       $data = Task::with(['customer', 'user', 'pickup', 'delivery', 'vehicle_size'])->find($req->id);
-      // $user = auth()->user();
-      // if (!$user || !$user->checkTask($req->id)) {
-      //   return response()->json(['status' => 2,  'error' => __('You do not have permission to do actions to this record')]);
-      // }
+
       if ($data->closed) {
         return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
       }
@@ -380,6 +455,12 @@ class TasksController extends Controller
       $data->history()->createMany($history);
 
       $data->save();
+
+      // $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
+      // $pdf = Pdf::loadView('admin.tasks.report_pdf', compact('task'));
+
+      // $pdfPath = storage_path("app/public/task-report-{$task->id}.pdf");
+      // Storage::put("public/task-report-{$task->id}.pdf", $pdf->output());
 
       // إرسال الإشعارات بالبريد الإلكتروني
       $this->sendTaskAssignmentNotifications($data, $driver);
@@ -549,18 +630,11 @@ class TasksController extends Controller
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
           'included' =>  $req->included ?? false,
+          'service_commission_type' => ($data['service_commission_type'] === 'percentage'  ? 0 : 1) ?? 0,
+          'service_commission' =>  $data['service_tax_commission'] ?? 0,
+          'vat_commission' => $data['vat_commission'] ?? 0,
         ];
-        if (!$req->filled('included')) {
-          if ($data['service_commission_type'] === 'fixed') {
-            $ad['lowest_price'] += $data['service_tax_commission'];
-            $ad['highest_price'] += $data['service_tax_commission'];
-          } else {
-            $ad['lowest_price'] += $ad['lowest_price'] * ($data['service_tax_commission'] / 100);
-            $ad['highest_price'] += $ad['highest_price'] * ($data['service_tax_commission'] / 100);
-          }
-          $ad['lowest_price'] += $ad['lowest_price'] * ($data['vat_commission'] / 100);
-          $ad['highest_price'] += $ad['highest_price'] * ($data['vat_commission'] / 100);
-        }
+
         $history[] = [
           'action_type' => 'advertised',
           'description' => 'set as Advertised',
@@ -943,18 +1017,10 @@ class TasksController extends Controller
           'lowest_price' => $req->min_price,
           'description' =>  $req->note_price,
           'included' =>  $req->included ?? false,
+          'service_commission_type' => ($data['service_commission_type'] === 'percentage'  ? 0 : 1) ?? 0,
+          'service_commission' =>  $data['service_tax_commission'] ?? 0,
+          'vat_commission' => $data['vat_commission'] ?? 0,
         ];
-        if (!$req->filled('included')) {
-          if ($data['service_commission_type'] === 'fixed') {
-            $ad['lowest_price'] += $data['service_tax_commission'];
-            $ad['highest_price'] += $data['service_tax_commission'];
-          } else {
-            $ad['lowest_price'] += $ad['lowest_price'] * ($data['service_tax_commission'] / 100);
-            $ad['highest_price'] += $ad['highest_price'] * ($data['service_tax_commission'] / 100);
-          }
-          $ad['lowest_price'] += $ad['lowest_price'] * ($data['vat_commission'] / 100);
-          $ad['highest_price'] += $ad['highest_price'] * ($data['vat_commission'] / 100);
-        }
 
 
         $history[] = [

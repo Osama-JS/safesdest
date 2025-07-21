@@ -14,6 +14,9 @@ class Task_Ad extends Model
     'lowest_price',
     'included',
     'closed_at',
+    'service_commission',
+    'service_commission_type',
+    'vat_commission',
     'task_id',
   ];
 

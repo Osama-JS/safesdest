@@ -12,6 +12,8 @@ use App\Http\Controllers\admin\WalletsController;
 use App\Http\Controllers\admin\CustomersController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\settings\BlockagesController;
+use App\Http\Controllers\admin\settings\BackupController;
+use App\Http\Controllers\admin\settings\SystemStatisticsController;
 use App\Http\Controllers\language\LanguageController;
 use App\Http\Controllers\admin\settings\TagsController;
 use App\Http\Controllers\laravel_example\UserManagement;
@@ -29,6 +31,10 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Middleware\EnsureCorrectGuard;
+use App\Http\Controllers\admin\CustomsClearanceController;
+
+use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
+
 use App\Http\Middleware\EnsureGuardIs;
 
 
@@ -186,6 +192,8 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/ads/offers/show/', [App\Http\Controllers\customer\AdsController::class, 'getOffers'])->name('customer.offers.data');
         Route::get('/ads/offers/accept/{id}', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.offers.accept');
         Route::get('/ads/offers/retract/{id}', [App\Http\Controllers\customer\AdsController::class, 'retractOffer'])->name('customer.ads.offers.retract');
+
+        // Customer Customs Clearance Management - تم نقله إلى ملف منفصل
       });
     });
 
@@ -223,6 +231,19 @@ Route::middleware('rate.limit')->group(function () {
         Route::prefix('settings')->group(function () {
           Route::get('/', [SettingsController::class, 'index'])->name('settings.general');
           Route::post('/set-template', [SettingsController::class, 'setTemplate'])->name('settings.setTemplate');
+
+          Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
+          Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');
+          Route::post('statistics/export', [SystemStatisticsController::class, 'export'])->name('settings.statistics.export');
+
+          Route::get('backup/', [BackupController::class, 'index'])->name('settings.backup');
+          Route::get('backup/data', [BackupController::class, 'getData'])->name('settings.backup.data');
+          Route::post('backup/create', [BackupController::class, 'create'])->name('settings.backup.create');
+          Route::get('backup/download/{backupName}', [BackupController::class, 'download'])->name('settings.backup.download');
+          Route::delete('backup/delete/{backupName}', [BackupController::class, 'delete'])->name('settings.backup.delete');
+          Route::post('backup/restore', [BackupController::class, 'restore'])->name('settings.backup.restore');
+          Route::post('backup/upload-restore', [BackupController::class, 'uploadAndRestore'])->name('settings.backup.upload-restore');
+          Route::get('backup/statistics', [BackupController::class, 'getStatistics'])->name('settings.backup.statistics');
 
 
           Route::get('/vehicles', [VehiclesController::class, 'index'])->name('settings.vehicles');
@@ -389,6 +410,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');
         Route::post('/tasks/validate-step2', [TasksController::class, 'validateStep2'])->name('tasks.validateStep2');
         Route::post('/tasks/status', [TasksController::class, 'chang_status'])->name('tasks.status');
+        Route::post('/tasks/add-note', [TasksController::class, 'taskAddNote'])->name('tasks.note');
         Route::get('/tasks/assign/{id}', [TasksController::class, 'getToAssign'])->name('tasks.get.assign');
         Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
         Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
@@ -431,3 +453,6 @@ Route::middleware('rate.limit')->group(function () {
     });
   });
 });
+
+// تضمين routes التخليص  الجديدة
+// require __DIR__ . '/customs_clearance.php';

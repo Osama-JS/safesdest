@@ -40,6 +40,22 @@ class Form_Template extends Model
   }
 
   /**
+   * طلبات التخليص الجمركي التي تستخدم هذا القالب
+   */
+  public function customsClearances()
+  {
+    return $this->hasMany(CustomsClearance::class, 'form_template_id');
+  }
+
+  /**
+   * عروض التخليص الجمركي التي تستخدم هذا القالب
+   */
+  public function customsClearanceOffers()
+  {
+    return $this->hasMany(CustomsClearanceOffer::class, 'form_template_id');
+  }
+
+  /**
    * Get usage statistics for this template
    *
    * @return array

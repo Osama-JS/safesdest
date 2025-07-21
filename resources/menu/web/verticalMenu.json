@@ -56,6 +56,14 @@
       "permission": "view_ads"
     },
     {
+      "url": "admin/settings/statistics",
+      "name": "System Statistics",
+      "icon": "menu-icon tf-icons ti ti-chart-line",
+      "slug": "settings.statistics",
+      "isactive": "statistics-isactive",
+      "permission": "view_ads"
+    },
+    {
       "name": "Settings",
       "icon": "menu-icon tf-icons ti ti-adjustments",
       "slug": "settings",

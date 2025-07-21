@@ -181,8 +181,37 @@ $(function () {
     });
   });
 
+  $(document).on('input', '#offer-price', function () {
+    calculateTotalPrice();
+  });
+
+  function calculateTotalPrice() {
+    const offerPrice = parseFloat($('#offer-price').val());
+
+    // التحقق من أن القيمة رقمية وأكبر من 0
+
+    let serviceCommissionAmount = 0;
+
+    if (adServiceCommissionType === 1) {
+      // مبلغ ثابت
+      serviceCommissionAmount = adServiceCommission;
+    } else {
+      // نسبة مئوية
+      serviceCommissionAmount = (offerPrice * adServiceCommission) / 100;
+    }
+
+    const vatAmount = (offerPrice * adVatCommission) / 100;
+    const totalDeductions = serviceCommissionAmount + vatAmount;
+    const netAmount = offerPrice - totalDeductions;
+
+    $('#total-price').text(
+      `You will receive: ${netAmount.toFixed(2)} SAR (after ${totalDeductions.toFixed(2)} SAR deductions)`
+    );
+  }
+
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
+    $('#total-price').text('');
     setTimeout(() => {
       $('#offerModal').modal('hide');
     }, 2000);

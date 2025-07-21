@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -195,6 +196,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="email-wrapper">
         <!-- Header -->
@@ -216,7 +218,7 @@
             </div>
 
             <!-- Action Button -->
-            @if(isset($action_url) && isset($action_text))
+            @if (isset($action_url) && isset($action_text))
                 <div class="action-section">
                     <a href="{{ $action_url }}" class="action-button">
                         {{ $action_text }}
@@ -225,10 +227,10 @@
             @endif
 
             <!-- Additional Data -->
-            @if(isset($additional_data) && !empty($additional_data))
+            @if (isset($additional_data) && !empty($additional_data))
                 <div class="info-box">
                     <h3>تفاصيل إضافية</h3>
-                    @foreach($additional_data as $key => $value)
+                    @foreach ($additional_data as $key => $value)
                         <div class="info-item">
                             <span class="info-label">{{ $key }}:</span>
                             <span class="info-value">{{ $value }}</span>
@@ -254,15 +256,16 @@
                 <a href="{{ config('app.url') }}/contact">تواصل معنا</a>
                 <a href="{{ config('app.url') }}/privacy">سياسة الخصوصية</a>
             </div>
-            
+
             <div class="copyright">
                 &copy; {{ date('Y') }} {{ config('app.name') }}. جميع الحقوق محفوظة.
             </div>
-            
+
             <div class="company-info">
                 هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه.
             </div>
         </div>
     </div>
 </body>
+
 </html>

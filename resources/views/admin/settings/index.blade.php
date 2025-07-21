@@ -140,6 +140,21 @@
                         <span class="task-error text-danger"></span>
                     </div>
 
+                    <div class="form-group mb-9">
+                        <label for="task-template" class="mb-2">{{ __('Default Customs Clearances Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="task_to_port_template"
+                            id="task-to-port-template">
+                            <option value="">{{ __('--- Select Template') }}</option>
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['task_to_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="task-error text-danger"></span>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -180,6 +195,33 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-4">
+
+            <div class="card border ">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('System Management') }}</strong></div>
+                    </div>
+                </div>
+
+                <div class="card-body text-center">
+
+                    <h5 class="card-title">{{ __('Backup Management') }}</h5>
+                    <p class="card-text text-muted">
+                        {{ __('Manage database backups and uploaded files with advanced encryption') }}
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ route('settings.backup') }}" class="btn btn-primary">
+                            <i class="ti ti-settings me-1"></i>
+                            {{ __('Manage Backups') }}
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+
 
 @endsection

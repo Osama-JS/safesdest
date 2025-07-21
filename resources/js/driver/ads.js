@@ -203,10 +203,7 @@ $(function () {
                 <div class="card-footer">
                   ${priceHtml}
                   ${actionButton}
-                   <a href="${baseUrl}customer/ads/show/${ad.id}" class="btn btn-outline-primary w-100">
-                    <i class="ti ti-eye me-1"></i>
-                    View Details
-                  </a>
+                  
                 </div>
               </div>
             </div>

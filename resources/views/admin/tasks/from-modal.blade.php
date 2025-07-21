@@ -693,6 +693,24 @@
                 @csrf
                 <div class="modal-body">
                     <input type="hidden" name="id" id="ad-id">
+                    <div class="alert alert-info mb-3 d-flex flex-column" role="alert" style="max-width: 600px;">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="included" id="ad-included-price" class="form-check-input"
+                                value="1">
+                            <label class="form-check-label fw-bold" for="not-price">
+                                Including VAT and service charge
+                            </label>
+                        </div>
+
+                        <p class="small text-muted">
+                            If you do not select this option, both the VAT and the service commission will be calculated
+                            on top of the amount you display.
+                        </p>
+                        <p class="small text-muted" id="ad-commission-info">
+
+                        </p>
+                        <span class="included-error text-danger mt-2"></span>
+                    </div>
                     <div class="mb-3 row">
                         <div class="col-md-6">
                             <label for="min-price">* Min Price</label>
@@ -815,6 +833,40 @@
 
 
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade " id="addNoteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog " role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addNoteTitle">{{ __('Edit Task Pricing') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('tasks.note') }}" method="POST" class="card shadow-sm p-4 border-0 form_submit"
+                enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="task" id="task_note_id">
+                <span class="task-error text-danger text-error"></span>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">{{ __('Add Note') }}</label>
+                    <textarea name="description" id="description" class="form-control" rows="3"
+                        placeholder="{{ __('Type the note here') }}..."></textarea>
+                    <span class="description-error text-danger text-error"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="file" class="form-label">{{ __('Upload File') }}
+                        ({{ __('optional') }})
+                    </label>
+                    <input type="file" name="file" id="file" class="form-control">
+                    <span class="file-error text-danger text-error"></span>
+                </div>
+
+                <button type="submit" class="btn btn-primary">{{ __('Submit') }}</button>
+            </form>
         </div>
     </div>
 </div>

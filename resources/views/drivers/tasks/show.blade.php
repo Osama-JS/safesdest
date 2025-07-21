@@ -62,7 +62,7 @@
                                 <div>
                                     <small class="text-muted d-block">{{ __('Price') }}</small>
                                     <strong class="text-success">
-                                        {{ $task->total_price ? number_format($task->commission, 2) : '0.00' }}
+                                        {{ $task->total_price ? number_format($task->total_price - $task->commission, 2) : '0.00' }}
                                         SAR
                                     </strong>
                                 </div>

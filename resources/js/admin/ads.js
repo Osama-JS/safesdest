@@ -45,6 +45,8 @@ $(function () {
         hideLoadingState();
         $('#ads-container').html(''); // مسح المحتوى الحالي
 
+        console.log(response);
+
         // Update stats
         updateStats(response.stats || {});
 
@@ -138,14 +140,8 @@ $(function () {
                   <p class="card-text">${ad.note || 'No description available'}</p>
                 </div>
 
-                <div class="card-footer">
-                ${
-                  ad.included
-                    ? `
-                  <div class="alert alert-info p-0">VAT and company commission are charged to the driver.</div>
-                  `
-                    : ''
-                }
+                <div class="p-3">
+
                   <div class="price-info">${priceHtml}</div>
                   <a href="${baseUrl}admin/ads/show/${ad.id}" class="btn btn-outline-primary w-100">
                     <i class="ti ti-eye me-1"></i>

@@ -33,11 +33,14 @@
         </div>
         <div class="row mb-3 p-3">
             <div class="col-md-12">
-                <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
-                    data-bs-target="#submitModal">
-                    <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
-                    <span class="d-none d-sm-inline-block"> Add New Team</span>
-                </button>
+                @can('save_teams')
+                    <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
+                        data-bs-target="#submitModal">
+                        <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                        <span class="d-none d-sm-inline-block"> Add New Team</span>
+                    </button>
+                @endcan
+
                 <input type="text" id="search-team" class="form-control " placeholder="🔍 Search Team">
 
             </div>

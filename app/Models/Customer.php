@@ -31,10 +31,12 @@ class Customer extends Authenticatable
     'form_template_id',
     'role_id',
     'team_id',
+    'is_customs_clearance_agent',
   ];
 
   protected $casts = [
     'additional_data' => 'array',
+    'is_customs_clearance_agent' => 'boolean',
   ];
 
   protected $dates = ['deleted_at'];
@@ -101,5 +103,55 @@ class Customer extends Authenticatable
           in_array($field->customer_can, ['read', 'write']);
       });
     })->values()->all();
+  }
+
+  // علاقات التخليص الجمركي
+
+  /**
+   * طلبات التخليص التي أنشأها هذا العميل
+   */
+  public function customsClearanceRequests()
+  {
+    return $this->hasMany(CustomsClearance::class, 'customer_id');
+  }
+
+  /**
+   * طلبات التخليص المعينة لهذا العميل كمخلص
+   */
+  public function assignedCustomsClearances()
+  {
+    return $this->hasMany(CustomsClearance::class, 'clearance_customer_id');
+  }
+
+  /**
+   * عروض التخليص المقدمة من هذا العميل
+   */
+  public function customsClearanceOffers()
+  {
+    return $this->hasMany(CustomsClearanceOffer::class, 'customer_id');
+  }
+
+  /**
+   * تاريخ عمليات التخليص التي قام بها هذا العميل
+   */
+  public function customsClearanceHistories()
+  {
+    return $this->hasMany(CustomsClearanceHistory::class, 'customer_id');
+  }
+
+  /**
+   * فلترة العملاء المخلصين الجمركيين
+   */
+  public function scopeCustomsClearanceAgents($query)
+  {
+    return $query->where('is_customs_clearance_agent', true);
+  }
+
+  /**
+   * التحقق من كون العميل مخلص جمركي
+   */
+  public function isCustomsClearanceAgent()
+  {
+    return $this->is_customs_clearance_agent;
   }
 }

@@ -61,7 +61,7 @@
       "icon": "menu-icon tf-icons ti ti-chart-line",
       "slug": "settings.statistics",
       "isactive": "statistics-isactive",
-      "permission": "view_ads"
+      "permission": "view_statistics"
     },
     {
       "name": "Settings",

@@ -7,216 +7,264 @@
     <style>
         @font-face {
             font-family: 'Tajawal';
-            /* قم بوضع الخط داخل مجلد عام يمكن الوصول إليه أو مسار ثابت */
-            src: url("{{ storage_path('fonts/Tajawal-Regular.ttf') }}") format('truetype');
-            font-weight: normal;
-            font-style: normal;
+            src: url("{{ public_path('fonts/Tajawal-Regular.ttf') }}") format('truetype');
         }
 
         body {
-            font-family: 'Tajawal', sans-serif !important;
+            font-family: 'Tajawal', sans-serif;
             margin: 0;
-            background-color: #fafafa;
+            /* تقليل الهوامش قدر الإمكان */
+            padding: 0;
             color: #2c3e50;
-            line-height: 1.5;
-            font-size: 14px;
+            font-size: 12px;
             direction: {{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }};
             text-align: {{ app()->getLocale() === 'ar' ? 'right' : 'left' }};
         }
 
         header {
-            background-color: #1a2733;
-            color: white;
-            padding: 10px 25px;
-            font-size: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .platform-info div {
-            margin: 2px 0;
+        .platform-info {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #555;
         }
 
-        /* الصور في DomPDF قد لا تعمل مع url asset، لذلك سنحول الصورة إلى base64 */
         .logo img {
-            max-height: 40px;
-            object-fit: contain;
-        }
-
-        main {
-            background: white;
-            margin: 20px auto;
-            padding: 25px 30px;
-            max-width: 800px;
-            border-radius: 6px;
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
-            font-size: 13px;
+            height: 40px;
         }
 
         h1 {
             text-align: center;
-            color: #1a2733;
             font-size: 18px;
-            margin-bottom: 25px;
+            color: #1a2733;
+            margin-bottom: 20px;
         }
 
         .section {
             margin-bottom: 20px;
+            padding: 0 10px;
         }
 
         .section-title {
             font-size: 15px;
+            font-weight: bold;
             color: #34495e;
-            font-weight: 600;
-            margin-bottom: 12px;
-            border-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}: 4px solid #1abc9c;
-            padding-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}: 10px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            padding-left: 7px;
+            border-left: 4px solid #070000;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px 20px;
+        table.header-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 10px;
         }
 
-        .info-item {
-            background-color: #f5f5f5;
-            padding: 3px 5px;
-            border-radius: 4px;
-            word-break: break-word;
+        table.info-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 10px;
+        }
+
+        table.info-table td {
+            background-color: #f5f7fa;
+            padding: 3px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            width: 33%;
+            vertical-align: top;
         }
 
         .label {
-            font-weight: 600;
-            color: #34495e;
-            display: block;
-            min-width: 100px;
+            font-size: 12px;
+            color: #000;
+            font-weight: 500;
+            margin-bottom: 5px;
         }
 
         .value {
-            color: #555;
-        }
-
-        .note {
-            background-color: #fff8e1;
-            padding: 12px 16px;
-            border-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}: 4px solid #fbc02d;
-            border-radius: 4px;
-            font-style: italic;
             font-size: 13px;
-            color: #665c00;
+            color: #2c3e50;
         }
 
         footer {
             text-align: center;
-            margin-top: 40px;
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
-            border-top: 1px solid #e1e4e8;
-            padding-top: 15px;
+            border-top: 1px solid #e1e1e1;
+            margin-top: 30px;
+            padding-top: 10px;
         }
-
-        /* بعض خصائص الطباعة يمكن تجاهلها أو تبسيطها */
     </style>
 </head>
 
 <body>
 
+    {{-- Header --}}
     <header>
-        <div class="platform-info">
-            <div><strong>{{ __('Safe Dest') }}</strong></div>
-            <div>{{ __('info@safedest.com') }}</div>
-            <div>{{ __('+966556978782') }}</div>
-        </div>
-        <div class="logo">
-            {{-- استبدل الصورة بـ base64 --}}
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logo.png'))) }}"
-                alt="Logo" />
-        </div>
-        <div class="lang-switch" style="display:none;">
-            {{-- اخفاء لان الpdf ثابت --}}
-        </div>
+        <table class="header-table">
+            <td>
+                <div class="platform-info">
+                    <div><strong>{{ __('Safe Dest') }}</strong></div>
+                    <div>{{ __('info@safedest.com') }}</div>
+                    <div>{{ __('+966556978782') }}</div>
+                </div>
+            </td>
+            <td style="text-align: right">
+                <div class="logo">
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logo.png'))) }}"
+                        alt="Logo">
+                </div>
+            </td>
+        </table>
     </header>
 
-    <main>
-        <h1>{{ __('Task Status Report') }} #{{ $task->id }}</h1>
+    {{-- Title --}}
+    <h1>{{ __('Task Status Report') }} #{{ $task->id }}</h1>
 
-        <div class="section">
-            <div class="section-title">{{ __('task information') }}</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">{{ __('Task ID') }}</span>
-                    <span class="value">{{ $task->id }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('customer name') }}</span>
-                    <span class="value">{{ $task->customer?->company_name }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('status') }}</span>
-                    <span class="value">{{ $task->status }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('Vehicle') }}</span>
-                    <span class="value">
-                        {{ $task->vehicle_size?->type?->vehicle->name }} ({{ $task->vehicle_size?->type->name }})
+    {{-- Task Info --}}
+    <div class="section">
+        <div class="section-title">{{ __('task information') }}</div>
+        <table class="info-table">
+            <tr>
+                <td>
+                    <div class="label">{{ __('Task ID') }}</div>
+                    <div class="value">{{ $task->id }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('customer name') }}</div>
+                    <div class="value">{{ $task->customer?->company_name }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('status') }}</div>
+                    <div class="value">{{ $task->status }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="label">{{ __('Vehicle') }}</div>
+                    <div class="value">
+                        {{ $task->vehicle_size?->type?->vehicle->name }}
+                        ({{ $task->vehicle_size?->type->name }})
                         ({{ $task->vehicle_size?->name }})
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('Start before') }}</span>
-                    <span class="value">{{ $task->pickup->scheduled_time }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('complete before') }}</span>
-                    <span class="value">{{ $task->delivery->scheduled_time }}</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- بقية الأقسام تنطبق عليها نفس الملاحظات:
-             - استبدال الصور إلى base64
-             - تبسيط التنسيق --}}
-
-        <div class="section">
-            <div class="section-title">{{ __('Pickup Point') }}</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">{{ __('Name') }}</span>
-                    <span class="value">{{ $task->pickup->contact_name }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('phone number') }}</span>
-                    <span class="value">{{ $task->pickup?->contact_phone }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('email') }}</span>
-                    <span class="value">{{ $task->pickup->contact_emil }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">{{ __('Address') }}</span>
-                    <span class="value">{{ $task->pickup?->address }}</span>
-                </div>
-                @if ($task->pickup?->note)
-                    <div class="info-item note">{{ $task->pickup?->note }}</div>
-                @endif
-                @if ($task->pickup->image)
-                    <div class="info-item">
-                        <span class="label">{{ __('Reference Image') }}</span>
-                        <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents(public_path($task->pickup->image))) }}"
-                            style="width: 50px;" />
                     </div>
-                @endif
-            </div>
-        </div>
+                </td>
+                <td>
+                    <div class="label">{{ __('Start before') }}</div>
+                    <div class="value">{{ $task->pickup->scheduled_time }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('complete before') }}</div>
+                    <div class="value">{{ $task->delivery->scheduled_time }}</div>
+                </td>
+            </tr>
 
-        {{-- نفس الشيء لبقية الصور والنصوص --}}
+        </table>
+    </div>
 
-        <footer>
-            {{ __('task report generated at') }}: {{ now()->format('Y-m-d H:i') }}
-        </footer>
-    </main>
+    {{-- Pickup Info --}}
+    <div class="section">
+        <div class="section-title">{{ __('Pickup Point') }}</div>
+        <table class="info-table">
+            <tr>
+                <td>
+                    <div class="label">{{ __('Name') }}</div>
+                    <div class="value">{{ $task->pickup->contact_name }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('phone number') }}</div>
+                    <div class="value">{{ $task->pickup->contact_phone }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('email') }}</div>
+                    <div class="value">{{ $task->pickup->contact_emil }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="label">{{ __('Address') }}</div>
+                    <div class="value">{{ $task->pickup->address }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {{-- Delivery Info --}}
+    <div class="section">
+        <div class="section-title">{{ __('Delivery Point') }}</div>
+        <table class="info-table">
+            <tr>
+                <td>
+                    <div class="label">{{ __('Name') }}</div>
+                    <div class="value">{{ $task->delivery->contact_name }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('phone number') }}</div>
+                    <div class="value">{{ $task->delivery->contact_phone }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('email') }}</div>
+                    <div class="value">{{ $task->delivery->contact_emil }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="label">{{ __('Address') }}</div>
+                    <div class="value">{{ $task->delivery->address }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {{-- Driver Info --}}
+    <div class="section">
+        <div class="section-title">{{ __('Driver Information') }}</div>
+        <table class="info-table">
+            <tr>
+                <td>
+                    <div class="label">{{ __('Driver name') }}</div>
+                    <div class="value">{{ $task->driver?->name }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('Phone number') }}</div>
+                    <div class="value">{{ $task->driver?->phone }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('Team') }}</div>
+                    <div class="value">{{ $task->driver?->team?->name }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="label">{{ __('Left Letter') }}</div>
+                    <div class="value">{{ $task->driver?->vehicle_letters?->left }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('Right Letter') }}</div>
+                    <div class="value">{{ $task->driver?->vehicle_letters?->right }}</div>
+                </td>
+                <td>
+                    <div class="label">{{ __('Middle Letter') }}</div>
+                    <div class="value">{{ $task->driver?->vehicle_letters?->middle }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <div class="label">{{ __('Vehicle Number') }}</div>
+                    <div class="value">{{ $task->driver?->vehicle_number }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <footer>
+        {{ __('task report generated at') }}: {{ now()->format('Y-m-d H:i') }}
+    </footer>
 
 </body>
 

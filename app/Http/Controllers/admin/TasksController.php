@@ -456,12 +456,13 @@ class TasksController extends Controller
 
       $data->save();
 
-      // $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
-      // $pdf = Pdf::loadView('admin.tasks.report_pdf', compact('task'));
+      $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
+      $pdf = Pdf::loadView('admin.tasks.report_pdf', compact('task'));
 
-      // $pdfPath = storage_path("app/public/task-report-{$task->id}.pdf");
-      // Storage::put("public/task-report-{$task->id}.pdf", $pdf->output());
+      $pdfPath = storage_path("app/public/task-report-{$task->id}.pdf");
+      Storage::put("public/task-report-{$task->id}.pdf", $pdf->output());
 
+      dd('osama');
       // إرسال الإشعارات بالبريد الإلكتروني
       $this->sendTaskAssignmentNotifications($data, $driver);
 

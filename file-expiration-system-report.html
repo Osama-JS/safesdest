@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تقرير تطوير نظام تنبيهات انتهاء صلاحية الملفات - SafeDests</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.8em;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+        margin-bottom: 10px;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .section {
+        margin-bottom: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .section-header {
+        padding: 20px;
+        font-size: 1.5em;
+        font-weight: bold;
+        color: white;
+        text-align: center;
+      }
+
+      .analysis {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+      }
+      .architecture {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      }
+      .implementation {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+      }
+      .schedule {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+      }
+      .testing {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+      }
+      .monitoring {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+      }
+
+      .section-content {
+        padding: 30px;
+        background: #f8f9fa;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        margin: 15px 0;
+        overflow-x: auto;
+        font-size: 0.9em;
+        line-height: 1.5;
+        border-left: 4px solid #3498db;
+      }
+
+      .file-structure {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 15px 0;
+      }
+
+      .file-structure h4 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+      }
+
+      .file-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .file-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f8f9fa;
+        color: #6c757d;
+      }
+
+      .file-list li:last-child {
+        border-bottom: none;
+      }
+
+      .file-list .file-name {
+        color: #007bff;
+        font-weight: bold;
+      }
+
+      .timeline {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 5px solid;
+      }
+
+      .timeline.phase1 {
+        border-left-color: #e74c3c;
+      }
+      .timeline.phase2 {
+        border-left-color: #f39c12;
+      }
+      .timeline.phase3 {
+        border-left-color: #27ae60;
+      }
+
+      .timeline h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+      }
+
+      .timeline ol {
+        padding-right: 25px;
+      }
+
+      .timeline li {
+        margin-bottom: 10px;
+        color: #555;
+        line-height: 1.6;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        border-left: 4px solid;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-card.primary {
+        border-left-color: #007bff;
+      }
+      .feature-card.success {
+        border-left-color: #28a745;
+      }
+      .feature-card.warning {
+        border-left-color: #ffc107;
+      }
+      .feature-card.danger {
+        border-left-color: #dc3545;
+      }
+      .feature-card.info {
+        border-left-color: #17a2b8;
+      }
+
+      .feature-card h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+      }
+
+      .feature-card ul {
+        padding-right: 20px;
+      }
+
+      .feature-card li {
+        margin-bottom: 8px;
+        color: #555;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .stat-number {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .stat-label {
+        color: #666;
+        font-size: 1.1em;
+      }
+
+      .workflow {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+      }
+
+      .workflow-step {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .workflow-step .step-number {
+        background: #007bff;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-left: 15px;
+        flex-shrink: 0;
+      }
+
+      .workflow-step .step-content {
+        flex: 1;
+      }
+
+      .workflow-step .step-title {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+
+      .workflow-step .step-description {
+        color: #6c757d;
+        font-size: 0.9em;
+      }
+
+      .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid;
+      }
+
+      .alert.info {
+        background: #d1ecf1;
+        border-left-color: #17a2b8;
+        color: #0c5460;
+      }
+
+      .alert.warning {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+        color: #856404;
+      }
+
+      .alert.success {
+        background: #d4edda;
+        border-left-color: #28a745;
+        color: #155724;
+      }
+
+      .footer {
+        background: #2c3e50;
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .footer p {
+        margin-bottom: 10px;
+      }
+
+      .toc {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+
+      .toc h3 {
+        color: #495057;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .toc li {
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .toc li:last-child {
+        border-bottom: none;
+      }
+
+      .toc a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        padding: 3px 6px;
+        border-radius: 3px;
+        color: #856404;
+        font-weight: bold;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+      }
+
+      .badge.new {
+        background: #28a745;
+      }
+      .badge.update {
+        background: #17a2b8;
+      }
+      .badge.config {
+        background: #6f42c1;
+      }
+      .badge.critical {
+        background: #dc3545;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📧 تقرير تطوير نظام تنبيهات انتهاء صلاحية الملفات</h1>
+        <p>نظام SafeDests - تطوير آلية فحص وتنبيه شاملة للملفات منتهية الصلاحية</p>
+        <p>تاريخ التقرير: 24 يوليو 2025 | المطور: نظام التطوير الآلي</p>
+      </div>
+
+      <div class="content">
+        <!-- فهرس المحتويات -->
+        <div class="toc">
+          <h3>📋 فهرس المحتويات</h3>
+          <ul>
+            <li><a href="#analysis">🔍 تحليل النظام الحالي</a></li>
+            <li><a href="#architecture">🏗️ هيكلة النظام الجديد</a></li>
+            <li><a href="#implementation">💻 الملفات والأكواد المطلوبة</a></li>
+            <li><a href="#schedule">⏰ الجدولة والتوقيت</a></li>
+            <li><a href="#workflow">🔄 آلية العمل</a></li>
+            <li><a href="#testing">🧪 اختبار النظام</a></li>
+            <li><a href="#monitoring">📊 المراقبة والتقارير</a></li>
+            <li><a href="#integration">🔧 التكامل مع النظام الحالي</a></li>
+            <li><a href="#implementation-plan">✅ خطة التنفيذ</a></li>
+          </ul>
+        </div>
+
+        <!-- تحليل النظام الحالي -->
+        <div class="section" id="analysis">
+          <div class="section-header analysis">🔍 تحليل النظام الحالي</div>
+          <div class="section-content">
+            <div class="feature-grid">
+              <div class="feature-card success">
+                <h4>✅ نظام الإيميلات الحالي</h4>
+                <ul>
+                  <li><strong>EmailNotificationService:</strong> خدمة شاملة مع دعم القوالب</li>
+                  <li><strong>SendEmailNotificationJob:</strong> نظام طوابير مع إعادة المحاولة</li>
+                  <li><strong>EmailNotificationLog:</strong> تسجيل شامل لحالة الإيميلات</li>
+                  <li><strong>القوالب المتاحة:</strong> notification, welcome, task-assigned</li>
+                </ul>
+              </div>
+
+              <div class="feature-card info">
+                <h4>📊 بنية البيانات الإضافية</h4>
+                <div class="code-block">
+                  { "field_name": { "label": "رخصة القيادة", "value": "path/to/file.pdf", "expiration": "2024-12-31",
+                  "type": "file_expiration_date" } }
+                </div>
+              </div>
+
+              <div class="feature-card warning">
+                <h4>🎯 الجداول المستهدفة</h4>
+                <ul>
+                  <li><strong>users:</strong> additional_data + status (active/inactive/deleted/pending)</li>
+                  <li><strong>customers:</strong> additional_data + status (active/verified/blocked)</li>
+                  <li><strong>drivers:</strong> additional_data + status + team_id</li>
+                </ul>
+              </div>
+
+              <div class="feature-card primary">
+                <h4>🔗 العلاقات المهمة</h4>
+                <ul>
+                  <li><strong>Driver → Team:</strong> علاقة belongsTo</li>
+                  <li><strong>Team → Users:</strong> علاقة hasMany عبر user_has_teams</li>
+                  <li><strong>Form Templates:</strong> تحديد نوع الحقول</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- هيكلة النظام الجديد -->
+        <div class="section" id="architecture">
+          <div class="section-header architecture">🏗️ هيكلة النظام الجديد</div>
+          <div class="section-content">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-number" style="color: #28a745">10</div>
+                <div class="stat-label">ملفات جديدة</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" style="color: #17a2b8">3</div>
+                <div class="stat-label">خدمات رئيسية</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" style="color: #ffc107">2</div>
+                <div class="stat-label">قوالب إيميل</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" style="color: #dc3545">1</div>
+                <div class="stat-label">جدول جديد</div>
+              </div>
+            </div>
+
+            <div class="workflow">
+              <h4 style="color: #2c3e50; margin-bottom: 20px">🔄 تدفق العمل الأساسي</h4>
+
+              <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <div class="step-title">الفحص اليومي</div>
+                  <div class="step-description">فحص جميع المستخدمين النشطين للملفات منتهية الصلاحية</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <div class="step-title">تحليل البيانات</div>
+                  <div class="step-description">تحليل additional_data للبحث عن حقول file_expiration_date</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <div class="step-title">إرسال التنبيهات</div>
+                  <div class="step-description">إرسال إيميلات للمستخدم + مدير الفريق + إيميل المنصة</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <div class="step-title">تسجيل التنبيه</div>
+                  <div class="step-description">حفظ تفاصيل التنبيه لمنع التكرار وتتبع الحالة</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <div class="step-title">تعليق الحسابات</div>
+                  <div class="step-description">تعليق الحسابات التي لم تحدث ملفاتها خلال 3 أيام</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- الملفات والأكواد المطلوبة -->
+        <div class="section" id="implementation">
+          <div class="section-header implementation">💻 الملفات والأكواد المطلوبة</div>
+          <div class="section-content">
+            <div class="alert info">
+              <strong>📝 ملاحظة مهمة:</strong> جميع الملفات التالية جديدة ولا تتطلب تعديل أي ملفات موجودة في النظام
+              الحالي
+            </div>
+
+            <div class="file-structure">
+              <h4>📁 الملفات الجديدة المطلوبة</h4>
+              <ul class="file-list">
+                <li>
+                  <span class="file-name"
+                    >database/migrations/2025_07_24_000001_create_file_expiration_notifications_table.php</span
+                  >
+                  <span class="badge new">جديد</span>
+                </li>
+                <li>
+                  <span class="file-name">app/Models/FileExpirationNotification.php</span>
+                  <span class="badge new">جديد</span>
+                </li>
+                <li>
+                  <span class="file-name">app/Services/FileExpirationService.php</span>
+                  <span class="badge new">جديد</span>
+                </li>
+                <li>
+                  <span class="file-name">app/Console/Commands/CheckFileExpirations.php</span>
+                  <span class="badge new">جديد</span>
+                </li>
+                <li>
+                  <span class="file-name">resources/views/emails/file-expiration-notification.blade.php</span>
+                  <span class="badge new">جديد</span>
+                </li>
+                <li>
+                  <span class="file-name">resources/views/emails/account-suspension-notification.blade.php</span>
+                  <span class="badge new">جديد</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="file-structure">
+              <h4>🔧 الملفات المحدثة</h4>
+              <ul class="file-list">
+                <li>
+                  <span class="file-name">app/Console/Kernel.php</span> <span class="badge update">تحديث</span> - إضافة
+                  الجدولة
+                </li>
+                <li>
+                  <span class="file-name">app/Services/EmailNotificationService.php</span>
+                  <span class="badge update">تحديث</span> - إضافة القوالب الجديدة
+                </li>
+                <li>
+                  <span class="file-name">config/app.php</span> <span class="badge config">إعداد</span> - إضافة إعدادات
+                  الإيميل
+                </li>
+                <li>
+                  <span class="file-name">.env</span> <span class="badge config">إعداد</span> - إضافة متغيرات البيئة
+                </li>
+              </ul>
+            </div>
+
+            <div class="feature-grid">
+              <div class="feature-card primary">
+                <h4>🗄️ جدول التنبيهات الجديد</h4>
+                <div class="code-block">
+                  Schema::create('file_expiration_notifications', function (Blueprint $table) { $table->id();
+                  $table->string('user_type'); // 'user', 'customer', 'driver' $table->unsignedBigInteger('user_id');
+                  $table->string('field_name'); // اسم الحقل $table->string('field_label'); // تسمية الحقل
+                  $table->string('file_path'); // مسار الملف $table->date('expiration_date'); // تاريخ الانتهاء
+                  $table->date('notification_sent_date'); // تاريخ الإرسال $table->integer('days_before_expiration');
+                  $table->enum('status', ['sent', 'account_suspended']); $table->json('recipients')->nullable();
+                  $table->timestamps(); });
+                </div>
+              </div>
+
+              <div class="feature-card success">
+                <h4>📧 خدمة فحص الملفات</h4>
+                <ul>
+                  <li><strong>checkAndNotifyExpiredFiles():</strong> الدالة الرئيسية للفحص</li>
+                  <li><strong>checkUsersFiles():</strong> فحص ملفات المستخدمين</li>
+                  <li><strong>checkCustomersFiles():</strong> فحص ملفات العملاء</li>
+                  <li><strong>checkDriversFiles():</strong> فحص ملفات السائقين</li>
+                  <li><strong>suspendAccountsWithExpiredFiles():</strong> تعليق الحسابات</li>
+                </ul>
+              </div>
+
+              <div class="feature-card warning">
+                <h4>⚙️ أمر Artisan للفحص</h4>
+                <div class="code-block">
+                  php artisan files:check-expirations // الأمر يقوم بـ: // 1. فحص جميع المستخدمين النشطين // 2. تحليل
+                  البيانات الإضافية // 3. إرسال التنبيهات المطلوبة // 4. تعليق الحسابات المنتهية // 5. إرجاع تقرير مفصل
+                </div>
+              </div>
+
+              <div class="feature-card danger">
+                <h4>🔔 قوالب الإيميل</h4>
+                <ul>
+                  <li><strong>file-expiration-notification:</strong> تنبيه انتهاء الصلاحية</li>
+                  <li><strong>account-suspension-notification:</strong> إشعار تعليق الحساب</li>
+                  <li><strong>تصميم متجاوب:</strong> يعمل على جميع الأجهزة</li>
+                  <li><strong>محتوى ديناميكي:</strong> يتغير حسب نوع المستخدم</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- الجدولة والتوقيت -->
+        <div class="section" id="schedule">
+          <div class="section-header schedule">⏰ الجدولة والتوقيت</div>
+          <div class="section-content">
+            <div class="feature-grid">
+              <div class="feature-card info">
+                <h4>🕙 التوقيت المقترح</h4>
+                <ul>
+                  <li><strong>التشغيل اليومي:</strong> الساعة 10:00 صباحاً</li>
+                  <li><strong>المنطقة الزمنية:</strong> Asia/Riyadh</li>
+                  <li><strong>عدم التداخل:</strong> withoutOverlapping()</li>
+                  <li><strong>التشغيل في الخلفية:</strong> runInBackground()</li>
+                  <li><strong>تقارير الأخطاء:</strong> emailOutputOnFailure()</li>
+                </ul>
+              </div>
+
+              <div class="feature-card success">
+                <h4>🔒 آلية منع التكرار</h4>
+                <ul>
+                  <li><strong>فحص يومي:</strong> التحقق من التنبيهات المرسلة اليوم</li>
+                  <li><strong>مفتاح فريد:</strong> (user_type, user_id, field_name, date)</li>
+                  <li><strong>تسجيل شامل:</strong> حفظ جميع التفاصيل</li>
+                  <li><strong>منع الإزعاج:</strong> تنبيه واحد فقط لكل ملف يومياً</li>
+                </ul>
+              </div>
+
+              <div class="feature-card warning">
+                <h4>⚡ إعدادات الأداء</h4>
+                <div class="code-block">
+                  // في app/Console/Kernel.php $schedule->command('files:check-expirations') ->dailyAt('10:00')
+                  ->timezone('Asia/Riyadh') ->withoutOverlapping() ->runInBackground()
+                  ->emailOutputOnFailure(config('app.admin_email'));
+                </div>
+              </div>
+
+              <div class="feature-card primary">
+                <h4>📊 مراقبة الأداء</h4>
+                <ul>
+                  <li><strong>تسجيل شامل:</strong> جميع العمليات مسجلة</li>
+                  <li><strong>إحصائيات يومية:</strong> عدد المفحوصين والتنبيهات</li>
+                  <li><strong>تقارير الأخطاء:</strong> إرسال فوري للإدارة</li>
+                  <li><strong>مراقبة الذاكرة:</strong> تحسين استهلاك الموارد</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- آلية العمل -->
+        <div class="section" id="workflow">
+          <div class="section-header analysis">🔄 آلية العمل التفصيلية</div>
+          <div class="section-content">
+            <div class="alert success">
+              <strong>🎯 الهدف الأساسي:</strong> فحص يومي شامل للملفات منتهية الصلاحية مع إرسال تنبيهات ذكية وتعليق
+              الحسابات المهملة
+            </div>
+
+            <div class="workflow">
+              <h4 style="color: #2c3e50; margin-bottom: 20px">1️⃣ مرحلة الفحص اليومي (10:00 صباحاً)</h4>
+
+              <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <div class="step-title">فحص المستخدمين النشطين</div>
+                  <div class="step-description">البحث في جداول users, customers, drivers للمستخدمين بحالة 'active'</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <div class="step-title">تحليل البيانات الإضافية</div>
+                  <div class="step-description">فحص additional_data للبحث عن حقول نوع 'file_expiration_date'</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <div class="step-title">فحص تواريخ الانتهاء</div>
+                  <div class="step-description">التحقق من الملفات منتهية الصلاحية أو التي ستنتهي خلال يوم واحد</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <div class="step-title">منع التكرار</div>
+                  <div class="step-description">التحقق من عدم إرسال تنبيه لنفس الملف في نفس اليوم</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <div class="step-title">تحديد المستلمين</div>
+                  <div class="step-description">المستخدم + مدير الفريق (للسائقين) + إيميل المنصة</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                  <div class="step-title">إرسال التنبيهات</div>
+                  <div class="step-description">إرسال إيميلات مخصصة لكل مستلم مع تفاصيل الملف</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">7</div>
+                <div class="step-content">
+                  <div class="step-title">تسجيل التنبيه</div>
+                  <div class="step-description">حفظ تفاصيل التنبيه في قاعدة البيانات لمنع التكرار</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="workflow">
+              <h4 style="color: #2c3e50; margin-bottom: 20px">2️⃣ مرحلة تعليق الحسابات (بعد 3 أيام)</h4>
+
+              <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <div class="step-title">البحث عن التنبيهات القديمة</div>
+                  <div class="step-description">العثور على التنبيهات المرسلة قبل 3 أيام أو أكثر</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <div class="step-title">فحص حالة المستخدم</div>
+                  <div class="step-description">التأكد من أن المستخدم لا يزال نشطاً ولم يحدث الملف</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <div class="step-title">تعليق الحساب</div>
+                  <div class="step-description">تغيير حالة المستخدم إلى 'inactive'</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <div class="step-title">إرسال إشعار التعليق</div>
+                  <div class="step-description">إرسال إيميل إشعار بتعليق الحساب مع تعليمات الإعادة</div>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                  <div class="step-title">تحديث حالة التنبيه</div>
+                  <div class="step-description">تغيير حالة التنبيه إلى 'account_suspended'</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="feature-grid">
+              <div class="feature-card info">
+                <h4>👥 المستلمون للتنبيهات</h4>
+                <ul>
+                  <li><strong>المستخدم نفسه:</strong> دائماً (إيميل أساسي)</li>
+                  <li><strong>مدير الفريق:</strong> للسائقين فقط إذا كان ينتمي لفريق</li>
+                  <li><strong>إيميل المنصة:</strong> دائماً للمراقبة والمتابعة</li>
+                  <li><strong>إزالة التكرارات:</strong> تلقائياً من قائمة المستلمين</li>
+                </ul>
+              </div>
+
+              <div class="feature-card warning">
+                <h4>⚠️ شروط الفحص</h4>
+                <ul>
+                  <li><strong>الحالة النشطة:</strong> فقط المستخدمين بحالة 'active'</li>
+                  <li><strong>وجود البيانات:</strong> additional_data غير فارغة</li>
+                  <li><strong>نوع الحقل:</strong> 'file_expiration_date' فقط</li>
+                  <li><strong>وجود تاريخ الانتهاء:</strong> حقل expiration مملوء</li>
+                </ul>
+              </div>
+
+              <div class="feature-card success">
+                <h4>📈 مؤشرات الأداء</h4>
+                <ul>
+                  <li><strong>عدد المستخدمين المفحوصين:</strong> تقرير يومي</li>
+                  <li><strong>عدد التنبيهات المرسلة:</strong> إحصائية مفصلة</li>
+                  <li><strong>عدد الحسابات المعلقة:</strong> متابعة دقيقة</li>
+                  <li><strong>معدل نجاح الإرسال:</strong> مراقبة مستمرة</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+            <!-- اختبار النظام -->
+            <div class="section" id="testing">
+                <div class="section-header testing">
+                    🧪 اختبار النظام
+                </div>
+                <div class="section-content">
+
+                    <div class="feature-grid">
+                        <div class="feature-card primary">
+                            <h4>🔧 اختبار يدوي</h4>
+                            <div class="code-block">
+# تشغيل الفحص يدوياً
+php artisan files:check-expirations
+
+# فحص الجدولة
+php artisan schedule:list
+
+# تشغيل الجدولة للاختبار
+php artisan schedule:run
+
+# مراقبة الطوابير
+php artisan queue:work --verbose
+                            </div>
+                        </div>
+
+                        <div class="feature-card success">
+                            <h4>📊 اختبار البيانات</h4>
+                            <div class="code-block">
+-- إدراج بيانات اختبار للمستخدمين
+UPDATE users SET additional_data = '[
+    {
+        "driving_license": {
+            "label": "رخصة القيادة",
+            "value": "files/license.pdf",
+            "expiration": "2024-07-25",
+            "type": "file_expiration_date"
+        }
+    }
+]' WHERE id = 1;
+                            </div>
+                        </div>
+
+                        <div class="feature-card warning">
+                            <h4>⚠️ سيناريوهات الاختبار</h4>
+                            <ul>
+                                <li><strong>ملف منتهي الصلاحية:</strong> تاريخ أمس</li>
+                                <li><strong>ملف سينتهي اليوم:</strong> تاريخ اليوم</li>
+                                <li><strong>ملف سينتهي غداً:</strong> تاريخ الغد</li>
+                                <li><strong>مستخدم غير نشط:</strong> status != 'active'</li>
+                                <li><strong>سائق بدون فريق:</strong> team_id = null</li>
+                                <li><strong>سائق مع فريق:</strong> team_id موجود</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card info">
+                            <h4>📈 مؤشرات النجاح</h4>
+                            <ul>
+                                <li><strong>إرسال التنبيهات:</strong> وصول الإيميلات للمستلمين</li>
+                                <li><strong>منع التكرار:</strong> عدم إرسال تنبيه مكرر</li>
+                                <li><strong>تعليق الحسابات:</strong> تغيير الحالة بعد 3 أيام</li>
+                                <li><strong>تسجيل العمليات:</strong> حفظ جميع التفاصيل</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- خطة التنفيذ -->
+            <div class="section" id="implementation-plan">
+                <div class="section-header implementation">
+                    ✅ خطة التنفيذ المرحلية
+                </div>
+                <div class="section-content">
+
+                    <div class="alert info">
+                        <strong>⏱️ المدة الإجمالية:</strong> 3 أيام عمل مع إمكانية التشغيل التدريجي والاختبار المستمر
+                    </div>
+
+                    <div class="timeline phase1">
+                        <h4>🚀 المرحلة الأولى - البنية الأساسية (يوم واحد)</h4>
+                        <ol>
+                            <li>إنشاء Migration للجدول الجديد وتشغيله</li>
+                            <li>إنشاء Model FileExpirationNotification مع العلاقات</li>
+                            <li>إنشاء Service FileExpirationService مع الدوال الأساسية</li>
+                            <li>إنشاء Command CheckFileExpirations للتشغيل اليدوي</li>
+                            <li>اختبار أولي للبنية الأساسية</li>
+                        </ol>
+                    </div>
+
+                    <div class="timeline phase2">
+                        <h4>📧 المرحلة الثانية - نظام الإيميل والقوالب (يوم واحد)</h4>
+                        <ol>
+                            <li>إنشاء قوالب الإيميل (تنبيه انتهاء الصلاحية + تعليق الحساب)</li>
+                            <li>تحديث EmailNotificationService لإضافة القوالب الجديدة</li>
+                            <li>إضافة الجدولة في Kernel.php</li>
+                            <li>إضافة الإعدادات في config/app.php و .env</li>
+                            <li>اختبار إرسال الإيميلات والقوالب</li>
+                        </ol>
+                    </div>
+
+                    <div class="timeline phase3">
+                        <h4>🧪 المرحلة الثالثة - الاختبار والتحسين (يوم واحد)</h4>
+                        <ol>
+                            <li>اختبار شامل للنظام مع بيانات حقيقية</li>
+                            <li>تشغيل تجريبي للجدولة اليومية</li>
+                            <li>مراقبة الأداء وتحسين الاستعلامات</li>
+                            <li>إضافة المراقبة والتقارير</li>
+                            <li>توثيق النظام وتسليمه للإنتاج</li>
+                        </ol>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-card success">
+                            <h4>✅ معايير الإنجاز</h4>
+                            <ul>
+                                <li><strong>الفحص اليومي:</strong> يعمل تلقائياً في الوقت المحدد</li>
+                                <li><strong>إرسال التنبيهات:</strong> وصول الإيميلات لجميع المستلمين</li>
+                                <li><strong>منع التكرار:</strong> عدم إرسال تنبيهات مكررة</li>
+                                <li><strong>تعليق الحسابات:</strong> تلقائياً بعد 3 أيام</li>
+                                <li><strong>التسجيل:</strong> جميع العمليات مسجلة ومراقبة</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card warning">
+                            <h4>⚠️ نقاط المراجعة</h4>
+                            <ul>
+                                <li><strong>بعد كل مرحلة:</strong> اختبار شامل للوظائف</li>
+                                <li><strong>قبل الإنتاج:</strong> مراجعة أمنية شاملة</li>
+                                <li><strong>بعد التشغيل:</strong> مراقبة لمدة أسبوع</li>
+                                <li><strong>التحسين المستمر:</strong> تحليل الأداء والتطوير</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer">
+            <p><strong>تم إنشاء هذا التقرير بواسطة نظام التطوير الآلي المتقدم</strong></p>
+            <p>يُنصح بمراجعة هذا التقرير مع فريق التطوير وتطبيق التوصيات حسب الأولوية</p>
+            <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">
+                للاستفسارات التقنية أو المساعدة في التطبيق، يرجى التواصل مع فريق التطوير
+            </p>
+
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
+                    <div>
+                        <h4 style="color: #ecf0f1; margin-bottom: 10px;">📊 إحصائيات التقرير</h4>
+                        <p style="opacity: 0.8; font-size: 0.9em;">10 ملفات جديدة</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">4 ملفات محدثة</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">3 مراحل تنفيذ</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #ecf0f1; margin-bottom: 10px;">⏱️ الجدولة</h4>
+                        <p style="opacity: 0.8; font-size: 0.9em;">فحص يومي 10:00 ص</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">تعليق بعد 3 أيام</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">مراقبة مستمرة</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #ecf0f1; margin-bottom: 10px;">🎯 الأهداف</h4>
+                        <p style="opacity: 0.8; font-size: 0.9em;">منع انتهاء الملفات</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">تنبيهات ذكية</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">إدارة تلقائية</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #ecf0f1; margin-bottom: 10px;">🔧 التكامل</h4>
+                        <p style="opacity: 0.8; font-size: 0.9em;">100% متوافق</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">لا تعديل على الموجود</p>
+                        <p style="opacity: 0.8; font-size: 0.9em;">تشغيل آمن</p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                <p style="font-size: 1.1em; font-weight: bold; color: #ecf0f1;">
+                    🚀 جاهز للتطبيق الفوري - نظام شامل ومتكامل لإدارة انتهاء صلاحية الملفات
+                </p>
+                <p style="margin-top: 10px; opacity: 0.8;">
+                    تاريخ إنشاء التقرير: 24 يوليو 2025 | الإصدار: 1.0 | الحالة: جاهز للتنفيذ
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

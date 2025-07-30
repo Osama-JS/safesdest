@@ -31,14 +31,16 @@ class RegisterController extends Controller
     $vehicles = Vehicle::all();
     $customer = Settings::where('key', 'customer_template')->first();
     $driver = Settings::where('key', 'driver_template')->first();
+    $broker = Settings::where('key', 'customs_clearance_agent_template')->first();
 
     $customer_template = Form_Field::where('form_template_id', $customer->value)->get();
     $driver_template = Form_Field::where('form_template_id', $driver->value)->get();
+    $broker_template = Form_Field::where('form_template_id', $broker->value)->get();
 
     // جلب الفرق العامة فقط للظهور في نموذج تسجيل السائقين
     $public_teams = Teams::public()->orderBy('name')->get();
 
-    return view('auth.register', compact('vehicles', 'customer_template', 'driver_template', 'customer', 'driver', 'public_teams'));
+    return view('auth.register', compact('vehicles', 'customer_template', 'driver_template', 'broker_template', 'customer', 'driver', 'broker', 'public_teams'));
   }
 
   function createVerificationToken($user)
@@ -154,7 +156,7 @@ class RegisterController extends Controller
   public function registerCustomer(Request $req)
   {
 
-    $validator = Validator::make($req->all(), [
+    $baseRules = [
       'name'           => 'required|string|max:255',
       'email'          => 'required|email|unique:customers,email',
       'phone'          => 'required|unique:customers,phone',
@@ -163,99 +165,108 @@ class RegisterController extends Controller
       'c_name'         => 'nullable|string|max:255',
       'c_address'      => 'nullable|string|max:255',
       'g-recaptcha-response' => 'required|recaptcha',
-      // 'captcha' => 'required|captcha',
+    ];
 
-    ], [
+    $messages = [
       'captcha.captcha' => 'The verification code is invalid',
-    ]);
+    ];
+
+    $additionalRules = [];
 
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
 
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
-        $rules[$fieldKey] = [];
 
-        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        $fieldRules = [];
+
         if (!$req->filled('id') && $field->required) {
-          $rules[$fieldKey][] = 'required';
+          $fieldRules[] = 'required';
         }
 
-        // إضافة قواعد بناءً على نوع الحقل
         switch ($field->type) {
           case 'text':
-            $rules[$fieldKey][] = 'string';
+            $fieldRules[] = 'string';
             break;
 
           case 'number':
-            $rules[$fieldKey][] = 'numeric';
+            $fieldRules[] = 'numeric';
             break;
+
           case 'url':
-            $rules[$fieldKey][] = 'url';
+            $fieldRules[] = 'url';
+            break;
+
           case 'date':
-            $rules[$fieldKey][] = 'date';
-
+            $fieldRules[] = 'date';
             break;
+
           case 'file':
-            $rules[$fieldKey][] = 'file';
-            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
-            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            $fieldRules[] = 'file';
+            $fieldRules[] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $fieldRules[] = 'max:10240';
             break;
+
           case 'image':
-            $rules[$fieldKey][] = 'image';
-            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            $fieldRules[] = 'image';
+            $fieldRules[] = 'mimes:jpeg,png,jpg,webp,gif';
+            $fieldRules[] = 'max:5120';
             break;
+
           case 'file_expiration_date':
-            $rules[$fieldKey . '_file'][] = 'file';
-            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey . '_file'][] = 'max:10240';
+            $fileKey = $fieldKey . '_file';
+            $expKey = $fieldKey . '_expiration';
 
-            $rules[$fieldKey . '_expiration'][] = 'date';
+            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+            $additionalRules[$expKey] = ['date'];
 
-            // إذا الحقل مطلوب، نضيف required حسب الحاجة
             if ($field->required) {
-              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
-              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+              $additionalRules[$fileKey][] = 'required_with:' . $expKey;
+              $additionalRules[$expKey][] = 'required_with:' . $fileKey;
             }
 
-            // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
             if ($req->hasFile("additional_fields.{$field->name}_file")) {
-              $rules[$fieldKey . '_expiration'][] = 'required';
+              $additionalRules[$expKey][] = 'required';
             }
 
-            break;
+            continue 2;
 
           case 'file_with_text':
-            $rules[$fieldKey . '_file'][] = 'file';
-            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey . '_file'][] = 'max:10240';
+            $fileKey = $fieldKey . '_file';
+            $textKey = $fieldKey . '_text';
 
-            $rules[$fieldKey . '_text'][] = 'nullable';
-            $rules[$fieldKey . '_text'][] = 'string';
-            $rules[$fieldKey . '_text'][] = 'max:255';
+            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+            $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
 
             if ($field->required) {
-              $rules[$fieldKey . '_file'][] = 'required';
-              $rules[$fieldKey . '_text'][] = 'required';
+              $additionalRules[$fileKey][] = 'required';
+              $additionalRules[$textKey][] = 'required';
             }
 
-            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
             if ($req->hasFile("additional_fields.{$field->name}_file")) {
-              $rules[$fieldKey . '_text'][] = 'required';
+              $additionalRules[$textKey][] = 'required';
             }
 
-            break;
+            continue 2;
 
           default:
             if (!$field->required) {
-              $rules[$fieldKey][] = 'nullable';
+              $fieldRules[] = 'nullable';
             }
-            $rules[$fieldKey][] = 'string';
+            $fieldRules[] = 'string';
             break;
         }
+
+        $additionalRules[$fieldKey] = $fieldRules;
       }
     }
+
+    // ✅ دمج القواعد الأساسية والإضافية
+    $allRules = array_merge($baseRules, $additionalRules);
+
+    // ✅ تنفيذ التحقق بعد بناء جميع القواعد
+    $validator = Validator::make($req->all(), $allRules, $messages);
 
     if ($validator->fails()) {
       return response()->json([
@@ -263,8 +274,8 @@ class RegisterController extends Controller
         'error'  => $validator->errors()
       ]);
     }
-    DB::beginTransaction();
 
+    DB::beginTransaction();
 
     try {
 
@@ -278,6 +289,15 @@ class RegisterController extends Controller
         'company_address' => $req->c_address,
       ];
 
+      if ($req->filled('broker')) {
+        if ($req->broker != 1) {
+          return response()->json([
+            'status' => 2,
+            'error'  => 'Field To Register As Broker'
+          ]);
+        }
+        $data['is_customs_clearance_agent'] = 1;
+      }
       $structuredFields = [];
 
       if ($req->filled('template')) {
@@ -372,7 +392,7 @@ class RegisterController extends Controller
   public function registerDriver(Request $req)
   {
 
-    $validator = Validator::make($req->all(), [
+    $baseRules = [
       'name'           => 'required|string|max:255',
       'username'       => 'required|unique:drivers,username',
       'email'          => 'required|email|unique:drivers,email',
@@ -382,99 +402,107 @@ class RegisterController extends Controller
       'address'        => 'required|string|max:255',
       'vehicle'        => 'nullable|string|max:255',
       'team_id'        => 'nullable|exists:teams,id',
-      // WhatsApp validation
       'phone_is_whatsapp'       => 'nullable|boolean',
       'whatsapp_country_code'   => 'nullable|string|max:10',
       'whatsapp_number'         => 'nullable|string|max:20',
-      'g-recaptcha-response' => 'required|recaptcha',
-      // 'captcha' => 'required|captcha',
+      'g-recaptcha-response'    => 'required|recaptcha',
+    ];
 
-    ], [
+    $messages = [
       'captcha.captcha' => 'The verification code is invalid',
-    ]);
+    ];
+
+    // متغير لتجميع قواعد التحقق من الحقول الإضافية
+    $additionalRules = [];
+
     if ($req->filled('template')) {
       $fields = Form_Field::where('form_template_id', $req->template)->get();
 
       foreach ($fields as $field) {
         $fieldKey = 'additional_fields.' . $field->name;
-        $rules[$fieldKey] = [];
 
-        // إذا لم تكن العملية تعديل أو الحقل مطلوب فعليًا
+        $fieldRules = [];
+
         if (!$req->filled('id') && $field->required) {
-          $rules[$fieldKey][] = 'required';
+          $fieldRules[] = 'required';
         }
 
-        // إضافة قواعد بناءً على نوع الحقل
         switch ($field->type) {
           case 'text':
-            $rules[$fieldKey][] = 'string';
+            $fieldRules[] = 'string';
             break;
 
           case 'number':
-            $rules[$fieldKey][] = 'numeric';
+            $fieldRules[] = 'numeric';
             break;
+
           case 'url':
-            $rules[$fieldKey][] = 'url';
+            $fieldRules[] = 'url';
             break;
 
           case 'date':
-            $rules[$fieldKey][] = 'date';
+            $fieldRules[] = 'date';
             break;
+
           case 'file':
-            $rules[$fieldKey][] = 'file';
-            $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
-            $rules[$fieldKey][] = 'max:10240'; // 10MB
+            $fieldRules[] = 'file';
+            $fieldRules[] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+            $fieldRules[] = 'max:10240';
             break;
+
           case 'image':
-            $rules[$fieldKey][] = 'image';
-            $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey][] = 'max:5120'; // 5MB
+            $fieldRules[] = 'image';
+            $fieldRules[] = 'mimes:jpeg,png,jpg,webp,gif';
+            $fieldRules[] = 'max:5120';
             break;
+
           case 'file_expiration_date':
-            $rules[$fieldKey . '_file'][] = 'file';
-            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey . '_file'][] = 'max:10240';
+            $fileKey = $fieldKey . '_file';
+            $expKey = $fieldKey . '_expiration';
 
-            $rules[$fieldKey . '_expiration'][] = 'date';
+            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+            $additionalRules[$expKey] = ['date'];
 
-            // إذا الحقل مطلوب، نضيف required حسب الحاجة
             if ($field->required) {
-              $rules[$fieldKey . '_file'][] = 'required_with:' . $fieldKey . '_expiration';
-              $rules[$fieldKey . '_expiration'][] = 'required_with:' . $fieldKey . '_file';
+              $additionalRules[$fileKey][] = 'required_with:' . $expKey;
+              $additionalRules[$expKey][] = 'required_with:' . $fileKey;
             }
-            break;
+            continue 2;
 
           case 'file_with_text':
-            $rules[$fieldKey . '_file'][] = 'file';
-            $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
-            $rules[$fieldKey . '_file'][] = 'max:10240';
+            $fileKey = $fieldKey . '_file';
+            $textKey = $fieldKey . '_text';
 
-            $rules[$fieldKey . '_text'][] = 'nullable';
-            $rules[$fieldKey . '_text'][] = 'string';
-            $rules[$fieldKey . '_text'][] = 'max:255';
+            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+            $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
 
             if ($field->required) {
-              $rules[$fieldKey . '_file'][] = 'required';
-              $rules[$fieldKey . '_text'][] = 'required';
+              $additionalRules[$fileKey][] = 'required';
+              $additionalRules[$textKey][] = 'required';
             }
 
-            // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
             if ($req->hasFile("additional_fields.{$field->name}_file")) {
-              $rules[$fieldKey . '_text'][] = 'required';
+              $additionalRules[$textKey][] = 'required';
             }
-
-            break;
+            continue 2;
 
           default:
             if (!$field->required) {
-              $rules[$fieldKey][] = 'nullable';
+              $fieldRules[] = 'nullable';
             }
-            $rules[$fieldKey][] = 'string';
+            $fieldRules[] = 'string';
             break;
         }
+
+        $additionalRules[$fieldKey] = $fieldRules;
       }
     }
 
+    // دمج القواعد
+    $allRules = array_merge($baseRules, $additionalRules);
+
+    // إنشاء Validator بعد بناء القواعد كاملة
+    $validator = Validator::make($req->all(), $allRules, $messages);
 
     if ($validator->fails()) {
       return response()->json([

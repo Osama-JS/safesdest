@@ -4,28 +4,56 @@
       "url": "/",
       "icon": "menu-icon tf-icons ti ti-chart-pie-2",
       "name": "Dashboard",
-      "slug": "customer.dashboard"
+      "slug": "customer.dashboard",
+      "broker": "broker"
     },
     {
       "url": "customer/tasks",
       "name": "My Tasks",
       "icon": "menu-icon tf-icons ti ti-truck-delivery",
       "slug": "customer.tasks.index",
-      "isactive": "task-isactive"
+      "isactive": "task-isactive",
+      "broker": "broker"
+    },
+    {
+      "url": "customer/customs-clearances",
+      "name": "My Customs Clearances",
+      "icon": "menu-icon tf-icons ti ti-clipboard-check",
+      "slug": "customer.customes.index",
+      "isactive": "customes-isactive",
+      "broker": "no"
     },
     {
       "url": "customer/wallet",
       "name": "My Wallet",
       "icon": "menu-icon tf-icons ti ti-wallet",
       "slug": "customer.wallet.index",
-      "isactive": "wallets-isactive"
+      "isactive": "wallets-isactive",
+      "broker": "no"
     },
     {
       "url": "customer/ads",
       "name": "My Tasks Ads",
       "icon": "menu-icon tf-icons ti ti-speakerphone",
       "slug": "customer.ads.index",
-      "isactive": "ad-isactive"
+      "isactive": "ad-isactive",
+      "broker": "no"
     },
+    {
+      "url": "customer/customs-clearances/ads",
+      "name": "Customs Clearances Ads",
+      "icon": "menu-icon tf-icons ti ti-clipboard-check",
+      "slug": "customer.customs-clearances.ads",
+      "isactive": "customes-ads-isactive",
+      "broker": "broker"
+    },
+    {
+      "url": "customer/customs-clearances/orders",
+      "name": "Customs Clearances Orders",
+      "icon": "menu-icon tf-icons ti ti-clipboard-check",
+      "slug": "customer.customs-clearances.orders",
+      "isactive": "customes-orders-isactive",
+      "broker": "broker"
+    }
   ]
 }

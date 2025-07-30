@@ -73,7 +73,10 @@ class FortifyServiceProvider extends ServiceProvider
           $user = Driver::where('email', $email)->first();
           break;
         case 'customer':
-          $user = Customer::where('email', $email)->first();
+          $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 0)->first();
+          break;
+        case 'broker':
+          $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 1)->first();
           break;
         default:
           $user = User::where('email', $email)->first();
@@ -109,7 +112,7 @@ class FortifyServiceProvider extends ServiceProvider
       $request->session()->put('captcha', true);
 
       // تسجيل الدخول بالـ guard المناسب
-      if ($guard == 'customer') {
+      if ($guard == 'customer' || $guard == 'broker') {
         Auth::guard('web')->logout();
         Auth::guard('driver')->logout();
         Auth::guard('customer')->login($user);

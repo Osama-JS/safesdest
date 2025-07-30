@@ -1,28 +1,54 @@
 /**
- * Page Task List
+ * ===================================================================
+ * TASK MANAGEMENT SYSTEM
+ * ===================================================================
+ * This file handles task creation, editing, map integration,
+ * and point management functionality for the admin panel.
  */
 
 'use strict';
 import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../../ajax';
 import { mapsConfig } from '../../mapbox-helper';
 
+// ===================================================================
+// INITIALIZATION AND SETUP
+// ===================================================================
+
 $(function () {
+  /**
+   * متغيرات عامة للنظام
+   */
   let pointIndex = 0;
+
+  /**
+   * تهيئة القالب المحدد مسبقاً إن وجد
+   */
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
   }
-  /* ===========  MapBox  accessToken   ===========*/
 
+  /**
+   * إعداد MapBox access token
+   */
   mapboxgl.accessToken = mapsConfig.token;
 
-  /* ===========  ajax setup   ===========*/
+  /**
+   * إعداد CSRF token لطلبات Ajax
+   */
   $.ajaxSetup({
     headers: {
       'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     }
   });
 
-  /* ===========  Chose Task owner Code   ===========*/
+  // ===================================================================
+  // TASK OWNER SELECTION
+  // ===================================================================
+
+  /**
+   * معالج اختيار مالك المهمة (عميل أو إداري)
+   * يظهر/يخفي قائمة العملاء حسب الاختيار
+   */
   $('#task-owner').on('change', function () {
     if ($(this).val() === 'customer') {
       $('#customers-wrapper').show();
@@ -32,14 +58,23 @@ $(function () {
     }
   });
 
-  /* ===========  PreviewMap Code   ===========*/
+  // ===================================================================
+  // MAP AND BLOCKAGES SYSTEM
+  // ===================================================================
 
+  /**
+   * متغيرات النقاط والخطوط المحظورة
+   */
   let blockedPoints = [];
   let blockedLines = [];
 
+  /**
+   * دالة تحميل الإغلاقات من الخادم
+   * تجلب النقاط والخطوط المحظورة لعرضها على الخريطة
+   */
   async function loadBlockages() {
     try {
-      const response = await fetch(`${baseUrl}admin/settings/blockages/get`); // <-- تأكد أن هذا هو الـ endpoint الصحيح
+      const response = await fetch(`${baseUrl}admin/settings/blockages/get`);
       const data = await response.json();
       console.log(data);
 

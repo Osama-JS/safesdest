@@ -56,6 +56,7 @@
 @section('page-script')
     @vite(['resources/js/admin/templates.js'])
     @vite(['resources/js/admin/pricing_template.js'])
+    @vite(['resources/js/admin/clearance_pricing_template.js'])
 
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
@@ -262,7 +263,6 @@
     </div>
 
     <div class="col-md">
-
         <div id="accordionCustomIcon" class="accordion mt-4 accordion-custom-button">
             <div class="accordion-item">
                 <h2 class="accordion-header text-body d-flex justify-content-between" id="accordionCustomIconOne">
@@ -271,7 +271,9 @@
                         <i class="ri-bar-chart-2-line me-2 ri-20px"></i>
                         <h5> Tasks Pricing</h5>
                     </button>
+
                 </h2>
+
 
                 <div id="accordionCustomIcon-1" class="accordion-collapse collapse" data-bs-parent="#accordionCustomIcon">
                     <div class="accordion-body">
@@ -300,6 +302,50 @@
             </div>
         </div>
     </div>
+
+    <div class="col-md">
+        <div id="accordionCustomIcon" class="accordion mt-4 accordion-custom-button">
+            <div class="accordion-item">
+                <h2 class="accordion-header text-body d-flex justify-content-between" id="accordionCustomIconOne">
+                    <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse"
+                        data-bs-target="#accordionCustomIcon-2" aria-controls="accordionCustomIcon-2">
+                        <i class="ri-bar-chart-2-line me-2 ri-20px"></i>
+                        <h5> Customs Clearance Pricing</h5>
+                    </button>
+
+                </h2>
+
+
+                <div id="accordionCustomIcon-2" class="accordion-collapse collapse"
+                    data-bs-parent="#accordionCustomIcon">
+                    <div class="accordion-body">
+                        <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
+                            data-bs-target="#clearancePricingModal">
+                            <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                            <span class="d-none d-sm-inline-block"> {{ __('Add Pricing Module') }}</span>
+                        </button>
+                        <div class="card-datatable table-responsive">
+                            <table class="table  datatables-clearance-pricing">
+                                <thead class="border-top">
+                                    <tr>
+                                        <th></th> <!-- للعمود control -->
+                                        <th>#</th> <!-- للـ fake_id -->
+                                        <th>Role name</th>
+                                        <th>Created at</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+
+
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
 
     <div class="modal fade " id="submitModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
@@ -602,11 +648,174 @@
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">{{ __('Discount percentage %') }}</label>
-                                <input type="number" name="discount" class="form-control" min="0.00"
-                                    placeholder="0.00">
+                                <input type="number" name="discount" class="form-control" value="0.00"
+                                    min="0.00" placeholder="0.00">
                                 <span class="discount-error text-danger text-error"></span>
                             </div>
                         </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="modal fade " id="clearancePricingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modelTitle">{{ __('Add Pricing Module') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="add-new-user pt-0 form_submit" method="POST"
+                    action="{{ route('settings.templates.clearance.pricing.store') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <input type="hidden" name="form_id" value="{{ $data->id }}">
+                        <input type="hidden" name="id" id="clearance_pricing_id">
+                        <!-- Rule Name -->
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <label class="form-label">* {{ __('Rule Name') }}</label>
+                                    <input type="text" name="rule_name" id="rule_name" class="form-control"
+                                        placeholder="Role Name">
+                                    <span class="rule_name-error text-danger text-error"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">* {{ __('Set Decimal Places') }}</label>
+                                    <input type="number" name="decimal_places" id="decimal_places" class="form-control"
+                                        placeholder="Set Decimal Places For config the price" value="2">
+                                    <span class="decimal_places-error text-danger text-error"></span>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- Customers Selection -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>{{ __('Customers Selections') }}</strong></div>
+                            </div>
+
+                            <div class="mb-4">
+                                <input type="checkbox" id="clearance_allCustomers" name="all_customers" value="true"
+                                    class="form-check-input" checked>
+                                <label for="allCustomers">{{ __('Apply to All Customers') }}</label>
+                                <span class="all_customers-error text-danger text-error"></span>
+
+                            </div>
+
+                            <div class="row">
+                                <!-- Tags -->
+                                <div class="col-md-6">
+                                    <label for="">{{ __('Use customers tags') }} </label>
+                                    <input type="checkbox" id="clearance_useTags" name="use_tags" value="true"
+                                        class="form-check-input mb-2">
+                                    <select class="form-select select2-clearance-tags" name="tags[]" multiple
+                                        id="clearance_tagsSelect" disabled>
+                                        @foreach ($tags as $val)
+                                            <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <span class="use_tags-error text-danger text-error"></span>
+                                    <span class="tags-error text-danger text-error"></span>
+
+                                </div>
+
+                                <!-- Specific Customers -->
+                                <div class="col-md-6">
+                                    <label for="">{{ __('Use Specific customers') }} </label>
+                                    <input type="checkbox" id="clearance_useCustomers" name="use_customers"
+                                        value="true" class="form-check-input mb-2">
+                                    <select class="form-select select2-clearance-customers" name="customers[]" multiple
+                                        id="clearance_customersSelect" disabled>
+                                        @foreach ($customers as $val)
+                                            <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <span class="use_customers-error text-danger text-error"></span>
+                                    <span class="customers-error text-danger text-error"></span>
+
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Commission -->
+                        <div class="mb-3">
+                            <div class="divider text-start">
+                                <div class="divider-text"><strong>{{ __('Commission') }}</strong></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ __('VAT Commission') }}</label>
+                                    <input type="number" name="vat_commission" id="vat_commission" class="form-control"
+                                        min="0.00" placeholder="0.00">
+                                    <span class="vat_commission-error text-danger text-error"></span>
+
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Service Commission Status Switch -->
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ __('Service Commission Status') }}</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                id="clearance_service_commission_status" name="service_commission_status"
+                                                value="1" checked>
+                                            <label class="form-check-label" for="clearance_service_commission_status">
+                                                {{ __('Enable Service Commission') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Service Commission Fields (shown when switch is enabled) -->
+                            <div id="clearance_service_commission_fields" class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">{{ __('Service Commission Type') }}</label>
+                                    <select name="service_commission_type" class="form-select"
+                                        id="clearance_service_commission_type">
+                                        <option value="percentage">{{ __('Percentage') }}</option>
+                                        <option value="fixed">{{ __('Fixed Amount') }}</option>
+                                    </select>
+                                    <span class="service_commission_type-error text-danger text-error"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"
+                                        id="clearance_service_commission_label">{{ __('Service Tax Commission (%)') }}</label>
+                                    <input type="number" name="service_commission" class="form-control" min="0.00"
+                                        placeholder="0.00" id="clearance_service_commission_input">
+                                    <span class="service_commission-error text-danger text-error"></span>
+                                </div>
+                            </div>
+                        </div>
+
+
 
                     </div>
 

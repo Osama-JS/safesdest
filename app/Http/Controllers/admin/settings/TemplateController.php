@@ -70,7 +70,7 @@ class TemplateController extends Controller
     $methods = $query->offset($start)
       ->limit($limit)
       ->orderBy($order, $dir)
-      ->withCount(['tasks', 'customers', 'drivers', 'users'])
+      ->withCount(['tasks', 'customers', 'drivers', 'users', 'customsClearances'])
       ->get();
 
 
@@ -95,6 +95,9 @@ class TemplateController extends Controller
       }
       if ($method->users_count > 0) {
         $usageDetails[] = __('Users') . ': ' . $method->users_count;
+      }
+      if ($method->customsClearances->count() > 0) {
+        $usageDetails[] = __('Clearance') . ': ' . $method->customsClearances->count();
       }
 
       $usageSummary = empty($usageDetails) ? __('No usage') : implode('<br>', $usageDetails);

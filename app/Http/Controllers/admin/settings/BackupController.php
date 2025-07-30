@@ -207,11 +207,11 @@ class BackupController extends Controller
       throw new Exception('Invalid PostgreSQL database configuration');
     }
 
-    $pgDumpBinary = 'C:\Program Files\PostgreSQL\15\bin\pg_dump.exe'; // fallback إلى "pg_dump" لو لم يُحدد
+    $pgDumpBinary = 'pg_dump'; // fallback إلى "pg_dump" لو لم يُحدد
 
     // Build pg_dump command with proper escaping
     $command = sprintf(
-      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --create --no-owner --file=%s 2>&1',
+      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --no-owner --file=%s 2>&1',
       escapeshellarg($pgDumpBinary),
       escapeshellarg($dbConfig['host']),
       escapeshellarg($dbConfig['port'] ?? 5432),
@@ -457,6 +457,12 @@ class BackupController extends Controller
 
       // إرسال المهمة
       SendEmailNotificationJob::dispatch($emailData, $attachments);
+
+      Log::info('Send Backup To Email', [
+        'backup_name' => $backupName,
+        'type' => $type,
+        'user' => $toEmail
+      ]);
 
       return response()->json(['status' => 1, 'message' => 'تم إرسال النسخة الاحتياطية إلى البريد الإلكتروني.']);
     } catch (Exception $e) {

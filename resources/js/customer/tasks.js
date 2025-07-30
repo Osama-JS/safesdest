@@ -74,6 +74,7 @@ $(function () {
       },
       success: function (response) {
         $('#tasks-container').html('');
+        $('#tasks-count').html(response.data.length);
 
         if (!response.data || response.data.length === 0) {
           $('#tasks-container').html(`
@@ -85,6 +86,9 @@ $(function () {
               <p class="text-muted">No tasks found matching your search criteria</p>
             </div>
           `);
+
+          // Trigger event for task count update with 0 count
+          $(document).trigger('tasksLoaded', [{ pagination: { total: 0 } }]);
           return;
         }
 
@@ -209,6 +213,9 @@ $(function () {
         if (response.pagination) {
           renderPagination(response.pagination);
         }
+
+        // Trigger event for task count update
+        $(document).trigger('tasksLoaded', [response]);
       },
       error: function () {
         $('#tasks-container').html(`
@@ -1038,4 +1045,9 @@ $(document).on('click', '.task_type_template', function () {
   $('#taskTypeModal').modal('hide');
   $('#submitModal').modal('show');
 });
+
+$(document).on('click', '#toggle-tasks', function () {
+  $('#tasks-section').fadeToggle();
+});
+
 generateFields(taskTemplate);

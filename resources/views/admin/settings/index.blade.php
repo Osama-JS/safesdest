@@ -142,12 +142,28 @@
 
                     <div class="form-group mb-9">
                         <label for="task-template" class="mb-2">{{ __('Default Customs Clearances Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="task_to_port_template"
+                        <select class="form-select  update-setting-select" data-key="customs_clearance_template"
                             id="task-to-port-template">
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['task_to_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $settings['customs_clearance_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ $val->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span class="task-error text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-9">
+                        <label for="task-template"
+                            class="mb-2">{{ __('Default Customs Clearances Agent Template') }}</label>
+                        <select class="form-select  update-setting-select" data-key="customs_clearance_agent_template"
+                            id="task-to-port-template">
+                            <option value="">{{ __('--- Select Template') }}</option>
+                            @foreach ($templates as $val)
+                                <option value="{{ $val->id }}"
+                                    {{ $settings['customs_clearance_agent_template']['value'] == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach

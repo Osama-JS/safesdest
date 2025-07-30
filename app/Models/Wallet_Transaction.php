@@ -20,6 +20,7 @@ class Wallet_Transaction extends Model
     'sequence',
     'task_id',
     'team_id',
+    'clearance_id',
 
   ];
 
@@ -44,6 +45,12 @@ class Wallet_Transaction extends Model
   {
     return $this->belongsTo(Task::class, 'task_id');
   }
+
+  public function clearance()
+  {
+    return $this->belongsTo(Customs_Clearance::class, 'clearance_id');
+  }
+
 
   public function user()
   {

@@ -32,9 +32,10 @@ use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Middleware\EnsureCorrectGuard;
 use App\Http\Controllers\admin\CustomsClearanceController;
+use App\Http\Controllers\admin\PlatformWalletController;
 
 use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
-
+use App\Http\Controllers\admin\settings\ClearancePricingTemplateController;
 use App\Http\Middleware\EnsureGuardIs;
 
 
@@ -81,6 +82,7 @@ Route::middleware('rate.limit')->group(function () {
 
   Route::middleware([config('jetstream.auth_session')])->group(function () {
     Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+    Route::post('clearance/initiate-payment', [PaymentController::class, 'initiatePaymentClearance'])->name('payment.clearance.initiate');
 
     // Route لاستقبال الـ callback من HyperPay
     Route::get('/payment-callback', [PaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
@@ -193,7 +195,21 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/ads/offers/accept/{id}', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.offers.accept');
         Route::get('/ads/offers/retract/{id}', [App\Http\Controllers\customer\AdsController::class, 'retractOffer'])->name('customer.ads.offers.retract');
 
-        // Customer Customs Clearance Management - تم نقله إلى ملف منفصل
+        // Customs Clearance Agent Mange Ads
+        Route::get('customs-clearances/ads', [App\Http\Controllers\customer\CustomsClearanceController::class, 'index'])->name('customer.customs-clearances.ads');
+        Route::get('customs-clearances/ads/data', [App\Http\Controllers\customer\CustomsClearanceController::class, 'getData'])->name('customer.customs-clearances.ads.data');
+        Route::get('customs-clearances/ads/show/{id}', [App\Http\Controllers\customer\CustomsClearanceController::class, 'show'])->name('customer.customs-clearances.ads.show');
+        Route::get('customs-clearances/ads/offers/show/', [App\Http\Controllers\customer\CustomsClearanceController::class, 'getOffers'])->name('customer.customs-clearances.offers.data');
+        Route::post('customs-clearances/ads/offers/store/', [App\Http\Controllers\customer\CustomsClearanceController::class, 'storeOffers'])->name('customer.customs-clearances.offers.store');
+        Route::get('customs-clearances/ads/offers/accept/task/{id}', [App\Http\Controllers\customer\CustomsClearanceController::class, 'assignTaskByOffer'])->name('customer.customs-clearances.offers.assign');
+
+
+        // Customer Customs Clearance orders - تم نقله إلى ملف منفصل
+        Route::get('customs-clearances/orders', [App\Http\Controllers\customer\CustomsClearanceOrdersController::class, 'index'])->name('customer.customs-clearances.orders');
+        Route::get('customs-clearances/orders/data', [App\Http\Controllers\customer\CustomsClearanceOrdersController::class, 'data'])->name('customer.customs-clearances.orders.data');
+        Route::get('customs-clearances/orders/show/{id}', [App\Http\Controllers\customer\CustomsClearanceOrdersController::class, 'show'])->name('customer.customs-clearances.orders.show');
+        Route::post('/customs-clearances/orders/histories', [App\Http\Controllers\customer\CustomsClearanceOrdersController::class, 'taskAddToHistories'])->name('customer.customs-clearances.orders.histories.store');
+        Route::post('/customs-clearances/orders/update-status', [App\Http\Controllers\customer\CustomsClearanceOrdersController::class, 'updateStatus'])->name('customer.customs-clearances.orders.updateStatus');
       });
     });
 
@@ -317,8 +333,18 @@ Route::middleware('rate.limit')->group(function () {
           Route::post('/templates/pricing/status/{id}', [PricingTemplateController::class, 'change_state'])->name('settings.templates.pricing.status');
           Route::get('/templates/pricing/methods', [PricingTemplateController::class, 'getPricingMethod'])->name('settings.templates.pricing.methods');
           Route::delete('/templates/pricing/delete/{id}', [PricingTemplateController::class, 'destroy'])->name('settings.templates.pricing.delete');
+
+          Route::post('/template/clearance/pricing', [ClearancePricingTemplateController::class, 'store'])->name('settings.templates.clearance.pricing.store');
+          Route::get('/templates/clearance/pricing/data/{id}', [ClearancePricingTemplateController::class, 'getData'])->name('settings.templates.clearance.pricing.data');
+          Route::get('/templates/clearance/pricing/edit/{id}', [ClearancePricingTemplateController::class, 'edit'])->name('settings.templates.clearance.pricing.edit');
+          Route::delete('/templates/clearance/pricing/delete/{id}', [ClearancePricingTemplateController::class, 'destroy'])->name('settings.templates.clearance.pricing.delete');
         });
 
+        // Platform Wallet Routes
+        Route::get('platform-wallet', [PlatformWalletController::class, 'index'])->name('admin.platform-wallet.index');
+        Route::get('platform-wallet/data', [PlatformWalletController::class, 'data'])->name('admin.platform-wallet.data');
+        Route::get('platform-wallet/statistics', [PlatformWalletController::class, 'statistics'])->name('admin.platform-wallet.statistics');
+        Route::get('platform-wallet/export', [PlatformWalletController::class, 'export'])->name('admin.platform-wallet.export');
 
         Route::get('/customers', [CustomersController::class, 'index'])->name('customers.customers');
         Route::get('/customers/account/{id}/{name}', [CustomersController::class, 'show'])->name('customers.show');
@@ -401,6 +427,34 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('/teams/wallets/{id}/{name}', [TeamWalletController::class, 'index'])->name('teams.wallet');
 
 
+
+        // Customs Clearances Routes
+        Route::get('customs-clearances', [CustomsClearanceController::class, 'index'])->name('admin.customs-clearances.index');
+        Route::get('customs-clearances/data', [CustomsClearanceController::class, 'data'])->name('admin.customs-clearances.data');
+        Route::get('customs-clearances/statistics', [CustomsClearanceController::class, 'statistics'])->name('admin.customs-clearances.statistics');
+        Route::get('customs-clearances/{id}', [CustomsClearanceController::class, 'show'])->name('admin.customs-clearances.show');
+        Route::get('customs-clearances/{id}/edit', [CustomsClearanceController::class, 'edit'])->name('admin.customs-clearances.edit');
+        Route::post('customs-clearances', [CustomsClearanceController::class, 'store'])->name('admin.customs-clearances.store');
+        Route::put('customs-clearances/{id}', [CustomsClearanceController::class, 'update'])->name('admin.customs-clearances.update');
+        Route::delete('customs-clearances/{id}', [CustomsClearanceController::class, 'destroy'])->name('admin.customs-clearances.destroy');
+        Route::get('/customs-clearances/assign/{id}', [CustomsClearanceController::class, 'getToAssign'])->name('customs-clearances.get.assign');
+        Route::post('customs-clearances/assign', [CustomsClearanceController::class, 'assign'])->name('customs-clearances.assign');
+        Route::post('customs-clearances/{id}/create-ad', [CustomsClearanceController::class, 'createAd'])->name('admin.customs-clearances.create-ad');
+        Route::post('customs-clearances/status', [CustomsClearanceController::class, 'chang_status'])->name('customs-clearances.status');
+        Route::post('customs-clearances/{id}/close', [CustomsClearanceController::class, 'close'])->name('admin.customs-clearances.close');
+
+
+        Route::get('customs-clearances/payment/{id}', [CustomsClearanceController::class, 'paymentInfo'])->name('customs-clearances.payment.info');
+
+
+        Route::get('customs-clearances/payment/confirm/{id}', [CustomsClearanceController::class, 'confirmPayment'])->name('customs-clearances.payment.confirm');
+        Route::get('customs-clearances/payment/cancel/{id}', [CustomsClearanceController::class, 'cancelPayment'])->name('customs-clearances.payment.cancel');
+
+
+        Route::get('/customs-clearances/offers/show/{id}', [CustomsClearanceController::class, 'showOffers'])->name('customs-clearances.offers');
+        Route::get('/customs-clearances/offers/show/', [CustomsClearanceController::class, 'getOffers'])->name('customs-clearances.offers.data');
+        Route::get('/customs-clearances/offers/accept/{id}', [CustomsClearanceController::class, 'acceptOffer'])->name('customs-clearances.offers.accept');
+        Route::get('/customs-clearances/offers/retract/{id}', [CustomsClearanceController::class, 'retractOffer'])->name('customs-clearances.offers.retract');
 
 
         Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');

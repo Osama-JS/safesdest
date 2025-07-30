@@ -123,7 +123,30 @@ return [
     'store' => env('APP_MAINTENANCE_STORE', 'database'),
   ],
 
+  /*
+  |--------------------------------------------------------------------------
+  | File Expiration System Configuration
+  |--------------------------------------------------------------------------
+  |
+  | These configuration options are used by the file expiration notification
+  | system to manage expired files and send notifications to users.
+  |
+  */
 
+  // إيميل المنصة لاستقبال تنبيهات انتهاء الصلاحية
+  'platform_notification_email' => env('PLATFORM_NOTIFICATION_EMAIL', 'notifications@safedests.com'),
+
+  // إيميل الإدارة لاستقبال تقارير الأخطاء والتقارير الأسبوعية
+  'admin_email' => env('ADMIN_EMAIL', 'admin@safedests.com'),
+
+  // عدد الأيام قبل تعليق الحساب بعد انتهاء الصلاحية
+  'file_expiration_suspension_days' => env('FILE_EXPIRATION_SUSPENSION_DAYS', 3),
+
+  // عدد الأيام للتنبيه المسبق قبل انتهاء الصلاحية
+  'file_expiration_warning_days' => env('FILE_EXPIRATION_WARNING_DAYS', 1),
+
+  // تفعيل/إلغاء تفعيل نظام انتهاء الصلاحية
+  'file_expiration_enabled' => env('FILE_EXPIRATION_ENABLED', true),
 
   'aliases' => [
     // Other aliases...

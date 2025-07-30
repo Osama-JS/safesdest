@@ -27,7 +27,7 @@
         /* Enhanced User Card */
         .user-profile-card {
             background: white;
-            border-radius: 20px;
+            border-radius: 5px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
             border: 1px solid #e7eef7;
             overflow: hidden;
@@ -115,6 +115,78 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
             border: 1px solid #e7eef7;
             overflow: hidden;
+        }
+
+        /* Hidden by default - using a class for better control */
+        .tasks-section.hidden {
+            display: none;
+        }
+
+        /* Toggle Buttons Section */
+        .section-toggles {
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            padding: 1rem 1.5rem;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toggle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .toggle-button:active {
+            transform: translateY(0);
+        }
+
+        .toggle-button.active {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .toggle-button .count-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+        }
+
+        .toggle-button .icon {
+            font-size: 1.1rem;
+        }
+
+        .toggle-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .toggle-button:hover::before {
+            left: 100%;
         }
 
         .tasks-header {
@@ -573,6 +645,56 @@
     @vite(['resources/js/customer/tasks.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
+
+    <script>
+        $(document).ready(function() {
+            // Toggle functionality for sections
+            $('.toggle-button').on('click', function(e) {
+                e.preventDefault();
+                const targetId = $(this).data('target');
+                const targetSection = $('#' + targetId);
+                const button = $(this);
+
+                console.log('Toggle button clicked, target:', targetId);
+                console.log('Target section found:', targetSection.length > 0);
+                console.log('Section has hidden class:', targetSection.hasClass('hidden'));
+
+                if (targetSection.length === 0) {
+                    console.error('Target section not found:', targetId);
+                    return;
+                }
+
+                if (targetSection.hasClass('hidden')) {
+                    // Show section
+                    targetSection.removeClass('hidden').hide().slideDown(300, function() {
+                        console.log('Section shown');
+                    });
+                    button.addClass('active');
+                    console.log('Button active class added');
+                } else {
+                    // Hide section
+                    targetSection.slideUp(300, function() {
+                        targetSection.addClass('hidden');
+                        console.log('Section hidden');
+                    });
+                    button.removeClass('active');
+                    console.log('Button active class removed');
+                }
+            });
+
+            // Function to update task count
+            window.updateTaskCount = function(count) {
+                $('#tasks-count').text(count || 0);
+            };
+
+            // Listen for task data updates
+            $(document).on('tasksLoaded', function(event, data) {
+                if (data && data.pagination && data.pagination.total !== undefined) {
+                    updateTaskCount(data.pagination.total);
+                }
+            });
+        });
+    </script>
 @endsection
 
 @section('content')
@@ -591,6 +713,12 @@
                                     alt="User avatar" />
                                 <div class="user-info text-center">
                                     <h5>{{ auth()->user()->name }}</h5>
+                                    @if (auth()->user()->is_customs_clearance_agent)
+                                        <span class="bg-primary text-white p-2 rounded mb-3"> Customs Clearance Broker
+                                        </span>
+                                    @endif
+                                    <br>
+                                    <br>
                                     <span
                                         class="badge bg-label-secondary">{{ auth()->user()->company_name ?? 'No Company' }}</span>
                                 </div>
@@ -611,7 +739,7 @@
                                         <span>Tasks Done</span>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-6 ">
                                     <div class="stat-item">
                                         <div class="avatar">
                                             <div class="avatar-initial">
@@ -626,8 +754,8 @@
                             </div>
                         </div>
 
-                        <h5 class="pb-4 border-bottom mb-4">Details</h5>
-                        <div class="info-container">
+                        <h5 class="pb-4 border-bottom mb-4 px-4">Details</h5>
+                        <div class="info-container px-4">
                             <ul class="list-unstyled mb-6">
                                 <li class="mb-3">
                                     <span class="h6 text-muted">Phone:</span><br>
@@ -650,8 +778,10 @@
                                     <span class="badge bg-success">{{ ucfirst(auth()->user()->status) }}</span>
                                 </li>
                                 <li class="mb-3">
-                                    <span class="h6 text-muted">Role:</span><br>
-                                    <span class="fw-semibold">{{ ucfirst(auth()->user()->role) }}</span>
+                                    @if (auth()->user()->role)
+                                        <span class="h6 text-muted">Role:</span><br>
+                                        <span class="fw-semibold">{{ ucfirst(auth()->user()->role) }}</span>
+                                    @endif
                                 </li>
                             </ul>
                         </div>
@@ -663,14 +793,51 @@
 
             <!-- Enhanced Tasks Section -->
             <div class="col-xl-9 col-lg-8">
-                <div class="tasks-section fade-in">
+                @if (auth()->user()->is_customs_clearance_agent)
+                    <div class="card mb-4 shadow-sm border-0 bg-white">
+                        <div class="card-body position-relative p-4">
+                            <h4>
+                                <i class="ti ti-clipboard-check"></i>
+                                {{ __('Clearance Tasks') }}
+                            </h4>
+
+                            <p class="text-muted mb-4 fs-6">
+                                {{ __('There are') }} <strong>{{ $clearance }}</strong>
+                                {{ __('customs clearance tasks available. You can view them and submit your offer.') }}
+                            </p>
+
+                            <a href="{{ route('customer.customs-clearances.ads') }}"
+                                class="btn btn-primary btn-lg px-4 py-2 d-inline-flex align-items-center">
+                                <i class="ti ti-clipboard-check me-2 fs-5"></i>
+                                {{ __('View Customs Clearance Tasks Now') }}
+                            </a>
+
+                            <div class="position-absolute top-0 end-0 m-3">
+                                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill shadow-sm">
+                                    {{ $clearance }} {{ __('new customs clearance available') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Section Toggle Buttons -->
+                <div class="section-toggles">
+                    <button class="toggle-button" id="toggle-tasks" data-target="tasks-section">
+                        <i class="ti ti-truck-delivery icon"></i>
+                        <span>My Tasks</span>
+                        <span class="count-badge" id="tasks-count">0</span>
+                    </button>
+                    <!-- Future toggle buttons can be added here -->
+                </div>
+
+                <div class="tasks-section fade-in hidden" id="tasks-section">
+
                     <!-- Enhanced Tasks Header -->
                     <div class="tasks-header">
                         <div class="d-flex justify-content-between align-items-center flex-wrap">
                             <h4>
-                                <div class="header-icon">
-                                    <i class="ti ti-list-check"></i>
-                                </div>
+                                <i class="ti ti-truck-delivery"></i>
                                 My Tasks
                             </h4>
                             <button class="add-task-btn" data-bs-toggle="modal" data-bs-target="#taskTypeModal">

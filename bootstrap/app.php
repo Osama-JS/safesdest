@@ -10,6 +10,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\LocaleMiddleware;
 use App\Schedule\DriverScheduler;
 use App\Schedule\CheckDriversOnline;
+use App\Schedule\FileExpirationScheduler;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Spatie\Permission\Middlewares\RoleMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
   )->withSchedule(function (Illuminate\Console\Scheduling\Schedule $schedule) {
     (new DriverScheduler())($schedule);
     (new CheckDriversOnline())($schedule);
+    (new FileExpirationScheduler())($schedule);
   })
   ->withMiddleware(function (Middleware $middleware) {
     $middleware->web(LocaleMiddleware::class);

@@ -1,5 +1,23 @@
+/**
+ * ===================================================================
+ * AUTHENTICATION AND REGISTRATION UTILITIES
+ * ===================================================================
+ * This file handles authentication forms, registration processes,
+ * and user account creation functionality.
+ */
+
+// استيراد الدوال المساعدة من ملف ajax
 import { handleErrors, showBlockAlert, showAlert } from './ajax';
 
+// ===================================================================
+// AUTHENTICATION FORM HANDLER
+// ===================================================================
+
+/**
+ * معالج نماذج المصادقة (تسجيل الدخول والتسجيل)
+ * يتعامل مع جميع النماذج التي تحمل class "form_auth"
+ * يدعم إعادة التوجيه التلقائي بعد النجاح
+ */
 $(document)
   .off('submit', '.form_auth')
   .on('submit', '.form_auth', function (e) {
@@ -41,7 +59,6 @@ $(document)
               handleErrors(data.error);
               console.log(data.error);
               showAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة', 5000, true);
-
               showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
             } else if (data.status === 1) {
               showBlockAlert('success', data.success, 1700);
@@ -68,6 +85,15 @@ $(document)
     });
   });
 
+// ===================================================================
+// COMMENTED CODE - DRIVER FIELDS TOGGLE (FOR FUTURE USE)
+// ===================================================================
+
+/**
+ * الكود التالي معطل حالياً - يمكن استخدامه لإظهار/إخفاء حقول السائق
+ * في نموذج التسجيل حسب نوع الحساب المختار
+ */
+
 // import { generateFields } from './ajax';
 // $(document).ready(function () {
 //   function toggleDriverFields() {
@@ -87,6 +113,11 @@ $(document)
 //   });
 // });
 
+/**
+ * الكود التالي معطل حالياً - يمكن استخدامه لجلب حقول القالب
+ * وإنشاؤها ديناميكياً في النموذج
+ */
+
 // $.ajax({
 //   url: baseUrl + 'admin/settings/templates/fields', // استبدل بالمسار الفعلي لاسترجاع الحقول
 //   type: 'GET',
@@ -94,7 +125,6 @@ $(document)
 //   success: function (response) {
 //     // توليد الحقول في #additional-form
 //     console.log(response.fields);
-
 //     generateFields(response.fields);
 //   },
 //   error: function () {
@@ -102,21 +132,37 @@ $(document)
 //   }
 // });
 
-// generateFields(fields);
+// ===================================================================
+// VEHICLE SELECTION FUNCTIONALITY
+// ===================================================================
 
-/* ================  Select Vehicles Code   =============== */
-let vehicleIndex = 0;
-const selectedTypes = new Set();
+/**
+ * متغيرات عامة لإدارة اختيار المركبات
+ */
+let vehicleIndex = 0; // فهرس المركبة الحالي
+const selectedTypes = new Set(); // مجموعة الأنواع المختارة
 
+/**
+ * دالة إنشاء صف جديد لاختيار المركبة
+ * تستبدل المتغيرات في القالب بالفهرس المحدد
+ * @param {number} index - فهرس المركبة
+ * @returns {string} HTML للصف الجديد
+ */
 function createVehicleRow(index) {
   return $('#vehicle-row-template').html().replaceAll('{index}', index);
 }
 
+/**
+ * دالة ربط الأحداث بصف المركبة
+ * تتعامل مع تغيير المركبة والنوع والحجم
+ * @param {jQuery} $row - عنصر الصف
+ */
 function updateVehicleRowEvents($row) {
   const $vehicleSelect = $row.find('.vehicle-select');
   const $typeSelect = $row.find('.vehicle-type-select');
   const $sizeSelect = $row.find('.vehicle-size-select');
 
+  // معالج تغيير المركبة - يجلب الأنواع المتاحة
   $vehicleSelect.on('change', function () {
     const vehicleId = $(this).val();
     $typeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
@@ -135,6 +181,7 @@ function updateVehicleRowEvents($row) {
     }
   });
 
+  // معالج تغيير النوع - يجلب الأحجام المتاحة
   $typeSelect.on('change', function () {
     const typeId = $(this).val();
     $sizeSelect.prop('disabled', true).empty().append('<option>Loading...</option>');
@@ -152,67 +199,99 @@ function updateVehicleRowEvents($row) {
   });
 }
 
+/**
+ * إنشاء الصف الأول لاختيار المركبة وربط الأحداث
+ */
 const $newRow = $(createVehicleRow(vehicleIndex++));
 $('#vehicle-selection-container').append($newRow);
 updateVehicleRowEvents($newRow);
 
-/* ================  Template Fields Generate Code   =============== */
+// ===================================================================
+// TEMPLATE FIELDS GENERATION
+// ===================================================================
 
+/**
+ * إنشاء حقول القوالب المختلفة حسب نوع المستخدم
+ * يتم استدعاء هذه الدوال عند تحميل الصفحة إذا كانت القوالب متوفرة
+ */
+
+// إنشاء حقول قالب العميل
 if (CustomerTemplate != null) {
   generateFields(CustomerTemplate, 'additional-customer-form');
 }
+
+// إنشاء حقول قالب السائق
 if (DriverTemplate != null) {
   generateFields(DriverTemplate, 'additional-driver-form');
 }
 
+// إنشاء حقول قالب الوسيط
+if (BrokerTemplate != null) {
+  generateFields(BrokerTemplate, 'additional-broker-form');
+}
+
+/**
+ * دالة إنشاء الحقول الديناميكية للتسجيل
+ * تختلف عن دالة ajax.js في أنها تتحقق من صلاحيات الكتابة
+ * @param {Array} fields - مصفوفة حقول القالب
+ * @param {string} generateSection - معرف القسم المراد إضافة الحقول إليه
+ */
 export function generateFields(fields, generateSection) {
   fields.forEach(field => {
     var inputField = '',
       inputSpan = '';
 
+    // التحقق من صلاحية الكتابة للحقل
     if (field.driver_can == 'write' || field.customer_can == 'write') {
+      // إنشاء الحقل حسب النوع
       switch (field.type) {
         case 'string':
-          inputField = `<input type="text" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" }>`;
+          inputField = `<input type="text" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}">`;
           break;
         case 'number':
-          inputField = `<input type="number" name="additional_fields[${field.name}]"  class="form-control" placeholder="Enter ${field.name}" }>`;
+          inputField = `<input type="number" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}">`;
           break;
         case 'email':
-          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}"}>`;
+          inputField = `<input type="email" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}">`;
           break;
         case 'date':
-          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control" }>`;
+          inputField = `<input type="date" name="additional_fields[${field.name}]" class="form-control">`;
           break;
         case 'textarea':
-          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" }></textarea>`;
+          inputField = `<textarea name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}"></textarea>`;
           break;
         case 'file':
-          inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" }>`;
+          inputField = `<input type="file" name="additional_fields[${field.name}]" class="form-control">`;
           break;
+        // حقل ملف مع تاريخ انتهاء صلاحية
         case 'file_expiration_date':
           inputField = `
-    <input type="file" name="additional_fields[${field.name}_file]" class="form-control"}>
+            <input type="file" name="additional_fields[${field.name}_file]" class="form-control">
             <label class="p-0">expiration date</label>
+            <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control">
+          `;
+          break;
 
-    <input type="date" name="additional_fields[${field.name}_expiration]" class="form-control " }>
-  `;
-          break;
+        // حقل رابط URL
         case 'url':
-          inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
+          inputField = `<input type="url" name="additional_fields[${field.name}]" class="form-control" placeholder="Enter ${field.name}" ${field.required ? 'required' : ''}>`;
           break;
+
+        // حقل صورة
         case 'image':
-          inputField = `<input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+          inputField = `<input type="file" name="additional_fields[${field.name}]" class="form-control">`;
           break;
+
+        // حقل قائمة اختيار
         case 'select':
-          inputField = `<select name="additional_fields[${field.name}]" class="form-select"}>
+          inputField = `<select name="additional_fields[${field.name}]" class="form-select">
           ${(() => {
             try {
               const options = JSON.parse(field.value || '[]');
               return options
                 .map(
                   option =>
-                    `<option value="${option.value}" >
+                    `<option value="${option.value}">
                   ${option.name}
                 </option>`
                 )
@@ -225,33 +304,49 @@ export function generateFields(fields, generateSection) {
         </select>`;
           break;
       }
+
+      // إنشاء عناصر عرض الأخطاء
       if (field.type === 'file_expiration_date') {
-        inputSpan = `<span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>`;
-        inputSpan = `<span class="additional_fields-${field.name}_file-error text-danger text-error"></span>`;
+        inputSpan = `
+          <span class="additional_fields-${field.name}_file-error text-danger text-error"></span>
+          <span class="additional_fields-${field.name}_expiration-error text-danger text-error"></span>
+        `;
       } else {
         inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
       }
+
+      // إضافة الحقل إلى القسم المحدد
       $(`#${generateSection}`).append(`
-        <div class="mb-4  col-md-6">
+        <div class="mb-4 col-md-6">
           <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
-          ${inputSpan}
           ${inputField}
-          <span class="additional_fields-${field.name}-error text-danger text-error"></span>
+          ${inputSpan}
         </div>
       `);
     }
   });
 }
 
-// WhatsApp functionality for registration form
+// ===================================================================
+// WHATSAPP FUNCTIONALITY FOR REGISTRATION
+// ===================================================================
+
+/**
+ * وظائف إدارة حقول WhatsApp في نموذج التسجيل
+ * تتيح للمستخدم استخدام نفس رقم الهاتف لـ WhatsApp أو إدخال رقم منفصل
+ */
 $(document).ready(function () {
+  /**
+   * دالة إظهار/إخفاء حقول WhatsApp المنفصلة
+   * تخفي الحقول إذا كان رقم الهاتف هو نفسه WhatsApp
+   */
   function toggleWhatsAppFieldsReg() {
     const isPhoneWhatsApp = $('#phone-is-whatsapp-reg').is(':checked');
     const whatsappFields = $('#whatsapp-fields-reg');
 
     if (isPhoneWhatsApp) {
       whatsappFields.hide();
-      // Clear WhatsApp fields when phone is WhatsApp
+      // مسح حقول WhatsApp عند استخدام رقم الهاتف
       $('#whatsapp-country-code-reg').val('');
       $('#whatsapp-number-reg').val('');
     } else {
@@ -259,10 +354,10 @@ $(document).ready(function () {
     }
   }
 
-  // Initialize WhatsApp fields visibility
+  // تهيئة حالة حقول WhatsApp عند تحميل الصفحة
   toggleWhatsAppFieldsReg();
 
-  // Handle WhatsApp toggle
+  // معالج تغيير حالة مربع الاختيار
   $('#phone-is-whatsapp-reg').on('change', function () {
     toggleWhatsAppFieldsReg();
   });

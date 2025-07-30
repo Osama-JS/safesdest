@@ -1,3 +1,20 @@
+/**
+ * ===================================================================
+ * AJAX UTILITIES AND FORM HANDLING
+ * ===================================================================
+ * This file contains utility functions for handling AJAX requests,
+ * form submissions, alerts, and dynamic field generation.
+ */
+
+// ===================================================================
+// FORM SUBMISSION HANDLER
+// ===================================================================
+
+/**
+ * معالج إرسال النماذج العام
+ * يتعامل مع جميع النماذج التي تحمل class "form_submit"
+ * يدعم رفع الملفات، معالجة الأخطاء، وعرض الرسائل
+ */
 $(document)
   .off('submit', '.form_submit')
   .on('submit', '.form_submit', function (e) {
@@ -76,6 +93,16 @@ $(document)
     });
   });
 
+// ===================================================================
+// DELETE RECORD FUNCTION
+// ===================================================================
+
+/**
+ * دالة حذف السجلات مع تأكيد المستخدم
+ * تعرض نافذة تأكيد قبل الحذف وتتعامل مع الاستجابة
+ * @param {string} name - اسم العنصر المراد حذفه
+ * @param {string} url - رابط API للحذف
+ */
 export function deleteRecord(name, url) {
   Swal.fire({
     title: `Delete ${name} ?`,
@@ -93,7 +120,6 @@ export function deleteRecord(name, url) {
       $.ajax({
         url: url,
         type: 'DELETE',
-
         success: function (response) {
           if (response.status === 1) {
             showAlert('success', response.success, 10000, true);
@@ -110,6 +136,16 @@ export function deleteRecord(name, url) {
   });
 }
 
+// ===================================================================
+// TEAM CONNECTION FUNCTION
+// ===================================================================
+
+/**
+ * دالة ربط السجل بالفريق مع تأكيد المستخدم
+ * تعرض نافذة تأكيد قبل الربط وتتعامل مع الاستجابة
+ * @param {string} name - اسم العنصر المراد ربطه
+ * @param {string} url - رابط API للربط
+ */
 export function connectTeam(name, url) {
   Swal.fire({
     title: `Connect ${name} ?`,
@@ -127,7 +163,6 @@ export function connectTeam(name, url) {
       $.ajax({
         url: url,
         type: 'DELETE',
-
         success: function (response) {
           if (response.status === 1) {
             showAlert('success', response.success, 10000, true);
@@ -144,6 +179,22 @@ export function connectTeam(name, url) {
   });
 }
 
+// ===================================================================
+// MODAL FORM FUNCTION
+// ===================================================================
+
+/**
+ * دالة عرض نموذج في نافذة منبثقة مع إرسال البيانات
+ * تستخدم لتحديث الحالات والبيانات السريعة
+ * @param {Object} options - خيارات النافذة المنبثقة
+ * @param {string} options.title - عنوان النافذة
+ * @param {string} options.icon - أيقونة النافذة
+ * @param {string} options.fields - حقول HTML للنموذج
+ * @param {string} options.url - رابط الإرسال
+ * @param {string} options.method - طريقة الإرسال
+ * @param {Object} options.dataTable - جدول البيانات للتحديث
+ * @param {Object} options.extraData - بيانات إضافية
+ */
 export function showFormModal(options) {
   const {
     title = 'Update Status',
@@ -202,13 +253,23 @@ export function showFormModal(options) {
   });
 }
 
+// ===================================================================
+// ALERT AND NOTIFICATION FUNCTIONS
+// ===================================================================
+
+/**
+ * دالة عرض تنبيه مؤقت على النموذج
+ * تعرض رسالة ملونة فوق النموذج لفترة محددة
+ * @param {string} type - نوع التنبيه (success, warning, error)
+ * @param {string} message - نص الرسالة
+ * @param {number} timer - مدة العرض بالميلي ثانية
+ */
 export function showBlockAlert(type, message, timer = 700) {
   let bgColor = type === 'success' ? 'bg-success' : 'warning' ? 'bg-warning' : 'bg-danger';
 
   $('.form_submit').block({
     message: `<div class="p-3 text-white ${bgColor}" style="border-radius: 5px;">${message}</div>`,
     timeout: timer,
-
     css: {
       backgroundColor: 'transparent',
       border: '0'
@@ -223,6 +284,15 @@ export function showBlockAlert(type, message, timer = 700) {
     $('.form_submit').unblock();
   }, 2000);
 }
+
+/**
+ * دالة عرض إشعار توست
+ * تعرض إشعار في أعلى الصفحة مع تأثيرات بصرية
+ * @param {string} icon - نوع الإشعار (success, error, warning, info)
+ * @param {string} title - نص الإشعار
+ * @param {number} timer - مدة العرض بالميلي ثانية
+ * @param {boolean} showConfirmButton - عرض زر التأكيد (غير مستخدم حالياً)
+ */
 export function showAlert(icon, title, timer, showConfirmButton = false) {
   toastr.options = {
     closeButton: true,
@@ -249,6 +319,16 @@ export function showAlert(icon, title, timer, showConfirmButton = false) {
   }
 }
 
+// ===================================================================
+// ERROR HANDLING FUNCTION
+// ===================================================================
+
+/**
+ * دالة معالجة وعرض أخطاء التحقق من النماذج
+ * تعرض رسائل الخطأ تحت الحقول المناسبة
+ * @param {Object} errors - كائن الأخطاء من الخادم
+ * @param {string} prefix - بادئة لأسماء الحقول (اختيارية)
+ */
 export function handleErrors(errors, prefix = '') {
   $('span.text-error').text(''); // إعادة تعيين الأخطاء
 
@@ -286,20 +366,41 @@ export function handleErrors(errors, prefix = '') {
   });
 }
 
-// دالة لإعادة تعيين محتوى CKEditor
+// ===================================================================
+// HELPER FUNCTIONS
+// ===================================================================
+
+/**
+ * دالة إعادة تعيين محتوى محرر CKEditor
+ * تمسح محتوى المحرر بعد الإرسال الناجح
+ * @param {Element} contentElement - عنصر المحتوى
+ * @param {Element} contentResetElement - عنصر إعادة التعيين
+ */
 function resetCKEditor(contentElement, contentResetElement) {
   if (contentElement && contentResetElement && CKEDITOR.instances['content']) {
     CKEDITOR.instances['content'].setData('');
   }
 }
 
-// دالة لإعادة تعيين الصورة
+/**
+ * دالة إعادة تعيين الصورة إلى الحالة الافتراضية
+ * تستعيد الصورة الافتراضية بعد الإرسال الناجح
+ * @param {Element} imgElement - عنصر الصورة
+ */
 function resetImage(imgElement) {
   if (imgElement) {
     $(imgElement).attr('src', $(imgElement).attr('data-image'));
   }
 }
 
+// ===================================================================
+// TEMPLATE SELECTION HANDLER
+// ===================================================================
+
+/**
+ * معالج تغيير القالب المحدد
+ * يجلب حقول القالب ويعرضها ديناميكياً
+ */
 $('#select-template')
   .off('change')
   .on('change', function () {
@@ -325,12 +426,24 @@ $('#select-template')
     }
   });
 
+// ===================================================================
+// DYNAMIC FIELD GENERATION FUNCTION
+// ===================================================================
+
+/**
+ * دالة إنشاء الحقول الديناميكية بناءً على القالب المحدد
+ * تدعم أنواع مختلفة من الحقول مع البيانات المحفوظة مسبقاً
+ * @param {Array} fields - مصفوفة حقول القالب
+ * @param {Object} storedData - البيانات المحفوظة مسبقاً (للتعديل)
+ */
 export function generateFields(fields, storedData = {}) {
   fields.forEach(field => {
     var inputField = '';
     var inputSpan = '';
     const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المخزنة إذا وجدت
     console.log(storedData);
+
+    // إنشاء الحقل حسب النوع
     switch (field.type) {
       case 'string':
         inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
@@ -350,9 +463,9 @@ export function generateFields(fields, storedData = {}) {
       case 'file':
         inputField = `
         <a href="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
-
         <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
+      // حقل ملف مع تاريخ انتهاء صلاحية
       case 'file_expiration_date':
         const currentFile = storedData[field.name]?.value || '';
         const currentExpiration = storedData[field.name]?.expiration || '';
@@ -370,20 +483,20 @@ export function generateFields(fields, storedData = {}) {
 
         inputField = `
           ${fileDisplay}
-          <div class="mb-3">
-            <label class="form-label">Upload File</label>
+          <div class="">
             <input type="file" name="additional_fields[${field.name}_file]" class="form-control"
                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.jpeg,.png,.jpg,.webp,.gif">
-            <small class="text-muted">Max size: 10MB. Allowed types: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, Images</small>
           </div>
           <div class="mb-3">
             <label class="form-label">${expirationLabel}</label>
             <input type="date" name="additional_fields[${field.name}_expiration]"
                    value="${currentExpiration}" class="form-control" min="${new Date().toISOString().split('T')[0]}"
                    placeholder="Enter ${expirationLabel.toLowerCase()}">
+            <small class="text-muted">Max size: 10MB. Allowed types: PDF, DOC, DOCX, XLS, XLSX, TXT, CSV, Images</small>
           </div>
         `;
         break;
+      // حقل ملف مع نص
       case 'file_with_text':
         const currentFileWithText = storedData[field.name]?.value || '';
         const currentText = storedData[field.name]?.text || '';
@@ -414,15 +527,20 @@ export function generateFields(fields, storedData = {}) {
           </div>
         `;
         break;
+
+      // حقل رابط URL
       case 'url':
         inputField = `<input type="url" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}" >`;
         break;
+
+      // حقل صورة
       case 'image':
         inputField = `
         <img src="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
         <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
         break;
 
+      // حقل قائمة اختيار
       case 'select':
         inputField = `<select name="additional_fields[${field.name}]" class="form-select">
           ${(() => {
@@ -445,6 +563,7 @@ export function generateFields(fields, storedData = {}) {
         break;
     }
 
+    // إنشاء عناصر عرض الأخطاء حسب نوع الحقل
     if (field.type === 'file_expiration_date') {
       inputSpan = `
         <span class="additional_fields-${field.name}_file-error text-danger text-error d-block"></span>
@@ -458,6 +577,8 @@ export function generateFields(fields, storedData = {}) {
     } else {
       inputSpan = `<span class="additional_fields-${field.name}-error text-danger text-error"></span>`;
     }
+
+    // إضافة الحقل إلى النموذج
     $('#additional-form').append(`
       <div class="mb-3 col-md-6">
         <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>

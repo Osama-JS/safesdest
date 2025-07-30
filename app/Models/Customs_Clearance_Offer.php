@@ -20,7 +20,7 @@ class Customs_Clearance_Offer extends Model
   {
     return $this->belongsTo(Customs_Clearance::class, 'customs_clearance_id');
   }
-  public function clearanceAgent()
+  public function broker()
   {
     return $this->belongsTo(Customer::class, 'clearance_agent_id');
   }

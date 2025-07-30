@@ -20,8 +20,9 @@ class DatabaseSeeder extends Seeder
       PricingMethodsSeeder::class,
       SettingsSeeder::class,
       VehiclesSeeder::class,
-      CustomsClearancePermissionTypesSeeder::class,
       CustomsClearancePermissionsSeeder::class,
+      NewPermissionsSeeder::class,
+      NewPermissions2Seeder::class
     ]);
     Customer::factory()->count(10)->create();
   }

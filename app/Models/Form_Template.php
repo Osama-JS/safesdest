@@ -39,20 +39,16 @@ class Form_Template extends Model
     return $this->hasMany(User::class, 'form_template_id');
   }
 
-  /**
-   * طلبات التخليص الجمركي التي تستخدم هذا القالب
-   */
+
   public function customsClearances()
   {
-    return $this->hasMany(CustomsClearance::class, 'form_template_id');
+    return $this->hasMany(Customs_Clearance::class, 'form_template_id');
   }
 
-  /**
-   * عروض التخليص الجمركي التي تستخدم هذا القالب
-   */
-  public function customsClearanceOffers()
+
+  public function clearancePricingTemplates()
   {
-    return $this->hasMany(CustomsClearanceOffer::class, 'form_template_id');
+    return $this->hasMany(Clearance_Pricing_Template::class, 'form_template_id');
   }
 
   /**
@@ -67,6 +63,7 @@ class Form_Template extends Model
       'customers' => $this->customers()->count(),
       'drivers' => $this->drivers()->count(),
       'users' => $this->users()->count(),
+      'customsClearances' => $this->customsClearances()->count(),
     ];
   }
 
@@ -92,6 +89,9 @@ class Form_Template extends Model
     if ($stats['users'] > 0) {
       $summary[] = __('Users') . ': ' . $stats['users'];
     }
+    if ($stats['customsClearances'] > 0) {
+      $summary[] = __('Customs Clearances') . ': ' . $stats['customsClearances'];
+    }
 
     return empty($summary) ? __('No usage') : implode('<br>', $summary);
   }
@@ -104,6 +104,6 @@ class Form_Template extends Model
   public function getTotalUsageAttribute()
   {
     $stats = $this->usage_stats;
-    return $stats['tasks'] + $stats['customers'] + $stats['drivers'] + $stats['users'];
+    return $stats['tasks'] + $stats['customers'] + $stats['drivers'] + $stats['users'] + $stats['customsClearances'];
   }
 }

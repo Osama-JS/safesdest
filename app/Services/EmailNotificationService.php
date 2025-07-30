@@ -22,7 +22,7 @@ class EmailNotificationService
         try {
             // Validate email data
             $validator = $this->validateEmailData($emailData);
-            
+
             if ($validator->fails()) {
                 Log::error('Email notification validation failed', [
                     'errors' => $validator->errors()->toArray(),
@@ -48,7 +48,6 @@ class EmailNotificationService
             ]);
 
             return true;
-
         } catch (\Exception $e) {
             Log::error('Failed to dispatch email notification job', [
                 'error' => $e->getMessage(),
@@ -70,7 +69,7 @@ class EmailNotificationService
     public function sendBulk(array $recipients, array $emailData, array $attachments = [], $delay = null): array
     {
         $results = [];
-        
+
         foreach ($recipients as $recipient) {
             $individualEmailData = array_merge($emailData, ['to' => $recipient]);
             $results[$recipient] = $this->send($individualEmailData, $attachments, $delay);
@@ -194,7 +193,10 @@ class EmailNotificationService
             'payment_received' => 'emails.payment-received',
             'account_activated' => 'emails.account-activated',
             'password_changed' => 'emails.password-changed',
-            'system_maintenance' => 'emails.system-maintenance'
+            'system_maintenance' => 'emails.system-maintenance',
+            // قوالب نظام انتهاء صلاحية الملفات
+            'file-expiration-notification' => 'emails.file-expiration-notification',
+            'account-suspension-notification' => 'emails.account-suspension-notification'
         ];
     }
 }

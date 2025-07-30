@@ -311,6 +311,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
+    @vite(['resources/assets/js/config.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
     @vite(['resources/js/admin/vehicles.js'])

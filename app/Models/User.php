@@ -156,6 +156,11 @@ class User extends Authenticatable
     return $this->morphMany(Transaction::class, 'payable');
   }
 
+  public function transactionsClearance()
+  {
+    return $this->morphMany(Clearance_Transactions::class, 'payable');
+  }
+
   // علاقات التخليص الجمركي
 
   /**

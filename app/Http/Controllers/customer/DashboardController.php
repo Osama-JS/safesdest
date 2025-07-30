@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
 use App\Models\Customer;
+use App\Models\Customs_Clearance;
 use App\Models\Form_Field;
 use App\Models\Settings;
 use App\Models\Vehicle;
@@ -29,7 +30,12 @@ class DashboardController extends Controller
     $template_from_fields = Form_Field::where('form_template_id', $task_from_template->value)->get();
     $template_to_fields = Form_Field::where('form_template_id', $task_to_template->value)->get();
 
-    return view('customers.index', compact('vehicles', 'template_fields', 'task_template', 'task_from_template', 'task_to_template', 'template_from_fields', 'template_to_fields'));
+    $clearance = 0;
+    if (auth()->user()->is_customs_clearance_agent) {
+      $clearance = Customs_Clearance::where('status', 'in_progress')->where('public', true)->count();
+    }
+
+    return view('customers.index', compact('vehicles', 'template_fields', 'task_template', 'task_from_template', 'task_to_template', 'template_from_fields', 'template_to_fields', 'clearance'));
   }
 
   public function profile()

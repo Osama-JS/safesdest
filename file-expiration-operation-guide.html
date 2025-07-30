@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>دليل تشغيل ومراقبة نظام تنبيهات انتهاء صلاحية الملفات</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .section {
+        margin-bottom: 40px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .section-header {
+        padding: 20px;
+        font-size: 1.5em;
+        font-weight: bold;
+        color: white;
+        text-align: center;
+      }
+
+      .operation {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+      }
+      .monitoring {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+      }
+      .commands {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      }
+      .troubleshooting {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+      }
+
+      .section-content {
+        padding: 30px;
+        background: #f8f9fa;
+      }
+
+      .workflow-step {
+        background: white;
+        margin-bottom: 20px;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #007bff;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .workflow-step h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+      }
+
+      .workflow-step .step-number {
+        background: #007bff;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-left: 10px;
+        float: right;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        margin: 15px 0;
+        overflow-x: auto;
+        font-size: 0.9em;
+        line-height: 1.5;
+        border-left: 4px solid #3498db;
+      }
+
+      .command-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .command-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        border-left: 4px solid;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .command-card.primary {
+        border-left-color: #007bff;
+      }
+      .command-card.success {
+        border-left-color: #28a745;
+      }
+      .command-card.warning {
+        border-left-color: #ffc107;
+      }
+      .command-card.danger {
+        border-left-color: #dc3545;
+      }
+
+      .command-card h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+      }
+
+      .monitoring-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .monitoring-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .monitoring-card .icon {
+        font-size: 3em;
+        margin-bottom: 15px;
+      }
+
+      .monitoring-card h4 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid;
+      }
+
+      .alert.info {
+        background: #d1ecf1;
+        border-left-color: #17a2b8;
+        color: #0c5460;
+      }
+
+      .alert.warning {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+        color: #856404;
+      }
+
+      .alert.success {
+        background: #d4edda;
+        border-left-color: #28a745;
+        color: #155724;
+      }
+
+      .alert.danger {
+        background: #f8d7da;
+        border-left-color: #dc3545;
+        color: #721c24;
+      }
+
+      .schedule-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .schedule-table th {
+        background: #34495e;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .schedule-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e9ecef;
+        text-align: center;
+      }
+
+      .schedule-table tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        font-weight: bold;
+        color: white;
+      }
+
+      .status-badge.active {
+        background: #28a745;
+      }
+      .status-badge.scheduled {
+        background: #17a2b8;
+      }
+      .status-badge.warning {
+        background: #ffc107;
+        color: #333;
+      }
+      .status-badge.error {
+        background: #dc3545;
+      }
+
+      .footer {
+        background: #2c3e50;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .toc {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+
+      .toc h3 {
+        color: #495057;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .toc li {
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .toc li:last-child {
+        border-bottom: none;
+      }
+
+      .toc a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 768px) {
+        .command-grid,
+        .monitoring-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .container {
+          margin: 10px;
+          border-radius: 5px;
+        }
+
+        .header,
+        .content {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>⚙️ دليل تشغيل ومراقبة نظام تنبيهات انتهاء صلاحية الملفات</h1>
+        <p>SafeDests Platform - دليل شامل للتشغيل والمراقبة والصيانة</p>
+      </div>
+
+      <div class="content">
+        <!-- فهرس المحتويات -->
+        <div class="toc">
+          <h3>📋 فهرس المحتويات</h3>
+          <ul>
+            <li><a href="#operation">🔄 آلية العمل التفصيلية</a></li>
+            <li><a href="#commands">💻 أوامر التشغيل والإدارة</a></li>
+            <li><a href="#monitoring">📊 المراقبة والتتبع</a></li>
+            <li><a href="#troubleshooting">🔧 استكشاف الأخطاء وإصلاحها</a></li>
+          </ul>
+        </div>
+
+        <!-- آلية العمل -->
+        <div class="section" id="operation">
+          <div class="section-header operation">🔄 آلية العمل التفصيلية</div>
+          <div class="section-content">
+            <div class="alert info">
+              <strong>📌 ملاحظة مهمة:</strong> النظام يعمل تلقائياً يومياً في الساعة 10:00 صباحاً (توقيت الرياض) ولا
+              يحتاج تدخل يدوي في الظروف العادية.
+            </div>
+
+            <h3 style="color: #2c3e50; margin-bottom: 20px">🕙 الجدولة الزمنية للنظام</h3>
+
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th>المهمة</th>
+                  <th>التوقيت</th>
+                  <th>التكرار</th>
+                  <th>الحالة</th>
+                  <th>الوصف</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>فحص انتهاء الصلاحية</strong></td>
+                  <td>10:00 صباحاً</td>
+                  <td>يومي</td>
+                  <td><span class="status-badge active">نشط</span></td>
+                  <td>فحص جميع الملفات وإرسال التنبيهات</td>
+                </tr>
+                <tr>
+                  <td><strong>تنظيف السجلات</strong></td>
+                  <td>02:00 صباحاً</td>
+                  <td>أسبوعي (الأحد)</td>
+                  <td><span class="status-badge scheduled">مجدول</span></td>
+                  <td>حذف السجلات القديمة (30+ يوم)</td>
+                </tr>
+                <tr>
+                  <td><strong>التقرير الأسبوعي</strong></td>
+                  <td>09:00 صباحاً</td>
+                  <td>أسبوعي (الأحد)</td>
+                  <td><span class="status-badge scheduled">مجدول</span></td>
+                  <td>إرسال تقرير شامل للإدارة</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 style="color: #2c3e50; margin: 30px 0 20px 0">🔍 خطوات الفحص اليومي</h3>
+
+            <div class="workflow-step">
+              <div class="step-number">1</div>
+              <h4>فحص المستخدمين النشطين</h4>
+              <p>
+                يقوم النظام بفحص جداول <code>users</code>, <code>customers</code>, <code>drivers</code> للمستخدمين بحالة
+                <code>active</code> فقط.
+              </p>
+              <div class="code-block">
+                // استعلام المستخدمين النشطين User::where('status', 'active')->whereNotNull('additional_data')->get()
+                Customer::where('status', 'active')->whereNotNull('additional_data')->get() Driver::where('status',
+                'active')->whereNotNull('additional_data')->with('team.users.user')->get()
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">2</div>
+              <h4>تحليل البيانات الإضافية</h4>
+              <p>
+                فحص حقل <code>additional_data</code> للبحث عن الحقول من نوع <code>file_expiration_date</code> التي تحتوي
+                على تاريخ انتهاء.
+              </p>
+              <div class="code-block">
+                // بنية البيانات المطلوبة { "field_name": { "label": "رخصة القيادة", "value": "files/license.pdf",
+                "expiration": "2024-12-31", "type": "file_expiration_date" } }
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">3</div>
+              <h4>فحص تواريخ الانتهاء</h4>
+              <p>التحقق من الملفات التي انتهت صلاحيتها أو ستنتهي خلال يوم واحد من تاريخ اليوم.</p>
+              <div class="code-block">
+                // شرط الفحص $expirationDate = Carbon::parse($fieldData['expiration']); $today = now()->startOfDay(); if
+                ($expirationDate->lte($today->copy()->addDay())) { // الملف منتهي أو سينتهي خلال يوم }
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">4</div>
+              <h4>منع التكرار</h4>
+              <p>التحقق من عدم إرسال تنبيه لنفس الملف في نفس اليوم باستخدام مفتاح فريد.</p>
+              <div class="code-block">
+                // فحص التكرار $existingNotification = FileExpirationNotification::where([ 'user_type' => $userType,
+                'user_id' => $user->id, 'field_name' => $fieldName, 'notification_sent_date' => today() ])->first();
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">5</div>
+              <h4>تحديد المستلمين</h4>
+              <p>إنشاء قائمة المستلمين: المستخدم نفسه + مدير الفريق (للسائقين) + إيميل المنصة.</p>
+              <div class="code-block">
+                $recipients = [$user->email]; // إضافة مدير الفريق للسائقين if ($userType === 'driver' &&
+                $user->team_id) { $teamManagers = $user->team->users()->with('user')->get(); foreach ($teamManagers as
+                $teamUser) { if ($teamUser->user && $teamUser->user->status === 'active') { $recipients[] =
+                $teamUser->user->email; } } } // إضافة إيميل المنصة $recipients[] =
+                config('app.platform_notification_email');
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">6</div>
+              <h4>إرسال التنبيهات</h4>
+              <p>إرسال إيميلات مخصصة لكل مستلم باستخدام قالب <code>file-expiration-notification</code>.</p>
+              <div class="code-block">
+                $this->emailService->sendWithTemplate( 'file-expiration-notification', $email, 'تنبيه: انتهاء صلاحية
+                الملف - ' . $fieldData['label'], [ 'user_name' => $user->name, 'user_type' =>
+                $this->getUserTypeInArabic($userType), 'field_label' => $fieldData['label'], 'expiration_date' =>
+                $expirationDate->format('Y-m-d'), 'days_remaining' => max(0, $daysBeforeExpiration), 'is_expired' =>
+                $daysBeforeExpiration < 0, 'action_url' => $this->getUpdateUrl($userType) ] );
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">7</div>
+              <h4>تسجيل التنبيه</h4>
+              <p>حفظ تفاصيل التنبيه في جدول <code>file_expiration_notifications</code> لمنع التكرار والمتابعة.</p>
+              <div class="code-block">
+                FileExpirationNotification::createSafely([ 'user_type' => $userType, 'user_id' => $user->id,
+                'field_name' => $fieldName, 'field_label' => $fieldData['label'], 'file_path' => $fieldData['value'] ??
+                '', 'expiration_date' => $expirationDate, 'notification_sent_date' => today(), 'days_before_expiration'
+                => $daysBeforeExpiration, 'recipients' => $recipients ]);
+              </div>
+            </div>
+
+            <div class="workflow-step">
+              <div class="step-number">8</div>
+              <h4>تعليق الحسابات</h4>
+              <p>فحص التنبيهات المرسلة قبل 3 أيام أو أكثر وتعليق الحسابات التي لم تحدث ملفاتها.</p>
+              <div class="code-block">
+                // البحث عن التنبيهات القديمة $notificationsToSuspend = FileExpirationNotification::where('status',
+                'sent') ->where('notification_sent_date', '<=', now()->subDays(3)->toDateString()) ->get(); foreach
+                ($notificationsToSuspend as $notification) { $user = $notification->user(); if ($user && $user->status
+                === 'active') { // تعليق الحساب $user->update(['status' => 'inactive']); $notification->update(['status'
+                => 'account_suspended']); // إرسال إشعار التعليق $this->sendAccountSuspensionNotification($user,
+                $notification); } }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- أوامر التشغيل -->
+        <div class="section" id="commands">
+          <div class="section-header commands">💻 أوامر التشغيل والإدارة</div>
+          <div class="section-content">
+            <div class="alert success">
+              <strong>✅ الأمر الرئيسي:</strong> <code>php artisan files:check-expirations</code> - يمكن تشغيله يدوياً
+              في أي وقت للفحص الفوري
+            </div>
+
+            <div class="command-grid">
+              <div class="command-card primary">
+                <h4>🔍 الفحص الأساسي</h4>
+                <div class="code-block">
+                  # فحص شامل مع إرسال التنبيهات php artisan files:check-expirations # النتيجة المتوقعة: ✅ تم إكمال فحص
+                  الملفات بنجاح! المستخدمين المفحوصين: 150 العملاء المفحوصين: 89 السائقين المفحوصين: 234 التنبيهات
+                  المرسلة: 12 الحسابات المعلقة: 3
+                </div>
+              </div>
+
+              <div class="command-card success">
+                <h4>📊 عرض الإحصائيات</h4>
+                <div class="code-block">
+                  # عرض إحصائيات مفصلة فقط php artisan files:check-expirations --stats # النتيجة المتوقعة: 📊 إحصائيات
+                  النظام: 👥 المستخدمين النشطين: مستخدمي النظام: 150 العملاء: 89 السائقين: 234 🔔 تنبيهات اليوم: إجمالي
+                  التنبيهات: 12 الملفات المنتهية: 8 الملفات ستنتهي قريباً: 4
+                </div>
+              </div>
+
+              <div class="command-card warning">
+                <h4>🧪 التشغيل التجريبي</h4>
+                <div class="code-block">
+                  # تشغيل تجريبي بدون إرسال إيميلات php artisan files:check-expirations --dry-run # تشغيل تجريبي مع
+                  تفاصيل إضافية php artisan files:check-expirations --dry-run --verbose # فائدة: اختبار النظام بأمان قبل
+                  التشغيل الفعلي
+                </div>
+              </div>
+
+              <div class="command-card danger">
+                <h4>🎯 فحص نوع محدد</h4>
+                <div class="code-block">
+                  # فحص المستخدمين فقط php artisan files:check-expirations --user-type=user # فحص العملاء فقط php
+                  artisan files:check-expirations --user-type=customer # فحص السائقين فقط php artisan
+                  files:check-expirations --user-type=driver
+                </div>
+              </div>
+            </div>
+
+            <h3 style="color: #2c3e50; margin: 30px 0 20px 0">⚙️ أوامر الإدارة والصيانة</h3>
+
+            <div class="command-grid">
+              <div class="command-card primary">
+                <h4>📅 فحص الجدولة</h4>
+                <div class="code-block">
+                  # عرض جميع المهام المجدولة php artisan schedule:list # تشغيل الجدولة يدوياً (للاختبار) php artisan
+                  schedule:run # مراقبة الجدولة في الوقت الفعلي php artisan schedule:work
+                </div>
+              </div>
+
+              <div class="command-card success">
+                <h4>🗄️ إدارة قاعدة البيانات</h4>
+                <div class="code-block">
+                  # تشغيل Migration الجديد php artisan migrate
+                  --path=database/migrations/2025_07_24_000001_create_file_expiration_notifications_table.php # فحص حالة
+                  Migrations php artisan migrate:status # التراجع عن Migration (إذا لزم الأمر) php artisan
+                  migrate:rollback --step=1
+                </div>
+              </div>
+
+              <div class="command-card warning">
+                <h4>🔄 إدارة الطوابير</h4>
+                <div class="code-block">
+                  # تشغيل معالج الطوابير php artisan queue:work --verbose # مراقبة الطوابير المعلقة php artisan
+                  queue:monitor # إعادة تشغيل الطوابير الفاشلة php artisan queue:retry all
+                </div>
+              </div>
+
+              <div class="command-card danger">
+                <h4>🧹 تنظيف النظام</h4>
+                <div class="code-block">
+                  # تنظيف السجلات القديمة يدوياً php artisan db:query "DELETE FROM file_expiration_notifications WHERE
+                  status = 'sent' AND created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)" # تنظيف ملفات السجلات php artisan
+                  log:clear # تحسين قاعدة البيانات php artisan optimize:clear
+                </div>
+              </div>
+            </div>
+
+            <div class="alert warning">
+              <strong>⚠️ تحذير مهم:</strong> استخدم الأوامر التجريبية <code>--dry-run</code> دائماً قبل التشغيل الفعلي
+              في بيئة الإنتاج لتجنب أي مشاكل غير متوقعة.
+            </div>
+          </div>
+        </div>
+
+        <!-- المراقبة والتتبع -->
+        <div class="section" id="monitoring">
+          <div class="section-header monitoring">📊 المراقبة والتتبع</div>
+          <div class="section-content">
+            <div class="alert info">
+              <strong>📈 نظام المراقبة:</strong> يوفر النظام مراقبة شاملة على مستويات متعددة لضمان الأداء الأمثل والكشف
+              المبكر عن المشاكل.
+            </div>
+
+            <div class="monitoring-grid">
+              <div class="monitoring-card">
+                <div class="icon" style="color: #28a745">📊</div>
+                <h4>الإحصائيات اليومية</h4>
+                <p>تتبع عدد المستخدمين المفحوصين والتنبيهات المرسلة والحسابات المعلقة يومياً</p>
+              </div>
+
+              <div class="monitoring-card">
+                <div class="icon" style="color: #17a2b8">📧</div>
+                <h4>مراقبة الإيميلات</h4>
+                <p>تتبع حالة إرسال الإيميلات ومعدل النجاح والفشل مع إعادة المحاولة التلقائية</p>
+              </div>
+
+              <div class="monitoring-card">
+                <div class="icon" style="color: #ffc107">⚠️</div>
+                <h4>تنبيهات الأخطاء</h4>
+                <p>إرسال تنبيهات فورية للإدارة عند حدوث أخطاء أو مشاكل في النظام</p>
+              </div>
+
+              <div class="monitoring-card">
+                <div class="icon" style="color: #dc3545">🚫</div>
+                <h4>مراقبة التعليق</h4>
+                <p>تتبع الحسابات المعلقة وأسباب التعليق مع إحصائيات مفصلة</p>
+              </div>
+            </div>
+
+            <h3 style="color: #2c3e50; margin: 30px 0 20px 0">📋 ملفات السجلات</h3>
+
+            <div class="command-grid">
+              <div class="command-card primary">
+                <h4>📄 سجل Laravel الرئيسي</h4>
+                <div class="code-block">
+                  # مسار الملف storage/logs/laravel.log # مراقبة السجل في الوقت الفعلي tail -f storage/logs/laravel.log
+                  # البحث عن سجلات النظام grep "File expiration" storage/logs/laravel.log # أمثلة السجلات: [2025-07-24
+                  10:00:01] INFO: Starting file expiration check process [2025-07-24 10:00:15] INFO: Checked 150 users,
+                  12 had expired files [2025-07-24 10:00:20] INFO: File expiration notification sent successfully
+                  [2025-07-24 10:00:25] WARNING: Account suspended due to expired file
+                </div>
+              </div>
+
+              <div class="command-card success">
+                <h4>📊 سجل الإحصائيات</h4>
+                <div class="code-block">
+                  # استعلام الإحصائيات من قاعدة البيانات SELECT DATE(created_at) as date, user_type, COUNT(*) as
+                  total_notifications, COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent, COUNT(CASE WHEN status =
+                  'account_suspended' THEN 1 END) as suspended FROM file_expiration_notifications WHERE created_at >=
+                  DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(created_at), user_type ORDER BY date DESC;
+                </div>
+              </div>
+
+              <div class="command-card warning">
+                <h4>⚡ مراقبة الأداء</h4>
+                <div class="code-block">
+                  # مراقبة استهلاك الذاكرة والوقت php artisan files:check-expirations --verbose # النتيجة تتضمن: ⏱️ وقت
+                  التنفيذ: 2.34 ثانية 💾 استهلاك الذاكرة: 45.2 MB # مراقبة الطوابير php artisan horizon:status php
+                  artisan queue:monitor high,default
+                </div>
+              </div>
+
+              <div class="command-card danger">
+                <h4>🚨 تنبيهات الطوارئ</h4>
+                <div class="code-block">
+                  # تنبيهات تُرسل للإدارة تلقائياً: 1. فشل في تشغيل النظام 2. عدد كبير من الحسابات المعلقة (>10) 3. فشل
+                  في إرسال الإيميلات 4. أخطاء في قاعدة البيانات 5. استهلاك ذاكرة مرتفع # إعداد التنبيهات في .env:
+                  ADMIN_EMAIL=admin@safedests.com PLATFORM_NOTIFICATION_EMAIL=notifications@safedests.com
+                </div>
+              </div>
+            </div>
+
+            <h3 style="color: #2c3e50; margin: 30px 0 20px 0">📈 مؤشرات الأداء الرئيسية (KPIs)</h3>
+
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th>المؤشر</th>
+                  <th>القيمة المثلى</th>
+                  <th>التحذير</th>
+                  <th>الخطر</th>
+                  <th>الإجراء المطلوب</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>وقت التنفيذ</strong></td>
+                  <td>< 5 ثواني</td>
+                  <td>5-15 ثانية</td>
+                  <td>> 15 ثانية</td>
+                  <td>تحسين الاستعلامات</td>
+                </tr>
+                <tr>
+                  <td><strong>معدل نجاح الإيميل</strong></td>
+                  <td>> 95%</td>
+                  <td>90-95%</td>
+                  <td>< 90%</td>
+                  <td>فحص إعدادات SMTP</td>
+                </tr>
+                <tr>
+                  <td><strong>الحسابات المعلقة يومياً</strong></td>
+                  <td>< 5</td>
+                  <td>5-10</td>
+                  <td>> 10</td>
+                  <td>مراجعة سياسة التعليق</td>
+                </tr>
+                <tr>
+                  <td><strong>استهلاك الذاكرة</strong></td>
+                  <td>< 50 MB</td>
+                  <td>50-100 MB</td>
+                  <td>> 100 MB</td>
+                  <td>تحسين معالجة البيانات</td>
+                </tr>
+                <tr>
+                  <td><strong>حجم جدول التنبيهات</strong></td>
+                  <td>< 10,000 سجل</td>
+                  <td>10,000-50,000</td>
+                  <td>> 50,000</td>
+                  <td>تنظيف السجلات القديمة</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- استكشاف الأخطاء وإصلاحها -->
+        <div class="section" id="troubleshooting">
+          <div class="section-header troubleshooting">🔧 استكشاف الأخطاء وإصلاحها</div>
+          <div class="section-content">
+            <div class="alert danger">
+              <strong>🚨 دليل الطوارئ:</strong> هذا القسم يحتوي على حلول للمشاكل الشائعة وخطوات الإصلاح السريع للحفاظ
+              على استمرارية النظام.
+            </div>
+
+            <h3 style="color: #2c3e50; margin: 30px 0 20px 0">❌ المشاكل الشائعة والحلول</h3>
+
+            <div class="command-grid">
+              <div class="command-card danger">
+                <h4>🚫 فشل تشغيل الأمر</h4>
+                <div class="code-block">
+                  # المشكلة: Command "files:check-expirations" is not defined # الحل: 1. تأكد من وجود الملف:
+                  app/Console/Commands/CheckFileExpirations.php 2. تنظيف الكاش: php artisan config:clear php artisan
+                  cache:clear php artisan optimize:clear 3. إعادة تحميل الأوامر: php artisan list | grep files
+                </div>
+              </div>
+
+              <div class="command-card warning">
+                <h4>📧 فشل إرسال الإيميلات</h4>
+                <div class="code-block">
+                  # المشكلة: Connection could not be established with host # التشخيص: php artisan tinker
+                  Mail::raw('Test', function($msg) { $msg->to('test@example.com')->subject('Test'); }); # الحل: 1. فحص
+                  إعدادات SMTP في .env 2. اختبار الاتصال 3. إعادة تشغيل الطوابير
+                </div>
+              </div>
+
+              <div class="command-card primary">
+                <h4>🗄️ خطأ في قاعدة البيانات</h4>
+                <div class="code-block">
+                  # المشكلة: Table 'file_expiration_notifications' doesn't exist # الحل: 1. تشغيل Migration: php artisan
+                  migrate --path=database/migrations/2025_07_24_000001_create_file_expiration_notifications_table.php 2.
+                  فحص حالة Migration: php artisan migrate:status 3. فحص الجدول: DESCRIBE file_expiration_notifications;
+                </div>
+              </div>
+
+              <div class="command-card success">
+                <h4>⚡ مشاكل الأداء</h4>
+                <div class="code-block">
+                  # المشكلة: النظام بطيء أو يستهلك ذاكرة كثيرة # الحلول: 1. تنظيف السجلات القديمة 2. تحسين الاستعلامات
+                  3. استخدام الطوابير 4. مراقبة الذاكرة
+                </div>
+              </div>
+            </div>
+
+            <div class="alert success">
+              <strong>✅ نصائح للوقاية:</strong>
+              <ul style="margin: 10px 0; padding-right: 20px">
+                <li>راقب السجلات يومياً للكشف المبكر عن المشاكل</li>
+                <li>احتفظ بنسخ احتياطية منتظمة من قاعدة البيانات</li>
+                <li>اختبر النظام بانتظام باستخدام <code>--dry-run</code></li>
+                <li>راقب مؤشرات الأداء وحجم قاعدة البيانات</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div style="text-align: center; margin-bottom: 20px">
+          <h3 style="color: #ecf0f1; margin-bottom: 15px">📞 معلومات الدعم والتواصل</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px">
+            <div>
+              <h4 style="color: #ecf0f1; margin-bottom: 10px">📧 الدعم الفني</h4>
+              <p style="opacity: 0.8">support@safedests.com</p>
+              <p style="opacity: 0.8">استجابة خلال 24 ساعة</p>
+            </div>
+            <div>
+              <h4 style="color: #ecf0f1; margin-bottom: 10px">🚨 الطوارئ</h4>
+              <p style="opacity: 0.8">emergency@safedests.com</p>
+              <p style="opacity: 0.8">استجابة فورية</p>
+            </div>
+            <div>
+              <h4 style="color: #ecf0f1; margin-bottom: 10px">📱 الهاتف</h4>
+              <p style="opacity: 0.8">+966 12 345 6789</p>
+              <p style="opacity: 0.8">24/7 متاح</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; text-align: center">
+          <p><strong>تم إنشاء هذا الدليل بواسطة نظام التطوير المتقدم</strong></p>
+          <p>دليل شامل لتشغيل ومراقبة نظام تنبيهات انتهاء صلاحية الملفات</p>
+          <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8">
+            تاريخ آخر تحديث: 24 يوليو 2025 | الإصدار: 1.0 | الحالة: جاهز للإنتاج
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

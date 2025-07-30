@@ -15,56 +15,264 @@
 @section('page-style')
     @vite(['resources/assets/vendor/scss/pages/page-auth.scss'])
     <style>
-        .card-select {
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
             position: relative;
-            width: 48%;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            transition: all 0.3s ease-in-out;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            z-index: 1;
+            max-width: 480px;
+            margin: 0 auto;
         }
 
-        .card-select input {
-            display: none;
-        }
-
-
-        .card-select label {
-            display: block;
+        .login-header {
             text-align: center;
-            gap: 16px;
-            padding: 20px;
-            background-color: #ffffff;
-            color: #333;
-            transition: all 0.3s ease-in-out;
-            border-radius: 12px;
-            height: 100%;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h4 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        /* Account Type Selection */
+        .account-type-section {
+            margin-bottom: 2rem;
+        }
+
+        .account-type-title {
+            text-align: center;
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .account-types-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .account-type-card {
+            position: relative;
             cursor: pointer;
         }
 
-        .card-select:hover label {
-            background-color: #f5f7fa;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 86, 179, 0.1);
+        .account-type-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .card-select input:checked+label {
-            border: 2px solid #081a2e;
-            background-color: #ccdffc;
-            box-shadow: 0 0 0 4px rgba(0, 86, 179, 0.2);
+        .account-type-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.25rem 0.75rem;
+            background: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            color: #495057;
+            position: relative;
+            overflow: hidden;
         }
 
+        .account-type-label::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
 
-        .card-title {
-            font-size: 16px;
+        .account-type-card:hover .account-type-label::before {
+            left: 100%;
+        }
+
+        .account-type-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            transition: transform 0.3s ease;
+        }
+
+        .account-type-title {
+            font-size: 0.875rem;
             font-weight: 600;
+            text-align: center;
+            margin: 0;
         }
 
-        .card-icon {
-            width: 48px;
-            height: 48px;
-            flex-shrink: 0;
+        .account-type-card:hover .account-type-label {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: #dee2e6;
+        }
+
+        .account-type-card:hover .account-type-icon {
+            transform: scale(1.1);
+        }
+
+        .account-type-input:checked+.account-type-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .account-type-input:checked+.account-type-label .account-type-icon,
+        .account-type-input:checked+.account-type-label .account-type-title {
+            color: white;
+            transform: scale(1.15);
+        }
+
+        /* Customer Type Colors */
+        .customer-icon {
+            color: #007bff;
+        }
+
+        .driver-icon {
+            color: #28a745;
+        }
+
+        .broker-icon {
+            color: #6f42c1;
+        }
+
+        /* Form Enhancements */
+        .form-floating {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-floating .form-control {
+            height: 3.5rem;
+            padding: 1rem 0.75rem 0.25rem;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+
+        .form-floating .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+        }
+
+        .form-floating label {
+            padding: 1rem 0.75rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+
+        .forgot-password-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .forgot-password-link:hover {
+            color: #764ba2;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1rem;
+            padding-top: 5px;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .register-link a:hover {
+            color: #764ba2;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .account-types-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .account-type-label {
+                flex-direction: row;
+                justify-content: flex-start;
+                padding: 1rem;
+                text-align: left;
+            }
+
+            .account-type-icon {
+                margin-bottom: 0;
+                margin-right: 1rem;
+                font-size: 1.5rem;
+            }
+
+            .login-card {
+                margin: 1rem;
+                border-radius: 15px;
+            }
+        }
+
+        /* Loading Animation */
+        .btn-login.loading {
+            pointer-events: none;
+        }
+
+        .btn-login.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 @endsection
@@ -74,7 +282,7 @@
 @endsection
 
 @section('page-script')
-    @vite(['resources/assets/js/pages-auth.js'])
+    {{-- @vite(['resources/assets/js/pages-auth.js']) --}}
 @endsection
 
 @section('content')
@@ -82,149 +290,365 @@
         <div class="authentication-wrapper authentication-basic container-p-y">
             <div class="authentication-inner py-6">
                 <!-- Login -->
-                <div class="card">
-                    <div class="card-body">
+                <div class="card login-card">
+                    <div class="card-body p-5">
                         <!-- Logo -->
-                        <div class="app-brand justify-content-center mb-6">
+                        <div class="app-brand justify-content-center mb-4">
                             <a href="{{ url('/') }}" class="app-brand-link">
-                                <span class="app-brand-logo demo">@include('_partials.macros', ['height' => 20, 'withbg' => 'fill: #fff;'])</span>
-                                <span
-                                    class="app-brand-text demo text-heading fw-bold">{{ config('variables.templateName') }}</span>
+                                <span class="app-brand-logo demo">@include('_partials.macros', [
+                                    'height' => 20,
+                                    'withbg' => 'fill: #667eea;',
+                                ])</span>
+                                <span class="app-brand-text demo text-heading fw-bold"
+                                    style="color: #2c3e50;">{{ config('variables.templateName') }}</span>
                             </a>
                         </div>
                         <!-- /Logo -->
-                        <h4 class="mb-1">Welcome to {{ config('variables.templateName') }}! 👋</h4>
-                        <p class="mb-6">Please sign-in to your account and start the adventure</p>
 
-                        <form id="formAuthentication" class="mb-6" action="{{ route('login') }}" method="POST">
+                        <div class="login-header">
+                            <h4>Welcome to {{ config('variables.templateName') }}! 👋</h4>
+                            <p>Please sign-in to your account and start the adventure</p>
+                        </div>
+
+                        <form id="formAuthentication" action="{{ route('login') }}" method="POST">
                             @csrf
 
                             <!-- Account Type Selection -->
-                            <div class="mb-6">
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-select w-48 text-center">
+                            <div class="account-type-section">
+                                <h6 class="account-type-title">Choose Your Account Type</h6>
+                                <div class="account-types-grid">
+                                    <div class="account-type-card">
                                         <input type="radio" id="customer" name="account_type" value="customer"
-                                            class="d-none" checked />
-                                        <label for="customer" class="card p-4 shadow-sm border border-light rounded-3">
-                                            <i class="fas fa-user fa-2x text-primary mb-3"></i>
-                                            <span class="card-title">Customer</span>
+                                            class="account-type-input" checked />
+                                        <label for="customer" class="account-type-label">
+                                            <i class="ti ti-user account-type-icon customer-icon"></i>
+                                            <span class="account-type-title">Customer</span>
                                         </label>
                                     </div>
-                                    <div class="card-select w-48 text-center">
+
+                                    <div class="account-type-card">
                                         <input type="radio" id="driver" name="account_type" value="driver"
-                                            class="d-none" />
-                                        <label for="driver" class="card p-4 shadow-sm border border-light rounded-3">
-                                            <i class="fas fa-car fa-2x text-success mb-3"></i>
-                                            <span class="card-title">Driver</span>
+                                            class="account-type-input" />
+                                        <label for="driver" class="account-type-label">
+                                            <i class="ti ti-car account-type-icon driver-icon"></i>
+                                            <span class="account-type-title">Driver</span>
+                                        </label>
+                                    </div>
+
+                                    <div class="account-type-card">
+                                        <input type="radio" id="broker" name="account_type" value="broker"
+                                            class="account-type-input" />
+                                        <label for="broker" class="account-type-label">
+                                            <i class="ti ti-building account-type-icon broker-icon"></i>
+                                            <span class="account-type-title">Customs Broker</span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
-                            <div class="mb-6">
-                                <div id="driver-fields" style="display: none; margin-top: 10px;">
-                                    <label for="team" class="form-label">Team Code</label>
-                                    <input type="text" id="team" name="team_code" autocomplete="off"
-                                        class="form-control" placeholder="0189...">
+
+
+
+                            <!-- Email Field -->
+                            <div class="form-floating">
+                                <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                    id="login-email" name="email" placeholder="Email Address" autocomplete="email"
+                                    autofocus value="{{ old('email') }}" required>
+                                <label for="login-email">
+                                    <i class="ti ti-mail me-2"></i>Email Address
+                                </label>
+                                <div class="validation-message">
+                                    <i class="ti ti-alert-circle me-1"></i>Please enter a valid email address
                                 </div>
-                            </div>
-                            <div class="mb-6">
-                                <label for="login-email" class="form-label">Email</label>
-                                <input type="text" class="form-control @error('email') is-invalid @enderror"
-                                    id="login-email" name="email" autocomplete="off" placeholder="john@example.com"
-                                    autofocus value="{{ old('email') }}">
                                 @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <span class="fw-medium">{!! $message !!}</span>
-                                    </span>
-                                @enderror
-                            </div>
-                            <div class="mb-6 form-password-toggle">
-                                <label class="form-label" for="login-password">Password</label>
-                                <div class="input-group input-group-merge @error('password') is-invalid @enderror">
-                                    <input type="password" id="login-password"
-                                        class="form-control @error('password') is-invalid @enderror" name="password"
-                                        autocomplete="off"
-                                        placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" />
-                                    <span class="input-group-text cursor-pointer"><i class="ti ti-eye-off"></i></span>
-                                </div>
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <span class="fw-medium">{{ $message }}</span>
-                                    </span>
-                                @enderror
-                            </div>
-
-                            <div class="mb-6">
-                                @error('recaptcha')
-                                    <span class="invalid-feedback" role="alert">
-                                        <span class="fw-medium">{{ $message }}</span>
-                                    </span>
-                                @enderror
-                                <label class="form-label" for="login-password">confirm that you ar not a robot</label>
-                                {!! htmlFormSnippet() !!}
-
-                            </div>
-                            {{-- <div class="mb-6">
-                                <div class="form-group">
-                                    <label class="form-label" for="login-password">Enter the code in the image</label>
-                                    <div class="captcha mb-2">
-                                        <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
-                                            style="height: 60px;">
-                                        <button type="button" class="btn btn-outline-seconde btn-refresh">↻</button>
+                                    <div class="invalid-feedback">
+                                        <i class="ti ti-alert-circle me-1"></i>{!! $message !!}
                                     </div>
+                                @enderror
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="form-floating">
+                                <input type="password" id="login-password"
+                                    class="form-control @error('password') is-invalid @enderror" name="password"
+                                    placeholder="Password" autocomplete="current-password" required />
+
+                                <label for="login-password">
+                                    <i class="ti ti-lock me-2"></i>Password
+                                </label>
+
+                                <!-- زر إظهار كلمة المرور كأيقونة عائمة -->
+                                <span class="position-absolute top-50 end-0 translate-middle-y pe-3 cursor-pointer"
+                                    id="toggle-password">
+                                    <i class="ti ti-eye-off" id="eye-icon"></i>
+                                </span>
+
+                                @error('password')
+                                    <div class="invalid-feedback">
+                                        <i class="ti ti-alert-circle me-1"></i>{{ $message }}
+                                    </div>
+                                @enderror
+                            </div>
 
 
-                                    <input type="text" class="form-control" name="captcha" required>
-                                    @error('captcha')
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-
-                            </div> --}}
-
-
-
-                            <div class="my-8">
-                                <div class="d-flex justify-content-between">
-
-                                    @if (Route::has('password.request'))
-                                        <a href="{{ route('password.request') }}">
-                                            <p class="mb-0">Forgot Password?</p>
-                                        </a>
-                                    @endif
+                            <!-- reCAPTCHA Section -->
+                            <div class="mb-4">
+                                @error('recaptcha')
+                                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                        <i class="ti ti-alert-circle me-2"></i>
+                                        <span>{{ $message }}</span>
+                                    </div>
+                                @enderror
+                                <div class="captcha-section">
+                                    <label class="form-label mb-3">
+                                        <i class="ti ti-shield-check me-2"></i>Security Verification
+                                    </label>
+                                    <div class="captcha-container">
+                                        {!! htmlFormSnippet() !!}
+                                    </div>
                                 </div>
                             </div>
-                            <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
+
+                            <!-- Forgot Password Link -->
+                            <div class="d-flex justify-content-end mb-4">
+                                @if (Route::has('password.request'))
+                                    <a href="{{ route('password.request') }}" class="forgot-password-link">
+                                        <i class="ti ti-help me-1"></i>Forgot Password?
+                                    </a>
+                                @endif
+                            </div>
+
+                            <!-- Login Button -->
+                            <button id="btn-login" class="btn btn-primary btn-login d-grid w-100 mb-4" type="submit">
+                                <span class="d-flex align-items-center justify-content-center">
+                                    <i class="ti ti-login me-2"></i>
+                                    Sign In
+                                </span>
+                            </button>
                         </form>
 
-
-                        <p class="text-center">
-                            <span>New on our platform?</span>
+                        <!-- Register Link -->
+                        <div class="register-link">
+                            <span class="text-muted">New on our platform?</span>
                             <a href="{{ route('auth.register') }}">
-                                <span>Create an account</span>
+                                <i class="ti ti-user-plus me-1"></i>Create an account
                             </a>
-                        </p>
+                        </div>
+
+                        <!-- Team Leader Sign In Link -->
+
                     </div>
                 </div>
-                <!-- /Register -->
+                <!-- /Login -->
+                <div class="text-center mt-3">
+                    <span class="text-muted">Are You Team Leader?</span>
+                    <a href="{{ url('admin-panel/login') }}">
+                        Sign In From Here
+                    </a>
+                </div>
             </div>
+
         </div>
+
     </div>
+
     {!! htmlScriptTagJsApi() !!}
 
-    {{-- <script>
-        document.querySelector('.btn-refresh').addEventListener('click', function() {
-            fetch("{{ route('captcha.refresh') }}", {
-                    headers: {
-                        'Accept': 'application/json'
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+
+            // Password toggle functionality
+            const togglePassword = document.getElementById('toggle-password');
+            const passwordInput = document.getElementById('login-password');
+
+            if (togglePassword && passwordInput) {
+                togglePassword.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        if (type === 'password') {
+                            icon.className = 'ti ti-eye-off';
+                        } else {
+                            icon.className = 'ti ti-eye';
+                        }
                     }
-                })
-                .then(res => res.json()) // ← يتوقع JSON
-                .then(data => {
-                    document.getElementById('captcha-image').src = data.captcha + '?' + Date.now();
                 });
+            }
+
+            // Form submission with loading state
+            const form = document.getElementById('formAuthentication');
+            const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+            if (form && submitBtn) {
+                console.log('submit');
+                form.addEventListener('submit', function(e) {
+
+
+                    // Show loading state
+                    submitBtn.classList.add('loading');
+                    submitBtn.disabled = true;
+
+                    // Re-enable after 10 seconds as fallback
+                    setTimeout(() => {
+                        submitBtn.classList.remove('loading');
+                        submitBtn.disabled = false;
+                    }, 10000);
+                });
+            }
+
+            // Enhanced form validation feedback
+            const allInputs = document.querySelectorAll('#formAuthentication input');
+            if (allInputs && allInputs.length > 0) {
+                allInputs.forEach(input => {
+                    if (!input) return;
+
+                    // Real-time validation on input
+                    input.addEventListener('input', function() {
+                        if (this.classList.contains('is-invalid')) {
+                            if (this.type === 'email') {
+                                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                if (this.value && this.value.trim() && emailRegex.test(this.value
+                                        .trim())) {
+                                    this.classList.remove('is-invalid');
+                                }
+                            } else if (this.value && this.value.trim() !== '') {
+                                this.classList.remove('is-invalid');
+                            }
+                        }
+                    });
+
+                    // Validation on blur
+                    input.addEventListener('blur', function() {
+                        // Skip validation if input is not visible (like team code when not driver)
+                        if (this.offsetParent === null) return;
+
+                        if (this.hasAttribute('required') && (!this.value || !this.value.trim())) {
+                            this.classList.add('is-invalid');
+                        } else if (this.type === 'email' && this.value && this.value.trim()) {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(this.value.trim())) {
+                                this.classList.add('is-invalid');
+                            } else {
+                                this.classList.remove('is-invalid');
+                            }
+                        } else if (this.value && this.value.trim()) {
+                            this.classList.remove('is-invalid');
+                        }
+                    });
+                });
+            }
+
+            // Add smooth animations for cards
+            const cards = document.querySelectorAll('.account-type-card');
+            if (cards.length > 0) {
+                cards.forEach((card, index) => {
+                    if (card) {
+                        card.style.animationDelay = `${index * 0.1}s`;
+                        card.classList.add('animate-in');
+                    }
+                });
+            }
+
+            // Handle server-side validation errors
+            const serverErrors = document.querySelectorAll('.invalid-feedback');
+            serverErrors.forEach(error => {
+                const input = error.previousElementSibling;
+                if (input && input.tagName === 'INPUT') {
+                    input.classList.add('is-invalid');
+                }
+            });
         });
-    </script> --}}
+    </script>
+
+    <style>
+        /* Animation for cards */
+        .animate-in {
+            animation: slideInUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Form validation enhancements */
+        .form-control.is-invalid {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+
+        .form-control:valid:not(:placeholder-shown) {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+        }
+
+        .form-floating .form-control.is-invalid~label {
+            color: #dc3545;
+        }
+
+        .form-floating .form-control:valid:not(:placeholder-shown)~label {
+            color: #28a745;
+        }
+
+        /* Custom validation message */
+        .validation-message {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            padding-left: 0.75rem;
+        }
+
+        .form-control.is-invalid~.validation-message {
+            display: block;
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Loading button animation */
+        .btn-login.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-login.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    </style>
 
 @endsection

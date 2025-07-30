@@ -15,54 +15,69 @@ class SettingsSeeder extends Seeder
   public function run(): void
   {
     $settings = [
+      // [
+      //   'key' => 'customer_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for customers",
+      // ],
+      // [
+      //   'key' => 'driver_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for drivers",
+      // ],
+      // [
+      //   'key' => 'user_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for users",
+      // ],
+      // [
+      //   'key' => 'task_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for tasks",
+      // ],
+      // [
+      //   'key' => 'task_from_port_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for tasks From Port",
+      // ],
+      // [
+      //   'key' => 'task_to_port_template',
+      //   'value' => null,
+      //   'description' => "This is a default Template for tasks To Port",
+      // ],
+      // [
+      //   'key' => 'commission_type',
+      //   'value' => 'rate',
+      //   'description' => "Select The Commission Type The will bs upper to all drivers",
+      // ],
+      // [
+      //   'key' => 'commission_rate',
+      //   'value' => 15,
+      //   'description' => "rate commission",
+      // ],
+      // [
+      //   'key' => 'commission_fixed',
+      //   'value' => 500,
+      //   'description' => "fixed amount commission",
+      // ],
       [
-        'key' => 'customer_template',
+        'key' => 'customs_clearance_template',
         'value' => null,
-        'description' => "This is a default Template for customers",
+        'description' => "This is a default Template for Customs Clearances",
       ],
       [
-        'key' => 'driver_template',
+        'key' => 'customs_clearance_agent_template',
         'value' => null,
-        'description' => "This is a default Template for drivers",
+        'description' => "This is a default Template for Customs Clearances Agents",
       ],
       [
-        'key' => 'user_template',
-        'value' => null,
-        'description' => "This is a default Template for users",
-      ],
-      [
-        'key' => 'task_template',
-        'value' => null,
-        'description' => "This is a default Template for tasks",
-      ],
-      [
-        'key' => 'task_from_port_template',
-        'value' => null,
-        'description' => "This is a default Template for tasks From Port",
-      ],
-      [
-        'key' => 'task_to_port_template',
-        'value' => null,
-        'description' => "This is a default Template for tasks To Port",
-      ],
-      [
-        'key' => 'commission_type',
-        'value' => 'rate',
-        'description' => "Select The Commission Type The will bs upper to all drivers",
-      ],
-      [
-        'key' => 'commission_rate',
-        'value' => 15,
-        'description' => "rate commission",
-      ],
-      [
-        'key' => 'commission_fixed',
-        'value' => 500,
-        'description' => "fixed amount commission",
+        'key' => 'main_email',
+        'value' => "osama.samomy@gmail.com",
+        'description' => "This Main Email in the platform",
       ],
     ];
 
-    Settings::query()->delete();
+    // Settings::query()->delete();
 
     foreach ($settings as $setting) {
       Settings::create($setting);

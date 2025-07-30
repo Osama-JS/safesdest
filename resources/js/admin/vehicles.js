@@ -7,6 +7,12 @@ import { deleteRecord } from '../ajax';
 
 // Datatable (jquery)
 $(function () {
+  // Check if baseUrl is defined
+  if (typeof baseUrl === 'undefined') {
+    console.error('baseUrl is not defined. Make sure config.js is loaded before this script.');
+    return;
+  }
+
   // ajax setup
   $.ajaxSetup({
     headers: {
@@ -27,6 +33,8 @@ $(function () {
   };
 
   function loadData(vehicle = '', type = '', lodeType = true, loadAll = true, loadSize = true, tab = 'all', page = 1) {
+    console.log('loadData called with:', { vehicle, type, lodeType, loadAll, loadSize, tab, page });
+
     // Update current page for the specific tab
     if (tab !== 'all') {
       currentPage[tab] = page;
@@ -40,22 +48,34 @@ $(function () {
         type: type,
         tab: tab,
         page: page,
-        per_page: tab !== 'all' ? perPage[tab] : 10
+        per_page:
+          tab === 'vehicles' ? perPage.vehicles : tab === 'types' ? perPage.types : tab === 'sizes' ? perPage.sizes : 10
       },
       success: function (response) {
+        console.log('AJAX Response:', response); // Debug log
+
+        // Check if response has the expected structure
+        if (!response || !response.data) {
+          console.error('Invalid response structure:', response);
+          return;
+        }
+
         // Update statistics
         updateStatistics(response.data);
 
-        if (loadAll && response.data.vehicles) {
-          var vehiclesData = response.data.vehicles.data || response.data.vehicles;
+        // تحديث جدول المركبات
+        if ((loadAll || tab === 'vehicles') && response.data.vehicles) {
+          console.log('Updating vehicles table with data:', response.data.vehicles);
+          var vehiclesData = response.data.vehicles.data || response.data.vehicles || [];
           var vehicles = vehiclesData
             .map((vehicle, index) => {
               // Calculate the correct index based on pagination
-              let actualIndex = response.data.vehicles.pagination
-                ? (response.data.vehicles.pagination.current_page - 1) * response.data.vehicles.pagination.per_page +
-                  index +
-                  1
-                : index + 1;
+              let actualIndex =
+                response.data.vehicles && response.data.vehicles.pagination
+                  ? (response.data.vehicles.pagination.current_page - 1) * response.data.vehicles.pagination.per_page +
+                    index +
+                    1
+                  : index + 1;
 
               return `
           <tr>
@@ -92,7 +112,7 @@ $(function () {
             })
             .join('');
 
-          if (vehiclesData.length === 0) {
+          if (!vehiclesData || vehiclesData.length === 0) {
             vehicles = `<tr>
               <td colspan="4" class="text-center text-muted">
                 <div class="empty-state">
@@ -103,22 +123,31 @@ $(function () {
               </td>
             </tr>`;
           }
+          console.log('Updating #vehicle-table with HTML:', vehicles.substring(0, 200) + '...');
           $('#vehicle-table').html(vehicles);
 
           // Update pagination for vehicles
-          if (response.data.vehicles.pagination) {
+          if (response.data.vehicles && response.data.vehicles.pagination) {
+            console.log('Updating vehicles pagination:', response.data.vehicles.pagination);
             updatePagination('vehicles', response.data.vehicles.pagination);
+          } else {
+            console.log('No pagination data for vehicles');
           }
+        }
 
-          var typesData = response.data.types.data || response.data.types;
+        // تحديث جدول الأنواع
+        if ((lodeType || tab === 'types' || tab === 'all') && response.data.types) {
+          var typesData =
+            response.data.types && response.data.types.data ? response.data.types.data : response.data.types || [];
           var types = typesData
             .map((type, index) => {
               // Calculate the correct index based on pagination
-              let actualIndex = response.data.types.pagination
-                ? (response.data.types.pagination.current_page - 1) * response.data.types.pagination.per_page +
-                  index +
-                  1
-                : index + 1;
+              let actualIndex =
+                response.data.types && response.data.types.pagination
+                  ? (response.data.types.pagination.current_page - 1) * response.data.types.pagination.per_page +
+                    index +
+                    1
+                  : index + 1;
 
               return `
           <tr>
@@ -158,7 +187,7 @@ $(function () {
             })
             .join('');
 
-          if (typesData.length === 0) {
+          if (!typesData || typesData.length === 0) {
             types = `<tr>
                 <td colspan="5" class="text-center text-muted">
                   <div class="empty-state">
@@ -172,19 +201,24 @@ $(function () {
           $('#types-table').html(types);
 
           // Update pagination for types
-          if (response.data.types.pagination) {
+          if (response.data.types && response.data.types.pagination) {
             updatePagination('types', response.data.types.pagination);
           }
+        }
 
-          var sizesData = response.data.sizes.data || response.data.sizes;
+        // تحديث جدول الأحجام
+        if ((loadSize || tab === 'sizes' || tab === 'all') && response.data.sizes) {
+          var sizesData =
+            response.data.sizes && response.data.sizes.data ? response.data.sizes.data : response.data.sizes || [];
           var sizes = sizesData
             .map((size, index) => {
               // Calculate the correct index based on pagination
-              let actualIndex = response.data.sizes.pagination
-                ? (response.data.sizes.pagination.current_page - 1) * response.data.sizes.pagination.per_page +
-                  index +
-                  1
-                : index + 1;
+              let actualIndex =
+                response.data.sizes && response.data.sizes.pagination
+                  ? (response.data.sizes.pagination.current_page - 1) * response.data.sizes.pagination.per_page +
+                    index +
+                    1
+                  : index + 1;
 
               return `
           <tr>
@@ -224,7 +258,7 @@ $(function () {
             })
             .join('');
 
-          if (sizesData.length === 0) {
+          if (!sizesData || sizesData.length === 0) {
             sizes = `<tr>
                   <td colspan="5" class="text-center text-muted">
                     <div class="empty-state">
@@ -238,55 +272,92 @@ $(function () {
           $('#sizes-table').html(sizes);
 
           // Update pagination for sizes
-          if (response.data.sizes.pagination) {
+          if (response.data.sizes && response.data.sizes.pagination) {
             updatePagination('sizes', response.data.sizes.pagination);
           }
         }
-        // توليد القوائم المنسدلة
-        var vehiclesForDropdown = response.data.vehicles.data || response.data.vehicles;
-        var vehicle_options = ` <option value="">-- ${__('Select vehicle')} --</option>`;
-        vehicle_options += vehiclesForDropdown
-          .map(
-            option => `
-          <option value="${option.id}">${option.name} - ${option.en_name}</option>
-        `
-          )
-          .join('');
-        if (lodeType) {
-          $('.vehicle-type-vehicle').html(vehicle_options);
+
+        // توليد القوائم المنسدلة - فقط في الصفحة الأولى أو عند تحميل جميع البيانات
+        if (page == 1 || tab === 'all') {
+          // استخدام all_vehicles للمركبات
+          var vehiclesForDropdown = response.data.all_vehicles || [];
+          var vehicle_options = ` <option value="">-- ${__('Select vehicle')} --</option>`;
+
+          if (vehiclesForDropdown && vehiclesForDropdown.length > 0) {
+            vehicle_options += vehiclesForDropdown
+              .map(
+                option => `
+            <option value="${option.id}">${option.name} - ${option.en_name}</option>
+          `
+              )
+              .join('');
+          }
+
+          if (lodeType) {
+            $('.vehicle-type-vehicle').html(vehicle_options);
+          }
+
+          // استخدام البيانات المتاحة للأنواع - فقط إذا كانت متاحة
+          if (response.data.types) {
+            var typesForDropdown =
+              response.data.types && response.data.types.data ? response.data.types.data : response.data.types || [];
+            var vehicle_type_options = ` <option value="">-- ${__('select vehicle type')} --</option>`;
+
+            if (typesForDropdown && typesForDropdown.length > 0) {
+              vehicle_type_options += typesForDropdown
+                .map(
+                  option => `
+              <option value="${option.id}"> ${option.name} - ${option.en_name}</option>
+            `
+                )
+                .join('');
+            }
+
+            if (loadSize) {
+              $('.vehicle-sizes-vehicle').html(vehicle_type_options);
+            }
+            $('.size-type-flitter').html(vehicle_type_options);
+          }
+
+          // استخدام البيانات المتاحة للأحجام - فقط إذا كانت متاحة
+          if (response.data.sizes && loadSize) {
+            var sizesForDropdown =
+              response.data.sizes && response.data.sizes.data ? response.data.sizes.data : response.data.sizes || [];
+            var vehicle_sizes_options = ` <option value="">-- ${__('select vehicle Size')} --</option>`;
+
+            if (sizesForDropdown && sizesForDropdown.length > 0) {
+              vehicle_sizes_options += sizesForDropdown
+                .map(
+                  size => `
+              <option value="${size.id}"> ${size.name}</option>
+            `
+                )
+                .join('');
+            }
+
+            if (loadSize) {
+              $('#size-vehicle').html(vehicle_sizes_options);
+            }
+          }
+
+          // تحديث القوائم الأساسية
+          $('.vehicle-select').html(vehicle_options);
+          $('.type-vehicle-flitter').html(vehicle_options);
+          $('.size-vehicle-flitter').html(vehicle_options);
         }
+      },
+      error: function (xhr, status, error) {
+        console.error('AJAX Error:', error);
+        console.error('Status:', status);
+        console.error('Response:', xhr.responseText);
 
-        var typesForDropdown = response.data.types.data || response.data.types;
-        var vehicle_type_options = ` <option value="">-- ${__('select vehicle type')} --</option>`;
-        vehicle_type_options += typesForDropdown
-          .map(
-            option => `
-          <option value="${option.id}"> ${option.name} - ${option.en_name}</option>
-        `
-          )
-          .join('');
-
-        if (loadSize) {
-          $('.vehicle-sizes-vehicle').html(vehicle_type_options);
-        }
-
-        var sizesForDropdown = response.data.sizes.data || response.data.sizes;
-        var vehicle_sizes_options = ` <option value="">-- ${__('select vehicle Size')} --</option>`;
-        vehicle_sizes_options += sizesForDropdown
-          .map(
-            size => `
-          <option value="${size.id}"> ${size.name}</option>
-        `
-          )
-          .join('');
-
-        $('.vehicle-select').html(vehicle_options);
-        $('.type-vehicle-flitter').html(vehicle_options);
-        $('.size-vehicle-flitter').html(vehicle_options);
-        $('.size-type-flitter').html(vehicle_type_options);
-
-        if (loadSize) {
-          $('#size-vehicle').html(vehicle_type_options);
+        // Show user-friendly error message
+        if (xhr.status === 404) {
+          console.error('Route not found: admin/settings/vehicles/data');
+        } else if (xhr.status === 500) {
+          console.error('Server error occurred');
+        } else {
+          console.error('Request failed: ' + error);
         }
       }
     });
@@ -313,9 +384,14 @@ $(function () {
 
   // Function to update pagination
   function updatePagination(type, paginationData) {
+    console.log(`updatePagination called for ${type}:`, paginationData);
     const paginationContainer = $(`#${type}-pagination`);
     const paginationInfo = $(`#${type}-pagination-info`);
     const paginationWrapper = $(`#${type}-pagination-wrapper`);
+
+    console.log(
+      `Pagination elements found: container=${paginationContainer.length}, info=${paginationInfo.length}, wrapper=${paginationWrapper.length}`
+    );
 
     if (!paginationData || paginationData.last_page <= 1) {
       paginationWrapper.addClass('d-none');
@@ -386,6 +462,7 @@ $(function () {
       </li>`;
     }
 
+    console.log(`Setting pagination HTML for ${type}:`, paginationHtml.substring(0, 200) + '...');
     paginationContainer.html(paginationHtml);
   }
 
@@ -411,7 +488,9 @@ $(function () {
     }
   }
 
-  loadData();
+  // تحميل البيانات الأولي
+  console.log('Initial data load...');
+  loadData('', '', true, true, true, 'all', 1);
 
   // Pagination event handlers
   $(document).on('click', '.page-link', function (e) {
@@ -419,13 +498,20 @@ $(function () {
     const page = $(this).data('page');
     const type = $(this).data('type');
 
+    console.log('Pagination clicked:', { page, type, element: this });
+
     if (page && type) {
       if (type === 'vehicles') {
-        loadData('', '', true, true, false, 'vehicles', page);
+        // تحديث الصفحة الحالية
+        currentPage.vehicles = page;
+        // تحميل المركبات فقط مع الصفحة المحددة
+        loadData('', '', true, false, false, 'vehicles', page);
       } else if (type === 'types') {
+        currentPage.types = page;
         const vehicle = $('#type-vehicle-flitter').val();
         loadData(vehicle, '', false, false, false, 'types', page);
       } else if (type === 'sizes') {
+        currentPage.sizes = page;
         const vehicle = $('#size-vehicle-flitter').val();
         const typeFilter = $('#size-type-flitter').val();
         loadData(vehicle, typeFilter, false, false, true, 'sizes', page);
@@ -435,20 +521,28 @@ $(function () {
 
   // Per page change handlers
   $(document).on('change', '#vehicles-per-page', function () {
-    perPage.vehicles = parseInt($(this).val());
-    loadData('', '', true, true, false, 'vehicles', 1);
+    const newPerPage = parseInt($(this).val());
+    console.log('Vehicles per page changing from', perPage.vehicles, 'to', newPerPage);
+    perPage.vehicles = newPerPage;
+    currentPage.vehicles = 1; // إعادة تعيين الصفحة إلى الأولى
+    console.log('Loading vehicles data with new per page setting...');
+    loadData('', '', true, false, false, 'vehicles', 1);
   });
 
   $(document).on('change', '#types-per-page', function () {
     perPage.types = parseInt($(this).val());
+    currentPage.types = 1;
     const vehicle = $('#type-vehicle-flitter').val();
-    loadData(vehicle, '', false, false, false, 'types', 1);
+    console.log('Types per page changed to:', perPage.types);
+    loadData(vehicle, '', false, true, false, 'types', 1);
   });
 
   $(document).on('change', '#sizes-per-page', function () {
     perPage.sizes = parseInt($(this).val());
+    currentPage.sizes = 1;
     const vehicle = $('#size-vehicle-flitter').val();
     const typeFilter = $('#size-type-flitter').val();
+    console.log('Sizes per page changed to:', perPage.sizes);
     loadData(vehicle, typeFilter, false, false, true, 'sizes', 1);
   });
 

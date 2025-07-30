@@ -77,6 +77,11 @@ class Customer extends Authenticatable
     return $this->morphMany(Transaction::class, 'payable');
   }
 
+  public function transactionsClearance()
+  {
+    return $this->morphMany(Clearance_Transactions::class, 'payable');
+  }
+
   public function wallet()
   {
     return $this->hasOne(Wallet::class, 'customer_id');

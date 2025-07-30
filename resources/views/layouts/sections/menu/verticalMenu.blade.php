@@ -30,6 +30,9 @@
         @foreach ($menuSet as $menu)
             {{-- adding active and open class if child is active --}}
 
+            @if (isset($menu->broker) && $menu->broker === 'broker' && auth()->user()->is_customs_clearance_agent === 0)
+                @continue
+            @endif
             {{-- menu headers --}}
             @if (isset($menu->menuHeader))
                 <li class="menu-header small">

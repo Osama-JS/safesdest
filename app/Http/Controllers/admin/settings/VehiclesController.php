@@ -48,7 +48,7 @@ class VehiclesController extends Controller
     // Vehicles with pagination
     if ($tab === 'vehicles' || $tab === 'all') {
       $vehiclesQuery = Vehicle::with('types.sizes');
-      $vehiclesPaginated = $vehiclesQuery->paginate($perPage, ['*'], 'vehicles_page', $page);
+      $vehiclesPaginated = $vehiclesQuery->paginate($perPage, ['*'], 'page', $page);
 
       $data['vehicles'] = [
         'data' => $vehiclesPaginated->map(function ($item) {
@@ -77,7 +77,7 @@ class VehiclesController extends Controller
         $typesQuery->where('vehicle_id', $req->vehicle);
       }
 
-      $typesPaginated = $typesQuery->paginate($perPage, ['*'], 'types_page', $page);
+      $typesPaginated = $typesQuery->paginate($perPage, ['*'], 'page', $page);
 
       $data['types'] = [
         'data' => $typesPaginated->map(function ($item) {
@@ -113,7 +113,7 @@ class VehiclesController extends Controller
         });
       }
 
-      $sizesPaginated = $sizesQuery->paginate($perPage, ['*'], 'sizes_page', $page);
+      $sizesPaginated = $sizesQuery->paginate($perPage, ['*'], 'page', $page);
 
       $data['sizes'] = [
         'data' => $sizesPaginated->map(function ($item) {
@@ -136,6 +136,9 @@ class VehiclesController extends Controller
         ]
       ];
     }
+
+    // Always include all vehicles for dropdowns
+    $data['all_vehicles'] = Vehicle::select('id', 'name', 'en_name')->get();
 
     // Statistics for counters
     $data['statistics'] = [

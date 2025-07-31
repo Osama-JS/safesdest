@@ -554,7 +554,7 @@
                                                     <div class="input-group">
                                                         <select id="country-code" name="phone_code" class="form-select"
                                                             required style="max-width: 120px;">
-                                                            <option value="+966">🇾🇪 +966</option>
+                                                            <option value="+966">🇸🇦 +966</option>
                                                             <option value="+971">🇦🇪 +971</option>
                                                             <option value="+20">🇪🇬 +20</option>
                                                             <option value="+1">🇺🇸 +1</option>

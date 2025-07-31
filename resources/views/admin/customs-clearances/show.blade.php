@@ -537,7 +537,7 @@
                                             @endif
 
                                             <p class="mb-1">{{ $entry->description }}</p>
-                                            @if ($entry->file_path)
+                                            @if ($entry->file_path && $entry->file_type)
                                                 <a href="{{ asset('storage/' . $entry->file_path) }}" target="_blank"
                                                     class="btn btn-sm btn-outline-primary">{{ __('download file') }}</a>
                                             @endif

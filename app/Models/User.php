@@ -93,6 +93,11 @@ class User extends Authenticatable
     return $this->hasMany(Task::class, 'user_id');
   }
 
+  public function customsClearance()
+  {
+    return $this->hasMany(Customs_Clearance::class, 'user_id');
+  }
+
   public function checkCustomer($id)
   {
     if ($this->can('mange_customers')) {
@@ -130,6 +135,26 @@ class User extends Authenticatable
     return false;
   }
 
+  public function checkClearance($id)
+  {
+    // إذا كان المستخدم لديه صلاحية عامة لإدارة المهام
+    if ($this->can('manage_customs_clearances')) {
+      return true;
+    }
+
+    // إذا كانت المهمة مرتبطة مباشرة بالمستخدم
+    if ($this->customsClearance()->where('id', $id)->exists()) {
+      return true;
+    }
+
+    $customerIds = $this->customers()->pluck('customers.id'); // الحصول على معرفات الفرق التي ينتمي لها المستخدم
+
+
+    return Customs_Clearance::where('id', $id)
+      ->whereIn('customer_id', $customerIds)
+      ->exists();
+  }
+
   public function checkTask($id)
   {
     // إذا كان المستخدم لديه صلاحية عامة لإدارة المهام
@@ -159,55 +184,5 @@ class User extends Authenticatable
   public function transactionsClearance()
   {
     return $this->morphMany(Clearance_Transactions::class, 'payable');
-  }
-
-  // علاقات التخليص الجمركي
-
-  /**
-   * طلبات التخليص التي أنشأها هذا المستخدم
-   */
-  public function customsClearanceRequests()
-  {
-    return $this->hasMany(CustomsClearance::class, 'user_id');
-  }
-
-  /**
-   * طلبات التخليص المعينة لهذا المستخدم كمخلص
-   */
-  public function assignedCustomsClearances()
-  {
-    return $this->hasMany(CustomsClearance::class, 'clearance_user_id');
-  }
-
-  /**
-   * عروض التخليص المقدمة من هذا المستخدم
-   */
-  public function customsClearanceOffers()
-  {
-    return $this->hasMany(CustomsClearanceOffer::class, 'user_id');
-  }
-
-  /**
-   * تاريخ عمليات التخليص التي قام بها هذا المستخدم
-   */
-  public function customsClearanceHistories()
-  {
-    return $this->hasMany(CustomsClearanceHistory::class, 'user_id');
-  }
-
-  /**
-   * فلترة المستخدمين المخلصين الجمركيين
-   */
-  public function scopeCustomsClearanceAgents($query)
-  {
-    return $query->where('is_customs_clearance_agent', true);
-  }
-
-  /**
-   * التحقق من كون المستخدم مخلص جمركي
-   */
-  public function isCustomsClearanceAgent()
-  {
-    return $this->is_customs_clearance_agent;
   }
 }

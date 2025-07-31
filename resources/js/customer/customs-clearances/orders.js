@@ -10,9 +10,6 @@ $(function () {
   var dt_data_table = $('.datatables-customs-clearances'),
     clearanceView = baseUrl + 'admin/customs-clearances/';
 
-  if (templateId != null) {
-    $('#select-template').val(templateId).trigger('change');
-  }
   var start_from;
   var end_to;
   // ajax setup
@@ -84,7 +81,9 @@ $(function () {
               return `
                 <div class="d-flex flex-column">
                   <span class="fw-medium">${full.owner.name}</span>
-                  ${full.owner.badge}
+                  <a href="tel:${full.owner.phone}" class="fw-medium">${full.owner.phone}</a>
+                  <a href="mailto${full.owner.email}"class="fw-medium">${full.owner.email}</a>
+
                 </div>
               `;
             }

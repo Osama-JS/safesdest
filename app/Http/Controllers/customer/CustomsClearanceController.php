@@ -14,14 +14,23 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomsClearanceController extends Controller
 {
+
+  function checkAgent()
+  {
+    if (!auth()->user()->is_customs_clearance_agent) {
+      abort(404);
+    }
+  }
   public function index()
   {
+    $this->checkAgent();
     return view('customers.customs-clearance.ads');
   }
 
 
   public function getData(Request $request)
   {
+    $this->checkAgent();
     $size_id = auth()->user()->vehicle_size_id;
     $broker = auth()->user()->id;
 
@@ -69,6 +78,7 @@ class CustomsClearanceController extends Controller
 
   public function show($id)
   {
+    $this->checkAgent();
     $ad = Customs_Clearance::findOrFail($id);
     if ($ad->status !== 'in_progress' || $ad->closed === true || $ad->public === 0) {
       abort(404);
@@ -86,6 +96,7 @@ class CustomsClearanceController extends Controller
 
   public function getOffers(Request $req)
   {
+    $this->checkAgent();
     $offers = Customs_Clearance_Offer::where('customs_clearance_id', $req->id)->get();
 
     $transformed = $offers->map(function ($offer) {
@@ -107,6 +118,7 @@ class CustomsClearanceController extends Controller
 
   public function storeOffers(Request $req)
   {
+    $this->checkAgent();
     $validator = Validator::make($req->all(), [
       'ad' => 'required|exists:customs_clearance,id',
       'price' => 'required|numeric',
@@ -157,6 +169,7 @@ class CustomsClearanceController extends Controller
 
   public function assignTaskByOffer($id)
   {
+    $this->checkAgent();
     DB::beginTransaction();
     try {
       $data = Customs_Clearance_Offer::find($id);

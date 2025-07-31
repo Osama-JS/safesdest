@@ -22,51 +22,62 @@ class CustomsClearancePermissionsSeeder extends Seeder
     ];
 
     $permissions = [
+
       [
-        'name' => 'view_customs_clearances',
-        'd_name' => 'View Customs Clearances',
+        'name' => 'status_customs_clearances',
+        'd_name' => 'Change Customs Clearances status',
         'slug' => 'Customs Clearance Permissions'
       ],
       [
-        'name' => 'create_customs_clearances',
-        'd_name' => 'Create Customs Clearances',
+        'name' => 'payment_customs_clearances',
+        'd_name' => 'Pay Customs Clearances',
         'slug' => 'Customs Clearance Permissions'
       ],
-      [
-        'name' => 'edit_customs_clearances',
-        'd_name' => 'Edit Customs Clearances',
-        'slug' => 'Customs Clearance Permissions'
-      ],
-      [
-        'name' => 'delete_customs_clearances',
-        'd_name' => 'Delete Customs Clearances',
-        'slug' => 'Customs Clearance Permissions'
-      ],
-      [
-        'name' => 'close_customs_clearances',
-        'd_name' => 'Close Customs Clearances',
-        'slug' => 'Customs Clearance Permissions'
-      ],
-      [
-        'name' => 'assign_customs_clearances',
-        'd_name' => 'Assign Customs Clearances',
-        'slug' => 'Customs Clearance Permissions'
-      ],
-      [
-        'name' => 'manage_customs_clearances',
-        'd_name' => 'Manage All Customs Clearances',
-        'slug' => 'Customs Clearance Permissions'
-      ],
+      // [
+      //   'name' => 'view_customs_clearances',
+      //   'd_name' => 'View Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'create_customs_clearances',
+      //   'd_name' => 'Create Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'edit_customs_clearances',
+      //   'd_name' => 'Edit Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'delete_customs_clearances',
+      //   'd_name' => 'Delete Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'close_customs_clearances',
+      //   'd_name' => 'Close Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'assign_customs_clearances',
+      //   'd_name' => 'Assign Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
+      // [
+      //   'name' => 'manage_customs_clearances',
+      //   'd_name' => 'Manage All Customs Clearances',
+      //   'slug' => 'Customs Clearance Permissions'
+      // ],
     ];
 
     $role = Role::where('name', 'Owner')->first();
 
-    foreach ($types as $key) {
-      $type = Permissions_Type::create([
-        'name' => $key['name'],
-        'guard_name' => 'web'
-      ]);
-    }
+    // foreach ($types as $key) {
+    //   $type = Permissions_Type::create([
+    //     'name' => $key['name'],
+    //     'guard_name' => 'web'
+    //   ]);
+    // }
 
     foreach ($permissions as $permission) {
       $type = Permissions_Type::where('name', $permission['slug'])->first();

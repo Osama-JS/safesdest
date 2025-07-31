@@ -13,13 +13,25 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomsClearanceOrdersController extends Controller
 {
+
+
+
+  function checkAgent()
+  {
+    if (!auth()->user()->is_customs_clearance_agent) {
+      abort(404);
+    }
+  }
   public function index()
   {
+    $this->checkAgent();
     return view('customers.customs-clearance.orders');
   }
 
   public function data(Request $request)
   {
+    $this->checkAgent();
+
     $query = Customs_Clearance::where('clearance_agent_id', auth()->user()->id)->with(['customer', 'user', 'formTemplate', 'clearanceAgent', 'offers']);
 
     // Filter by form search
@@ -90,10 +102,9 @@ class CustomsClearanceOrdersController extends Controller
         'id' => $clearance->id,
         'owner' => [
           'name' => $owner ? $owner->name : __('Not specified'),
-          'type' => $ownerType,
-          'badge' => $ownerType === 'Customer' ?
-            '<span class="">(customer)</span>' :
-            '<span class="">(administrator)</span>'
+          'phone' => $owner->phone_code . $owner->phone,
+          'email' => $owner->email,
+
         ],
         'status' => $statusBadge,
         'closed' => $clearance->closed,
@@ -162,12 +173,16 @@ class CustomsClearanceOrdersController extends Controller
 
   public function show($id)
   {
+    $this->checkAgent();
+
     $data = Customs_Clearance::findOrFail($id);
     return view('customers.customs-clearance.orders-show', compact('data'));
   }
 
   public function updateStatus(Request $request)
   {
+    $this->checkAgent();
+
     $request->validate([
       'id' => 'required|exists:customs_clearance,id',
       'status' => 'required|string',
@@ -179,6 +194,7 @@ class CustomsClearanceOrdersController extends Controller
 
       // ترتيب الحالات
       $statuses = [
+        'assign',
         'start',
         'completed',
       ];
@@ -209,21 +225,22 @@ class CustomsClearanceOrdersController extends Controller
       ]);
 
       DB::commit();
+
       return back()->with('success', 'Task status updated successfully.');
     } catch (Exception $ex) {
       DB::rollBack();
-      dd($ex->getMessage());
       return back()->with('error', 'Error: ' . $ex->getMessage());
     }
   }
 
-
   public function taskAddToHistories(Request $req)
   {
+    $this->checkAgent();
+
     $validator = Validator::make($req->all(), [
       'description' => 'nullable|string|required_without:file',
       'file' => 'nullable|file|max:10240|required_without:description',
-      'task' => 'required|exists:tasks,id',
+      'customs_clearance' => 'required|exists:customs_clearance,id',
     ]);
 
     if ($validator->fails()) {
@@ -266,7 +283,7 @@ class CustomsClearanceOrdersController extends Controller
       }
 
       Customs_Clearance_History::create([
-        'customs_clearance_id' => $req->task,
+        'customs_clearance_id' => $req->customs_clearance,
         'description' => $req->description,
         'file_path' => $filePath,
         'file_type' => $fileType,

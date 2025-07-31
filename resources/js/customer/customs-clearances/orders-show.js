@@ -3,7 +3,20 @@
  */
 
 'use strict';
+import { locale } from 'moment/moment';
 import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../../ajax';
+
+document.addEventListener('formSubmitted', function (event) {
+  $('.form_submit').trigger('reset');
+  $('#total-price').text('');
+  setTimeout(() => {
+    $('#addNoteModal').modal('hide');
+    location.reload();
+  }, 2000);
+
+  loadOffers();
+});
+
 const buttons = document.querySelectorAll('.step-circle');
 
 buttons.forEach(button => {

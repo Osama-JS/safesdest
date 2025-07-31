@@ -24,6 +24,18 @@ use App\Models\Wallet_Transaction;
 
 class CustomsClearanceController extends Controller
 {
+
+  public function __construct()
+  {
+    $this->middleware('permission:view_customs_clearances', ['only' => ['index', 'data', 'edit', 'historyData', 'showOffers', 'getOffers']]);
+    $this->middleware('permission:create_customs_clearances', ['only' => ['store']]);
+    $this->middleware('permission:delete_customs_clearances', ['only' => ['destroy']]);
+    $this->middleware('permission:close_customs_clearances', ['only' => ['close']]);
+    $this->middleware('permission:assign_customs_clearances', ['only' => ['getToAssign', 'assign']]);
+    $this->middleware('permission:status_customs_clearances', ['only' => ['chang_status', 'createAd']]);
+    $this->middleware('permission:payment_customs_clearances', ['only' => ['confirmPayment', 'paymentInfo', 'cancelPayment']]);
+  }
+
   public function index()
   {
     $templates = Form_Template::all();

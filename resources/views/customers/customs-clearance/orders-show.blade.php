@@ -687,11 +687,15 @@
                         <div class="d-flex gap-2">
 
 
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                                <i class="ti ti-write me-1"></i>
+                                Add Notes
+                            </button>
+
                             <a href="{{ route('customer.customs-clearances.orders') }}" class="btn btn-outline-secondary">
                                 <i class="ti ti-arrow-left me-1"></i>
                                 Back to List
                             </a>
-
                         </div>
                     </div>
 
@@ -1043,7 +1047,7 @@
                                             @endif
 
                                             <p class="mb-1">{{ $entry->description }}</p>
-                                            @if ($entry->file_path)
+                                            @if ($entry->file_path && $entry->file_type)
                                                 <a href="{{ asset('storage/' . $entry->file_path) }}" target="_blank"
                                                     class="btn btn-sm btn-outline-primary">{{ __('download file') }}</a>
                                             @endif
@@ -1060,4 +1064,38 @@
                 </div>
             </div>
         </div>
-    @endsection
+    </div>
+    <div class="modal fade " id="addNoteModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addNoteTitle">{{ __('Add Notes') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('customer.customs-clearances.orders.histories.store') }}" method="POST"
+                    class="card shadow-sm p-4 border-0 form_submit" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="customs_clearance" value="{{ $data->id }}">
+                    <span class="task-error text-danger text-error"></span>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">{{ __('Add Note') }}</label>
+                        <textarea name="description" id="description" class="form-control" rows="3"
+                            placeholder="{{ __('Type the note here') }}..."></textarea>
+                        <span class="description-error text-danger text-error"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">{{ __('Upload File') }}
+                            ({{ __('optional') }})
+                        </label>
+                        <input type="file" name="file" id="file" class="form-control">
+                        <span class="file-error text-danger text-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">{{ __('Submit') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection

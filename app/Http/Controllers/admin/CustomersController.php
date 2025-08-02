@@ -106,6 +106,7 @@ class CustomersController extends Controller
         'fake_id'    => ++$fakeId,
         'name'       => $customer->name,
         'email'      => $customer->email,
+        'broker'     => $customer->is_customs_clearance_agent,
         'phone'      => $customer->phone_code . $customer->phone,
         'image'      => $customer->image ? url($customer->image) : null,
         'tags'       => $customer->tags->pluck('tag.name')->implode(', '),

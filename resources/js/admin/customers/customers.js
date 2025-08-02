@@ -105,6 +105,7 @@ $(function () {
             </div>`;
             }
 
+            var broker = full.broker ? '<span class=" badge bg-label-primary ">Customs Clearance Agent</span>' : '';
             return `
               <div class="d-flex align-items-center">
                 <div class="avatar-wrapper me-3">
@@ -112,6 +113,8 @@ $(function () {
                 </div>
                 <div class="d-flex flex-column">
                   <span class="fw-medium">${$name}</span>
+                  <span class="fw-medium">${broker}</span>
+
                 </div>
               </div>`;
           }

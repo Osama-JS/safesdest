@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
 
 class Customs_Clearance extends Model
 {
@@ -85,5 +88,35 @@ class Customs_Clearance extends Model
   public function payments()
   {
     return $this->hasMany(Clearance_Payments::class, 'customs_clearance_id');
+  }
+
+  public function transactions()
+  {
+    return $this->hasMany(Clearance_Transactions::class, 'reference_id');
+  }
+
+  public function walletTransactions()
+  {
+    return $this->hasMany(Wallet_Transaction::class, 'clearance_id');
+  }
+
+  public function deleteCompletely()
+  {
+    DB::transaction(function () {
+      // حذف الصور المرتبطة بالـ transactions إن وُجدت
+      foreach ($this->transactions as $transaction) {
+        if ($transaction->receipt_image) {
+          unlink($transaction->receipt_image);
+        }
+        $transaction->delete();
+      }
+
+      $this->offers()->delete();
+      $this->history()->delete();
+      $this->payments()->delete();
+      $this->walletTransactions()->delete();
+
+      $this->delete();
+    });
   }
 }

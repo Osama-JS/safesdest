@@ -54,10 +54,46 @@ class CustomsClearanceController extends Controller
         ->where('clearance_agent_id', $broker)
         ->first();
 
+
+      $totalPrice = $ad->total_price ?? 0;
+      $pricing = $ad->pricing;
+
+      if ($totalPrice > 0 && !$ad->included && $ad->commission == 0 && $ad->clearance_agent_id == null) {
+
+
+
+        $vat = floatval($pricing->vat_commission); // تحويل إلى رقم والتعامل مع null
+        $commission = floatval($pricing->service_commission);
+        $commissionType = $pricing->service_commission_type; // 'fixed' or 'percentage'
+
+        $commissionAmount = 0;
+        $vatAmount = 0;
+
+        // حساب العمولة فقط إذا كانت قيمة صالحة
+        if ($commission > 0) {
+          if ($commissionType === 'percentage') {
+            $commissionAmount = ($commission / 100) * $totalPrice;
+          } else { // fixed
+            $commissionAmount = $commission;
+          }
+        }
+
+        // حساب الضريبة فقط إذا كانت قيمة صالحة
+        $priceWithCommission = $totalPrice + $commissionAmount;
+        if ($vat > 0) {
+          $vatAmount = ($vat / 100) * $priceWithCommission;
+        }
+
+        // المجموع النهائي
+        $totalPrice += $commissionAmount + $vatAmount;
+      }
+
+
+
       return [
         'id' => $ad->id,
         'clearance_id' => $ad->id,
-        'price' => $ad->total_price ?? 0,
+        'price' => $totalPrice,
         'note' => $ad->notes,
         'has_offer' => $brokerOffer ? true : false,
         'offer_price' => $brokerOffer ? $brokerOffer->price : null,
@@ -83,6 +119,33 @@ class CustomsClearanceController extends Controller
     if ($ad->status !== 'in_progress' || $ad->closed === true || $ad->public === 0) {
       abort(404);
     }
+    $pricing = $ad->pricing;
+    if ($ad->total_price > 0 && !$ad->included && $ad->commission == 0 && $ad->clearance_agent_id == null) {
+      $vat = floatval($pricing->vat_commission); // تحويل إلى رقم والتعامل مع null
+      $commission = floatval($pricing->service_commission);
+      $commissionType = $pricing->service_commission_type; // 'fixed' or 'percentage'
+
+      $commissionAmount = 0;
+      $vatAmount = 0;
+
+      // حساب العمولة فقط إذا كانت قيمة صالحة
+      if ($commission > 0) {
+        if ($commissionType === 'percentage') {
+          $commissionAmount = ($commission / 100) * $ad->total_price;
+        } else { // fixed
+          $commissionAmount = $commission;
+        }
+      }
+
+      // حساب الضريبة فقط إذا كانت قيمة صالحة
+      $priceWithCommission = $ad->total_price + $commissionAmount;
+      if ($vat > 0) {
+        $vatAmount = ($vat / 100) * $priceWithCommission;
+      }
+
+      // المجموع النهائي
+      $ad->total_price += $commissionAmount + $vatAmount;
+    }
     $broker = auth()->user()->id;
 
     // التحقق من وجود عرض مقبول
@@ -90,6 +153,7 @@ class CustomsClearanceController extends Controller
       ->where('accepted', true)
       ->first();
     $offer = Customs_Clearance_Offer::where('customs_clearance_id', $id)->where('clearance_agent_id', $broker)->first();
+
 
     return view('customers.customs-clearance.ads-show', compact('ad', 'offer', 'acceptedOffer'));
   }

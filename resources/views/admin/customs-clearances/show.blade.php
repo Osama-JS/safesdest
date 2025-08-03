@@ -252,6 +252,7 @@
                                         <i class="fas fa-dollar-sign fs-2 mb-2"></i>
                                         <h6 class="card-title">{{ __('Total Price') }}</h6>
                                         <h4 class="mb-0">
+
                                             {{ $data->total_price ? number_format($data->total_price, 2) : '0.00' }} SAR
                                         </h4>
                                     </div>

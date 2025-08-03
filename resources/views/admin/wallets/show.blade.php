@@ -114,7 +114,7 @@
                             <th>{{ __('Amount') }}</th>
                             <th>{{ __('Description') }}</th>
                             <th>{{ __('Maturity') }}</th>
-                            <th>{{ __('Task') }}</th>
+                            <th>{{ __('Task / Clearance') }}</th>
                             <th>{{ __('User') }}</th>
                             <th>{{ __('Created At') }}</th>
                             <th class="text-end">{{ __('Actions') }}</th>

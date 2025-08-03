@@ -143,9 +143,9 @@ $(function () {
 
           // التحقق من السعر الأدنى والأعلى
           if (ad.price > 0) {
-            priceHtml = `<span>price: ${ad.price} SAR</span>`;
+            priceHtml = `<span class="badge bg-success p-2 ">price: ${ad.price} SAR</span>`;
           } else {
-            priceHtml = '<span>Price not specified</span>';
+            priceHtml = '<span class="badge bg-secondary p-2">Price not specified</span>';
           }
 
           //  <div class="d-flex align-items-center mb-3">

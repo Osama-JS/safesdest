@@ -41,6 +41,7 @@ class WalletController extends Controller
     $wallet = Wallet::where('customer_id', Auth::user()->id)->first();
 
 
+
     if (!$wallet) {
       return response()->json([
         'draw'            => intval($request->input('draw')),
@@ -63,13 +64,14 @@ class WalletController extends Controller
     $query = Wallet_Transaction::query();
     $query->where('wallet_id', $wallet->id);
 
-
     if ($fromDate && $toDate) {
       $query->whereBetween('created_at', [
         Carbon::parse($fromDate)->startOfDay(),
         Carbon::parse($toDate)->endOfDay()
       ]);
     }
+
+
 
 
 
@@ -93,6 +95,8 @@ class WalletController extends Controller
       ->orderBy($order, $dir)
       ->get();
 
+
+
     $data = [];
     $fakeId = $start;
 
@@ -106,6 +110,7 @@ class WalletController extends Controller
         'maturity'    => $val->maturity_time ?? '',
         'user'    => $val->user->name ?? 'automatic',
         'task'    => $val->task_id ?? '',
+        'clearance'    => $val->clearance_id ?? '',
         'image'   => $val->image,
         'sequence'    => $val->sequence,
         'created_at' => $val->created_at->format('Y-m-d H:i'),

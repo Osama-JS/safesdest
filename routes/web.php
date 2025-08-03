@@ -353,6 +353,7 @@ Route::middleware('rate.limit')->group(function () {
         Route::post('/customers', [CustomersController::class, 'store'])->name('customers.create');
         Route::get('/customers/data', [CustomersController::class, 'getData'])->name('customers.data');
         Route::post('/customers/status', [CustomersController::class, 'chang_status'])->name('customers.status');
+        Route::post('/customers/broker/status', [CustomersController::class, 'chang_broker_status'])->name('customers.broker.status');
         Route::get('/customers/edit/{id}', [CustomersController::class, 'edit'])->name('customers.show');
         Route::delete('/customers/delete/{id}', [CustomersController::class, 'destroy'])->name('customers.delete');
         Route::post('/customers/wallet/create', [CustomersController::class, 'createWallet'])->name('customers.wallet.create');
@@ -436,7 +437,8 @@ Route::middleware('rate.limit')->group(function () {
         Route::get('customs-clearances/{id}/edit', [CustomsClearanceController::class, 'edit'])->name('admin.customs-clearances.edit');
         Route::post('customs-clearances', [CustomsClearanceController::class, 'store'])->name('admin.customs-clearances.store');
         Route::put('customs-clearances/{id}', [CustomsClearanceController::class, 'update'])->name('admin.customs-clearances.update');
-        Route::delete('customs-clearances/{id}', [CustomsClearanceController::class, 'destroy'])->name('admin.customs-clearances.destroy');
+        Route::delete('customs-clearances/delete/{id}', [CustomsClearanceController::class, 'destroy'])->name('admin.customs-clearances.destroy');
+        Route::delete('customs-clearances/delete-all/{id}', [CustomsClearanceController::class, 'destroyAll'])->name('admin.customs-clearances.destroy.all');
         Route::get('/customs-clearances/assign/{id}', [CustomsClearanceController::class, 'getToAssign'])->name('customs-clearances.get.assign');
         Route::post('customs-clearances/assign', [CustomsClearanceController::class, 'assign'])->name('customs-clearances.assign');
         Route::post('customs-clearances/{id}/create-ad', [CustomsClearanceController::class, 'createAd'])->name('admin.customs-clearances.create-ad');

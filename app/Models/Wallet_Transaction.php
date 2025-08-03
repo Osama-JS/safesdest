@@ -19,6 +19,7 @@ class Wallet_Transaction extends Model
     'maturity_time',
     'sequence',
     'task_id',
+    'clearance_id',
     'team_id',
     'clearance_id',
 

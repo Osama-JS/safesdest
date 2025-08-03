@@ -105,12 +105,14 @@ $(function () {
         },
         {
           targets: 5,
+          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
             return `<span class="fw-bold text-dark">${data} SAR</span>`;
           }
         },
         {
           targets: 6,
+          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
             return `<span class="commission-badge bg-success text-white">${data} SAR</span>`;
           }
@@ -163,12 +165,10 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-1">
-                <a href="${baseUrl}admin/tasks/${full.id}" class="btn btn-sm btn-outline-primary" title="View Task">
+                <a href="${baseUrl}admin/tasks/${full.id}" class="btn btn-sm " title="View Task">
                   <i class="ti ti-eye"></i>
                 </a>
-                <button class="btn btn-sm btn-outline-info view-details" data-id="${full.id}" title="View Details">
-                  <i class="ti ti-info-circle"></i>
-                </button>
+
               </div>
             `;
           }

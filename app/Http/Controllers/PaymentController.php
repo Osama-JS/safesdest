@@ -378,7 +378,7 @@ class PaymentController extends Controller
 
         $result = null;
         if ($request->hasFile('receipt_image')) {
-          $result = (new FunctionsController)->convert($request->receipt_image, 'tasks/payment');
+          $result = (new FunctionsController)->convert($request->receipt_image, 'customs-clearance/payment');
         }
         $transaction = $user->transactionsClearance()->create([
           'amount' => $amount,

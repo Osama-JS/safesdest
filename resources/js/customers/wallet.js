@@ -33,8 +33,7 @@ $(function () {
     }
   });
 
-  var start_from = moment().startOf('month').format('YYYY-MM-DD');
-  var end_to = moment().endOf('month').format('YYYY-MM-DD');
+  var start_from, end_to;
 
   if (dt_data_table.length) {
     var dt_data = dt_data_table.DataTable({
@@ -113,7 +112,10 @@ $(function () {
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            return `<span>${full.task ? '#' + full.task : ''}</span>`;
+            return `
+            <span>${full.task ? 'Task #' + full.task : ''}</span>
+            <span>${full.clearance ? 'Clearance #' + full.clearance : ''}</span>
+            `;
           }
         },
 

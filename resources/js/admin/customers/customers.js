@@ -192,6 +192,7 @@ $(function () {
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">${__('View')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">${__('Change Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-broker-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.broker}">${__('Change Broker Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >${__('Create Wallet')}</a></li>
                   </ul>
                 </div>
@@ -351,6 +352,29 @@ $(function () {
       icon: 'info',
       fields: fields,
       url: `${baseUrl}admin/customers/status`,
+      method: 'POST',
+      dataTable: dt_data // إعادة تحميل الجدول إذا موجود
+    });
+  });
+
+  $(document).on('click', '.status-broker-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
+
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+      <select class="form-select" name="status">
+        <option value="active" ${status ? 'selected' : ''}>Active</option>
+        <option value="inactive" ${!status ? 'selected' : ''}>Inactive</option>
+      </select>
+    `;
+
+    showFormModal({
+      title: `Change Broker: ${name} Status`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/customers/broker/status`,
       method: 'POST',
       dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });

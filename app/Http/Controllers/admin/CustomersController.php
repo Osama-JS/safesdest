@@ -26,7 +26,7 @@ class CustomersController extends Controller
   {
     $this->middleware('permission:view_customers', ['only' => ['index', 'getData', 'edit']]);
     $this->middleware('permission:save_customers', ['only' => ['store']]);
-    $this->middleware('permission:status_customers', ['only' => ['chang_status']]);
+    $this->middleware('permission:status_customers', ['only' => ['chang_status', 'chang_broker_status']]);
     $this->middleware('permission:delete_customers', ['only' => ['destroy']]);
     $this->middleware('permission:profile_customers', ['only' => ['show', 'getCustomerTasks']]);
     $this->middleware('permission:wallet_customers', ['only' => ['']]);
@@ -151,6 +151,37 @@ class CustomersController extends Controller
         return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
       }
       $done = Customer::find($req->id)->update(['status' => $req->status]);
+
+      if (!$done) {
+        return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Customer Status')]);
+      }
+      return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Customer Status changed')]);
+    } catch (Exception $ex) {
+      return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+    }
+  }
+
+  public function chang_broker_status(Request $req)
+  {
+    $validator = Validator::make($req->all(), [
+      'id' => 'required|exists:customers,id',
+      'status' => 'required',
+    ], [
+      'id.required' => __('The customer id is required.'),
+      'id.exists' => __('The selected customer does not exist.'),
+      'status.required' => __('The broker status field is required.'),
+    ]);
+    if ($validator->fails()) {
+      return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
+    }
+
+    try {
+      $user = auth()->user();
+      if (!$user || !$user->checkCustomer($req->id)) {
+        return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+      }
+      $broker = $req->status == true;
+      $done = Customer::find($req->id)->update(['is_customs_clearance_agent' => $broker]);
 
       if (!$done) {
         return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Customer Status')]);
@@ -640,6 +671,8 @@ class CustomersController extends Controller
       return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
     }
   }
+
+
 
 
 

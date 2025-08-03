@@ -114,7 +114,10 @@ $(function () {
         {
           targets: 5,
           render: function (data, type, full, meta) {
-            return `<span>${full.task}</span>`;
+            return `
+            <span>${full.task ? 'Task #' + full.task : ''}</span>
+            <span>${full.clearance ? 'Clearance #' + full.clearance : ''}</span>
+            `;
           }
         },
         {
@@ -140,7 +143,7 @@ $(function () {
             return `
               <div class="text-end">
                 ${
-                  full.task !== ''
+                  (full.task || full.clearance) !== ''
                     ? `
                     <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}"  >
                   <i class="ti ti-edit"></i>
@@ -159,7 +162,7 @@ $(function () {
         }
       ],
       createdRow: function (row, data, dataIndex) {
-        if (data.task !== '') {
+        if (data.task !== '' || data.clearance !== '') {
           $(row).addClass('table-success');
         }
       },

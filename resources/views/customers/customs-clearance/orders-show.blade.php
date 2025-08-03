@@ -792,10 +792,11 @@
                                         <i class="ti ti-cash"></i>
                                     </div>
                                     <div>
-                                        <small class="text-muted d-block">{{ __('The Offering Price') }}</small>
+                                        <small class="text-muted d-block">{{ __('The Price you get') }}</small>
                                         <div class="fw-bold text-success fs-5">
                                             @if ($data->total_price != 0)
-                                                {{ number_format($data->total_price, 0) }} <small>SAR</small>
+                                                {{ number_format($data->total_price - $data->commission, 2) }}
+                                                <small>SAR</small>
                                             @else
                                                 <span class="text-muted">Not specified</span>
                                             @endif

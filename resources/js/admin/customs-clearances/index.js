@@ -417,7 +417,12 @@ $(function () {
   // Delete record
   $(document).on('click', '.delete-record', function () {
     const id = $(this).data('id');
-    deleteRecord(id, `${clearanceView}${id}`, dt_data);
+    deleteRecord(id, `${clearanceView}/delete${id}`, dt_data);
+  });
+
+  $(document).on('click', '.delete-record-force', function () {
+    const id = $(this).data('id');
+    deleteRecord(id, `${clearanceView}delete-all/${id}`, dt_data);
   });
 
   // Assign clearance agent
@@ -574,6 +579,7 @@ $(function () {
                 } else {
                   dt_data.draw();
                   $('.payment_submit').trigger('reset');
+                  $('#paymentModal').modal('hide');
                 }
               } else if (data.status === 2) {
                 showAlert('error', data.error, 10000, true);

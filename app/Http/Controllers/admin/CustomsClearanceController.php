@@ -47,6 +47,34 @@ class CustomsClearanceController extends Controller
   public function show($id)
   {
     $data = Customs_Clearance::findOrFail($id);
+    $pricing = $data->pricing;
+    if ($data->total_price > 0 && !$data->included && $data->commission == 0 && $data->clearance_agent_id == null) {
+      $vat = floatval($pricing->vat_commission); // تحويل إلى رقم والتعامل مع null
+      $commission = floatval($pricing->service_commission);
+      $commissionType = $pricing->service_commission_type; // 'fixed' or 'percentage'
+
+      $commissionAmount = 0;
+      $vatAmount = 0;
+
+      // حساب العمولة فقط إذا كانت قيمة صالحة
+      if ($commission > 0) {
+        if ($commissionType === 'percentage') {
+          $commissionAmount = ($commission / 100) * $data->total_price;
+        } else { // fixed
+          $commissionAmount = $commission;
+        }
+      }
+
+      // حساب الضريبة فقط إذا كانت قيمة صالحة
+      $priceWithCommission = $data->total_price + $commissionAmount;
+      if ($vat > 0) {
+        $vatAmount = ($vat / 100) * $priceWithCommission;
+      }
+
+      // المجموع النهائي
+      $data->total_price += $commissionAmount + $vatAmount;
+    }
+
     return view('admin.customs-clearances.show', compact('data'));
   }
 
@@ -142,7 +170,7 @@ class CustomsClearanceController extends Controller
       $totalPrice = $clearance->total_price ?? 0;
       $pricing = $clearance->pricing;
 
-      if ($totalPrice > 0 && !$clearance->included) {
+      if ($totalPrice > 0 && !$clearance->included && $clearance->commission == 0 && $clearance->clearance_agent_id == null) {
 
 
         $vat = floatval($pricing->vat_commission); // تحويل إلى رقم والتعامل مع null
@@ -307,6 +335,11 @@ class CustomsClearanceController extends Controller
     $actions .= '<li><a href="javascript:;" class="dropdown-item text-danger delete-record"
                     data-id="' . $clearance->id . '">
                     <i class="ti ti-trash me-1"></i> Delete
+                </a></li>';
+
+    $actions .= '<li><a href="javascript:;" class="dropdown-item text-danger delete-record-force"
+                    data-id="' . $clearance->id . '">
+                    <i class="ti ti-trash me-1"></i> Delete Force
                 </a></li>';
 
 
@@ -744,10 +777,53 @@ class CustomsClearanceController extends Controller
     }
   }
 
+  public function destroyAll(Request $req)
+  {
+    DB::beginTransaction();
+    try {
+      $find = Customs_Clearance::findOrFail($req->id);
+
+      $find->deleteCompletely();
+      DB::commit();
+      return response()->json(['status' => 1, 'success' => __('Customs Clearance deleted')]);
+    } catch (Exception $ex) {
+      DB::rollBack();
+      return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+    }
+  }
+
   // ============================================= Customs Clearance Offers
   public function showOffers($id)
   {
     $data = Customs_Clearance::findOrFail($id);
+    $pricing = $data->pricing;
+    if ($data->total_price > 0 && !$data->included && $data->commission == 0 && $data->clearance_agent_id == null) {
+      $vat = floatval($pricing->vat_commission); // تحويل إلى رقم والتعامل مع null
+      $commission = floatval($pricing->service_commission);
+      $commissionType = $pricing->service_commission_type; // 'fixed' or 'percentage'
+
+      $commissionAmount = 0;
+      $vatAmount = 0;
+
+      // حساب العمولة فقط إذا كانت قيمة صالحة
+      if ($commission > 0) {
+        if ($commissionType === 'percentage') {
+          $commissionAmount = ($commission / 100) * $data->total_price;
+        } else { // fixed
+          $commissionAmount = $commission;
+        }
+      }
+
+      // حساب الضريبة فقط إذا كانت قيمة صالحة
+      $priceWithCommission = $data->total_price + $commissionAmount;
+      if ($vat > 0) {
+        $vatAmount = ($vat / 100) * $priceWithCommission;
+      }
+
+      // المجموع النهائي
+      $data->total_price += $commissionAmount + $vatAmount;
+    }
+
     // $offer = Customs_Clearance_Offer::where('customs_clearance_id', $id)->where('driver_id', Auth::user()->id)->first();
     return view('admin.customs-clearances.offers', compact('data'));
   }
@@ -1104,7 +1180,9 @@ class CustomsClearanceController extends Controller
 
   public function close($id)
   {
+    DB::beginTransaction();
     try {
+
       $clearance = Customs_Clearance::findOrFail($id);
 
       if (!in_array($clearance->status, ['completed'])) {
@@ -1150,6 +1228,7 @@ class CustomsClearanceController extends Controller
 
       $wallet =  $clearance->clearanceAgent->wallet;
       if (!$wallet) {
+        DB::rollBack();
         return response()->json([
           'success' => false,
           'message' => 'Cannot close this clearance. This clearance agent does not have a wallet'
@@ -1161,21 +1240,24 @@ class CustomsClearanceController extends Controller
         'description'         => 'Amount for Customs Clearance #' . $clearance->id,
         'transaction_type'    => 'credit',
         'wallet_id'           => $wallet->id,
+        'clearance_id'        => $clearance->id,
         'maturity_time'       => Carbon::now()->copy()->addDays(3),
       ];
 
       Wallet_Transaction::create($data);
 
 
+      DB::commit();
       return response()->json([
         'success' => true,
         'message' => 'Clearance closed successfully'
       ]);
     } catch (\Exception $e) {
+      DB::rollBack();
       return response()->json([
         'success' => false,
         'message' => 'Failed to close clearance'
-      ], 500);
+      ]);
     }
   }
 

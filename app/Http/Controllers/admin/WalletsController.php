@@ -481,7 +481,8 @@ class WalletsController extends Controller
         'description' => $val->description ?? '',
         'maturity'    => $val->maturity_time ? $val->maturity_time : '',
         'user'        => $val->user ? $val->user->name : 'automatic',
-        'task'        => $val->task_id ? $val->task_id : '',
+        'task'        => $val->task_id ?? '',
+        'clearance'        => $val->clearance_id ?? '',
         'image'       => $val->image ?? '',
         'sequence'    => $val->sequence,
         'status'      => (int) $val->status, // Ensure it's integer

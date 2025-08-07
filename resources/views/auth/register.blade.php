@@ -449,7 +449,7 @@
                                             </div> --}}
                                         </div>
                                     </div>
-                                    <div class="mb-6">
+                                    {{-- <div class="mb-6">
                                         @error('recaptcha')
                                             <span class="invalid-feedback" role="alert">
                                                 <span class="fw-medium">{{ $message }}</span>
@@ -459,8 +459,8 @@
                                             robot</label>
                                         {!! htmlFormSnippet() !!}
 
-                                    </div>
-                                    {{-- <div class="mb-6">
+                                    </div> --}}
+                                    <div class="mb-6">
 
                                         <div class="form-group">
                                             <label class="form-label" for="login-password">Enter the code in the
@@ -468,8 +468,10 @@
                                             <div class="captcha mb-2">
                                                 <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
                                                     style="height: 60px;">
-                                                <button type="button"
-                                                    class="btn btn-outline-seconde btn-refresh">↻</button>
+                                                <button type="button" class="btn btn-outline-secondary btn-refresh"
+                                                    onclick="refreshCaptcha()">
+                                                    <i class="ti ti-refresh"></i>
+                                                </button>
                                             </div>
 
 
@@ -478,7 +480,7 @@
 
                                         </div>
 
-                                    </div> --}}
+                                    </div>
 
 
                                     <!-- Terms -->
@@ -691,7 +693,7 @@
 
 
                                     </div>
-                                    <div class="mb-6">
+                                    {{-- <div class="mb-6">
                                         @error('recaptcha')
                                             <span class="invalid-feedback" role="alert">
                                                 <span class="fw-medium">{{ $message }}</span>
@@ -701,8 +703,8 @@
                                             robot</label>
                                         {!! htmlFormSnippet() !!}
 
-                                    </div>
-                                    {{-- <div class="mb-6">
+                                    </div> --}}
+                                    <div class="mb-6">
 
                                         <div class="form-group">
                                             <label class="form-label" for="login-password">Enter the code in the
@@ -710,8 +712,10 @@
                                             <div class="captcha mb-2">
                                                 <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
                                                     style="height: 60px;">
-                                                <button type="button"
-                                                    class="btn btn-outline-seconde btn-refresh">↻</button>
+                                                <button type="button" class="btn btn-outline-secondary btn-refresh"
+                                                    onclick="refreshCaptcha()">
+                                                    <i class="ti ti-refresh"></i>
+                                                </button>
                                             </div>
 
 
@@ -720,7 +724,7 @@
 
                                         </div>
 
-                                    </div> --}}
+                                    </div>
 
                                     <!-- Terms -->
                                     <div id="additional-form" class="row mt-4">
@@ -859,7 +863,7 @@
                                             </div> --}}
                                         </div>
                                     </div>
-                                    <div class="mb-6">
+                                    {{-- <div class="mb-6">
                                         @error('recaptcha')
                                             <span class="invalid-feedback" role="alert">
                                                 <span class="fw-medium">{{ $message }}</span>
@@ -869,7 +873,7 @@
                                             robot</label>
                                         {!! htmlFormSnippet() !!}
 
-                                    </div>
+                                    </div> --}}
                                     <div class="mb-6">
 
                                         <div class="form-group">
@@ -878,8 +882,10 @@
                                             <div class="captcha mb-2">
                                                 <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
                                                     style="height: 60px;">
-                                                <button type="button"
-                                                    class="btn btn-outline-seconde btn-refresh">↻</button>
+                                                <button type="button" class="btn btn-outline-secondary btn-refresh"
+                                                    onclick="refreshCaptcha()">
+                                                    <i class="ti ti-refresh"></i>
+                                                </button>
                                             </div>
 
 
@@ -937,5 +943,13 @@
         </div>
     </div>
     {!! htmlScriptTagJsApi() !!}
+    <script>
+        function refreshCaptcha() {
+            const captchaImage = document.getElementById('captcha-image');
+            if (captchaImage) {
+                captchaImage.src = '{{ captcha_src() }}?' + Math.random();
+            }
+        }
+    </script>
 
 @endsection

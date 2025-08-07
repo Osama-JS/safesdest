@@ -80,39 +80,44 @@
                                 </span>
                             @enderror
                         </div>
-                        <div class="mb-6">
-                            @error('recaptcha')
-                                    <span class="invalid-feedback" role="alert">
-                                        <span class="fw-medium">{{ $message }}</span>
-                                    </span>
-                                @enderror
-                            <label class="form-label" for="login-password">confirm that you ar not a robot</label>
-                            {!! htmlFormSnippet() !!}
-                        </div>
-
                         {{-- <div class="mb-6">
                             @error('recaptcha')
                                 <span class="invalid-feedback" role="alert">
                                     <span class="fw-medium">{{ $message }}</span>
                                 </span>
                             @enderror
+                            <label class="form-label" for="login-password">confirm that you ar not a robot</label>
+                            {!! htmlFormSnippet() !!}
+                        </div> --}}
 
-
-                            <div class="form-group">
-                                <label class="form-label" for="login-password">Enter the code in the image</label>
-                                <div class="captcha mb-2">
-                                    <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image" style="height: 60px;">
-                                    <button type="button" class="btn btn-outline-seconde btn-refresh">↻</button>
+                        <div class="mb-4">
+                            @error('captcha')
+                                <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                    <i class="ti ti-alert-circle me-2"></i>
+                                    <span>{{ $message }}</span>
                                 </div>
-
-
-                                <input type="text" class="form-control" name="captcha" required>
+                            @enderror
+                            <div class="captcha-section">
+                                <label class="form-label mb-3">
+                                    <i class="ti ti-shield-check me-2"></i>Enter the code in the image
+                                </label>
+                                <div class="captcha-container d-flex align-items-center gap-3 mb-3">
+                                    <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
+                                        style="height: 60px; border-radius: 8px; border: 2px solid #e9ecef;">
+                                    <button type="button" class="btn btn-outline-secondary btn-refresh"
+                                        onclick="refreshCaptcha()">
+                                        <i class="ti ti-refresh"></i>
+                                    </button>
+                                </div>
+                                <input type="text" class="form-control @error('captcha') is-invalid @enderror"
+                                    name="captcha" placeholder="Enter captcha code" required>
                                 @error('captcha')
-                                    <span class="text-danger">{{ $message }}</span>
+                                    <div class="invalid-feedback">
+                                        <i class="ti ti-alert-circle me-1"></i>{{ $message }}
+                                    </div>
                                 @enderror
                             </div>
-
-                        </div> --}}
+                        </div>
                         <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
                     </form>
 
@@ -124,6 +129,14 @@
 
     {!! htmlScriptTagJsApi() !!}
 
+    <script>
+        function refreshCaptcha() {
+            const captchaImage = document.getElementById('captcha-image');
+            if (captchaImage) {
+                captchaImage.src = '{{ captcha_src() }}?' + Math.random();
+            }
+        }
+    </script>
 
     {{-- <script>
         document.querySelector('.btn-refresh').addEventListener('click', function() {

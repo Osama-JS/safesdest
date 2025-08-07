@@ -23,124 +23,146 @@ use Illuminate\Support\Facades\Log;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-  /**
-   * Register any application services.
-   */
-  public function register(): void
-  {
-    //
-  }
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
 
-  /**
-   * Bootstrap any application services.
-   */
-  public function boot(): void
-  {
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
 
-    // Fortify::createUsersUsing(CreateNewUser::class);
-    Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
-    Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
-    // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+        // Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
+        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
+        // Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
 
-    Fortify::authenticateUsing(function (Request $request) {
-      // تحقق من الـ captcha فقط إذا لم يتم التحقق منه في هذا الطلب
-      if (!$request->attributes->get('captcha_validated')) {
-        Log::info('Validating reCAPTCHA - First attempt...');
+        Fortify::authenticateUsing(function (Request $request) {
+            // تحقق من الـ captcha فقط إذا لم يتم التحقق منه في هذا الطلب
+            if (!$request->attributes->get('captcha_validated')) {
+                Log::info('Validating reCAPTCHA - First attempt...');
 
-        $validator = Validator::make($request->all(), [
-          'g-recaptcha-response' => 'required|recaptcha',
-        ]);
+                // Google reCAPTCHA validation (currently active)
+                // $validator = Validator::make($request->all(), [
+                //   'g-recaptcha-response' => 'required|recaptcha',
+                // ]);
 
-        if ($validator->fails()) {
-          throw ValidationException::withMessages([
-            'recaptcha' => ['reCAPTCHA verification failed.'],
-          ]);
-        }
+                // Custom captcha validation (commented for easy switching)
+                // To switch to custom captcha:
+                // 1. Comment out the above reCAPTCHA validation
+                // 2. Uncomment the below custom captcha validation
+                // 3. Uncomment the custom captcha section in custom-login.blade.php
+                // 4. Comment out the reCAPTCHA section in custom-login.blade.php
 
-        Log::info('Captcha validated successfully');
-        // ضع علامة في الـ request attributes أن الـ captcha تم التحقق منه
-        $request->attributes->set('captcha_validated', true);
-      } else {
-        Log::info('Captcha already validated in this request, skipping validation');
-      }
-
-      $guard = $request->input('account_type');
-      $email = $request->input('email');
-      $password = $request->input('password');
-
-      switch ($guard) {
-        case 'driver':
-          $user = Driver::where('email', $email)->first();
-          break;
-        case 'customer':
-          $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 0)->first();
-          break;
-        case 'broker':
-          $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 1)->first();
-          break;
-        default:
-          $user = User::where('email', $email)->first();
-          break;
-      }
-
-      if (!$user || !Hash::check($password, $user->password)) {
-        throw ValidationException::withMessages([
-          'email' => ['These credentials do not match our records.']
-        ]);
-      }
-
-      if ($user->status === 'verified') {
-        throw ValidationException::withMessages([
-          'email' => ['Your email is not verified. <a href="' . route('verify.manual', ['email' => $user->email]) . '">Click here to verify</a>']
-        ]);
-      }
-
-      if ($user->status != 'active') {
-        throw ValidationException::withMessages([
-          'email' => ['Your account is pending or inactive.']
-        ]);
-      }
-
-      if ($user->reset_password) {
-        throw ValidationException::withMessages([
-          'email' => ['You need to reset your password before logging in.']
-        ]);
-      }
-
-      // تجديد الـ session token وإعداد الـ captcha flag
-      $request->session()->regenerateToken();
-      $request->session()->put('captcha', true);
-
-      // تسجيل الدخول بالـ guard المناسب
-      if ($guard == 'customer' || $guard == 'broker') {
-        Auth::guard('web')->logout();
-        Auth::guard('driver')->logout();
-        Auth::guard('customer')->login($user);
-        session(['guard' => 'customer']);
-      } elseif ($guard == 'driver') {
-        Auth::guard('customer')->logout();
-        Auth::guard('web')->logout();
-        Auth::guard('driver')->login($user);
-        session(['guard' => 'driver']);
-      } else {
-        Auth::guard('customer')->logout();
-        Auth::guard('driver')->logout();
-        Auth::guard('web')->login($user);
-        session(['guard' => 'web']);
-      }
-
-      return $user;
-    });
+                $validator = Validator::make($request->all(), [
+                  'captcha' => 'required|captcha',
+                ]);
 
 
+                if ($validator->fails()) {
+                    // Check which captcha failed and throw appropriate error
+                    if ($validator->errors()->has('g-recaptcha-response')) {
+                        throw ValidationException::withMessages([
+                          'recaptcha' => ['reCAPTCHA verification failed.'],
+                        ]);
+                    }
 
-    RateLimiter::for('login', function (Request $request) {
-      $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
-      return Limit::perMinute(5)->by($throttleKey);
-    });
+                    if ($validator->errors()->has('captcha')) {
+                        throw ValidationException::withMessages([
+                          'captcha' => ['Captcha verification failed. Please try again.'],
+                        ]);
+                    }
+                }
 
-    RateLimiter::for('two-factor', function (Request $request) {
-      return Limit::perMinute(5)->by($request->session()->get('login.id'));
-    });
-  }
+                Log::info('Captcha validated successfully');
+                // ضع علامة في الـ request attributes أن الـ captcha تم التحقق منه
+                $request->attributes->set('captcha_validated', true);
+            } else {
+                Log::info('Captcha already validated in this request, skipping validation');
+            }
+
+            $guard = $request->input('account_type');
+            $email = $request->input('email');
+            $password = $request->input('password');
+
+            switch ($guard) {
+                case 'driver':
+                    $user = Driver::where('email', $email)->first();
+                    break;
+                case 'customer':
+                    $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 0)->first();
+                    break;
+                case 'broker':
+                    $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 1)->first();
+                    break;
+                default:
+                    $user = User::where('email', $email)->first();
+                    break;
+            }
+
+            if (!$user || !Hash::check($password, $user->password)) {
+                throw ValidationException::withMessages([
+                  'email' => ['These credentials do not match our records.']
+                ]);
+            }
+
+            if ($user->status === 'verified') {
+                throw ValidationException::withMessages([
+                  'email' => ['Your email is not verified. <a href="' . route('verify.manual', ['email' => $user->email]) . '">Click here to verify</a>']
+                ]);
+            }
+
+            if ($user->status != 'active') {
+                throw ValidationException::withMessages([
+                  'email' => ['Your account is pending or inactive.']
+                ]);
+            }
+
+            if ($user->reset_password) {
+                throw ValidationException::withMessages([
+                  'email' => ['You need to reset your password before logging in.']
+                ]);
+            }
+
+            // تجديد الـ session token وإعداد الـ captcha flag
+            $request->session()->regenerateToken();
+            $request->session()->put('captcha', true);
+
+            // تسجيل الدخول بالـ guard المناسب
+            if ($guard == 'customer' || $guard == 'broker') {
+                Auth::guard('web')->logout();
+                Auth::guard('driver')->logout();
+                Auth::guard('customer')->login($user);
+                session(['guard' => 'customer']);
+            } elseif ($guard == 'driver') {
+                Auth::guard('customer')->logout();
+                Auth::guard('web')->logout();
+                Auth::guard('driver')->login($user);
+                session(['guard' => 'driver']);
+            } else {
+                Auth::guard('customer')->logout();
+                Auth::guard('driver')->logout();
+                Auth::guard('web')->login($user);
+                session(['guard' => 'web']);
+            }
+
+            return $user;
+        });
+
+
+
+        RateLimiter::for('login', function (Request $request) {
+            $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+            return Limit::perMinute(5)->by($throttleKey);
+        });
+
+        RateLimiter::for('two-factor', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        });
+    }
 }

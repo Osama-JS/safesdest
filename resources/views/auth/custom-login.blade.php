@@ -391,7 +391,7 @@
 
 
                             <!-- reCAPTCHA Section -->
-                            <div class="mb-4">
+                            {{-- <div class="mb-4">
                                 @error('recaptcha')
                                     <div class="alert alert-danger d-flex align-items-center" role="alert">
                                         <i class="ti ti-alert-circle me-2"></i>
@@ -405,6 +405,36 @@
                                     <div class="captcha-container">
                                         {!! htmlFormSnippet() !!}
                                     </div>
+                                </div>
+                            </div> --}}
+
+                            {{-- Custom Captcha Section (commented for easy switching) --}}
+                            <div class="mb-4">
+                                @error('captcha')
+                                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                        <i class="ti ti-alert-circle me-2"></i>
+                                        <span>{{ $message }}</span>
+                                    </div>
+                                @enderror
+                                <div class="captcha-section">
+                                    <label class="form-label mb-3">
+                                        <i class="ti ti-shield-check me-2"></i>Enter the code in the image
+                                    </label>
+                                    <div class="captcha-container d-flex align-items-center gap-3 mb-3">
+                                        <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
+                                            style="height: 60px; border-radius: 8px; border: 2px solid #e9ecef;">
+                                        <button type="button" class="btn btn-outline-secondary btn-refresh"
+                                            onclick="refreshCaptcha()">
+                                            <i class="ti ti-refresh"></i>
+                                        </button>
+                                    </div>
+                                    <input type="text" class="form-control @error('captcha') is-invalid @enderror"
+                                        name="captcha" placeholder="Enter captcha code" required>
+                                    @error('captcha')
+                                        <div class="invalid-feedback">
+                                            <i class="ti ti-alert-circle me-1"></i>{{ $message }}
+                                        </div>
+                                    @enderror
                                 </div>
                             </div>
 
@@ -454,6 +484,14 @@
     {!! htmlScriptTagJsApi() !!}
 
     <script>
+        // Function to refresh captcha (for custom captcha)
+        function refreshCaptcha() {
+            const captchaImage = document.getElementById('captcha-image');
+            if (captchaImage) {
+                captchaImage.src = '{{ captcha_src() }}?' + Math.random();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
 
 
@@ -648,6 +686,34 @@
             border-top-color: #ffffff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+        }
+
+        /* Custom Captcha Styles */
+        .captcha-container {
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .captcha-container img {
+            transition: all 0.3s ease;
+        }
+
+        .captcha-container img:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-refresh {
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-refresh:hover {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+            transform: rotate(180deg);
         }
     </style>
 

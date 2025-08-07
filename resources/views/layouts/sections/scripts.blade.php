@@ -37,6 +37,7 @@
             body: JSON.stringify(subscription)
         });
 
+        console.log('تم الاشتراك في الإشعارات بنجاح');
         // alert('تم الاشتراك في الإشعارات بنجاح');
     }
 

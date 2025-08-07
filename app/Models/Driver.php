@@ -4,186 +4,189 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
-
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class Driver extends Authenticatable
 {
-  use HasRoles;
-  use SoftDeletes;
-  protected $guard_name = 'driver';
+    use HasRoles;
+    use SoftDeletes;
+    use HasPushSubscriptions;
+    protected $guard_name = 'driver';
 
-  protected $table = 'drivers';
-  protected $fillable = [
-    'name',
-    'phone',
-    'phone_code',
-    'email',
-    'image',
-    'username',
-    'password',
-    'status',
-    'address',
-    'online',
-    'free',
-    'longitude',
-    'altitude',
-    'last_seen_at',
-    'commission_type',
-    'commission_value',
-    'location_update_interval',
-    'additional_data',
-    'form_template_id',
-    'team_id',
-    'vehicle_size_id',
-    'role_id',
-    'whatsapp_country_code',
-    'whatsapp_number',
-    'phone_is_whatsapp'
-  ];
-  protected $casts = [
-    'additional_data' => 'array',
-  ];
+    protected $table = 'drivers';
+    protected $fillable = [
+      'name',
+      'phone',
+      'phone_code',
+      'email',
+      'image',
+      'username',
+      'password',
+      'status',
+      'address',
+      'online',
+      'free',
+      'longitude',
+      'altitude',
+      'last_seen_at',
+      'commission_type',
+      'commission_value',
+      'location_update_interval',
+      'additional_data',
+      'form_template_id',
+      'team_id',
+      'vehicle_size_id',
+      'role_id',
+      'whatsapp_country_code',
+      'whatsapp_number',
+      'phone_is_whatsapp'
+    ];
+    protected $casts = [
+      'additional_data' => 'array',
+    ];
 
-  protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 
-  public function team()
-  {
-    return $this->belongsTo(Teams::class, 'team_id');
-  }
-  public function tags()
-  {
-    return $this->hasMany(Tag_Drivers::class, 'driver_id');
-  }
-
-  public function role()
-  {
-    return $this->belongsTo(Role::class, 'role_id');
-  }
-  public function vehicle_size()
-  {
-    return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
-  }
-
-  public function tasks()
-  {
-    return $this->hasMany(Task::class, 'driver_id');
-  }
-
-  public function possible_tasks()
-  {
-    return $this->hasMany(Task::class, 'pending_driver_id');
-  }
-
-  public function wallet()
-  {
-    return $this->hasOne(Wallet::class, 'driver_id');
-  }
-
-
-
-  public function transactions()
-  {
-    return $this->morphMany(Transaction::class, 'payable');
-  }
-
-  // App\Models\Driver.php
-
-  public function calculateCommission(float $totalPrice): float
-  {
-    $commissionType = $this->commission_type;
-    $commissionValue = $this->commission_value;
-
-    // إذا لم يوجد عمولة للسائق نبحث عن الفريق
-    if (!$commissionType && $this->team_id && $this->team) {
-      $commissionType = $this->team->commission_type;
-      $commissionValue = $this->team->commission_value;
+    public function team()
+    {
+        return $this->belongsTo(Teams::class, 'team_id');
+    }
+    public function tags()
+    {
+        return $this->hasMany(Tag_Drivers::class, 'driver_id');
     }
 
-    // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
-    if (!$commissionType) {
-      $commissionType = \App\Models\Settings::where('key', 'commission_type')->value('value');
-
-      if ($commissionType === 'rate') {
-        $commissionValue = \App\Models\Settings::where('key', 'commission_rate')->value('value');
-      } elseif ($commissionType === 'fixed') {
-        $commissionValue = \App\Models\Settings::where('key', 'commission_fixed')->value('value');
-      }
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+    public function vehicle_size()
+    {
+        return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
     }
 
-    // حساب العمولة
-    if ($commissionType && $commissionValue !== null) {
-      if ($commissionType === 'rate') {
-        return ($commissionValue / 100) * $totalPrice;
-      } elseif ($commissionType === 'fixed') {
-        return $commissionValue;
-      }
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'driver_id');
     }
 
-    return 0;
-  }
-
-  public function formTemplate()
-  {
-    return $this->belongsTo(Form_Template::class, 'form_template_id');
-  }
-
-  public function getDriverVisibleAdditionalDataAttribute()
-  {
-    if (!is_array($this->additional_data)) return [];
-
-    $formFields = $this->formTemplate?->fields ?? collect();
-
-    return collect($this->additional_data)->filter(function ($item) use ($formFields) {
-      return $formFields->contains(function ($field) use ($item) {
-        return $field->label == $item['label'] &&
-          in_array($field->customer_can, ['read', 'write']);
-      });
-    })->values()->all();
-  }
-
-  /**
-   * Get full WhatsApp number with country code
-   */
-  public function getFullWhatsappNumberAttribute()
-  {
-    if ($this->phone_is_whatsapp) {
-      return $this->phone_code . $this->phone;
+    public function possible_tasks()
+    {
+        return $this->hasMany(Task::class, 'pending_driver_id');
     }
 
-    if ($this->whatsapp_country_code && $this->whatsapp_number) {
-      return $this->whatsapp_country_code . $this->whatsapp_number;
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class, 'driver_id');
     }
 
-    return null;
-  }
 
-  /**
-   * Get WhatsApp number for display
-   */
-  public function getWhatsappDisplayAttribute()
-  {
-    if ($this->phone_is_whatsapp) {
-      return $this->phone_code . ' ' . $this->phone . ' (Same as phone)';
+
+    public function transactions()
+    {
+        return $this->morphMany(Transaction::class, 'payable');
     }
 
-    if ($this->whatsapp_country_code && $this->whatsapp_number) {
-      return $this->whatsapp_country_code . ' ' . $this->whatsapp_number;
+    // App\Models\Driver.php
+
+    public function calculateCommission(float $totalPrice): float
+    {
+        $commissionType = $this->commission_type;
+        $commissionValue = $this->commission_value;
+
+        // إذا لم يوجد عمولة للسائق نبحث عن الفريق
+        if (!$commissionType && $this->team_id && $this->team) {
+            $commissionType = $this->team->commission_type;
+            $commissionValue = $this->team->commission_value;
+        }
+
+        // إذا لم يوجد عمولة لا في السائق ولا في الفريق نرجع لإعدادات النظام
+        if (!$commissionType) {
+            $commissionType = \App\Models\Settings::where('key', 'commission_type')->value('value');
+
+            if ($commissionType === 'rate') {
+                $commissionValue = \App\Models\Settings::where('key', 'commission_rate')->value('value');
+            } elseif ($commissionType === 'fixed') {
+                $commissionValue = \App\Models\Settings::where('key', 'commission_fixed')->value('value');
+            }
+        }
+
+        // حساب العمولة
+        if ($commissionType && $commissionValue !== null) {
+            if ($commissionType === 'rate') {
+                return ($commissionValue / 100) * $totalPrice;
+            } elseif ($commissionType === 'fixed') {
+                return $commissionValue;
+            }
+        }
+
+        return 0;
     }
 
-    return 'Not provided';
-  }
-
-  /**
-   * Set WhatsApp data based on phone_is_whatsapp flag
-   */
-  public function setWhatsappFromPhone()
-  {
-    if ($this->phone_is_whatsapp) {
-      $this->whatsapp_country_code = $this->phone_code;
-      $this->whatsapp_number = $this->phone;
+    public function formTemplate()
+    {
+        return $this->belongsTo(Form_Template::class, 'form_template_id');
     }
-  }
+
+    public function getDriverVisibleAdditionalDataAttribute()
+    {
+        if (!is_array($this->additional_data)) {
+            return [];
+        }
+
+        $formFields = $this->formTemplate?->fields ?? collect();
+
+        return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+            return $formFields->contains(function ($field) use ($item) {
+                return $field->label == $item['label'] &&
+                  in_array($field->customer_can, ['read', 'write']);
+            });
+        })->values()->all();
+    }
+
+    /**
+     * Get full WhatsApp number with country code
+     */
+    public function getFullWhatsappNumberAttribute()
+    {
+        if ($this->phone_is_whatsapp) {
+            return $this->phone_code . $this->phone;
+        }
+
+        if ($this->whatsapp_country_code && $this->whatsapp_number) {
+            return $this->whatsapp_country_code . $this->whatsapp_number;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get WhatsApp number for display
+     */
+    public function getWhatsappDisplayAttribute()
+    {
+        if ($this->phone_is_whatsapp) {
+            return $this->phone_code . ' ' . $this->phone . ' (Same as phone)';
+        }
+
+        if ($this->whatsapp_country_code && $this->whatsapp_number) {
+            return $this->whatsapp_country_code . ' ' . $this->whatsapp_number;
+        }
+
+        return 'Not provided';
+    }
+
+    /**
+     * Set WhatsApp data based on phone_is_whatsapp flag
+     */
+    public function setWhatsappFromPhone()
+    {
+        if ($this->phone_is_whatsapp) {
+            $this->whatsapp_country_code = $this->phone_code;
+            $this->whatsapp_number = $this->phone;
+        }
+    }
 }

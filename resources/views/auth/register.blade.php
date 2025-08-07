@@ -870,7 +870,7 @@
                                         {!! htmlFormSnippet() !!}
 
                                     </div>
-                                    {{-- <div class="mb-6">
+                                    <div class="mb-6">
 
                                         <div class="form-group">
                                             <label class="form-label" for="login-password">Enter the code in the
@@ -888,7 +888,7 @@
 
                                         </div>
 
-                                    </div> --}}
+                                    </div>
 
 
                                     <!-- Terms -->

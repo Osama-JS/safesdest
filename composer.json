@@ -13,6 +13,7 @@
     "barryvdh/laravel-snappy": "^1.0",
     "biscolab/laravel-recaptcha": "^6.1",
     "devinweb/laravel-hyperpay": "^1.2",
+    "laravel-notification-channels/webpush": "^10.2",
     "laravel/framework": "^11.0",
     "laravel/jetstream": "^5.3",
     "laravel/sanctum": "^4.0",

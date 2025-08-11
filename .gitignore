@@ -1,6 +1,14 @@
 /.phpunit.cache
 /node_modules
 
+/safedests-app
+DRIVER_APIS_IMPLEMENTATION_REPORT.md
+driver-apis-complete-documentation.html
+driver-apis-summary-table.html
+flutter-driver-apis-detailed-report.html
+flutter-driver-app-analysis-report.html
+/docs
+
 /public/build
 /public/hot
 /public/storage

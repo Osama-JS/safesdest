@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class PushNotificationsController extends Controller
 {
-    public function index()
+    public function sendNotification(Request $req)
     {
         $user = User::find(1); // أو Customer أو Driver حسب نوع المستخدم
         $user->notify(new GeneralPushNotification([
@@ -19,6 +19,5 @@ class PushNotificationsController extends Controller
             'url' => '/notifications/1',
             'type' => 'admin_message',
         ]));
-
     }
 }

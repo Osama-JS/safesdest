@@ -1,0 +1,688 @@
+{
+  "info": {
+    "name": "SafeDests Driver APIs",
+    "description": "Complete collection of APIs for the SafeDests driver mobile application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{driver_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "driver_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Driver Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.token) {",
+                  "        pm.collectionVariables.set('driver_token', response.token);",
+                  "        console.log('Token saved:', response.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"iPhone 15\",\n    \"device_id\": \"unique-device-id-123\",\n    \"fcm_token\": \"firebase-token-here\",\n    \"app_version\": \"1.0.0\",\n    \"recaptcha_token\": \"03AGdBq26..._get_this_from_recaptcha_api\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Driver Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/refresh-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "refresh-token"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Driver Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "logout"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Get Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/tasks?status=pending&page=1&per_page=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Task Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/tasks/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/tasks/1/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks",
+                "1",
+                "accept"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Too far from my location\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/tasks/1/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks",
+                "1",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Task Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"picked_up\",\n    \"notes\": \"Package picked up successfully\",\n    \"location\": {\n        \"latitude\": 24.7136,\n        \"longitude\": 46.6753\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/tasks/1/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks",
+                "1",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Task History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/tasks/history/completed?page=1&per_page=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "tasks",
+                "history",
+                "completed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Location & Status",
+      "item": [
+        {
+          "name": "Update Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"latitude\": 24.7136,\n    \"longitude\": 46.6753,\n    \"accuracy\": 5.0,\n    \"speed\": 45.5,\n    \"heading\": 180.0,\n    \"timestamp\": \"2024-01-15T12:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/location",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "location"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/location/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "location",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Driver Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"online\": true,\n    \"free\": true,\n    \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update FCM Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fcm_token\": \"new-firebase-token-here\",\n    \"device_id\": \"unique-device-id-123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/fcm-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "fcm-token"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet & Earnings",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/wallet",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "wallet"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/wallet/transactions?page=1&per_page=20&type=credit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "wallet",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "type",
+                  "value": "credit"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Earnings Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/wallet/earnings/stats?period=month",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "wallet",
+                "earnings",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/notifications?page=1&per_page=20&unread_only=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                },
+                {
+                  "key": "unread_only",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/notifications/1/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "notifications",
+                "1",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/notifications/read-all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "notifications",
+                "read-all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/notifications/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "notifications",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Notification Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"new_tasks\": true,\n    \"task_updates\": true,\n    \"payment_notifications\": true,\n    \"system_announcements\": true,\n    \"marketing\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/notifications/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "driver",
+                "notifications",
+                "settings"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

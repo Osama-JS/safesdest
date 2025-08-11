@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 use NotificationChannels\WebPush\HasPushSubscriptions;
+use Laravel\Sanctum\HasApiTokens;
 
 class Driver extends Authenticatable
 {
+    use HasApiTokens;
     use HasRoles;
     use SoftDeletes;
     use HasPushSubscriptions;
+
     protected $guard_name = 'driver';
 
     protected $table = 'drivers';
@@ -42,7 +45,11 @@ class Driver extends Authenticatable
       'role_id',
       'whatsapp_country_code',
       'whatsapp_number',
-      'phone_is_whatsapp'
+      'phone_is_whatsapp',
+      'device_id',
+      'fcm_token',
+      'app_version',
+      'last_activity_at'
     ];
     protected $casts = [
       'additional_data' => 'array',
@@ -188,5 +195,68 @@ class Driver extends Authenticatable
             $this->whatsapp_country_code = $this->phone_code;
             $this->whatsapp_number = $this->phone;
         }
+    }
+
+    /**
+     * Create a new API token for the driver with specific abilities
+     */
+    public function createDriverToken($deviceName, $deviceId = null, $fcmToken = null)
+    {
+        // Define driver-specific abilities
+        $abilities = [
+            'driver:read',
+            'driver:update',
+            'tasks:read',
+            'tasks:manage',
+            'location:update',
+            'wallet:read',
+            'notifications:read'
+        ];
+
+        // Create the token
+        $token = $this->createToken($deviceName, $abilities);
+
+        // Update driver with device info if provided
+        if ($deviceId || $fcmToken) {
+            $updateData = [];
+            if ($deviceId) {
+                $updateData['device_id'] = $deviceId;
+            }
+            if ($fcmToken) {
+                $updateData['fcm_token'] = $fcmToken;
+            }
+            $this->update($updateData);
+        }
+
+        return $token;
+    }
+
+    /**
+     * Revoke all tokens for this driver
+     */
+    public function revokeAllTokens()
+    {
+        return $this->tokens()->delete();
+    }
+
+    /**
+     * Revoke tokens for a specific device
+     */
+    public function revokeDeviceTokens($deviceName)
+    {
+        return $this->tokens()->where('name', $deviceName)->delete();
+    }
+
+    /**
+     * Check if driver has specific ability
+     */
+    public function hasDriverAbility($ability)
+    {
+        $token = $this->currentAccessToken();
+        if (!$token) {
+            return false;
+        }
+
+        return in_array($ability, $token->abilities);
     }
 }

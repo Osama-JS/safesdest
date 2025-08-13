@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\EnsureGuardIs;
 use App\Http\Controllers\PaymentController;
 use App\Http\Middleware\EnsureCorrectGuard;
+use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\TeamsController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\admin\CustomersController;
 use App\Http\Controllers\admin\DashboardController;
 use App\Http\Controllers\admin\TeamWalletController;
 use App\Http\Controllers\language\LanguageController;
+use App\Http\Controllers\PushNotificationsController;
 use App\Http\Controllers\admin\settings\TagsController;
 use App\Http\Controllers\admin\PlatformWalletController;
 use App\Http\Controllers\laravel_example\UserManagement;
@@ -37,14 +39,18 @@ use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\settings\SystemStatisticsController;
 use App\Http\Controllers\admin\settings\ClearancePricingTemplateController;
 use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
-use App\Http\Controllers\PushNotificationsController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
+Route::get('/active-account', function () {
+
+    dd('hello');
+})->name("active-account-test");
 
 Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
 
 Route::get('/refresh-captcha', [CaptchaController::class, 'refresh'])->name('captcha.refresh');
+Route::get('/test-signit', [SignatureController::class, 'testOAuth']);
 
 
 Route::middleware('rate.limit')->group(function () {

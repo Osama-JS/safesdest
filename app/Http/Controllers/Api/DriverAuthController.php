@@ -199,11 +199,11 @@ class DriverAuthController extends Controller
                     'commission_type' => $driver->commission_type,
                     'commission_value' => $driver->commission_value,
                     'location_update_interval' => $driver->location_update_interval,
-                    'team' => $driver->team ? [
+                    'team' => $driver->team_id ? [
                         'id' => $driver->team->id,
                         'name' => $driver->team->name
                     ] : null,
-                    'vehicle_size' => $driver->vehicle_size ? [
+                    'vehicle_size' => $driver->vehicle_size_id ? [
                         'id' => $driver->vehicle_size->id,
                         'name' => $driver->vehicle_size->name
                     ] : null,

@@ -4,33 +4,31 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\FileExpirationService;
-use App\Models\FileExpirationNotification;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
 class CheckFileExpirations extends Command
 {
     /**
-     * اسم الأمر وتوقيعه
+     * Command name and signature
      */
-    protected $signature = 'files:check-expirations 
-                            {--dry-run : تشغيل تجريبي بدون إرسال إيميلات أو تعليق حسابات}
-                            {--user-type= : فحص نوع مستخدم محدد (user, customer, driver)}
-                            {--stats : عرض الإحصائيات فقط}
-                            {--verbose : عرض تفاصيل إضافية}';
+    protected $signature = 'files:check-expirations
+                            {--dry-run : Run in test mode without sending emails or suspending accounts}
+                            {--user-type= : Check a specific user type (user, customer, driver)}
+                            {--stats : Display only system statistics}';
 
     /**
-     * وصف الأمر
+     * Command description
      */
-    protected $description = 'فحص الملفات منتهية الصلاحية وإرسال التنبيهات وتعليق الحسابات المطلوبة';
+    protected $description = 'Check expired files, send notifications, and suspend accounts if required';
 
     /**
-     * خدمة فحص انتهاء الصلاحية
+     * File expiration service
      */
     protected $fileExpirationService;
 
     /**
-     * إنشاء مثيل جديد من الأمر
+     * Create a new command instance
      */
     public function __construct(FileExpirationService $fileExpirationService)
     {
@@ -39,200 +37,200 @@ class CheckFileExpirations extends Command
     }
 
     /**
-     * تنفيذ الأمر
+     * Execute the command
      */
     public function handle()
     {
         $startTime = microtime(true);
-        
+
         try {
             $this->displayHeader();
-            
-            // عرض الإحصائيات فقط إذا طُلب ذلك
+
+            // Show statistics only if requested
             if ($this->option('stats')) {
                 return $this->displayStatistics();
             }
-            
-            // التحقق من الوضع التجريبي
+
+            // Check dry run mode
             if ($this->option('dry-run')) {
-                $this->warn('🧪 تشغيل تجريبي - لن يتم إرسال إيميلات أو تعليق حسابات');
+                $this->warn('🧪 Dry run - No emails will be sent and no accounts will be suspended');
                 $this->newLine();
             }
-            
-            // بدء عملية الفحص
-            $this->info('🔍 بدء فحص الملفات منتهية الصلاحية...');
+
+            // Start file expiration check
+            $this->info('🔍 Starting expired file check...');
             $this->newLine();
-            
+
             $results = $this->fileExpirationService->checkAndNotifyExpiredFiles();
-            
-            // عرض النتائج
+
+            // Display results
             $this->displayResults($results, microtime(true) - $startTime);
-            
-            // عرض الإحصائيات إذا طُلب ذلك
+
+            // Display statistics if verbose is enabled
             if ($this->option('verbose')) {
                 $this->newLine();
                 $this->displayStatistics();
             }
-            
+
             return $this->getExitCode($results);
-            
+
         } catch (Exception $e) {
-            $this->error('❌ حدث خطأ أثناء تنفيذ الأمر:');
+            $this->error('❌ An error occurred while running the command:');
             $this->error($e->getMessage());
-            
+
             if ($this->option('verbose')) {
-                $this->error('تفاصيل الخطأ:');
+                $this->error('Error details:');
                 $this->error($e->getTraceAsString());
             }
-            
+
             Log::error('CheckFileExpirations command failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return 1;
         }
     }
 
     /**
-     * عرض رأس الأمر
+     * Display command header
      */
     protected function displayHeader()
     {
         $this->info('╔══════════════════════════════════════════════════════════════╗');
-        $this->info('║                  🔔 نظام فحص انتهاء صلاحية الملفات                  ║');
-        $this->info('║                        SafeDests Platform                        ║');
+        $this->info('║                  🔔 File Expiration Check System               ║');
+        $this->info('║                        SafeDests Platform                      ║');
         $this->info('╚══════════════════════════════════════════════════════════════╝');
         $this->newLine();
-        $this->info('📅 التاريخ: ' . now()->format('Y-m-d H:i:s'));
-        $this->info('🌍 المنطقة الزمنية: ' . config('app.timezone', 'UTC'));
+        $this->info('📅 Date: ' . now()->format('Y-m-d H:i:s'));
+        $this->info('🌍 Timezone: ' . config('app.timezone', 'UTC'));
         $this->newLine();
     }
 
     /**
-     * عرض نتائج الفحص
+     * Display check results
      */
     protected function displayResults(array $results, float $executionTime)
     {
-        $this->info('✅ تم إكمال فحص الملفات بنجاح!');
+        $this->info('✅ File expiration check completed successfully!');
         $this->newLine();
-        
-        // إنشاء جدول النتائج
+
+        // Create results table
         $tableData = [
-            ['المؤشر', 'العدد', 'الحالة'],
-            ['المستخدمين المفحوصين', $results['users_checked'], '✓'],
-            ['العملاء المفحوصين', $results['customers_checked'], '✓'],
-            ['السائقين المفحوصين', $results['drivers_checked'], '✓'],
-            ['التنبيهات المرسلة', $results['notifications_sent'], $results['notifications_sent'] > 0 ? '📧' : '-'],
-            ['الحسابات المعلقة', $results['accounts_suspended'], $results['accounts_suspended'] > 0 ? '🚫' : '-'],
+            ['Metric', 'Count', 'Status'],
+            ['Users checked', $results['users_checked'], '✓'],
+            ['Customers checked', $results['customers_checked'], '✓'],
+            ['Drivers checked', $results['drivers_checked'], '✓'],
+            ['Notifications sent', $results['notifications_sent'], $results['notifications_sent'] > 0 ? '📧' : '-'],
+            ['Accounts suspended', $results['accounts_suspended'], $results['accounts_suspended'] > 0 ? '🚫' : '-'],
         ];
-        
+
         $this->table($tableData[0], array_slice($tableData, 1));
-        
-        // عرض الأخطاء إن وجدت
+
+        // Display errors if any
         if (!empty($results['errors'])) {
             $this->newLine();
-            $this->error('⚠️  الأخطاء التي حدثت:');
+            $this->error('⚠️  Errors occurred:');
             foreach ($results['errors'] as $error) {
                 $this->error("   • $error");
             }
         }
-        
-        // معلومات الأداء
+
+        // Performance info
         $this->newLine();
-        $this->info("⏱️  وقت التنفيذ: " . round($executionTime, 2) . " ثانية");
-        $this->info("💾 استهلاك الذاكرة: " . $this->formatBytes(memory_get_peak_usage(true)));
+        $this->info("⏱️  Execution time: " . round($executionTime, 2) . " seconds");
+        $this->info("💾 Memory usage: " . $this->formatBytes(memory_get_peak_usage(true)));
     }
 
     /**
-     * عرض الإحصائيات
+     * Display system statistics
      */
     protected function displayStatistics()
     {
         try {
-            $this->info('📊 إحصائيات النظام:');
+            $this->info('📊 System Statistics:');
             $this->newLine();
-            
+
             $stats = $this->fileExpirationService->getSystemStatistics();
-            
-            // إحصائيات المستخدمين النشطين
-            $this->info('👥 المستخدمين النشطين:');
+
+            // Active users statistics
+            $this->info('👥 Active users:');
             $activeUsersData = [
-                ['النوع', 'العدد'],
-                ['مستخدمي النظام', $stats['active_users']['users']],
-                ['العملاء', $stats['active_users']['customers']],
-                ['السائقين', $stats['active_users']['drivers']],
-                ['الإجمالي', array_sum($stats['active_users'])]
+                ['Type', 'Count'],
+                ['System users', $stats['active_users']['users']],
+                ['Customers', $stats['active_users']['customers']],
+                ['Drivers', $stats['active_users']['drivers']],
+                ['Total', array_sum($stats['active_users'])]
             ];
             $this->table($activeUsersData[0], array_slice($activeUsersData, 1));
-            
-            // إحصائيات التنبيهات
+
+            // Notifications statistics
             if (!empty($stats['notifications'])) {
                 $this->newLine();
-                $this->info('🔔 تنبيهات اليوم (' . $stats['date'] . '):');
-                
+                $this->info('🔔 Notifications today (' . $stats['date'] . '):');
+
                 $notificationData = [
-                    ['المؤشر', 'العدد']
+                    ['Metric', 'Count']
                 ];
-                
-                $notificationData[] = ['إجمالي التنبيهات', $stats['notifications']['total']];
-                
+
+                $notificationData[] = ['Total notifications', $stats['notifications']['total']];
+
                 if (!empty($stats['notifications']['by_user_type'])) {
                     foreach ($stats['notifications']['by_user_type'] as $type => $count) {
-                        $typeInArabic = [
-                            'user' => 'مستخدمي النظام',
-                            'customer' => 'العملاء', 
-                            'driver' => 'السائقين'
+                        $typeLabel = [
+                            'user' => 'System users',
+                            'customer' => 'Customers',
+                            'driver' => 'Drivers'
                         ][$type] ?? $type;
-                        $notificationData[] = ["تنبيهات {$typeInArabic}", $count];
+                        $notificationData[] = ["Notifications for {$typeLabel}", $count];
                     }
                 }
-                
-                $notificationData[] = ['الملفات المنتهية', $stats['notifications']['expired_files'] ?? 0];
-                $notificationData[] = ['الملفات ستنتهي قريباً', $stats['notifications']['expiring_soon'] ?? 0];
-                $notificationData[] = ['الحسابات المعلقة اليوم', $stats['suspended_today']];
-                
+
+                $notificationData[] = ['Expired files', $stats['notifications']['expired_files'] ?? 0];
+                $notificationData[] = ['Files expiring soon', $stats['notifications']['expiring_soon'] ?? 0];
+                $notificationData[] = ['Accounts suspended today', $stats['suspended_today']];
+
                 $this->table($notificationData[0], array_slice($notificationData, 1));
             }
-            
+
             return 0;
-            
+
         } catch (Exception $e) {
-            $this->error('❌ خطأ في عرض الإحصائيات: ' . $e->getMessage());
+            $this->error('❌ Error displaying statistics: ' . $e->getMessage());
             return 1;
         }
     }
 
     /**
-     * تحديد رمز الخروج بناءً على النتائج
+     * Determine exit code based on results
      */
     protected function getExitCode(array $results): int
     {
-        // إذا كانت هناك أخطاء
+        // If there are errors
         if (!empty($results['errors'])) {
             return 1;
         }
-        
-        // إذا تم تعليق حسابات كثيرة (أكثر من 10)
+
+        // If too many accounts were suspended
         if ($results['accounts_suspended'] > 10) {
-            $this->warn('⚠️  تحذير: تم تعليق عدد كبير من الحسابات (' . $results['accounts_suspended'] . ')');
+            $this->warn('⚠️  Warning: A large number of accounts were suspended (' . $results['accounts_suspended'] . ')');
             return 2;
         }
-        
+
         return 0;
     }
 
     /**
-     * تنسيق حجم الذاكرة
+     * Format memory size
      */
     protected function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        
+
         for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, $precision) . ' ' . $units[$i];
     }
 }

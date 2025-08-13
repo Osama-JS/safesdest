@@ -466,8 +466,8 @@
                                             <label class="form-label" for="login-password">Enter the code in the
                                                 image</label>
                                             <div class="captcha mb-2">
-                                                <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
-                                                    style="height: 60px;">
+                                                <img src="" alt="captcha" id="captcha-image"
+                                                    class="captcha-image" style="height: 60px;">
                                                 <button type="button" class="btn btn-outline-secondary btn-refresh"
                                                     onclick="refreshCaptcha()">
                                                     <i class="ti ti-refresh"></i>
@@ -710,8 +710,8 @@
                                             <label class="form-label" for="login-password">Enter the code in the
                                                 image</label>
                                             <div class="captcha mb-2">
-                                                <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
-                                                    style="height: 60px;">
+                                                <img src="" alt="captcha" id="captcha-image"
+                                                    class="captcha-image" style="height: 60px;">
                                                 <button type="button" class="btn btn-outline-secondary btn-refresh"
                                                     onclick="refreshCaptcha()">
                                                     <i class="ti ti-refresh"></i>
@@ -880,8 +880,8 @@
                                             <label class="form-label" for="login-password">Enter the code in the
                                                 image</label>
                                             <div class="captcha mb-2">
-                                                <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
-                                                    style="height: 60px;">
+                                                <img src="" alt="captcha" id="captcha-image"
+                                                    class="captcha-image" style="height: 60px;">
                                                 <button type="button" class="btn btn-outline-secondary btn-refresh"
                                                     onclick="refreshCaptcha()">
                                                     <i class="ti ti-refresh"></i>
@@ -942,14 +942,35 @@
             <!-- /Register -->
         </div>
     </div>
+
+    <img src="{{ captcha_src() }}" alt="captcha" id="captcha-source" style="display:none;">
+
     {!! htmlScriptTagJsApi() !!}
     <script>
-        function refreshCaptcha() {
-            const captchaImage = document.getElementById('captcha-image');
-            if (captchaImage) {
-                captchaImage.src = '{{ captcha_src() }}?' + Math.random();
-            }
+        function updateAllCaptchas() {
+            const source = document.getElementById('captcha-source');
+            const imgs = document.querySelectorAll('.captcha-image');
+
+            imgs.forEach(img => {
+                img.src = source.src;
+
+            });
         }
+
+        function refreshCaptcha() {
+            const source = document.getElementById('captcha-source');
+            source.src = '{{ captcha_src() }}?' + Math.random();
+            updateAllCaptchas();
+        }
+        // function refreshCaptcha() {
+        //     const captchaImage = document.getElementById('captcha-image');
+        //     if (captchaImage) {
+        //         captchaImage.src = '{{ captcha_src() }}?' + Math.random();
+        //     }
+        // }
+
+
+        updateAllCaptchas();
     </script>
 
 @endsection

@@ -2294,16 +2294,16 @@ class TasksController extends Controller
                 ]);
             }
 
-            app(\App\Services\NotificationService::class)->send(
-                'driver',
-                $driver->id, // IDs المستلمين
-                '📌 تم إقفال المهمة', // العنوان
-                "تم إقفال المهمة رقم (#{$$task->id}). الرجاء مراجعة المهام الخاصة بك.", // الرسالة
-                '/images/admin-icon.png',
-                '/images/banner.png',
-                "/tasks/{$$task->id}",
-                'task_closed' // نوع الإشعار
-            );
+            // app(\App\Services\NotificationService::class)->send(
+            //     'driver',
+            //     $driver->id, // IDs المستلمين
+            //     '📌 تم إقفال المهمة', // العنوان
+            //     "تم إقفال المهمة رقم (#{$$task->id}). الرجاء مراجعة المهام الخاصة بك.", // الرسالة
+            //     '/images/admin-icon.png',
+            //     '/images/banner.png',
+            //     "/tasks/{$$task->id}",
+            //     'task_closed' // نوع الإشعار
+            // );
 
 
             DB::commit();

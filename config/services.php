@@ -42,4 +42,12 @@ return [
     'min_score' => env('RECAPTCHA_MIN_SCORE', 0.5),
   ],
 
+  'signit' => [
+    'base_url'      => env('SIGNIT_BASE_URL'),
+    'client_id'     => env('SIGNIT_CLIENT_ID'),
+    'client_secret' => env('SIGNIT_CLIENT_SECRET'),
+    'scope'         => env('SIGNIT_SCOPE'),
+  ],
+
+
 ];

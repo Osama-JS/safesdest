@@ -16,18 +16,11 @@ class FileExpirationService
 {
     protected $emailService;
     protected $platformEmail;
-
     public function __construct(EmailNotificationService $emailService)
     {
         $this->emailService = $emailService;
-        $this->platformEmail = config('app.platform_notification_email', 'notifications@safedests.com');
+        $this->platformEmail = config('app.platform_notification_email', 'osama.samomy@gmail.com');
     }
-
-    /**
-     * فحص جميع الملفات منتهية الصلاحية وإرسال التنبيهات
-     *
-     * @return array
-     */
     public function checkAndNotifyExpiredFiles(): array
     {
         $results = [
@@ -36,69 +29,53 @@ class FileExpirationService
             'drivers_checked' => 0,
             'notifications_sent' => 0,
             'accounts_suspended' => 0,
+            'expired_files' => [], // <-- هنا نخزن الملفات المنتهية
             'errors' => []
         ];
-
         DB::beginTransaction();
-
         try {
             Log::info('Starting file expiration check process');
 
-            // فحص المستخدمين
-            $results['users_checked'] = $this->checkUsersFiles();
+            $results['users_checked'] = $this->checkUsersFiles($results['expired_files']);
+            $results['customers_checked'] = $this->checkCustomersFiles($results['expired_files']);
+            $results['drivers_checked'] = $this->checkDriversFiles($results['expired_files']);
 
-            // فحص العملاء
-            $results['customers_checked'] = $this->checkCustomersFiles();
 
-            // فحص السائقين
-            $results['drivers_checked'] = $this->checkDriversFiles();
-
-            // حساب إجمالي التنبيهات المرسلة اليوم
             $results['notifications_sent'] = FileExpirationNotification::sentToday()->count();
-
-            // تعليق الحسابات التي لم تحدث ملفاتها خلال 3 أيام
             $results['accounts_suspended'] = $this->suspendAccountsWithExpiredFiles();
 
             DB::commit();
 
+            // إرسال تقرير للـ admin
+            if (!empty($results['expired_files'])) {
+                $this->sendAdminReport($results['expired_files']);
+            }
+
             Log::info('File expiration check completed successfully', $results);
         } catch (Exception $e) {
             DB::rollBack();
-
             $error = 'File expiration check failed: ' . $e->getMessage();
             $results['errors'][] = $error;
-
             Log::error($error, [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString()
             ]);
-
-            // إرسال تنبيه للإدارة عن الخطأ
             $this->notifyAdminOfError($e, $results);
         }
-
         return $results;
     }
-
-    /**
-     * فحص ملفات المستخدمين
-     *
-     * @return int
-     */
-    protected function checkUsersFiles(): int
+    protected function checkUsersFiles(array &$expiredFiles): int
     {
         try {
             $users = User::where('status', 'active')
                 ->whereNotNull('additional_data')
                 ->get();
-
             $count = 0;
             foreach ($users as $user) {
-                if ($this->processUserFiles($user, 'user')) {
+                if ($this->processUserFiles($user, 'user', $expiredFiles)) {
                     $count++;
                 }
             }
-
             Log::info("Checked {$users->count()} users, {$count} had expired files");
             return $users->count();
         } catch (Exception $e) {
@@ -110,25 +87,18 @@ class FileExpirationService
         }
     }
 
-    /**
-     * فحص ملفات العملاء
-     *
-     * @return int
-     */
-    protected function checkCustomersFiles(): int
+    protected function checkCustomersFiles(array &$expiredFiles): int
     {
         try {
             $customers = Customer::where('status', 'active')
                 ->whereNotNull('additional_data')
                 ->get();
-
             $count = 0;
             foreach ($customers as $customer) {
-                if ($this->processUserFiles($customer, 'customer')) {
+                if ($this->processUserFiles($customer, 'customer', $expiredFiles)) {
                     $count++;
                 }
             }
-
             Log::info("Checked {$customers->count()} customers, {$count} had expired files");
             return $customers->count();
         } catch (Exception $e) {
@@ -140,12 +110,7 @@ class FileExpirationService
         }
     }
 
-    /**
-     * فحص ملفات السائقين
-     *
-     * @return int
-     */
-    protected function checkDriversFiles(): int
+    protected function checkDriversFiles(array &$expiredFiles): int
     {
         try {
             $drivers = Driver::where('status', 'active')
@@ -154,14 +119,12 @@ class FileExpirationService
                     $query->where('status', 'active');
                 }])
                 ->get();
-
             $count = 0;
             foreach ($drivers as $driver) {
-                if ($this->processUserFiles($driver, 'driver')) {
+                if ($this->processUserFiles($driver, 'driver', $expiredFiles)) {
                     $count++;
                 }
             }
-
             Log::info("Checked {$drivers->count()} drivers, {$count} had expired files");
             return $drivers->count();
         } catch (Exception $e) {
@@ -173,14 +136,7 @@ class FileExpirationService
         }
     }
 
-    /**
-     * معالجة ملفات مستخدم واحد
-     *
-     * @param mixed $user
-     * @param string $userType
-     * @return bool
-     */
-    protected function processUserFiles($user, string $userType): bool
+    protected function processUserFiles($user, string $userType, array &$expiredFiles = []): bool
     {
         if (!is_array($user->additional_data)) {
             return false;
@@ -189,12 +145,10 @@ class FileExpirationService
         $hasExpiredFiles = false;
 
         foreach ($user->additional_data as $fieldName => $fieldData) {
-            // التحقق من نوع الحقل
             if (!isset($fieldData['type']) || $fieldData['type'] !== 'file_expiration_date') {
                 continue;
             }
 
-            // التحقق من وجود تاريخ الانتهاء
             if (!isset($fieldData['expiration']) || !$fieldData['expiration']) {
                 continue;
             }
@@ -203,9 +157,16 @@ class FileExpirationService
                 $expirationDate = Carbon::parse($fieldData['expiration']);
                 $today = now()->startOfDay();
 
-                // فحص إذا كان الملف منتهي الصلاحية أو سينتهي خلال يوم واحد
                 if ($expirationDate->lte($today->copy()->addDay())) {
-                    // فحص إذا تم إرسال تنبيه لهذا الملف اليوم
+                    // إضافة الملف لقائمة المنتهين
+                    $expiredFiles[] = [
+                        'user_type' => $userType,
+                        'user_name' => $user->name,
+                        'email' => $user->email,
+                        'field_label' => $fieldData['label'],
+                        'expiration_date' => $expirationDate->format('Y-m-d')
+                    ];
+
                     $existingNotification = FileExpirationNotification::where([
                         'user_type' => $userType,
                         'user_id' => $user->id,
@@ -227,26 +188,52 @@ class FileExpirationService
                 ]);
             }
         }
-
         return $hasExpiredFiles;
     }
 
-    /**
-     * إرسال تنبيه انتهاء الصلاحية
-     *
-     * @param mixed $user
-     * @param string $userType
-     * @param string $fieldName
-     * @param array $fieldData
-     * @param Carbon $expirationDate
-     * @return void
-     */
+    protected function sendAdminReport(array $expiredFiles)
+    {
+
+        // إذا كانت المصفوفة فارغة لا ترسل الإيميل
+        if (empty($expiredFiles)) {
+            return; // لا يوجد ملفات منتهية
+        }
+
+        $adminEmail = config('app.admin_email', 'osama.samomy@gmail.com');
+
+        $htmlTable = "<table class='report-table'>
+        <tr>
+            <th>User Type</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>File</th>
+            <th>Expiration Date</th>
+        </tr>";
+
+        foreach ($expiredFiles as $file) {
+            $htmlTable .= "<tr>
+            <td>{$file['user_type']}</td>
+            <td>{$file['user_name']}</td>
+            <td>{$file['email']}</td>
+            <td>{$file['field_label']}</td>
+            <td>{$file['expiration_date']}</td>
+        </tr>";
+        }
+        $htmlTable .= "</table>";
+
+        $this->emailService->sendHighPriority([
+            'to' => $adminEmail,
+            'subject' => 'Expired Files Report',
+            'template' => 'emails.admin-expired-files-report',
+            'report_html' => $htmlTable
+        ]);
+    }
+
     protected function sendExpirationNotification($user, string $userType, string $fieldName, array $fieldData, Carbon $expirationDate)
     {
         try {
             $daysBeforeExpiration = now()->startOfDay()->diffInDays($expirationDate, false);
             $recipients = [$user->email];
-
             // إضافة مدير الفريق للسائقين
             if ($userType === 'driver' && $user->team_id && $user->team) {
                 $teamManagers = $user->team->users()->with('user')->get();
@@ -256,17 +243,14 @@ class FileExpirationService
                     }
                 }
             }
-
             // إضافة إيميل المنصة
-            $recipients[] = $this->platformEmail;
-
+            $recipients = [];
             // إزالة التكرارات وتنظيف القائمة
             $recipients = array_unique(array_filter($recipients));
-
             // إرسال الإيميل لكل مستلم
             foreach ($recipients as $email) {
                 $this->emailService->sendWithTemplate(
-                    'file-expiration-notification',
+                    'emails.file-expiration-notification',
                     $email,
                     'تنبيه: انتهاء صلاحية الملف - ' . $fieldData['label'],
                     [
@@ -282,7 +266,6 @@ class FileExpirationService
                     ]
                 );
             }
-
             // تسجيل التنبيه في قاعدة البيانات
             FileExpirationNotification::createSafely([
                 'user_type' => $userType,
@@ -295,7 +278,6 @@ class FileExpirationService
                 'days_before_expiration' => $daysBeforeExpiration,
                 'recipients' => $recipients
             ]);
-
             Log::info('File expiration notification sent successfully', [
                 'user_type' => $userType,
                 'user_id' => $user->id,
@@ -314,12 +296,6 @@ class FileExpirationService
             throw $e;
         }
     }
-
-    /**
-     * تعليق الحسابات التي لم تحدث ملفاتها خلال 3 أيام
-     *
-     * @return int
-     */
     protected function suspendAccountsWithExpiredFiles(): int
     {
         try {
@@ -327,11 +303,11 @@ class FileExpirationService
             $suspendedCount = 0;
 
             foreach ($notificationsToSuspend as $notification) {
-                $user = $notification->user();
+                $user = $notification->user;
 
                 if ($user && $user->status === 'active') {
                     // تحديث حالة المستخدم
-                    $user->update(['status' => 'inactive']);
+                    $user->update(['status' => 'blocked']);
 
                     // تحديث حالة التنبيه
                     $notification->update(['status' => 'account_suspended']);
@@ -363,24 +339,15 @@ class FileExpirationService
             throw $e;
         }
     }
-
-    /**
-     * إرسال إشعار تعليق الحساب
-     *
-     * @param mixed $user
-     * @param FileExpirationNotification $notification
-     * @return void
-     */
     protected function sendAccountSuspensionNotification($user, FileExpirationNotification $notification)
     {
         try {
-            $recipients = $notification->recipients ?? [$user->email, $this->platformEmail];
-
+            $recipients = $notification->recipients ;
             foreach ($recipients as $email) {
                 $this->emailService->sendHighPriority([
                     'to' => $email,
                     'subject' => 'تم تعليق الحساب - عدم تحديث الملف المطلوب',
-                    'template' => 'account-suspension-notification',
+                    'template' => 'emails.account-suspension-notification',
                     'user_name' => $user->name,
                     'user_type' => $this->getUserTypeInArabic($notification->user_type),
                     'field_label' => $notification->field_label,
@@ -390,7 +357,6 @@ class FileExpirationService
                     'action_text' => 'تحديث الملف وإعادة تفعيل الحساب'
                 ]);
             }
-
             Log::info('Account suspension notification sent', [
                 'user_type' => $notification->user_type,
                 'user_id' => $notification->user_id,
@@ -406,23 +372,15 @@ class FileExpirationService
             // لا نرمي الخطأ هنا لأن تعليق الحساب تم بنجاح
         }
     }
-
-    /**
-     * إرسال تنبيه للإدارة عن خطأ في النظام
-     *
-     * @param Exception $exception
-     * @param array $results
-     * @return void
-     */
     protected function notifyAdminOfError(Exception $exception, array $results)
     {
         try {
-            $adminEmail = config('app.admin_email', 'admin@safedests.com');
+            $adminEmail = config('app.admin_email', 'osama.samomy@gmail.com');
 
             $this->emailService->sendHighPriority([
                 'to' => $adminEmail,
                 'subject' => 'خطأ في نظام فحص انتهاء صلاحية الملفات',
-                'template' => 'system-error-notification',
+                'template' => 'emails.system-error-notification',
                 'error_message' => $exception->getMessage(),
                 'error_file' => $exception->getFile(),
                 'error_line' => $exception->getLine(),
@@ -436,25 +394,18 @@ class FileExpirationService
             ]);
         }
     }
-
-    /**
-     * الحصول على رابط التحديث حسب نوع المستخدم
-     *
-     * @param string $userType
-     * @return string
-     */
     protected function getUpdateUrl(string $userType): string
     {
         try {
             switch ($userType) {
                 case 'user':
-                    return route('admin.profile.index');
+                    return route('active-account-test');
                 case 'customer':
-                    return route('customers.profile.index');
+                    return route('active-account-test');
                 case 'driver':
-                    return route('drivers.profile.index');
+                    return route('active-account-test');
                 default:
-                    return route('home');
+                    return route('active-account-test');
             }
         } catch (Exception $e) {
             Log::warning('Error generating update URL', [
@@ -464,13 +415,6 @@ class FileExpirationService
             return config('app.url', 'https://safedests.com');
         }
     }
-
-    /**
-     * ترجمة نوع المستخدم للعربية
-     *
-     * @param string $userType
-     * @return string
-     */
     protected function getUserTypeInArabic(string $userType): string
     {
         $types = [
@@ -478,20 +422,11 @@ class FileExpirationService
             'customer' => 'عميل',
             'driver' => 'سائق'
         ];
-
         return $types[$userType] ?? $userType;
     }
-
-    /**
-     * الحصول على إحصائيات شاملة للنظام
-     *
-     * @param Carbon|null $date
-     * @return array
-     */
     public function getSystemStatistics(?Carbon $date = null): array
     {
         $date = $date ?? today();
-
         return [
             'date' => $date->format('Y-m-d'),
             'notifications' => FileExpirationNotification::getStatistics($date),

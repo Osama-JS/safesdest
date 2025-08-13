@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('DahsBoard'))
+@section('title', __('DashBoard'))
 
 <!-- Vendor Styles -->
 @section('vendor-style')

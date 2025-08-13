@@ -196,7 +196,8 @@ class EmailNotificationService
             'system_maintenance' => 'emails.system-maintenance',
             // قوالب نظام انتهاء صلاحية الملفات
             'file-expiration-notification' => 'emails.file-expiration-notification',
-            'account-suspension-notification' => 'emails.account-suspension-notification'
+            'account-suspension-notification' => 'emails.account-suspension-notification',
+            'admin-expired-files-report' => 'emails.admin-expired-files-report'
         ];
     }
 }

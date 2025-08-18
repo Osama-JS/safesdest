@@ -314,8 +314,40 @@ $(function () {
   );
 
   $(document).on('click', '.show-image', function () {
-    const imageUrl = $(this).data('image');
-    $('#modalImage').attr('src', imageUrl);
+    const fileUrl = $(this).data('image'); // الرابط الكامل للملف
+
+    // استخرج اسم الملف من الرابط
+    const fileName = fileUrl.split('/').pop();
+
+    // استخرج الامتداد
+    const extension = fileName.split('.').pop().toLowerCase();
+
+    // الامتدادات المسموح بها للصور
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+    if (imageExtensions.includes(extension)) {
+      // إذا كان صورة -> اعرضها داخل <img>
+      $('#modalContent').html(`
+            <img id="modalImage" src="${fileUrl}" class="img-fluid rounded" alt="${fileName}">
+        `);
+    } else if (extension === 'pdf') {
+      // استخدام Google Docs Viewer
+      $('#modalContent').html(`
+        <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true"
+                width="100%" height="600px" style="border:none;"></iframe>
+    `);
+    } else {
+      // أي ملف آخر (Word, Excel, ...) -> اعرض اسمه مع زر فتح
+      $('#modalContent').html(`
+            <div class="p-3 text-center">
+                <p><strong>الملف:</strong> ${fileName}</p>
+                <a href="${fileUrl}" target="_blank" class="btn btn-primary">فتح الملف</a>
+            </div>
+        `);
+    }
+
+    // افتح المودال
+    $('#fileModal').modal('show');
   });
 
   $(document).on('click', '.edit-record', function () {

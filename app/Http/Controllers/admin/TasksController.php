@@ -43,6 +43,7 @@ use App\Models\Team_Wallet_Transaction;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
+use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Services\NotificationService;
 
@@ -922,9 +923,50 @@ class TasksController extends Controller
                     );
                 }
 
+
+                $notiMessages = [
+                    'user' => [
+                        'title' => 'إنشاء مهمة جديدة',
+                        'msg'   => "تم إنشاء مهمة جديدة رقم #{$newTask->id} بنجاح."
+                    ],
+                    'customer' => [
+                        'title' => 'إنشاء مهمة جديدة',
+                        'msg'   => "تم إنشاء مهمة جديدة لحسابك رقم #{$newTask->id} بنجاح. من قبل الـ Adminstrator"
+                    ],
+                ];
+
+                // قائمة المستلمين: [نوع => ID]
+                $recipients = [
+                    'user' => [
+                        $newTask->user_id,
+                        optional(
+                            User::select('id')->where('email', config('app.admin_email', 'info@safedest.com'))->first()
+                        )->id
+                    ],
+                    'customer' => [$newTask->customer_id],
+                ];
+
+                foreach ($recipients as $type => $ids) {
+                    // نظّف المصفوفة من null
+                    $ids = array_filter($ids);
+
+                    if (!empty($ids) && isset($notiMessages[$type])) {
+                        app(\App\Services\NotificationService::class)->send(
+                            $type,
+                            $ids, // هنا صارت كلها مصفوفة IDs صحيحة
+                            $notiMessages[$type]['title'],
+                            $notiMessages[$type]['msg'],
+                            '/images/admin-icon.png',
+                            '/images/banner.png',
+                            "/tasks/{$newTask->id}",
+                            'task_status'
+                        );
+                    }
+                }
+
+
                 return $newTask;
             });
-
 
 
             foreach ($origenToDelete ?? [] as $file) {
@@ -1645,6 +1687,7 @@ class TasksController extends Controller
           5 => 'address',
           6 => 'start',
           7 => 'complete',
+          7 => 'delevery',
           8 => 'status',
           9 => 'created_at'
         ];
@@ -1693,6 +1736,7 @@ class TasksController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%{$search}%")
+                ->orWhere('delivery_number', 'LIKE', "%{$search}%")
                   ->orWhereHas('order', function ($orderQuery) use ($search) {
                       $orderQuery->where('id', 'LIKE', "%{$search}%");
                   })
@@ -1711,7 +1755,8 @@ class TasksController extends Controller
                   })
                   ->orWhereHas('delivery', function ($deliveryQuery) use ($search) {
                       $deliveryQuery->where('address', 'LIKE', "%{$search}%");
-                  });
+                  })
+                ;
             });
         }
 
@@ -1751,6 +1796,7 @@ class TasksController extends Controller
                 : "",
               'status'     => $task->status,
               'closed'     => $task->closed,
+              'delivery'     => $task->delivery_number ?? '',
               'payment'     => $task->payment_status,
               'created_at' => $task->created_at->format('Y-m-d H:i'),
             ];

@@ -74,14 +74,17 @@ class DriverTaskController extends Controller
 
             return response()->json([
                 'success' => true,
-                'tasks' => $tasks->items(),
-                'pagination' => [
-                    'current_page' => $tasks->currentPage(),
-                    'last_page' => $tasks->lastPage(),
-                    'per_page' => $tasks->perPage(),
-                    'total' => $tasks->total(),
-                    'from' => $tasks->firstItem(),
-                    'to' => $tasks->lastItem()
+                'message' => 'Tasks retrieved successfully',
+                'data' => [
+                    'tasks' => $tasks->items(),
+                    'pagination' => [
+                        'current_page' => $tasks->currentPage(),
+                        'last_page' => $tasks->lastPage(),
+                        'per_page' => $tasks->perPage(),
+                        'total' => $tasks->total(),
+                        'from' => $tasks->firstItem(),
+                        'to' => $tasks->lastItem()
+                    ]
                 ]
             ], 200);
 
@@ -127,7 +130,9 @@ class DriverTaskController extends Controller
 
             return response()->json([
                 'success' => true,
-                'task' => [
+                'message' => 'Task details retrieved successfully',
+                'data' => [
+                    'task' => [
                     'id' => $task->id,
                     'customer' => [
                         'name' => $task->customer->name ?? 'Unknown',
@@ -159,6 +164,7 @@ class DriverTaskController extends Controller
                     'payment_status' => $task->payment_status,
                     'items' => $task->additional_data['items'] ?? [],
                     'special_instructions' => $task->additional_data['special_instructions'] ?? null
+                    ]
                 ]
             ], 200);
 

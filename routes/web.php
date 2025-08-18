@@ -52,6 +52,7 @@ Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSize
 Route::get('/refresh-captcha', [CaptchaController::class, 'refresh'])->name('captcha.refresh');
 Route::get('/test-signit', [SignatureController::class, 'testOAuth']);
 
+Route::get('/test-signature', [SignatureController::class, 'testSignatureRequest']);
 
 Route::middleware('rate.limit')->group(function () {
 

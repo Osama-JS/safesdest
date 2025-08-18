@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DriverTaskController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverWalletController;
 use App\Http\Controllers\Api\DriverNotificationController;
+use App\Http\Controllers\Api\DriverProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,8 +40,15 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::post('/logout', [DriverAuthController::class, 'logout'])
         ->name('api.driver.logout');
 
-    Route::get('/profile', [DriverAuthController::class, 'profile'])
+    // Profile management routes
+    Route::get('/profile', [DriverProfileController::class, 'show'])
         ->name('api.driver.profile');
+
+    Route::put('/profile', [DriverProfileController::class, 'update'])
+        ->name('api.driver.profile.update');
+
+    Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
+        ->name('api.driver.profile.stats');
 
     Route::post('/refresh-token', [DriverAuthController::class, 'refreshToken'])
         ->name('api.driver.refresh-token');

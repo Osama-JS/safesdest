@@ -14,12 +14,43 @@ class SignatureController extends Controller
     }
 
 
+    public function testSignatureRequest(SignitService $signit)
+    {
+        try {
+            // مسار ملف PDF للتجربة
+            $filePath = storage_path('app/documents/test.pdf');
+
+            // بيانات الموقّع
+            $signerEmail = 'osama.samomy@gmail.com';
+            $signerName = 'John Doe';
+            $customFields = [
+                'employee_id' => '12345',
+                'priority' => 'Medium'
+            ];
+
+            // إرسال الطلب
+            $response = $signit->createSignatureRequest($filePath, $signerEmail, $signerName, $customFields);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $response
+            ]);
+
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function sendSignature(SignitService $signit)
     {
         $result = $signit->createSignatureRequest(
             storage_path('app/documents/test.pdf'), // مسار الملف
-            'client@example.com', // بريد الموقّع
-            'محمد أحمد' // اسم الموقّع
+            'osama.samomy@gmail.com.com', // بريد الموقّع
+            'Osama Samomy' // اسم الموقّع
         );
 
         return response()->json($result);

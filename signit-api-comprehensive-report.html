@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تقرير شامل لـ SignIt API - التكامل مع Laravel 11</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .header p {
+        color: #7f8c8d;
+        font-size: 1.2em;
+      }
+
+      .section {
+        background: rgba(255, 255, 255, 0.95);
+        margin-bottom: 25px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 20px;
+        font-size: 1.4em;
+        font-weight: bold;
+      }
+
+      .section-content {
+        padding: 25px;
+      }
+
+      .api-endpoint {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-right: 4px solid #3498db;
+      }
+
+      .method {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.9em;
+        margin-left: 10px;
+      }
+
+      .method.post {
+        background: #e74c3c;
+        color: white;
+      }
+      .method.get {
+        background: #27ae60;
+        color: white;
+      }
+      .method.put {
+        background: #f39c12;
+        color: white;
+      }
+      .method.delete {
+        background: #8e44ad;
+        color: white;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        overflow-x: auto;
+        margin: 15px 0;
+        border: 1px solid #34495e;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-right: 4px solid #fdcb6e;
+      }
+
+      .warning {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-right: 4px solid #dc3545;
+      }
+
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-right: 4px solid #28a745;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      th,
+      td {
+        padding: 15px;
+        text-align: right;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        color: white;
+        font-weight: bold;
+      }
+
+      tr:hover {
+        background: #f5f5f5;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      .status-implemented {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status-partial {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-missing {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .toc {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding-right: 20px;
+      }
+
+      .toc li {
+        margin: 8px 0;
+      }
+
+      .toc a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      .implementation-plan {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin: 20px 0;
+      }
+
+      .implementation-plan h3 {
+        margin-bottom: 15px;
+        font-size: 1.3em;
+      }
+
+      .step {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-right: 4px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .footer {
+        text-align: center;
+        padding: 30px;
+        color: white;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        margin-top: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔐 تقرير شامل لـ SignIt API</h1>
+        <p>التكامل مع Laravel 11 - تحليل وخطة التطوير الكاملة</p>
+        <p style="font-size: 0.9em; color: #95a5a6; margin-top: 10px">
+          تاريخ التقرير: <?php echo date('Y-m-d H:i:s'); ?> | إعداد: Augment Agent
+        </p>
+      </div>
+
+      <div class="toc">
+        <h3>📋 فهرس المحتويات</h3>
+        <ul>
+          <li><a href="#current-analysis">1. تحليل الوضع الحالي</a></li>
+          <li><a href="#api-endpoints">2. نقاط النهاية المتاحة</a></li>
+          <li><a href="#authentication">3. نظام المصادقة</a></li>
+          <li><a href="#implementation-status">4. حالة التنفيذ</a></li>
+          <li><a href="#enhancement-plan">5. خطة التطوير</a></li>
+          <li><a href="#integration-guide">6. دليل التكامل</a></li>
+          <li><a href="#flutter-integration">7. التكامل مع Flutter</a></li>
+        </ul>
+      </div>
+
+      <div class="section" id="current-analysis">
+        <div class="section-header">📊 1. تحليل الوضع الحالي</div>
+        <div class="section-content">
+          <div class="highlight">
+            <strong>الملخص التنفيذي:</strong> يحتوي المشروع حالياً على تكامل أساسي مع SignIt API يشمل المصادقة وإنشاء
+            طلبات التوقيع والتحقق من الحالة.
+          </div>
+
+          <h3>🔍 الملفات الموجودة:</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>الملف</th>
+                <th>الوصف</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>app/Services/SignitService.php</td>
+                <td>خدمة التكامل الأساسية مع SignIt</td>
+                <td><span class="status-badge status-implemented">مُنفذ جزئياً</span></td>
+              </tr>
+              <tr>
+                <td>app/Http/Controllers/SignatureController.php</td>
+                <td>تحكم في عمليات التوقيع</td>
+                <td><span class="status-badge status-partial">أساسي</span></td>
+              </tr>
+              <tr>
+                <td>config/services.php</td>
+                <td>إعدادات SignIt</td>
+                <td><span class="status-badge status-implemented">مُكتمل</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>⚡ الوظائف المُنفذة حالياً:</h3>
+          <ul style="padding-right: 20px; margin: 15px 0">
+            <li>✅ المصادقة OAuth 2.0 مع Client Credentials</li>
+            <li>✅ إنشاء طلبات التوقيع الأساسية</li>
+            <li>✅ التحقق من حالة طلبات التوقيع</li>
+            <li>✅ رفع الملفات للتوقيع</li>
+          </ul>
+
+          <div class="warning">
+            <strong>⚠️ النقاط المطلوب تطويرها:</strong>
+            <ul style="margin-top: 10px; padding-right: 20px">
+              <li>إدارة شاملة للوثائق والتوقيعات</li>
+              <li>دعم التوقيع المتعدد والمتسلسل</li>
+              <li>نظام إشعارات متقدم</li>
+              <li>واجهات برمجية للتطبيق المحمول</li>
+              <li>معالجة أخطاء محسنة</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="api-endpoints">
+        <div class="section-header">🌐 2. نقاط النهاية المتاحة في SignIt API</div>
+        <div class="section-content">
+          <div class="success"><strong>📡 Base URL:</strong> https://api.signit.sa/v1</div>
+
+          <div class="api-endpoint">
+            <h4><span class="method post">POST</span> /oauth/token</h4>
+            <p><strong>الوصف:</strong> الحصول على رمز الوصول للمصادقة</p>
+            <div class="code-block">
+              { "grant_type": "client_credentials", "scope": "signature-requests:read signature-requests:write" }
+            </div>
+            <p><strong>الاستجابة:</strong></p>
+            <div class="code-block">
+              { "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...", "token_type": "Bearer", "expires_in": 3600 }
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method post">POST</span> /signature_requests</h4>
+            <p><strong>الوصف:</strong> إنشاء طلب توقيع جديد</p>
+            <div class="code-block">
+              { "title": "عقد اتفاق", "message": "يرجى مراجعة الوثيقة والتوقيع عليها", "signers": [ { "email":
+              "signer@example.com", "name": "اسم الموقع", "order": 1, "role": "signer" } ], "files": [ { "name":
+              "contract.pdf", "content": "base64_encoded_content" } ] }
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method get">GET</span> /signature_requests/{id}</h4>
+            <p><strong>الوصف:</strong> الحصول على تفاصيل طلب التوقيع</p>
+            <div class="code-block">
+              { "id": "req_123456", "title": "عقد اتفاق", "status": "pending", "created_at": "2024-01-15T10:30:00Z",
+              "signers": [ { "email": "signer@example.com", "name": "اسم الموقع", "status": "pending", "signed_at": null
+              } ] }
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method get">GET</span> /signature_requests</h4>
+            <p><strong>الوصف:</strong> الحصول على قائمة طلبات التوقيع</p>
+            <p><strong>المعاملات:</strong> page, per_page, status, created_after, created_before</p>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method post">POST</span> /signature_requests/{id}/remind</h4>
+            <p><strong>الوصف:</strong> إرسال تذكير للموقعين</p>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method post">POST</span> /signature_requests/{id}/cancel</h4>
+            <p><strong>الوصف:</strong> إلغاء طلب التوقيع</p>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method get">GET</span> /signature_requests/{id}/download</h4>
+            <p><strong>الوصف:</strong> تحميل الوثيقة الموقعة</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="authentication">
+        <div class="section-header">🔐 3. نظام المصادقة والأمان</div>
+        <div class="section-content">
+          <h3>🛡️ OAuth 2.0 Client Credentials Flow</h3>
+          <div class="highlight">
+            يستخدم SignIt API نظام OAuth 2.0 مع Client Credentials Grant للمصادقة، مما يوفر مستوى عالي من الأمان.
+          </div>
+
+          <h4>📋 متطلبات المصادقة:</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>المعامل</th>
+                <th>الوصف</th>
+                <th>مطلوب</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>client_id</td>
+                <td>معرف العميل المقدم من SignIt</td>
+                <td>✅</td>
+              </tr>
+              <tr>
+                <td>client_secret</td>
+                <td>المفتاح السري للعميل</td>
+                <td>✅</td>
+              </tr>
+              <tr>
+                <td>grant_type</td>
+                <td>نوع المنحة (client_credentials)</td>
+                <td>✅</td>
+              </tr>
+              <tr>
+                <td>scope</td>
+                <td>نطاق الصلاحيات المطلوبة</td>
+                <td>✅</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>🔑 الصلاحيات المتاحة:</h4>
+          <ul style="padding-right: 20px; margin: 15px 0">
+            <li><code>signature-requests:read</code> - قراءة طلبات التوقيع</li>
+            <li><code>signature-requests:write</code> - إنشاء وتعديل طلبات التوقيع</li>
+            <li><code>documents:read</code> - قراءة الوثائق</li>
+            <li><code>documents:write</code> - رفع وإدارة الوثائق</li>
+          </ul>
+
+          <div class="code-block">
+            // إعداد المصادقة في Laravel 'signit' => [ 'base_url' => env('SIGNIT_BASE_URL', 'https://api.signit.sa/v1'),
+            'client_id' => env('SIGNIT_CLIENT_ID'), 'client_secret' => env('SIGNIT_CLIENT_SECRET'), 'scope' =>
+            env('SIGNIT_SCOPE', 'signature-requests:read signature-requests:write'), ],
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="implementation-status">
+        <div class="section-header">📈 4. حالة التنفيذ الحالية</div>
+        <div class="section-content">
+          <h3>✅ الوظائف المُنفذة:</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>الوظيفة</th>
+                <th>الحالة</th>
+                <th>الملف</th>
+                <th>الملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>المصادقة OAuth</td>
+                <td><span class="status-badge status-implemented">مُكتمل</span></td>
+                <td>SignitService::getAccessToken()</td>
+                <td>يدعم Basic Authentication</td>
+              </tr>
+              <tr>
+                <td>إنشاء طلب التوقيع</td>
+                <td><span class="status-badge status-partial">جزئي</span></td>
+                <td>SignitService::createSignatureRequest()</td>
+                <td>يحتاج تحسين وإضافة معاملات</td>
+              </tr>
+              <tr>
+                <td>التحقق من الحالة</td>
+                <td><span class="status-badge status-implemented">مُكتمل</span></td>
+                <td>SignitService::getSignatureStatus()</td>
+                <td>يعمل بشكل صحيح</td>
+              </tr>
+              <tr>
+                <td>إدارة الأخطاء</td>
+                <td><span class="status-badge status-partial">أساسي</span></td>
+                <td>جميع الطرق</td>
+                <td>يحتاج تحسين وتفصيل</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>❌ الوظائف المفقودة:</h3>
+          <div class="warning">
+            <ul style="padding-right: 20px">
+              <li>إدارة الوثائق المتعددة</li>
+              <li>التوقيع المتسلسل والمتعدد</li>
+              <li>إرسال التذكيرات</li>
+              <li>إلغاء طلبات التوقيع</li>
+              <li>تحميل الوثائق الموقعة</li>
+              <li>نظام Webhooks للإشعارات</li>
+              <li>إدارة القوالب</li>
+              <li>تتبع تفصيلي للأحداث</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="enhancement-plan">
+        <div class="section-header">🚀 5. خطة التطوير والتحسين</div>
+        <div class="section-content">
+          <div class="implementation-plan">
+            <h3>📋 المرحلة الأولى: تحسين الخدمات الأساسية</h3>
+            <div class="step">
+              <strong>1. تطوير SignitService المحسن</strong>
+              <ul style="padding-right: 20px; margin-top: 10px">
+                <li>إضافة cache للـ access tokens</li>
+                <li>معالجة أخطاء شاملة مع retry logic</li>
+                <li>دعم التوقيع المتعدد والمتسلسل</li>
+                <li>إدارة الوثائق المتعددة</li>
+              </ul>
+            </div>
+            <div class="step">
+              <strong>2. إنشاء Models للبيانات</strong>
+              <ul style="padding-right: 20px; margin-top: 10px">
+                <li>SignatureRequest Model</li>
+                <li>Document Model</li>
+                <li>Signer Model</li>
+                <li>SignatureEvent Model</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="implementation-plan">
+            <h3>📋 المرحلة الثانية: واجهات برمجية متقدمة</h3>
+            <div class="step">
+              <strong>1. Controllers شاملة</strong>
+              <ul style="padding-right: 20px; margin-top: 10px">
+                <li>DocumentController - إدارة الوثائق</li>
+                <li>SignatureRequestController - إدارة طلبات التوقيع</li>
+                <li>WebhookController - استقبال الإشعارات</li>
+                <li>ReportController - التقارير والإحصائيات</li>
+              </ul>
+            </div>
+            <div class="step">
+              <strong>2. API Routes للتطبيق المحمول</strong>
+              <ul style="padding-right: 20px; margin-top: 10px">
+                <li>Driver signature endpoints</li>
+                <li>Document management APIs</li>
+                <li>Status tracking APIs</li>
+                <li>Notification APIs</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="implementation-plan">
+            <h3>📋 المرحلة الثالثة: التكامل مع Flutter</h3>
+            <div class="step">
+              <strong>1. Driver Mobile APIs</strong>
+              <ul style="padding-right: 20px; margin-top: 10px">
+                <li>قائمة الوثائق المطلوب توقيعها</li>
+                <li>عرض الوثيقة والتوقيع</li>
+                <li>تتبع حالة التوقيعات</li>
+                <li>الإشعارات الفورية</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="integration-guide">
+        <div class="section-header">📖 6. دليل التكامل التفصيلي</div>
+        <div class="section-content">
+          <h3>🔧 إعداد البيئة</h3>
+          <div class="code-block">
+            # .env إضافة المتغيرات التالية إلى ملف SIGNIT_BASE_URL=https://api.signit.sa/v1
+            SIGNIT_CLIENT_ID=your_client_id_here SIGNIT_CLIENT_SECRET=your_client_secret_here
+            SIGNIT_SCOPE="signature-requests:read signature-requests:write documents:read documents:write"
+          </div>
+
+          <h3>📦 الملفات المطلوب إنشاؤها</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>الملف</th>
+                <th>الوصف</th>
+                <th>الأولوية</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>app/Services/EnhancedSignitService.php</td>
+                <td>خدمة SignIt محسنة وشاملة</td>
+                <td>🔴 عالية</td>
+              </tr>
+              <tr>
+                <td>app/Models/SignatureRequest.php</td>
+                <td>نموذج طلبات التوقيع</td>
+                <td>🔴 عالية</td>
+              </tr>
+              <tr>
+                <td>app/Models/Document.php</td>
+                <td>نموذج الوثائق</td>
+                <td>🔴 عالية</td>
+              </tr>
+              <tr>
+                <td>app/Http/Controllers/Api/SignatureController.php</td>
+                <td>تحكم API للتوقيعات</td>
+                <td>🟡 متوسطة</td>
+              </tr>
+              <tr>
+                <td>app/Http/Controllers/WebhookController.php</td>
+                <td>استقبال إشعارات SignIt</td>
+                <td>🟡 متوسطة</td>
+              </tr>
+              <tr>
+                <td>database/migrations/create_signature_requests_table.php</td>
+                <td>جدول طلبات التوقيع</td>
+                <td>🔴 عالية</td>
+              </tr>
+              <tr>
+                <td>database/migrations/create_documents_table.php</td>
+                <td>جدول الوثائق</td>
+                <td>🔴 عالية</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>🗄️ هيكل قاعدة البيانات المقترح</h3>
+          <div class="code-block">
+            -- جدول طلبات التوقيع CREATE TABLE signature_requests ( id BIGINT PRIMARY KEY AUTO_INCREMENT, signit_id
+            VARCHAR(255) UNIQUE NOT NULL, title VARCHAR(255) NOT NULL, message TEXT, status ENUM('pending', 'completed',
+            'cancelled', 'expired') DEFAULT 'pending', created_by BIGINT, created_at TIMESTAMP DEFAULT
+            CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, completed_at
+            TIMESTAMP NULL, expires_at TIMESTAMP NULL, INDEX idx_status (status), INDEX idx_created_by (created_by) );
+            -- جدول الوثائق CREATE TABLE documents ( id BIGINT PRIMARY KEY AUTO_INCREMENT, signature_request_id BIGINT,
+            name VARCHAR(255) NOT NULL, original_name VARCHAR(255), file_path VARCHAR(500), file_size BIGINT, mime_type
+            VARCHAR(100), is_signed BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY
+            (signature_request_id) REFERENCES signature_requests(id) ON DELETE CASCADE ); -- جدول الموقعين CREATE TABLE
+            signers ( id BIGINT PRIMARY KEY AUTO_INCREMENT, signature_request_id BIGINT, email VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL, order_index INT DEFAULT 1, status ENUM('pending', 'signed', 'declined') DEFAULT
+            'pending', signed_at TIMESTAMP NULL, ip_address VARCHAR(45), user_agent TEXT, FOREIGN KEY
+            (signature_request_id) REFERENCES signature_requests(id) ON DELETE CASCADE );
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="flutter-integration">
+        <div class="section-header">📱 7. التكامل مع تطبيق Flutter للسائقين</div>
+        <div class="section-content">
+          <h3>🔗 API Endpoints للتطبيق المحمول</h3>
+          <div class="api-endpoint">
+            <h4><span class="method get">GET</span> /api/driver/signature-requests</h4>
+            <p><strong>الوصف:</strong> الحصول على قائمة الوثائق المطلوب توقيعها للسائق</p>
+            <div class="code-block">
+              { "success": true, "data": [ { "id": 1, "title": "عقد العمل", "status": "pending", "created_at":
+              "2024-01-15T10:30:00Z", "expires_at": "2024-01-22T10:30:00Z", "documents": [ { "id": 1, "name":
+              "contract.pdf", "size": "2.5 MB" } ] } ] }
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <h4><span class="method post">POST</span> /api/driver/signature-requests/{id}/sign</h4>
+            <p><strong>الوصف:</strong> توقيع وثيقة من التطبيق المحمول</p>
+            <div class="code-block">
+              { "signature_data": "base64_signature_image", "location": { "latitude": 24.7136, "longitude": 46.6753 },
+              "device_info": { "model": "iPhone 12", "os": "iOS 15.0" } }
+            </div>
+          </div>
+
+          <h3>📋 خطة التكامل مع Flutter</h3>
+          <div class="step">
+            <strong>1. إعداد الـ APIs</strong>
+            <ul style="padding-right: 20px; margin-top: 10px">
+              <li>إضافة routes جديدة في api_driver.php</li>
+              <li>إنشاء DriverSignatureController</li>
+              <li>تطبيق middleware للمصادقة</li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <strong>2. تطوير الواجهات في Flutter</strong>
+            <ul style="padding-right: 20px; margin-top: 10px">
+              <li>صفحة قائمة الوثائق</li>
+              <li>صفحة عرض الوثيقة</li>
+              <li>واجهة التوقيع الرقمي</li>
+              <li>صفحة تتبع الحالة</li>
+            </ul>
+          </div>
+
+          <div class="highlight">
+            <strong>💡 ملاحظة مهمة:</strong> سيتم ربط نظام التوقيع الإلكتروني مع نظام إدارة السائقين الموجود، بحيث يمكن
+            للسائقين توقيع العقود والوثائق المطلوبة مباشرة من التطبيق المحمول.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <h3>📊 ملخص التقرير</h3>
+        <p>
+          هذا التقرير يقدم تحليلاً شاملاً لـ SignIt API والتكامل المطلوب مع مشروع Laravel 11. يشمل التقرير الوضع الحالي،
+          الوظائف المطلوبة، وخطة التطوير التفصيلية.
+        </p>
+        <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8">
+          🔄 آخر تحديث: <?php echo date('Y-m-d H:i:s'); ?> | 📧 للاستفسارات: تواصل مع فريق التطوير
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

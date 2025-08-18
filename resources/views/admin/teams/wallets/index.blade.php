@@ -373,19 +373,20 @@
                                             <span class="description-error text-danger text-error"></span>
                                         </div>
                                         <div class="mb-6">
-                                            <label class="form-label" for="trans-image">{{ __('Image ') }}</label>
-
-                                            <div class="form-group mt-2">
-                                                <img src="{{ url(asset('assets/img/placeholder.jpg')) }}"
-                                                    data-image="{{ url(asset('assets/img/placeholder.jpg')) }}"
-                                                    alt="" id="image"
-                                                    style="width: 120px;    height: 100px;
-                                                                object-fit: cover;"
-                                                    class="rounded preview-pickup-image image-input">
-                                                <input type="file" class="form-control file-pickup-image"
-                                                    id="trans-image" name="image" style="display: none" />
+                                            <div class="form-group mb-3">
+                                                <label for="image" class="form-label">
+                                                    <i class="fas fa-file-upload me-1"></i>
+                                                    {{ __('Upload File') }}
+                                                </label>
+                                                <input type="file" name="image" class="form-control" id="image"
+                                                    accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx,.txt,.csv">
+                                                <div class="form-text text-muted mt-1">
+                                                    <small>
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        {{ __('Supported formats: Images (JPEG, PNG, WebP), Documents (PDF). Max size: 10MB') }}
+                                                    </small>
+                                                </div>
                                                 <span class="image-error text-danger text-error"></span>
-
                                             </div>
 
                                         </div>
@@ -409,11 +410,11 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="imageModalLabel">{{ __('View the image') }}</h5>
+                    <h5 class="modal-title" id="imageModalLabel">{{ __('View the File') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="{{ __('close') }}"></button>
                 </div>
-                <div class="modal-body text-center">
+                <div class="modal-body text-center" id="modalContent">
                     <img id="modalImage" src="" class="img-fluid rounded shadow" alt="{{ __('image') }}" />
                 </div>
             </div>

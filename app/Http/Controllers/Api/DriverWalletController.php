@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
 use App\Models\Wallet;
-use App\Models\WalletTransaction;
+use App\Models\Wallet_Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -115,7 +115,7 @@ class DriverWalletController extends Controller
             }
 
             // Build query for wallet transactions
-            $query = WalletTransaction::where('wallet_id', $wallet->id);
+            $query = Wallet_Transaction::where('wallet_id', $wallet->id);
 
             // Filter by transaction type
             if ($request->type) {

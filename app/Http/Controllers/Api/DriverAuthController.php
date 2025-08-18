@@ -96,6 +96,7 @@ class DriverAuthController extends Controller
                         'online' => $driver->online,
                         'free' => $driver->free,
                         'team_id' => $driver->team_id,
+                        'team'  => $driver->team,
                         'vehicle_size_id' => $driver->vehicle_size_id,
                         'commission_type' => $driver->commission_type,
                         'commission_value' => $driver->commission_value

@@ -288,7 +288,7 @@ class TasksController extends Controller
             $history = [
               [
                 'action_type' => $req->status,
-                'description' => 'Change status from ' . $status . 'to ' $find->status,
+                'description' => 'Change status from ' . $status . 'to ' . $find->status,
                 'ip' => $userIp,
                 'user_id' => Auth::user()->id
               ]

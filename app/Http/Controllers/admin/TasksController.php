@@ -264,6 +264,7 @@ class TasksController extends Controller
 
         try {
             $find = Task::find($req->id);
+            $status = $find->status;
             $user = auth()->user();
             if (!$user || !$user->checkTask($req->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
@@ -287,7 +288,7 @@ class TasksController extends Controller
             $history = [
               [
                 'action_type' => $req->status,
-                'description' => 'Change status from ' . $find->status,
+                'description' => 'Change status from ' . $status . 'to ' $find->status,
                 'ip' => $userIp,
                 'user_id' => Auth::user()->id
               ]
@@ -302,11 +303,11 @@ class TasksController extends Controller
             $notiMessages = [
                 'user' => [
                     'title' => '📌 تحديث حالة المهمة الخاصة بك',
-                    'msg'   => "تم تحديث حالة المهمة رقم #{$find->id} من '{$find->status}' إلى '{$req->status}'."
+                    'msg'   => "تم تحديث حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
                 'customer' => [
                     'title' => 'تحديث حالة طلبك',
-                    'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$find->status}' إلى '{$req->status}'."
+                    'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
             ];
 

@@ -63,6 +63,8 @@ class NotificationService
                     'type' => $notif_type,
                 ]));
             }
+            Log::alert("message: ".$recipient->name);
+
         }
 
         return true;

@@ -239,7 +239,7 @@ $(function () {
           targets: 12,
           responsivePriority: 6,
           render: function (data, type, full, meta) {
-            return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span> <p>Delivery no: ${full.delivery} </p>` : `<span class="px-2 rounded bg-success text-white">Open</span>  <p>Delivery no: ${full.delivery} </p>`}`;
+            return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span> <p>Delivery no: ${full.delivery} </p>` : `<span class="px-2 rounded bg-success text-white">Open</span> `}`;
           }
         },
         {

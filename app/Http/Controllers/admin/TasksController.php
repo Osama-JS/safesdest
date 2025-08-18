@@ -312,26 +312,32 @@ class TasksController extends Controller
 
             // قائمة المستلمين: [نوع => ID]
             $recipients = [
-                'user'     => $find->user_id,
-                'customer' => $find->customer_id,
-            ];
+                   'user' => [
+                       $find->user_id,
+                       optional(
+                           User::select('id')->where('email', config('app.admin_email', 'info@safedest.com'))->first()
+                       )->id
+                   ],
+                   'customer' => [$find->customer_id],
+               ];
 
-            foreach ($recipients as $type => $id) {
-                if ($id && isset($notiMessages[$type])) { // تأكد من وجود ID ورسالة
+            foreach ($recipients as $type => $ids) {
+                // نظّف المصفوفة من null
+                $ids = array_filter($ids);
+
+                if (!empty($ids) && isset($notiMessages[$type])) {
                     app(\App\Services\NotificationService::class)->send(
                         $type,
-                        [$id], // IDs المستلمين
+                        $ids, // هنا صارت كلها مصفوفة IDs صحيحة
                         $notiMessages[$type]['title'],
                         $notiMessages[$type]['msg'],
                         '/images/admin-icon.png',
                         '/images/banner.png',
-                        "/tasks/{$find->id}",
+                        "tasks/{$find->id}",
                         'task_status'
                     );
                 }
             }
-
-
             return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Task Status changed']);
         } catch (Exception $ex) {
             return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);

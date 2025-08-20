@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Controllers\FunctionsController;
 
 class DriverProfileController extends Controller
 {
@@ -18,9 +19,9 @@ class DriverProfileController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             // Load relationships
-            $driver->load(['team', 'vehicleSize']);
+            $driver->load(['team', 'vehicle_size']);
 
             return response()->json([
                 'success' => true,
@@ -31,6 +32,9 @@ class DriverProfileController extends Controller
                         'name' => $driver->name,
                         'email' => $driver->email,
                         'phone' => $driver->phone,
+                        'phone_code' => $driver->phone_code,
+                        'address' => $driver->address,
+                        'image' => $driver->image,
                         'status' => $driver->status,
                         'online' => $driver->online,
                         'free' => $driver->free,
@@ -40,16 +44,17 @@ class DriverProfileController extends Controller
                         'commission_value' => $driver->commission_value,
                         'last_activity_at' => $driver->last_activity_at,
                         'app_version' => $driver->app_version,
+                        'additional_data' => $driver->additional_data ? json_decode($driver->additional_data, true) : null,
                         'created_at' => $driver->created_at,
                         'updated_at' => $driver->updated_at,
                         'team' => $driver->team ? [
                             'id' => $driver->team->id,
                             'name' => $driver->team->name,
                         ] : null,
-                        'vehicle_size' => $driver->vehicleSize ? [
-                            'id' => $driver->vehicleSize->id,
-                            'name' => $driver->vehicleSize->name,
-                            'description' => $driver->vehicleSize->description,
+                        'vehicle_size' => $driver->vehicle_size ? [
+                            'id' => $driver->vehicle_size->id,
+                            'name' => $driver->vehicle_size->type->vehicle->name . ' - ' . $driver->vehicle_size->type->name .' - '.  $driver->vehicle_size->name,
+                            'description' => $driver->vehicle_size->description,
                         ] : null,
                     ]
                 ]
@@ -78,7 +83,10 @@ class DriverProfileController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
+                'email' => 'sometimes|required|email|max:255|unique:drivers,email,' . $driver->id,
                 'phone' => 'sometimes|required|string|max:20',
+                'address' => 'sometimes|nullable|string|max:500',
+                'image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'current_password' => 'sometimes|required_with:new_password|string',
                 'new_password' => 'sometimes|required|string|min:6|confirmed',
             ]);
@@ -96,8 +104,27 @@ class DriverProfileController extends Controller
                 $driver->name = $request->name;
             }
 
+            if ($request->has('email')) {
+                $driver->email = $request->email;
+            }
+
             if ($request->has('phone')) {
                 $driver->phone = $request->phone;
+            }
+
+            if ($request->has('address')) {
+                $driver->address = $request->address;
+            }
+
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                $oldImage = $driver->image;
+                $driver->image = (new FunctionsController())->convert($request->file('image'), 'drivers');
+
+                // Delete old image if exists
+                if ($oldImage && file_exists(public_path($oldImage))) {
+                    unlink(public_path($oldImage));
+                }
             }
 
             // Update password if provided
@@ -115,7 +142,7 @@ class DriverProfileController extends Controller
             $driver->save();
 
             // Load relationships for response
-            $driver->load(['team', 'vehicleSize']);
+            $driver->load(['team', 'vehicle_size']);
 
             return response()->json([
                 'success' => true,
@@ -126,6 +153,9 @@ class DriverProfileController extends Controller
                         'name' => $driver->name,
                         'email' => $driver->email,
                         'phone' => $driver->phone,
+                        'phone_code' => $driver->phone_code,
+                        'address' => $driver->address,
+                        'image' => $driver->image,
                         'status' => $driver->status,
                         'online' => $driver->online,
                         'free' => $driver->free,
@@ -135,16 +165,17 @@ class DriverProfileController extends Controller
                         'commission_value' => $driver->commission_value,
                         'last_activity_at' => $driver->last_activity_at,
                         'app_version' => $driver->app_version,
+                        'additional_data' => $driver->additional_data ? json_decode($driver->additional_data, true) : null,
                         'created_at' => $driver->created_at,
                         'updated_at' => $driver->updated_at,
                         'team' => $driver->team ? [
                             'id' => $driver->team->id,
                             'name' => $driver->team->name,
                         ] : null,
-                        'vehicle_size' => $driver->vehicleSize ? [
-                            'id' => $driver->vehicleSize->id,
-                            'name' => $driver->vehicleSize->name,
-                            'description' => $driver->vehicleSize->description,
+                        'vehicle_size' => $driver->vehicle_size ? [
+                            'id' => $driver->vehicle_size->id,
+                            'name' => $driver->vehicle_size->type->vehicle->name . '-' . $driver->vehicle_size->type->name .' - '.  $driver->vehicle_size->name,
+                            'description' => $driver->vehicle_size->description,
                         ] : null,
                     ]
                 ]
@@ -215,6 +246,63 @@ class DriverProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get statistics'
+            ], 500);
+        }
+    }
+
+    /**
+     * Change driver password
+     */
+    public function changePassword(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:8|confirmed',
+                'new_password_confirmation' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Check current password
+            if (!Hash::check($request->current_password, $driver->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current password is incorrect'
+                ], 422);
+            }
+
+            // Update password
+            $driver->password = Hash::make($request->new_password);
+            $driver->save();
+
+            Log::info('Driver password changed successfully', [
+                'driver_id' => $driver->id,
+                'driver_email' => $driver->email
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Change driver password error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change password'
             ], 500);
         }
     }

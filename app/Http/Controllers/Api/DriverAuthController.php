@@ -21,7 +21,7 @@ class DriverAuthController extends Controller
         try {
             // Validate request
             $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
+                'login' => 'required|string',
                 'password' => 'required|string|min:6',
                 'device_name' => 'required|string|max:255',
                 'device_id' => 'nullable|string|max:255',
@@ -38,8 +38,11 @@ class DriverAuthController extends Controller
                 ], 422);
             }
 
-            // Find driver by email
-            $driver = Driver::where('email', $request->email)->first();
+            // Find driver by email or username
+            $login = $request->login;
+            $driver = Driver::where('email', $login)
+                           ->orWhere('username', $login)
+                           ->first();
 
             // Check if driver exists and password is correct
             if (!$driver || !Hash::check($request->password, $driver->password)) {
@@ -108,7 +111,7 @@ class DriverAuthController extends Controller
         } catch (\Exception $e) {
             Log::error('Driver login error', [
                 'error' => $e->getMessage(),
-                'email' => $request->email ?? 'unknown'
+                'login' => $request->login ?? 'unknown'
             ]);
 
             return response()->json([

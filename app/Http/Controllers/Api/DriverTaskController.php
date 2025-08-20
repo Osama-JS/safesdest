@@ -39,12 +39,7 @@ class DriverTaskController extends Controller
             $status = $request->get('status');
 
             // Build query
-            $query = Task::with(['customer', 'pickup_point', 'delivery_point'])
-                ->where(function ($q) use ($driver) {
-                    $q->where('driver_id', $driver->id)
-                      ->orWhere('pending_driver_id', $driver->id);
-                });
-
+            $query = Task::with(['customer', 'pickup', 'delivery']);
             // Filter by status if provided
             if ($status) {
                 if ($status === 'pending') {
@@ -96,7 +91,7 @@ class DriverTaskController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get tasks'
+                'message' => 'Failed to get tasks: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -487,6 +482,187 @@ class DriverTaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get task history'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending task assigned to driver
+     */
+    public function getPendingTask(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $pendingTask = Task::with(['customer', 'pickup', 'delivery'])
+                ->where('pending_driver_id', $driver->id)
+                ->whereNull('driver_id')
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$pendingTask) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No pending task found',
+                    'task' => null
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pending task retrieved successfully',
+                'task' => [
+                    'id' => $pendingTask->id,
+                    'type' => $pendingTask->type,
+                    'status' => $pendingTask->status,
+                    'pickup_address' => $pendingTask->pickup_address,
+                    'delivery_address' => $pendingTask->delivery_address,
+                    'amount' => $pendingTask->amount,
+                    'notes' => $pendingTask->notes,
+                    'created_at' => $pendingTask->created_at,
+                    'customer' => $pendingTask->customer ? [
+                        'id' => $pendingTask->customer->id,
+                        'name' => $pendingTask->customer->name,
+                        'phone' => $pendingTask->customer->phone,
+                    ] : null,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get pending task error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * Accept pending task
+     */
+    public function acceptTask(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'task_id' => 'required|integer|exists:tasks,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $task = Task::where('id', $request->task_id)
+                ->where('pending_driver_id', $driver->id)
+                ->whereNull('driver_id')
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found or already assigned'
+                ], 404);
+            }
+
+            // Accept the task
+            $task->update([
+                'driver_id' => $driver->id,
+                'pending_driver_id' => null,
+                'status' => 'accepted',
+                'accepted_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task accepted successfully',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'accepted_at' => $task->accepted_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Accept task error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown',
+                'task_id' => $request->task_id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reject pending task
+     */
+    public function rejectTask(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'task_id' => 'required|integer|exists:tasks,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $task = Task::where('id', $request->task_id)
+                ->where('pending_driver_id', $driver->id)
+                ->whereNull('driver_id')
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found or already assigned'
+                ], 404);
+            }
+
+            // Clear pending driver and find next driver
+            $task->update([
+                'pending_driver_id' => null
+            ]);
+
+            // TODO: Implement logic to assign to next nearest driver
+            // This would involve finding the next closest available driver
+            // and setting them as pending_driver_id
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task rejected successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Reject task error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown',
+                'task_id' => $request->task_id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
             ], 500);
         }
     }

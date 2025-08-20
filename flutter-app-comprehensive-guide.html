@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>دليل تطبيق SafeDests Flutter - الدليل الشامل للمطورين</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Cairo', sans-serif;
+        line-height: 1.8;
+        color: #2c3e50;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.98);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+      }
+
+      .header h1 {
+        color: #2c3e50;
+        font-size: 3.2em;
+        margin-bottom: 15px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        font-weight: 800;
+      }
+
+      .header .subtitle {
+        color: #7f8c8d;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        font-weight: 500;
+      }
+
+      .header .meta {
+        font-size: 1em;
+        color: #95a5a6;
+        margin-top: 15px;
+        font-weight: 400;
+      }
+
+      .section {
+        background: rgba(255, 255, 255, 0.98);
+        margin-bottom: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 25px 30px;
+        font-size: 1.7em;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .section-content {
+        padding: 35px;
+      }
+
+      .subsection {
+        margin-bottom: 35px;
+        padding: 25px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-right: 5px solid #e74c3c;
+      }
+
+      .subsection h3 {
+        color: #2c3e50;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .file-structure {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 25px;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        overflow-x: auto;
+        margin: 20px 0;
+        border: 1px solid #34495e;
+        font-size: 0.95em;
+        line-height: 1.6;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 25px;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        overflow-x: auto;
+        margin: 20px 0;
+        border: 1px solid #34495e;
+        font-size: 0.95em;
+        line-height: 1.6;
+      }
+
+      .screen-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        border-right: 4px solid #e74c3c;
+        margin-bottom: 20px;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+
+      .screen-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .screen-card h4 {
+        color: #2c3e50;
+        font-size: 1.3em;
+        margin-bottom: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .screen-card .file-path {
+        background: #ecf0f1;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        color: #2c3e50;
+        margin-bottom: 15px;
+      }
+
+      .function-list {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 15px 0;
+      }
+
+      .function-list h5 {
+        color: #e74c3c;
+        font-size: 1.1em;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .function-list ul {
+        list-style: none;
+        padding-right: 20px;
+      }
+
+      .function-list li {
+        margin: 8px 0;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 6px;
+        border-right: 3px solid #e74c3c;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-right: 5px solid #fdcb6e;
+      }
+
+      .warning {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-right: 5px solid #dc3545;
+      }
+
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-right: 5px solid #28a745;
+      }
+
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        border-right: 5px solid #17a2b8;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 25px 0;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      th,
+      td {
+        padding: 18px;
+        text-align: right;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      th {
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        color: white;
+        font-weight: 600;
+        font-size: 1.1em;
+      }
+
+      tr:hover {
+        background: #f8f9fa;
+      }
+
+      .toc {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 35px;
+        border: 1px solid #e9ecef;
+      }
+
+      .toc h3 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        font-weight: 700;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding-right: 25px;
+      }
+
+      .toc li {
+        margin: 12px 0;
+        font-weight: 500;
+      }
+
+      .toc a {
+        color: #e74c3c;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      .toc a:hover {
+        color: #c0392b;
+        text-decoration: underline;
+      }
+
+      .flow-diagram {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin: 25px 0;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .flow-step {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 15px 20px;
+        margin: 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-block;
+        min-width: 200px;
+      }
+
+      .arrow {
+        font-size: 1.5em;
+        color: #e74c3c;
+        margin: 10px;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 40px;
+        color: white;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 15px;
+        margin-top: 40px;
+        backdrop-filter: blur(10px);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 25px 0;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      }
+
+      .stat-number {
+        font-size: 2.5em;
+        font-weight: 800;
+        color: #e74c3c;
+        margin-bottom: 10px;
+      }
+
+      .stat-label {
+        color: #7f8c8d;
+        font-weight: 500;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 15px;
+        }
+
+        .header h1 {
+          font-size: 2.5em;
+        }
+
+        .section-content {
+          padding: 25px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📱 دليل تطبيق SafeDests Flutter</h1>
+        <p class="subtitle">الدليل الشامل للمطورين - هيكلية التطبيق والتطوير</p>
+        <p class="meta">📅 تاريخ الإعداد: 19 أغسطس 2025 | 👨‍💻 إعداد: Augment Agent | 🚀 Flutter 3.x + Dart</p>
+      </div>
+
+      <div class="toc">
+        <h3>📋 فهرس المحتويات</h3>
+        <ul>
+          <li><a href="#overview">1. نظرة عامة على التطبيق</a></li>
+          <li><a href="#structure">2. هيكلية الملفات والمجلدات</a></li>
+          <li><a href="#screens">3. الشاشات والواجهات</a></li>
+          <li><a href="#services">4. الخدمات وربط APIs</a></li>
+          <li><a href="#models">5. نماذج البيانات</a></li>
+          <li><a href="#widgets">6. المكونات المخصصة</a></li>
+          <li><a href="#navigation">7. نظام التنقل</a></li>
+          <li><a href="#state-management">8. إدارة الحالة</a></li>
+          <li><a href="#development-guide">9. دليل التطوير</a></li>
+        </ul>
+      </div>
+
+      <div class="section" id="overview">
+        <div class="section-header">🌟 1. نظرة عامة على التطبيق</div>
+        <div class="section-content">
+          <div class="highlight">
+            <strong>SafeDests Driver App</strong> هو تطبيق Flutter مخصص للسائقين في منصة SafeDests للخدمات اللوجستية.
+            يوفر التطبيق واجهة سهلة الاستخدام لإدارة المهام، تتبع الأرباح، والتفاعل مع النظام.
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">5</div>
+              <div class="stat-label">شاشات رئيسية</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">6</div>
+              <div class="stat-label">خدمات API</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">5</div>
+              <div class="stat-label">نماذج بيانات</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">9</div>
+              <div class="stat-label">مكونات مخصصة</div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🎯 الوظائف الرئيسية</h3>
+            <div class="function-list">
+              <h5>🔐 المصادقة والأمان</h5>
+              <ul>
+                <li><strong>تسجيل الدخول الآمن:</strong> باستخدام Laravel Sanctum</li>
+                <li><strong>حفظ البيانات المشفرة:</strong> Flutter Secure Storage</li>
+                <li><strong>تجديد الرموز التلقائي:</strong> Token refresh mechanism</li>
+              </ul>
+            </div>
+
+            <div class="function-list">
+              <h5>📋 إدارة المهام</h5>
+              <ul>
+                <li><strong>عرض المهام المتاحة:</strong> قائمة تفاعلية مع التفاصيل</li>
+                <li><strong>قبول ورفض المهام:</strong> واجهة سهلة للتفاعل</li>
+                <li><strong>تتبع حالة المهام:</strong> تحديثات فورية</li>
+                <li><strong>سجل المهام:</strong> تاريخ المهام المكتملة</li>
+              </ul>
+            </div>
+
+            <div class="function-list">
+              <h5>💰 إدارة المحفظة</h5>
+              <ul>
+                <li><strong>عرض الرصيد:</strong> الرصيد الحالي والمعلق</li>
+                <li><strong>سجل المعاملات:</strong> تفاصيل جميع المعاملات</li>
+                <li><strong>إحصائيات الأرباح:</strong> رسوم بيانية وتقارير</li>
+              </ul>
+            </div>
+
+            <div class="function-list">
+              <h5>📍 تتبع الموقع</h5>
+              <ul>
+                <li><strong>تتبع الموقع المباشر:</strong> GPS عالي الدقة</li>
+                <li><strong>تحديث الحالة:</strong> متصل/غير متصل، متاح/مشغول</li>
+                <li><strong>العمل في الخلفية:</strong> استمرار التتبع</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🛠️ التقنيات المستخدمة</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>المكون</th>
+                  <th>التقنية/المكتبة</th>
+                  <th>الغرض</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>إدارة الحالة</td>
+                  <td>Provider</td>
+                  <td>إدارة البيانات والحالة العامة</td>
+                </tr>
+                <tr>
+                  <td>طلبات HTTP</td>
+                  <td>http package</td>
+                  <td>التواصل مع APIs</td>
+                </tr>
+                <tr>
+                  <td>التخزين الآمن</td>
+                  <td>flutter_secure_storage</td>
+                  <td>حفظ الرموز والبيانات الحساسة</td>
+                </tr>
+                <tr>
+                  <td>تتبع الموقع</td>
+                  <td>geolocator</td>
+                  <td>الحصول على الموقع الجغرافي</td>
+                </tr>
+                <tr>
+                  <td>الإشعارات</td>
+                  <td>firebase_messaging</td>
+                  <td>الإشعارات الفورية</td>
+                </tr>
+                <tr>
+                  <td>الصور</td>
+                  <td>image_picker</td>
+                  <td>التقاط وتحديد الصور</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="structure">
+        <div class="section-header">🏗️ 2. هيكلية الملفات والمجلدات</div>
+        <div class="section-content">
+          <div class="subsection">
+            <h3>📁 الهيكل العام للمشروع</h3>
+            <div class="file-structure">
+              safedests-app/ ├── lib/ # الكود الرئيسي للتطبيق │ ├── main.dart # نقطة البداية الرئيسية │ ├── config/ #
+              ملفات الإعدادات │ │ └── app_config.dart # إعدادات التطبيق والـ API URLs │ ├── models/ # نماذج البيانات
+              (Data Models) │ │ ├── api_response.dart # نموذج استجابة API العام │ │ ├── driver.dart # نموذج بيانات
+              السائق │ │ ├── task.dart # نموذج بيانات المهمة │ │ ├── wallet.dart # نموذج بيانات المحفظة │ │ └──
+              notification.dart # نموذج بيانات الإشعارات │ ├── services/ # خدمات التطبيق (Business Logic) │ │ ├──
+              api_service.dart # خدمة API الأساسية │ │ ├── auth_service.dart # خدمة المصادقة │ │ ├── task_service.dart #
+              خدمة إدارة المهام │ │ ├── wallet_service.dart # خدمة المحفظة │ │ ├── location_service.dart # خدمة تتبع
+              الموقع │ │ └── notification_service.dart # خدمة الإشعارات │ ├── screens/ # شاشات التطبيق (UI Screens) │ │
+              ├── splash_screen.dart # شاشة البداية │ │ ├── auth/ # شاشات المصادقة │ │ │ └── login_screen.dart # شاشة
+              تسجيل الدخول │ │ └── main/ # الشاشات الرئيسية │ │ ├── main_screen.dart # الشاشة الرئيسية مع التنقل │ │ ├──
+              home_screen.dart # شاشة الرئيسية │ │ ├── tasks_screen.dart # شاشة المهام │ │ ├── wallet_screen.dart # شاشة
+              المحفظة │ │ └── profile_screen.dart # شاشة الملف الشخصي │ ├── widgets/ # المكونات المخصصة (Custom Widgets)
+              │ │ ├── custom_button.dart # زر مخصص │ │ ├── custom_text_field.dart # حقل نص مخصص │ │ ├── task_card.dart #
+              بطاقة المهمة │ │ ├── wallet_balance_card.dart # بطاقة رصيد المحفظة │ │ ├── earnings_chart_card.dart #
+              بطاقة رسم الأرباح البياني │ │ ├── driver_status_card.dart # بطاقة حالة السائق │ │ ├──
+              quick_stats_card.dart # بطاقة الإحصائيات السريعة │ │ ├── recent_tasks_card.dart # بطاقة المهام الأخيرة │ │
+              ├── earnings_summary_card.dart # بطاقة ملخص الأرباح │ │ └── transaction_list_card.dart # بطاقة قائمة
+              المعاملات │ └── theme/ # تصميم التطبيق │ └── app_theme.dart # ألوان وتصميم التطبيق ├── assets/ # الأصول
+              والملفات الثابتة │ ├── icons/ # الأيقونات │ ├── images/ # الصور │ └── logos/ # الشعارات ├── android/ #
+              إعدادات Android ├── ios/ # إعدادات iOS └── pubspec.yaml # تبعيات Flutter والإعدادات
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>⚙️ ملف الإعدادات الرئيسي (app_config.dart)</h3>
+            <div class="info">
+              <strong>🎯 الغرض:</strong> يحتوي على جميع الإعدادات الثابتة للتطبيق مثل URLs، المفاتيح، والقيم الافتراضية.
+            </div>
+
+            <div class="function-list">
+              <h5>🔧 الإعدادات المتاحة</h5>
+              <ul>
+                <li><strong>baseUrl:</strong> رابط API الأساسي</li>
+                <li><strong>API Endpoints:</strong> جميع نقاط النهاية</li>
+                <li><strong>Storage Keys:</strong> مفاتيح التخزين المحلي</li>
+                <li><strong>Location Settings:</strong> إعدادات تتبع الموقع</li>
+                <li><strong>UI Settings:</strong> إعدادات الواجهة</li>
+                <li><strong>Colors:</strong> ألوان التطبيق (Red Theme)</li>
+              </ul>
+            </div>
+
+            <div class="code-block">
+              // مثال على استخدام الإعدادات class AppConfig { static const String baseUrl =
+              'http://192.168.0.186/safedestsss/public/api'; static const String appName = 'SafeDests Driver'; // API
+              Endpoints static const String loginEndpoint = '/driver/login'; static const String tasksEndpoint =
+              '/driver/tasks'; // Storage Keys static const String tokenKey = 'auth_token'; static const String
+              driverDataKey = 'driver_data'; // Helper Methods static String getApiUrl(String endpoint) { return
+              '$baseUrl$endpoint'; } }
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🚀 نقطة البداية (main.dart)</h3>
+            <div class="warning">
+              <strong>⚠️ ملاحظة مهمة:</strong> يستخدم التطبيق Provider لإدارة الحالة، وجميع الخدمات مسجلة كـ
+              ChangeNotifierProvider.
+            </div>
+
+            <div class="flow-diagram">
+              <div class="flow-step">تهيئة Flutter</div>
+              <div class="arrow">⬇️</div>
+              <div class="flow-step">تسجيل Providers</div>
+              <div class="arrow">⬇️</div>
+              <div class="flow-step">إعداد MaterialApp</div>
+              <div class="arrow">⬇️</div>
+              <div class="flow-step">تحديد المسارات</div>
+              <div class="arrow">⬇️</div>
+              <div class="flow-step">بدء التطبيق</div>
+            </div>
+
+            <div class="code-block">
+              void main() async { WidgetsFlutterBinding.ensureInitialized(); // تشغيل التطبيق مع Providers runApp(const
+              SafeDestsDriverApp()); } class SafeDestsDriverApp extends StatelessWidget { @override Widget
+              build(BuildContext context) { return MultiProvider( providers: [ ChangeNotifierProvider(create: (_) =>
+              AuthService()), ChangeNotifierProvider(create: (_) => TaskService()), ChangeNotifierProvider(create: (_)
+              => LocationService()), ChangeNotifierProvider(create: (_) => WalletService()),
+              ChangeNotifierProvider(create: (_) => NotificationService()), ], child: MaterialApp( title:
+              AppConfig.appName, theme: AppTheme.lightTheme, locale: const Locale('ar', 'SA'), // العربية initialRoute:
+              '/', routes: { '/': (context) => const SplashScreen(), '/login': (context) => const LoginScreen(),
+              '/main': (context) => const MainScreen(), }, ), ); } }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="screens">
+        <div class="section-header">📱 3. الشاشات والواجهات</div>
+        <div class="section-content">
+          <div class="subsection">
+            <h3>🎬 شاشة البداية (SplashScreen)</h3>
+            <div class="screen-card">
+              <h4>🚀 splash_screen.dart</h4>
+              <div class="file-path">lib/screens/splash_screen.dart</div>
+              <p>
+                <strong>الوظيفة:</strong> شاشة البداية التي تظهر عند تشغيل التطبيق وتقوم بتهيئة الخدمات والتحقق من حالة
+                المصادقة.
+              </p>
+
+              <div class="function-list">
+                <h5>⚙️ العمليات الرئيسية</h5>
+                <ul>
+                  <li><strong>تهيئة AuthService:</strong> التحقق من وجود token محفوظ</li>
+                  <li><strong>تحميل بيانات السائق:</strong> من التخزين المحلي</li>
+                  <li><strong>التوجيه التلقائي:</strong> إلى الشاشة المناسبة حسب حالة المصادقة</li>
+                </ul>
+              </div>
+
+              <div class="flow-diagram">
+                <div class="flow-step">عرض الشعار</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">تهيئة AuthService</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">فحص المصادقة</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">التوجيه للشاشة المناسبة</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🔐 شاشة تسجيل الدخول (LoginScreen)</h3>
+            <div class="screen-card">
+              <h4>🔑 login_screen.dart</h4>
+              <div class="file-path">lib/screens/auth/login_screen.dart</div>
+              <p><strong>الوظيفة:</strong> شاشة تسجيل الدخول للسائقين مع التحقق من البيانات والمصادقة الآمنة.</p>
+
+              <div class="function-list">
+                <h5>📝 المكونات</h5>
+                <ul>
+                  <li><strong>حقل البريد الإلكتروني:</strong> مع التحقق من الصحة</li>
+                  <li><strong>حقل كلمة المرور:</strong> مع إخفاء/إظهار</li>
+                  <li><strong>زر تسجيل الدخول:</strong> مع مؤشر التحميل</li>
+                  <li><strong>رسائل الخطأ:</strong> عرض أخطاء المصادقة</li>
+                </ul>
+              </div>
+
+              <div class="function-list">
+                <h5>🔄 تدفق تسجيل الدخول</h5>
+                <ul>
+                  <li><strong>التحقق من البيانات:</strong> محلياً قبل الإرسال</li>
+                  <li><strong>استدعاء AuthService.login():</strong> إرسال البيانات للخادم</li>
+                  <li><strong>حفظ الرمز:</strong> في Flutter Secure Storage</li>
+                  <li><strong>التوجيه للرئيسية:</strong> عند نجاح المصادقة</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🏠 الشاشة الرئيسية (MainScreen)</h3>
+            <div class="screen-card">
+              <h4>🎛️ main_screen.dart</h4>
+              <div class="file-path">lib/screens/main/main_screen.dart</div>
+              <p>
+                <strong>الوظيفة:</strong> الشاشة الرئيسية التي تحتوي على نظام التنقل السفلي وتدير عرض الشاشات الفرعية.
+              </p>
+
+              <div class="function-list">
+                <h5>📱 الشاشات الفرعية</h5>
+                <ul>
+                  <li><strong>HomeScreen (الفهرس 0):</strong> الشاشة الرئيسية</li>
+                  <li><strong>TasksScreen (الفهرس 1):</strong> شاشة المهام</li>
+                  <li><strong>WalletScreen (الفهرس 2):</strong> شاشة المحفظة</li>
+                  <li><strong>ProfileScreen (الفهرس 3):</strong> الملف الشخصي</li>
+                </ul>
+              </div>
+
+              <div class="function-list">
+                <h5>🔧 المميزات</h5>
+                <ul>
+                  <li><strong>IndexedStack:</strong> للحفاظ على حالة الشاشات</li>
+                  <li><strong>BottomNavigationBar:</strong> تنقل سفلي بالعربية</li>
+                  <li><strong>Notification Badge:</strong> عداد الإشعارات غير المقروءة</li>
+                  <li><strong>Auth Check:</strong> التحقق من المصادقة عند التهيئة</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="services">
+        <div class="section-header">
+          🔧 4. الخدمات وربط APIs
+        </div>
+        <div class="section-content">
+          <div class="subsection">
+            <h3>🌐 خدمة API الأساسية (ApiService)</h3>
+            <div class="screen-card">
+              <h4>⚡ api_service.dart</h4>
+              <div class="file-path">lib/services/api_service.dart</div>
+              <p><strong>الوظيفة:</strong> الخدمة الأساسية للتواصل مع APIs، تدير المصادقة، الطلبات، ومعالجة الأخطاء.</p>
+
+              <div class="function-list">
+                <h5>🔑 الوظائف الرئيسية</h5>
+                <ul>
+                  <li><strong>get&lt;T&gt;():</strong> طلبات GET مع معالجة الاستجابة</li>
+                  <li><strong>post&lt;T&gt;():</strong> طلبات POST مع إرسال البيانات</li>
+                  <li><strong>put&lt;T&gt;():</strong> طلبات PUT للتحديث</li>
+                  <li><strong>delete&lt;T&gt;():</strong> طلبات DELETE للحذف</li>
+                  <li><strong>setAuthToken():</strong> حفظ رمز المصادقة</li>
+                  <li><strong>refreshToken():</strong> تجديد الرمز</li>
+                </ul>
+              </div>
+
+              <div class="code-block">
+// مثال على استخدام ApiService
+final response = await _apiService.get&lt;Driver&gt;(
+  AppConfig.profileEndpoint,
+  fromJson: (data) => Driver.fromJson(data['driver']),
+);
+
+if (response.isSuccess && response.data != null) {
+  // معالجة البيانات المستلمة
+  final driver = response.data!;
+  print('Driver name: ${driver.name}');
+}
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🔐 خدمة المصادقة (AuthService)</h3>
+            <div class="screen-card">
+              <h4>🛡️ auth_service.dart</h4>
+              <div class="file-path">lib/services/auth_service.dart</div>
+              <p><strong>الوظيفة:</strong> إدارة المصادقة، تسجيل الدخول/الخروج، وحفظ بيانات السائق.</p>
+
+              <div class="function-list">
+                <h5>🔧 الوظائف المتاحة</h5>
+                <ul>
+                  <li><strong>initialize():</strong> تهيئة الخدمة وفحص المصادقة</li>
+                  <li><strong>login():</strong> تسجيل الدخول مع حفظ البيانات</li>
+                  <li><strong>logout():</strong> تسجيل الخروج ومسح البيانات</li>
+                  <li><strong>getProfile():</strong> جلب بيانات الملف الشخصي</li>
+                  <li><strong>refreshToken():</strong> تجديد رمز المصادقة</li>
+                  <li><strong>updateDriverData():</strong> تحديث بيانات السائق</li>
+                </ul>
+              </div>
+
+              <div class="flow-diagram">
+                <div class="flow-step">إدخال البيانات</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">التحقق محلياً</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">إرسال للخادم</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">حفظ الرمز</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">حفظ بيانات السائق</div>
+                <div class="arrow">⬇️</div>
+                <div class="flow-step">تحديث الحالة</div>
+              </div>
+
+              <div class="warning">
+                <strong>⚠️ ملاحظة أمنية:</strong> يتم حفظ جميع البيانات الحساسة في Flutter Secure Storage مع تشفير كامل.
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>📋 خدمة المهام (TaskService)</h3>
+            <div class="screen-card">
+              <h4>📝 task_service.dart</h4>
+              <div class="file-path">lib/services/task_service.dart</div>
+              <p><strong>الوظيفة:</strong> إدارة جميع عمليات المهام من جلب القائمة إلى تحديث الحالة.</p>
+
+              <div class="function-list">
+                <h5>📊 العمليات المتاحة</h5>
+                <ul>
+                  <li><strong>getTasks():</strong> جلب قائمة المهام مع التصفح</li>
+                  <li><strong>getTaskDetails():</strong> تفاصيل مهمة محددة</li>
+                  <li><strong>acceptTask():</strong> قبول مهمة</li>
+                  <li><strong>rejectTask():</strong> رفض مهمة</li>
+                  <li><strong>updateTaskStatus():</strong> تحديث حالة المهمة</li>
+                  <li><strong>getTaskHistory():</strong> سجل المهام المكتملة</li>
+                </ul>
+              </div>
+
+              <div class="code-block">
+// مثال على قبول مهمة
+Future&lt;ApiResponse&lt;Task&gt;&gt; acceptTask(int taskId) async {
+  final response = await _apiService.post&lt;Task&gt;(
+    AppConfig.getTaskEndpoint(taskId, 'accept'),
+    fromJson: (data) => Task.fromJson(data['task']),
+  );
+
+  if (response.isSuccess) {
+    // تحديث القائمة المحلية
+    await getTasks(refresh: true);
+    notifyListeners();
+  }
+
+  return response;
+}
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>💰 خدمة المحفظة (WalletService)</h3>
+            <div class="screen-card">
+              <h4>💳 wallet_service.dart</h4>
+              <div class="file-path">lib/services/wallet_service.dart</div>
+              <p><strong>الوظيفة:</strong> إدارة المحفظة، الأرباح، المعاملات، والإحصائيات المالية.</p>
+
+              <div class="function-list">
+                <h5>💸 العمليات المالية</h5>
+                <ul>
+                  <li><strong>getWallet():</strong> جلب بيانات المحفظة والرصيد</li>
+                  <li><strong>getTransactions():</strong> سجل المعاملات مع الفلترة</li>
+                  <li><strong>getEarningsStats():</strong> إحصائيات الأرباح</li>
+                  <li><strong>requestWithdrawal():</strong> طلب سحب الأموال</li>
+                  <li><strong>getWithdrawalHistory():</strong> سجل طلبات السحب</li>
+                </ul>
+              </div>
+
+              <div class="highlight">
+                <strong>📈 الإحصائيات المتاحة:</strong>
+                <ul style="margin-top: 10px; padding-right: 20px;">
+                  <li>الرصيد الحالي والمعلق</li>
+                  <li>إجمالي الأرباح</li>
+                  <li>أرباح الشهر الحالي</li>
+                  <li>متوسط الأرباح اليومية</li>
+                  <li>معدل النمو الشهري</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>📍 خدمة الموقع (LocationService)</h3>
+            <div class="screen-card">
+              <h4>🗺️ location_service.dart</h4>
+              <div class="file-path">lib/services/location_service.dart</div>
+              <p><strong>الوظيفة:</strong> تتبع موقع السائق وإرسال التحديثات للخادم.</p>
+
+              <div class="function-list">
+                <h5>📡 وظائف التتبع</h5>
+                <ul>
+                  <li><strong>getCurrentLocation():</strong> الحصول على الموقع الحالي</li>
+                  <li><strong>startLocationTracking():</strong> بدء التتبع التلقائي</li>
+                  <li><strong>stopLocationTracking():</strong> إيقاف التتبع</li>
+                  <li><strong>updateLocationToServer():</strong> إرسال الموقع للخادم</li>
+                  <li><strong>updateDriverStatus():</strong> تحديث حالة السائق</li>
+                  <li><strong>getCurrentStatus():</strong> جلب الحالة الحالية</li>
+                </ul>
+              </div>
+
+              <div class="info">
+                <strong>⚙️ إعدادات التتبع:</strong>
+                <ul style="margin-top: 10px; padding-right: 20px;">
+                  <li><strong>فترة التحديث:</strong> 30 ثانية (قابلة للتخصيص)</li>
+                  <li><strong>دقة الموقع:</strong> GPS عالي الدقة</li>
+                  <li><strong>المسافة الدنيا:</strong> 10 متر لتوفير البطارية</li>
+                  <li><strong>العمل في الخلفية:</strong> مدعوم</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>🔔 خدمة الإشعارات (NotificationService)</h3>
+            <div class="screen-card">
+              <h4>📢 notification_service.dart</h4>
+              <div class="file-path">lib/services/notification_service.dart</div>
+              <p><strong>الوظيفة:</strong> إدارة الإشعارات المحلية والفورية من Firebase.</p>
+
+              <div class="function-list">
+                <h5>📨 إدارة الإشعارات</h5>
+                <ul>
+                  <li><strong>initialize():</strong> تهيئة Firebase Messaging</li>
+                  <li><strong>getNotifications():</strong> جلب قائمة الإشعارات</li>
+                  <li><strong>markAsRead():</strong> تحديد إشعار كمقروء</li>
+                  <li><strong>markAllAsRead():</strong> تحديد جميع الإشعارات كمقروءة</li>
+                  <li><strong>updateFCMToken():</strong> تحديث رمز Firebase</li>
+                </ul>
+              </div>
+
+              <div class="function-list">
+                <h5>🔥 أنواع الإشعارات</h5>
+                <ul>
+                  <li><strong>new_task:</strong> مهمة جديدة متاحة</li>
+                  <li><strong>task_update:</strong> تحديث حالة المهمة</li>
+                  <li><strong>wallet_update:</strong> تحديث المحفظة</li>
+                  <li><strong>system_message:</strong> رسالة من الإدارة</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="models">
+        <div class="section-header">
+          📊 5. نماذج البيانات
+        </div>
+        <div class="section-content">
+          <div class="subsection">
+            <h3>👤 نموذج السائق (Driver)</h3>
+            <div class="screen-card">
+              <h4>🚛 driver.dart</h4>
+              <div class="file-path">lib/models/driver.dart</div>
+
+              <div class="code-block">
+class Driver {
+  final int id;
+  final String name;
+  final String email;
+  final String? phone;
+  final String? image;
+  final String status;
+  final bool online;
+  final bool free;
+  final double? latitude;
+  final double? longitude;
+  final DateTime? lastSeenAt;
+  final Team? team;
+  final Vehicle? vehicle;
+  final double rating;
+  final int completedTasks;
+
+  // Constructor, fromJson, toJson methods
+}
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>📋 نموذج المهمة (Task)</h3>
+            <div class="screen-card">
+              <h4>📝 task.dart</h4>
+              <div class="file-path">lib/models/task.dart</div>
+
+              <div class="code-block">
+class Task {
+  final int id;
+  final String status;
+  final double totalPrice;
+  final Location pickup;
+  final Location delivery;
+  final Customer customer;
+  final DateTime createdAt;
+  final DateTime? scheduledAt;
+  final String? notes;
+  final List&lt;TaskItem&gt; items;
+
+  // Status constants
+  static const String pending = 'pending';
+  static const String accepted = 'accepted';
+  static const String pickedUp = 'picked_up';
+  static const String inTransit = 'in_transit';
+  static const String delivered = 'delivered';
+}
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <h3>💳 نموذج المحفظة (Wallet)</h3>
+            <div class="screen-card">
+              <h4>💰 wallet.dart</h4>
+              <div class="file-path">lib/models/wallet.dart</div>
+
+              <div class="code-block">
+class Wallet {
+  final double balance;
+  final double pendingAmount;
+  final double totalEarnings;
+  final double thisMonthEarnings;
+  final String currency;
+  final DateTime? lastTransactionDate;
+
+  // Statistics
+  final WalletStats? stats;
+}
+
+class WalletStats {
+  final double dailyAverage;
+  final double weeklyTotal;
+  final double monthlyTotal;
+  final int completedTasks;
+  final double averagePerTask;
+  final double growthPercentage;
+}
+              </code-block>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <h3>📱 ملخص دليل Flutter</h3>
+        <p>
+          هذا الدليل يوفر فهماً شاملاً لتطبيق SafeDests Flutter، من الهيكلية الأساسية إلى التفاصيل التقنية المتقدمة.
+          يمكنك الآن البدء في التطوير والتعديل على التطبيق بثقة كاملة.
+        </p>
+        <div class="stats-grid" style="margin-top: 20px;">
+          <div class="stat-card">
+            <div class="stat-number">5</div>
+            <div class="stat-label">شاشات رئيسية</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">6</div>
+            <div class="stat-label">خدمات متكاملة</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">9</div>
+            <div class="stat-label">مكونات مخصصة</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">جاهز للتطوير</div>
+          </div>
+        </div>
+        <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+          🔄 آخر تحديث: 19 أغسطس 2025 |
+          📧 للاستفسارات التقنية: تواصل مع فريق التطوير
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

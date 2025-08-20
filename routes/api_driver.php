@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DriverTaskController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverWalletController;
 use App\Http\Controllers\Api\DriverNotificationController;
+use App\Http\Controllers\Api\DriverRegistrationController;
 use App\Http\Controllers\Api\DriverProfileController;
 
 /*
@@ -31,6 +32,17 @@ Route::prefix('driver')->group(function () {
         ->middleware(['throttle:5,1', 'api.route'])
         ->name('api.driver.login');
 
+    // Registration routes
+    Route::get('/registration-data', [DriverRegistrationController::class, 'getRegistrationData'])
+        ->name('api.driver.registration-data');
+    Route::get('/vehicle-types/{vehicleId}', [DriverRegistrationController::class, 'getVehicleTypes'])
+        ->name('api.driver.vehicle-types');
+    Route::get('/vehicle-sizes/{typeId}', [DriverRegistrationController::class, 'getVehicleSizes'])
+        ->name('api.driver.vehicle-sizes');
+    Route::post('/register', [DriverRegistrationController::class, 'register'])
+        ->middleware(['throttle:3,1'])
+        ->name('api.driver.register');
+
 });
 
 // Protected routes (require Sanctum authentication)
@@ -46,6 +58,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
     Route::put('/profile', [DriverProfileController::class, 'update'])
         ->name('api.driver.profile.update');
+
+    Route::post('/change-password', [DriverProfileController::class, 'changePassword'])
+        ->name('api.driver.change-password');
 
     Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
         ->name('api.driver.profile.stats');
@@ -73,6 +88,16 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::get('/history/completed', [DriverTaskController::class, 'history'])
             ->name('api.driver.tasks.history');
     });
+
+    // Pending task routes
+    Route::get('/pending-task', [DriverTaskController::class, 'getPendingTask'])
+        ->name('api.driver.pending-task');
+
+    Route::post('/accept-task', [DriverTaskController::class, 'acceptTask'])
+        ->name('api.driver.accept-task');
+
+    Route::post('/reject-task', [DriverTaskController::class, 'rejectTask'])
+        ->name('api.driver.reject-task');
 
     // Location and status routes
     Route::prefix('location')->group(function () {

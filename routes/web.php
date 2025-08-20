@@ -142,6 +142,7 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::get('/profile', [App\Http\Controllers\driver\DashboardController::class, 'profile'])->name('driver.profile');
                 Route::post('/profile/update', [App\Http\Controllers\driver\DashboardController::class, 'updateProfile'])->name('driver.profile.update');
+                Route::delete('/profile/delete/{id}', [App\Http\Controllers\driver\DashboardController::class, 'deleteAccount'])->name('driver.profile.delete');
 
                 Route::post('/update-location', [App\Http\Controllers\driver\DashboardController::class, 'updateLocation'])->name('driver.location');
                 Route::post('/respond/task', [App\Http\Controllers\driver\DashboardController::class, 'respondToTask'])->name('driver.respond.task');
@@ -175,6 +176,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/dashboard', [App\Http\Controllers\customer\DashboardController::class, 'index'])->name('customer.dashboard');
                 Route::get('/profile', [App\Http\Controllers\customer\DashboardController::class, 'profile'])->name('customer.profile');
                 Route::post('/profile/update', [App\Http\Controllers\customer\DashboardController::class, 'updateProfile'])->name('customer.profile.update');
+                Route::delete('/profile/delete/{id}', [App\Http\Controllers\customer\DashboardController::class, 'deleteAccount'])->name('customer.profile.delete');
 
                 Route::post('/tasks/validate-step1', [App\Http\Controllers\customer\TasksController::class, 'validateStep1'])->name('customer.task.validateStep1');
                 Route::post('/tasks/validate-step2', [App\Http\Controllers\customer\TasksController::class, 'validateStep2'])->name('customer.task.validateStep2');

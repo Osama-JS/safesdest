@@ -20,6 +20,7 @@
 @section('page-script')
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
+    @vite(['resources/js/customers/profile.js'])
 
 @endsection
 @section('dashboard-isactive', 'active')
@@ -79,6 +80,8 @@
 
                     </ul>
 
+                    <button class="brn btn-danger form-control" id="delete_account_btn"
+                        data-id="{{ $data->id }}">{{ __('Delete Your Account') }}</button>
 
 
 

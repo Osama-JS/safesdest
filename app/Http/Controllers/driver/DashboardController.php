@@ -425,4 +425,18 @@ class DashboardController extends Controller
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
         }
     }
+
+    public function deleteAccount(Request $req)
+    {
+        DB::beginTransaction();
+        try {
+            $find = Driver::findOrFail($req->id);
+            $find->delete(); // soft delete
+            DB::commit();
+            return response()->json(['status' => 1, 'success' => __('Your Account Deleted Successfully')]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
 }

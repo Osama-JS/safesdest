@@ -447,6 +447,17 @@
         </li>
         <!--/ Notification -->
 
+        <!-- Notes -->
+        @if (Auth::check() && Auth::guard('web')->check())
+            <li class="nav-item me-3 me-xl-2">
+                <a class="nav-link btn btn-text-secondary btn-icon rounded-pill" href="javascript:void(0);"
+                    id="notes-toggle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="My Notes">
+                    <i class="ti ti-notes ti-md"></i>
+                </a>
+            </li>
+        @endif
+        <!--/ Notes -->
+
         <!-- User -->
         <li class="nav-item navbar-dropdown dropdown-user dropdown">
             <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">

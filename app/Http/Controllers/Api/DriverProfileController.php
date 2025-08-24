@@ -82,13 +82,12 @@ class DriverProfileController extends Controller
             $driver = $request->user();
 
             $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|required|string|max:255',
-                'email' => 'sometimes|required|email|max:255|unique:drivers,email,' . $driver->id,
-                'phone' => 'sometimes|required|string|max:20',
-                'address' => 'sometimes|nullable|string|max:500',
-                'image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'current_password' => 'sometimes|required_with:new_password|string',
-                'new_password' => 'sometimes|required|string|min:6|confirmed',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255|unique:drivers,email,' . $driver->id,
+                'phone' => 'required|string|max:20',
+                'address' => 'required|string|max:500',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
             ]);
 
             if ($validator->fails()) {
@@ -128,16 +127,16 @@ class DriverProfileController extends Controller
             }
 
             // Update password if provided
-            if ($request->has('new_password')) {
-                if (!Hash::check($request->current_password, $driver->password)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Current password is incorrect'
-                    ], 422);
-                }
+            // if ($request->has('new_password')) {
+            //     if (!Hash::check($request->current_password, $driver->password)) {
+            //         return response()->json([
+            //             'success' => false,
+            //             'message' => 'Current password is incorrect'
+            //         ], 422);
+            //     }
 
-                $driver->password = Hash::make($request->new_password);
-            }
+            //     $driver->password = Hash::make($request->new_password);
+            // }
 
             $driver->save();
 
@@ -165,7 +164,7 @@ class DriverProfileController extends Controller
                         'commission_value' => $driver->commission_value,
                         'last_activity_at' => $driver->last_activity_at,
                         'app_version' => $driver->app_version,
-                        'additional_data' => $driver->additional_data ? json_decode($driver->additional_data, true) : null,
+                        'additional_data' => $driver->additional_data ? $driver->additional_data : null,
                         'created_at' => $driver->created_at,
                         'updated_at' => $driver->updated_at,
                         'team' => $driver->team ? [
@@ -175,7 +174,6 @@ class DriverProfileController extends Controller
                         'vehicle_size' => $driver->vehicle_size ? [
                             'id' => $driver->vehicle_size->id,
                             'name' => $driver->vehicle_size->type->vehicle->name . '-' . $driver->vehicle_size->type->name .' - '.  $driver->vehicle_size->name,
-                            'description' => $driver->vehicle_size->description,
                         ] : null,
                     ]
                 ]

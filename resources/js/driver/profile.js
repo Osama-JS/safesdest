@@ -13,7 +13,7 @@ $(document).on('click', '#delete_account_btn', function () {
     title: `Delete My Account`,
     text: `Your account will be deleted, and you will no longer be able to log in to the platform.
               However, please note that the tasks you have completed and your financial records will remain stored in the system
-              and cannot be deleted as they are part of the platform’s records.`,
+              and cannot be deleted as they are part of the platform’s recordss.`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, delete My Account',

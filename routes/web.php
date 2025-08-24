@@ -244,6 +244,14 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/profile', [UsersController::class, 'profile'])->name('user.profile');
                 Route::post('/profile/update', [UsersController::class, 'updateProfile'])->name('user.profile.update');
 
+                // Notes routes
+                Route::prefix('notes')->group(function () {
+                    Route::get('/', [App\Http\Controllers\NotesController::class, 'index'])->name('notes.index');
+                    Route::post('/', [App\Http\Controllers\NotesController::class, 'store'])->name('notes.store');
+                    Route::put('/{note}', [App\Http\Controllers\NotesController::class, 'update'])->name('notes.update');
+                    Route::delete('/{note}', [App\Http\Controllers\NotesController::class, 'destroy'])->name('notes.destroy');
+                });
+
 
                 Route::get('/users', [UsersController::class, 'index'])->name('user.users');
                 Route::get('/users/data', [UsersController::class, 'getData'])->name('user.data');

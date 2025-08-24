@@ -14,6 +14,7 @@ use App\Models\Settings;
 use App\Models\Email_Verifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -130,6 +131,11 @@ class DriverRegistrationController extends Controller
     public function register(Request $request)
     {
         try {
+            Log::error('Register driver error', [
+                    'message' => 'Data',
+                    'data' => $request->all()
+
+              ]);
             // Base validation rules
             $baseRules = [
                 'name' => 'required|string|max:255',
@@ -142,7 +148,7 @@ class DriverRegistrationController extends Controller
                 'address' => 'required|string|max:500',
                 'vehicle_size_id' => 'nullable|exists:vehicles,id',
                 'team_id' => 'nullable|exists:teams,id',
-                'phone_is_whatsapp' => 'nullable|boolean',
+                'phone_is_whatsapp' => 'nullable|in:true,false',
                 'whatsapp_country_code' => 'nullable|string|max:10',
                 'whatsapp_number' => 'nullable|string|max:20',
                 'template_id' => 'nullable|exists:form_templates,id',
@@ -154,7 +160,7 @@ class DriverRegistrationController extends Controller
                 $fields = Form_Field::where('form_template_id', $request->template_id)->get();
 
                 foreach ($fields as $field) {
-                    $fieldKey = 'additional_fields.' . $field->name;
+                    $fieldKey = $field->name; // Direct field name without 'additional_fields.' prefix
                     $fieldRules = [];
 
                     if ($field->required) {
@@ -203,7 +209,9 @@ class DriverRegistrationController extends Controller
                             }
                             continue 2;
                         default:
-                            $fieldRules[] = 'string|max:255';
+                            $fieldRules[] = 'string';
+                            $fieldRules[] = 'max:255';
+
                             break;
                     }
 
@@ -218,6 +226,11 @@ class DriverRegistrationController extends Controller
             $validator = Validator::make($request->all(), $allRules);
 
             if ($validator->fails()) {
+                Log::error('Register driver error', [
+                   'message' => 'Validation failed',
+                   'error' => $validator->errors(),
+
+             ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -239,7 +252,7 @@ class DriverRegistrationController extends Controller
                 'vehicle_size_id' => $request->vehicle_size_id,
                 'team_id' => $request->team_id,
                 'phone_is_whatsapp' => $request->has('phone_is_whatsapp') ? (bool)$request->phone_is_whatsapp : false,
-                'status' => 'inactive', // Will be activated after email verification
+
             ];
 
             // Handle WhatsApp number logic
@@ -280,7 +293,10 @@ class DriverRegistrationController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Register driver error', [
+                 'error' => $e->getMessage(),
 
+             ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed',
@@ -310,13 +326,13 @@ class DriverRegistrationController extends Controller
                 $fileFieldName = $fieldName . '_file';
                 $expirationFieldName = $fieldName . '_expiration';
 
-                if ($request->hasFile("additional_fields.$fileFieldName")) {
-                    $path = FileHelper::uploadFile($request->file("additional_fields.$fileFieldName"), 'drivers/files');
+                if ($request->hasFile($fileFieldName)) {
+                    $path = FileHelper::uploadFile($request->file($fileFieldName), 'drivers/files');
 
                     $structuredFields[$fieldName] = [
                         'label' => $field->label,
                         'value' => $path,
-                        'expiration' => $request->input("additional_fields.$expirationFieldName"),
+                        'expiration' => $request->input($expirationFieldName),
                         'type' => $field->type,
                     ];
                 }
@@ -324,19 +340,19 @@ class DriverRegistrationController extends Controller
                 $fileFieldName = $fieldName . '_file';
                 $textFieldName = $fieldName . '_text';
 
-                if ($request->hasFile("additional_fields.$fileFieldName")) {
-                    $path = FileHelper::uploadFile($request->file("additional_fields.$fileFieldName"), 'drivers/files');
+                if ($request->hasFile($fileFieldName)) {
+                    $path = FileHelper::uploadFile($request->file($fileFieldName), 'drivers/files');
 
                     $structuredFields[$fieldName] = [
                         'label' => $field->label,
                         'value' => $path,
-                        'text' => $request->input("additional_fields.$textFieldName"),
+                        'text' => $request->input($textFieldName),
                         'type' => $field->type,
                     ];
                 }
             } elseif (in_array($fieldType, ['file', 'image'])) {
-                if ($request->hasFile("additional_fields.$fieldName")) {
-                    $path = FileHelper::uploadFile($request->file("additional_fields.$fieldName"), 'drivers/files');
+                if ($request->hasFile($fieldName)) {
+                    $path = FileHelper::uploadFile($request->file($fieldName), 'drivers/files');
                     $structuredFields[$fieldName] = [
                         'label' => $field->label,
                         'value' => $path,
@@ -345,7 +361,7 @@ class DriverRegistrationController extends Controller
                 }
             } else {
                 // Regular fields (text, number, date, etc.)
-                $value = $request->input("additional_fields.$fieldName");
+                $value = $request->input($fieldName);
                 if ($value !== null) {
                     $structuredFields[$fieldName] = [
                         'label' => $field->label,

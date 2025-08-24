@@ -186,4 +186,12 @@ class User extends Authenticatable
     {
         return $this->morphMany(Clearance_Transactions::class, 'payable');
     }
+
+    /**
+     * Get the notes for the user.
+     */
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
 }

@@ -34,3 +34,4 @@ yarn-error.log
 !/public/assets/*
 /public/css
 /public/js
+/storage/firebase/service-account-key.json

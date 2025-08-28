@@ -6,7 +6,7 @@
 @section('vendor-style')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss'])
-    @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss')
+
 @endsection
 
 <!-- Page Styles -->
@@ -158,31 +158,53 @@
 @endsection
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
-    @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 
 @endsection
 
 <!-- Page Scripts -->
 @section('page-script')
-    <script>
-        // Wait for all libraries to load
-        setTimeout(function() {
-            // Set up routes for the JavaScript class
-            window.routes = {
-                preview: '{{ route('admin.reports.customer-tasks.preview') }}',
-                generate: '{{ route('admin.reports.customer-tasks.generate') }}'
-            };
-
-            // Initialize the report system
-            if (typeof CustomerTasksReport !== 'undefined') {
-                new CustomerTasksReport();
-            } else {
-                console.error('CustomerTasksReport class not found');
-            }
-        }, 500);
-    </script>
     <script src="{{ asset('js/admin/reports/customer-tasks.js') }}"></script>
+    {{-- @vite(['resources/js/admin/reports/customer-tasks.js']) --}}
+
+    <script>
+        // Set up routes for the JavaScript class
+        window.routes = {
+            preview: '{{ route('admin.reports.customer-tasks.preview') }}',
+            generate: '{{ route('admin.reports.customer-tasks.generate') }}'
+        };
+
+        // Function to check if all required libraries are loaded
+        function checkLibrariesLoaded() {
+            return typeof $ !== 'undefined' &&
+                typeof moment !== 'undefined' &&
+                typeof Swal !== 'undefined' &&
+                typeof $.fn.select2 !== 'undefined' &&
+                typeof $.fn.daterangepicker !== 'undefined';
+        }
+
+        // Function to initialize the report system
+        function initializeReport() {
+            if (checkLibrariesLoaded()) {
+                if (typeof CustomerTasksReport !== 'undefined') {
+                    console.log('All libraries loaded. Initializing CustomerTasksReport...');
+                    new CustomerTasksReport();
+                } else {
+                    console.error('CustomerTasksReport class not found');
+                }
+            } else {
+                console.log('Waiting for libraries to load...');
+                setTimeout(initializeReport, 500);
+            }
+        }
+
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeReport);
+        } else {
+            initializeReport();
+        }
+    </script>
 @endsection
 
 @section('content')

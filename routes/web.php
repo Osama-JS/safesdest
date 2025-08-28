@@ -548,33 +548,29 @@ Route::middleware('rate.limit')->group(function () {
                     $teams = \App\Models\Teams::select('id', 'name')->get();
 
                     $taskStatuses = [
-                        'in_progress' => 'قيد التنفيذ',
-                        'advertised' => 'معلن عنها',
-                        'assign' => 'مُعيّنة',
-                        'accepted' => 'مقبولة',
-                        'started' => 'بدأت',
-                        'in pickup point' => 'في نقطة الاستلام',
-                        'loading' => 'جاري التحميل',
-                        'in the way' => 'في الطريق',
-                        'in delivery point' => 'في نقطة التسليم',
-                        'unloading' => 'جاري التفريغ',
-                        'completed' => 'مكتملة',
-                        'canceled' => 'ملغية',
-                        'closed' => 'مغلقة'
+                        'in_progress' => 'in_progress',
+                        'advertised' => 'advertised',
+                        'assign' => 'assign',
+                        'started' => 'started',
+                        'in pickup point' => 'in pickup point',
+                        'loading' => 'loading',
+                        'in the way' => 'in the way',
+                        'in delivery point' => 'in delivery point',
+                        'unloading' => 'unloading',
+                        'completed' => 'completed',
+                        'canceled' => 'canceled',
                     ];
 
                     $paymentStatuses = [
-                        'pending' => 'في الانتظار',
-                        'paid' => 'مدفوعة',
-                        'partially_paid' => 'مدفوعة جزئياً',
-                        'refunded' => 'مستردة'
+                         'waiting' => 'waiting',
+                        'completed' => 'completed',
+                        'pending' => 'pending'
                     ];
 
                     $paymentMethods = [
-                        'cash' => 'نقداً',
-                        'bank_transfer' => 'تحويل بنكي',
-                        'credit_card' => 'بطاقة ائتمان',
-                        'wallet' => 'محفظة إلكترونية'
+                        'bank_transfer' => 'bank transfer',
+                        'credit_card' => 'credit card',
+                        'wallet' => 'wallet'
                     ];
 
                     return view('admin.reports.customer-tasks', compact(

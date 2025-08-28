@@ -49,10 +49,13 @@ class Driver extends Authenticatable
       'device_id',
       'fcm_token',
       'app_version',
-      'last_activity_at'
+      'last_activity_at',
+      'reset_token',
+      'reset_token_expires_at'
     ];
     protected $casts = [
       'additional_data' => 'array',
+      'reset_token_expires_at' => 'datetime',
     ];
 
     protected $dates = ['deleted_at'];

@@ -3,11 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DriverAuthController;
 use App\Http\Controllers\Api\DriverTaskController;
+use App\Http\Controllers\Api\DriverTaskAdsController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverWalletController;
 use App\Http\Controllers\Api\DriverNotificationController;
 use App\Http\Controllers\Api\DriverRegistrationController;
 use App\Http\Controllers\Api\DriverProfileController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +25,10 @@ use App\Http\Controllers\Api\DriverProfileController;
 // Public routes (no authentication required)
 Route::prefix('driver')->group(function () {
 
+    Route::get('/health', function () {
+        Log::alert("check connection is ok ");
+        return true;
+    });
     // Get reCAPTCHA site key
     // Route::get('/recaptcha-site-key', [DriverAuthController::class, 'getRecaptchaSiteKey'])
     //     ->name('api.driver.recaptcha-site-key');
@@ -31,6 +37,15 @@ Route::prefix('driver')->group(function () {
     Route::post('/login', [DriverAuthController::class, 'login'])
         ->middleware(['throttle:5,1', 'api.route'])
         ->name('api.driver.login');
+
+    // Password reset routes
+    Route::post('/forgot-password', [DriverAuthController::class, 'forgotPassword'])
+        ->middleware(['throttle:3,1'])
+        ->name('api.driver.forgot-password');
+
+    Route::post('/reset-password', [DriverAuthController::class, 'resetPassword'])
+        ->middleware(['throttle:3,1'])
+        ->name('api.driver.reset-password');
 
     // Registration routes
     Route::get('/registration-data', [DriverRegistrationController::class, 'getRegistrationData'])
@@ -85,9 +100,37 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::put('/{task}/status', [DriverTaskController::class, 'updateStatus'])
             ->name('api.driver.tasks.update-status');
 
+        Route::get('/{task}/logs', [DriverTaskController::class, 'getLogs'])
+            ->name('api.driver.tasks.logs');
+
+        Route::post('/{task}/notes', [DriverTaskController::class, 'addNote'])
+            ->name('api.driver.tasks.add-note');
+
         Route::get('/history/completed', [DriverTaskController::class, 'history'])
             ->name('api.driver.tasks.history');
     });
+
+    // Task Ads routes
+    Route::prefix('task-ads')->group(function () {
+        Route::get('/', [DriverTaskAdsController::class, 'index'])
+            ->name('api.driver.task-ads.index');
+
+        Route::get('/{id}', [DriverTaskAdsController::class, 'show'])
+            ->name('api.driver.task-ads.show');
+
+        Route::post('/{id}/offers', [DriverTaskAdsController::class, 'submitOffer'])
+            ->name('api.driver.task-ads.submit-offer');
+
+        Route::put('/offers/{id}', [DriverTaskAdsController::class, 'updateOffer'])
+            ->name('api.driver.task-ads.update-offer');
+
+        Route::post('/offers/{id}/accept', [DriverTaskAdsController::class, 'acceptTask'])
+            ->name('api.driver.task-ads.accept-task');
+    });
+
+    // Driver offers routes
+    Route::get('/my-offers', [DriverTaskAdsController::class, 'myOffers'])
+        ->name('api.driver.my-offers');
 
     // Pending task routes
     Route::get('/pending-task', [DriverTaskController::class, 'getPendingTask'])

@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تقرير تحليل شامل لمشروع SafeDests</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .header .subtitle {
+        color: #7f8c8d;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+      }
+
+      .header .meta {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+
+      .meta-item {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+      }
+
+      .section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        margin-bottom: 25px;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .section:hover {
+        transform: translateY(-5px);
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 20px 30px;
+        font-size: 1.4em;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .section-content {
+        padding: 30px;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .feature-card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 12px;
+        padding: 25px;
+        border-left: 5px solid #3498db;
+        transition: all 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateX(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-card h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+      }
+
+      .feature-card ul {
+        list-style: none;
+        padding-right: 0;
+      }
+
+      .feature-card li {
+        padding: 8px 0;
+        border-bottom: 1px solid #ecf0f1;
+        position: relative;
+        padding-right: 25px;
+      }
+
+      .feature-card li:before {
+        content: '✓';
+        position: absolute;
+        right: 0;
+        color: #27ae60;
+        font-weight: bold;
+      }
+
+      .tech-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .tech-item {
+        background: linear-gradient(45deg, #9b59b6, #8e44ad);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 0.9em;
+        box-shadow: 0 5px 15px rgba(155, 89, 182, 0.3);
+        transition: transform 0.3s ease;
+      }
+
+      .tech-item:hover {
+        transform: scale(1.05);
+      }
+
+      .models-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .model-card {
+        background: linear-gradient(135deg, #fff, #f8f9fa);
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .model-card:hover {
+        border-color: #3498db;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
+      }
+
+      .model-card h4 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+      }
+
+      .model-card .count {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        margin-top: 10px;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        overflow-x: auto;
+        margin: 15px 0;
+        border-left: 4px solid #3498db;
+      }
+
+      .highlight {
+        background: linear-gradient(45deg, #f39c12, #e67e22);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      .warning {
+        background: linear-gradient(45deg, #e74c3c, #c0392b);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #c0392b;
+      }
+
+      .info {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #2980b9;
+      }
+
+      .success {
+        background: linear-gradient(45deg, #27ae60, #229954);
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        border-left: 4px solid #229954;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 10px;
+        }
+
+        .header {
+          padding: 20px;
+        }
+
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .meta {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .models-grid {
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header Section -->
+      <div class="header">
+        <h1>🚚 تقرير تحليل شامل لمشروع SafeDests</h1>
+        <div class="subtitle">نظام إدارة النقل والخدمات اللوجستية المتكامل</div>
+        <div class="meta">
+          <div class="meta-item">📅 تاريخ التحليل: 27 أغسطس 2025</div>
+          <div class="meta-item">🔧 Laravel 11.x</div>
+          <div class="meta-item">📱 Flutter Mobile App</div>
+          <div class="meta-item">🗄️ MySQL Database</div>
+        </div>
+      </div>
+
+      <!-- Project Overview -->
+      <div class="section">
+        <div class="section-header">🎯 نظرة عامة على المشروع</div>
+        <div class="section-content">
+          <div class="info">
+            <strong>SafeDests</strong> هو نظام إدارة نقل وخدمات لوجستية متكامل يهدف إلى ربط العملاء بالسائقين وإدارة
+            المهام والشحنات بكفاءة عالية. يتضمن النظام واجهات متعددة للإدارة والعملاء والسائقين مع تطبيق محمول مخصص
+            للسائقين.
+          </div>
+
+          <h3>🎯 الأهداف الرئيسية:</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>🚛 إدارة النقل</h4>
+              <ul>
+                <li>تتبع المهام والشحنات</li>
+                <li>إدارة السائقين والمركبات</li>
+                <li>تحديد المواقع الجغرافية</li>
+                <li>حساب المسارات والأسعار</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>💰 النظام المالي</h4>
+              <ul>
+                <li>إدارة المحافظ الإلكترونية</li>
+                <li>حساب العمولات</li>
+                <li>معالجة المدفوعات</li>
+                <li>تتبع المعاملات المالية</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🏢 إدارة الأعمال</h4>
+              <ul>
+                <li>إدارة العملاء والفرق</li>
+                <li>نظام الصلاحيات المتقدم</li>
+                <li>التخليص الجمركي</li>
+                <li>التقارير والإحصائيات</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Architecture -->
+      <div class="section">
+        <div class="section-header">🏗️ الهيكل التقني والمعماري</div>
+        <div class="section-content">
+          <h3>🔧 التقنيات المستخدمة:</h3>
+          <div class="tech-stack">
+            <div class="tech-item">Laravel 11.x</div>
+            <div class="tech-item">PHP 8.2+</div>
+            <div class="tech-item">MySQL Database</div>
+            <div class="tech-item">Flutter (Mobile)</div>
+            <div class="tech-item">Vite + JavaScript</div>
+            <div class="tech-item">Bootstrap 5</div>
+            <div class="tech-item">Firebase FCM</div>
+            <div class="tech-item">Mapbox API</div>
+            <div class="tech-item">Laravel Sanctum</div>
+            <div class="tech-item">Spatie Permissions</div>
+          </div>
+
+          <h3>📦 الحزم والمكتبات الرئيسية:</h3>
+          <div class="code-block">
+            Backend (Laravel): • laravel/jetstream - نظام المصادقة والفرق • laravel/sanctum - API Authentication •
+            spatie/laravel-permission - إدارة الصلاحيات • kreait/firebase-php - تكامل Firebase • barryvdh/laravel-dompdf
+            - إنشاء PDF • biscolab/laravel-recaptcha - حماية reCAPTCHA • devinweb/laravel-hyperpay - معالجة المدفوعات •
+            livewire/livewire - مكونات تفاعلية Frontend: • Bootstrap 5.3.3 - إطار العمل الأمامي • DataTables - جداول
+            البيانات التفاعلية • ApexCharts - الرسوم البيانية • Mapbox GL JS - الخرائط التفاعلية • SweetAlert2 - النوافذ
+            المنبثقة • Select2 - قوائم الاختيار المتقدمة
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Models and Relationships -->
+      <div class="section">
+        <div class="section-header">🗄️ نماذج قاعدة البيانات والعلاقات</div>
+        <div class="section-content">
+          <h3>📊 النماذج الرئيسية:</h3>
+          <div class="models-grid">
+            <div class="model-card">
+              <h4>👤 User</h4>
+              <p>المستخدمين الإداريين</p>
+              <div class="count">إدارة النظام</div>
+            </div>
+            <div class="model-card">
+              <h4>🏢 Customer</h4>
+              <p>العملاء وطالبي الخدمة</p>
+              <div class="count">العملاء</div>
+            </div>
+            <div class="model-card">
+              <h4>🚛 Driver</h4>
+              <p>السائقين ومقدمي الخدمة</p>
+              <div class="count">السائقين</div>
+            </div>
+            <div class="model-card">
+              <h4>📋 Task</h4>
+              <p>المهام والشحنات</p>
+              <div class="count">المهام</div>
+            </div>
+            <div class="model-card">
+              <h4>👥 Teams</h4>
+              <p>الفرق والمجموعات</p>
+              <div class="count">الفرق</div>
+            </div>
+            <div class="model-card">
+              <h4>💰 Wallet</h4>
+              <p>المحافظ المالية</p>
+              <div class="count">المحافظ</div>
+            </div>
+            <div class="model-card">
+              <h4>🏛️ Customs_Clearance</h4>
+              <p>التخليص الجمركي</p>
+              <div class="count">الجمارك</div>
+            </div>
+            <div class="model-card">
+              <h4>📍 Task_Points</h4>
+              <p>نقاط التسليم والاستلام</p>
+              <div class="count">النقاط</div>
+            </div>
+          </div>
+
+          <h3>🔗 العلاقات الرئيسية:</h3>
+          <div class="code-block">
+            Task Model Relationships: • belongsTo(Customer) - العميل المالك للمهمة • belongsTo(Driver) - السائق المكلف
+            بالمهمة • belongsTo(Teams) - الفريق المسؤول • belongsTo(User) - المستخدم الإداري • hasMany(Task_Points) -
+            نقاط التسليم والاستلام • hasMany(Task_History) - تاريخ المهمة • hasOne(Task_Ad) - إعلان المهمة •
+            belongsTo(Vehicle_Size) - حجم المركبة المطلوبة Driver Model Relationships: • belongsTo(Teams) - الفريق
+            التابع له • hasMany(Task) - المهام المكلف بها • hasOne(Wallet) - المحفظة المالية • morphMany(Transaction) -
+            المعاملات المالية • hasMany(Tag_Drivers) - العلامات والتصنيفات Customer Model Relationships: • hasMany(Task)
+            - المهام المطلوبة • belongsToMany(User) - المستخدمين المرتبطين • hasOne(Wallet) - المحفظة المالية •
+            morphMany(Transaction) - المعاملات المالية
+          </div>
+
+          <h3>📋 حالات المهام (Task Status):</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>🔄 حالات التقدم</h4>
+              <ul>
+                <li>in_progress - قيد التنفيذ</li>
+                <li>advertised - معلن عنها</li>
+                <li>assign - مُعيّنة</li>
+                <li>accepted - مقبولة</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🚚 حالات التنفيذ</h4>
+              <ul>
+                <li>started - بدأت</li>
+                <li>in pickup point - في نقطة الاستلام</li>
+                <li>loading - جاري التحميل</li>
+                <li>in the way - في الطريق</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>✅ حالات الإنهاء</h4>
+              <ul>
+                <li>in delivery point - في نقطة التسليم</li>
+                <li>unloading - جاري التفريغ</li>
+                <li>completed - مكتملة</li>
+                <li>canceled - ملغية</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Features -->
+      <div class="section">
+        <div class="section-header">⚡ الميزات والوظائف الأساسية</div>
+        <div class="section-content">
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>🔐 نظام المصادقة والصلاحيات</h4>
+              <ul>
+                <li>Laravel Sanctum للـ API</li>
+                <li>Multi-Guard Authentication</li>
+                <li>Spatie Permissions</li>
+                <li>Role-based Access Control</li>
+                <li>Two-Factor Authentication</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📱 تطبيق السائقين المحمول</h4>
+              <ul>
+                <li>Flutter Native App</li>
+                <li>تتبع الموقع الجغرافي</li>
+                <li>إشعارات Firebase FCM</li>
+                <li>إدارة المهام والمحفظة</li>
+                <li>واجهة مستخدم متجاوبة</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>💰 النظام المالي المتكامل</h4>
+              <ul>
+                <li>محافظ إلكترونية للسائقين والعملاء</li>
+                <li>حساب العمولات التلقائي</li>
+                <li>معالجة المدفوعات المتعددة</li>
+                <li>تتبع المعاملات المالية</li>
+                <li>تقارير مالية مفصلة</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🗺️ الخرائط والمواقع</h4>
+              <ul>
+                <li>تكامل Mapbox API</li>
+                <li>حساب المسارات والمسافات</li>
+                <li>تتبع الموقع المباشر</li>
+                <li>Geofencing للمناطق</li>
+                <li>تحديد نقاط التسليم والاستلام</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📊 التقارير والإحصائيات</h4>
+              <ul>
+                <li>لوحات تحكم تفاعلية</li>
+                <li>تقارير الأداء</li>
+                <li>إحصائيات مالية</li>
+                <li>تحليل البيانات</li>
+                <li>تصدير البيانات PDF/Excel</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🔔 نظام الإشعارات</h4>
+              <ul>
+                <li>إشعارات Firebase للجوال</li>
+                <li>إشعارات الويب Push</li>
+                <li>إشعارات البريد الإلكتروني</li>
+                <li>إشعارات SMS</li>
+                <li>إشعارات WhatsApp</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Business Logic and Services -->
+      <div class="section">
+        <div class="section-header">🧠 منطق الأعمال والخدمات</div>
+        <div class="section-content">
+          <h3>🔧 الخدمات الأساسية:</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>💰 TaskPricingService</h4>
+              <ul>
+                <li>حساب أسعار المهام التلقائي</li>
+                <li>تطبيق قوالب التسعير</li>
+                <li>حساب المسافات والأوزان</li>
+                <li>تطبيق الخصومات والعروض</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🗺️ MapboxService</h4>
+              <ul>
+                <li>حساب المسارات والمسافات</li>
+                <li>تحديد الطرق المغلقة</li>
+                <li>تقدير أوقات الوصول</li>
+                <li>تحسين المسارات</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🔔 NotificationService</h4>
+              <ul>
+                <li>إرسال إشعارات Firebase</li>
+                <li>إشعارات المهام الجديدة</li>
+                <li>تحديثات حالة المهام</li>
+                <li>إشعارات المحفظة</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📧 EmailNotificationService</h4>
+              <ul>
+                <li>إرسال رسائل البريد الإلكتروني</li>
+                <li>قوالب الرسائل المتعددة</li>
+                <li>إرفاق الملفات</li>
+                <li>جدولة الإرسال</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📄 SignitService</h4>
+              <ul>
+                <li>التوقيع الإلكتروني</li>
+                <li>إنشاء طلبات التوقيع</li>
+                <li>رفع المستندات</li>
+                <li>تتبع حالة التوقيع</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📁 FileExpirationService</h4>
+              <ul>
+                <li>مراقبة انتهاء صلاحية الملفات</li>
+                <li>إرسال تنبيهات الانتهاء</li>
+                <li>تعليق الحسابات المنتهية</li>
+                <li>تقارير الملفات المنتهية</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>🔄 دورة حياة المهمة:</h3>
+          <div class="code-block">
+            1. إنشاء المهمة (Task Creation) • العميل ينشئ مهمة جديدة • تحديد نقاط الاستلام والتسليم • حساب السعر
+            التلقائي • حفظ تفاصيل المهمة 2. توزيع المهمة (Task Distribution) • البحث عن السائقين المناسبين • إرسال
+            إشعارات للسائقين • انتظار قبول المهمة 3. قبول المهمة (Task Acceptance) • السائق يقبل المهمة • تحديث حالة
+            المهمة • إشعار العميل بالقبول 4. تنفيذ المهمة (Task Execution) • السائق يبدأ المهمة • تتبع الموقع المباشر •
+            تحديث الحالات تدريجياً • التواصل مع العميل 5. إنهاء المهمة (Task Completion) • تأكيد التسليم • معالجة الدفع
+            • تحديث المحافظ • إغلاق المهمة
+          </div>
+        </div>
+      </div>
+
+      <!-- Flutter Mobile App -->
+      <div class="section">
+        <div class="section-header">📱 تطبيق Flutter للسائقين</div>
+        <div class="section-content">
+          <h3>🏗️ هيكل التطبيق:</h3>
+          <div class="code-block">
+            safedests-app/ ├── lib/ │ ├── main.dart # نقطة البداية │ ├── config/ │ │ └── app_config.dart # إعدادات
+            التطبيق │ ├── models/ # نماذج البيانات │ │ ├── driver.dart │ │ ├── task.dart │ │ ├── wallet.dart │ │ └──
+            api_response.dart │ ├── services/ # خدمات التطبيق │ │ ├── api_service.dart │ │ ├── auth_service.dart │ │ ├──
+            location_service.dart │ │ ├── notification_service.dart │ │ ├── task_service.dart │ │ └──
+            wallet_service.dart │ ├── screens/ # شاشات التطبيق │ │ ├── auth/ # شاشات المصادقة │ │ ├── dashboard/ #
+            الشاشة الرئيسية │ │ ├── tasks/ # إدارة المهام │ │ ├── wallet/ # المحفظة │ │ └── profile/ # الملف الشخصي │
+            └── widgets/ # مكونات UI └── assets/ # الأصول والصور
+          </div>
+
+          <h3>📱 الميزات الرئيسية للتطبيق:</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>🔐 المصادقة والأمان</h4>
+              <ul>
+                <li>تسجيل الدخول الآمن</li>
+                <li>استعادة كلمة المرور</li>
+                <li>حفظ بيانات الدخول</li>
+                <li>تشفير البيانات المحلية</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📋 إدارة المهام</h4>
+              <ul>
+                <li>عرض المهام المتاحة</li>
+                <li>قبول ورفض المهام</li>
+                <li>تتبع حالة المهام</li>
+                <li>تحديث حالة التنفيذ</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📍 الموقع والخرائط</h4>
+              <ul>
+                <li>تتبع الموقع المباشر</li>
+                <li>عرض الخرائط التفاعلية</li>
+                <li>توجيهات الملاحة</li>
+                <li>تحديث الموقع التلقائي</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>💰 المحفظة المالية</h4>
+              <ul>
+                <li>عرض الرصيد الحالي</li>
+                <li>سجل المعاملات</li>
+                <li>إحصائيات الأرباح</li>
+                <li>طلبات السحب</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>🔔 نظام الإشعارات:</h3>
+          <div class="info">
+            يستخدم التطبيق <strong>Firebase Cloud Messaging (FCM)</strong> لإرسال الإشعارات المباشرة للسائقين، بما في
+            ذلك إشعارات المهام الجديدة، تحديثات الحالة، والتنبيهات المالية.
+          </div>
+        </div>
+      </div>
+
+      <!-- API Documentation -->
+      <div class="section">
+        <div class="section-header">🔌 واجهات برمجة التطبيقات (APIs)</div>
+        <div class="section-content">
+          <h3>🚛 Driver APIs:</h3>
+          <div class="code-block">
+            Authentication APIs: • POST /api/driver/login - تسجيل الدخول • POST /api/driver/forgot-password - استعادة
+            كلمة المرور • POST /api/driver/reset-password - إعادة تعيين كلمة المرور • POST /api/driver/logout - تسجيل
+            الخروج Task Management APIs: • GET /api/driver/tasks - جلب المهام • GET /api/driver/tasks/{id} - تفاصيل مهمة
+            محددة • POST /api/driver/tasks/{id}/accept - قبول مهمة • POST /api/driver/tasks/{id}/reject - رفض مهمة • PUT
+            /api/driver/tasks/{id}/status - تحديث حالة المهمة Location APIs: • POST /api/driver/location/update - تحديث
+            الموقع • GET /api/driver/location/history - سجل المواقع Wallet APIs: • GET /api/driver/wallet - بيانات
+            المحفظة • GET /api/driver/wallet/transactions - المعاملات المالية • POST /api/driver/wallet/withdraw - طلب
+            سحب Profile APIs: • GET /api/driver/profile - الملف الشخصي • PUT /api/driver/profile - تحديث الملف الشخصي •
+            POST /api/driver/profile/avatar - تحديث الصورة الشخصية
+          </div>
+
+          <h3>🔐 نظام المصادقة:</h3>
+          <div class="info">
+            يستخدم النظام <strong>Laravel Sanctum</strong> لمصادقة API مع دعم Multiple Guards للتمييز بين المستخدمين
+            الإداريين والعملاء والسائقين.
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Features -->
+      <div class="section">
+        <div class="section-header">🔒 الأمان والحماية</div>
+        <div class="section-content">
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>🛡️ حماية API</h4>
+              <ul>
+                <li>Laravel Sanctum Authentication</li>
+                <li>Rate Limiting للطلبات</li>
+                <li>CSRF Protection</li>
+                <li>Input Validation</li>
+                <li>SQL Injection Prevention</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🔐 حماية البيانات</h4>
+              <ul>
+                <li>تشفير كلمات المرور</li>
+                <li>تشفير البيانات الحساسة</li>
+                <li>Secure Storage للملفات</li>
+                <li>HTTPS Enforcement</li>
+                <li>Database Encryption</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>🤖 حماية من البوتات</h4>
+              <ul>
+                <li>Google reCAPTCHA v3</li>
+                <li>Captcha للنماذج الحساسة</li>
+                <li>Bot Detection</li>
+                <li>Suspicious Activity Monitoring</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>📊 مراقبة الأمان</h4>
+              <ul>
+                <li>Activity Logging</li>
+                <li>Failed Login Attempts</li>
+                <li>Security Audit Trails</li>
+                <li>Real-time Monitoring</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deployment and Infrastructure -->
+      <div class="section">
+        <div class="section-header">🚀 النشر والبنية التحتية</div>
+        <div class="section-content">
+          <h3>🏗️ متطلبات النظام:</h3>
+          <div class="code-block">
+            Server Requirements: • PHP 8.2 أو أحدث • MySQL 8.0 أو MariaDB 10.3 • Nginx أو Apache Web Server • Redis
+            للتخزين المؤقت • Node.js 18+ للأصول الأمامية • SSL Certificate للأمان Laravel Requirements: • Composer 2.x •
+            Laravel 11.x • Extensions: BCMath, Ctype, Fileinfo, JSON, Mbstring, OpenSSL, PDO, Tokenizer, XML External
+            Services: • Firebase للإشعارات • Mapbox للخرائط • SMTP Server للبريد الإلكتروني • Payment Gateway (HyperPay)
+          </div>
+
+          <h3>📦 عملية النشر:</h3>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>1️⃣ إعداد الخادم</h4>
+              <ul>
+                <li>تثبيت PHP وMySQL</li>
+                <li>إعداد Web Server</li>
+                <li>تكوين SSL</li>
+                <li>إعداد Firewall</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>2️⃣ نشر التطبيق</h4>
+              <ul>
+                <li>رفع ملفات المشروع</li>
+                <li>تشغيل composer install</li>
+                <li>إعداد ملف .env</li>
+                <li>تشغيل migrations</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>3️⃣ إعداد الخدمات</h4>
+              <ul>
+                <li>تكوين Firebase</li>
+                <li>إعداد Mapbox</li>
+                <li>تكوين البريد الإلكتروني</li>
+                <li>إعداد Queue Workers</li>
+              </ul>
+            </div>
+            <div class="feature-card">
+              <h4>4️⃣ الاختبار والتحسين</h4>
+              <ul>
+                <li>اختبار الوظائف</li>
+                <li>تحسين الأداء</li>
+                <li>إعداد المراقبة</li>
+                <li>النسخ الاحتياطية</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conclusion -->
+      <div class="section">
+        <div class="section-header">📋 الخلاصة والتوصيات</div>
+        <div class="section-content">
+          <div class="success">
+            <h3>✅ نقاط القوة في المشروع:</h3>
+            <ul>
+              <li><strong>هيكل تقني متقدم:</strong> استخدام Laravel 11 مع أحدث التقنيات</li>
+              <li><strong>نظام شامل:</strong> يغطي جميع جوانب إدارة النقل والخدمات اللوجستية</li>
+              <li><strong>تطبيق محمول متكامل:</strong> تطبيق Flutter للسائقين مع ميزات متقدمة</li>
+              <li><strong>نظام مالي متطور:</strong> محافظ إلكترونية وإدارة مدفوعات</li>
+              <li><strong>أمان عالي:</strong> تطبيق أفضل ممارسات الأمان</li>
+              <li><strong>قابلية التوسع:</strong> بنية قابلة للتوسع والتطوير</li>
+            </ul>
+          </div>
+
+          <div class="warning">
+            <h3>⚠️ نقاط تحتاج تحسين:</h3>
+            <ul>
+              <li><strong>التوثيق:</strong> يحتاج المشروع لتوثيق أكثر تفصيلاً</li>
+              <li><strong>الاختبارات:</strong> إضافة المزيد من الاختبارات التلقائية</li>
+              <li><strong>الأداء:</strong> تحسين استعلامات قاعدة البيانات</li>
+              <li><strong>المراقبة:</strong> إضافة نظام مراقبة شامل</li>
+            </ul>
+          </div>
+
+          <h3>🎯 الاستخدام المقترح:</h3>
+          <div class="info">
+            هذا النظام مناسب للشركات التي تحتاج إلى:
+            <br />• إدارة أساطيل النقل والتوصيل <br />• خدمات الشحن واللوجستيات <br />• التخليص الجمركي <br />• إدارة
+            السائقين والمركبات <br />• نظام مالي متكامل للعمولات والمدفوعات
+          </div>
+
+          <div class="success">
+            <h3>🏆 التقييم النهائي:</h3>
+            <p>
+              <strong>SafeDests</strong> هو نظام متكامل ومتطور لإدارة النقل والخدمات اللوجستية، يتميز بالشمولية
+              والتقنيات الحديثة والأمان العالي. يمكن اعتباره حلاً مناسباً للشركات الكبيرة والمتوسطة في قطاع النقل.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

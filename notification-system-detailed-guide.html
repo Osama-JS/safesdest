@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>دليل شامل لنظام الإشعارات - SafeDests Driver</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .header h1 {
+        color: #2c3e50;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .header .subtitle {
+        color: #7f8c8d;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+      }
+
+      .section {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      }
+
+      .section h2 {
+        color: #2c3e50;
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        border-bottom: 3px solid #3498db;
+        padding-bottom: 10px;
+      }
+
+      .section h3 {
+        color: #34495e;
+        font-size: 1.4em;
+        margin: 20px 0 15px 0;
+      }
+
+      .section h4 {
+        color: #2c3e50;
+        font-size: 1.2em;
+        margin: 15px 0 10px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .card {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 12px;
+        padding: 20px;
+        border-left: 5px solid #3498db;
+        transition: transform 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
+
+      .card h4 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 1.2em;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 15px;
+        border-radius: 8px;
+        font-family: 'Courier New', monospace;
+        margin: 10px 0;
+        overflow-x: auto;
+        font-size: 0.9em;
+      }
+
+      .steps {
+        counter-reset: step-counter;
+      }
+
+      .step {
+        counter-increment: step-counter;
+        margin: 20px 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+        border-radius: 10px;
+        border-right: 5px solid #27ae60;
+        position: relative;
+      }
+
+      .step:before {
+        content: counter(step-counter);
+        position: absolute;
+        right: -15px;
+        top: -15px;
+        background: #27ae60;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      .flow-diagram {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: center;
+      }
+
+      .flow-step {
+        display: inline-block;
+        background: #3498db;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 20px;
+        margin: 5px;
+        font-weight: bold;
+      }
+
+      .arrow {
+        font-size: 1.5em;
+        color: #3498db;
+        margin: 0 10px;
+      }
+
+      .alert {
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+      }
+
+      .alert-info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+      }
+
+      .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+
+      .table th,
+      .table td {
+        padding: 12px;
+        text-align: right;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .table th {
+        background: #3498db;
+        color: white;
+        font-weight: bold;
+      }
+
+      .table tr:hover {
+        background: #f8f9fa;
+      }
+
+      .method-signature {
+        background: #34495e;
+        color: #ecf0f1;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        margin: 10px 0;
+        font-size: 0.9em;
+      }
+
+      .file-path {
+        background: #e74c3c;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-family: monospace;
+      }
+
+      .service-box {
+        border: 2px solid #3498db;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 15px 0;
+        background: #f8f9fa;
+      }
+
+      .notification-type {
+        display: inline-block;
+        background: #e74c3c;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8em;
+        margin: 2px;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 10px;
+        }
+
+        .header h1 {
+          font-size: 2em;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📱 دليل شامل لنظام الإشعارات</h1>
+        <div class="subtitle">آلية التسجيل والإرسال والاستقبال - SafeDests Driver</div>
+      </div>
+
+      <div class="section">
+        <h2>🔄 نظرة عامة على دورة حياة الإشعارات</h2>
+
+        <div class="flow-diagram">
+          <div class="flow-step">تسجيل السائق</div>
+          <span class="arrow">→</span>
+          <div class="flow-step">الحصول على FCM Token</div>
+          <span class="arrow">→</span>
+          <div class="flow-step">حفظ Token في قاعدة البيانات</div>
+          <br /><br />
+          <div class="flow-step">إنشاء إشعار</div>
+          <span class="arrow">→</span>
+          <div class="flow-step">إرسال عبر Firebase</div>
+          <span class="arrow">→</span>
+          <div class="flow-step">استقبال في التطبيق</div>
+          <span class="arrow">→</span>
+          <div class="flow-step">عرض للمستخدم</div>
+        </div>
+
+        <div class="alert alert-info">
+          <strong>📝 ملاحظة:</strong> النظام يدعم الإرسال من Firebase Console مباشرة أو من Laravel backend، مع إمكانية
+          التحكم الكامل في أنواع الإشعارات ومحتواها.
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>🚀 المرحلة الأولى: تسجيل السائق في نظام الإشعارات</h2>
+
+        <h3>📱 في تطبيق Flutter</h3>
+
+        <div class="service-box">
+          <h4>🔧 الخدمة المسؤولة: NotificationService</h4>
+          <div class="file-path">lib/services/notification_service.dart</div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <h4>تهيئة Firebase عند بدء التطبيق</h4>
+            <p>يتم استدعاء <code>Firebase.initializeApp()</code> في <code>main.dart</code></p>
+            <div class="code-block">
+              // في main.dart void main() async { WidgetsFlutterBinding.ensureInitialized(); await
+              Firebase.initializeApp(); runApp(MyApp()); }
+            </div>
+          </div>
+
+          <div class="step">
+            <h4>تهيئة NotificationService</h4>
+            <p>يتم استدعاء <code>NotificationService().initialize()</code> عند بدء التطبيق</p>
+            <div class="code-block">
+              // في NotificationService Future&lt;bool&gt; initialize() async { // تهيئة الإشعارات المحلية await
+              _initializeLocalNotifications(); // تهيئة Firebase Messaging await _initializeFirebaseMessaging(); //
+              الحصول على إعدادات الإشعارات await getNotificationSettings(); return true; }
+            </div>
+          </div>
+
+          <div class="step">
+            <h4>الحصول على FCM Token</h4>
+            <p>يتم الحصول على Token فريد لكل جهاز</p>
+            <div class="code-block">
+              // الحصول على FCM Token _fcmToken = await FirebaseMessaging.instance.getToken(); debugPrint('FCM Token:
+              $_fcmToken'); // إرسال Token إلى الخادم if (_fcmToken != null) { await updateFcmToken(_fcmToken!); }
+            </div>
+          </div>
+
+          <div class="step">
+            <h4>تسجيل Token في قاعدة البيانات</h4>
+            <p>يتم إرسال Token إلى Laravel API لحفظه</p>
+            <div class="code-block">
+              // إرسال Token إلى الخادم Future&lt;bool&gt; updateFcmToken(String token) async { final response = await
+              _apiService.post&lt;void&gt;( AppConfig.updateFcmTokenEndpoint, body: {'fcm_token': token}, fromJson:
+              (data) {}, ); return response.success; }
+            </div>
+          </div>
+        </div>
+
+        <h3>🖥️ في Laravel Backend</h3>
+
+        <div class="card">
+          <h4>📍 API Endpoint لتحديث FCM Token</h4>
+          <div class="method-signature">POST /api/driver/update-fcm-token</div>
+          <p>يتم استقبال Token وحفظه في جدول drivers</p>
+          <div class="code-block">
+            // في DriverController public function updateFcmToken(Request $request) { $driver = auth()->user();
+            $driver->fcm_token = $request->fcm_token; $driver->save(); return response()->json(['success' => true]); }
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>📤 المرحلة الثانية: إرسال الإشعارات</h2>
+
+        <h3>🔥 من Firebase Console</h3>
+
+        <div class="steps">
+          <div class="step">
+            <h4>الذهاب إلى Firebase Console</h4>
+            <p>اذهب إلى <strong>Cloud Messaging</strong> في Firebase Console</p>
+          </div>
+
+          <div class="step">
+            <h4>إنشاء رسالة جديدة</h4>
+            <p>انقر على <strong>"Send your first message"</strong> أو <strong>"New Campaign"</strong></p>
+          </div>
+
+          <div class="step">
+            <h4>تحديد المستلمين</h4>
+            <p>يمكنك الاختيار بين:</p>
+            <ul>
+              <li><strong>User segment:</strong> جميع المستخدمين</li>
+              <li><strong>Topic:</strong> مجموعة محددة</li>
+              <li><strong>Single device:</strong> جهاز واحد بـ FCM token</li>
+            </ul>
+          </div>
+
+          <div class="step">
+            <h4>كتابة محتوى الإشعار</h4>
+            <div class="code-block">
+              العنوان: "مهمة جديدة متاحة" النص: "لديك مهمة جديدة من الرياض إلى جدة" البيانات الإضافية: { "type":
+              "new_task", "task_id": "123", "click_action": "FLUTTER_NOTIFICATION_CLICK" }
+            </div>
+          </div>
+        </div>
+
+        <h3>🖥️ من Laravel Backend</h3>
+
+        <div class="service-box">
+          <h4>🔧 الخدمات المسؤولة</h4>
+          <div class="file-path">app/Services/FirebaseService.php</div>
+          <div class="file-path">app/Services/NotificationService.php</div>
+        </div>
+
+        <h4>📋 أنواع الإشعارات المدعومة</h4>
+        <div class="grid">
+          <div class="card">
+            <div class="notification-type">مهمة جديدة</div>
+            <div class="method-signature">sendNewTaskNotificationToDriver($driver, $task)</div>
+            <p>يتم إرسالها عند إنشاء مهمة جديدة للسائق</p>
+          </div>
+
+          <div class="card">
+            <div class="notification-type">تحديث المهمة</div>
+            <div class="method-signature">sendTaskUpdateNotificationToDriver($driver, $task, $status)</div>
+            <p>يتم إرسالها عند تغيير حالة المهمة</p>
+          </div>
+
+          <div class="card">
+            <div class="notification-type">دفعة مالية</div>
+            <div class="method-signature">sendPaymentNotificationToDriver($driver, $amount)</div>
+            <p>يتم إرسالها عند إضافة مبلغ للمحفظة</p>
+          </div>
+
+          <div class="card">
+            <div class="notification-type">إشعار عام</div>
+            <div class="method-signature">sendNotificationToMultipleDrivers($drivers, $title, $body)</div>
+            <p>يتم إرسالها لمجموعة من السائقين</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>💻 كيفية إرسال الإشعارات من أي Controller في Laravel</h2>
+
+        <h3>🔧 الطريقة الأساسية</h3>
+        <div class="code-block">
+          &lt;?php use App\Services\NotificationService; use App\Models\Driver; class YourController extends Controller
+          { protected $notificationService; public function __construct() { $this->notificationService = new
+          NotificationService(); } public function sendNotification() { // الحصول على السائق $driver = Driver::find(1);
+          // إرسال إشعار مهمة جديدة $task = (object) [ 'id' => 123, 'pickup' => (object) ['address' => 'الرياض - حي
+          النخيل'], 'delivery' => (object) ['address' => 'الرياض - حي الملز'], 'price' => 50 ]; $result =
+          $this->notificationService->sendNewTaskNotificationToDriver($driver, $task); if ($result['success']) { return
+          response()->json(['message' => 'تم إرسال الإشعار بنجاح']); } else { return response()->json(['error' =>
+          $result['message']], 500); } } }
+        </div>
+
+        <h3>📱 أمثلة عملية لإرسال الإشعارات</h3>
+
+        <div class="grid">
+          <div class="card">
+            <h4>🆕 إشعار مهمة جديدة</h4>
+            <div class="code-block">
+              // في TaskController public function assignTaskToDriver($taskId, $driverId) { $task = Task::find($taskId);
+              $driver = Driver::find($driverId); // تعيين المهمة للسائق $task->driver_id = $driverId; $task->status =
+              'assigned'; $task->save(); // إرسال إشعار $notificationService = new NotificationService(); $result =
+              $notificationService->sendNewTaskNotificationToDriver($driver, $task); return response()->json([
+              'task_assigned' => true, 'notification_sent' => $result['success'] ]); }
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>💰 إشعار دفعة مالية</h4>
+            <div class="code-block">
+              // في PaymentController public function addToWallet($driverId, $amount) { $driver =
+              Driver::find($driverId); // إضافة المبلغ للمحفظة $driver->wallet_balance += $amount; $driver->save(); //
+              إرسال إشعار $notificationService = new NotificationService(); $result =
+              $notificationService->sendPaymentNotificationToDriver( $driver, $amount, 'payment_received' ); return
+              response()->json([ 'wallet_updated' => true, 'new_balance' => $driver->wallet_balance, 'notification_sent'
+              => $result['success'] ]); }
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>🔄 إشعار تحديث المهمة</h4>
+            <div class="code-block">
+              // في TaskController public function updateTaskStatus($taskId, $status) { $task = Task::find($taskId);
+              $driver = $task->driver; // تحديث حالة المهمة $task->status = $status; $task->save(); // إرسال إشعار
+              $notificationService = new NotificationService(); $result =
+              $notificationService->sendTaskUpdateNotificationToDriver( $driver, $task, $status ); return
+              response()->json([ 'task_updated' => true, 'notification_sent' => $result['success'] ]); }
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>📢 إشعار جماعي</h4>
+            <div class="code-block">
+              // في AdminController public function sendBroadcastNotification(Request $request) { $title =
+              $request->title; $body = $request->body; // الحصول على جميع السائقين النشطين $drivers =
+              Driver::where('is_active', true) ->whereNotNull('fcm_token') ->get(); // إرسال إشعار جماعي
+              $notificationService = new NotificationService(); $result =
+              $notificationService->sendNotificationToMultipleDrivers( $drivers->toArray(), $title, $body, ['type' =>
+              'broadcast', 'timestamp' => now()->toISOString()] ); return response()->json([ 'drivers_count' =>
+              $drivers->count(), 'success_count' => $result['success_count'] ?? 0, 'failure_count' =>
+              $result['failure_count'] ?? 0 ]); }
+            </div>
+          </div>
+        </div>
+
+        <h3>🎯 إرسال إشعار مخصص</h3>
+        <div class="code-block">
+          // إرسال إشعار مخصص بالكامل public function sendCustomNotification($driverId, $title, $body, $data = []) {
+          $driver = Driver::find($driverId); if (!$driver || !$driver->fcm_token) { return response()->json(['error' =>
+          'Driver not found or no FCM token'], 404); } $firebaseService = new FirebaseService(); $result =
+          $firebaseService->sendToDevice( $driver->fcm_token, $title, $body, array_merge($data, [ 'click_action' =>
+          'FLUTTER_NOTIFICATION_CLICK', 'timestamp' => now()->toISOString() ]) ); return response()->json($result); }
+        </div>
+
+        <div class="section">
+          <h2>📥 المرحلة الثالثة: استقبال الإشعارات في التطبيق</h2>
+
+          <h3>📱 في NotificationService (Flutter)</h3>
+
+          <div class="steps">
+            <div class="step">
+              <h4>استقبال الإشعارات في المقدمة (Foreground)</h4>
+              <div class="code-block">
+                // في _initializeFirebaseMessaging() FirebaseMessaging.onMessage.listen(_handleForegroundMessage); void
+                _handleForegroundMessage(RemoteMessage message) { debugPrint('Received foreground message:
+                ${message.messageId}'); // عرض إشعار محلي _showLocalNotification(message); // إضافة للقائمة
+                _addNotificationFromRemoteMessage(message); }
+              </div>
+            </div>
+
+            <div class="step">
+              <h4>استقبال الإشعارات في الخلفية (Background)</h4>
+              <div class="code-block">
+                // معالج الإشعارات في الخلفية (دالة static) static Future&lt;void&gt;
+                _handleBackgroundMessage(RemoteMessage message) async { debugPrint('Received background message:
+                ${message.messageId}'); // يمكن حفظ الإشعار في قاعدة بيانات محلية } // تسجيل المعالج
+                FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
+              </div>
+            </div>
+
+            <div class="step">
+              <h4>معالجة النقر على الإشعار</h4>
+              <div class="code-block">
+                // عند النقر على الإشعار وفتح التطبيق
+                FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap); void
+                _handleNotificationTap(RemoteMessage message) { debugPrint('Notification tapped: ${message.messageId}');
+                // التنقل حسب نوع الإشعار String? type = message.data['type']; switch (type) { case 'new_task': //
+                الانتقال لصفحة المهام Navigator.pushNamed(context, '/tasks'); break; case 'payment_received': //
+                الانتقال لصفحة المحفظة Navigator.pushNamed(context, '/wallet'); break; default: // الانتقال للصفحة
+                الرئيسية Navigator.pushNamed(context, '/home'); } }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>🔧 الخدمات والملفات المسؤولة</h2>
+
+          <div class="grid">
+            <div class="card">
+              <h4>📱 في Flutter</h4>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>الملف</th>
+                    <th>المسؤولية</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>lib/services/notification_service.dart</code></td>
+                    <td>الخدمة الرئيسية للإشعارات</td>
+                  </tr>
+                  <tr>
+                    <td><code>lib/models/notification.dart</code></td>
+                    <td>نموذج بيانات الإشعار</td>
+                  </tr>
+                  <tr>
+                    <td><code>lib/config/app_config.dart</code></td>
+                    <td>إعدادات الإشعارات</td>
+                  </tr>
+                  <tr>
+                    <td><code>android/app/google-services.json</code></td>
+                    <td>إعدادات Firebase</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <h4>🖥️ في Laravel</h4>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>الملف</th>
+                    <th>المسؤولية</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>app/Services/FirebaseService.php</code></td>
+                    <td>خدمة Firebase الأساسية</td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Services/NotificationService.php</code></td>
+                    <td>خدمة الإشعارات المتقدمة</td>
+                  </tr>
+                  <tr>
+                    <td><code>app/Http/Controllers/TestFirebaseController.php</code></td>
+                    <td>تحكم اختبار الإشعارات</td>
+                  </tr>
+                  <tr>
+                    <td><code>storage/firebase/service-account-key.json</code></td>
+                    <td>مفتاح اعتماد Firebase</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="section"
+          style="text-align: center; background: linear-gradient(135deg, #667eea, #764ba2); color: white">
+          <h2 style="color: white; border-bottom: 3px solid white">📋 ملخص النظام</h2>
+          <div style="font-size: 1.1em; line-height: 1.8">
+            <p><strong>🔄 التسجيل:</strong> تلقائي عند تسجيل الدخول في التطبيق</p>
+            <p><strong>📤 الإرسال:</strong> من Firebase Console أو Laravel Controllers</p>
+            <p><strong>📥 الاستقبال:</strong> فوري في التطبيق مع إشعارات محلية</p>
+            <p><strong>🎯 التحكم:</strong> كامل في المحتوى والمستلمين والتوقيت</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -309,18 +309,28 @@ class TasksController extends Controller
                     'title' => 'تحديث حالة طلبك',
                     'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
+                'driver' => [
+                    'title' => 'تحديث حالة المهمة الخاصة المعينة لك',
+                    'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
+                ],
             ];
 
-            // قائمة المستلمين: [نوع => ID]
+            // قائمة المستلمين: [نوع => IDs]
             $recipients = [
-                   'user' => [
-                       $find->user_id,
-                       optional(
-                           User::select('id')->where('email', config('app.admin_email', 'info@safedest.com'))->first()
-                       )->id
-                   ],
-                   'customer' => [$find->customer_id],
-               ];
+                'user' => [
+                    $find->user_id,
+                    optional(
+                        User::select('id')->where('email', config('app.admin_email', 'info@safedest.com'))->first()
+                    )->id
+                ],
+                'customer' => [$find->customer_id],
+            ];
+
+            // ✨ إذا كان هناك سائق مرتبط بالمهمة أضفه
+            if (!empty($find->driver_id)) {
+                $recipients['driver'] = [$find->driver_id];
+            }
+
 
             foreach ($recipients as $type => $ids) {
                 // نظّف المصفوفة من null

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Models\Driver;
+use App\Models\Task_History;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,7 @@ class DriverTaskController extends Controller
     {
         try {
             $driver = $request->user();
+            Log::alert($request->all());
 
             // Validate query parameters
             $validator = Validator::make($request->all(), [
@@ -37,7 +39,7 @@ class DriverTaskController extends Controller
 
             $perPage = $request->get('per_page', 10);
             $status = $request->get('status');
-
+            Log::alert('status'.$status);
             // Build query
             $query = Task::with(['customer', 'pickup', 'delivery']);
             // Filter by status if provided
@@ -61,25 +63,46 @@ class DriverTaskController extends Controller
                         case 'cancelled':
                             $query->where('status', 'cancelled');
                             break;
+                        default:
+                            break;
                     }
                 }
             }
 
+
             $tasks = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+            Log::alert($tasks->items());
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tasks retrieved successfully',
                 'data' => [
-                    'tasks' => $tasks->items(),
+                    'tasks' => $tasks->map(function ($task) {
+                        return [
+                          'id' => $task->id,
+                          'total_price' => $task->total_price,
+                          'commission'  => $task->commission,
+                          'customer_name' => $task->customer->name,
+                          'pickup_address' => $task->pickup->address,
+                          'delivery_address' => $task->delivery->address,
+                          'status' => $task->status,
+                          'driver_id' => $task->driver_id,
+                          'pending_driver_id' => $task->pending_driver_id,
+                          'created_at' => $task->created_at,
+                          'pickup_point' => $task->pickup,
+                          'delivery_point' => $task->delivery
+
+                        ];
+                    }),
                     'pagination' => [
-                        'current_page' => $tasks->currentPage(),
-                        'last_page' => $tasks->lastPage(),
-                        'per_page' => $tasks->perPage(),
-                        'total' => $tasks->total(),
-                        'from' => $tasks->firstItem(),
-                        'to' => $tasks->lastItem()
-                    ]
+                                        'current_page' => $tasks->currentPage(),
+                                        'last_page' => $tasks->lastPage(),
+                                        'per_page' => $tasks->perPage(),
+                                        'total' => $tasks->total(),
+                                        'from' => $tasks->firstItem(),
+                                        'to' => $tasks->lastItem()
+                                    ]
                 ]
             ], 200);
 
@@ -102,13 +125,17 @@ class DriverTaskController extends Controller
     public function show(Request $request, $taskId)
     {
         try {
+            Log::alert('Get task details attempt', [
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
             $driver = $request->user();
 
             $task = Task::with([
                 'customer',
-                'pickup_point',
-                'delivery_point',
-                'task_points',
+                'pickup',
+                'delivery',
+                'points',
                 'driver',
                 'team'
             ])->where(function ($q) use ($driver) {
@@ -122,6 +149,8 @@ class DriverTaskController extends Controller
                     'message' => 'Task not found'
                 ], 404);
             }
+            Log::alert($task->pickup);
+            Log::alert($task->delivery);
 
             return response()->json([
                 'success' => true,
@@ -134,19 +163,19 @@ class DriverTaskController extends Controller
                         'phone' => $task->customer->phone ?? null,
                         'email' => $task->customer->email ?? null
                     ],
-                    'pickup_point' => $task->pickup_point ? [
-                        'address' => $task->pickup_point->address,
-                        'latitude' => $task->pickup_point->latitude,
-                        'longitude' => $task->pickup_point->longitude,
-                        'contact_name' => $task->pickup_point->contact_name,
-                        'contact_phone' => $task->pickup_point->contact_phone
+                    'pickup_point' => $task->pickup ? [
+                        'address' => $task->pickup->address,
+                        'latitude' => $task->pickup->latitude,
+                        'longitude' => $task->pickup->longitude,
+                        'contact_name' => $task->pickup->contact_name,
+                        'contact_phone' => $task->pickup->contact_phone
                     ] : null,
-                    'delivery_point' => $task->delivery_point ? [
-                        'address' => $task->delivery_point->address,
-                        'latitude' => $task->delivery_point->latitude,
-                        'longitude' => $task->delivery_point->longitude,
-                        'contact_name' => $task->delivery_point->contact_name,
-                        'contact_phone' => $task->delivery_point->contact_phone
+                    'delivery_point' => $task->delivery ? [
+                        'address' => $task->delivery->address,
+                        'latitude' => $task->delivery->latitude,
+                        'longitude' => $task->delivery->longitude,
+                        'contact_name' => $task->delivery->contact_name,
+                        'contact_phone' => $task->delivery->contact_phone
                     ] : null,
                     'total_price' => $task->total_price,
                     'commission' => $task->commission,
@@ -326,8 +355,14 @@ class DriverTaskController extends Controller
         try {
             $driver = $request->user();
 
+            Log::alert('Task status update attempt', [
+                'driver_id' => $driver->id,
+                'task_id'   => $taskId,
+                'request'   => $request->all()
+            ]);
+
             $validator = Validator::make($request->all(), [
-                'status' => 'required|string|in:picked_up,in_transit,delivered',
+                'status' => 'required|string|in:started,in pickup point,loading,in the way,in delivery point,unloading,completed',
                 'notes' => 'nullable|string|max:1000',
                 'location' => 'nullable|array',
                 'location.latitude' => 'nullable|numeric|between:-90,90',
@@ -335,6 +370,12 @@ class DriverTaskController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::warning('Validation failed on task status update', [
+                    'errors' => $validator->errors(),
+                    'task_id' => $taskId,
+                    'driver_id' => $driver->id
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -344,40 +385,70 @@ class DriverTaskController extends Controller
 
             DB::beginTransaction();
 
-            $task = Task::where('driver_id', $driver->id)
-                       ->whereIn('status', ['accepted', 'picked_up', 'in_transit'])
-                       ->find($taskId);
+            $task = Task::where('driver_id', $driver->id)->find($taskId);
 
             if (!$task) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Task not found or cannot be updated'
+                    'message' => 'Task not found or not assigned to you'
                 ], 404);
             }
 
-            $updateData = [
-                'status' => $request->status,
-                'last_activity_at' => now()
+            // ترتيب الحالات
+            $statuses = [
+                'started',
+                'in pickup point',
+                'loading',
+                'in the way',
+                'in delivery point',
+                'unloading',
+                'completed',
             ];
 
+            $currentIndex   = array_search($task->status, $statuses);
+            $requestedIndex = array_search($request->status, $statuses);
+
+            // تحقق من صلاحية الانتقال
+            if ($requestedIndex === false || $requestedIndex !== $currentIndex + 1) {
+                Log::warning('Invalid status change attempt', [
+                      'currentIndex' => $currentIndex,
+                      'requestedIndex' => $requestedIndex,
+                      'status' => $request->status,
+                      'task status' => $task->status
+                  ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid status change.'
+                ], 400);
+            }
+
+            if ($task->closed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This task is already closed.'
+                ], 400);
+            }
+
+            // تحديث البيانات
+            $task->status = $request->status;
+            $task->last_activity_at = now();
             if ($request->notes) {
-                $updateData['notes'] = $request->notes;
+                $task->notes = $request->notes;
             }
-
-            // Set completion time if delivered
-            if ($request->status === 'delivered') {
-                $updateData['completed_at'] = now();
-
-                // Free up the driver
-                $driver->update([
-                    'free' => true,
-                    'last_activity_at' => now()
-                ]);
+            if ($request->status === 'completed') {
+                $task->completed_at = now();
             }
+            $task->save();
 
-            $task->update($updateData);
+            // إضافة إلى سجل التاريخ
+            Task_History::create([
+                'task_id' => $task->id,
+                'action_type' => $request->status,
+                'description' => "Driver changed status to '{$request->status}'",
+                'driver_id' => $driver->id,
+            ]);
 
-            // Update driver location if provided
+            // تحديث موقع السائق إن وجد
             if ($request->has('location') && $request->location) {
                 $driver->update([
                     'longitude' => $request->location['longitude'],
@@ -388,7 +459,7 @@ class DriverTaskController extends Controller
 
             DB::commit();
 
-            Log::info('Task status updated', [
+            Log::info('Task status updated successfully', [
                 'task_id' => $taskId,
                 'driver_id' => $driver->id,
                 'new_status' => $request->status
@@ -421,6 +492,7 @@ class DriverTaskController extends Controller
         }
     }
 
+
     /**
      * Get task history
      */
@@ -428,7 +500,6 @@ class DriverTaskController extends Controller
     {
         try {
             $driver = $request->user();
-
             $validator = Validator::make($request->all(), [
                 'page' => 'nullable|integer|min:1',
                 'per_page' => 'nullable|integer|min:1|max:50',
@@ -460,6 +531,7 @@ class DriverTaskController extends Controller
 
             $tasks = $query->orderBy('completed_at', 'desc')->paginate($perPage);
 
+            Log::alert($tasks->items());
             return response()->json([
                 'success' => true,
                 'tasks' => $tasks->items(),
@@ -663,6 +735,157 @@ class DriverTaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Server error occurred'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get task logs/history
+     */
+    public function getLogs(Request $request, $taskId)
+    {
+        try {
+            $driver = $request->user();
+            Log::alert('get task History');
+
+            // Check if task belongs to driver
+            $task = Task::where(function ($q) use ($driver) {
+                $q->where('driver_id', $driver->id)
+                  ->orWhere('pending_driver_id', $driver->id);
+            })->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+
+            // Get task history/logs
+            $logs = DB::table('task_histories')
+                ->where('task_id', $taskId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($log) {
+                    $fileName = null;
+                    if ($log->file_path) {
+                        $fileName = basename($log->file_path);
+                    }
+
+                    return [
+                        'id' => $log->id,
+                        'status' => $log->action_type,
+                        'note' => $log->description,
+                        'file_name' => $fileName,
+                        'file_path' => $log->file_path,
+                        'created_at' => $log->created_at,
+                        'type' => $log->driver_id ? 'driver_note' : 'status_change'
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task logs retrieved successfully',
+                'data' => [
+                    'logs' => $logs
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Get task logs error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get task logs'
+            ], 500);
+        }
+    }
+
+    /**
+     * Add note to task
+     */
+    public function addNote(Request $request, $taskId)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'note' => 'required|string|max:1000',
+                'type' => 'nullable|string|in:driver_note,status_change',
+                'file' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Check if task belongs to driver
+            $task = Task::where('driver_id', $driver->id)->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found or not assigned to you'
+                ], 404);
+            }
+
+            DB::beginTransaction();
+
+            $filePath = null;
+
+            // Handle file upload if present
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('task_files/' . $taskId, $fileName, 'public');
+            }
+
+            // Add to task history
+            DB::table('task_histories')->insert([
+                'task_id' => $task->id,
+                'action_type' => $request->get('type', 'driver_note'),
+                'description' => $request->note,
+                'driver_id' => $driver->id,
+                'file_path' => $filePath,
+                'file_type' => $request->hasFile('file') ? $request->file('file')->getClientMimeType() : null,
+                'ip' => $request->ip(),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::commit();
+
+            Log::info('Note added to task', [
+                'task_id' => $taskId,
+                'driver_id' => $driver->id,
+                'has_file' => $filePath !== null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Note added successfully'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Add task note error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add note'
             ], 500);
         }
     }

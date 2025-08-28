@@ -72,6 +72,13 @@
       "permission": "view_ads"
     },
     {
+      "url": "admin/reports",
+      "name": "Platform Reports",
+      "icon": "menu-icon tf-icons ti ti-report",
+      "slug": "reports.reports",
+      "isactive": "reports-isactive"
+    },
+    {
       "url": "admin/settings/statistics",
       "name": "System Statistics",
       "icon": "menu-icon tf-icons ti ti-chart-line",

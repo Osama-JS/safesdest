@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "Driver Task Ads APIs",
+    "description": "API collection for testing driver task ads functionality",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{driver_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/safedestsss/api",
+      "type": "string"
+    },
+    {
+      "key": "driver_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Driver Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"login\": \"driver@example.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"Test Device\",\n    \"device_id\": \"test-device-123\",\n    \"app_version\": \"1.0.0\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/login",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data && response.data.token) {",
+                  "        pm.collectionVariables.set('driver_token', response.data.token);",
+                  "        console.log('Driver token saved:', response.data.token.substring(0, 20) + '...');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Task Ads",
+      "item": [
+        {
+          "name": "Get Task Ads",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/task-ads?page=1&per_page=10&status=running",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "task-ads"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "running"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Task Ad Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/task-ads/1",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "task-ads", "1"]
+            }
+          }
+        },
+        {
+          "name": "Submit Offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"price\": 650.00,\n    \"description\": \"متاح للتنفيذ فوراً مع خبرة 5 سنوات\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/task-ads/1/offers",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "task-ads", "1", "offers"]
+            }
+          }
+        },
+        {
+          "name": "Update Offer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"price\": 700.00,\n    \"description\": \"تحديث السعر - متاح للتنفيذ فوراً\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/task-ads/offers/1",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "task-ads", "offers", "1"]
+            }
+          }
+        },
+        {
+          "name": "Accept Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/driver/task-ads/offers/1/accept",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "task-ads", "offers", "1", "accept"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "My Offers",
+      "item": [
+        {
+          "name": "Get My Offers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/my-offers?page=1&per_page=10",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "my-offers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Offers - Accepted",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/my-offers?status=accepted",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "my-offers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "accepted"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Offers - Pending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/my-offers?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "my-offers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Offers - Rejected",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/driver/my-offers?status=rejected",
+              "host": ["{{base_url}}"],
+              "path": ["driver", "my-offers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "rejected"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

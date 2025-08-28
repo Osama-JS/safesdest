@@ -532,10 +532,78 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/ads/offers/show/', [TasksAdsController::class, 'getOffers'])->name('ads.offers.data');
                 Route::get('/ads/offers/accept/{id}', [TasksAdsController::class, 'acceptOffer'])->name('ads.offers.accept');
                 Route::get('/ads/offers/retract/{id}', [TasksAdsController::class, 'retractOffer'])->name('ads.offers.retract');
+
+                // تضمين routes التخليص  الجديدة
+                // require __DIR__ . '/customs_clearance.php';
+
+                // Platform Reports Routes - Simple Test
+                Route::get('reports', function () {
+                    return view('admin.reports.index');
+                })->name('admin.reports.index');
+
+                Route::get('admin/reports/customer-tasks', function () {
+                    // Get required data for the view
+                    $customers = \App\Models\Customer::select('id', 'name', 'company_name')->get();
+                    $drivers = \App\Models\Driver::select('id', 'name', 'phone')->get();
+                    $teams = \App\Models\Teams::select('id', 'name')->get();
+
+                    $taskStatuses = [
+                        'in_progress' => 'قيد التنفيذ',
+                        'advertised' => 'معلن عنها',
+                        'assign' => 'مُعيّنة',
+                        'accepted' => 'مقبولة',
+                        'started' => 'بدأت',
+                        'in pickup point' => 'في نقطة الاستلام',
+                        'loading' => 'جاري التحميل',
+                        'in the way' => 'في الطريق',
+                        'in delivery point' => 'في نقطة التسليم',
+                        'unloading' => 'جاري التفريغ',
+                        'completed' => 'مكتملة',
+                        'canceled' => 'ملغية',
+                        'closed' => 'مغلقة'
+                    ];
+
+                    $paymentStatuses = [
+                        'pending' => 'في الانتظار',
+                        'paid' => 'مدفوعة',
+                        'partially_paid' => 'مدفوعة جزئياً',
+                        'refunded' => 'مستردة'
+                    ];
+
+                    $paymentMethods = [
+                        'cash' => 'نقداً',
+                        'bank_transfer' => 'تحويل بنكي',
+                        'credit_card' => 'بطاقة ائتمان',
+                        'wallet' => 'محفظة إلكترونية'
+                    ];
+
+                    return view('admin.reports.customer-tasks', compact(
+                        'customers',
+                        'drivers',
+                        'teams',
+                        'taskStatuses',
+                        'paymentStatuses',
+                        'paymentMethods'
+                    ));
+                })->name('admin.reports.customer-tasks');
+
+                // Keep the original controller routes for POST requests
+                Route::post('admin/reports/customer-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
+                Route::post('admin/reports/customer-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
+
             });
         });
     });
 });
 
-// تضمين routes التخليص  الجديدة
-// require __DIR__ . '/customs_clearance.php';
+
+// Firebase Testing Routes
+Route::prefix('test-firebase')->group(function () {
+    Route::get('/connection', [App\Http\Controllers\TestFirebaseController::class, 'testConnection']);
+    Route::post('/send-notification', [App\Http\Controllers\TestFirebaseController::class, 'sendTestNotification']);
+    Route::post('/send-to-all', [App\Http\Controllers\TestFirebaseController::class, 'sendTestNotificationToAll']);
+    Route::get('/drivers-with-tokens', [App\Http\Controllers\TestFirebaseController::class, 'getDriversWithTokens']);
+    Route::post('/test-new-task', [App\Http\Controllers\TestFirebaseController::class, 'testNewTaskNotification']);
+    Route::post('/test-payment', [App\Http\Controllers\TestFirebaseController::class, 'testPaymentNotification']);
+    Route::post('/validate-token', [App\Http\Controllers\TestFirebaseController::class, 'validateToken']);
+});

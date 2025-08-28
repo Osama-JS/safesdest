@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class DriverAuthController extends Controller
@@ -309,4 +312,180 @@ class DriverAuthController extends Controller
     //         ], 500);
     //     }
     // }
+
+    /**
+     * Send password reset link to driver's email
+     */
+    public function forgotPassword(Request $request)
+    {
+        try {
+            // Validate request
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|exists:drivers,email'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'البريد الإلكتروني غير صحيح أو غير موجود',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Find driver
+            $driver = Driver::where('email', $request->email)->first();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'لم يتم العثور على حساب بهذا البريد الإلكتروني'
+                ], 404);
+            }
+
+            // Check if driver is active
+            if ($driver->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'حساب السائق غير نشط'
+                ], 403);
+            }
+
+            // Generate reset token
+            $token = Str::random(64);
+
+            // Store token in database (you might want to create a password_resets table)
+            $driver->update([
+                'reset_token' => Hash::make($token),
+                'reset_token_expires_at' => now()->addHours(1) // Token expires in 1 hour
+            ]);
+
+            // Create reset URL (this should point to your web interface)
+            $resetUrl = config('app.frontend_url') . '/driver/reset-password?token=' . $token . '&email=' . urlencode($request->email);
+
+            // Send email (you'll need to create a mail template)
+            try {
+                Mail::send('emails.driver-password-reset', [
+                    'driver' => $driver,
+                    'resetUrl' => $resetUrl,
+                    'token' => $token
+                ], function ($message) use ($driver) {
+                    $message->to($driver->email, $driver->name)
+                           ->subject('إعادة تعيين كلمة المرور - SafeDests Driver');
+                });
+
+                Log::info('Password reset email sent', [
+                    'driver_id' => $driver->id,
+                    'email' => $driver->email
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني'
+                ], 200);
+
+            } catch (\Exception $mailException) {
+                Log::error('Failed to send password reset email', [
+                    'driver_id' => $driver->id,
+                    'email' => $driver->email,
+                    'error' => $mailException->getMessage()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'فشل في إرسال البريد الإلكتروني. يرجى المحاولة مرة أخرى'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Forgot password error', [
+                'error' => $e->getMessage(),
+                'email' => $request->email ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ. يرجى المحاولة مرة أخرى'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset password using token
+     */
+    public function resetPassword(Request $request)
+    {
+        try {
+            // Validate request
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email|exists:drivers,email',
+                'token' => 'required|string',
+                'password' => 'required|string|min:8|confirmed'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'البيانات المدخلة غير صحيحة',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Find driver
+            $driver = Driver::where('email', $request->email)->first();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'لم يتم العثور على حساب بهذا البريد الإلكتروني'
+                ], 404);
+            }
+
+            // Check if token exists and is valid
+            if (!$driver->reset_token || !Hash::check($request->token, $driver->reset_token)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'رمز إعادة التعيين غير صحيح'
+                ], 400);
+            }
+
+            // Check if token is expired
+            if ($driver->reset_token_expires_at && $driver->reset_token_expires_at->isPast()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'انتهت صلاحية رمز إعادة التعيين. يرجى طلب رمز جديد'
+                ], 400);
+            }
+
+            // Update password and clear reset token
+            $driver->update([
+                'password' => Hash::make($request->password),
+                'reset_token' => null,
+                'reset_token_expires_at' => null
+            ]);
+
+            // Revoke all existing tokens for security
+            $driver->tokens()->delete();
+
+            Log::info('Password reset successful', [
+                'driver_id' => $driver->id,
+                'email' => $driver->email
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مرة أخرى'
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Reset password error', [
+                'error' => $e->getMessage(),
+                'email' => $request->email ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ. يرجى المحاولة مرة أخرى'
+            ], 500);
+        }
+    }
 }

@@ -60,6 +60,7 @@ class TasksController extends Controller
         $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign']]);
         $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
+        $this->middleware('permission:refund_tasks', ['only' => ['refundTask']]);
         $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment']]);
     }
 
@@ -2379,6 +2380,127 @@ class TasksController extends Controller
             }
             return response()->json(['status' => 2, 'error' => $e->getMessage()]);
         }
+    }
+
+    public function refundTask(Request $req)
+    {
+        $validator = Validator::make($req->all(), [
+            'id' => 'required|exists:tasks,id',
+            'resone' => 'required|string|max:500',
+          ], [
+            'id.required'  => __('Can not find the selected Task'),
+            'id.exists'  => __('Can not find the selected Task'),
+            'resone.required' => __('The Refund resone is required'),
+            'resone.string' => __('The Refund resone must be a valid text'),
+            'resone.max' => __('The Refund resone may not be greater than 500 characters'),
+
+          ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'error' => $validator->errors()]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $task = Task::findOrFail($req->id);
+            if (!$task->closed || $task->status === 'canceled' || $task->payment_status !== 'completed') {
+                return response()->json(['status' => 2, 'error' => __('This Task cannot be refunded in its current state')]);
+            }
+
+            if ($task->ad) {
+                if ($task->ad->offers) {
+                    $task->ad->offers()->delete();
+                }
+                $task->ad()->delete();
+            }
+
+            $wallet_transaction = Wallet_Transaction::where('task_id', $task->id)->delete();
+            $transaction = Transaction::where('reference_id', $task->id)->first();
+            $transaction_receipt_image = null;
+            if ($transaction) {
+                if ($transaction->receipt_image) {
+                    $transaction_receipt_image = $transaction->receipt_image;
+                }
+                $transaction->delete();
+            }
+
+            if ($task->payments) {
+                $task->payments()->delete();
+            }
+
+            $notifications = [
+               'user' => [
+                   'title' => 'your task #'. $task->id .' was refunded and canceld',
+                   'msg'   => "this task was refunded because of: " . $req->resone
+               ],
+               'customer' => [
+                   'title' =>  'your task #'. $task->id .' was refunded and canceld',
+                   'msg'   => "this task was refunded because of: " . $req->resone
+               ],
+               'driver' => [
+                   'title' => `task #{$task->id} that you assign to your was refunded and canceld`,
+                   'msg'   => 'this task was refunded because of: ' . $req->resone
+               ],
+            ];
+            // قائمة المستلمين: [نوع => ID]
+            $recipients = [
+                'user'     => $task->user_id,
+                'customer' => $task->customer_id,
+                'driver'   => $task->driver_id,
+            ];
+
+            $deleviry_note = $task->deleviry_note;
+
+            $task->update([
+                          'status' => 'canceled',
+                          'closed' => false,
+                          'payment_status' => 'waiting',
+                          'driver_id' => null,
+                          'deleviry_note' => null,
+                          'delivery_number' => null
+                        ]);
+
+            $task->history()->create([
+              'action_type' => 'refund',
+              'description' => 'The task was refunded by admin. Resone: ' . $req->resone,
+              'ip' => IpHelper::getUserIpAddress(),
+              'user_id' => Auth::user()->id,
+            ]);
+
+            if ($deleviry_note) {
+                FileHelper::deleteFileIfExists($deleviry_note);
+            }
+            if ($transaction_receipt_image) {
+                unlink($transaction_receipt_image);
+            }
+
+            foreach ($recipients as $type => $id) {
+                if ($id && isset($notifications[$type])) {
+                    $noti = $notifications[$type];
+
+                    app(\App\Services\NotificationService::class)->send(
+                        $type,
+                        [$id], // IDs المستلمين
+                        $noti['title'],
+                        $noti['msg'],
+                        '/images/admin-icon.png',
+                        '/images/banner.png',
+                        "/tasks/{$task->id}",
+                        'task_note' // نوع الإشعار
+                    );
+                }
+            }
+
+
+            DB::commit();
+
+            return response()->json(['status' => 1, 'success' => __('Task refunded successfully')]);
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+        }
+
     }
 
 

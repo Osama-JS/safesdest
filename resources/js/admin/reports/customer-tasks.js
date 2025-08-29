@@ -2,9 +2,7 @@
  * Customer Tasks Report JavaScript
  * SafeDests Platform Reports
  */
-
-console.log('reports');
-
+console.log('hayyyyy');
 class CustomerTasksReport {
   constructor() {
     this.availableColumns = {
@@ -30,11 +28,21 @@ class CustomerTasksReport {
   }
 
   init() {
+    console.log('CustomerTasksReport: Starting initialization...');
+
+    // Check if jQuery is available
+    if (typeof $ === 'undefined') {
+      console.error('jQuery is not available');
+      return;
+    }
+
     this.initializeDateRangePicker();
     this.initializeSelect2();
     this.initializeColumnSelector();
     this.loadSavedPreferences();
     this.bindEvents();
+
+    console.log('CustomerTasksReport: Initialization complete');
   }
 
   bindEvents() {
@@ -42,9 +50,13 @@ class CustomerTasksReport {
     $('#resetBtn').on('click', () => this.resetFilters());
     $('#exportExcelBtn').on('click', () => this.exportReport('excel'));
     $('#exportPdfBtn').on('click', () => this.exportReport('pdf'));
+
+    console.log('CustomerTasksReport: Events bound');
   }
 
   initializeDateRangePicker() {
+    console.log('CustomerTasksReport: Initializing DateRangePicker...');
+
     // Check if moment and daterangepicker are available
     if (typeof moment === 'undefined') {
       console.error('Moment.js is not available');
@@ -62,90 +74,100 @@ class CustomerTasksReport {
       return;
     }
 
-    $dateRange.daterangepicker(
-      {
-        opens: 'left',
-        locale: {
-          format: 'YYYY-MM-DD',
-          separator: ' to ',
-          applyLabel: 'Apply',
-          cancelLabel: 'Cancel',
-          fromLabel: 'From',
-          toLabel: 'To',
-          customRangeLabel: 'Custom',
-          weekLabel: 'W',
-          daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
-          monthNames: [
-            'January',
-            'February',
-            'March',
-            'April',
-            'May',
-            'June',
-            'July',
-            'August',
-            'September',
-            'October',
-            'November',
-            'December'
-          ],
-          firstDay: 1
+    try {
+      $dateRange.daterangepicker(
+        {
+          opens: 'left',
+          locale: {
+            format: 'YYYY-MM-DD',
+            separator: ' to ',
+            applyLabel: 'Apply',
+            cancelLabel: 'Cancel',
+            fromLabel: 'From',
+            toLabel: 'To',
+            customRangeLabel: 'Custom',
+            weekLabel: 'W',
+            daysOfWeek: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+            monthNames: [
+              'January',
+              'February',
+              'March',
+              'April',
+              'May',
+              'June',
+              'July',
+              'August',
+              'September',
+              'October',
+              'November',
+              'December'
+            ],
+            firstDay: 1
+          },
+          ranges: {
+            Today: [moment(), moment()],
+            Yesterday: [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+          },
+          startDate: moment().subtract(29, 'days'),
+          endDate: moment()
         },
-        ranges: {
-          Today: [moment(), moment()],
-          Yesterday: [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-          'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-          'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-          'This Month': [moment().startOf('month'), moment().endOf('month')],
-          'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-        },
-        startDate: moment().subtract(29, 'days'),
-        endDate: moment()
-      },
-      (start, end, label) => {
-        $('#date_from').val(start.format('YYYY-MM-DD'));
-        $('#date_to').val(end.format('YYYY-MM-DD'));
-      }
-    );
+        (start, end, label) => {
+          $('#date_from').val(start.format('YYYY-MM-DD'));
+          $('#date_to').val(end.format('YYYY-MM-DD'));
+        }
+      );
 
-    // Set initial values
-    $('#date_from').val(moment().subtract(29, 'days').format('YYYY-MM-DD'));
-    $('#date_to').val(moment().format('YYYY-MM-DD'));
+      // Set initial values
+      $('#date_from').val(moment().subtract(29, 'days').format('YYYY-MM-DD'));
+      $('#date_to').val(moment().format('YYYY-MM-DD'));
 
-    console.log('DateRangePicker initialized');
+      console.log('CustomerTasksReport: DateRangePicker initialized successfully');
+    } catch (error) {
+      console.error('Error initializing DateRangePicker:', error);
+    }
   }
 
   initializeSelect2() {
+    console.log('CustomerTasksReport: Initializing Select2...');
+
     // Check if Select2 is available
     if (typeof $.fn.select2 === 'undefined') {
       console.error('Select2 is not available');
       return;
     }
 
-    $('.select2').each(function () {
-      const $this = $(this);
-      if (!$this.hasClass('select2-hidden-accessible')) {
-        $this.select2({
-          theme: 'bootstrap-5',
-          placeholder: $this.attr('multiple') ? 'Select one or more...' : 'Select...',
-          allowClear: true,
-          width: '100%',
-          language: {
-            noResults: function () {
-              return 'No results found';
-            },
-            searching: function () {
-              return 'Searching...';
+    try {
+      $('.flitter-select').each(function () {
+        const $this = $(this);
+        if (!$this.hasClass('select2-hidden-accessible')) {
+          $this.select2({
+            placeholder: $this.attr('multiple') ? 'Select one or more...' : 'Select...',
+            allowClear: true,
+            language: {
+              noResults: function () {
+                return 'No results found';
+              },
+              searching: function () {
+                return 'Searching...';
+              }
             }
-          }
-        });
-      }
-    });
+          });
+        }
+      });
 
-    console.log('Select2 initialized for', $('.select2').length, 'elements');
+      console.log('CustomerTasksReport: Select2 initialized for', $('.flitter-select').length, 'elements');
+    } catch (error) {
+      console.error('Error initializing Select2:', error);
+    }
   }
 
   initializeColumnSelector() {
+    console.log('CustomerTasksReport: Initializing Column Selector...');
+
     const container = $('#columnSelector');
     if (container.length === 0) {
       console.error('Column selector container not found');
@@ -160,23 +182,23 @@ class CustomerTasksReport {
       const isRequired = column.required;
 
       const columnItem = $(`
-                <div class="column-item ${isRequired ? 'required' : ''}" data-column="${key}">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox"
-                               id="col_${key}" ${isSelected ? 'checked' : ''}
-                               ${isRequired ? 'disabled' : ''}>
-                        <label class="form-check-label" for="col_${key}">
-                            ${column.name} ${isRequired ? '(مطلوب)' : ''}
-                        </label>
-                    </div>
-                </div>
-            `);
+        <div class="column-item ${isRequired ? 'required' : ''}" data-column="${key}">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox"
+                   id="col_${key}" ${isSelected ? 'checked' : ''}
+                   ${isRequired ? 'disabled' : ''}>
+            <label class="form-check-label" for="col_${key}">
+              ${column.name} ${isRequired ? '(Required)' : ''}
+            </label>
+          </div>
+        </div>
+      `);
 
       container.append(columnItem);
     });
 
     // Handle column selection
-    container.off('change', '.form-check-input'); // Remove existing handlers
+    container.off('change', '.form-check-input');
     container.on('change', '.form-check-input', e => {
       const column = $(e.target).closest('.column-item').data('column');
       if (e.target.checked) {
@@ -191,7 +213,11 @@ class CustomerTasksReport {
     });
 
     this.updateSelectedCount();
-    console.log('Column selector initialized with', Object.keys(this.availableColumns).length, 'columns');
+    console.log(
+      'CustomerTasksReport: Column selector initialized with',
+      Object.keys(this.availableColumns).length,
+      'columns'
+    );
   }
 
   updateSelectedCount() {
@@ -203,6 +229,8 @@ class CustomerTasksReport {
   }
 
   previewReport() {
+    console.log('CustomerTasksReport: Preview report requested');
+
     if (!this.validateForm()) return;
 
     this.showLoading();
@@ -217,6 +245,7 @@ class CustomerTasksReport {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
       },
       success: response => {
+        console.log('CustomerTasksReport: Preview response received', response);
         if (response.success) {
           this.reportData = response.data;
           this.displayPreview(response.data, response.summary);
@@ -227,6 +256,7 @@ class CustomerTasksReport {
         }
       },
       error: xhr => {
+        console.error('CustomerTasksReport: Preview error', xhr);
         this.showError('Error occurred while fetching data');
       },
       complete: () => {
@@ -236,22 +266,19 @@ class CustomerTasksReport {
   }
 
   displayPreview(data, summary) {
-    let tableHtml = this.buildPreviewTable(data);
-    tableHtml += this.buildSummarySection(summary);
-
-    $('#previewTable').html(tableHtml);
+    let html = this.buildPreviewTable(data);
+    html += this.buildSummarySection(summary);
+    $('#previewTable').html(html);
     this.initializeDataTable();
   }
 
   buildPreviewTable(data) {
     let html = `
-            <div class="table-responsive">
-                <table class="table table-striped table-hover" id="previewDataTable">
-                    <thead class="table-dark">
-                        <tr>
-        `;
+      <div class="table-responsive">
+        <table class="table table-striped table-hover" id="previewDataTable">
+          <thead class="table-dark"><tr>
+    `;
 
-    // Add headers
     this.selectedColumns.forEach(column => {
       if (this.availableColumns[column]) {
         html += `<th>${this.availableColumns[column].name}</th>`;
@@ -260,7 +287,6 @@ class CustomerTasksReport {
 
     html += `</tr></thead><tbody>`;
 
-    // Add data rows (limit to first 50 for preview)
     const previewData = data.slice(0, 50);
     previewData.forEach(row => {
       html += '<tr>';
@@ -279,15 +305,15 @@ class CustomerTasksReport {
       case 'task_id':
         return row.id;
       case 'total_price':
-        return parseFloat(row.total_price).toLocaleString('ar-SA') + ' ريال';
+        return parseFloat(row.total_price).toLocaleString() + ' SAR';
       case 'pickup_info':
-        return `${row.pickup_address}<br><small>المسؤول: ${row.pickup_contact_name}<br>الهاتف: ${row.pickup_contact_phone}</small>`;
+        return `${row.pickup_address}<br><small>Contact: ${row.pickup_contact_name}<br>Phone: ${row.pickup_contact_phone}</small>`;
       case 'delivery_info':
-        return `${row.delivery_address}<br><small>المسؤول: ${row.delivery_contact_name}<br>الهاتف: ${row.delivery_contact_phone}</small>`;
+        return `${row.delivery_address}<br><small>Contact: ${row.delivery_contact_name}<br>Phone: ${row.delivery_contact_phone}</small>`;
       case 'vehicle_name':
         return row.vehicle_name;
       case 'driver_info':
-        return `${row.driver_name}<br><small>الهاتف: ${row.driver_phone}<br>الفريق: ${row.team_name}</small>`;
+        return `${row.driver_name}<br><small>Phone: ${row.driver_phone}<br>Team: ${row.team_name}</small>`;
       case 'status':
         return `<span class="badge bg-primary">${row.status_ar}</span>`;
       case 'payment_status':
@@ -299,9 +325,9 @@ class CustomerTasksReport {
       case 'created_at':
         return row.created_at_formatted;
       case 'completed_at':
-        return row.completed_at_formatted || 'لم تكتمل بعد';
+        return row.completed_at_formatted || 'Not completed yet';
       case 'closed_at':
-        return row.closed_at_formatted || 'لم تُغلق بعد';
+        return row.closed_at_formatted || 'Not closed yet';
       default:
         return '';
     }
@@ -309,24 +335,16 @@ class CustomerTasksReport {
 
   buildSummarySection(summary) {
     return `
-            <div class="mt-3 p-3 bg-light rounded">
-                <h6>ملخص التقرير:</h6>
-                <div class="row">
-                    <div class="col-md-3">
-                        <strong>إجمالي المهام:</strong> ${summary.total_tasks}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>إجمالي المبلغ:</strong> ${parseFloat(summary.total_amount).toLocaleString('ar-SA')} ريال
-                    </div>
-                    <div class="col-md-3">
-                        <strong>متوسط السعر:</strong> ${parseFloat(summary.average_amount).toLocaleString('ar-SA')} ريال
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">عرض أول 50 سجل للمعاينة</small>
-                    </div>
-                </div>
-            </div>
-        `;
+      <div class="mt-3 p-3 bg-light rounded">
+        <h6>Report Summary:</h6>
+        <div class="row">
+          <div class="col-md-3"><strong>Total Tasks:</strong> ${summary.total_tasks}</div>
+          <div class="col-md-3"><strong>Total Amount:</strong> ${parseFloat(summary.total_amount).toLocaleString()} SAR</div>
+          <div class="col-md-3"><strong>Average Price:</strong> ${parseFloat(summary.average_amount).toLocaleString()} SAR</div>
+          <div class="col-md-3"><small class="text-muted">Showing first 50 records for preview</small></div>
+        </div>
+      </div>
+    `;
   }
 
   initializeDataTable() {
@@ -338,7 +356,7 @@ class CustomerTasksReport {
       responsive: true,
       pageLength: 25,
       language: {
-        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ar.json'
+        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/en.json'
       }
     });
   }
@@ -350,24 +368,16 @@ class CustomerTasksReport {
     }
 
     this.showLoading();
-
     const formData = this.getFormData();
     formData.columns = this.selectedColumns;
     formData.export_type = type;
 
-    // Create form and submit
     const form = this.createExportForm(formData);
-
-    if (type === 'pdf') {
-      form.attr('target', '_blank');
-    }
-
+    if (type === 'pdf') form.attr('target', '_blank');
     form.submit();
     form.remove();
 
-    setTimeout(() => {
-      this.hideLoading();
-    }, 2000);
+    setTimeout(() => this.hideLoading(), 2000);
   }
 
   createExportForm(formData) {
@@ -376,7 +386,6 @@ class CustomerTasksReport {
       action: window.routes.generate
     });
 
-    // Add CSRF token
     form.append(
       $('<input>', {
         type: 'hidden',
@@ -385,7 +394,6 @@ class CustomerTasksReport {
       })
     );
 
-    // Add form data
     Object.keys(formData).forEach(key => {
       if (Array.isArray(formData[key])) {
         formData[key].forEach(value => {
@@ -446,9 +454,13 @@ class CustomerTasksReport {
 
   resetFilters() {
     $('#reportForm')[0].reset();
-    $('.select2').val(null).trigger('change');
-    $('#dateRange').data('daterangepicker').setStartDate(moment().subtract(29, 'days'));
-    $('#dateRange').data('daterangepicker').setEndDate(moment());
+    $('.flitter-select').val(null).trigger('change');
+
+    if ($('#dateRange').data('daterangepicker')) {
+      $('#dateRange').data('daterangepicker').setStartDate(moment().subtract(29, 'days'));
+      $('#dateRange').data('daterangepicker').setEndDate(moment());
+    }
+
     $('#date_from').val(moment().subtract(29, 'days').format('YYYY-MM-DD'));
     $('#date_to').val(moment().format('YYYY-MM-DD'));
     $('.preview-section').hide();
@@ -466,7 +478,6 @@ class CustomerTasksReport {
     if (saved) {
       try {
         const savedColumns = JSON.parse(saved);
-        // Ensure required columns are always included
         this.selectedColumns = [
           'task_id',
           'total_price',
@@ -479,7 +490,6 @@ class CustomerTasksReport {
     }
   }
 
-  // Utility functions
   showLoading() {
     $('#loadingOverlay').show();
   }
@@ -507,5 +517,4 @@ class CustomerTasksReport {
   }
 }
 
-// Class is now initialized from the Blade template
-// No automatic initialization here
+// Class will be initialized from the Blade template

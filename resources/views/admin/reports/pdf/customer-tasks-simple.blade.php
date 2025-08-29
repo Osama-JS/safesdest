@@ -236,7 +236,8 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="logo">SD</div>
+            <span class="app-brand-logo demo">@include('_partials.macros', ['height' => 20])</span>
+
             <div class="company-name">{{ __('SafeDests Transport and Logistics Company') }}</div>
             <div class="report-title">{{ __('Customer Tasks Report - Simple') }}</div>
         </div>

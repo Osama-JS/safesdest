@@ -269,6 +269,7 @@ $(function () {
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
+                    <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}">Refund Task</a></li>
                   </ul>
                 </div>
               </div>`;
@@ -361,6 +362,7 @@ $(function () {
       $('#closedModal').modal('hide');
       $('#checkPaymentModal').modal('hide');
       $('#assignTitle').html('');
+      $('#refundModal').html('');
     }, 2000);
 
     if (dt_data) {
@@ -648,6 +650,13 @@ $(function () {
     $('#task-id').val(id);
     $('#modelTitle').html('#' + id);
     $('#closedModal').modal('show');
+  });
+
+  $(document).on('click', '.refund-task', function () {
+    var id = $(this).data('id');
+    $('#task-refund-id').val(id);
+    $('#modelRefundTitle').html('#' + id);
+    $('#refundModal').modal('show');
   });
 
   $(document).on('click', '.connect-task', function () {

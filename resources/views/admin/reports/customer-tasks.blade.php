@@ -5,7 +5,7 @@
 <!-- Vendor Styles -->
 @section('vendor-style')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss'])
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss'])
 
 @endsection
 
@@ -13,7 +13,7 @@
 @section('page-style')
     @vite(['resources/css/app.css'])
     {{-- <link rel="stylesheet" href="{{ asset('css/admin/reports.css') }}"> --}}
-    <style>
+    {{-- <style>
         /* Select2 Bootstrap 5 Compatibility */
         .select2-container--bootstrap-5 .select2-selection {
             border: 1px solid #d0d7de;
@@ -154,18 +154,17 @@
             border-radius: 0.5rem;
             text-align: center;
         }
-    </style>
+    </style> --}}
 @endsection
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/select2/select2.js'])
 
 @endsection
 
 <!-- Page Scripts -->
 @section('page-script')
     <script src="{{ asset('js/admin/reports/customer-tasks.js') }}"></script>
-    {{-- @vite(['resources/js/admin/reports/customer-tasks.js']) --}}
 
     <script>
         // Set up routes for the JavaScript class
@@ -209,10 +208,6 @@
 
 @section('content')
 
-
-
-
-
     <div class="card mb-4">
         <div class="card-header border-bottom">
             <h5 class="card-title mb-2">
@@ -244,8 +239,8 @@
                                 <div class="col-md-4 mb-3">
                                     <label for="customer_ids" class="form-label">{{ __('Select Customers') }} <span
                                             class="text-danger">*</span></label>
-                                    <select class="select2 form-select" id="customer_ids" name="customer_ids[]" multiple
-                                        required>
+                                    <select class="form-select  flitter-select" id="customer_ids" name="customer_ids[]"
+                                        multiple required>
                                         @foreach ($customers as $customer)
                                             <option value="{{ $customer->id }}">{{ $customer->name }} @if ($customer->company_name)
                                                     - {{ $customer->company_name }}
@@ -267,7 +262,8 @@
                                 <!-- Task Status -->
                                 <div class="col-md-4 mb-3">
                                     <label for="task_statuses" class="form-label">{{ __('Task Status') }}</label>
-                                    <select class="form-select select2" id="task_statuses" name="task_statuses[]" multiple>
+                                    <select class="form-select flitter-select" id="task_statuses" name="task_statuses[]"
+                                        multiple>
                                         @foreach ($taskStatuses as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
                                         @endforeach
@@ -277,7 +273,7 @@
                                 <!-- Payment Status -->
                                 <div class="col-md-4 mb-3">
                                     <label for="payment_status" class="form-label">{{ __('Payment Status') }}</label>
-                                    <select class=" select2 form-select" id="payment_status" name="payment_status">
+                                    <select class=" flitter-select form-select" id="payment_status" name="payment_status">
                                         <option value="">{{ __('All Payment Statuses') }}</option>
                                         @foreach ($paymentStatuses as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -288,7 +284,7 @@
                                 <!-- Payment Method -->
                                 <div class="col-md-4 mb-3">
                                     <label for="payment_method" class="form-label">{{ __('Payment Method') }}</label>
-                                    <select class="form-select select2" id="payment_method" name="payment_method">
+                                    <select class="form-select flitter-select" id="payment_method" name="payment_method">
                                         <option value="">{{ __('All Payment Methods') }}</option>
                                         @foreach ($paymentMethods as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -299,7 +295,7 @@
                                 <!-- Driver Selection -->
                                 <div class="col-md-4 mb-3">
                                     <label for="driver_ids" class="form-label">{{ __('Select Drivers') }}</label>
-                                    <select class="form-select select2" id="driver_ids" name="driver_ids[]" multiple>
+                                    <select class="form-select flitter-select" id="driver_ids" name="driver_ids[]" multiple>
                                         @foreach ($drivers as $driver)
                                             <option value="{{ $driver->id }}">{{ $driver->name }} -
                                                 {{ $driver->phone }}</option>
@@ -310,7 +306,7 @@
                                 <!-- Team Selection -->
                                 <div class="col-md-4 mb-3">
                                     <label for="team_ids" class="form-label">{{ __('Select Teams') }}</label>
-                                    <select class="form-select select2" id="team_ids" name="team_ids[]" multiple>
+                                    <select class="form-select flitter-select" id="team_ids" name="team_ids[]" multiple>
                                         @foreach ($teams as $team)
                                             <option value="{{ $team->id }}">{{ $team->name }}</option>
                                         @endforeach

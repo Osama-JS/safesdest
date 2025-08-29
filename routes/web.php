@@ -499,6 +499,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
                 Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
                 Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');
+                Route::post('/tasks/refund', [TasksController::class, 'refundTask'])->name('tasks.refund');
                 Route::delete('/tasks/delete', [TasksController::class, 'destroy'])->name('tasks.delete');
                 Route::delete('/tasks/connect/{id}', [TasksController::class, 'connectTeam'])->name('tasks.connect');
                 Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');

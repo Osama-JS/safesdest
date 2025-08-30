@@ -13,7 +13,7 @@
 @section('page-style')
     @vite(['resources/css/app.css'])
     {{-- <link rel="stylesheet" href="{{ asset('css/admin/reports.css') }}"> --}}
-    {{-- <style>
+    <style>
         /* Select2 Bootstrap 5 Compatibility */
         .select2-container--bootstrap-5 .select2-selection {
             border: 1px solid #d0d7de;
@@ -154,7 +154,7 @@
             border-radius: 0.5rem;
             text-align: center;
         }
-    </style> --}}
+    </style>
 @endsection
 <!-- Vendor Scripts -->
 @section('vendor-script')

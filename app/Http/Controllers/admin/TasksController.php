@@ -127,7 +127,7 @@ class TasksController extends Controller
 
         $unassignedStatuses = ['in_progress', 'pending_payment', 'payment_failed', 'advertised'];
         $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'];
-        $completedStatuses = ['completed', 'canceled'];
+        $completedStatuses = ['completed', 'canceled','refund'];
 
         $grouped = [
           'unassigned' => [],
@@ -2438,9 +2438,10 @@ class TasksController extends Controller
                    'msg'   => "this task was refunded because of: " . $req->resone
                ],
                'driver' => [
-                   'title' => `task #{$task->id} that you assign to your was refunded and canceld`,
-                   'msg'   => 'this task was refunded because of: ' . $req->resone
-               ],
+                  'title' => "Task #{$task->id} that was assigned to you was refunded and canceled",
+                  'msg'   => "This task was refunded because of: {$req->resone}"
+                ],
+
             ];
             // قائمة المستلمين: [نوع => ID]
             $recipients = [
@@ -2452,7 +2453,7 @@ class TasksController extends Controller
             $deleviry_note = $task->deleviry_note;
 
             $task->update([
-                          'status' => 'canceled',
+                          'status' => 'refund',
                           'closed' => false,
                           'payment_status' => 'waiting',
                           'driver_id' => null,
@@ -2486,7 +2487,7 @@ class TasksController extends Controller
                         '/images/admin-icon.png',
                         '/images/banner.png',
                         "/tasks/{$task->id}",
-                        'task_note' // نوع الإشعار
+                        'refund_task' // نوع الإشعار
                     );
                 }
             }

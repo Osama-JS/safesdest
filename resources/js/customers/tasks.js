@@ -112,17 +112,16 @@ $(function () {
               in_progress: { title: 'In Progress', class: 'bg-label-warning' },
               advertised: { title: 'Advertised', class: 'bg-label-info' },
               assign: { title: 'Assigned', class: 'bg-label-primary' },
-              started: { title: 'Started', class: 'bg-label-warning' },
+              started: { title: 'Started', class: 'bg-label-info' },
               completed: { title: 'Completed', class: 'bg-label-success' },
-              cancelled: { title: 'Cancelled', class: 'bg-label-danger' }
+              canceled: { title: 'Canceled', class: 'bg-label-danger' },
+              refund: { title: 'Refund', class: 'bg-label-danger' }
             };
-            return (
-              '<span class="badge ' +
-              statusObj[full.status]?.class +
-              '">' +
-              (statusObj[full.status]?.title || full.status) +
-              '</span>'
-            );
+
+            // جلب الحالة أو جعلها Secondary كافتراضي
+            var status = statusObj[full.status] || { title: full.status, class: 'bg-label-secondary' };
+
+            return '<span class="badge ' + status.class + '">' + status.title + '</span>';
           }
         },
         {

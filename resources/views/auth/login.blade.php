@@ -15,6 +15,37 @@
 @endsection
 
 @section('content')
+    <!-- Language -->
+    <div class="nav-item dropdown-language dropdown " style="position: fixed; z-index: 1000;bottom: 0;">
+
+        <a class="nav-link btn btn-text-secondary   dropdown-toggle hide-arrow "
+            style="margin: 20px;
+                      background: white;
+                      padding: 10px 20px;
+                      border-radius: 10px;"
+            href="javascript:void(0);" data-bs-toggle="dropdown">
+            <i class='ti ti-language rounded-circle ti-md'></i>
+            {{ app()->getLocale() === 'en' ? 'English' : 'عربي' }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <a class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ url('lang/en') }}"
+                    data-language="en" data-text-direction="ltr">
+                    <span>English</span>
+                </a>
+            </li>
+
+            <li>
+                <a class="dropdown-item {{ app()->getLocale() === 'ar' ? 'active' : '' }}" href="{{ url('lang/ar') }}"
+                    data-language="ar" data-text-direction="rtl">
+                    <span>Arabic</span>
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+    <!--/ Language -->
     <div class="authentication-wrapper authentication-cover">
         <!-- Logo -->
         <a href="{{ url('/') }}" class="app-brand auth-cover-brand">
@@ -42,8 +73,8 @@
             <!-- Login -->
             <div class="d-flex col-12 col-lg-4 align-items-center authentication-bg p-sm-12 p-6">
                 <div class="w-px-400 mx-auto mt-12 pt-5">
-                    <h4 class="mb-1">Welcome to {{ config('variables.templateName') }}! 👋</h4>
-                    <p class="mb-6">Please sign-in to your account and start the adventure</p>
+                    <h4 class="mb-1">{{ __('Welcome to') }} {{ config('variables.templateName') }}! 👋</h4>
+                    <p class="mb-6">{{ __('sign in to start manage the tasks') }}</p>
 
                     @if (session('status'))
                         <div class="alert alert-success mb-1 rounded-0" role="alert">
@@ -56,7 +87,7 @@
                     <form id="formAuthentication" class="mb-6" action="{{ route('login') }}" method="POST">
                         @csrf
                         <div class="mb-6">
-                            <label for="login-email" class="form-label">Email</label>
+                            <label for="login-email" class="form-label">{{ __('Email') }}</label>
                             <input type="text" class="form-control @error('email') is-invalid @enderror" id="login-email"
                                 name="email" placeholder="john@example.com" autofocus>
                             @error('email')
@@ -66,7 +97,7 @@
                             @enderror
                         </div>
                         <div class="mb-6 form-password-toggle">
-                            <label class="form-label" for="login-password">Password</label>
+                            <label class="form-label" for="login-password">{{ __('Password') }}</label>
                             <div class="input-group input-group-merge @error('password') is-invalid @enderror">
                                 <input type="password" id="login-password"
                                     class="form-control @error('password') is-invalid @enderror" name="password"
@@ -99,7 +130,7 @@
                             @enderror
                             <div class="captcha-section">
                                 <label class="form-label mb-3">
-                                    <i class="ti ti-shield-check me-2"></i>Enter the code in the image
+                                    <i class="ti ti-shield-check me-2"></i>{{ __('Enter the code in the image') }}
                                 </label>
                                 <div class="captcha-container d-flex align-items-center gap-3 mb-3">
                                     <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
@@ -118,7 +149,7 @@
                                 @enderror
                             </div>
                         </div>
-                        <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
+                        <button class="btn btn-primary d-grid w-100" type="submit">{{ __('Sign In') }}</button>
                     </form>
 
                 </div>

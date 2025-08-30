@@ -287,6 +287,37 @@
 
 @section('content')
     <div class="container-xxl">
+        <!-- Language -->
+        <div class="nav-item dropdown-language dropdown " style="position: fixed; z-index: 1000;">
+
+            <a class="nav-link btn btn-text-secondary   dropdown-toggle hide-arrow "
+                style="margin: 20px;
+                      background: white;
+                      padding: 10px 20px;
+                      border-radius: 10px;"
+                href="javascript:void(0);" data-bs-toggle="dropdown">
+                <i class='ti ti-language rounded-circle ti-md'></i>
+                {{ app()->getLocale() === 'en' ? 'English' : 'عربي' }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ url('lang/en') }}"
+                        data-language="en" data-text-direction="ltr">
+                        <span>English</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item {{ app()->getLocale() === 'ar' ? 'active' : '' }}" href="{{ url('lang/ar') }}"
+                        data-language="ar" data-text-direction="rtl">
+                        <span>Arabic</span>
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+        <!--/ Language -->
         <div class="authentication-wrapper authentication-basic container-p-y">
             <div class="authentication-inner py-6">
                 <!-- Login -->
@@ -306,8 +337,8 @@
                         <!-- /Logo -->
 
                         <div class="login-header">
-                            <h4>Welcome to {{ config('variables.templateName') }}! 👋</h4>
-                            <p>Please sign-in to your account and start the adventure</p>
+                            <h4>{{ __('Welcome to') }} {{ config('variables.templateName') }}! 👋</h4>
+                            <p>{{ __('sign in to request a delivery or start completing delivery tasks') }}</p>
                         </div>
 
                         <form id="formAuthentication" action="{{ route('login') }}" method="POST">
@@ -315,14 +346,14 @@
 
                             <!-- Account Type Selection -->
                             <div class="account-type-section">
-                                <h6 class="account-type-title">Choose Your Account Type</h6>
+                                <h6 class="account-type-title my-3">{{ __('Choose Your Account Type') }}</h6>
                                 <div class="account-types-grid">
                                     <div class="account-type-card">
                                         <input type="radio" id="customer" name="account_type" value="customer"
                                             class="account-type-input" checked />
                                         <label for="customer" class="account-type-label">
                                             <i class="ti ti-user account-type-icon customer-icon"></i>
-                                            <span class="account-type-title">Customer</span>
+                                            <span class="account-type-title">{{ __('Customer') }}</span>
                                         </label>
                                     </div>
 
@@ -331,7 +362,7 @@
                                             class="account-type-input" />
                                         <label for="driver" class="account-type-label">
                                             <i class="ti ti-car account-type-icon driver-icon"></i>
-                                            <span class="account-type-title">Driver</span>
+                                            <span class="account-type-title">{{ __('Driver') }}</span>
                                         </label>
                                     </div>
 
@@ -340,7 +371,7 @@
                                             class="account-type-input" />
                                         <label for="broker" class="account-type-label">
                                             <i class="ti ti-building account-type-icon broker-icon"></i>
-                                            <span class="account-type-title">Customs Broker</span>
+                                            <span class="account-type-title">{{ __('Customs Broker') }}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -354,10 +385,10 @@
                                     id="login-email" name="email" placeholder="Email Address" autocomplete="email"
                                     autofocus value="{{ old('email') }}" required>
                                 <label for="login-email">
-                                    <i class="ti ti-mail me-2"></i>Email Address
+                                    <i class="ti ti-mail me-2"></i>{{ __('Email Address') }}
                                 </label>
                                 <div class="validation-message">
-                                    <i class="ti ti-alert-circle me-1"></i>Please enter a valid email address
+                                    <i class="ti ti-alert-circle me-1"></i>{{ __('Please enter a valid email address') }}
                                 </div>
                                 @error('email')
                                     <div class="invalid-feedback">
@@ -373,7 +404,7 @@
                                     placeholder="Password" autocomplete="current-password" required />
 
                                 <label for="login-password">
-                                    <i class="ti ti-lock me-2"></i>Password
+                                    <i class="ti ti-lock me-2"></i>{{ __('Password') }}
                                 </label>
 
                                 <!-- زر إظهار كلمة المرور كأيقونة عائمة -->
@@ -418,7 +449,7 @@
                                 @enderror
                                 <div class="captcha-section">
                                     <label class="form-label mb-3">
-                                        <i class="ti ti-shield-check me-2"></i>Enter the code in the image
+                                        <i class="ti ti-shield-check me-2"></i>{{ __('Enter the code in the image') }}
                                     </label>
                                     <div class="captcha-container d-flex align-items-center gap-3 mb-3">
                                         <img src="{{ captcha_src() }}" alt="captcha" id="captcha-image"
@@ -442,7 +473,7 @@
                             <div class="d-flex justify-content-end mb-4">
                                 @if (Route::has('password.request'))
                                     <a href="{{ route('password.request') }}" class="forgot-password-link">
-                                        <i class="ti ti-help me-1"></i>Forgot Password?
+                                        <i class="ti ti-help me-1"></i>{{ __('Forgot Password?') }}
                                     </a>
                                 @endif
                             </div>
@@ -451,16 +482,16 @@
                             <button id="btn-login" class="btn btn-primary btn-login d-grid w-100 mb-4" type="submit">
                                 <span class="d-flex align-items-center justify-content-center">
                                     <i class="ti ti-login me-2"></i>
-                                    Sign In
+                                    {{ __('Sign In') }}
                                 </span>
                             </button>
                         </form>
 
                         <!-- Register Link -->
                         <div class="register-link">
-                            <span class="text-muted">New on our platform?</span>
+                            <span class="text-muted">{{ __('New on our platform?') }}</span>
                             <a href="{{ route('auth.register') }}">
-                                <i class="ti ti-user-plus me-1"></i>Create an account
+                                <i class="ti ti-user-plus me-1"></i>{{ __('Create an account') }}
                             </a>
                         </div>
 
@@ -470,9 +501,9 @@
                 </div>
                 <!-- /Login -->
                 <div class="text-center mt-3">
-                    <span class="text-muted">Are You Team Leader?</span>
+                    <span class="text-muted">{{ __('Are You Team Leader?') }}</span>
                     <a href="{{ url('admin-panel/login') }}">
-                        Sign In From Here
+                        {{ __('Sign In From Here') }}
                     </a>
                 </div>
             </div>

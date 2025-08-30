@@ -275,6 +275,37 @@
     </script>
 @endsection
 @section('content')
+    <!-- Language -->
+    <div class="nav-item dropdown-language dropdown " style="position: fixed; z-index: 1000;bottom: 0;">
+
+        <a class="nav-link btn btn-text-secondary   dropdown-toggle hide-arrow "
+            style="margin: 20px;
+                      background: white;
+                      padding: 10px 20px;
+                      border-radius: 10px;"
+            href="javascript:void(0);" data-bs-toggle="dropdown">
+            <i class='ti ti-language rounded-circle ti-md'></i>
+            {{ app()->getLocale() === 'en' ? 'English' : 'عربي' }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+                <a class="dropdown-item {{ app()->getLocale() === 'en' ? 'active' : '' }}" href="{{ url('lang/en') }}"
+                    data-language="en" data-text-direction="ltr">
+                    <span>English</span>
+                </a>
+            </li>
+
+            <li>
+                <a class="dropdown-item {{ app()->getLocale() === 'ar' ? 'active' : '' }}" href="{{ url('lang/ar') }}"
+                    data-language="ar" data-text-direction="rtl">
+                    <span>Arabic</span>
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+    <!--/ Language -->
     <div class="authentication-wrapper authentication-cover">
         <!-- Logo -->
         <a href="{{ url('/') }}" class="app-brand auth-cover-brand">
@@ -304,8 +335,8 @@
             <!-- Register -->
             <div class="d-flex col-12 col-lg-5 align-items-center authentication-bg p-sm-12 p-3">
                 <div class="w-px-500 mx-auto mt-12 pt-5">
-                    <h4 class="mb-1">Adventure starts here 🚀</h4>
-                    <p class="mb-6">Make your app management easy and fun!</p>
+                    <h4 class="mb-1">{{ __('Create your account now') }} 🚀</h4>
+                    <p class="mb-6">{{ __('Start with create your account in our platform') }}</p>
                     <div class="nav-align-top mb-6">
                         <div class="account-types-grid" role="tablist">
                             <div class="account-type-card">
@@ -314,7 +345,7 @@
                                 <label for="customer" class="account-type-label active" role="tab" data-bs-toggle="tab"
                                     data-bs-target="#navs-customers" aria-controls="navs-customers" aria-selected="true">
                                     <i class="ti ti-user account-type-icon customer-icon"></i>
-                                    <span class="account-type-title">Customer</span>
+                                    <span class="account-type-title">{{ __('Customer') }}</span>
                                 </label>
                             </div>
 
@@ -324,7 +355,7 @@
                                 <label for="driver" class="account-type-label" role="tab" data-bs-toggle="tab"
                                     data-bs-target="#navs-drivers" aria-controls="navs-drivers" aria-selected="false">
                                     <i class="ti ti-car account-type-icon driver-icon"></i>
-                                    <span class="account-type-title">Driver</span>
+                                    <span class="account-type-title">{{ __('Driver') }}</span>
                                 </label>
                             </div>
 
@@ -334,7 +365,7 @@
                                 <label for="broker" class="account-type-label" role="tab" data-bs-toggle="tab"
                                     data-bs-target="#navs-brokers" aria-controls="navs-brokers" aria-selected="false">
                                     <i class="ti ti-building account-type-icon broker-icon"></i>
-                                    <span class="account-type-title">Customs Broker</span>
+                                    <span class="account-type-title">{{ __('Customs Broker') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -424,7 +455,7 @@
                                             <div class="col-md-6">
                                                 <div class="mb-4">
                                                     <label class="form-label" for="customer-c_name">
-                                                        {{ 'Company Name' }}</label>
+                                                        {{ __('Company Name') }}</label>
                                                     <input type="text" name="c_name" class="form-control"
                                                         id="customer-c_name"
                                                         placeholder="{{ __('enter company name') }}" />
@@ -436,7 +467,7 @@
                                             <div class="col-md-6">
                                                 <div class="mb-4">
                                                     <label class="form-label" for="customer-c_address">
-                                                        {{ 'Company Address' }}</label>
+                                                        {{ __('Company Address') }}</label>
                                                     <input type="text" name="c_address" class="form-control"
                                                         id="customer-c_address"
                                                         placeholder="{{ __('enter company address') }}" />
@@ -463,8 +494,8 @@
                                     <div class="mb-6">
 
                                         <div class="form-group">
-                                            <label class="form-label" for="login-password">Enter the code in the
-                                                image</label>
+                                            <label class="form-label"
+                                                for="login-password">{{ __('Enter the code in the image') }}</label>
                                             <div class="captcha mb-2">
                                                 <img src="" alt="captcha" id="captcha-image"
                                                     class="captcha-image" style="height: 60px;">
@@ -506,7 +537,8 @@
                                         @endif
                                     </div>
 
-                                    <button type="submit" class="btn btn-primary d-grid w-100">Sign up</button>
+                                    <button type="submit"
+                                        class="btn btn-primary d-grid w-100">{{ __('Sign up') }}</button>
                                 </form>
                             </div>
 
@@ -683,7 +715,8 @@
 
                                         <div class="mb-3">
                                             <div class="divider text-start">
-                                                <div class="divider-text"><strong>Vehicle Selection</strong></div>
+                                                <div class="divider-text"><strong>{{ __('Vehicle Selection') }}</strong>
+                                                </div>
                                             </div>
 
                                             <div id="vehicle-selection-container">
@@ -707,8 +740,8 @@
                                     <div class="mb-6">
 
                                         <div class="form-group">
-                                            <label class="form-label" for="login-password">Enter the code in the
-                                                image</label>
+                                            <label class="form-label"
+                                                for="login-password">{{ __('Enter the code in the image') }}</label>
                                             <div class="captcha mb-2">
                                                 <img src="" alt="captcha" id="captcha-image"
                                                     class="captcha-image" style="height: 60px;">
@@ -877,8 +910,8 @@
                                     <div class="mb-6">
 
                                         <div class="form-group">
-                                            <label class="form-label" for="login-password">Enter the code in the
-                                                image</label>
+                                            <label class="form-label"
+                                                for="login-password">{{ __('Enter the code in the image') }}</label>
                                             <div class="captcha mb-2">
                                                 <img src="" alt="captcha" id="captcha-image"
                                                     class="captcha-image" style="height: 60px;">
@@ -920,7 +953,8 @@
                                         @endif
                                     </div>
 
-                                    <button type="submit" class="btn btn-primary d-grid w-100">Sign up</button>
+                                    <button type="submit"
+                                        class="btn btn-primary d-grid w-100">{{ __('Sign up') }}</button>
                                 </form>
                             </div>
 
@@ -930,10 +964,10 @@
 
 
                     <p class="text-center ">
-                        <span>Already have an account?</span>
+                        <span>{{ __('Already have an account?') }}</span>
                         @if (Route::has('login'))
                             <a href="{{ route('login') }}">
-                                <span>Sign in instead</span>
+                                <span>{{ __('Sign in instead') }}</span>
                             </a>
                         @endif
                     </p>

@@ -1,0 +1,602 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>اختبار وظيفة طلب السداد</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap"
+      rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <meta name="user-name" content="أحمد محمد المدير" />
+  </head>
+  <body style="font-family: 'Tajawal', sans-serif">
+    <div class="container mt-5">
+      <h2 class="text-center mb-4">اختبار وظيفة طلب السداد</h2>
+
+      <div class="row">
+        <div class="col-md-8 mx-auto">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">نموذج اختبار طلب السداد</h5>
+            </div>
+            <div class="card-body">
+              <form id="testForm">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">رقم المهمة</label>
+                      <input type="number" class="form-control" id="taskId" value="12345" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">المبلغ المطلوب</label>
+                      <input type="number" class="form-control" id="requestedAmount" value="500" step="0.01" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">اسم البنك</label>
+                      <input type="text" class="form-control" id="bankName" value="البنك الأهلي السعودي" />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">رقم الحساب</label>
+                      <input type="text" class="form-control" id="accountNumber" value="1234567890" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">رقم الآيبان</label>
+                      <input type="text" class="form-control" id="ibanNumber" value="SA12 3456 7890 1234 5678 90" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">المستفيد</label>
+                      <select class="form-select" id="paymentRecipient">
+                        <option value="driver">السائق</option>
+                        <option value="team_leader">رئيس الفريق</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="text-center">
+                  <button type="button" class="btn btn-primary btn-lg" onclick="testPaymentRequest()">
+                    <i class="bi bi-printer"></i> إنشاء طلب السداد
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      function testPaymentRequest() {
+        const data = {
+          taskId: parseInt(document.getElementById('taskId').value),
+          requestedAmount: parseFloat(document.getElementById('requestedAmount').value),
+          bankName: document.getElementById('bankName').value,
+          accountNumber: document.getElementById('accountNumber').value,
+          ibanNumber: document.getElementById('ibanNumber').value,
+          paymentRecipient: document.getElementById('paymentRecipient').value,
+          taskData: {
+            id: parseInt(document.getElementById('taskId').value),
+            total_price: 1000,
+            commission: 150,
+            driver_amount: 850,
+            driver_name: 'محمد أحمد السائق',
+            team_leader_name: 'علي حسن رئيس الفريق',
+            owner_name: 'عبدالله أحمد العميل',
+            pickup_address: 'الرياض - حي النخيل - شارع الملك فهد',
+            delivery_address: 'جدة - حي الصفا - شارع التحلية'
+          }
+        };
+
+        generatePaymentRequestDocument(data);
+      }
+
+      function generatePaymentRequestDocument(data) {
+        const today = new Date();
+        const formattedDate = today.toLocaleDateString('ar-SA');
+        const remainingAmount = data.taskData.driver_amount - data.requestedAmount;
+        const recipientName =
+          data.paymentRecipient === 'driver' ? data.taskData.driver_name : data.taskData.team_leader_name;
+
+        // Generate reference number: TaskID + Date (YYYYMMDD) + Random 3 digits
+        const dateString =
+          today.getFullYear().toString() +
+          (today.getMonth() + 1).toString().padStart(2, '0') +
+          today.getDate().toString().padStart(2, '0');
+        const randomNumber = Math.floor(Math.random() * 900) + 100;
+        const referenceNumber = `${data.taskId}${dateString}${randomNumber}`;
+
+        const requestedAmountInWords = numberToArabicWords(data.requestedAmount);
+
+        const printContent = `
+                <!DOCTYPE html>
+                <html dir="rtl" lang="ar">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>طلب سداد - ${referenceNumber}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+                    <style>
+                        body {
+                            font-family: 'Tajawal', 'Arial', sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: white;
+                            direction: rtl;
+                            font-size: 16px;
+                            line-height: 1.6;
+                            color: #000;
+                        }
+                        
+                        .payment-request-container {
+                            max-width: 210mm;
+                            min-height: 297mm;
+                            margin: 0 auto;
+                            background: white;
+                            padding: 25mm;
+                            position: relative;
+                            box-sizing: border-box;
+                        }
+                        
+                        .payment-request-letterhead {
+                            text-align: center;
+                            margin-bottom: 40px;
+                            border-bottom: 4px double #000;
+                            padding-bottom: 25px;
+                        }
+                        
+                        .payment-request-company-name {
+                            font-size: 32px;
+                            font-weight: 800;
+                            color: #000;
+                            margin-bottom: 10px;
+                            letter-spacing: 1px;
+                        }
+                        
+                        .payment-request-company-subtitle {
+                            font-size: 18px;
+                            color: #555;
+                            margin-bottom: 25px;
+                            font-weight: 400;
+                        }
+                        
+                        .payment-request-document-title {
+                            font-size: 32px;
+                            font-weight: 700;
+                            color: #000;
+                            margin: 25px 0;
+                            text-decoration: underline;
+                            text-underline-offset: 10px;
+                        }
+                        
+                        .payment-request-document-number {
+                            font-size: 16px;
+                            color: #666;
+                            margin-bottom: 10px;
+                            font-weight: 500;
+                        }
+                        
+                        .payment-request-date-section {
+                            text-align: left;
+                            margin-bottom: 30px;
+                            font-size: 18px;
+                            font-weight: 600;
+                        }
+                        
+                        .payment-request-section {
+                            margin-bottom: 25px;
+                            padding: 0;
+                            border: none;
+                            background: none;
+                        }
+                        
+                        .payment-request-section-title {
+                            font-size: 20px;
+                            font-weight: 700;
+                            color: #000;
+                            margin-bottom: 15px;
+                            padding: 8px 0;
+                            border-bottom: 2px solid #000;
+                            text-align: right;
+                        }
+                        
+                        .payment-request-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .payment-request-table td {
+                            padding: 15px 20px;
+                            border: 2px solid #000;
+                            font-size: 16px;
+                            vertical-align: middle;
+                            min-height: 40px;
+                        }
+                        
+                        .payment-request-table .label-cell {
+                            font-weight: 600;
+                            background-color: #f0f0f0;
+                            width: 40%;
+                            text-align: right;
+                            border-left: 3px solid #007bff;
+                        }
+                        
+                        .payment-request-table .value-cell {
+                            text-align: right;
+                            width: 60%;
+                            background-color: white;
+                            font-weight: 500;
+                        }
+                        
+                        .payment-request-amount-section {
+                            background-color: #f8f8f8;
+                            border: 3px double #000;
+                            padding: 25px;
+                            margin: 25px 0;
+                            text-align: center;
+                            position: relative;
+                        }
+                        
+                        .payment-request-amount-title {
+                            font-size: 24px;
+                            font-weight: 700;
+                            margin-bottom: 20px;
+                            color: #000;
+                            text-decoration: underline;
+                        }
+                        
+                        .payment-request-amount-words {
+                            font-size: 22px;
+                            font-weight: 600;
+                            color: #000;
+                            border: 2px solid #000;
+                            padding: 20px;
+                            background-color: white;
+                            margin: 15px 0;
+                            min-height: 60px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+                        
+                        .payment-request-signature-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 30px;
+                        }
+                        
+                        .payment-request-signature-table td {
+                            padding: 30px 15px;
+                            border: 2px solid #000;
+                            text-align: center;
+                            font-weight: 600;
+                            width: 33.33%;
+                            vertical-align: top;
+                            height: 120px;
+                            background-color: #fafafa;
+                            font-size: 16px;
+                        }
+                        
+                        .payment-request-reference-number {
+                            position: absolute;
+                            top: 20px;
+                            left: 20px;
+                            font-size: 14px;
+                            color: #666;
+                            font-weight: 500;
+                        }
+                        
+                        .payment-request-important-note {
+                            background-color: #fff3cd;
+                            border: 1px solid #ffeaa7;
+                            padding: 15px;
+                            margin: 20px 0;
+                            border-radius: 5px;
+                            font-weight: 500;
+                        }
+                        
+                        .payment-request-approval-section {
+                            margin-top: 40px;
+                            border: 2px solid #000;
+                            padding: 20px;
+                        }
+                        
+                        .payment-request-approval-title {
+                            font-size: 18px;
+                            font-weight: 700;
+                            text-align: center;
+                            margin-bottom: 20px;
+                            text-decoration: underline;
+                        }
+                        
+                        .payment-request-footer {
+                            margin-top: 40px;
+                            text-align: center;
+                            font-size: 14px;
+                            color: #666;
+                            border-top: 1px solid #ccc;
+                            padding-top: 15px;
+                            font-weight: 400;
+                        }
+                        
+                        @media print {
+                            body { 
+                                background-color: white; 
+                                font-size: 14px;
+                                padding: 0;
+                                margin: 0;
+                            }
+                            
+                            .payment-request-container { 
+                                max-width: none;
+                                min-height: none;
+                                padding: 15mm;
+                                margin: 0;
+                                box-shadow: none;
+                                border: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="payment-request-container">
+                        <!-- Reference Number -->
+                        <div class="payment-request-reference-number">
+                            المرجع: ${referenceNumber}
+                        </div>
+                        
+                        <!-- Company Letterhead -->
+                        <div class="payment-request-letterhead">
+                            <div class="payment-request-company-name">شركة النقل الآمن</div>
+                            <div class="payment-request-company-subtitle">خدمات النقل والتوصيل المتميزة</div>
+                            <div class="payment-request-document-title">طلب سداد مالي</div>
+                            <div class="payment-request-document-number">رقم الطلب: ${referenceNumber}</div>
+                        </div>
+                        
+                        <!-- Date Section -->
+                        <div class="payment-request-date-section">
+                            التاريخ: ${formattedDate}
+                        </div>
+                        
+                        <!-- Employee Information -->
+                        <div class="payment-request-section">
+                            <table class="payment-request-table">
+                                <tr>
+                                    <td class="label-cell">اسم الموظف طالب السداد</td>
+                                    <td class="value-cell">${$('meta[name="user-name"]').attr('content') || 'المستخدم الحالي'}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Payment Amount Section -->
+                        <div class="payment-request-section">
+                            <div class="payment-request-section-title">بيانات السداد</div>
+                            <div class="payment-request-amount-section">
+                                <div class="payment-request-amount-title">مبلغ السداد</div>
+                                <div class="payment-request-amount-words">${requestedAmountInWords}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Breakdown -->
+                        <div class="payment-request-section">
+                            <div class="payment-request-section-title">السداد</div>
+                            <table class="payment-request-table">
+                                <tr>
+                                    <td class="label-cell">دفعة</td>
+                                    <td class="value-cell">${data.requestedAmount.toFixed(2)} ريال</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">باقي حساب</td>
+                                    <td class="value-cell">${remainingAmount.toFixed(2)} ريال</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">الحساب كامل</td>
+                                    <td class="value-cell">${data.taskData.driver_amount.toFixed(2)} ريال</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Bank Information -->
+                        <div class="payment-request-section">
+                            <div class="payment-request-section-title">بيانات البنك</div>
+                            <table class="payment-request-table">
+                                <tr>
+                                    <td class="label-cell">اسم البنك</td>
+                                    <td class="value-cell">${data.bankName}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">رقم الحساب</td>
+                                    <td class="value-cell">${data.accountNumber}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">رقم الآيبان</td>
+                                    <td class="value-cell">${data.ibanNumber}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">اسم المورد</td>
+                                    <td class="value-cell">${recipientName}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Trip Information -->
+                        <div class="payment-request-section">
+                            <div class="payment-request-section-title">بيانات الرحلة</div>
+                            <table class="payment-request-table">
+                                <tr>
+                                    <td class="label-cell">رقم المهمة</td>
+                                    <td class="value-cell">#${data.taskId}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">اسم صاحب الرحلة</td>
+                                    <td class="value-cell">${data.taskData.owner_name}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label-cell">جهة الرحلة</td>
+                                    <td class="value-cell">من ${data.taskData.pickup_address}<br>إلى ${data.taskData.delivery_address}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Important Note -->
+                        <div class="payment-request-important-note">
+                            <strong>ملاحظة مهمة:</strong> يرجى التأكد من صحة جميع البيانات المذكورة أعلاه قبل الموافقة على السداد.
+                        </div>
+                        
+                        <!-- Approval Section -->
+                        <div class="payment-request-approval-section">
+                            <div class="payment-request-approval-title">قسم الموافقات والاعتمادات</div>
+                            <table class="payment-request-signature-table">
+                                <tr>
+                                    <td>
+                                        <strong>إعداد الطلب</strong><br>
+                                        <small>قسم العمليات</small><br><br><br>
+                                        التوقيع: _______________<br>
+                                        التاريخ: _______________
+                                    </td>
+                                    <td>
+                                        <strong>مراجعة المحاسب</strong><br>
+                                        <small>القسم المالي</small><br><br><br>
+                                        التوقيع: _______________<br>
+                                        التاريخ: _______________
+                                    </td>
+                                    <td>
+                                        <strong>اعتماد المدير</strong><br>
+                                        <small>الإدارة العليا</small><br><br><br>
+                                        التوقيع: _______________<br>
+                                        التاريخ: _______________
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="payment-request-footer">
+                            <p><strong>شركة النقل الآمن</strong> | هاتف: +966-XX-XXX-XXXX | البريد الإلكتروني: info@safetransport.com</p>
+                            <p>هذا المستند تم إنشاؤه إلكترونياً في ${new Date().toLocaleString('ar-SA')}</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+
+        // Add event listener for print dialog
+        printWindow.addEventListener('beforeprint', function () {
+          console.log('Print dialog opened');
+        });
+
+        printWindow.addEventListener('afterprint', function () {
+          console.log('Print dialog closed');
+          printWindow.close();
+        });
+
+        // Handle print cancellation
+        printWindow.onbeforeunload = function () {
+          return null;
+        };
+
+        // Trigger print
+        printWindow.print();
+
+        // Fallback: close window if user cancels print (for some browsers)
+        setTimeout(function () {
+          if (!printWindow.closed) {
+            printWindow.addEventListener('focus', function () {
+              setTimeout(function () {
+                if (!printWindow.closed) {
+                  printWindow.close();
+                }
+              }, 100);
+            });
+          }
+        }, 1000);
+      }
+
+      function numberToArabicWords(num) {
+        const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+        const tens = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+        const teens = [
+          'عشرة',
+          'أحد عشر',
+          'اثنا عشر',
+          'ثلاثة عشر',
+          'أربعة عشر',
+          'خمسة عشر',
+          'ستة عشر',
+          'سبعة عشر',
+          'ثمانية عشر',
+          'تسعة عشر'
+        ];
+        const hundreds = [
+          '',
+          'مائة',
+          'مائتان',
+          'ثلاثمائة',
+          'أربعمائة',
+          'خمسمائة',
+          'ستمائة',
+          'سبعمائة',
+          'ثمانمائة',
+          'تسعمائة'
+        ];
+
+        if (num === 0) return 'صفر ريال';
+
+        let result = '';
+        const integerPart = Math.floor(num);
+        const decimalPart = Math.round((num - integerPart) * 100);
+
+        if (integerPart >= 1000) {
+          const thousands = Math.floor(integerPart / 1000);
+          result += convertHundreds(thousands) + ' ألف ';
+          const remainder = integerPart % 1000;
+          if (remainder > 0) {
+            result += convertHundreds(remainder);
+          }
+        } else {
+          result = convertHundreds(integerPart);
+        }
+
+        result += ' ريال';
+
+        if (decimalPart > 0) {
+          result += ' و ' + convertHundreds(decimalPart) + ' هللة';
+        }
+
+        return result.trim();
+
+        function convertHundreds(num) {
+          let result = '';
+
+          if (num >= 100) {
+            const hundredsDigit = Math.floor(num / 100);
+            result += hundreds[hundredsDigit] + ' ';
+            num %= 100;
+          }
+
+          if (num >= 20) {
+            const tensDigit = Math.floor(num / 10);
+            result += tens[tensDigit] + ' ';
+            num %= 10;
+            if (num > 0) {
+              result += ones[num] + ' ';
+            }
+          } else if (num >= 10) {
+            result += teens[num - 10] + ' ';
+          } else if (num > 0) {
+            result += ones[num] + ' ';
+          }
+
+          return result.trim();
+        }
+      }
+    </script>
+  </body>
+</html>

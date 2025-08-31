@@ -61,7 +61,7 @@ class TasksController extends Controller
         $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
         $this->middleware('permission:refund_tasks', ['only' => ['refundTask']]);
-        $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment']]);
+        $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment', 'paymentRequestInfo']]);
     }
 
     public function index()
@@ -1853,6 +1853,58 @@ class TasksController extends Controller
             return response()->json([
               'status' => 2,
               'error' => __('Task not found')
+            ]);
+        }
+    }
+
+    public function paymentRequestInfo($id)
+    {
+        try {
+            $task = Task::with(['driver', 'customer', 'user', 'team.users.user', 'pickup', 'delivery'])
+                ->findOrFail($id);
+
+            // Calculate driver amount (total_price - commission)
+            $driverAmount = $task->total_price - $task->commission;
+
+            // Get owner name
+            $ownerName = '';
+            if ($task->customer_id) {
+                $ownerName = $task->customer->name ?? 'Customer';
+            } elseif ($task->user_id) {
+                $ownerName = $task->user->name ?? 'Admin User';
+            }
+
+            // Get driver name
+            $driverName = $task->driver->name ?? 'غير محدد';
+
+            // Get team leader name - get first user in team as team leader
+            $teamLeaderName = '';
+            if ($task->team_id && $task->team && $task->team->users->isNotEmpty()) {
+                $teamLeaderName = $task->team->users->first()->user->name ?? 'غير محدد';
+            }
+
+            // Get addresses
+            $pickupAddress = $task->pickup->address ?? 'غير محدد';
+            $deliveryAddress = $task->delivery->address ?? 'غير محدد';
+
+            return response()->json([
+                'status' => 1,
+                'task' => [
+                    'id' => $task->id,
+                    'total_price' => $task->total_price,
+                    'commission' => $task->commission,
+                    'driver_amount' => $driverAmount,
+                    'owner_name' => $ownerName,
+                    'driver_name' => $driverName,
+                    'team_leader_name' => $teamLeaderName,
+                    'pickup_address' => $pickupAddress,
+                    'delivery_address' => $deliveryAddress
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => __('Task not found')
             ]);
         }
     }

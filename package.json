@@ -178,6 +178,7 @@
     "swiper": "11.0.7",
     "timepicker": "1.14.1",
     "toastr": "2.1.4",
-    "typeahead.js": "0.11.1"
+    "typeahead.js": "0.11.1",
+    "written-number": "^0.11.1"
   }
 }

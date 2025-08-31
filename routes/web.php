@@ -511,6 +511,7 @@ Route::middleware('rate.limit')->group(function () {
 
 
                 Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');
+                Route::get('tasks/payment-request/{id}', [TasksController::class, 'paymentRequestInfo'])->name('tasks.payment.request.info');
 
 
                 Route::get('tasks/payment/confirm/{id}', [TasksController::class, 'confirmPayment'])->name('tasks.payment.confirm');

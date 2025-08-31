@@ -482,7 +482,7 @@ class WalletsController extends Controller
               'user'        => $val->user ? $val->user->name : 'automatic',
               'task'        => $val->task_id ?? '',
               'clearance'        => $val->clearance_id ?? '',
-              'image'       => $val->image ? ('storage/' . $val->image) : '',
+              'image'       => $val->image ? ($val->image) : '',
               'sequence'    => $val->sequence,
               'status'      => (int) $val->status, // Ensure it's integer
               'created_at'  => $val->created_at->format('Y-m-d H:i'),

@@ -51,6 +51,7 @@
         content="{{ config('variables.templateKeyword') ? config('variables.templateKeyword') : '' }}">
     <!-- laravel CRUD token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-name" content="{{ auth()->check() ? auth()->user()->name : '' }}">
     <!-- Canonical SEO -->
     <link rel="canonical" href="{{ config('variables.productPage') ? config('variables.productPage') : '' }}">
     <!-- Favicon -->

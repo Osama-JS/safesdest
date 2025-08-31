@@ -1,0 +1,326 @@
+/* Official Payment Request Print Styles */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+.payment-request-print {
+  font-family: 'Tajawal', 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  direction: rtl;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #000;
+}
+
+.payment-request-container {
+  max-width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: white;
+  padding: 25mm;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.payment-request-letterhead {
+  text-align: center;
+  margin-bottom: 40px;
+  border-bottom: 4px double #000;
+  padding-bottom: 25px;
+  position: relative;
+}
+
+.payment-request-letterhead::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23007bff" stroke="%23000" stroke-width="2"/><text x="50" y="55" text-anchor="middle" fill="white" font-size="20" font-weight="bold">شركة</text></svg>')
+    no-repeat center;
+  background-size: contain;
+}
+
+.payment-request-company-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: #000;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-company-subtitle {
+  font-size: 18px;
+  color: #555;
+  margin-bottom: 25px;
+  font-weight: 400;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-document-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #000;
+  margin: 25px 0;
+  text-decoration: underline;
+  text-underline-offset: 10px;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-document-number {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 10px;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 500;
+}
+
+.payment-request-date-section {
+  text-align: left;
+  margin-bottom: 30px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-section {
+  margin-bottom: 25px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+.payment-request-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 15px;
+  padding: 8px 0;
+  border-bottom: 2px solid #000;
+  text-align: right;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.payment-request-table td {
+  padding: 15px 20px;
+  border: 2px solid #000;
+  font-size: 16px;
+  vertical-align: middle;
+  min-height: 40px;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-table .label-cell {
+  font-weight: 600;
+  background-color: #f0f0f0;
+  width: 40%;
+  text-align: right;
+  border-left: 3px solid #007bff;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-table .value-cell {
+  text-align: right;
+  width: 60%;
+  background-color: white;
+  font-weight: 500;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-amount-section {
+  background-color: #f8f8f8;
+  border: 3px double #000;
+  padding: 25px;
+  margin: 25px 0;
+  text-align: center;
+  position: relative;
+}
+
+.payment-request-amount-section::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border: 1px solid #000;
+}
+
+.payment-request-amount-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #000;
+  text-decoration: underline;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-amount-words {
+  font-size: 22px;
+  font-weight: 600;
+  color: #000;
+  border: 2px solid #000;
+  padding: 20px;
+  background-color: white;
+  margin: 15px 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-request-payment-breakdown {
+  margin: 20px 0;
+}
+
+.payment-request-signature-section {
+  margin-top: 60px;
+  page-break-inside: avoid;
+}
+
+.payment-request-signature-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 30px;
+}
+
+.payment-request-signature-table td {
+  padding: 30px 15px;
+  border: 2px solid #000;
+  text-align: center;
+  font-weight: 600;
+  width: 33.33%;
+  vertical-align: top;
+  height: 120px;
+  background-color: #fafafa;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 16px;
+}
+
+.payment-request-footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+  border-top: 1px solid #ccc;
+  padding-top: 15px;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 400;
+}
+
+/* Additional Official Styling */
+.payment-request-reference-number {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 14px;
+  color: #666;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 500;
+}
+
+.payment-request-urgent-stamp {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  border: 2px solid #dc3545;
+  color: #dc3545;
+  padding: 5px 10px;
+  font-weight: bold;
+  transform: rotate(-15deg);
+  font-size: 14px;
+}
+
+.payment-request-amount-box {
+  border: 3px double #000;
+  padding: 15px;
+  margin: 15px 0;
+  background-color: #f9f9f9;
+}
+
+.payment-request-important-note {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 15px;
+  margin: 20px 0;
+  border-radius: 5px;
+  font-family: 'Tajawal', sans-serif;
+  font-weight: 500;
+}
+
+.payment-request-approval-section {
+  margin-top: 40px;
+  border: 2px solid #000;
+  padding: 20px;
+}
+
+.payment-request-approval-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 20px;
+  text-decoration: underline;
+  font-family: 'Tajawal', sans-serif;
+}
+
+@media print {
+  .payment-request-print {
+    background-color: white;
+    font-size: 14px;
+    padding: 0;
+    margin: 0;
+  }
+
+  .payment-request-container {
+    max-width: none;
+    min-height: none;
+    padding: 15mm;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  .payment-request-letterhead {
+    border-bottom: 3px solid #000;
+  }
+
+  .payment-request-section {
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .payment-request-table {
+    page-break-inside: avoid;
+  }
+
+  .payment-request-amount-section {
+    background-color: #f8f8f8 !important;
+    border: 2px solid #000 !important;
+    page-break-inside: avoid;
+  }
+
+  .payment-request-signature-section {
+    page-break-inside: avoid;
+    margin-top: 40px;
+  }
+
+  .payment-request-signature-table {
+    page-break-inside: avoid;
+  }
+
+  .payment-request-footer {
+    position: fixed;
+    bottom: 10mm;
+    left: 0;
+    right: 0;
+  }
+}

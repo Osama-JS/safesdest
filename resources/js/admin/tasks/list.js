@@ -273,7 +273,7 @@ $(function () {
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}">Refund Task</a></li>
 
-                    ${full.closed && full.status !== 'completed' ? `<li><a href="javascript:;" class="dropdown-item payment-request-task" data-id="${full.id}"><i class="ti ti-receipt me-1"></i>Payment Request</a></li>` : ''}
+                    ${full.closed && full.status === 'completed' ? `<li><a href="javascript:;" class="dropdown-item payment-request-task" data-id="${full.id}"><i class="ti ti-receipt me-1"></i>Payment Request</a></li>` : ''}
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>
                 </div>
@@ -705,7 +705,9 @@ $(function () {
         commission: task.commission,
         driver_amount: driverAmount,
         driver_name: task.driver_name,
+        driver_phone: task.driver_phone,
         team_leader_name: task.team_leader_name,
+        team_leader_phone: task.team_leader_phone,
         owner_name: task.owner_name,
         pickup_address: task.pickup_address,
         delivery_address: task.delivery_address
@@ -849,6 +851,8 @@ $(function () {
     const remainingAmount = data.taskData.driver_amount - data.requestedAmount;
     const recipientName =
       data.paymentRecipient === 'driver' ? data.taskData.driver_name : data.taskData.team_leader_name;
+    const recipientPhone =
+      data.paymentRecipient === 'driver' ? data.taskData.driver_phone : data.taskData.team_leader_phone;
 
     // Generate reference number: TaskID + Date (YYYYMMDD) + Random 3 digits
     const dateString =
@@ -863,6 +867,7 @@ $(function () {
     let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
     let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
 
+    console.log(data);
     const printContent = `
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -989,7 +994,7 @@ $(function () {
       <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
       <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
       <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
-      <tr><td class="label">اسم المورد</td><td>${recipientName || 'غير محدد'}</td></tr>
+      <tr><td class="label">اسم المورد</td><td>${recipientName || 'غير محدد'}  ${recipientPhone || ''}</td></tr>
     </table>
 
     <!-- Trip Info -->

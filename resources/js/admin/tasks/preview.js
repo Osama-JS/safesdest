@@ -818,6 +818,7 @@ $(function () {
           <option value="in delivery point" ${status === 'in delivery point' ? 'selected' : ''}>in delivery point</option>
           <option value="unloading" ${status === 'unloading' ? 'selected' : ''}>unloading</option>
           <option value="completed" ${status === 'completed' ? 'selected' : ''}>completed</option>
+          <option value="invoiced" ${status === 'invoiced' ? 'selected' : ''}>Invoiced</option>
           <option value="canceled" ${status === 'canceled' ? 'selected' : ''}>canceled</option>
         </select>
       `;

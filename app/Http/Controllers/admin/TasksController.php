@@ -126,7 +126,7 @@ class TasksController extends Controller
         $tasks = $query->get();
 
         $unassignedStatuses = ['in_progress', 'pending_payment', 'payment_failed', 'advertised'];
-        $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading'];
+        $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','invoiced', 'unloading'];
         $completedStatuses = ['completed', 'canceled','refund'];
 
         $grouped = [
@@ -256,7 +256,7 @@ class TasksController extends Controller
     {
         $validator = Validator::make($req->all(), [
           'id' => 'required|exists:tasks,id',
-          'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,canceled',
+          'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,invoiced,canceled',
         ]);
 
         if ($validator->fails()) {
@@ -1875,12 +1875,15 @@ class TasksController extends Controller
             }
 
             // Get driver name
-            $driverName = $task->driver->name ?? 'غير محدد';
+            $driverName = $task->driver->name ??  'غير محدد';
+            $driverPhone = $task->driver->name ? $task->driver->name  . $task->driver->phone_code .  $task->driver->phone : "";
 
             // Get team leader name - get first user in team as team leader
             $teamLeaderName = '';
+            $teamLeaderPhone = '';
             if ($task->team_id && $task->team && $task->team->users->isNotEmpty()) {
                 $teamLeaderName = $task->team->users->first()->user->name ?? 'غير محدد';
+                $teamLeaderPhone = $task->team->users->first()->user->name ? $task->team->users->first()->user->phone_code .  $task->team->users->first()->user->phone : "";
             }
 
             // Get addresses
@@ -1896,7 +1899,9 @@ class TasksController extends Controller
                     'driver_amount' => $driverAmount,
                     'owner_name' => $ownerName,
                     'driver_name' => $driverName,
+                    'driver_phone' => $driverPhone,
                     'team_leader_name' => $teamLeaderName,
+                    'team_leader_phone' => $teamLeaderPhone,
                     'pickup_address' => $pickupAddress,
                     'delivery_address' => $deliveryAddress
                 ]

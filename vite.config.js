@@ -30,6 +30,7 @@ const LibsJsFiles = GetFilesArray('resources/assets/vendor/libs/**/*.js');
 const CoreScssFiles = GetFilesArray('resources/assets/vendor/scss/**/!(_)*.scss');
 
 const JsPageFiles = GetFilesArray('resources/js/**/*.js');
+const CssPageFiles = GetFilesArray('resources/css/*.css');
 
 // Processing Libs Scss & Css Files
 const LibsScssFiles = GetFilesArray('resources/assets/vendor/libs/**/!(_)*.scss');
@@ -61,6 +62,7 @@ export default defineConfig({
         'resources/assets/css/demo.css',
         'resources/js/app.js',
         ...pageJsFiles,
+        ...CssPageFiles,
         ...vendorJsFiles,
         ...LibsJsFiles,
         ...CoreScssFiles,

@@ -1,11 +1,43 @@
 $(function () {
   'use strict';
 
-  var start_from = moment().startOf('month').format('YYYY-MM-DD');
-  var end_to = moment().endOf('month').format('YYYY-MM-DD');
+  var start_from = null;
+  var end_to = null;
 
   var dt_tasks_table = $('.datatables-tasks'),
     userView = baseUrl + 'customer/tasks/show/';
+
+  var select2 = $('.flitter-status');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select status'),
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+  var select2 = $('.flitter-payment');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select pyment status'),
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
+
+  var select2 = $('.flitter-payment-type');
+  if (select2.length) {
+    var $this = select2;
+    $this.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select pyment type'),
+      dropdownParent: $this.parent(),
+      closeOnSelect: false
+    });
+  }
 
   // Tasks DataTable
   if (dt_tasks_table.length) {
@@ -277,6 +309,63 @@ $(function () {
       dt_tasks.draw();
     }
   );
+
+  // Initialize report date range picker (only if element exists)
+  if ($('#reportDateRange').length) {
+    $('#reportDateRange').daterangepicker({
+      opens: 'left',
+      locale: {
+        format: 'DD MMM YYYY',
+        cancelLabel: 'إلغاء',
+        applyLabel: 'تطبيق'
+      },
+      startDate: moment().startOf('month'),
+      endDate: moment().endOf('month')
+    });
+  }
+
+  // Handle report generation
+  $('#generateReportBtn').on('click', function () {
+    const dateRange = $('#reportDateRange').data('daterangepicker');
+    const startDate = dateRange.startDate.format('YYYY-MM-DD');
+    const endDate = dateRange.endDate.format('YYYY-MM-DD');
+
+    // Get multiple selected values
+    const statuses = $('#reportStatus').val() || [];
+    const paymentStatuses = $('#reportPaymentStatus').val() || [];
+    const paymentMethods = $('#reportPaymentMethod').val() || [];
+
+    // Show loading state
+    $(this).prop('disabled', true).html('<i class="ti ti-loader me-2"></i>Generating...');
+
+    // Build URL with parameters
+    const params = new URLSearchParams();
+    params.append('from_date', startDate);
+    params.append('to_date', endDate);
+
+    // Add multiple values for each filter
+    statuses.forEach(status => {
+      if (status) params.append('status[]', status);
+    });
+
+    paymentStatuses.forEach(paymentStatus => {
+      if (paymentStatus) params.append('payment_status[]', paymentStatus);
+    });
+
+    paymentMethods.forEach(paymentMethod => {
+      if (paymentMethod) params.append('payment_method[]', paymentMethod);
+    });
+
+    // Open PDF in new window
+    const reportUrl = `${baseUrl}customer/tasks/report?${params.toString()}`;
+    window.open(reportUrl, '_blank');
+
+    // Reset button state
+    setTimeout(() => {
+      $(this).prop('disabled', false).html('<i class="ti ti-file-type-pdf me-2"></i>Generate PDF Report');
+      $('#reportModal').modal('hide');
+    }, 1000);
+  });
 
   // Load statistics
   loadTaskStatistics();

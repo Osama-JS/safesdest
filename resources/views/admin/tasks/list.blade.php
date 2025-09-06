@@ -444,21 +444,40 @@
                                             </div>
                                             <span class="requested_amount-error text-danger text-error"></span>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="paymentRecipient">*
+                                                {{ __('Payment Recipient') }}</label>
+                                            <select class="form-select" id="paymentRecipient" name="payment_recipient"
+                                                required>
+                                                <option value="">{{ __('Select Recipient') }}</option>
+                                                <option value="driver">{{ __('Driver') }}</option>
+                                                <option value="team_leader">{{ __('Team Leader') }}</option>
+                                            </select>
+                                            <span class="payment_recipient-error text-danger text-error"></span>
+                                        </div>
 
                                         <div class="mb-3">
                                             <label class="form-label" for="bankName">* {{ __('Bank Name') }}</label>
-                                            <select class="form-select" id="bankName" name="bank_name" required>
+
+                                            <select name="bank_name" id="bankName" class="form-select">
                                                 <option value="">{{ __('Select Bank') }}</option>
-                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
-                                                <option value="مصرف الراجحي">مصرف الراجحي</option>
+                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                </option>
+                                                <option value="بنك الراجحي">بنك الراجحي</option>
                                                 <option value="بنك الرياض">بنك الرياض</option>
-                                                <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
-                                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
-                                                <option value="البنك العربي الوطني">البنك العربي الوطني</option>
-                                                <option value="بنك ساب">بنك ساب</option>
+                                                <option value="البنك السعودي للاستثمار">البنك السعودي
+                                                    للاستثمار</option>
+                                                <option value="البنك السعودي الفرنسي">البنك السعودي
+                                                    الفرنسي</option>
+                                                <option value="البنك السعودي البريطاني">البنك السعودي
+                                                    البريطاني (ساب)</option>
+                                                <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                </option>
+                                                <option value="بنك سامبا">بنك سامبا</option>
+                                                <option value="البنك الأول">البنك الأول</option>
                                                 <option value="بنك الجزيرة">بنك الجزيرة</option>
-                                                <option value="البنك السعودي البريطاني">البنك السعودي البريطاني</option>
                                                 <option value="بنك الإنماء">بنك الإنماء</option>
+                                                <option value="البنك العربي">البنك العربي</option>
                                                 <option value="other">{{ __('Other') }}</option>
                                             </select>
                                             <input type="text" class="form-control mt-2" id="customBankName"
@@ -486,17 +505,7 @@
                                             <span class="iban_number-error text-danger text-error"></span>
                                         </div>
 
-                                        <div class="mb-3">
-                                            <label class="form-label" for="paymentRecipient">*
-                                                {{ __('Payment Recipient') }}</label>
-                                            <select class="form-select" id="paymentRecipient" name="payment_recipient"
-                                                required>
-                                                <option value="">{{ __('Select Recipient') }}</option>
-                                                <option value="driver">{{ __('Driver') }}</option>
-                                                <option value="team_leader">{{ __('Team Leader') }}</option>
-                                            </select>
-                                            <span class="payment_recipient-error text-danger text-error"></span>
-                                        </div>
+
                                     </form>
                                 </div>
                             </div>

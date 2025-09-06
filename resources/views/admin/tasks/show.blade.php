@@ -132,6 +132,12 @@
                         <p><strong>{{ __('phone') }}:</strong>
                             {{ $task->owner == 'admin' ? $task->user->phone : $task->customer->phone }}</p>
 
+                        @if ($task->conditions)
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                {{ $task->conditions }}
+                            </div>
+                        @endif
                         @if ($task->driver_id && $task->driver)
                             <div class="card mb-4 shadow-sm">
                                 <div

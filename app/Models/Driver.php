@@ -51,7 +51,10 @@ class Driver extends Authenticatable
       'app_version',
       'last_activity_at',
       'reset_token',
-      'reset_token_expires_at'
+      'reset_token_expires_at',
+      'bank_name',
+      'account_number',
+      'iban_number'
     ];
     protected $casts = [
       'additional_data' => 'array',

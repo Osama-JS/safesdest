@@ -273,7 +273,7 @@ $(function () {
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}">Refund Task</a></li>
 
-                    ${full.closed && full.status === 'completed' ? `<li><a href="javascript:;" class="dropdown-item payment-request-task" data-id="${full.id}"><i class="ti ti-receipt me-1"></i>Payment Request</a></li>` : ''}
+                    ${!full.closed && full.status !== 'completed' ? `<li><a href="javascript:;" class="dropdown-item payment-request-task" data-id="${full.id}"><i class="ti ti-receipt me-1"></i>Payment Request</a></li>` : ''}
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>
                 </div>
@@ -706,12 +706,31 @@ $(function () {
         driver_amount: driverAmount,
         driver_name: task.driver_name,
         driver_phone: task.driver_phone,
+        driver_bank_name: task.driver_bank_name,
+        driver_account_number: task.driver_account_number,
+        driver_iban_number: task.driver_iban_number,
+        driver_has_team: task.driver_has_team,
         team_leader_name: task.team_leader_name,
         team_leader_phone: task.team_leader_phone,
+        team_leader_bank_name: task.team_leader_bank_name,
+        team_leader_account_number: task.team_leader_account_number,
+        team_leader_iban_number: task.team_leader_iban_number,
         owner_name: task.owner_name,
         pickup_address: task.pickup_address,
         delivery_address: task.delivery_address
       });
+
+      // Handle team leader option visibility
+      const teamLeaderOption = $('#paymentRecipient option[value="team_leader"]');
+      if (task.driver_has_team) {
+        teamLeaderOption.show();
+      } else {
+        teamLeaderOption.hide();
+        // If team_leader was selected but driver has no team, reset to empty
+        if ($('#paymentRecipient').val() === 'team_leader') {
+          $('#paymentRecipient').val('');
+        }
+      }
 
       // Show modal
       $('#paymentRequestModal').modal('show');
@@ -750,6 +769,76 @@ $(function () {
       $('.requested_amount-error').text(`المبلغ لا يمكن أن يكون أكبر من ${maxAmount.toFixed(2)} ريال`);
     } else {
       $('.requested_amount-error').text('');
+    }
+  });
+
+  // Handle payment recipient change to auto-fill bank details
+  $(document).on('change', '#paymentRecipient', function () {
+    const recipient = $(this).val();
+    const taskData = $('#paymentRequestModal').data('taskData');
+
+    if (!taskData) return;
+
+    // Clear current bank details
+    $('#bankName').val('');
+    $('#customBankName').val('').hide();
+    $('#accountNumber').val('');
+    $('#ibanNumber').val('');
+
+    if (recipient === 'driver') {
+      // Fill driver bank details
+      if (taskData.driver_bank_name) {
+        // Check if bank exists in options
+        const bankOption = $('#bankName option[value="' + taskData.driver_bank_name + '"]');
+        if (bankOption.length > 0) {
+          $('#bankName').val(taskData.driver_bank_name);
+        } else {
+          // Use "other" option and show custom field
+          $('#bankName').val('other');
+          $('#customBankName').val(taskData.driver_bank_name).show();
+        }
+      }
+
+      if (taskData.driver_account_number) {
+        $('#accountNumber').val(taskData.driver_account_number);
+      }
+
+      if (taskData.driver_iban_number) {
+        // Format IBAN with spaces for display
+        const formattedIban = taskData.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
+        $('#ibanNumber').val(formattedIban);
+      }
+    } else if (recipient === 'team_leader') {
+      // Check if driver has team before filling team leader details
+      if (!taskData.driver_has_team) {
+        // Driver has no team, reset selection and show warning
+        $(this).val('');
+        showAlert('warning', 'هذا السائق لا ينتمي إلى أي فريق. لا يمكن اختيار قائد الفريق كمستلم للدفع.');
+        return;
+      }
+
+      // Fill team leader bank details
+      if (taskData.team_leader_bank_name) {
+        // Check if bank exists in options
+        const bankOption = $('#bankName option[value="' + taskData.team_leader_bank_name + '"]');
+        if (bankOption.length > 0) {
+          $('#bankName').val(taskData.team_leader_bank_name);
+        } else {
+          // Use "other" option and show custom field
+          $('#bankName').val('other');
+          $('#customBankName').val(taskData.team_leader_bank_name).show();
+        }
+      }
+
+      if (taskData.team_leader_account_number) {
+        $('#accountNumber').val(taskData.team_leader_account_number);
+      }
+
+      if (taskData.team_leader_iban_number) {
+        // Format IBAN with spaces for display
+        const formattedIban = taskData.team_leader_iban_number.replace(/(.{4})/g, '$1 ').trim();
+        $('#ibanNumber').val(formattedIban);
+      }
     }
   });
 

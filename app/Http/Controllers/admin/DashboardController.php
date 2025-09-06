@@ -97,6 +97,7 @@ class DashboardController extends Controller
               'avatar' => $avatar,
               'point' => $task->point()->where('type', 'pickup')->first(),
               'closed' => $task->closed,
+              'conditions' => $task->conditions,
             ];
 
             if ($driver) {

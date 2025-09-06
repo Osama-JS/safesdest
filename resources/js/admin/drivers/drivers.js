@@ -34,6 +34,61 @@ $(function () {
     toggleWhatsAppFields();
   });
 
+  // Bank fields functionality
+  function toggleCustomBankField() {
+    const bankSelect = $('#driver-bank-name');
+    const customBankField = $('#driver-custom-bank-field');
+
+    if (bankSelect.val() === 'other') {
+      customBankField.show();
+      $('#driver-custom-bank-name').attr('required', true);
+    } else {
+      customBankField.hide();
+      $('#driver-custom-bank-name').attr('required', false).val('');
+    }
+  }
+
+  // Handle bank selection change
+  $(document).on('change', '#driver-bank-name', function () {
+    toggleCustomBankField();
+  });
+
+  // Format account number (numbers only)
+  $(document).on('input', '#driver-account-number', function () {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+
+  // Format IBAN number
+  $(document).on('input', '#driver-iban-number', function () {
+    let value = this.value.replace(/[^0-9SA]/g, '').toUpperCase();
+
+    // Ensure it starts with SA
+    if (value && !value.startsWith('SA')) {
+      if (value.startsWith('S')) {
+        value = 'SA' + value.substring(1);
+      } else {
+        value = 'SA' + value;
+      }
+    }
+
+    // Limit to SA + 22 digits
+    if (value.length > 24) {
+      value = value.substring(0, 24);
+    }
+
+    // Format with spaces for readability
+    if (value.length > 2) {
+      value =
+        value.substring(0, 2) +
+        value
+          .substring(2)
+          .replace(/(.{4})/g, '$1 ')
+          .trim();
+    }
+
+    this.value = value;
+  });
+
   if (templateId != null) {
     $('#select-template').val(templateId).trigger('change');
   }
@@ -379,6 +434,18 @@ $(function () {
 
       // Update WhatsApp fields visibility
       toggleWhatsAppFields();
+
+      // Load bank details
+      $('#driver-bank-name').val(data.bank_name || '');
+      $('#driver-account-number').val(data.account_number || '');
+      $('#driver-iban-number').val(data.iban_number || '');
+
+      // Handle custom bank name
+      if (data.bank_name && !$('#driver-bank-name option[value="' + data.bank_name + '"]').length) {
+        $('#driver-bank-name').val('other');
+        $('#driver-custom-bank-name').val(data.bank_name);
+      }
+      toggleCustomBankField();
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 

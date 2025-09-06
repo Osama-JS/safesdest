@@ -78,6 +78,12 @@
                                     <span class="h6">{{ __('Created At') }}:</span>
                                     <span>{{ $task->created_at->format('Y-m-d H:i') }}</span>
                                 </li>
+                                @if ($task->conditions)
+                                    <li class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>
+                                        {{ $task->conditions }}
+                                    </li>
+                                @endif
                             </ul>
                         </div>
                         <div class="col-md-6">

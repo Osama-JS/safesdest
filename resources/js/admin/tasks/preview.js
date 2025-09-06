@@ -145,6 +145,11 @@ $(function () {
         <i class="bi bi-truck"></i> Team: ${task.driver.team}
      </div>`
           : '';
+      const conditionsHtml = task.conditions
+        ? `<div class="mt-2  small bg-warning  text-white p-1 rounded ">
+        <i class="bi bi-truck"></i> Conditions: ${task.conditions}
+     </div>`
+        : '';
 
       const completeAt = task.complete_at
         ? `
@@ -164,6 +169,7 @@ $(function () {
                   <p>${task.point.address || ''} (${task.point.longitude} - ${task.point.latitude})</p>
                    ${driverHtml}
                 ${teamHtml}
+                ${conditionsHtml}
                 ${completeAt}
                 </div>
               </div>
@@ -430,6 +436,16 @@ $(function () {
                   <strong>Created At</strong>
                   <span>${task.data.created_at || '—'}</span>
                 </li>
+                </li>
+                ${
+                  task.data.conditions
+                    ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-warning">
+                  <strong>Conditions</strong>
+                  <span>${task.data.conditions || '—'}</span>
+                </li>`
+                    : ''
+                }
+                
                 ${driverInfo}
                 </ul>
                  <div class="divider text-start">

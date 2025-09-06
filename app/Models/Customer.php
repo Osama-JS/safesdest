@@ -34,6 +34,9 @@ class Customer extends Authenticatable
       'role_id',
       'team_id',
       'is_customs_clearance_agent',
+      'bank_name',
+      'account_number',
+      'iban_number'
     ];
 
     protected $casts = [

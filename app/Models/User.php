@@ -41,7 +41,10 @@ class User extends Authenticatable
       'additional_data',
       'form_template_id',
       'role_id',
-      'is_customs_clearance_agent'
+      'is_customs_clearance_agent',
+      'bank_name',
+      'account_number',
+      'iban_number'
     ];
 
     protected $casts = [

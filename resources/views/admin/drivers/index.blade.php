@@ -452,8 +452,92 @@
                                                             <span
                                                                 class="commission_type-error text-danger text-error"></span>
                                                             <span class="commission-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
 
+                                                    <!-- Bank Details Section -->
+                                                    <div class="col-md-12">
+                                                        <div class="divider text-start">
+                                                            <div class="divider-text">
+                                                                <strong><i
+                                                                        class="ti ti-building-bank me-2"></i>{{ __('Bank Details') }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
+                                                    <div class="col-md-4">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="driver-bank-name">{{ __('Bank Name') }}</label>
+                                                            <select name="bank_name" id="driver-bank-name"
+                                                                class="form-select">
+                                                                <option value="">{{ __('Select Bank') }}</option>
+                                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                                </option>
+                                                                <option value="بنك الراجحي">بنك الراجحي</option>
+                                                                <option value="بنك الرياض">بنك الرياض</option>
+                                                                <option value="البنك السعودي للاستثمار">البنك السعودي
+                                                                    للاستثمار</option>
+                                                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي
+                                                                </option>
+                                                                <option value="البنك السعودي البريطاني">البنك السعودي
+                                                                    البريطاني (ساب)</option>
+                                                                <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                                </option>
+                                                                <option value="بنك سامبا">بنك سامبا</option>
+                                                                <option value="البنك الأول">البنك الأول</option>
+                                                                <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                                <option value="بنك الإنماء">بنك الإنماء</option>
+                                                                <option value="البنك العربي">البنك العربي</option>
+                                                                <option value="other">{{ __('Other') }}</option>
+                                                            </select>
+                                                            <span class="bank_name-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-4" id="driver-custom-bank-field"
+                                                        style="display: none;">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="driver-custom-bank-name">{{ __('Custom Bank Name') }}</label>
+                                                            <input type="text" name="custom_bank_name"
+                                                                id="driver-custom-bank-name" class="form-control"
+                                                                placeholder="{{ __('Enter bank name') }}">
+                                                            <span
+                                                                class="custom_bank_name-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="driver-account-number">{{ __('Account Number') }}</label>
+                                                            <input type="text" name="account_number"
+                                                                id="driver-account-number" class="form-control"
+                                                                placeholder="1234567890" pattern="[0-9]{8,20}"
+                                                                minlength="8" maxlength="20">
+                                                            <div class="form-text">
+                                                                <small
+                                                                    class="text-muted">{{ __('Numbers only, 8-20 digits') }}</small>
+                                                            </div>
+                                                            <span
+                                                                class="account_number-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="driver-iban-number">{{ __('IBAN Number') }}</label>
+                                                            <input type="text" name="iban_number"
+                                                                id="driver-iban-number" class="form-control"
+                                                                placeholder="SA12 3456 7890 1234 5678 90" maxlength="29"
+                                                                pattern="SA(?:[0-9]{2}\s?){11}">
+                                                            <div class="form-text">
+                                                                <small
+                                                                    class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                                            </div>
+                                                            <span class="iban_number-error text-danger text-error"></span>
                                                         </div>
                                                     </div>
 

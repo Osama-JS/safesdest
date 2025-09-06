@@ -25,6 +25,61 @@ $(function () {
     });
   }
 
+  // Bank fields functionality for users
+  function toggleCustomBankFieldUser() {
+    const bankSelect = $('#user-bank-name');
+    const customBankField = $('#user-custom-bank-field');
+
+    if (bankSelect.val() === 'other') {
+      customBankField.show();
+      $('#user-custom-bank-name').attr('required', true);
+    } else {
+      customBankField.hide();
+      $('#user-custom-bank-name').attr('required', false).val('');
+    }
+  }
+
+  // Handle bank selection change
+  $(document).on('change', '#user-bank-name', function () {
+    toggleCustomBankFieldUser();
+  });
+
+  // Format account number (numbers only)
+  $(document).on('input', '#user-account-number', function () {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+
+  // Format IBAN number
+  $(document).on('input', '#user-iban-number', function () {
+    let value = this.value.replace(/[^0-9SA]/g, '').toUpperCase();
+
+    // Ensure it starts with SA
+    if (value && !value.startsWith('SA')) {
+      if (value.startsWith('S')) {
+        value = 'SA' + value.substring(1);
+      } else {
+        value = 'SA' + value;
+      }
+    }
+
+    // Limit to SA + 22 digits
+    if (value.length > 24) {
+      value = value.substring(0, 24);
+    }
+
+    // Format with spaces for readability
+    if (value.length > 2) {
+      value =
+        value.substring(0, 2) +
+        value
+          .substring(2)
+          .replace(/(.{4})/g, '$1 ')
+          .trim();
+    }
+
+    this.value = value;
+  });
+
   var select2 = $('.select-customers');
   if (select2.length) {
     var $this = select2;
@@ -356,6 +411,19 @@ $(function () {
       }
 
       generateFields(data.fields, data.additional_data);
+
+      // Load bank details
+      $('#user-bank-name').val(data.bank_name || '');
+      $('#user-account-number').val(data.account_number || '');
+      $('#user-iban-number').val(data.iban_number || '');
+
+      // Handle custom bank name
+      if (data.bank_name && !$('#user-bank-name option[value="' + data.bank_name + '"]').length) {
+        $('#user-bank-name').val('other');
+        $('#user-custom-bank-name').val(data.bank_name);
+      }
+      toggleCustomBankFieldUser();
+
       $('#modelTitle').html(`${__('Edit User')}: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });
     var dtrModal = $('.dtr-bs-modal.show');

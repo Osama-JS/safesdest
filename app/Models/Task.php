@@ -26,6 +26,7 @@ class Task extends Model
       'pending_driver_id',
       'pricing_history',
       'pricing_details',
+      'conditions',
       'closed',
       'closed_at',
       'completed_at',

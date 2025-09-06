@@ -556,6 +556,12 @@
                                         <div id="taskFinalDetails">
                                         </div>
                                     </div>
+                                    <div class="mb-3">
+                                        <label for="">{{ __('Do you have any Conditions') }}?</label>
+                                        <textarea name="conditions" id="conditions" class="form-control" rows="3"
+                                            placeholder="{{ __('Write your Conditions') }}"></textarea>
+                                        <span class="conditions-error text-danger text-error"></span>
+                                    </div>
                                     <div id="assign-section" style="display: none">
                                         <div class="mb-3">
                                             <div class="form-group border p-3 rounded ">

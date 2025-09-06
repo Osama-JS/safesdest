@@ -149,6 +149,7 @@ class TasksController extends Controller
               'name'   => $customer ? $customer->name : ($user->name ?? 'غير معروف'),
               'owner'  => $customer ? 'customer' : 'admin',
               'status' => $task->status,
+              'conditions' => $task->conditions,
               'avatar' => $avatar,
               'point' => $task->point()->where('type', 'pickup')->first()
             ];
@@ -186,11 +187,12 @@ class TasksController extends Controller
             'id'         => $task->id,
             'status'     => $task->status,
             'driver'     => $task->driver->name ?? "",
-            'team'       => $task->driver->team->name ?? "",
+            'team'       => $task->team->name ?? "",
             'order_id'   => $task->order_id ?? "",
             'created_at' => $task->created_at->toDateTimeString(),
             'owner'      => $task->owner,
             'total_price'      => $task->total_price,
+            'conditions'      => $task->conditions,
             'commission'      => $task->commission,
             'pickup' => $task->pickup,
             'delivery' => $task->delivery,
@@ -645,7 +647,8 @@ class TasksController extends Controller
               'form_template_id' => $req->template,
               'user_id'          => Auth::id(),
               'pricing_id'       => $taskData['pricing'],
-              'vehicle_size_id'  => $taskData['vehicles'][0]
+              'vehicle_size_id'  => $taskData['vehicles'][0],
+              'conditions'       => $req->conditions
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -1106,7 +1109,8 @@ class TasksController extends Controller
               'form_template_id' => $req->template,
               'user_id'          => Auth::id(),
               'pricing_id'       => $taskData['pricing'],
-              'vehicle_size_id' => $taskData['vehicles'][0]
+              'vehicle_size_id' => $taskData['vehicles'][0],
+              'conditions'       => $req->conditions
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -1797,7 +1801,7 @@ class TasksController extends Controller
               'id'         => $task->id,
               'order'      => $task->order->id ?? "-",
               'price'      => $task->total_price,
-              'team'       => $task->driver->team->name ?? "-",
+              'team'       => $task->team->name ?? "-",
               'driver'     => $task->driver ?? '-',
               'owner'     => $task->owner ?? "-",
               'owner_info' => match ($task->owner) {
@@ -1874,16 +1878,30 @@ class TasksController extends Controller
                 $ownerName = $task->user->name ?? 'Admin User';
             }
 
-            // Get driver name
+            // Get driver info with bank details
             $driverName = $task->driver->name ??  'غير محدد';
             $driverPhone = $task->driver->name ? $task->driver->name  . $task->driver->phone_code .  $task->driver->phone : "";
+            $driverBankName = $task->driver->bank_name ?? null;
+            $driverAccountNumber = $task->driver->account_number ?? null;
+            $driverIbanNumber = $task->driver->iban_number ?? null;
 
-            // Get team leader name - get first user in team as team leader
+            // Check if driver belongs to a team
+            $driverHasTeam = $task->team_id && $task->team && $task->team->users->isNotEmpty();
+
+            // Get team leader info with bank details - get first user in team as team leader
             $teamLeaderName = '';
             $teamLeaderPhone = '';
-            if ($task->team_id && $task->team && $task->team->users->isNotEmpty()) {
-                $teamLeaderName = $task->team->users->first()->user->name ?? 'غير محدد';
-                $teamLeaderPhone = $task->team->users->first()->user->name ? $task->team->users->first()->user->phone_code .  $task->team->users->first()->user->phone : "";
+            $teamLeaderBankName = null;
+            $teamLeaderAccountNumber = null;
+            $teamLeaderIbanNumber = null;
+
+            if ($driverHasTeam) {
+                $teamLeader = $task->team->users->first()->user;
+                $teamLeaderName = $teamLeader->name ?? 'غير محدد';
+                $teamLeaderPhone = $teamLeader->name ? $teamLeader->phone_code .  $teamLeader->phone : "";
+                $teamLeaderBankName = $teamLeader->bank_name ?? null;
+                $teamLeaderAccountNumber = $teamLeader->account_number ?? null;
+                $teamLeaderIbanNumber = $teamLeader->iban_number ?? null;
             }
 
             // Get addresses
@@ -1900,8 +1918,15 @@ class TasksController extends Controller
                     'owner_name' => $ownerName,
                     'driver_name' => $driverName,
                     'driver_phone' => $driverPhone,
+                    'driver_bank_name' => $driverBankName,
+                    'driver_account_number' => $driverAccountNumber,
+                    'driver_iban_number' => $driverIbanNumber,
+                    'driver_has_team' => $driverHasTeam,
                     'team_leader_name' => $teamLeaderName,
                     'team_leader_phone' => $teamLeaderPhone,
+                    'team_leader_bank_name' => $teamLeaderBankName,
+                    'team_leader_account_number' => $teamLeaderAccountNumber,
+                    'team_leader_iban_number' => $teamLeaderIbanNumber,
                     'pickup_address' => $pickupAddress,
                     'delivery_address' => $deliveryAddress
                 ]

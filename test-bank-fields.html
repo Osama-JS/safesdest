@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الحقول البنكية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px;
+        }
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid #007bff;
+        }
+        .form-section h3 {
+            color: #007bff;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        .btn-test {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.4);
+        }
+        .result-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .result-value {
+            color: #007bff;
+            font-weight: 500;
+        }
+        .alert-custom {
+            border-radius: 8px;
+            border: none;
+            padding: 15px 20px;
+        }
+        .custom-bank-field {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="header">
+            <h1><i class="bi bi-building-bank me-3"></i>اختبار الحقول البنكية</h1>
+            <p class="mb-0">اختبار حقول البنك المضافة للسائقين والعملاء والمستخدمين</p>
+        </div>
+        
+        <div class="content">
+            <!-- Driver Bank Fields -->
+            <div class="form-section">
+                <h3><i class="bi bi-truck me-2"></i>حقول السائق البنكية</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك</label>
+                            <select id="driver-bank-name" class="form-select">
+                                <option value="">اختر البنك</option>
+                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                <option value="بنك الراجحي">بنك الراجحي</option>
+                                <option value="بنك الرياض">بنك الرياض</option>
+                                <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
+                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
+                                <option value="البنك السعودي البريطاني">البنك السعودي البريطاني (ساب)</option>
+                                <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                <option value="بنك سامبا">بنك سامبا</option>
+                                <option value="البنك الأول">البنك الأول</option>
+                                <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                <option value="بنك الإنماء">بنك الإنماء</option>
+                                <option value="البنك العربي">البنك العربي</option>
+                                <option value="other">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 custom-bank-field" id="driver-custom-bank">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك المخصص</label>
+                            <input type="text" id="driver-custom-bank-name" class="form-control" placeholder="أدخل اسم البنك">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الحساب</label>
+                            <input type="text" id="driver-account-number" class="form-control" placeholder="1234567890" maxlength="20">
+                            <div class="form-text">أرقام فقط، 8-20 رقم</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الآيبان</label>
+                            <input type="text" id="driver-iban-number" class="form-control" placeholder="SA12 3456 7890 1234 5678 90" maxlength="29">
+                            <div class="form-text">التنسيق: SA + 22 رقم</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Bank Fields -->
+            <div class="form-section">
+                <h3><i class="bi bi-person-badge me-2"></i>حقول العميل البنكية</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك</label>
+                            <select id="customer-bank-name" class="form-select">
+                                <option value="">اختر البنك</option>
+                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                <option value="بنك الراجحي">بنك الراجحي</option>
+                                <option value="بنك الرياض">بنك الرياض</option>
+                                <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
+                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
+                                <option value="البنك السعودي البريطاني">البنك السعودي البريطاني (ساب)</option>
+                                <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                <option value="بنك سامبا">بنك سامبا</option>
+                                <option value="البنك الأول">البنك الأول</option>
+                                <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                <option value="بنك الإنماء">بنك الإنماء</option>
+                                <option value="البنك العربي">البنك العربي</option>
+                                <option value="other">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 custom-bank-field" id="customer-custom-bank">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك المخصص</label>
+                            <input type="text" id="customer-custom-bank-name" class="form-control" placeholder="أدخل اسم البنك">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الحساب</label>
+                            <input type="text" id="customer-account-number" class="form-control" placeholder="1234567890" maxlength="20">
+                            <div class="form-text">أرقام فقط، 8-20 رقم</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الآيبان</label>
+                            <input type="text" id="customer-iban-number" class="form-control" placeholder="SA12 3456 7890 1234 5678 90" maxlength="29">
+                            <div class="form-text">التنسيق: SA + 22 رقم</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Bank Fields -->
+            <div class="form-section">
+                <h3><i class="bi bi-person-gear me-2"></i>حقول المستخدم البنكية</h3>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك</label>
+                            <select id="user-bank-name" class="form-select">
+                                <option value="">اختر البنك</option>
+                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                <option value="بنك الراجحي">بنك الراجحي</option>
+                                <option value="بنك الرياض">بنك الرياض</option>
+                                <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
+                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
+                                <option value="البنك السعودي البريطاني">البنك السعودي البريطاني (ساب)</option>
+                                <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                <option value="بنك سامبا">بنك سامبا</option>
+                                <option value="البنك الأول">البنك الأول</option>
+                                <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                <option value="بنك الإنماء">بنك الإنماء</option>
+                                <option value="البنك العربي">البنك العربي</option>
+                                <option value="other">أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 custom-bank-field" id="user-custom-bank">
+                        <div class="mb-3">
+                            <label class="form-label">اسم البنك المخصص</label>
+                            <input type="text" id="user-custom-bank-name" class="form-control" placeholder="أدخل اسم البنك">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الحساب</label>
+                            <input type="text" id="user-account-number" class="form-control" placeholder="1234567890" maxlength="20">
+                            <div class="form-text">أرقام فقط، 8-20 رقم</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label">رقم الآيبان</label>
+                            <input type="text" id="user-iban-number" class="form-control" placeholder="SA12 3456 7890 1234 5678 90" maxlength="29">
+                            <div class="form-text">التنسيق: SA + 22 رقم</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Button -->
+            <div class="text-center">
+                <button type="button" class="btn btn-test btn-lg" onclick="testBankFields()">
+                    <i class="bi bi-check-circle me-2"></i>اختبار الحقول البنكية
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="result-box">
+                <h4><i class="bi bi-clipboard-data me-2"></i>نتائج الاختبار</h4>
+                <div id="results-content"></div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="alert alert-info alert-custom mt-4">
+                <h5><i class="bi bi-info-circle me-2"></i>تعليمات الاختبار:</h5>
+                <ul class="mb-0">
+                    <li>اختر بنك من القائمة أو اختر "أخرى" لإدخال اسم بنك مخصص</li>
+                    <li>أدخل رقم الحساب (أرقام فقط، 8-20 رقم)</li>
+                    <li>أدخل رقم الآيبان بتنسيق SA + 22 رقم</li>
+                    <li>سيتم تنسيق الآيبان تلقائياً مع المسافات</li>
+                    <li>جميع الحقول اختيارية ويمكن تركها فارغة</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Handle bank selection for all types
+            $('[id$="-bank-name"]').on('change', function() {
+                const type = this.id.split('-')[0]; // driver, customer, or user
+                const customField = $(`#${type}-custom-bank`);
+                const customInput = $(`#${type}-custom-bank-name`);
+                
+                if ($(this).val() === 'other') {
+                    customField.show();
+                    customInput.attr('required', true);
+                } else {
+                    customField.hide();
+                    customInput.attr('required', false).val('');
+                }
+            });
+
+            // Format account numbers (numbers only)
+            $('[id$="-account-number"]').on('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+
+            // Format IBAN numbers
+            $('[id$="-iban-number"]').on('input', function() {
+                let value = this.value.replace(/[^0-9SA]/g, '').toUpperCase();
+                
+                // Ensure it starts with SA
+                if (value && !value.startsWith('SA')) {
+                    if (value.startsWith('S')) {
+                        value = 'SA' + value.substring(1);
+                    } else {
+                        value = 'SA' + value;
+                    }
+                }
+                
+                // Limit to SA + 22 digits
+                if (value.length > 24) {
+                    value = value.substring(0, 24);
+                }
+                
+                // Format with spaces for readability
+                if (value.length > 2) {
+                    value = value.substring(0, 2) + value.substring(2).replace(/(.{4})/g, '$1 ').trim();
+                }
+                
+                this.value = value;
+            });
+        });
+
+        function testBankFields() {
+            const results = [];
+            
+            // Test Driver fields
+            const driverBank = $('#driver-bank-name').val() === 'other' ? $('#driver-custom-bank-name').val() : $('#driver-bank-name').val();
+            const driverAccount = $('#driver-account-number').val();
+            const driverIban = $('#driver-iban-number').val();
+            
+            results.push({
+                section: 'السائق',
+                bank: driverBank || 'غير محدد',
+                account: driverAccount || 'غير محدد',
+                iban: driverIban || 'غير محدد'
+            });
+
+            // Test Customer fields
+            const customerBank = $('#customer-bank-name').val() === 'other' ? $('#customer-custom-bank-name').val() : $('#customer-bank-name').val();
+            const customerAccount = $('#customer-account-number').val();
+            const customerIban = $('#customer-iban-number').val();
+            
+            results.push({
+                section: 'العميل',
+                bank: customerBank || 'غير محدد',
+                account: customerAccount || 'غير محدد',
+                iban: customerIban || 'غير محدد'
+            });
+
+            // Test User fields
+            const userBank = $('#user-bank-name').val() === 'other' ? $('#user-custom-bank-name').val() : $('#user-bank-name').val();
+            const userAccount = $('#user-account-number').val();
+            const userIban = $('#user-iban-number').val();
+            
+            results.push({
+                section: 'المستخدم',
+                bank: userBank || 'غير محدد',
+                account: userAccount || 'غير محدد',
+                iban: userIban || 'غير محدد'
+            });
+
+            // Display results
+            let html = '';
+            results.forEach(result => {
+                html += `
+                    <div class="mb-3">
+                        <h6 class="text-primary">${result.section}:</h6>
+                        <div class="result-item">
+                            <span class="result-label">اسم البنك:</span>
+                            <span class="result-value">${result.bank}</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">رقم الحساب:</span>
+                            <span class="result-value">${result.account}</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">رقم الآيبان:</span>
+                            <span class="result-value">${result.iban}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            $('#results-content').html(html);
+            $('#results').show();
+        }
+    </script>
+</body>
+</html>

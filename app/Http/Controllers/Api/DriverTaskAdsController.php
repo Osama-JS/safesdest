@@ -412,6 +412,79 @@ class DriverTaskAdsController extends Controller
     }
 
     /**
+     * Get offers for a specific task ad
+     */
+    public function getAdOffers(Request $request, $adId)
+    {
+        try {
+            $driver = Auth::user();
+            $driver_id = $driver->id;
+
+            // Find the ad
+            $ad = Task_Ad::findOrFail($adId);
+
+            // Check if driver can view this ad
+            $acceptedOffer = Task_Offire::where('task_ad_id', $adId)
+                                       ->where('accepted', true)
+                                       ->first();
+
+            if (!$this->canViewDetails($ad, $driver_id, $acceptedOffer)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to view offers for this advertisement'
+                ], 403);
+            }
+
+            // Get all offers for this ad
+            $offers = Task_Offire::with(['driver'])
+                                ->where('task_ad_id', $adId)
+                                ->orderBy('created_at', 'DESC')
+                                ->get();
+
+            // Transform offers
+            $transformedOffers = $offers->map(function ($offer) use ($driver_id) {
+                return [
+                    'id' => $offer->id,
+                    'driver_id' => $offer->driver_id,
+                    'driver_name' => $offer->driver->name,
+                    'driver_phone' => $offer->driver->phone,
+                    'price' => (float) $offer->price,
+                    'description' => $offer->description,
+                    'accepted' => (bool) $offer->accepted,
+                    'is_my_offer' => $offer->driver_id === $driver_id,
+                    'created_at' => $offer->created_at,
+                    'updated_at' => $offer->updated_at
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'offers' => $transformedOffers,
+                    'total_offers' => $offers->count(),
+                    'accepted_offer' => $acceptedOffer ? [
+                        'id' => $acceptedOffer->id,
+                        'driver_id' => $acceptedOffer->driver_id,
+                        'price' => (float) $acceptedOffer->price
+                    ] : null
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+            Log::error('Driver Get Ad Offers Error', [
+                'error' => $e->getMessage(),
+                'ad_id' => $adId,
+                'driver_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch offers'
+            ], 500);
+        }
+    }
+
+    /**
      * Get driver's submitted offers
      */
     public function myOffers(Request $request)

@@ -19,7 +19,7 @@ class ReportService
     public function generateCustomerTasksReport(array $filters, bool $preview = false)
     {
         $user = Auth::user();
-        
+
         // Build base query
         $query = Task::with([
             'customer:id,name,company_name',
@@ -82,7 +82,7 @@ class ReportService
         // Filter tasks based on user permissions
         if (!$user->can('manage_tasks')) {
             $teamIds = $user->teams->pluck('id')->toArray();
-            $query->where(function($q) use ($user, $teamIds) {
+            $query->where(function ($q) use ($user, $teamIds) {
                 $q->where('user_id', $user->id)
                   ->orWhereIn('team_id', $teamIds);
             });
@@ -164,9 +164,14 @@ class ReportService
     private function processTasksData($tasks, $filters)
     {
         return $tasks->map(function ($task) {
+            // Handle refunded/cancelled tasks - set price to 0
+            $effectivePrice = $this->getEffectivePrice($task);
+            $effectivePaymentMethod = $this->getEffectivePaymentMethod($task);
+
             return [
                 'id' => $task->id,
-                'total_price' => $task->total_price,
+                'total_price' => $effectivePrice,
+                'original_price' => $task->total_price, // Keep original for reference
                 'customer_name' => $task->customer->name ?? 'غير محدد',
                 'customer_company' => $task->customer->company_name ?? '',
                 'driver_name' => $task->driver->name ?? 'غير محدد',
@@ -184,7 +189,7 @@ class ReportService
                 'payment_status' => $task->payment_status,
                 'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method,
-                'payment_method_ar' => $this->getPaymentMethodInArabic($task->payment_method),
+                'payment_method_ar' => $effectivePaymentMethod,
                 'created_by' => $task->user ? 'إداري' : 'عميل',
                 'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
                 'created_at' => $task->created_at,
@@ -209,13 +214,90 @@ class ReportService
     }
 
     /**
+     * Get effective price for task (0 for refunded/cancelled)
+     */
+    private function getEffectivePrice($task)
+    {
+        // Set price to 0 for refunded or cancelled tasks
+        if (in_array($task->status, ['refund', 'canceled', 'cancelled'])) {
+            return 0;
+        }
+
+        return $task->total_price;
+    }
+
+    /**
+     * Get effective payment method display
+     */
+    private function getEffectivePaymentMethod($task)
+    {
+        // Show empty for incomplete payment status (pending, unpaid, partially_paid)
+        if (in_array($task->payment_status, ['pending', 'unpaid', 'partially_paid'])) {
+            return '';
+        }
+
+        return $this->getPaymentMethodInArabic($task->payment_method);
+    }
+
+    /**
      * Generate report summary
      */
     private function generateSummary($tasks, $filters)
     {
         $totalTasks = $tasks->count();
-        $totalAmount = $tasks->sum('total_price');
-        
+
+        // Calculate effective amounts (excluding refunded/cancelled tasks)
+        $effectiveAmounts = $tasks->map(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        $totalAmount = $effectiveAmounts->sum();
+
+        // Payment status breakdown with effective amounts
+        $paidTasks = $tasks->where('payment_status', 'paid');
+        $partiallyPaidTasks = $tasks->where('payment_status', 'partially_paid');
+        $unpaidTasks = $tasks->where('payment_status', 'unpaid');
+        $pendingTasks = $tasks->where('payment_status', 'pending');
+
+        $paidAmount = $paidTasks->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        $partiallyPaidAmount = $partiallyPaidTasks->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        $unpaidAmount = $unpaidTasks->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        $pendingAmount = $pendingTasks->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        // Remaining = unpaid + partially paid + pending
+        $remainingAmount = $unpaidAmount + $partiallyPaidAmount + $pendingAmount;
+
+        // Payment method breakdown (only include fully paid tasks)
+        $paymentMethodBreakdown = $tasks->filter(function ($task) {
+            // Only include tasks that are fully paid and not refunded/cancelled
+            if (in_array($task->status, ['refund', 'canceled', 'cancelled'])) {
+                return false;
+            }
+            // Only include fully paid tasks
+            if ($task->payment_status !== 'paid') {
+                return false;
+            }
+            return true;
+        })->groupBy('payment_method')->map(function ($group) {
+            return [
+                'count' => $group->count(),
+                'total' => $group->sum(function ($task) {
+                    return $this->getEffectivePrice($task);
+                })
+            ];
+        });
+
         $statusCounts = $tasks->groupBy('status')->map->count();
         $paymentStatusCounts = $tasks->groupBy('payment_status')->map->count();
 
@@ -223,6 +305,11 @@ class ReportService
             'total_tasks' => $totalTasks,
             'total_amount' => $totalAmount,
             'average_amount' => $totalTasks > 0 ? $totalAmount / $totalTasks : 0,
+            'paid_amount' => $paidAmount,
+            'partially_paid_amount' => $partiallyPaidAmount,
+            'unpaid_amount' => $unpaidAmount,
+            'remaining_amount' => $remainingAmount,
+            'payment_method_breakdown' => $paymentMethodBreakdown,
             'status_counts' => $statusCounts,
             'payment_status_counts' => $paymentStatusCounts,
             'date_range' => [

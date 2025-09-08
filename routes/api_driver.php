@@ -118,6 +118,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::get('/{id}', [DriverTaskAdsController::class, 'show'])
             ->name('api.driver.task-ads.show');
 
+        Route::get('/{id}/offers', [DriverTaskAdsController::class, 'getAdOffers'])
+            ->name('api.driver.task-ads.offers');
+
         Route::post('/{id}/offers', [DriverTaskAdsController::class, 'submitOffer'])
             ->name('api.driver.task-ads.submit-offer');
 

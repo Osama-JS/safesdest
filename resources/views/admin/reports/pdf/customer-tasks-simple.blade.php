@@ -278,29 +278,40 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 8%">رقم المهمة</th>
-                    <th style="width: 12%">سعر المهمة</th>
-                    <th style="width: 25%">المسار</th>
-                    <th style="width: 20%">السائق</th>
-                    <th style="width: 12%">حالة المهمة</th>
-                    <th style="width: 12%">تاريخ الإنشاء</th>
-                    <th style="width: 11%">تاريخ الإغلاق</th>
+                    <th style="width: 6%">{{ __('Task ID') }}</th>
+                    <th style="width: 10%">{{ __('Task Price') }}</th>
+                    <th style="width: 20%">{{ __('Route') }}</th>
+                    <th style="width: 15%">{{ __('Driver') }}</th>
+                    <th style="width: 10%">{{ __('Task Status') }}</th>
+                    <th style="width: 10%">{{ __('Payment Status') }}</th>
+                    <th style="width: 10%">{{ __('Payment Method') }}</th>
+                    <th style="width: 10%">{{ __('Created Date') }}</th>
+                    <th style="width: 9%">{{ __('Closed Date') }}</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($reportData['tasks'] as $task)
                     <tr>
                         <td>{{ $task['id'] }}</td>
-                        <td>{{ number_format($task['total_price'], 2) }} ريال</td>
+                        <td>
+                            @if ($task['total_price'] == 0 && isset($task['original_price']) && $task['original_price'] > 0)
+                                <span
+                                    style="text-decoration: line-through; color: #6c757d;">{{ number_format($task['original_price'], 2) }}</span>
+                                <br><strong style="color: #dc3545;">0.00</strong> {{ __('SAR') }}
+                                <br><small style="color: #dc3545;">{{ __('Refunded/Cancelled') }}</small>
+                            @else
+                                {{ number_format($task['total_price'], 2) }} {{ __('SAR') }}
+                            @endif
+                        </td>
                         <td class="text-truncate">
-                            <strong>من:</strong> {{ $task['pickup_address'] }}<br>
-                            <strong>إلى:</strong> {{ $task['delivery_address'] }}
+                            <strong>{{ __('From') }}:</strong> {{ $task['pickup_address'] }}<br>
+                            <strong>{{ __('To') }}:</strong> {{ $task['delivery_address'] }}
                         </td>
                         <td>
                             <strong>{{ $task['driver_name'] }}</strong><br>
                             <span class="small-text">{{ $task['driver_phone'] }}</span><br>
                             @if ($task['team_name'] !== 'غير محدد')
-                                <span class="small-text">الفريق: {{ $task['team_name'] }}</span>
+                                <span class="small-text">{{ __('Team') }}: {{ $task['team_name'] }}</span>
                             @endif
                         </td>
                         <td>
@@ -316,13 +327,37 @@
                             @endphp
                             <span class="status-badge {{ $statusClass }}">{{ $task['status_ar'] }}</span>
                         </td>
+                        <td>
+                            @php
+                                $paymentStatusClass = 'status-pending';
+                                if ($task['payment_status'] === 'paid') {
+                                    $paymentStatusClass = 'status-completed';
+                                } elseif ($task['payment_status'] === 'partially_paid') {
+                                    $paymentStatusClass = 'status-in-progress';
+                                } elseif ($task['payment_status'] === 'unpaid') {
+                                    $paymentStatusClass = 'status-canceled';
+                                }
+                            @endphp
+                            <span
+                                class="status-badge {{ $paymentStatusClass }}">{{ $task['payment_status_ar'] }}</span>
+                        </td>
+                        <td>
+                            @if ($task['payment_status'] === 'paid')
+                                @if (empty($task['payment_method_ar']))
+                                    <span style="color: #6c757d; font-style: italic;">{{ __('Not Completed') }}</span>
+                                @else
+                                    {{ $task['payment_method_ar'] }}
+                                @endif
+                            @endif
+
+                        </td>
                         <td>{{ $task['created_at_formatted'] }}</td>
-                        <td>{{ $task['closed_at_formatted'] ?: 'لم تُغلق بعد' }}</td>
+                        <td>{{ $task['closed_at_formatted'] ?: __('Not closed yet') }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;">
-                            لا توجد مهام تطابق المعايير المحددة
+                        <td colspan="9" style="text-align: center; padding: 20px; color: #6c757d;">
+                            {{ __('No tasks match the specified criteria') }}
                         </td>
                     </tr>
                 @endforelse
@@ -332,23 +367,89 @@
         <!-- Summary -->
         @if (!empty($reportData['summary']))
             <div class="summary">
-                <div class="summary-title">ملخص التقرير</div>
+                <div class="summary-title">{{ __('Report Summary') }}</div>
+
+                <!-- Basic Summary -->
                 <div class="summary-grid">
                     <div class="summary-item">
-                        <div class="summary-label">إجمالي عدد المهام</div>
+                        <div class="summary-label">{{ __('Total Tasks') }}</div>
                         <div class="summary-value">{{ $reportData['summary']['total_tasks'] }}</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-label">إجمالي المبلغ</div>
-                        <div class="summary-value">{{ number_format($reportData['summary']['total_amount'], 2) }} ريال
-                        </div>
+                        <div class="summary-label">{{ __('Total Amount') }}</div>
+                        <div class="summary-value">{{ number_format($reportData['summary']['total_amount'], 2) }}
+                            {{ __('SAR') }}</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-label">متوسط سعر المهمة</div>
+                        <div class="summary-label">{{ __('Average Task Price') }}</div>
                         <div class="summary-value">{{ number_format($reportData['summary']['average_amount'], 2) }}
-                            ريال</div>
+                            {{ __('SAR') }}</div>
                     </div>
                 </div>
+
+                <!-- Payment Summary -->
+                <div class="summary-title" style="margin-top: 20px; font-size: 16px;">{{ __('Payment Summary') }}</div>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-label">{{ __('Paid Amount') }}</div>
+                        <div class="summary-value" style="color: #28a745;">
+                            {{ number_format($reportData['summary']['paid_amount'], 2) }} {{ __('SAR') }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">{{ __('Partially Paid Amount') }}</div>
+                        <div class="summary-value" style="color: #ffc107;">
+                            {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}
+                            {{ __('SAR') }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">{{ __('Unpaid Amount') }}</div>
+                        <div class="summary-value" style="color: #dc3545;">
+                            {{ number_format($reportData['summary']['unpaid_amount'], 2) }} {{ __('SAR') }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">{{ __('Remaining Amount') }}</div>
+                        <div class="summary-value" style="color: #fd7e14; font-weight: bold;">
+                            {{ number_format($reportData['summary']['remaining_amount'], 2) }} {{ __('SAR') }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Breakdown -->
+                @if (!empty($reportData['summary']['payment_method_breakdown']))
+                    <div class="summary-title" style="margin-top: 20px; font-size: 16px;">
+                        {{ __('Payment Method Breakdown') }} ({{ __('Paid Only') }})</div>
+                    <div class="summary-grid">
+                        @foreach ($reportData['summary']['payment_method_breakdown'] as $method => $data)
+                            <div class="summary-item">
+                                <div class="summary-label">
+                                    @switch($method)
+                                        @case('cash')
+                                            {{ __('Cash') }}
+                                        @break
+
+                                        @case('bank_transfer')
+                                            {{ __('Bank Transfer') }}
+                                        @break
+
+                                        @case('credit_card')
+                                            {{ __('Credit Card') }}
+                                        @break
+
+                                        @case('wallet')
+                                            {{ __('Digital Wallet') }}
+                                        @break
+
+                                        @default
+                                            {{ ucfirst($method) }}
+                                    @endswitch
+                                    ({{ $data['count'] }} {{ __('tasks') }})
+                                </div>
+                                <div class="summary-value">{{ number_format($data['total'], 2) }} {{ __('SAR') }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         @endif
 

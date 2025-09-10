@@ -590,6 +590,12 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('admin/reports/customer-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
                 Route::post('admin/reports/customer-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
 
+                // Wallet Reports Routes
+                Route::get('reports/wallet', [App\Http\Controllers\admin\WalletReportsController::class, 'index'])->name('admin.reports.wallet.index');
+                Route::post('reports/wallet/preview', [App\Http\Controllers\admin\WalletReportsController::class, 'getWalletPreview'])->name('admin.reports.wallet.preview');
+                Route::post('reports/wallet/generate', [App\Http\Controllers\admin\WalletReportsController::class, 'generateReport'])->name('admin.reports.wallet.generate');
+                Route::post('reports/wallet/get-owners', [App\Http\Controllers\admin\WalletReportsController::class, 'getOwnersByType'])->name('admin.reports.wallet.get-owners');
+
             });
         });
     });

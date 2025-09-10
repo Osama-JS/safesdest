@@ -53,16 +53,16 @@ class NotificationService
                 $result = $this->firebaseService->mainSendNotification($recipient->fcm_token, $title, $body, $notif_type);
             }
             // التأكد أن الموديل يدعم notify ومشترك في الإشعارات
-            if (method_exists($recipient, 'notify')) {
-                $recipient->notify(new GeneralPushNotification([
-                    'title' => $title,
-                    'body' => $body,
-                    'icon' => $icon ?? '/images/admin-icon.png',
-                    'image' => $image ?? '/images/banner.png',
-                    'url' => $url ?? '/',
-                    'type' => $notif_type,
-                ]));
-            }
+            // if (method_exists($recipient, 'notify')) {
+            //     $recipient->notify(new GeneralPushNotification([
+            //         'title' => $title,
+            //         'body' => $body,
+            //         'icon' => $icon ?? '/images/admin-icon.png',
+            //         'image' => $image ?? '/images/banner.png',
+            //         'url' => $url ?? '/',
+            //         'type' => $notif_type,
+            //     ]));
+            // }
 
 
 

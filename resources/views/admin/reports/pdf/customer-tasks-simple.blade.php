@@ -237,16 +237,21 @@
         <!-- Header -->
         <div class="header">
             <span class="app-brand-logo demo">@include('_partials.macros', ['height' => 20])</span>
-
             <div class="company-name">{{ __('SafeDests Transport and Logistics Company') }}</div>
-            <div class="report-title">{{ __('Customer Tasks Report - Simple') }}</div>
+            <div class="report-title">{{ __('Customer Tasks Report') }}</div>
         </div>
 
         <!-- Report Information -->
         <div class="report-info">
             <div class="info-row">
                 <span class="info-label">العميل:</span>
-                <span class="info-value">{{ implode(', ', $customerNames) }}</span>
+
+                @foreach ($customerNames as $cust)
+                    <span class="info-value">
+                        {{ $cust->name }}
+                    </span>
+                @endforeach
+
             </div>
             <div class="info-row">
                 <span class="info-label">الفترة الزمنية:</span>
@@ -321,7 +326,7 @@
                                     $statusClass = 'status-completed';
                                 } elseif (in_array($task['status'], ['in_progress', 'started', 'in the way'])) {
                                     $statusClass = 'status-in-progress';
-                                } elseif (in_array($task['status'], ['canceled'])) {
+                                } elseif (in_array($task['status'], ['canceled', 'refund'])) {
                                     $statusClass = 'status-canceled';
                                 }
                             @endphp
@@ -330,11 +335,11 @@
                         <td>
                             @php
                                 $paymentStatusClass = 'status-pending';
-                                if ($task['payment_status'] === 'paid') {
+                                if ($task['payment_status'] === 'completed') {
                                     $paymentStatusClass = 'status-completed';
-                                } elseif ($task['payment_status'] === 'partially_paid') {
+                                } elseif ($task['payment_status'] === 'pending') {
                                     $paymentStatusClass = 'status-in-progress';
-                                } elseif ($task['payment_status'] === 'unpaid') {
+                                } elseif ($task['payment_status'] === 'waiting') {
                                     $paymentStatusClass = 'status-canceled';
                                 }
                             @endphp
@@ -342,7 +347,7 @@
                                 class="status-badge {{ $paymentStatusClass }}">{{ $task['payment_status_ar'] }}</span>
                         </td>
                         <td>
-                            @if ($task['payment_status'] === 'paid')
+                            @if ($task['payment_status'] === 'completed')
                                 @if (empty($task['payment_method_ar']))
                                     <span style="color: #6c757d; font-style: italic;">{{ __('Not Completed') }}</span>
                                 @else
@@ -396,7 +401,7 @@
                             {{ number_format($reportData['summary']['paid_amount'], 2) }} {{ __('SAR') }}</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-label">{{ __('Partially Paid Amount') }}</div>
+                        <div class="summary-label">{{ __('Pending Amount') }}</div>
                         <div class="summary-value" style="color: #ffc107;">
                             {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}
                             {{ __('SAR') }}</div>
@@ -444,8 +449,18 @@
                                     @endswitch
                                     ({{ $data['count'] }} {{ __('tasks') }})
                                 </div>
-                                <div class="summary-value">{{ number_format($data['total'], 2) }} {{ __('SAR') }}
+                                <div class="summary-value">{{ number_format($data['total'], 2) }}
+                                    {{ __('SAR') }}<br>
+                                    @if ($method == 'wallet')
+                                        @foreach ($customerNames as $cust)
+                                            <span class="info-value">
+                                                {{ $cust->name }} :
+                                                {{ __('Wallet Balance: ') . number_format($cust->wallet->balance, 2) . __('SAR') }}
+                                            </span>
+                                        @endforeach
+                                    @endif
                                 </div>
+
                             </div>
                         @endforeach
                     </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Task_Ad;
 use App\Models\Task_Offire;
 use App\Models\Task;
+use App\Models\Driver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -15,12 +16,88 @@ use Exception;
 class DriverTaskAdsController extends Controller
 {
     /**
+     * Get task ads statistics for driver dashboard
+     */
+    public function getStats(Request $request)
+    {
+        try {
+            $driver = Auth::guard('driver')->user();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver not authenticated'
+                ], 401);
+            }
+
+            $driver_id = $driver->id;
+            $vehicle_size_id = $driver->vehicle_size_id;
+
+            Log::alert('Driver ID: ' . $driver_id . ', Vehicle Size ID: ' . $vehicle_size_id);
+
+            // Count available ads (running status, vehicle size match, no driver offers)
+            // Note: Task ads with status 'running' are available for offers
+            $availableAds = Task_Ad::where('status', 'running')
+                ->whereHas('task', function ($query) use ($vehicle_size_id) {
+                    $query->where('vehicle_size_id', $vehicle_size_id)
+                          ->whereIn('status', ['advertised', 'in_progress']); // Tasks that can have ads
+                })
+                ->whereDoesntHave('offers', function ($query) use ($driver_id) {
+                    $query->where('driver_id', $driver_id);
+                })
+                ->count();
+
+            // Count driver's submitted offers (pending)
+            $myOffers = Task_Offire::where('driver_id', $driver_id)
+                ->whereHas('ad', function ($query) {
+                    $query->where('status', 'running');
+                })
+                ->where('accepted', false)
+                ->count();
+
+            // Count driver's accepted offers
+            $acceptedOffers = Task_Offire::where('driver_id', $driver_id)
+                ->where('accepted', true)
+                ->count();
+
+            Log::alert('Stats - Available: ' . $availableAds . ', My Offers: ' . $myOffers . ', Accepted: ' . $acceptedOffers);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'available_ads' => $availableAds,
+                    'my_offers' => $myOffers,
+                    'accepted_offers' => $acceptedOffers,
+                ],
+                'message' => 'Statistics retrieved successfully'
+            ]);
+
+        } catch (Exception $e) {
+            Log::error('Error getting task ads stats: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get available task ads for driver
      */
     public function index(Request $request)
     {
         try {
-            $driver = Auth::user();
+            $driver = Auth::guard('driver')->user();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver not authenticated'
+                ], 401);
+            }
+
             $size_id = $driver->vehicle_size_id;
             $driver_id = $driver->id;
 
@@ -490,7 +567,15 @@ class DriverTaskAdsController extends Controller
     public function myOffers(Request $request)
     {
         try {
-            $driver = Auth::user();
+            $driver = Auth::guard('driver')->user();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver not authenticated'
+                ], 401);
+            }
+
             $driver_id = $driver->id;
 
             // Validation
@@ -740,5 +825,78 @@ class DriverTaskAdsController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Test endpoint to debug task ads without authentication
+     */
+    public function testStats()
+    {
+        try {
+            // Get first driver for testing
+            $driver = Driver::first();
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No drivers found'
+                ]);
+            }
+
+            $driver_id = $driver->id;
+            $vehicle_size_id = $driver->vehicle_size_id;
+
+            // Count all task ads
+            $totalAds = Task_Ad::count();
+            $runningAds = Task_Ad::where('status', 'running')->count();
+
+            // Count available ads (running status, vehicle size match, no driver offers)
+            $availableAds = Task_Ad::where('status', 'running')
+                ->whereHas('task', function ($query) use ($vehicle_size_id) {
+                    $query->where('vehicle_size_id', $vehicle_size_id)
+                          ->whereIn('status', ['advertised', 'in_progress']);
+                })
+                ->whereDoesntHave('offers', function ($query) use ($driver_id) {
+                    $query->where('driver_id', $driver_id);
+                })
+                ->count();
+
+            // Count driver's submitted offers (pending)
+            $myOffers = Task_Offire::where('driver_id', $driver_id)
+                ->whereHas('ad', function ($query) {
+                    $query->where('status', 'running');
+                })
+                ->where('accepted', false)
+                ->count();
+
+            // Count driver's accepted offers
+            $acceptedOffers = Task_Offire::where('driver_id', $driver_id)
+                ->where('accepted', true)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'driver' => [
+                    'id' => $driver_id,
+                    'name' => $driver->name,
+                    'vehicle_size_id' => $vehicle_size_id
+                ],
+                'debug' => [
+                    'total_ads' => $totalAds,
+                    'running_ads' => $runningAds,
+                ],
+                'data' => [
+                    'available_ads' => $availableAds,
+                    'my_offers' => $myOffers,
+                    'accepted_offers' => $acceptedOffers,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get test statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

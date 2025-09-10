@@ -398,4 +398,36 @@
             </div>
         </div>
     </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
+                    </div>
+                    <h6 class="mb-2">{{ __('Processing Request') }}</h6>
+                    <p class="text-muted small mb-0">
+                        {{ __('Please wait while we process your request...') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">{{ __('Loading...') }}</span>
+                    </div>
+                    <h6 class="mb-2">{{ __('Processing Request') }}</h6>
+                    <p class="text-muted small mb-0">{{ __('Please wait while we process your request...') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection

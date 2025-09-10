@@ -29,6 +29,9 @@ Route::prefix('driver')->group(function () {
         Log::alert("check connection is ok ");
         return true;
     });
+
+    // Test endpoint for debugging task ads (no auth required)
+    Route::get('/task-ads/test-stats', [DriverTaskAdsController::class, 'testStats']);
     // Get reCAPTCHA site key
     // Route::get('/recaptcha-site-key', [DriverAuthController::class, 'getRecaptchaSiteKey'])
     //     ->name('api.driver.recaptcha-site-key');
@@ -112,6 +115,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
     // Task Ads routes
     Route::prefix('task-ads')->group(function () {
+        Route::get('/stats', [DriverTaskAdsController::class, 'getStats'])
+            ->name('api.driver.task-ads.stats');
+
         Route::get('/', [DriverTaskAdsController::class, 'index'])
             ->name('api.driver.task-ads.index');
 

@@ -177,8 +177,7 @@ class PlatformReportsController extends Controller
     {
         // Get customer names for the report
         $customerNames = Customer::whereIn('id', $filters['customer_ids'])
-            ->pluck('name')
-            ->toArray();
+            ->get();
 
         return view('admin.reports.pdf.customer-tasks-simple', compact(
             'reportData',

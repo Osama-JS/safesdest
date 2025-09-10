@@ -254,9 +254,9 @@ class ReportService
         $totalAmount = $effectiveAmounts->sum();
 
         // Payment status breakdown with effective amounts
-        $paidTasks = $tasks->where('payment_status', 'paid');
+        $paidTasks = $tasks->where('payment_status', 'completed');
         $partiallyPaidTasks = $tasks->where('payment_status', 'partially_paid');
-        $unpaidTasks = $tasks->where('payment_status', 'unpaid');
+        $unpaidTasks = $tasks->where('payment_status', 'waiting');
         $pendingTasks = $tasks->where('payment_status', 'pending');
 
         $paidAmount = $paidTasks->sum(function ($task) {
@@ -285,7 +285,7 @@ class ReportService
                 return false;
             }
             // Only include fully paid tasks
-            if ($task->payment_status !== 'paid') {
+            if ($task->payment_status !== 'completed') {
                 return false;
             }
             return true;
@@ -306,7 +306,7 @@ class ReportService
             'total_amount' => $totalAmount,
             'average_amount' => $totalTasks > 0 ? $totalAmount / $totalTasks : 0,
             'paid_amount' => $paidAmount,
-            'partially_paid_amount' => $partiallyPaidAmount,
+            'partially_paid_amount' => $pendingAmount,
             'unpaid_amount' => $unpaidAmount,
             'remaining_amount' => $remainingAmount,
             'payment_method_breakdown' => $paymentMethodBreakdown,
@@ -370,7 +370,9 @@ class ReportService
             'in delivery point' => 'في نقطة التسليم',
             'unloading' => 'جاري التفريغ',
             'completed' => 'مكتملة',
-            'canceled' => 'ملغية'
+            'canceled' => 'ملغية',
+            'refund' => 'مرتجعة'
+
         ];
 
         return $statuses[$status] ?? $status;

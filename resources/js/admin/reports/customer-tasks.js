@@ -41,6 +41,7 @@ class CustomerTasksReport {
     this.initializeColumnSelector();
     this.loadSavedPreferences();
     this.bindEvents();
+    this.initializeLoadingModal();
 
     console.log('CustomerTasksReport: Initialization complete');
   }
@@ -233,36 +234,41 @@ class CustomerTasksReport {
 
     if (!this.validateForm()) return;
 
-    this.showLoading();
+    console.log('CustomerTasksReport: About to show loading modal');
 
-    const formData = this.getFormData();
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      this.showLoading('Loading Report Data');
 
-    $.ajax({
-      url: window.routes.preview,
-      method: 'POST',
-      data: formData,
-      headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-      },
-      success: response => {
-        console.log('CustomerTasksReport: Preview response received', response);
-        if (response.success) {
-          this.reportData = response.data;
-          this.displayPreview(response.data, response.summary);
-          $('.preview-section').show();
-          this.updateSelectedCount();
-        } else {
-          this.showError(response.message);
+      const formData = this.getFormData();
+
+      $.ajax({
+        url: window.routes.preview,
+        method: 'POST',
+        data: formData,
+        headers: {
+          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: response => {
+          console.log('CustomerTasksReport: Preview response received', response);
+          if (response.success) {
+            this.reportData = response.data;
+            this.displayPreview(response.data, response.summary);
+            $('.preview-section').show();
+            this.updateSelectedCount();
+          } else {
+            this.showError(response.message);
+          }
+        },
+        error: xhr => {
+          console.error('CustomerTasksReport: Preview error', xhr);
+          this.showError('Error occurred while fetching data');
+        },
+        complete: () => {
+          this.hideLoading();
         }
-      },
-      error: xhr => {
-        console.error('CustomerTasksReport: Preview error', xhr);
-        this.showError('Error occurred while fetching data');
-      },
-      complete: () => {
-        this.hideLoading();
-      }
-    });
+      });
+    }, 100);
   }
 
   displayPreview(data, summary) {
@@ -356,7 +362,18 @@ class CustomerTasksReport {
       responsive: true,
       pageLength: 25,
       language: {
-        url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/en.json'
+        lengthMenu: 'Show _MENU_ entries',
+        zeroRecords: 'No matching records found',
+        info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+        infoEmpty: 'Showing 0 to 0 of 0 entries',
+        infoFiltered: '(filtered from _MAX_ total entries)',
+        search: 'Search:',
+        paginate: {
+          first: 'First',
+          last: 'Last',
+          next: 'Next',
+          previous: 'Previous'
+        }
       }
     });
   }
@@ -367,7 +384,7 @@ class CustomerTasksReport {
       return;
     }
 
-    this.showLoading();
+    this.showLoading('Generating Report');
     const formData = this.getFormData();
     formData.columns = this.selectedColumns;
     formData.export_type = type;
@@ -490,12 +507,109 @@ class CustomerTasksReport {
     }
   }
 
-  showLoading() {
-    $('#loadingOverlay').show();
+  showLoading(message = null) {
+    console.log('CustomerTasksReport: showLoading called with message:', message);
+
+    // Update modal text if message provided
+    if (message) {
+      $('#loadingModal .modal-body h6').text(message);
+    }
+
+    // Check if modal exists
+    if ($('#loadingModal').length === 0) {
+      console.error('CustomerTasksReport: Loading modal not found in DOM');
+      this.showSimpleLoading();
+      return;
+    }
+
+    // Simple jQuery modal show
+    try {
+      $('#loadingModal')
+        .modal({
+          backdrop: 'static',
+          keyboard: false
+        })
+        .modal('show');
+      console.log('CustomerTasksReport: Loading modal shown successfully');
+    } catch (error) {
+      console.error('CustomerTasksReport: Error showing modal:', error);
+      this.showSimpleLoading();
+    }
   }
 
   hideLoading() {
-    $('#loadingOverlay').hide();
+    console.log('CustomerTasksReport: hideLoading called');
+
+    try {
+      // Simple jQuery modal hide
+      $('#loadingModal').modal('hide');
+      // Reset to default text
+      $('#loadingModal .modal-body h6').text('Processing Request');
+      console.log('CustomerTasksReport: Loading modal hidden successfully');
+    } catch (error) {
+      console.error('CustomerTasksReport: Error hiding modal:', error);
+      this.hideSimpleLoading();
+    }
+  }
+
+  showSimpleLoading() {
+    // Create simple loading overlay if modal doesn't work
+    if ($('#simpleLoadingOverlay').length === 0) {
+      $('body').append(`
+        <div id="simpleLoadingOverlay" style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999;
+        ">
+          <div style="
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+          ">
+            <div class="spinner-border text-primary mb-3"></div>
+            <h6>Processing Request</h6>
+            <p class="text-muted small">Please wait...</p>
+          </div>
+        </div>
+      `);
+    }
+    $('#simpleLoadingOverlay').show();
+  }
+
+  hideSimpleLoading() {
+    $('#simpleLoadingOverlay').hide();
+  }
+
+  initializeLoadingModal() {
+    console.log('CustomerTasksReport: Initializing Loading Modal...');
+
+    // Check if modal exists in DOM
+    const modalExists = $('#loadingModal').length > 0;
+    console.log('CustomerTasksReport: Modal exists in DOM:', modalExists);
+
+    if (!modalExists) {
+      console.warn('CustomerTasksReport: Loading modal not found in DOM');
+      return;
+    }
+
+    // Check if Bootstrap is available
+    const bootstrapAvailable = typeof $.fn.modal !== 'undefined';
+    console.log('CustomerTasksReport: Bootstrap modal available:', bootstrapAvailable);
+
+    if (!bootstrapAvailable) {
+      console.warn('CustomerTasksReport: Bootstrap modal not available');
+      return;
+    }
+
+    console.log('CustomerTasksReport: Loading modal initialized successfully');
   }
 
   showError(message) {

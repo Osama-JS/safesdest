@@ -115,6 +115,31 @@
                 </div>
             </div>
 
+            <!-- Wallet Reports -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon success mx-auto">
+                            <i class="ti ti-wallet"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('Wallet Reports') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('Generate comprehensive wallet reports for customers, drivers, and teams with transaction details') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-success me-2">{{ __('PDF Export') }}</span>
+                            <span class="badge bg-info">{{ __('Multi-Type') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.wallet.index') }}" class="btn btn-success">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- <!-- Driver Performance Report (Coming Soon) -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100 opacity-50">
@@ -278,20 +303,20 @@
                 </div>
             </div>
         </div> --}}
-    </div>
-@endsection
+        </div>
+    @endsection
 
-<!-- Vendor Scripts -->
-@section('vendor-script')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
-@endsection
+    <!-- Vendor Scripts -->
+    @section('vendor-script')
+        @vite(['resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @endsection
 
-<!-- Page Scripts -->
-@section('page-script')
-    <script>
-        $(document).ready(function() {
-            // Add any initialization scripts here
-            console.log('Platform Reports page loaded');
-        });
-    </script>
-@endsection
+    <!-- Page Scripts -->
+    @section('page-script')
+        <script>
+            $(document).ready(function() {
+                // Add any initialization scripts here
+                console.log('Platform Reports page loaded');
+            });
+        </script>
+    @endsection

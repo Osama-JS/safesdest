@@ -28,6 +28,11 @@ class ReportsPermissionsSeeder extends Seeder
                 'slug' => 'Reports Permissions'
             ],
             [
+                'name' => 'generate_reports',
+                'd_name' => 'Generate Platform Reports',
+                'slug' => 'Reports Permissions'
+            ],
+            [
                 'name' => 'export_reports',
                 'd_name' => 'Export Reports to Excel/PDF',
                 'slug' => 'Reports Permissions'
@@ -35,6 +40,11 @@ class ReportsPermissionsSeeder extends Seeder
             [
                 'name' => 'customer_tasks_reports',
                 'd_name' => 'Generate Customer Tasks Reports',
+                'slug' => 'Reports Permissions'
+            ],
+            [
+                'name' => 'wallet_reports',
+                'd_name' => 'Generate Wallet Reports',
                 'slug' => 'Reports Permissions'
             ],
         ];

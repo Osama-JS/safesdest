@@ -406,4 +406,405 @@ class ReportService
 
         return $methods[$method] ?? $method;
     }
+
+    /**
+     * Generate driver tasks report
+     */
+    public function generateDriverTasksReport(array $filters, bool $preview = false)
+    {
+        $user = Auth::user();
+
+        // Build base query
+        $query = Task::with([
+            'customer:id,name,phone,company_name',
+            'driver:id,name,phone,team_id',
+            'driver.team:id,name'
+        ]);
+
+        // Filter by drivers (required)
+        if (!empty($filters['driver_ids'])) {
+            $query->whereIn('driver_id', $filters['driver_ids']);
+        }
+
+        // Filter by date range (required)
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $query->whereBetween('created_at', [
+                $filters['date_from'] . ' 00:00:00',
+                $filters['date_to'] . ' 23:59:59'
+            ]);
+        }
+
+        // Additional filters
+        if (!empty($filters['customer_ids'])) {
+            $query->whereIn('customer_id', $filters['customer_ids']);
+        }
+
+        if (!empty($filters['team_ids'])) {
+            $query->whereHas('driver', function ($q) use ($filters) {
+                $q->whereIn('team_id', $filters['team_ids']);
+            });
+        }
+
+        if (!empty($filters['task_statuses'])) {
+            $query->whereIn('status', $filters['task_statuses']);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (!empty($filters['payment_method'])) {
+            $query->where('payment_method', $filters['payment_method']);
+        }
+
+        if (!empty($filters['created_by'])) {
+            if ($filters['created_by'] === 'customer') {
+                $query->whereNotNull('customer_id');
+            } elseif ($filters['created_by'] === 'admin') {
+                $query->whereNull('customer_id');
+            }
+        }
+
+        // Get tasks
+        $tasks = $query->orderBy('created_at', 'desc')->get();
+
+        // Process tasks data
+        $processedTasks = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'total_price' => $task->total_price ?? 0,
+                'commission' => $task->commission ?? 0,
+                'pickup_address' => $task->pickup_address ?? '',
+                'delivery_address' => $task->delivery_address ?? '',
+                'customer_name' => $task->customer->name ?? '',
+                'customer_phone' => $task->customer->phone ?? '',
+                'customer_company_name' => $task->customer->company_name ?? '',
+                'driver_name' => $task->driver->name ?? '',
+                'driver_phone' => $task->driver->phone ?? '',
+                'team_name' => $task->driver->team->name ?? '',
+                'status' => $task->status ?? '',
+                'status_ar' => $this->translateTaskStatus($task->status ?? ''),
+                'payment_status' => $task->payment_status ?? '',
+                'payment_status_ar' => $this->translatePaymentStatus($task->payment_status ?? ''),
+                'payment_method' => $task->payment_method ?? '',
+                'payment_method_ar' => $this->translatePaymentMethod($task->payment_method ?? ''),
+                'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
+                'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
+                'notes' => $task->notes ?? ''
+            ];
+        });
+
+        // Calculate summary
+        $summary = $this->calculateDriverTasksSummary($processedTasks);
+
+        return [
+            'tasks' => $preview ? $processedTasks->take(10) : $processedTasks,
+            'summary' => $summary,
+            'generated_at' => now(),
+            'generated_by' => $user->name ?? 'System',
+            'filters_applied' => $this->getAppliedFilters($filters)
+        ];
+    }
+
+    /**
+     * Generate team tasks report
+     */
+    public function generateTeamTasksReport(array $filters, bool $preview = false)
+    {
+        $user = Auth::user();
+
+        // Build base query
+        $query = Task::with([
+            'customer:id,name,phone,company_name',
+            'driver:id,name,phone,team_id',
+            'driver.team:id,name'
+        ]);
+
+        // Filter by teams (required)
+        if (!empty($filters['team_ids'])) {
+            $query->whereHas('driver', function ($q) use ($filters) {
+                $q->whereIn('team_id', $filters['team_ids']);
+            });
+        }
+
+        // Filter by date range (required)
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $query->whereBetween('created_at', [
+                $filters['date_from'] . ' 00:00:00',
+                $filters['date_to'] . ' 23:59:59'
+            ]);
+        }
+
+        // Additional filters
+        if (!empty($filters['customer_ids'])) {
+            $query->whereIn('customer_id', $filters['customer_ids']);
+        }
+
+        if (!empty($filters['driver_ids'])) {
+            $query->whereIn('driver_id', $filters['driver_ids']);
+        }
+
+        if (!empty($filters['task_statuses'])) {
+            $query->whereIn('status', $filters['task_statuses']);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $query->where('payment_status', $filters['payment_status']);
+        }
+
+        if (!empty($filters['payment_method'])) {
+            $query->where('payment_method', $filters['payment_method']);
+        }
+
+        if (!empty($filters['created_by'])) {
+            if ($filters['created_by'] === 'customer') {
+                $query->whereNotNull('customer_id');
+            } elseif ($filters['created_by'] === 'admin') {
+                $query->whereNull('customer_id');
+            }
+        }
+
+        // Get tasks
+        $tasks = $query->orderBy('created_at', 'desc')->get();
+
+        // Process tasks data
+        $processedTasks = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'total_price' => $task->total_price ?? 0,
+                'commission' => $task->commission ?? 0,
+                'pickup_address' => $task->pickup_address ?? '',
+                'delivery_address' => $task->delivery_address ?? '',
+                'customer_name' => $task->customer->name ?? '',
+                'customer_phone' => $task->customer->phone ?? '',
+                'customer_company_name' => $task->customer->company_name ?? '',
+                'driver_name' => $task->driver->name ?? '',
+                'driver_phone' => $task->driver->phone ?? '',
+                'team_name' => $task->driver->team->name ?? '',
+                'status' => $task->status ?? '',
+                'status_ar' => $this->translateTaskStatus($task->status ?? ''),
+                'payment_status' => $task->payment_status ?? '',
+                'payment_status_ar' => $this->translatePaymentStatus($task->payment_status ?? ''),
+                'payment_method' => $task->payment_method ?? '',
+                'payment_method_ar' => $this->translatePaymentMethod($task->payment_method ?? ''),
+                'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
+                'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
+                'notes' => $task->notes ?? ''
+            ];
+        });
+
+        // Calculate summary
+        $summary = $this->calculateTeamTasksSummary($processedTasks);
+
+        return [
+            'tasks' => $preview ? $processedTasks->take(10) : $processedTasks,
+            'summary' => $summary,
+            'generated_at' => now(),
+            'generated_by' => $user->name ?? 'System',
+            'filters_applied' => $this->getAppliedFilters($filters)
+        ];
+    }
+
+    /**
+     * Calculate driver tasks summary
+     */
+    private function calculateDriverTasksSummary($tasks)
+    {
+        $totalTasks = $tasks->count();
+        $totalAmount = 0;
+        $totalCommission = 0;
+        $paidAmount = 0;
+        $partiallyPaidAmount = 0;
+        $unpaidAmount = 0;
+
+        foreach ($tasks as $task) {
+            $taskAmount = ($task['total_price'] ?? 0) - ($task['commission'] ?? 0);
+            $totalAmount += $taskAmount;
+            $totalCommission += $task['commission'] ?? 0;
+
+            // Calculate payment amounts
+            if ($task['payment_status'] === 'completed') {
+                $paidAmount += $taskAmount;
+            } elseif ($task['payment_status'] === 'pending') {
+                $partiallyPaidAmount += $taskAmount;
+            } else {
+                $unpaidAmount += $taskAmount;
+            }
+        }
+
+        return [
+            'total_tasks' => $totalTasks,
+            'total_amount' => $totalAmount,
+            'total_commission' => $totalCommission,
+            'average_amount' => $totalTasks > 0 ? $totalAmount / $totalTasks : 0,
+            'paid_amount' => $paidAmount,
+            'partially_paid_amount' => $partiallyPaidAmount,
+            'unpaid_amount' => $unpaidAmount
+        ];
+    }
+
+    /**
+     * Calculate team tasks summary
+     */
+    private function calculateTeamTasksSummary($tasks)
+    {
+        $totalTasks = $tasks->count();
+        $totalAmount = 0;
+        $totalCommission = 0;
+        $paidAmount = 0;
+        $partiallyPaidAmount = 0;
+        $unpaidAmount = 0;
+
+        foreach ($tasks as $task) {
+            $taskAmount = ($task['total_price'] ?? 0) - ($task['commission'] ?? 0);
+            $totalAmount += $taskAmount;
+            $totalCommission += $task['commission'] ?? 0;
+
+            // Calculate payment amounts
+            if ($task['payment_status'] === 'completed') {
+                $paidAmount += $taskAmount;
+            } elseif ($task['payment_status'] === 'pending') {
+                $partiallyPaidAmount += $taskAmount;
+            } else {
+                $unpaidAmount += $taskAmount;
+            }
+        }
+
+        return [
+            'total_tasks' => $totalTasks,
+            'total_amount' => $totalAmount,
+            'total_commission' => $totalCommission,
+            'average_amount' => $totalTasks > 0 ? $totalAmount / $totalTasks : 0,
+            'paid_amount' => $paidAmount,
+            'partially_paid_amount' => $partiallyPaidAmount,
+            'unpaid_amount' => $unpaidAmount
+        ];
+    }
+
+    /**
+     * Export driver tasks to Excel
+     */
+    public function exportDriverTasksToExcel($reportData, $filters)
+    {
+        // Create Excel export similar to customer tasks
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set headers
+        $headers = ['رقم المهمة', 'سعر المهمة', 'المسار', 'العميل', 'حالة المهمة', 'حالة الدفع', 'طريقة الدفع', 'تاريخ الإنشاء', 'تاريخ الإغلاق'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        // Add data
+        $row = 2;
+        foreach ($reportData['tasks'] as $task) {
+            $displayPrice = ($task['total_price'] ?? 0) - ($task['commission'] ?? 0);
+            $route = 'من: ' . ($task['pickup_address'] ?? '') . ' إلى: ' . ($task['delivery_address'] ?? '');
+
+            $sheet->fromArray([
+                $task['id'],
+                number_format($displayPrice, 2) . ' ريال',
+                $route,
+                $task['customer_name'],
+                $task['status_ar'],
+                $task['payment_status_ar'],
+                $task['payment_method_ar'],
+                $task['created_at_formatted'],
+                $task['closed_at_formatted'] ?: 'لم يتم الإغلاق بعد'
+            ], null, 'A' . $row);
+            $row++;
+        }
+
+        // Create response
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'driver-tasks-report-' . date('Y-m-d-H-i-s') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Export driver tasks to PDF
+     */
+    public function exportDriverTasksToPdf($reportData, $filters)
+    {
+        // Get driver names for the report
+        $driverIds = $filters['driver_ids'] ?? [];
+        $driverNames = \App\Models\Driver::whereIn('id', $driverIds)->get(['id', 'name', 'phone']);
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('admin.reports.pdf.driver-tasks-simple', [
+            'reportData' => $reportData,
+            'filters' => $filters,
+            'driverNames' => $driverNames
+        ]);
+
+        return $pdf->download('driver-tasks-report-' . date('Y-m-d-H-i-s') . '.pdf');
+    }
+
+    /**
+     * Export team tasks to Excel
+     */
+    public function exportTeamTasksToExcel($reportData, $filters)
+    {
+        // Create Excel export similar to customer tasks
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set headers
+        $headers = ['رقم المهمة', 'سعر المهمة', 'المسار', 'العميل', 'السائق', 'حالة المهمة', 'حالة الدفع', 'طريقة الدفع', 'تاريخ الإنشاء', 'تاريخ الإغلاق'];
+        $sheet->fromArray($headers, null, 'A1');
+
+        // Add data
+        $row = 2;
+        foreach ($reportData['tasks'] as $task) {
+            $displayPrice = ($task['total_price'] ?? 0) - ($task['commission'] ?? 0);
+            $route = 'من: ' . ($task['pickup_address'] ?? '') . ' إلى: ' . ($task['delivery_address'] ?? '');
+
+            $sheet->fromArray([
+                $task['id'],
+                number_format($displayPrice, 2) . ' ريال',
+                $route,
+                $task['customer_name'],
+                $task['driver_name'],
+                $task['status_ar'],
+                $task['payment_status_ar'],
+                $task['payment_method_ar'],
+                $task['created_at_formatted'],
+                $task['closed_at_formatted'] ?: 'لم يتم الإغلاق بعد'
+            ], null, 'A' . $row);
+            $row++;
+        }
+
+        // Create response
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'team-tasks-report-' . date('Y-m-d-H-i-s') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * Export team tasks to PDF
+     */
+    public function exportTeamTasksToPdf($reportData, $filters)
+    {
+        // Get team names for the report
+        $teamIds = $filters['team_ids'] ?? [];
+        $teamNames = \App\Models\Team::whereIn('id', $teamIds)->get(['id', 'name']);
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('admin.reports.pdf.team-tasks-simple', [
+            'reportData' => $reportData,
+            'filters' => $filters,
+            'teamNames' => $teamNames
+        ]);
+
+        return $pdf->download('team-tasks-report-' . date('Y-m-d-H-i-s') . '.pdf');
+    }
 }

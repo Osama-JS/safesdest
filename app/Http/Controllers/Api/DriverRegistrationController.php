@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use Exception;
+use App\Models\Teams;
 use App\Models\Driver;
 use App\Models\Vehicle;
-use App\Models\Vehicle_Type;
-use App\Models\Vehicle_Size;
-use App\Models\Form_Field;
-use App\Models\Form_Template;
-use App\Models\Teams;
 use App\Models\Settings;
-use App\Models\Email_Verifications;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use App\Models\Form_Field;
 use App\Helpers\FileHelper;
+use Illuminate\Support\Str;
+use App\Models\Vehicle_Size;
+use App\Models\Vehicle_Type;
+use Illuminate\Http\Request;
+use App\Models\Form_Template;
+use Illuminate\Support\Facades\DB;
+use App\Models\Email_Verifications;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
 
 class DriverRegistrationController extends Controller
 {
@@ -40,7 +41,7 @@ class DriverRegistrationController extends Controller
             if ($driverTemplateSetting) {
                 $driverTemplate = Form_Template::find($driverTemplateSetting->value);
                 if ($driverTemplate) {
-                    $driverFields = Form_Field::where('form_template_id', $driverTemplate->id)
+                    $driverFields = Form_Field::where('form_template_id', $driverTemplate->id)->where('driver_can', 'write')
                         ->orderBy('order', 'ASC')
                         ->get();
                 }
@@ -131,8 +132,13 @@ class DriverRegistrationController extends Controller
     public function register(Request $request)
     {
         try {
-            Log::info('Register driver (API) attempt', ['payload' => $request->all()]);
-
+            // Log::info('Register driver (API) attempt', [
+            //     'payload' => $request->all(),
+            //     'files' => $request->allFiles(),
+            //     'has_additional_fields' => $request->has('additional_fields')
+            // ]);
+            // Log::alert($request);
+            // dd('stop');
             // قواعد أساسية (قريبة من دالة الموقع)
             $baseRules = [
                 'name'                  => 'required|string|max:255',
@@ -155,90 +161,16 @@ class DriverRegistrationController extends Controller
             // دعم template_id أو template
             $templateId = $request->input('template_id') ?? $request->input('template');
 
-            // قواعد الحقول الإضافية
+            // قواعد الحقول الإضافية - التنسيق الجديد
             $additionalRules = [];
             if (!empty($templateId)) {
-                $fields = Form_Field::where('form_template_id', $templateId)->get();
+                // Add validation for additional_fields as JSON string
+                $additionalRules['additional_fields'] = 'nullable|json';
 
-                foreach ($fields as $field) {
-                    $keyBase = 'additional_fields.' . $field->name;
-                    $rules   = [];
-
-                    // required عند الإنشاء فقط (مطابق لدالة الموقع)
-                    if (!$request->filled('id') && $field->required) {
-                        $rules[] = 'required';
-                    }
-
-                    switch ($field->type) {
-                        case 'text':
-                            $rules[] = 'string';
-                            break;
-
-                        case 'number':
-                            $rules[] = 'numeric';
-                            break;
-
-                        case 'url':
-                            $rules[] = 'url';
-                            break;
-
-                        case 'date':
-                            $rules[] = 'date';
-                            break;
-
-                        case 'file':
-                            $rules[] = 'file';
-                            $rules[] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
-                            $rules[] = 'max:10240';
-                            break;
-
-                        case 'image':
-                            $rules[] = 'image';
-                            $rules[] = 'mimes:jpeg,png,jpg,webp,gif';
-                            $rules[] = 'max:5120';
-                            break;
-
-                        case 'file_expiration_date':
-                            $fileKey = $keyBase . '_file';
-                            $expKey  = $keyBase . '_expiration';
-
-                            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
-                            $additionalRules[$expKey]  = ['date'];
-
-                            if ($field->required) {
-                                $additionalRules[$fileKey][] = 'required_with:' . $expKey;
-                                $additionalRules[$expKey][]  = 'required_with:' . $fileKey;
-                            }
-                            // لا تضف قاعدة على $keyBase نفسه
-                            continue 2;
-
-                        case 'file_with_text':
-                            $fileKey = $keyBase . '_file';
-                            $textKey = $keyBase . '_text';
-
-                            $additionalRules[$fileKey] = ['file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
-                            $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
-
-                            if ($field->required) {
-                                $additionalRules[$fileKey][] = 'required';
-                                $additionalRules[$textKey][] = 'required';
-                            }
-                            if ($request->hasFile("additional_fields.{$field->name}_file")) {
-                                $additionalRules[$textKey][] = 'required';
-                            }
-                            continue 2;
-
-                        default:
-                            if (!$field->required) {
-                                $rules[] = 'nullable';
-                            }
-                            $rules[] = 'string';
-                            break;
-                    }
-
-                    $additionalRules[$keyBase] = $rules;
-                }
+                // We'll validate the content of additional_fields after parsing
+                // No need for individual field validation rules here since they're in JSON
             }
+
 
             // دمج القواعد والتحقق
             $allRules  = array_merge($baseRules, $additionalRules);
@@ -251,6 +183,14 @@ class DriverRegistrationController extends Controller
                     'message' => 'Validation failed',
                     'errors'  => $validator->errors(),
                 ], 422);
+            }
+
+            // Custom validation for additional_fields content
+            if (!empty($templateId) && $request->has('additional_fields')) {
+                $additionalFieldsValidation = $this->validateAdditionalFieldsContent($request, $templateId);
+                if ($additionalFieldsValidation !== true) {
+                    return $additionalFieldsValidation;
+                }
             }
 
             DB::beginTransaction();
@@ -301,6 +241,8 @@ class DriverRegistrationController extends Controller
                 ],
             ], 201);
 
+
+
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('Register driver (API) error', ['error' => $e->getMessage()]);
@@ -322,31 +264,56 @@ class DriverRegistrationController extends Controller
 
         $template = Form_Template::with('fields')->find($templateId);
         if (!$template) {
+            Log::warning('Template not found', ['template_id' => $templateId]);
             return $structured;
         }
+
+        // Check if additional_fields is sent as JSON string
+        $additionalFieldsData = [];
+        if ($req->has('additional_fields')) {
+            $additionalFieldsJson = $req->input('additional_fields');
+            if (is_string($additionalFieldsJson)) {
+                $additionalFieldsData = json_decode($additionalFieldsJson, true) ?? [];
+            } elseif (is_array($additionalFieldsJson)) {
+                $additionalFieldsData = $additionalFieldsJson;
+            }
+        }
+
+        Log::info('Processing additional fields', [
+            'template_id' => $templateId,
+            'fields_count' => $template->fields->count(),
+            'additional_fields_data' => $additionalFieldsData,
+            'request_keys' => array_keys($req->all())
+        ]);
 
         foreach ($template->fields as $field) {
             $name = $field->name;
             $type = $field->type;
 
+            Log::info('Processing field', [
+                'field_name' => $name,
+                'field_type' => $type,
+                'field_required' => $field->required
+            ]);
+
             switch ($type) {
                 case 'file_expiration_date': {
                     $fileKey = "additional_fields.{$name}_file";
-                    $expKey  = "additional_fields.{$name}_expiration";
+                    $expKey  = "{$name}_expiration";
 
                     if ($req->hasFile($fileKey)) {
-                        $path = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
+                        $path = FileHelper::uploadFile($req->file($fileKey), 'drivers/files');
                         $structured[$name] = [
                             'label'      => $field->label,
                             'value'      => $path,
-                            'expiration' => $req->input($expKey),
+                            'expiration' => $additionalFieldsData[$expKey] ?? null,
                             'type'       => $type,
                         ];
-                    } elseif ($req->filled($expKey)) {
+                    } elseif (isset($additionalFieldsData[$expKey])) {
                         $structured[$name] = [
                             'label'      => $field->label,
                             'value'      => null,
-                            'expiration' => $req->input($expKey),
+                            'expiration' => $additionalFieldsData[$expKey],
                             'type'       => $type,
                         ];
                     }
@@ -355,18 +322,18 @@ class DriverRegistrationController extends Controller
 
                 case 'file_with_text': {
                     $fileKey = "additional_fields.{$name}_file";
-                    $textKey = "additional_fields.{$name}_text";
+                    $textKey = "{$name}_text";
 
                     $valuePath = null;
                     if ($req->hasFile($fileKey)) {
                         $valuePath = FileHelper::uploadFile($req->file($fileKey), 'drivers/files');
                     }
 
-                    if ($req->hasFile($fileKey) || $req->filled($textKey)) {
+                    if ($req->hasFile($fileKey) || isset($additionalFieldsData[$textKey])) {
                         $structured[$name] = [
                             'label' => $field->label,
                             'value' => $valuePath,
-                            'text'  => $req->input($textKey),
+                            'text'  => $additionalFieldsData[$textKey] ?? null,
                             'type'  => $type,
                         ];
                     }
@@ -388,11 +355,10 @@ class DriverRegistrationController extends Controller
                 }
 
                 default: {
-                    $valKey = "additional_fields.{$name}";
-                    if ($req->has($valKey)) {
+                    if (isset($additionalFieldsData[$name])) {
                         $structured[$name] = [
                             'label' => $field->label,
-                            'value' => $req->input($valKey),
+                            'value' => $additionalFieldsData[$name],
                             'type'  => $type,
                         ];
                     }
@@ -401,7 +367,89 @@ class DriverRegistrationController extends Controller
             }
         }
 
+        Log::info('Additional fields processing completed', [
+            'structured_fields_count' => count($structured),
+            'structured_fields' => array_keys($structured)
+        ]);
+
         return $structured;
+    }
+
+    /**
+     * Validate additional_fields content after JSON parsing
+     */
+    private function validateAdditionalFieldsContent(Request $request, $templateId)
+    {
+        $additionalFieldsJson = $request->input('additional_fields');
+        $additionalFieldsData = [];
+
+        if (is_string($additionalFieldsJson)) {
+            $additionalFieldsData = json_decode($additionalFieldsJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid JSON format for additional_fields',
+                    'errors' => ['additional_fields' => ['Invalid JSON format']]
+                ], 422);
+            }
+        } elseif (is_array($additionalFieldsJson)) {
+            $additionalFieldsData = $additionalFieldsJson;
+        }
+
+        $template = Form_Template::with('fields')->find($templateId);
+        if (!$template) {
+            return true; // Skip validation if template not found
+        }
+
+        $errors = [];
+
+        foreach ($template->fields as $field) {
+            $fieldName = $field->name;
+            $fieldValue = $additionalFieldsData[$fieldName] ?? null;
+
+            // Check required fields
+            if ($field->required && (is_null($fieldValue) || $fieldValue === '')) {
+                $errors["additional_fields.{$fieldName}"] = ["The {$field->label} field is required."];
+                continue;
+            }
+
+            // Skip validation if field is empty and not required
+            if (is_null($fieldValue) || $fieldValue === '') {
+                continue;
+            }
+
+            // Type-specific validation
+            switch ($field->type) {
+                case 'number':
+                    if (!is_numeric($fieldValue)) {
+                        $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a number."];
+                    }
+                    break;
+
+                case 'url':
+                    if (!filter_var($fieldValue, FILTER_VALIDATE_URL)) {
+                        $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid URL."];
+                    }
+                    break;
+
+                case 'date':
+                    if (!strtotime($fieldValue)) {
+                        $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid date."];
+                    }
+                    break;
+            }
+        }
+
+        if (!empty($errors)) {
+            Log::warning('Additional fields validation failed', ['errors' => $errors]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Additional fields validation failed',
+                'errors' => $errors
+            ], 422);
+        }
+
+        return true;
     }
 
     /**

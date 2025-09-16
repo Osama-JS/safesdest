@@ -8,12 +8,14 @@ use App\Models\Wallet;
 use Mockery\Expectation;
 use Illuminate\Http\Request;
 use App\Models\Wallet_Transaction;
+use App\Models\WalletPaymentRequestLog;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\FunctionsController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
+use App\Helpers\IpHelper;
 
 class WalletsController extends Controller
 {
@@ -652,4 +654,156 @@ class WalletsController extends Controller
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
         }
     }
+
+
+    public function paymentRequest($id)
+    {
+        try {
+            $wallet = Wallet::findOrFail($id);
+
+            if ($wallet->user_type != 'driver') {
+                return response()->json([
+                  'status' => 0,
+                  'error' => __('Wallet not found')
+                ]);
+            }
+            // Calculate driver amount (total_price - commission)
+            $driverAmount = $wallet->balance;
+
+            // Get driver info with bank details
+            $driverName = $wallet->driver->name ;
+            $driverPhone = $wallet->driver->name ? $wallet->driver->phone_code .  $wallet->driver->phone : "";
+            $driverEmail = $wallet->driver->name ? $wallet->driver->email : "";
+            $driverBankName = $wallet->driver->bank_name ?? null;
+            $driverAccountNumber = $wallet->driver->account_number ?? null;
+            $driverIbanNumber = $wallet->driver->iban_number ?? null;
+            $userId = Auth::user()->id;
+            $userName = Auth::user()->name;
+
+            return response()->json([
+                'status' => 1,
+                'wallet' => [
+                    'id' => $wallet->id,
+                    'balance' => $wallet->balance,
+                    'driver_name' => $driverName,
+                    'driver_phone' => $driverPhone,
+                    'driver_email' => $driverEmail,
+                    'driver_bank_name' => $driverBankName,
+                    'driver_account_number' => $driverAccountNumber,
+                    'driver_iban_number' => $driverIbanNumber,
+                    'user_id' =>  $userId ,
+                    'user_name' =>  $userName
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => __('Wallet not found') . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Log wallet payment request when printed
+     */
+    public function logPaymentRequest(Request $request, $walletId)
+    {
+        try {
+            // التحقق من صحة البيانات
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:0.01',
+                'payment_request_number' => 'required|string|max:50',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'بيانات غير صحيحة',
+                    'errors' => $validator->errors()
+                ]);
+            }
+
+            // جلب المحفظة والتحقق من وجودها
+            $wallet = Wallet::with('driver')->findOrFail($walletId);
+
+            // التحقق من أن المحفظة خاصة بسائق
+            if ($wallet->user_type !== 'driver') {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'هذه المحفظة ليست خاصة بسائق'
+                ]);
+            }
+
+            // التحقق من صلاحية المستخدم
+            $user = Auth::user();
+            if (!$user->checkDriver($wallet->driver_id)) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'غير مصرح لك بالوصول لهذه المحفظة'
+                ]);
+            }
+
+            // إنشاء سجل طلب السداد
+            $log = WalletPaymentRequestLog::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $user->id,
+                'driver_id' => $wallet->driver_id,
+                'amount' => $request->amount,
+                'payment_request_number' => $request->payment_request_number,
+                'notes' => $request->notes,
+                'ip_address' => IpHelper::getUserIpAddress(),
+                'printed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'تم تسجيل طلب السداد بنجاح',
+                'log_id' => $log->id
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء تسجيل طلب السداد: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get payment request logs for a wallet
+     */
+    public function getPaymentRequestLogs($walletId)
+    {
+        try {
+            $wallet = Wallet::findOrFail($walletId);
+
+            // التحقق من صلاحية المستخدم
+            $user = Auth::user();
+            if ($wallet->user_type === 'driver' && !$user->checkDriver($wallet->driver_id)) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'غير مصرح لك بالوصول لهذه المحفظة'
+                ]);
+            }
+
+            // جلب سجلات طلبات السداد
+            $logs = WalletPaymentRequestLog::with(['user', 'driver'])
+                ->forWallet($walletId)
+                ->latest()
+                ->paginate(10);
+
+            return response()->json([
+                'status' => 1,
+                'logs' => $logs
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء جلب السجلات: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }

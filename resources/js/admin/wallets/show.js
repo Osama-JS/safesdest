@@ -3,7 +3,8 @@
  */
 
 'use strict';
-import { deleteRecord, showFormModal } from '../../ajax';
+import { deleteRecord, showFormModal, showAlert } from '../../ajax';
+import writtenNumber from 'written-number';
 
 $(function () {
   var dt_data_table = $('.datatables-users');
@@ -393,4 +394,521 @@ $(function () {
     $('#trans_id').val('');
     $('#modelTitle').html('Add New Transaction');
   });
+
+  // Payment Request Handler
+  $(document).on('click', '#payment-request', function () {
+    // $('#paymentRequestModal').modal('show');
+
+    // Get task details for payment request
+    $.get(`${baseUrl}admin/wallets/payment/request/${walletId}`, function (data) {
+      if (data.status === 0) {
+        showAlert('error', data.error);
+        return;
+      }
+
+      const wallet = data.wallet;
+      const balance = wallet.balance;
+
+      // Fill wallet information
+      $('#paymentRequestWalletId').text(`#${wallet.id}`);
+      $('#walletInfoId').text(`#${wallet.id}`);
+      $('#walletInfoAmount').text(`${balance.toFixed(2)} SAR`);
+      $('#walletInfoOwner').text(wallet.driver_name || 'N/A');
+      $('#walletInfoOwnerPhone').text(wallet.driver_phone || 'N/A');
+      $('#walletInfoOwnerEmail').text(wallet.driver_email || 'N/A');
+
+      // Set maximum amount
+      $('#maxAmount').text(`${balance.toFixed(2)} SAR`);
+      $('#requestedAmount').attr('max', balance);
+
+      // Set hidden wallet ID
+      $('#paymentRequestWalletIdInput').val(wallet.id);
+
+      // Store wallet data for later use
+      $('#paymentRequestModal').data('walletData', {
+        id: wallet.id,
+        driver_amount: balance,
+        driver_name: wallet.driver_name,
+        driver_phone: wallet.driver_phone,
+        driver_email: wallet.driver_email,
+        driver_bank_name: wallet.driver_bank_name,
+        driver_account_number: wallet.driver_account_number,
+        driver_iban_number: wallet.driver_iban_number,
+        user_id: wallet.user_id,
+        user_name: wallet.user_name
+      });
+      // Show modal
+      $('#paymentRequestModal').modal('show');
+      // Reset form
+      $('#paymentRequestForm')[0].reset();
+      $('.text-error').text('');
+
+      $('#bankName').val(wallet.driver_bank_name);
+      $('#accountNumber').val(wallet.driver_account_number);
+      const formattedIban = wallet.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
+      $('#ibanNumber').val(formattedIban);
+    }).fail(function () {
+      showAlert('error', 'Error loading wallet details');
+    });
+  });
+
+  // Format IBAN input
+  $(document).on('input', '#ibanNumber', function () {
+    let value = $(this).val().replace(/\s/g, '').toUpperCase();
+    // Ensure it starts with SA
+    if (value && !value.startsWith('SA')) {
+      value = 'SA' + value.replace(/^SA/i, '');
+    }
+    let formatted = value.replace(/(.{4})/g, '$1 ').trim();
+    $(this).val(formatted);
+  });
+
+  // Format Account Number input
+  $(document).on('input', '#accountNumber', function () {
+    let value = $(this).val().replace(/\D/g, '');
+    $(this).val(value);
+  });
+
+  // Validate requested amount in real-time
+  $(document).on('input', '#requestedAmount', function () {
+    const value = parseFloat($(this).val());
+    const maxAmount = parseFloat($(this).attr('max'));
+
+    if (value > maxAmount) {
+      $('.requested_amount-error').text(`المبلغ لا يمكن أن يكون أكبر من ${maxAmount.toFixed(2)} ريال`);
+    } else {
+      $('.requested_amount-error').text('');
+    }
+  });
+
+  // Handle bank selection
+  $(document).on('change', '#bankName', function () {
+    const selectedValue = $(this).val();
+    if (selectedValue === 'other') {
+      $('#customBankName').show().attr('required', true);
+    } else {
+      $('#customBankName').hide().attr('required', false).val('');
+    }
+  });
+
+  // Generate Payment Request Handler
+  $(document).on('click', '#generatePaymentRequest', function () {
+    const form = $('#paymentRequestForm');
+    const walletData = $('#paymentRequestModal').data('walletData');
+
+    // Validate form
+    const requestedAmount = parseFloat($('#requestedAmount').val());
+    let bankName = $('#bankName').val().trim();
+    const customBankName = $('#customBankName').val().trim();
+    const accountNumber = $('#accountNumber').val().trim();
+    const ibanNumber = $('#ibanNumber').val().trim();
+    const paymentRecipient = $('#paymentRecipient').val();
+    const notes = $('#notes').val();
+
+    // Use custom bank name if "other" is selected
+    if (bankName === 'other') {
+      bankName = customBankName;
+    }
+
+    // Clear previous errors
+    $('.text-error').text('');
+
+    let hasErrors = false;
+
+    if (!requestedAmount || requestedAmount <= 0) {
+      $('.requested_amount-error').text('المبلغ المطلوب مطلوب ويجب أن يكون أكبر من صفر');
+      hasErrors = true;
+    }
+
+    if (requestedAmount > walletData.driver_amount) {
+      $('.requested_amount-error').text(
+        `المبلغ المطلوب لا يمكن أن يكون أكبر من المبلغ المستحق للسائق (${walletData.driver_amount.toFixed(2)} ريال)`
+      );
+      hasErrors = true;
+    }
+
+    if (!bankName || bankName.length < 2) {
+      if ($('#bankName').val() === 'other') {
+        $('.bank_name-error').text('يرجى إدخال اسم البنك في الحقل المخصص');
+      } else {
+        $('.bank_name-error').text('يرجى اختيار البنك');
+      }
+      hasErrors = true;
+    }
+
+    if (!accountNumber || accountNumber.length < 8) {
+      $('.account_number-error').text('رقم الحساب مطلوب ويجب أن يكون على الأقل 8 أرقام');
+      hasErrors = true;
+    }
+
+    if (!ibanNumber || ibanNumber.replace(/\s/g, '').length < 15) {
+      $('.iban_number-error').text('رقم الآيبان مطلوب ويجب أن يكون صحيحاً (على الأقل 15 رقم)');
+      hasErrors = true;
+    }
+
+    // Validate IBAN format (basic validation)
+    if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
+      $('.iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      return;
+    }
+
+    // Generate payment request document
+    generatePaymentRequestDocument({
+      taskId: walletData.id,
+      requestedAmount: requestedAmount,
+      bankName: bankName,
+      accountNumber: accountNumber,
+      ibanNumber: ibanNumber,
+      paymentRecipient: paymentRecipient,
+      notes: notes,
+      walletData: walletData
+    });
+  });
+
+  // Function to generate payment request document
+  function generatePaymentRequestDocument(data) {
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('ar-SA');
+    const remainingAmount = data.walletData.driver_amount - data.requestedAmount;
+    const recipientName = data.walletData.driver_name;
+    const recipientPhone = data.walletData.driver_phone;
+
+    // Generate reference number: TaskID + Date (YYYYMMDD) + Random 3 digits
+    const dateString =
+      today.getFullYear().toString() +
+      (today.getMonth() + 1).toString().padStart(2, '0') +
+      today.getDate().toString().padStart(2, '0');
+    const randomNumber = Math.floor(Math.random() * 900) + 100; // 3-digit random number
+    const referenceNumber = `${data.taskId}${dateString}${randomNumber}`;
+
+    // Convert number to Arabic words
+    // const requestedAmountInWords = numberToArabicWords(data.requestedAmount);
+    let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
+    let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
+
+    console.log(data);
+    const printContent = `
+  <!DOCTYPE html>
+  <html dir="rtl" lang="ar">
+  <head>
+    <meta charset="UTF-8">
+    <title>طلب سداد - ${referenceNumber}</title>
+    <style>
+      body {
+        font-family: 'Tajawal', Arial, sans-serif;
+        margin: 0;
+        padding: 20mm;
+        font-size: 14px;
+        color: #000;
+        background: #fff;
+      }
+
+      .container {
+        max-width: 210mm;
+        margin: auto;
+      }
+
+      h1, h2, h3 {
+        margin: 0 0 10px 0;
+        font-weight: bold;
+      }
+
+      .title {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .emp-name{
+        font-size: 16px;
+      }
+
+      table {
+        width: 100%;
+        margin-bottom: 15px;
+      }
+
+      td {
+        border: 1px solid #000;
+        padding: 8px;
+        vertical-align: top;
+      }
+
+      .label {
+        width: 30%;
+        font-weight: bold;
+        background: #f7f7f7;
+      }
+
+      .amount-box {
+
+        padding: 15px;
+        margin: 20px 0;
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .signatures td {
+        height: 80px;
+        text-align: center;
+      }
+
+      .amount-details{
+        font-size: 16px;
+      }
+        .amount-details span{
+          border:1px solid #000;
+          padding: 5px 10px;
+          margin: 20px 5px;
+          border-radius: 5px;
+        }
+      .footer {
+        margin-top: 25px;
+        text-align: center;
+        font-size: 12px;
+        color: #555;
+      }
+
+      @media print {
+        body { margin: 0; padding: 15mm; font-size: 12px; }
+        .container { width: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+
+      <!-- Header -->
+      <div class="title">
+        <h1>Safedests</h1>
+        <h2>طلب سداد مالي</h2>
+        <p>رقم الطلب: ${referenceNumber}</p>
+        <p>التاريخ: ${formattedDate}</p>
+      </div>
+
+      <!-- Employee -->
+
+      <p class="emp-name">
+          اسم الموظف طالب السداد : <strong> ${$('meta[name="user-name"]').attr('content') || 'المستخدم الحالي'}</strong>
+      </p>
+
+      <h3>بيانات السداد</h3>
+      <!-- Amount -->
+      <div class="amount-box">
+        مبلغ السداد:
+
+        (${requestedAmountInWords})
+      </div>
+      <div>
+        <p class="amount-details">
+        السداد:
+        دفعة <span>${data.requestedAmount.toFixed(2)} ريال </span>
+        باقي حساب <span> ${remainingAmount.toFixed(2)} ريال </span>
+        إجمالي الحساب <span>${data.walletData.driver_amount.toFixed(2)} ريال </span>
+        </p>
+      </div>
+
+      <!-- Bank Info -->
+      <h3>بيانات البنك</h3>
+      <table>
+        <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
+        <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
+        <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
+      </table>
+
+      <!-- Trip Info -->
+      <h3>بيانات المورد</h3>
+      <table>
+        <tr><td class="label">الإسم</td><td>${recipientName}</td></tr>
+        <tr><td class="label">رقم الهاتف</td><td>${recipientPhone}</td></tr>
+        <tr><td class="label">رقم المحفظة</td><td>${data.walletData.id}</td></tr>
+        <tr><td class="label">الرصيد المتبقي</td><td> ${remainingAmount.toFixed(2)} ريال</td></tr>
+      </table>
+      <h3>ملاحظات</h3>
+      <p> <strong>${data.notes || '<br>'}</strong> </p>
+
+      <!-- Signatures -->
+      <h3>التوقيع</h3>
+      <br>
+      <br>
+      <br>
+      <!-- Footer -->
+      <div class="footer">
+        <p>تم إنشاء المستند إلكترونياً بتاريخ ${new Date().toLocaleDateString('ar-SA')}</p>
+        <p>أنشأ من قبل:  ${data.walletData.user_name}</p>
+      </div>
+
+    </div>
+  </body>
+  </html>
+  `;
+
+    // Open print window
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+
+    // Add event listener for print dialog
+    printWindow.addEventListener('beforeprint', function () {
+      console.log('Print dialog opened');
+    });
+
+    printWindow.addEventListener('afterprint', function () {
+      console.log('Print dialog closed - logging payment request');
+
+      // Log the payment request after actual printing
+      logPaymentRequest({
+        walletId: data.walletData.id,
+        amount: data.requestedAmount,
+        paymentRequestNumber: referenceNumber,
+        notes: data.notes || null
+      });
+
+      printWindow.close();
+    });
+
+    // Handle print cancellation
+    printWindow.onbeforeunload = function () {
+      return null;
+    };
+
+    // Trigger print
+    printWindow.print();
+
+    // Fallback: close window if user cancels print (for some browsers)
+    setTimeout(function () {
+      if (!printWindow.closed) {
+        printWindow.addEventListener('focus', function () {
+          setTimeout(function () {
+            if (!printWindow.closed) {
+              printWindow.close();
+            }
+          }, 100);
+        });
+      }
+    }, 1000);
+
+    // Close modal after printing
+    setTimeout(() => {
+      $('#paymentRequestModal').modal('hide');
+      $('#paymentRequestForm')[0].reset();
+    }, 1000);
+  }
+
+  // Function to log payment request after printing
+  function logPaymentRequest(data) {
+    $.ajax({
+      url: `${baseUrl}admin/wallets/${data.walletId}/log-payment-request`,
+      method: 'POST',
+      data: {
+        amount: data.amount,
+        payment_request_number: data.paymentRequestNumber,
+        notes: data.notes,
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (response) {
+        if (response.status === 1) {
+          console.log('Payment request logged successfully:', response.log_id);
+          // Refresh payment logs if visible
+          if ($('#payment-logs-section').is(':visible')) {
+            loadPaymentRequestLogs();
+          }
+        } else {
+          console.error('Failed to log payment request:', response.error);
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error('Error logging payment request:', error);
+      }
+    });
+  }
+
+  // Function to load payment request logs
+  function loadPaymentRequestLogs() {
+    $.ajax({
+      url: `${baseUrl}admin/wallets/${walletId}/payment-request-logs`,
+      method: 'GET',
+      success: function (response) {
+        if (response.status === 1) {
+          displayPaymentRequestLogs(response.logs);
+        } else {
+          console.error('Failed to load payment logs:', response.error);
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error('Error loading payment logs:', error);
+      }
+    });
+  }
+
+  // Function to display payment request logs
+  function displayPaymentRequestLogs(logs) {
+    const logsContainer = $('#payment-logs-container');
+
+    if (logs.data.length === 0) {
+      logsContainer.html(`
+        <div class="text-center py-4">
+          <i class="ti ti-file-x fs-1 text-muted"></i>
+          <p class="text-muted mt-2">لا توجد سجلات طلبات سداد</p>
+        </div>
+      `);
+      return;
+    }
+
+    let logsHtml = '';
+    logs.data.forEach(log => {
+      logsHtml += `
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-2">
+                <small class="text-muted">${__('Printing Date')}</small>
+                <div class="fw-semibold">${log.printed_at}</div>
+              </div>
+              <div class="col-md-2">
+                <small class="text-muted">رقم الطلب</small>
+                <div class="fw-semibold text-primary">${log.payment_request_number || 'غير محدد'}</div>
+              </div>
+              <div class="col-md-2">
+                <small class="text-muted">${__('Amount')}</small>
+                <div class="fw-semibold text-success">${log.amount}</div>
+              </div>
+              <div class="col-md-2">
+                <small class="text-muted">${__('User')}</small>
+                <div class="fw-semibold">${log.user.name}</div>
+              </div>
+              <div class="col-md-2">
+                <small class="text-muted">IP</small>
+                <div class="fw-semibold">${log.ip_address}</div>
+              </div>
+              <div class="col-md-2">
+                <small class="text-muted">${__('Notes')}</small>
+                <div class="fw-semibold">${log.notes || ''}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    logsContainer.html(logsHtml);
+
+    // Add pagination if needed
+    if (logs.last_page > 1) {
+      // Add pagination controls here if needed
+    }
+  }
+
+  $(document).on('click', '#loadRefresh', function () {
+    loadPaymentRequestLogs();
+  });
+
+  // Load payment logs on page load if section is visible
+  if ($('#payment-logs-section').length) {
+    loadPaymentRequestLogs();
+  }
 });

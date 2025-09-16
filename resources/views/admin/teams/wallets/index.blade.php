@@ -249,7 +249,12 @@
                         </div>
                     </h4>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    @can('generate_payment_request')
+                        <button type="button" class="btn btn-success" onclick="showTeamPaymentRequestOptions()">
+                            <i class="ti ti-file-invoice me-1"></i>{{ __('Payment Request') }}
+                        </button>
+                    @endcan
                     <a href="{{ route('teams.teams') }}" class="btn btn-outline-secondary">
                         <i class="ti ti-arrow-left me-1"></i>{{ __('Back to Teams') }}
                     </a>
@@ -420,6 +425,182 @@
             </div>
         </div>
     </div>
+
+    @can('generate_payment_request')
+      <!-- Team Payment Request Modal -->
+    <div class="modal fade" id="teamPaymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('Payment Request from Team Wallet: ') }} <span
+                            id="teamPaymentRequestWalletId" class="bg-info text-white rounded p-1 px-2"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Team Wallet Information Section -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">{{ __('Team Wallet Information') }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">{{ __('Team Wallet ID') }}:</label>
+                                        <span id="teamWalletInfoId" class="text-primary fw-bold"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">{{ __('Team Wallet Balance') }}:</label>
+                                        <span id="teamWalletInfoAmount" class="text-success fw-bold"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">{{ __('Team Name') }}:</label>
+                                        <span id="teamWalletInfoName"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">{{ __('Team Leader') }}:</label>
+                                        <span id="teamWalletInfoLeader" class="text-muted"></span>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">{{ __('Leader Email') }}:</label>
+                                        <span id="teamWalletInfoLeaderEmail" class="text-muted"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Request Form Section -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">{{ __('Payment Request Form') }}</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="teamPaymentRequestForm">
+                                        <input type="hidden" id="teamPaymentRequestWalletIdInput" name="team_wallet_id">
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="teamRequestedAmount">*
+                                                {{ __('Requested Amount') }}</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.01" class="form-control"
+                                                    id="teamRequestedAmount" name="requested_amount" required>
+                                                <span class="input-group-text">{{ __('SAR') }}</span>
+                                            </div>
+                                            <div class="form-text">
+                                                <small class="text-muted">{{ __('Maximum amount') }}: <span
+                                                        id="teamMaxAmount" class="text-primary fw-bold"></span></small>
+                                            </div>
+                                            <span class="team_requested_amount-error text-danger text-error"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="teamBankName">* {{ __('Bank Name') }}</label>
+
+                                            <select name="bank_name" id="teamBankName" class="form-select">
+                                                <option value="">{{ __('Select Bank') }}</option>
+                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                </option>
+                                                <option value="بنك الراجحي">بنك الراجحي</option>
+                                                <option value="بنك الرياض">بنك الرياض</option>
+                                                <option value="البنك السعودي للاستثمار">البنك السعودي
+                                                    للاستثمار</option>
+                                                <option value="البنك السعودي الفرنسي">البنك السعودي
+                                                    الفرنسي</option>
+                                                <option value="البنك السعودي البريطاني">البنك السعودي
+                                                    البريطاني (ساب)</option>
+                                                <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                </option>
+                                                <option value="بنك سامبا">بنك سامبا</option>
+                                                <option value="البنك الأول">البنك الأول</option>
+                                                <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                <option value="بنك الإنماء">بنك الإنماء</option>
+                                                <option value="البنك العربي">البنك العربي</option>
+                                                <option value="other">{{ __('Other') }}</option>
+                                            </select>
+                                            <input type="text" class="form-control mt-2" id="teamCustomBankName"
+                                                name="custom_bank_name" placeholder="{{ __('Enter bank name') }}"
+                                                style="display: none;">
+                                            <span class="team_bank_name-error text-danger text-error"></span>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="teamAccountNumber">*
+                                                {{ __('Account Number') }}</label>
+                                            <input type="text" class="form-control" id="teamAccountNumber"
+                                                name="account_number" placeholder="1234567890" minlength="8" required>
+                                            <span class="team_account_number-error text-danger text-error"></span>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label" for="teamIbanNumber">*
+                                                {{ __('IBAN Number') }}</label>
+                                            <input type="text" class="form-control" id="teamIbanNumber"
+                                                name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
+                                                maxlength="29" required>
+                                            <div class="form-text">
+                                                <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                            </div>
+                                            <span class="team_iban_number-error text-danger text-error"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="teamNotes">* {{ __('Notes') }}</label>
+                                            <textarea type="text" class="form-control" id="teamNotes" name="notes" placeholder="Notes" maxlength="255"></textarea>
+                                            <span class="notes-error text-danger text-error"></span>
+                                        </div>
+
+
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-primary"
+                        id="generateTeamPaymentRequest">{{ __('Generate Payment Request') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endcan
+
+
+
+
+    @can('view_payment_requests_logs')
+        <!-- Team Payment Request Logs Section -->
+        <div class="card mt-4">
+            <div class="card-header py-4 px-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="ti ti-file-text me-2 text-primary"></i>
+                            {{ __('Payment Request Logs') }}
+                        </h5>
+                        <p class="text-muted mb-0">{{ __('History of printed payment requests') }}</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadTeamPaymentRequestLogs()">
+                            <i class="ti ti-refresh me-1"></i>{{ __('Refresh') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="teamPaymentLogsContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">{{ __('Loading...') }}</span>
+                        </div>
+                        <p class="mt-2 text-muted">{{ __('Loading payment request logs...') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
+
 
 
 @endsection

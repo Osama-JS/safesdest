@@ -273,7 +273,6 @@ $(function () {
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" >Close Task</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}">Refund Task</a></li>
 
-                    ${!full.closed && full.status !== 'completed' ? `<li><a href="javascript:;" class="dropdown-item payment-request-task" data-id="${full.id}"><i class="ti ti-receipt me-1"></i>Payment Request</a></li>` : ''}
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>
                 </div>
@@ -669,583 +668,487 @@ $(function () {
     connectTeam($(this).data('name'), url);
   });
 
-  // Payment Request Handler
-  $(document).on('click', '.payment-request-task', function () {
-    const taskId = $(this).data('id');
-
-    // Get task details for payment request
-    $.get(`${baseUrl}admin/tasks/payment-request/${taskId}`, function (data) {
-      if (data.status === 0) {
-        showAlert('error', data.error);
-        return;
-      }
-
-      const task = data.task;
-      const driverAmount = task.total_price - task.commission;
-
-      // Fill task information
-      $('#paymentRequestTaskId').text(`#${task.id}`);
-      $('#taskInfoId').text(`#${task.id}`);
-      $('#taskInfoDriverAmount').text(`${driverAmount.toFixed(2)} SAR`);
-      $('#taskInfoOwner').text(task.owner_name || 'N/A');
-      $('#taskInfoPickup').text(task.pickup_address || 'N/A');
-      $('#taskInfoDelivery').text(task.delivery_address || 'N/A');
-
-      // Set maximum amount
-      $('#maxAmount').text(`${driverAmount.toFixed(2)} SAR`);
-      $('#requestedAmount').attr('max', driverAmount);
-
-      // Set hidden task ID
-      $('#paymentRequestTaskIdInput').val(task.id);
-
-      // Store task data for later use
-      $('#paymentRequestModal').data('taskData', {
-        id: task.id,
-        total_price: task.total_price,
-        commission: task.commission,
-        driver_amount: driverAmount,
-        driver_name: task.driver_name,
-        driver_phone: task.driver_phone,
-        driver_bank_name: task.driver_bank_name,
-        driver_account_number: task.driver_account_number,
-        driver_iban_number: task.driver_iban_number,
-        driver_has_team: task.driver_has_team,
-        team_leader_name: task.team_leader_name,
-        team_leader_phone: task.team_leader_phone,
-        team_leader_bank_name: task.team_leader_bank_name,
-        team_leader_account_number: task.team_leader_account_number,
-        team_leader_iban_number: task.team_leader_iban_number,
-        owner_name: task.owner_name,
-        pickup_address: task.pickup_address,
-        delivery_address: task.delivery_address
-      });
-
-      // Handle team leader option visibility
-      const teamLeaderOption = $('#paymentRecipient option[value="team_leader"]');
-      if (task.driver_has_team) {
-        teamLeaderOption.show();
-      } else {
-        teamLeaderOption.hide();
-        // If team_leader was selected but driver has no team, reset to empty
-        if ($('#paymentRecipient').val() === 'team_leader') {
-          $('#paymentRecipient').val('');
-        }
-      }
-
-      // Show modal
-      $('#paymentRequestModal').modal('show');
-
-      // Reset form
-      $('#paymentRequestForm')[0].reset();
-      $('.text-error').text('');
-    }).fail(function () {
-      showAlert('error', 'Error loading task details');
-    });
-  });
-
-  // Format IBAN input
-  $(document).on('input', '#ibanNumber', function () {
-    let value = $(this).val().replace(/\s/g, '').toUpperCase();
-    // Ensure it starts with SA
-    if (value && !value.startsWith('SA')) {
-      value = 'SA' + value.replace(/^SA/i, '');
-    }
-    let formatted = value.replace(/(.{4})/g, '$1 ').trim();
-    $(this).val(formatted);
-  });
-
-  // Format Account Number input
-  $(document).on('input', '#accountNumber', function () {
-    let value = $(this).val().replace(/\D/g, '');
-    $(this).val(value);
-  });
-
-  // Validate requested amount in real-time
-  $(document).on('input', '#requestedAmount', function () {
-    const value = parseFloat($(this).val());
-    const maxAmount = parseFloat($(this).attr('max'));
-
-    if (value > maxAmount) {
-      $('.requested_amount-error').text(`المبلغ لا يمكن أن يكون أكبر من ${maxAmount.toFixed(2)} ريال`);
-    } else {
-      $('.requested_amount-error').text('');
-    }
-  });
-
-  // Handle payment recipient change to auto-fill bank details
-  $(document).on('change', '#paymentRecipient', function () {
-    const recipient = $(this).val();
-    const taskData = $('#paymentRequestModal').data('taskData');
-
-    if (!taskData) return;
-
-    // Clear current bank details
-    $('#bankName').val('');
-    $('#customBankName').val('').hide();
-    $('#accountNumber').val('');
-    $('#ibanNumber').val('');
-
-    if (recipient === 'driver') {
-      // Fill driver bank details
-      if (taskData.driver_bank_name) {
-        // Check if bank exists in options
-        const bankOption = $('#bankName option[value="' + taskData.driver_bank_name + '"]');
-        if (bankOption.length > 0) {
-          $('#bankName').val(taskData.driver_bank_name);
-        } else {
-          // Use "other" option and show custom field
-          $('#bankName').val('other');
-          $('#customBankName').val(taskData.driver_bank_name).show();
-        }
-      }
-
-      if (taskData.driver_account_number) {
-        $('#accountNumber').val(taskData.driver_account_number);
-      }
-
-      if (taskData.driver_iban_number) {
-        // Format IBAN with spaces for display
-        const formattedIban = taskData.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
-        $('#ibanNumber').val(formattedIban);
-      }
-    } else if (recipient === 'team_leader') {
-      // Check if driver has team before filling team leader details
-      if (!taskData.driver_has_team) {
-        // Driver has no team, reset selection and show warning
-        $(this).val('');
-        showAlert('warning', 'هذا السائق لا ينتمي إلى أي فريق. لا يمكن اختيار قائد الفريق كمستلم للدفع.');
-        return;
-      }
-
-      // Fill team leader bank details
-      if (taskData.team_leader_bank_name) {
-        // Check if bank exists in options
-        const bankOption = $('#bankName option[value="' + taskData.team_leader_bank_name + '"]');
-        if (bankOption.length > 0) {
-          $('#bankName').val(taskData.team_leader_bank_name);
-        } else {
-          // Use "other" option and show custom field
-          $('#bankName').val('other');
-          $('#customBankName').val(taskData.team_leader_bank_name).show();
-        }
-      }
-
-      if (taskData.team_leader_account_number) {
-        $('#accountNumber').val(taskData.team_leader_account_number);
-      }
-
-      if (taskData.team_leader_iban_number) {
-        // Format IBAN with spaces for display
-        const formattedIban = taskData.team_leader_iban_number.replace(/(.{4})/g, '$1 ').trim();
-        $('#ibanNumber').val(formattedIban);
-      }
-    }
-  });
-
-  // Handle bank selection
-  $(document).on('change', '#bankName', function () {
-    const selectedValue = $(this).val();
-    if (selectedValue === 'other') {
-      $('#customBankName').show().attr('required', true);
-    } else {
-      $('#customBankName').hide().attr('required', false).val('');
-    }
-  });
-
-  // Generate Payment Request Handler
-  $(document).on('click', '#generatePaymentRequest', function () {
-    const form = $('#paymentRequestForm');
-    const taskData = $('#paymentRequestModal').data('taskData');
-
-    // Validate form
-    const requestedAmount = parseFloat($('#requestedAmount').val());
-    let bankName = $('#bankName').val().trim();
-    const customBankName = $('#customBankName').val().trim();
-    const accountNumber = $('#accountNumber').val().trim();
-    const ibanNumber = $('#ibanNumber').val().trim();
-    const paymentRecipient = $('#paymentRecipient').val();
-
-    // Use custom bank name if "other" is selected
-    if (bankName === 'other') {
-      bankName = customBankName;
-    }
-
-    // Clear previous errors
-    $('.text-error').text('');
-
-    let hasErrors = false;
-
-    if (!requestedAmount || requestedAmount <= 0) {
-      $('.requested_amount-error').text('المبلغ المطلوب مطلوب ويجب أن يكون أكبر من صفر');
-      hasErrors = true;
-    }
-
-    if (requestedAmount > taskData.driver_amount) {
-      $('.requested_amount-error').text(
-        `المبلغ المطلوب لا يمكن أن يكون أكبر من المبلغ المستحق للسائق (${taskData.driver_amount.toFixed(2)} ريال)`
-      );
-      hasErrors = true;
-    }
-
-    if (!bankName || bankName.length < 2) {
-      if ($('#bankName').val() === 'other') {
-        $('.bank_name-error').text('يرجى إدخال اسم البنك في الحقل المخصص');
-      } else {
-        $('.bank_name-error').text('يرجى اختيار البنك');
-      }
-      hasErrors = true;
-    }
-
-    if (!accountNumber || accountNumber.length < 8) {
-      $('.account_number-error').text('رقم الحساب مطلوب ويجب أن يكون على الأقل 8 أرقام');
-      hasErrors = true;
-    }
-
-    if (!ibanNumber || ibanNumber.replace(/\s/g, '').length < 15) {
-      $('.iban_number-error').text('رقم الآيبان مطلوب ويجب أن يكون صحيحاً (على الأقل 15 رقم)');
-      hasErrors = true;
-    }
-
-    if (!paymentRecipient) {
-      $('.payment_recipient-error').text('يجب تحديد المستفيد من السداد');
-      hasErrors = true;
-    }
-
-    // Validate IBAN format (basic validation)
-    if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
-      $('.iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
-      hasErrors = true;
-    }
-
-    if (hasErrors) {
-      return;
-    }
-
-    // Generate payment request document
-    generatePaymentRequestDocument({
-      taskId: taskData.id,
-      requestedAmount: requestedAmount,
-      bankName: bankName,
-      accountNumber: accountNumber,
-      ibanNumber: ibanNumber,
-      paymentRecipient: paymentRecipient,
-      taskData: taskData
-    });
-  });
-
-  // Function to generate payment request document
-  function generatePaymentRequestDocument(data) {
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('ar-SA');
-    const remainingAmount = data.taskData.driver_amount - data.requestedAmount;
-    const recipientName =
-      data.paymentRecipient === 'driver' ? data.taskData.driver_name : data.taskData.team_leader_name;
-    const recipientPhone =
-      data.paymentRecipient === 'driver' ? data.taskData.driver_phone : data.taskData.team_leader_phone;
-
-    // Generate reference number: TaskID + Date (YYYYMMDD) + Random 3 digits
-    const dateString =
-      today.getFullYear().toString() +
-      (today.getMonth() + 1).toString().padStart(2, '0') +
-      today.getDate().toString().padStart(2, '0');
-    const randomNumber = Math.floor(Math.random() * 900) + 100; // 3-digit random number
-    const referenceNumber = `${data.taskId}${dateString}${randomNumber}`;
-
-    // Convert number to Arabic words
-    // const requestedAmountInWords = numberToArabicWords(data.requestedAmount);
-    let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
-    let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
-
-    console.log(data);
-    const printContent = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <title>طلب سداد - ${referenceNumber}</title>
-  <style>
-    body {
-      font-family: 'Tajawal', Arial, sans-serif;
-      margin: 0;
-      padding: 20mm;
-      font-size: 14px;
-      color: #000;
-      background: #fff;
-    }
-
-    .container {
-      max-width: 210mm;
-      margin: auto;
-    }
-
-    h1, h2, h3 {
-      margin: 0 0 10px 0;
-      font-weight: bold;
-    }
-
-    .title {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .emp-name{
-      font-size: 16px;
-    }
-
-    table {
-      width: 100%;
-      margin-bottom: 15px;
-    }
-
-    td {
-      border: 1px solid #000;
-      padding: 8px;
-      vertical-align: top;
-    }
-
-    .label {
-      width: 30%;
-      font-weight: bold;
-      background: #f7f7f7;
-    }
-
-    .amount-box {
-
-      padding: 15px;
-      margin: 20px 0;
-      font-weight: bold;
-      font-size: 16px;
-    }
-
-    .signatures td {
-      height: 80px;
-      text-align: center;
-    }
-
-    .amount-details{
-      font-size: 16px;
-    }
-      .amount-details span{
-        border:1px solid #000;
-        padding: 5px 10px;
-        margin: 5px;
-        border-radius: 5px;
-      }
-    .footer {
-      margin-top: 25px;
-      text-align: center;
-      font-size: 12px;
-      color: #555;
-    }
-
-    @media print {
-      body { margin: 0; padding: 15mm; font-size: 12px; }
-      .container { width: auto; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-
-    <!-- Header -->
-    <div class="title">
-      <h1>Safedests</h1>
-      <h2>طلب سداد مالي</h2>
-      <p>رقم الطلب: ${referenceNumber}</p>
-      <p>التاريخ: ${formattedDate}</p>
-    </div>
-
-    <!-- Employee -->
-
-    <p class="emp-name">
-        اسم الموظف طالب السداد : <strong> ${$('meta[name="user-name"]').attr('content') || 'المستخدم الحالي'}</strong>
-    </p>
-
-    <h3>بيانات السداد</h3>
-    <!-- Amount -->
-    <div class="amount-box">
-      مبلغ السداد:
-
-      (${requestedAmountInWords})
-    </div>
-    <div>
-      <p class="amount-details">
-      السداد:
-      دفعة <span>${data.requestedAmount.toFixed(2)} ريال </span>
-      باقي حساب <span> ${remainingAmount.toFixed(2)} ريال </span>
-      إجمالي الحساب <span>${data.taskData.driver_amount.toFixed(2)} ريال </span>
-      </p>
-    </div>
-
-    <!-- Bank Info -->
-    <h3>بيانات البنك</h3>
-    <table>
-      <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
-      <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
-      <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
-      <tr><td class="label">اسم المورد</td><td>${recipientName || 'غير محدد'}  ${recipientPhone || ''}</td></tr>
-    </table>
-
-    <!-- Trip Info -->
-    <h3>بيانات الرحلة</h3>
-    <table>
-      <tr><td class="label">رقم المهمة</td><td>#${data.taskId}</td></tr>
-      <tr><td class="label">صاحب الرحلة</td><td>${data.taskData.owner_name}</td></tr>
-      <tr><td class="label">الوجهة</td><td>من ${data.taskData.pickup_address} إلى ${data.taskData.delivery_address}</td></tr>
-    </table>
-
-    <!-- Signatures -->
-    <h3>التوقيع</h3>
-
-
-    <!-- Footer -->
-    <div class="footer">
-      <p>تم إنشاء المستند إلكترونياً بتاريخ ${new Date().toLocaleDateString('ar-SA')}</p>
-    </div>
-
-  </div>
-</body>
-</html>
-`;
-
-    // Open print window
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-
-    // Add event listener for print dialog
-    printWindow.addEventListener('beforeprint', function () {
-      console.log('Print dialog opened');
-    });
-
-    printWindow.addEventListener('afterprint', function () {
-      console.log('Print dialog closed');
-      printWindow.close();
-    });
-
-    // Handle print cancellation
-    printWindow.onbeforeunload = function () {
-      return null;
-    };
-
-    // Trigger print
-    printWindow.print();
-
-    // Fallback: close window if user cancels print (for some browsers)
-    setTimeout(function () {
-      if (!printWindow.closed) {
-        printWindow.addEventListener('focus', function () {
-          setTimeout(function () {
-            if (!printWindow.closed) {
-              printWindow.close();
-            }
-          }, 100);
-        });
-      }
-    }, 1000);
-
-    // Close modal after printing
-    setTimeout(() => {
-      $('#paymentRequestModal').modal('hide');
-      $('#paymentRequestForm')[0].reset();
-    }, 1000);
-  }
-
-  // Function to convert numbers to Arabic words (enhanced version)
-  function numberToArabicWords(num) {
-    const ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
-    const tens = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
-    const teens = [
-      'عشرة',
-      'أحد عشر',
-      'اثنا عشر',
-      'ثلاثة عشر',
-      'أربعة عشر',
-      'خمسة عشر',
-      'ستة عشر',
-      'سبعة عشر',
-      'ثمانية عشر',
-      'تسعة عشر'
-    ];
-    const hundreds = [
-      '',
-      'مائة',
-      'مائتان',
-      'ثلاثمائة',
-      'أربعمائة',
-      'خمسمائة',
-      'ستمائة',
-      'سبعمائة',
-      'ثمانمائة',
-      'تسعمائة'
-    ];
-
-    if (num === 0) return 'صفر ريال';
-
-    let result = '';
-    const integerPart = Math.floor(num);
-    const decimalPart = Math.round((num - integerPart) * 100);
-
-    // Convert integer part
-    if (integerPart >= 1000000) {
-      const millions = Math.floor(integerPart / 1000000);
-      result += convertHundreds(millions) + ' مليون ';
-      const remainder = integerPart % 1000000;
-      if (remainder >= 1000) {
-        const thousands = Math.floor(remainder / 1000);
-        result += convertHundreds(thousands) + ' ألف ';
-        const finalRemainder = remainder % 1000;
-        if (finalRemainder > 0) {
-          result += convertHundreds(finalRemainder);
-        }
-      } else if (remainder > 0) {
-        result += convertHundreds(remainder);
-      }
-    } else if (integerPart >= 1000) {
-      const thousands = Math.floor(integerPart / 1000);
-      result += convertHundreds(thousands) + ' ألف ';
-      const remainder = integerPart % 1000;
-      if (remainder > 0) {
-        result += convertHundreds(remainder);
-      }
-    } else {
-      result = convertHundreds(integerPart);
-    }
-
-    result += ' ريال';
-
-    if (decimalPart > 0) {
-      result += ' و ' + convertHundreds(decimalPart) + ' هللة';
-    }
-
-    return result.trim();
-
-    function convertHundreds(num) {
-      let result = '';
-
-      if (num >= 100) {
-        const hundredsDigit = Math.floor(num / 100);
-        result += hundreds[hundredsDigit] + ' ';
-        num %= 100;
-      }
-
-      if (num >= 20) {
-        const tensDigit = Math.floor(num / 10);
-        result += tens[tensDigit] + ' ';
-        num %= 10;
-        if (num > 0) {
-          result += ones[num] + ' ';
-        }
-      } else if (num >= 10) {
-        result += teens[num - 10] + ' ';
-      } else if (num > 0) {
-        result += ones[num] + ' ';
-      }
-
-      return result.trim();
-    }
-  }
+  //   // Payment Request Handler
+  //   $(document).on('click', '.payment-request-task', function () {
+  //     const taskId = $(this).data('id');
+
+  //     // Get task details for payment request
+  //     $.get(`${baseUrl}admin/tasks/payment-request/${taskId}`, function (data) {
+  //       if (data.status === 0) {
+  //         showAlert('error', data.error);
+  //         return;
+  //       }
+
+  //       const task = data.task;
+  //       const driverAmount = task.total_price - task.commission;
+
+  //       // Fill task information
+  //       $('#paymentRequestTaskId').text(`#${task.id}`);
+  //       $('#taskInfoId').text(`#${task.id}`);
+  //       $('#taskInfoDriverAmount').text(`${driverAmount.toFixed(2)} SAR`);
+  //       $('#taskInfoOwner').text(task.owner_name || 'N/A');
+  //       $('#taskInfoPickup').text(task.pickup_address || 'N/A');
+  //       $('#taskInfoDelivery').text(task.delivery_address || 'N/A');
+
+  //       // Set maximum amount
+  //       $('#maxAmount').text(`${driverAmount.toFixed(2)} SAR`);
+  //       $('#requestedAmount').attr('max', driverAmount);
+
+  //       // Set hidden task ID
+  //       $('#paymentRequestTaskIdInput').val(task.id);
+
+  //       // Store task data for later use
+  //       $('#paymentRequestModal').data('taskData', {
+  //         id: task.id,
+  //         total_price: task.total_price,
+  //         commission: task.commission,
+  //         driver_amount: driverAmount,
+  //         driver_name: task.driver_name,
+  //         driver_phone: task.driver_phone,
+  //         driver_bank_name: task.driver_bank_name,
+  //         driver_account_number: task.driver_account_number,
+  //         driver_iban_number: task.driver_iban_number,
+  //         driver_has_team: task.driver_has_team,
+  //         team_leader_name: task.team_leader_name,
+  //         team_leader_phone: task.team_leader_phone,
+  //         team_leader_bank_name: task.team_leader_bank_name,
+  //         team_leader_account_number: task.team_leader_account_number,
+  //         team_leader_iban_number: task.team_leader_iban_number,
+  //         owner_name: task.owner_name,
+  //         pickup_address: task.pickup_address,
+  //         delivery_address: task.delivery_address
+  //       });
+
+  //       // Handle team leader option visibility
+  //       const teamLeaderOption = $('#paymentRecipient option[value="team_leader"]');
+  //       if (task.driver_has_team) {
+  //         teamLeaderOption.show();
+  //       } else {
+  //         teamLeaderOption.hide();
+  //         // If team_leader was selected but driver has no team, reset to empty
+  //         if ($('#paymentRecipient').val() === 'team_leader') {
+  //           $('#paymentRecipient').val('');
+  //         }
+  //       }
+
+  //       // Show modal
+  //       $('#paymentRequestModal').modal('show');
+
+  //       // Reset form
+  //       $('#paymentRequestForm')[0].reset();
+  //       $('.text-error').text('');
+  //     }).fail(function () {
+  //       showAlert('error', 'Error loading task details');
+  //     });
+  //   });
+
+  //   // Format IBAN input
+  //   $(document).on('input', '#ibanNumber', function () {
+  //     let value = $(this).val().replace(/\s/g, '').toUpperCase();
+  //     // Ensure it starts with SA
+  //     if (value && !value.startsWith('SA')) {
+  //       value = 'SA' + value.replace(/^SA/i, '');
+  //     }
+  //     let formatted = value.replace(/(.{4})/g, '$1 ').trim();
+  //     $(this).val(formatted);
+  //   });
+
+  //   // Format Account Number input
+  //   $(document).on('input', '#accountNumber', function () {
+  //     let value = $(this).val().replace(/\D/g, '');
+  //     $(this).val(value);
+  //   });
+
+  //   // Validate requested amount in real-time
+  //   $(document).on('input', '#requestedAmount', function () {
+  //     const value = parseFloat($(this).val());
+  //     const maxAmount = parseFloat($(this).attr('max'));
+
+  //     if (value > maxAmount) {
+  //       $('.requested_amount-error').text(`المبلغ لا يمكن أن يكون أكبر من ${maxAmount.toFixed(2)} ريال`);
+  //     } else {
+  //       $('.requested_amount-error').text('');
+  //     }
+  //   });
+
+  //   // Handle payment recipient change to auto-fill bank details
+  //   $(document).on('change', '#paymentRecipient', function () {
+  //     const recipient = $(this).val();
+  //     const taskData = $('#paymentRequestModal').data('taskData');
+
+  //     if (!taskData) return;
+
+  //     // Clear current bank details
+  //     $('#bankName').val('');
+  //     $('#customBankName').val('').hide();
+  //     $('#accountNumber').val('');
+  //     $('#ibanNumber').val('');
+
+  //     if (recipient === 'driver') {
+  //       // Fill driver bank details
+  //       if (taskData.driver_bank_name) {
+  //         // Check if bank exists in options
+  //         const bankOption = $('#bankName option[value="' + taskData.driver_bank_name + '"]');
+  //         if (bankOption.length > 0) {
+  //           $('#bankName').val(taskData.driver_bank_name);
+  //         } else {
+  //           // Use "other" option and show custom field
+  //           $('#bankName').val('other');
+  //           $('#customBankName').val(taskData.driver_bank_name).show();
+  //         }
+  //       }
+
+  //       if (taskData.driver_account_number) {
+  //         $('#accountNumber').val(taskData.driver_account_number);
+  //       }
+
+  //       if (taskData.driver_iban_number) {
+  //         // Format IBAN with spaces for display
+  //         const formattedIban = taskData.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
+  //         $('#ibanNumber').val(formattedIban);
+  //       }
+  //     } else if (recipient === 'team_leader') {
+  //       // Check if driver has team before filling team leader details
+  //       if (!taskData.driver_has_team) {
+  //         // Driver has no team, reset selection and show warning
+  //         $(this).val('');
+  //         showAlert('warning', 'هذا السائق لا ينتمي إلى أي فريق. لا يمكن اختيار قائد الفريق كمستلم للدفع.');
+  //         return;
+  //       }
+
+  //       // Fill team leader bank details
+  //       if (taskData.team_leader_bank_name) {
+  //         // Check if bank exists in options
+  //         const bankOption = $('#bankName option[value="' + taskData.team_leader_bank_name + '"]');
+  //         if (bankOption.length > 0) {
+  //           $('#bankName').val(taskData.team_leader_bank_name);
+  //         } else {
+  //           // Use "other" option and show custom field
+  //           $('#bankName').val('other');
+  //           $('#customBankName').val(taskData.team_leader_bank_name).show();
+  //         }
+  //       }
+
+  //       if (taskData.team_leader_account_number) {
+  //         $('#accountNumber').val(taskData.team_leader_account_number);
+  //       }
+
+  //       if (taskData.team_leader_iban_number) {
+  //         // Format IBAN with spaces for display
+  //         const formattedIban = taskData.team_leader_iban_number.replace(/(.{4})/g, '$1 ').trim();
+  //         $('#ibanNumber').val(formattedIban);
+  //       }
+  //     }
+  //   });
+
+  //   // Handle bank selection
+  //   $(document).on('change', '#bankName', function () {
+  //     const selectedValue = $(this).val();
+  //     if (selectedValue === 'other') {
+  //       $('#customBankName').show().attr('required', true);
+  //     } else {
+  //       $('#customBankName').hide().attr('required', false).val('');
+  //     }
+  //   });
+
+  //   // Generate Payment Request Handler
+  //   $(document).on('click', '#generatePaymentRequest', function () {
+  //     const form = $('#paymentRequestForm');
+  //     const taskData = $('#paymentRequestModal').data('taskData');
+
+  //     // Validate form
+  //     const requestedAmount = parseFloat($('#requestedAmount').val());
+  //     let bankName = $('#bankName').val().trim();
+  //     const customBankName = $('#customBankName').val().trim();
+  //     const accountNumber = $('#accountNumber').val().trim();
+  //     const ibanNumber = $('#ibanNumber').val().trim();
+  //     const paymentRecipient = $('#paymentRecipient').val();
+
+  //     // Use custom bank name if "other" is selected
+  //     if (bankName === 'other') {
+  //       bankName = customBankName;
+  //     }
+
+  //     // Clear previous errors
+  //     $('.text-error').text('');
+
+  //     let hasErrors = false;
+
+  //     if (!requestedAmount || requestedAmount <= 0) {
+  //       $('.requested_amount-error').text('المبلغ المطلوب مطلوب ويجب أن يكون أكبر من صفر');
+  //       hasErrors = true;
+  //     }
+
+  //     if (requestedAmount > taskData.driver_amount) {
+  //       $('.requested_amount-error').text(
+  //         `المبلغ المطلوب لا يمكن أن يكون أكبر من المبلغ المستحق للسائق (${taskData.driver_amount.toFixed(2)} ريال)`
+  //       );
+  //       hasErrors = true;
+  //     }
+
+  //     if (!bankName || bankName.length < 2) {
+  //       if ($('#bankName').val() === 'other') {
+  //         $('.bank_name-error').text('يرجى إدخال اسم البنك في الحقل المخصص');
+  //       } else {
+  //         $('.bank_name-error').text('يرجى اختيار البنك');
+  //       }
+  //       hasErrors = true;
+  //     }
+
+  //     if (!accountNumber || accountNumber.length < 8) {
+  //       $('.account_number-error').text('رقم الحساب مطلوب ويجب أن يكون على الأقل 8 أرقام');
+  //       hasErrors = true;
+  //     }
+
+  //     if (!ibanNumber || ibanNumber.replace(/\s/g, '').length < 15) {
+  //       $('.iban_number-error').text('رقم الآيبان مطلوب ويجب أن يكون صحيحاً (على الأقل 15 رقم)');
+  //       hasErrors = true;
+  //     }
+
+  //     if (!paymentRecipient) {
+  //       $('.payment_recipient-error').text('يجب تحديد المستفيد من السداد');
+  //       hasErrors = true;
+  //     }
+
+  //     // Validate IBAN format (basic validation)
+  //     if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
+  //       $('.iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
+  //       hasErrors = true;
+  //     }
+
+  //     if (hasErrors) {
+  //       return;
+  //     }
+
+  //     // Generate payment request document
+  //     generatePaymentRequestDocument({
+  //       taskId: taskData.id,
+  //       requestedAmount: requestedAmount,
+  //       bankName: bankName,
+  //       accountNumber: accountNumber,
+  //       ibanNumber: ibanNumber,
+  //       paymentRecipient: paymentRecipient,
+  //       taskData: taskData
+  //     });
+  //   });
+
+  //   // Function to generate payment request document
+  //   function generatePaymentRequestDocument(data) {
+  //     const today = new Date();
+  //     const formattedDate = today.toLocaleDateString('ar-SA');
+  //     const remainingAmount = data.taskData.driver_amount - data.requestedAmount;
+  //     const recipientName =
+  //       data.paymentRecipient === 'driver' ? data.taskData.driver_name : data.taskData.team_leader_name;
+  //     const recipientPhone =
+  //       data.paymentRecipient === 'driver' ? data.taskData.driver_phone : data.taskData.team_leader_phone;
+
+  //     // Generate reference number: TaskID + Date (YYYYMMDD) + Random 3 digits
+  //     const dateString =
+  //       today.getFullYear().toString() +
+  //       (today.getMonth() + 1).toString().padStart(2, '0') +
+  //       today.getDate().toString().padStart(2, '0');
+  //     const randomNumber = Math.floor(Math.random() * 900) + 100; // 3-digit random number
+  //     const referenceNumber = `${data.taskId}${dateString}${randomNumber}`;
+
+  //     // Convert number to Arabic words
+  //     // const requestedAmountInWords = numberToArabicWords(data.requestedAmount);
+  //     let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
+  //     let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
+
+  //     console.log(data);
+  //     const printContent = `
+  // <!DOCTYPE html>
+  // <html dir="rtl" lang="ar">
+  // <head>
+  //   <meta charset="UTF-8">
+  //   <title>طلب سداد - ${referenceNumber}</title>
+  //   <style>
+  //     body {
+  //       font-family: 'Tajawal', Arial, sans-serif;
+  //       margin: 0;
+  //       padding: 20mm;
+  //       font-size: 14px;
+  //       color: #000;
+  //       background: #fff;
+  //     }
+
+  //     .container {
+  //       max-width: 210mm;
+  //       margin: auto;
+  //     }
+
+  //     h1, h2, h3 {
+  //       margin: 0 0 10px 0;
+  //       font-weight: bold;
+  //     }
+
+  //     .title {
+  //       text-align: center;
+  //       margin-bottom: 20px;
+  //     }
+
+  //     .emp-name{
+  //       font-size: 16px;
+  //     }
+
+  //     table {
+  //       width: 100%;
+  //       margin-bottom: 15px;
+  //     }
+
+  //     td {
+  //       border: 1px solid #000;
+  //       padding: 8px;
+  //       vertical-align: top;
+  //     }
+
+  //     .label {
+  //       width: 30%;
+  //       font-weight: bold;
+  //       background: #f7f7f7;
+  //     }
+
+  //     .amount-box {
+
+  //       padding: 15px;
+  //       margin: 20px 0;
+  //       font-weight: bold;
+  //       font-size: 16px;
+  //     }
+
+  //     .signatures td {
+  //       height: 80px;
+  //       text-align: center;
+  //     }
+
+  //     .amount-details{
+  //       font-size: 16px;
+  //     }
+  //       .amount-details span{
+  //         border:1px solid #000;
+  //         padding: 5px 10px;
+  //         margin: 5px;
+  //         border-radius: 5px;
+  //       }
+  //     .footer {
+  //       margin-top: 25px;
+  //       text-align: center;
+  //       font-size: 12px;
+  //       color: #555;
+  //     }
+
+  //     @media print {
+  //       body { margin: 0; padding: 15mm; font-size: 12px; }
+  //       .container { width: auto; }
+  //     }
+  //   </style>
+  // </head>
+  // <body>
+  //   <div class="container">
+
+  //     <!-- Header -->
+  //     <div class="title">
+  //       <h1>Safedests</h1>
+  //       <h2>طلب سداد مالي</h2>
+  //       <p>رقم الطلب: ${referenceNumber}</p>
+  //       <p>التاريخ: ${formattedDate}</p>
+  //     </div>
+
+  //     <!-- Employee -->
+
+  //     <p class="emp-name">
+  //         اسم الموظف طالب السداد : <strong> ${$('meta[name="user-name"]').attr('content') || 'المستخدم الحالي'}</strong>
+  //     </p>
+
+  //     <h3>بيانات السداد</h3>
+  //     <!-- Amount -->
+  //     <div class="amount-box">
+  //       مبلغ السداد:
+
+  //       (${requestedAmountInWords})
+  //     </div>
+  //     <div>
+  //       <p class="amount-details">
+  //       السداد:
+  //       دفعة <span>${data.requestedAmount.toFixed(2)} ريال </span>
+  //       باقي حساب <span> ${remainingAmount.toFixed(2)} ريال </span>
+  //       إجمالي الحساب <span>${data.taskData.driver_amount.toFixed(2)} ريال </span>
+  //       </p>
+  //     </div>
+
+  //     <!-- Bank Info -->
+  //     <h3>بيانات البنك</h3>
+  //     <table>
+  //       <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
+  //       <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
+  //       <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
+  //       <tr><td class="label">اسم المورد</td><td>${recipientName || 'غير محدد'}  ${recipientPhone || ''}</td></tr>
+  //     </table>
+
+  //     <!-- Trip Info -->
+  //     <h3>بيانات الرحلة</h3>
+  //     <table>
+  //       <tr><td class="label">رقم المهمة</td><td>#${data.taskId}</td></tr>
+  //       <tr><td class="label">صاحب الرحلة</td><td>${data.taskData.owner_name}</td></tr>
+  //       <tr><td class="label">الوجهة</td><td>من ${data.taskData.pickup_address} إلى ${data.taskData.delivery_address}</td></tr>
+  //     </table>
+
+  //     <!-- Signatures -->
+  //     <h3>التوقيع</h3>
+
+  //     <!-- Footer -->
+  //     <div class="footer">
+  //       <p>تم إنشاء المستند إلكترونياً بتاريخ ${new Date().toLocaleDateString('ar-SA')}</p>
+  //     </div>
+
+  //   </div>
+  // </body>
+  // </html>
+  // `;
+
+  //     // Open print window
+  //     const printWindow = window.open('', '_blank');
+  //     printWindow.document.write(printContent);
+  //     printWindow.document.close();
+  //     printWindow.focus();
+
+  //     // Add event listener for print dialog
+  //     printWindow.addEventListener('beforeprint', function () {
+  //       console.log('Print dialog opened');
+  //     });
+
+  //     printWindow.addEventListener('afterprint', function () {
+  //       console.log('Print dialog closed');
+  //       printWindow.close();
+  //     });
+
+  //     // Handle print cancellation
+  //     printWindow.onbeforeunload = function () {
+  //       return null;
+  //     };
+
+  //     // Trigger print
+  //     printWindow.print();
+
+  //     // Fallback: close window if user cancels print (for some browsers)
+  //     setTimeout(function () {
+  //       if (!printWindow.closed) {
+  //         printWindow.addEventListener('focus', function () {
+  //           setTimeout(function () {
+  //             if (!printWindow.closed) {
+  //               printWindow.close();
+  //             }
+  //           }, 100);
+  //         });
+  //       }
+  //     }, 1000);
+
+  //     // Close modal after printing
+  //     setTimeout(() => {
+  //       $('#paymentRequestModal').modal('hide');
+  //       $('#paymentRequestForm')[0].reset();
+  //     }, 1000);
+  //   }
 
   // 🗑️ معالج حذف المهمة باستخدام SweetAlert2
   $(document).on('click', '.delete-task', function () {

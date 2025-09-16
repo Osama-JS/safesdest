@@ -214,4 +214,169 @@ class PlatformReportsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Generate driver tasks report data
+     */
+    public function generateDriverTasksReport(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'driver_ids' => 'required|array|min:1',
+                'driver_ids.*' => 'exists:drivers,id',
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from',
+                'format' => 'required|in:excel,pdf'
+            ]);
+
+            // Generate report data
+            $reportData = $this->reportService->generateDriverTasksReport($request->all());
+
+            if ($request->format === 'excel') {
+                return $this->exportDriverTasksToExcel($reportData, $request->all());
+            } else {
+                return $this->exportDriverTasksToPdf($reportData, $request->all());
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء إنشاء التقرير: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get driver tasks report preview
+     */
+    public function getDriverTasksPreview(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'driver_ids' => 'required|array|min:1',
+                'driver_ids.*' => 'exists:drivers,id',
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from'
+            ]);
+
+            $reportData = $this->reportService->generateDriverTasksReport($request->all(), true); // Preview mode
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tasks' => $reportData['tasks'],
+                    'summary' => $reportData['summary']
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء جلب البيانات: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate team tasks report data
+     */
+    public function generateTeamTasksReport(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'team_ids' => 'required|array|min:1',
+                'team_ids.*' => 'exists:teams,id',
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from',
+                'format' => 'required|in:excel,pdf'
+            ]);
+
+            // Generate report data
+            $reportData = $this->reportService->generateTeamTasksReport($request->all());
+
+            if ($request->format === 'excel') {
+                return $this->exportTeamTasksToExcel($reportData, $request->all());
+            } else {
+                return $this->exportTeamTasksToPdf($reportData, $request->all());
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء إنشاء التقرير: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get team tasks report preview
+     */
+    public function getTeamTasksPreview(Request $request)
+    {
+        try {
+            // Validate request
+            $request->validate([
+                'team_ids' => 'required|array|min:1',
+                'team_ids.*' => 'exists:teams,id',
+                'date_from' => 'required|date',
+                'date_to' => 'required|date|after_or_equal:date_from'
+            ]);
+
+            $reportData = $this->reportService->generateTeamTasksReport($request->all(), true); // Preview mode
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tasks' => $reportData['tasks'],
+                    'summary' => $reportData['summary']
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء جلب البيانات: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Export driver tasks to Excel
+     */
+    private function exportDriverTasksToExcel($reportData, $filters)
+    {
+        // Implementation similar to customer tasks Excel export
+        // This will be handled by the ReportService
+        return $this->reportService->exportDriverTasksToExcel($reportData, $filters);
+    }
+
+    /**
+     * Export driver tasks to PDF
+     */
+    private function exportDriverTasksToPdf($reportData, $filters)
+    {
+        // Implementation similar to customer tasks PDF export
+        return $this->reportService->exportDriverTasksToPdf($reportData, $filters);
+    }
+
+    /**
+     * Export team tasks to Excel
+     */
+    private function exportTeamTasksToExcel($reportData, $filters)
+    {
+        // Implementation similar to customer tasks Excel export
+        return $this->reportService->exportTeamTasksToExcel($reportData, $filters);
+    }
+
+    /**
+     * Export team tasks to PDF
+     */
+    private function exportTeamTasksToPdf($reportData, $filters)
+    {
+        // Implementation similar to customer tasks PDF export
+        return $this->reportService->exportTeamTasksToPdf($reportData, $filters);
+    }
 }

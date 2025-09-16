@@ -115,6 +115,58 @@
                 </div>
             </div>
 
+            {{-- <!-- Driver Tasks Report -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon success mx-auto">
+                            <i class="ti ti-user-check"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('Driver Tasks Report') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('Generate detailed reports for driver tasks with commission calculations and customizable filters') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-success me-2">{{ __('Excel Export') }}</span>
+                            <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
+                            <span class="badge bg-warning">{{ __('Commission Calc') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.driver-tasks') }}" class="btn btn-success">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Tasks Report -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon info mx-auto">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('Team Tasks Report') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('Generate comprehensive reports for team tasks with driver and customer information') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-info me-2">{{ __('Excel Export') }}</span>
+                            <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
+                            <span class="badge bg-warning">{{ __('Commission Calc') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.team-tasks') }}" class="btn btn-info">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div> --}}
+
             <!-- Wallet Reports -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100">
@@ -278,6 +330,12 @@
                                 <ul class="list-unstyled">
                                     <li><i
                                             class="ti ti-check text-success me-2"></i>{{ __('Customer Tasks Report with Excel/PDF export') }}
+                                    </li>
+                                    <li><i
+                                            class="ti ti-check text-success me-2"></i>{{ __('Driver Tasks Report with commission calculations') }}
+                                    </li>
+                                    <li><i
+                                            class="ti ti-check text-success me-2"></i>{{ __('Team Tasks Report with comprehensive data') }}
                                     </li>
                                     <li><i
                                             class="ti ti-check text-success me-2"></i>{{ __('Customizable column selection') }}

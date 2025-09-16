@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Helpers\FileHelper;
 use App\Http\Controllers\admin\WalletsController;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
@@ -396,7 +397,8 @@ class RegisterController extends Controller
 
     public function registerDriver(Request $req)
     {
-
+        Log::info('Register driver (API) attempt', ['payload' => $req->all()]);
+        dd('error');
         $baseRules = [
           'name'           => 'required|string|max:255',
           'username'       => 'required|unique:drivers,username',

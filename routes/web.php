@@ -395,12 +395,15 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/transaction/show/{id}/{name}', [WalletsController::class, 'show'])->name('wallets.transaction');
                 Route::get('/wallets/driver/show/{id}', [WalletsController::class, 'driverShow'])->name('wallets.driver.show');
                 Route::post('/wallets/driver/payment', [WalletsController::class, 'processDriverPayment'])->name('wallets.driver.payment');
+                Route::post('/wallets/{wallet}/log-payment-request', [WalletsController::class, 'logPaymentRequest'])->name('wallets.log-payment-request');
+                Route::get('/wallets/{wallet}/payment-request-logs', [WalletsController::class, 'getPaymentRequestLogs'])->name('wallets.payment-request-logs');
                 Route::get('/wallets/transactions/{id}', [WalletsController::class, 'getDataTransactions'])->name('wallets.transactions');
                 Route::get('/wallets/transaction/data', [WalletsController::class, 'getDataTransactions'])->name('wallets.transaction.data');
                 Route::post('/wallets/transaction/store', [WalletsController::class, 'storeTransaction'])->name('wallets.transaction.store');
                 Route::get('/wallets/transaction/edit/{id}', [WalletsController::class, 'editTransaction'])->name('wallets.transaction.edit');
                 Route::delete('/wallets/transaction/delete/{id}', [WalletsController::class, 'destroy'])->name('wallets.transaction.delete');
 
+                Route::get('/wallets/payment/request/{id}', [WalletsController::class, 'paymentRequest'])->name('wallets.payment_request');
 
 
                 Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
@@ -454,6 +457,12 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::delete('/teams/wallet/transaction/delete/{id}', [TeamWalletController::class, 'destroy'])->name('teams.wallet.transaction.delete');
                 Route::get('/teams/wallets/{id}/{name}', [TeamWalletController::class, 'index'])->name('teams.wallet');
+
+                // Team Payment Request Routes
+                Route::get('/teams/wallet/check-team-leader', [TeamWalletController::class, 'checkTeamLeader'])->name('teams.wallet.check-team-leader');
+                Route::post('/teams/wallet/log-payment-request', [TeamWalletController::class, 'logTeamPaymentRequest'])->name('teams.wallet.log-payment-request');
+                Route::get('/teams/wallet/payment-request-logs', [TeamWalletController::class, 'getTeamPaymentRequestLogs'])->name('teams.wallet.payment-request-logs');
+                Route::post('/teams/wallet/generate-payment-pdf', [TeamWalletController::class, 'generateTeamPaymentPDF'])->name('teams.wallet.generate-payment-pdf');
 
 
 
@@ -589,6 +598,88 @@ Route::middleware('rate.limit')->group(function () {
                 // Keep the original controller routes for POST requests
                 Route::post('admin/reports/customer-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
                 Route::post('admin/reports/customer-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
+
+                // Driver Tasks Report Routes
+                Route::get('reports/driver-tasks', function () {
+                    $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
+                    $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
+                    $teams = App\Models\Teams::select('id', 'name')->get();
+
+                    $taskStatuses = [
+                        'pending' => __('Pending'),
+                        'confirmed' => __('Confirmed'),
+                        'in_progress' => __('In Progress'),
+                        'completed' => __('Completed'),
+                        'canceled' => __('Canceled'),
+                        'refund' => __('Refund')
+                    ];
+
+                    $paymentStatuses = [
+                        'pending' => __('Pending'),
+                        'completed' => __('Completed'),
+                        'waiting' => __('Waiting')
+                    ];
+
+                    $paymentMethods = [
+                        'cash' => 'cash',
+                        'bank_transfer' => 'bank transfer',
+                        'credit_card' => 'credit card',
+                        'wallet' => 'wallet'
+                    ];
+
+                    return view('admin.reports.driver-tasks', compact(
+                        'customers',
+                        'drivers',
+                        'teams',
+                        'taskStatuses',
+                        'paymentStatuses',
+                        'paymentMethods'
+                    ));
+                })->name('admin.reports.driver-tasks');
+
+                Route::post('admin/reports/driver-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateDriverTasksReport'])->name('admin.reports.driver-tasks.generate');
+                Route::post('admin/reports/driver-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getDriverTasksPreview'])->name('admin.reports.driver-tasks.preview');
+
+                // Team Tasks Report Routes
+                Route::get('reports/team-tasks', function () {
+                    $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
+                    $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
+                    $teams = App\Models\Team::select('id', 'name')->get();
+
+                    $taskStatuses = [
+                        'pending' => __('Pending'),
+                        'confirmed' => __('Confirmed'),
+                        'in_progress' => __('In Progress'),
+                        'completed' => __('Completed'),
+                        'canceled' => __('Canceled'),
+                        'refund' => __('Refund')
+                    ];
+
+                    $paymentStatuses = [
+                        'pending' => __('Pending'),
+                        'completed' => __('Completed'),
+                        'waiting' => __('Waiting')
+                    ];
+
+                    $paymentMethods = [
+                        'cash' => 'cash',
+                        'bank_transfer' => 'bank transfer',
+                        'credit_card' => 'credit card',
+                        'wallet' => 'wallet'
+                    ];
+
+                    return view('admin.reports.team-tasks', compact(
+                        'customers',
+                        'drivers',
+                        'teams',
+                        'taskStatuses',
+                        'paymentStatuses',
+                        'paymentMethods'
+                    ));
+                })->name('admin.reports.team-tasks');
+
+                Route::post('admin/reports/team-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateTeamTasksReport'])->name('admin.reports.team-tasks.generate');
+                Route::post('admin/reports/team-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getTeamTasksPreview'])->name('admin.reports.team-tasks.preview');
 
                 // Wallet Reports Routes
                 Route::get('reports/wallet', [App\Http\Controllers\admin\WalletReportsController::class, 'index'])->name('admin.reports.wallet.index');

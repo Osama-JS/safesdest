@@ -32,15 +32,14 @@ class DriverWalletController extends Controller
             }
 
             // Calculate total earnings from completed tasks
-            $totalEarnings = $driver->tasks()
-                ->where('status', 'delivered')
-                ->sum('commission');
+            $totalEarnings = $wallet->credit;
+
 
             // Get pending amount (from tasks not yet paid)
-            $pendingAmount = $driver->tasks()
-                ->where('status', 'delivered')
-                ->where('payment_status', '!=', 'paid')
-                ->sum('commission');
+            $pendingAmount = $wallet->debit;
+
+            Log::alert("Pending amount: " . $pendingAmount);
+            Log::alert("Total earnings: " . $totalEarnings);
 
             return response()->json([
                 'success' => true,
@@ -140,6 +139,7 @@ class DriverWalletController extends Controller
                     'type' => $transaction->transaction_type,
                     'description' => $transaction->description,
                     'status' => $transaction->status,
+                    'image' => $transaction->image ? url('storage/' . $transaction->image) : null,
                     'created_at' => $transaction->created_at,
                     'maturity_time' => $transaction->maturity_time,
                     'reference_id' => $transaction->reference_id

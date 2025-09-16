@@ -44,7 +44,7 @@ class DriverProfileController extends Controller
                         'commission_value' => $driver->commission_value,
                         'last_activity_at' => $driver->last_activity_at,
                         'app_version' => $driver->app_version,
-                        'additional_data' => $driver->additional_data ? json_decode($driver->additional_data, true) : null,
+                        'additional_data' => $driver->additional_data,
                         'created_at' => $driver->created_at,
                         'updated_at' => $driver->updated_at,
                         'team' => $driver->team ? [

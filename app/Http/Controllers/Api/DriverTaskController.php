@@ -18,9 +18,9 @@ class DriverTaskController extends Controller
      */
     public function index(Request $request)
     {
+
         try {
             $driver = $request->user();
-            Log::alert($request->all());
 
             // Validate query parameters
             $validator = Validator::make($request->all(), [
@@ -47,9 +47,9 @@ class DriverTaskController extends Controller
                 if ($status === 'pending') {
                     $query->where('pending_driver_id', $driver->id)
                           ->whereNull('driver_id');
+                    Log::alert('pending_driver_id===========');
                 } else {
                     $query->where('driver_id', $driver->id);
-
                     switch ($status) {
                         case 'accepted':
                             $query->where('status', 'accepted');
@@ -58,21 +58,23 @@ class DriverTaskController extends Controller
                             $query->whereIn('status', ['picked_up', 'in_transit']);
                             break;
                         case 'completed':
-                            $query->where('status', 'delivered');
+                            $query->whereIn('status', ['completed','invoiced']);
                             break;
                         case 'cancelled':
-                            $query->where('status', 'cancelled');
+                            $query->whereIn('status', ['cancelled','refund']);
                             break;
                         default:
                             break;
                     }
                 }
+            } else {
+                $query->where('driver_id', $driver->id);
             }
 
 
             $tasks = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
-            Log::alert($tasks->items());
+            Log::alert($tasks);
 
             return response()->json([
                 'success' => true,

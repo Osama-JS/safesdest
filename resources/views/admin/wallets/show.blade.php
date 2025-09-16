@@ -101,6 +101,16 @@
                     </div>
                 </div>
             @endif
+            @can('generate_payment_request')
+                @if ($data->user_type === 'driver')
+                    <div class="mt-4">
+                        <a href="javascript:;" class="btn btn-success" id="payment-request"><i
+                                class="ti ti-receipt me-1"></i>{{ __('Payment Request') }}</a>
+                    </div>
+                @endif
+            @endcan
+
+
         </div>
 
         <!-- Table -->
@@ -247,6 +257,184 @@
             </div>
         </div>
     </div>
+
+    @can('generate_payment_request')
+        <div class="modal fade" id="paymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('Payment Request from Wallet: ') }} <span id="paymentRequestWalletId"
+                                class="bg-info text-white rounded p-1 px-2"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Task Information Section -->
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">{{ __('Wallet Information') }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Wallet ID') }}:</label>
+                                            <span id="walletInfoId" class="text-primary fw-bold"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Wallet Balance') }}:</label>
+                                            <span id="walletInfoAmount" class="text-success fw-bold"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Wallet Owner') }}:</label>
+                                            <span id="walletInfoOwner"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Phone') }}:</label>
+                                            <span id="walletInfoOwnerPhone" class="text-muted"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Email') }}:</label>
+                                            <span id="walletInfoOwnerEmail" class="text-muted"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Request Form Section -->
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">{{ __('Payment Request Form') }}</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="paymentRequestForm">
+                                            <input type="hidden" id="paymentRequestWalletIdInput" name="task_id">
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="requestedAmount">*
+                                                    {{ __('Requested Amount') }}</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.01" class="form-control"
+                                                        id="requestedAmount" name="requested_amount" required>
+                                                    <span class="input-group-text">{{ __('SAR') }}</span>
+                                                </div>
+                                                <div class="form-text">
+                                                    <small class="text-muted">{{ __('Maximum amount') }}: <span
+                                                            id="maxAmount" class="text-primary fw-bold"></span></small>
+                                                </div>
+                                                <span class="requested_amount-error text-danger text-error"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="bankName">* {{ __('Bank Name') }}</label>
+
+                                                <select name="bank_name" id="bankName" class="form-select">
+                                                    <option value="">{{ __('Select Bank') }}</option>
+                                                    <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                    </option>
+                                                    <option value="بنك الراجحي">بنك الراجحي</option>
+                                                    <option value="بنك الرياض">بنك الرياض</option>
+                                                    <option value="البنك السعودي للاستثمار">البنك السعودي
+                                                        للاستثمار</option>
+                                                    <option value="البنك السعودي الفرنسي">البنك السعودي
+                                                        الفرنسي</option>
+                                                    <option value="البنك السعودي البريطاني">البنك السعودي
+                                                        البريطاني (ساب)</option>
+                                                    <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                    </option>
+                                                    <option value="بنك سامبا">بنك سامبا</option>
+                                                    <option value="البنك الأول">البنك الأول</option>
+                                                    <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                    <option value="بنك الإنماء">بنك الإنماء</option>
+                                                    <option value="البنك العربي">البنك العربي</option>
+                                                    <option value="other">{{ __('Other') }}</option>
+                                                </select>
+                                                <input type="text" class="form-control mt-2" id="customBankName"
+                                                    name="custom_bank_name" placeholder="{{ __('Enter bank name') }}"
+                                                    style="display: none;">
+                                                <span class="bank_name-error text-danger text-error"></span>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="accountNumber">*
+                                                    {{ __('Account Number') }}</label>
+                                                <input type="text" class="form-control" id="accountNumber"
+                                                    name="account_number" placeholder="1234567890" minlength="8" required>
+                                                <span class="account_number-error text-danger text-error"></span>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="ibanNumber">* {{ __('IBAN Number') }}</label>
+                                                <input type="text" class="form-control" id="ibanNumber"
+                                                    name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
+                                                    maxlength="29" required>
+                                                <div class="form-text">
+                                                    <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                                </div>
+                                                <span class="iban_number-error text-danger text-error"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label" for="notes">* {{ __('Notes') }}</label>
+                                                <textarea type="text" class="form-control" id="notes" name="notes" placeholder="Notes" maxlength="29"></textarea>
+                                                <span class="notes-error text-danger text-error"></span>
+                                            </div>
+
+
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-primary"
+                            id="generatePaymentRequest">{{ __('Generate Payment Request') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
+
+
+    @can('view_payment_requests_logs')
+        <!-- Payment Request Logs Section -->
+        @if ($data->user_type === 'driver')
+            <div class="card shadow-sm border-0 mt-4" id="payment-logs-section">
+                <div class="card-header py-4 px-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="ti ti-file-text me-2 text-primary"></i>
+                                {{ __('Payment Request Logs') }}
+                            </h5>
+                            <p class="text-muted mb-0">{{ __('History of printed payment requests') }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="loadRefresh">
+                                <i class="ti ti-refresh me-1"></i>
+                                {{ __('Refresh') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Logs Container -->
+                    <div id="payment-logs-container">
+                        <!-- Loading state -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">{{ __('Loading') }}...</span>
+                            </div>
+                            <p class="text-muted mt-2">{{ __('Loading payment request logs') }}...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endcan
+
 
 
 @endsection

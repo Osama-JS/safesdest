@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 use Carbon\Carbon;
+use App\Models\Task;
 use App\Models\Wallet;
 use Mockery\Expectation;
 use Illuminate\Http\Request;
@@ -714,6 +715,8 @@ class WalletsController extends Controller
                 'amount' => 'required|numeric|min:0.01',
                 'payment_request_number' => 'required|string|max:50',
                 'notes' => 'nullable|string|max:1000',
+                'selected_tasks' => 'nullable|array',
+                'selected_tasks.*' => 'integer|exists:tasks,id',
             ]);
 
             if ($validator->fails()) {
@@ -744,6 +747,35 @@ class WalletsController extends Controller
                 ]);
             }
 
+            // معالجة المهام المحددة وتحديث الملاحظات
+            $finalNotes = $request->notes ?? '';
+
+            if ($request->selected_tasks && count($request->selected_tasks) > 0) {
+                // التحقق من أن المهام تنتمي للسائق
+                $tasks = Task::whereIn('id', $request->selected_tasks)
+                    ->where('driver_id', $wallet->driver_id)
+                    ->with(['pickup', 'delivery'])
+                    ->get();
+
+                if ($tasks->count() !== count($request->selected_tasks)) {
+                    return response()->json([
+                        'status' => 0,
+                        'error' => 'بعض المهام المحددة لا تنتمي لهذا السائق'
+                    ]);
+                }
+
+                // إضافة معلومات المهام للملاحظات
+                if (!empty($finalNotes)) {
+                    $finalNotes .= "\n\n";
+                }
+
+                $finalNotes .= "المهام المحددة:\n";
+                foreach ($tasks as $task) {
+                    $pickupAddress = $task->pickup->address ?? 'عنوان غير محدد';
+                    $finalNotes .= "- مهمة #{$task->id}: {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
+                }
+            }
+
             // إنشاء سجل طلب السداد
             $log = WalletPaymentRequestLog::create([
                 'wallet_id' => $wallet->id,
@@ -751,7 +783,7 @@ class WalletsController extends Controller
                 'driver_id' => $wallet->driver_id,
                 'amount' => $request->amount,
                 'payment_request_number' => $request->payment_request_number,
-                'notes' => $request->notes,
+                'notes' => $finalNotes,
                 'ip_address' => IpHelper::getUserIpAddress(),
                 'printed_at' => now(),
             ]);
@@ -802,6 +834,50 @@ class WalletsController extends Controller
             return response()->json([
                 'status' => 0,
                 'error' => 'حدث خطأ أثناء جلب السجلات: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get tasks for a specific driver
+     */
+    public function getDriverTasks($driverId)
+    {
+        try {
+            // التحقق من صلاحية المستخدم
+            $user = Auth::user();
+            if (!$user->checkDriver($driverId)) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'غير مصرح لك بالوصول لمهام هذا السائق'
+                ]);
+            }
+
+            // جلب المهام المرتبطة بالسائق
+            $tasks = Task::with(['pickup', 'delivery'])
+                ->where('driver_id', $driverId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'text' => "مهمة #{$task->id} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'status' => $task->status,
+                        'total_price' => $task->total_price,
+                        'pickup_address' => $task->pickup->address ?? 'عنوان غير محدد',
+                        'delivery_address' => $task->delivery->address ?? 'عنوان غير محدد'
+                    ];
+                });
+
+            return response()->json([
+                'status' => 1,
+                'tasks' => $tasks
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء جلب المهام: ' . $e->getMessage()
             ]);
         }
     }

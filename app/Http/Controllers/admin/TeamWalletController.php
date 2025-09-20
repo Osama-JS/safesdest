@@ -4,6 +4,7 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 use Carbon\Carbon;
+use App\Models\Task;
 use App\Models\Team;
 use App\Models\Team_Wallet;
 use Illuminate\Http\Request;
@@ -282,6 +283,8 @@ class TeamWalletController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'payment_request_number' => 'required|string|max:50',
             'notes' => 'nullable|string|max:1000',
+            'selected_tasks' => 'nullable|array',
+            'selected_tasks.*' => 'integer|exists:tasks,id',
         ]);
 
         if ($validator->fails()) {
@@ -313,6 +316,35 @@ class TeamWalletController extends Controller
                 ]);
             }
 
+            // معالجة المهام المحددة وتحديث الملاحظات
+            $finalNotes = $request->notes ?? '';
+
+            if ($request->selected_tasks && count($request->selected_tasks) > 0) {
+                // التحقق من أن المهام تنتمي للفريق
+                $tasks = Task::whereIn('id', $request->selected_tasks)
+                    ->where('team_id', $team->id)
+                    ->with(['pickup', 'delivery'])
+                    ->get();
+
+                if ($tasks->count() !== count($request->selected_tasks)) {
+                    return response()->json([
+                        'status' => 0,
+                        'error' => 'بعض المهام المحددة لا تنتمي لهذا الفريق'
+                    ]);
+                }
+
+                // إضافة معلومات المهام للملاحظات
+                if (!empty($finalNotes)) {
+                    $finalNotes .= "\n\n";
+                }
+
+                $finalNotes .= "المهام المحددة:\n";
+                foreach ($tasks as $task) {
+                    $pickupAddress = $task->pickup->address ?? 'عنوان غير محدد';
+                    $finalNotes .= "- مهمة #{$task->id}: {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
+                }
+            }
+
             // Create log entry
             TeamWalletPaymentRequestLog::create([
                 'team_wallet_id' => $request->team_wallet_id,
@@ -321,7 +353,7 @@ class TeamWalletController extends Controller
                 'team_leader_id' => $teamLeader->id,
                 'amount' => $request->amount,
                 'payment_request_number' => $request->payment_request_number,
-                'notes' => $request->notes,
+                'notes' => $finalNotes,
                 'ip_address' => IpHelper::getUserIpAddress(),
                 'printed_at' => now(),
             ]);
@@ -593,6 +625,50 @@ class TeamWalletController extends Controller
             return response()->json([
                 'status' => 2,
                 'error' => 'خطأ في التحقق من بيانات الفريق: ' . $ex->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get tasks for a specific team
+     */
+    public function getTeamTasks($teamId)
+    {
+        try {
+            // التحقق من صلاحية المستخدم
+            $user = Auth::user();
+            if (!$user->checkTeam($teamId)) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'غير مصرح لك بالوصول لمهام هذا الفريق'
+                ]);
+            }
+
+            // جلب المهام المرتبطة بالفريق
+            $tasks = Task::with(['pickup', 'delivery'])
+                ->where('team_id', $teamId)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'text' => "مهمة #{$task->id} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'status' => $task->status,
+                        'total_price' => $task->total_price,
+                        'pickup_address' => $task->pickup->address ?? 'عنوان غير محدد',
+                        'delivery_address' => $task->delivery->address ?? 'عنوان غير محدد'
+                    ];
+                });
+
+            return response()->json([
+                'status' => 1,
+                'tasks' => $tasks
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء جلب المهام: ' . $e->getMessage()
             ]);
         }
     }

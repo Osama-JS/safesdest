@@ -397,6 +397,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/wallets/driver/payment', [WalletsController::class, 'processDriverPayment'])->name('wallets.driver.payment');
                 Route::post('/wallets/{wallet}/log-payment-request', [WalletsController::class, 'logPaymentRequest'])->name('wallets.log-payment-request');
                 Route::get('/wallets/{wallet}/payment-request-logs', [WalletsController::class, 'getPaymentRequestLogs'])->name('wallets.payment-request-logs');
+                Route::get('/wallets/driver-tasks/{driverId}', [WalletsController::class, 'getDriverTasks'])->name('wallets.driver-tasks');
                 Route::get('/wallets/transactions/{id}', [WalletsController::class, 'getDataTransactions'])->name('wallets.transactions');
                 Route::get('/wallets/transaction/data', [WalletsController::class, 'getDataTransactions'])->name('wallets.transaction.data');
                 Route::post('/wallets/transaction/store', [WalletsController::class, 'storeTransaction'])->name('wallets.transaction.store');
@@ -462,6 +463,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/teams/wallet/check-team-leader', [TeamWalletController::class, 'checkTeamLeader'])->name('teams.wallet.check-team-leader');
                 Route::post('/teams/wallet/log-payment-request', [TeamWalletController::class, 'logTeamPaymentRequest'])->name('teams.wallet.log-payment-request');
                 Route::get('/teams/wallet/payment-request-logs', [TeamWalletController::class, 'getTeamPaymentRequestLogs'])->name('teams.wallet.payment-request-logs');
+                Route::get('/teams/wallet/team-tasks/{teamId}', [TeamWalletController::class, 'getTeamTasks'])->name('teams.wallet.team-tasks');
                 Route::post('/teams/wallet/generate-payment-pdf', [TeamWalletController::class, 'generateTeamPaymentPDF'])->name('teams.wallet.generate-payment-pdf');
 
 

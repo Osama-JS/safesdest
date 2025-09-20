@@ -32,8 +32,7 @@
       "name": "My Tasks Ads",
       "icon": "menu-icon tf-icons ti ti-speakerphone",
       "slug": "customer.ads.index",
-      "isactive": "ad-isactive",
-      "broker": "no"
+      "isactive": "ad-isactive"
     },
     {
       "url": "customer/customs-clearances/ads",

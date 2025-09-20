@@ -19,3 +19,4 @@ Route::get('/user', function (Request $request) {
 
 // Include driver API routes
 require __DIR__.'/api_driver.php';
+require __DIR__.'/api_customer.php';

@@ -319,10 +319,11 @@
                                                     <span class="input-group-text">{{ __('SAR') }}</span>
                                                 </div>
                                                 <div class="form-text">
-                                                    <small class="text-muted">{{ __('Maximum amount') }}: <span
-                                                            id="maxAmount" class="text-primary fw-bold"></span></small>
+                                                    <small class="text-muted">{{ __('Available amount') }}: <span
+                                                            id="maxAmount" class="text-primary fw-bold"></span>
+                                                        ({{ __('You can enter a larger amount') }})</small>
                                                 </div>
-                                                <span class="requested_amount-error text-danger text-error"></span>
+                                                <span class="requested_amount-error text-error"></span>
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label" for="bankName">* {{ __('Bank Name') }}</label>
@@ -373,9 +374,23 @@
                                                 <span class="iban_number-error text-danger text-error"></span>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label" for="notes">* {{ __('Notes') }}</label>
-                                                <textarea type="text" class="form-control" id="notes" name="notes" placeholder="Notes" maxlength="29"></textarea>
+                                                <label class="form-label" for="notes">{{ __('Notes') }}</label>
+                                                <textarea type="text" class="form-control" id="notes" name="notes" placeholder="Notes" maxlength="1000"></textarea>
                                                 <span class="notes-error text-danger text-error"></span>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="selectedTasks">{{ __('Related Tasks') }}
+                                                    ({{ __('Optional') }})</label>
+                                                <select class="form-select" id="selectedTasks" name="selected_tasks[]"
+                                                    multiple>
+                                                    <!-- سيتم تحميل المهام ديناميكياً -->
+                                                </select>
+                                                <div class="form-text">
+                                                    <small
+                                                        class="text-muted">{{ __('Select tasks related to this payment request') }}</small>
+                                                </div>
+                                                <span class="selected_tasks-error text-danger text-error"></span>
                                             </div>
 
 

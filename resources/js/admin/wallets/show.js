@@ -417,9 +417,9 @@ $(function () {
       $('#walletInfoOwnerPhone').text(wallet.driver_phone || 'N/A');
       $('#walletInfoOwnerEmail').text(wallet.driver_email || 'N/A');
 
-      // Set maximum amount
+      // Set maximum amount (for display only, not validation)
       $('#maxAmount').text(`${balance.toFixed(2)} SAR`);
-      $('#requestedAmount').attr('max', balance);
+      $('#requestedAmount').removeAttr('max').data('balance', balance);
 
       // Set hidden wallet ID
       $('#paymentRequestWalletIdInput').val(wallet.id);
@@ -447,6 +447,10 @@ $(function () {
       $('#accountNumber').val(wallet.driver_account_number);
       const formattedIban = wallet.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
       $('#ibanNumber').val(formattedIban);
+
+      console.log(wallet);
+      // Initialize Select2 for tasks
+      initializeTasksSelect2(wallet.driver_id);
     }).fail(function () {
       showAlert('error', 'Error loading wallet details');
     });
@@ -472,12 +476,15 @@ $(function () {
   // Validate requested amount in real-time
   $(document).on('input', '#requestedAmount', function () {
     const value = parseFloat($(this).val());
-    const maxAmount = parseFloat($(this).attr('max'));
+    const balance = parseFloat($(this).data('balance'));
 
-    if (value > maxAmount) {
-      $('.requested_amount-error').text(`المبلغ لا يمكن أن يكون أكبر من ${maxAmount.toFixed(2)} ريال`);
+    if (value > balance) {
+      $('.requested_amount-error')
+        .text(`تنبيه: المبلغ أكبر من المبلغ المستحق (${balance.toFixed(2)} ريال). سيظهر الرصيد المتبقي بالسالب.`)
+        .removeClass('text-danger')
+        .addClass('text-warning');
     } else {
-      $('.requested_amount-error').text('');
+      $('.requested_amount-error').text('').removeClass('text-warning').addClass('text-danger');
     }
   });
 
@@ -504,6 +511,7 @@ $(function () {
     const ibanNumber = $('#ibanNumber').val().trim();
     const paymentRecipient = $('#paymentRecipient').val();
     const notes = $('#notes').val();
+    const selectedTasks = $('#selectedTasks').val() || [];
 
     // Use custom bank name if "other" is selected
     if (bankName === 'other') {
@@ -521,10 +529,14 @@ $(function () {
     }
 
     if (requestedAmount > walletData.driver_amount) {
-      $('.requested_amount-error').text(
-        `المبلغ المطلوب لا يمكن أن يكون أكبر من المبلغ المستحق للسائق (${walletData.driver_amount.toFixed(2)} ريال)`
-      );
-      hasErrors = true;
+      $('.requested_amount-error')
+        .text(
+          `تنبيه: المبلغ المطلوب أكبر من المبلغ المستحق للسائق (${walletData.driver_amount.toFixed(2)} ريال). سيظهر الرصيد المتبقي بالسالب في طلب السداد.`
+        )
+        .removeClass('text-danger')
+        .addClass('text-warning');
+    } else {
+      $('.requested_amount-error').removeClass('text-warning').addClass('text-danger');
     }
 
     if (!bankName || bankName.length < 2) {
@@ -565,6 +577,7 @@ $(function () {
       ibanNumber: ibanNumber,
       paymentRecipient: paymentRecipient,
       notes: notes,
+      selectedTasks: selectedTasks,
       walletData: walletData
     });
   });
@@ -765,7 +778,8 @@ $(function () {
         walletId: data.walletData.id,
         amount: data.requestedAmount,
         paymentRequestNumber: referenceNumber,
-        notes: data.notes || null
+        notes: data.notes || null,
+        selectedTasks: data.selectedTasks || []
       });
 
       printWindow.close();
@@ -799,6 +813,51 @@ $(function () {
     }, 1000);
   }
 
+  // Function to initialize Select2 for tasks
+  function initializeTasksSelect2(driverId) {
+    console.log(driverId);
+    $('#selectedTasks').select2({
+      placeholder: 'اختر المهام المرتبطة بطلب السداد',
+      allowClear: true,
+      width: '100%',
+      ajax: {
+        url: `${baseUrl}admin/wallets/driver-tasks/${driverId}`,
+        dataType: 'json',
+        delay: 250,
+        processResults: function (data) {
+          if (data.status === 1) {
+            return {
+              results: data.tasks
+            };
+          } else {
+            console.error('Error loading tasks:', data.error);
+            return {
+              results: []
+            };
+          }
+        },
+        cache: true
+      },
+      templateResult: function (task) {
+        if (task.loading) {
+          return task.text;
+        }
+        console.log(task);
+
+        return $(`
+          <div class="task-option">
+            <div class="fw-bold">مهمة #${task.id}</div>
+            <div class="text-muted small">${task.pickup_address}</div>
+            <div class="text-primary small">${task.total_price} ريال - ${task.status}</div>
+          </div>
+        `);
+      },
+      templateSelection: function (task) {
+        return task.text || `مهمة #${task.id}`;
+      }
+    });
+  }
+
   // Function to log payment request after printing
   function logPaymentRequest(data) {
     $.ajax({
@@ -808,6 +867,7 @@ $(function () {
         amount: data.amount,
         payment_request_number: data.paymentRequestNumber,
         notes: data.notes,
+        selected_tasks: data.selectedTasks || [],
         _token: $('meta[name="csrf-token"]').attr('content')
       },
       success: function (response) {

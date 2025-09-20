@@ -96,11 +96,25 @@ class Driver extends Authenticatable
         return $this->hasOne(Wallet::class, 'driver_id');
     }
 
-
-
     public function transactions()
     {
         return $this->morphMany(Transaction::class, 'payable');
+    }
+
+    /**
+     * Get the notifications for this driver
+     */
+    public function driverNotifications()
+    {
+        return $this->hasMany(Notification_Drivers::class, 'driver_id');
+    }
+
+    /**
+     * Get unread notifications count
+     */
+    public function getUnreadNotificationsCountAttribute()
+    {
+        return $this->driverNotifications()->unread()->count();
     }
 
     // App\Models\Driver.php

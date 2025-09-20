@@ -18,7 +18,6 @@ class DriverTaskController extends Controller
      */
     public function index(Request $request)
     {
-
         try {
             $driver = $request->user();
 
@@ -39,15 +38,17 @@ class DriverTaskController extends Controller
 
             $perPage = $request->get('per_page', 10);
             $status = $request->get('status');
-            Log::alert('status'.$status);
+            Log::alert('status: '.$status);
             // Build query
             $query = Task::with(['customer', 'pickup', 'delivery']);
             // Filter by status if provided
             if ($status) {
                 if ($status === 'pending') {
+                    // Available tasks: tasks that are pending for this driver
                     $query->where('pending_driver_id', $driver->id)
-                          ->whereNull('driver_id');
-                    Log::alert('pending_driver_id===========');
+                          ->whereNull('driver_id')
+                          ->where('status', 'in_progress'); // Tasks that are still available
+                    Log::alert('Fetching pending tasks for driver: ' . $driver->id);
                 } else {
                     $query->where('driver_id', $driver->id);
                     switch ($status) {
@@ -55,19 +56,20 @@ class DriverTaskController extends Controller
                             $query->where('status', 'accepted');
                             break;
                         case 'in_progress':
-                            $query->whereIn('status', ['picked_up', 'in_transit']);
+                            $query->whereIn('status', ['assign','accepted', 'started', 'in pickup point', 'picked_up', 'in_transit', 'in delivery point']);
                             break;
                         case 'completed':
-                            $query->whereIn('status', ['completed','invoiced']);
+                            $query->whereIn('status', ['completed', 'delivered', 'invoiced']);
                             break;
                         case 'cancelled':
-                            $query->whereIn('status', ['cancelled','refund']);
+                            $query->whereIn('status', ['cancelled', 'refund']);
                             break;
                         default:
                             break;
                     }
                 }
             } else {
+                // Default: get all tasks assigned to this driver
                 $query->where('driver_id', $driver->id);
             }
 
@@ -117,6 +119,82 @@ class DriverTaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get driver's completed tasks history
+     */
+    public function history(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            // Validate query parameters
+            $validator = Validator::make($request->all(), [
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:50',
+                'from' => 'nullable|date',
+                'to' => 'nullable|date|after_or_equal:from'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $perPage = $request->get('per_page', 10);
+            $from = $request->get('from');
+            $to = $request->get('to');
+
+            // Build query for completed tasks - include all completed statuses
+            $query = Task::with(['customer', 'pickup_point', 'delivery_point'])
+                ->where('driver_id', $driver->id)
+                ->whereIn('status', ['completed', 'delivered', 'invoiced']);
+
+            // Apply date filters if provided
+            if ($from && $to) {
+                $query->whereBetween('updated_at', [$from, $to]);
+            } elseif ($from) {
+                $query->whereDate('updated_at', '>=', $from);
+            } elseif ($to) {
+                $query->whereDate('updated_at', '<=', $to);
+            }
+
+            $tasks = $query->orderBy('updated_at', 'desc')->paginate($perPage);
+
+            Log::alert('Task history retrieved', [
+                'driver_id' => $driver->id,
+                'total_tasks' => $tasks->total(),
+                'current_page' => $tasks->currentPage()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks->items(),
+                'pagination' => [
+                    'current_page' => $tasks->currentPage(),
+                    'last_page' => $tasks->lastPage(),
+                    'per_page' => $tasks->perPage(),
+                    'total' => $tasks->total(),
+                    'from' => $tasks->firstItem(),
+                    'to' => $tasks->lastItem()
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Get task history error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get task history'
             ], 500);
         }
     }
@@ -258,13 +336,27 @@ class DriverTaskController extends Controller
                 'driver_id' => $driver->id
             ]);
 
+            // Load task with relationships for complete response
+            $task->load(['customer', 'pickup_point', 'delivery_point']);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Task accepted successfully',
                 'task' => [
                     'id' => $task->id,
+                    'total_price' => $task->total_price,
+                    'commission' => $task->commission,
+                    'customer_name' => $task->customer->name ?? null,
+                    'pickup_address' => $task->pickup_point->address ?? null,
+                    'delivery_address' => $task->delivery_point->address ?? null,
                     'status' => $task->status,
-                    'accepted_at' => $task->accepted_at
+                    'driver_id' => $task->driver_id,
+                    'pending_driver_id' => $task->pending_driver_id,
+                    'accepted_at' => $task->accepted_at,
+                    'created_at' => $task->created_at,
+                    'pickup_point' => $task->pickup_point,
+                    'delivery_point' => $task->delivery_point,
+                    'customer' => $task->customer
                 ]
             ], 200);
 
@@ -398,6 +490,7 @@ class DriverTaskController extends Controller
 
             // ترتيب الحالات
             $statuses = [
+                'assign',
                 'started',
                 'in pickup point',
                 'loading',
@@ -433,7 +526,7 @@ class DriverTaskController extends Controller
 
             // تحديث البيانات
             $task->status = $request->status;
-            $task->last_activity_at = now();
+
             if ($request->notes) {
                 $task->notes = $request->notes;
             }
@@ -455,7 +548,6 @@ class DriverTaskController extends Controller
                 $driver->update([
                     'longitude' => $request->location['longitude'],
                     'altitude' => $request->location['latitude'],
-                    'last_seen_at' => now()
                 ]);
             }
 
@@ -495,70 +587,7 @@ class DriverTaskController extends Controller
     }
 
 
-    /**
-     * Get task history
-     */
-    public function history(Request $request)
-    {
-        try {
-            $driver = $request->user();
-            $validator = Validator::make($request->all(), [
-                'page' => 'nullable|integer|min:1',
-                'per_page' => 'nullable|integer|min:1|max:50',
-                'from' => 'nullable|date',
-                'to' => 'nullable|date|after_or_equal:from'
-            ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $perPage = $request->get('per_page', 10);
-
-            $query = Task::with(['customer', 'pickup_point', 'delivery_point'])
-                ->where('driver_id', $driver->id)
-                ->where('status', 'delivered');
-
-            // Date range filter
-            if ($request->from) {
-                $query->whereDate('completed_at', '>=', $request->from);
-            }
-            if ($request->to) {
-                $query->whereDate('completed_at', '<=', $request->to);
-            }
-
-            $tasks = $query->orderBy('completed_at', 'desc')->paginate($perPage);
-
-            Log::alert($tasks->items());
-            return response()->json([
-                'success' => true,
-                'tasks' => $tasks->items(),
-                'pagination' => [
-                    'current_page' => $tasks->currentPage(),
-                    'last_page' => $tasks->lastPage(),
-                    'per_page' => $tasks->perPage(),
-                    'total' => $tasks->total(),
-                    'from' => $tasks->firstItem(),
-                    'to' => $tasks->lastItem()
-                ]
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Get task history error', [
-                'error' => $e->getMessage(),
-                'driver_id' => $request->user()->id ?? 'unknown'
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get task history'
-            ], 500);
-        }
-    }
 
     /**
      * Get pending task assigned to driver

@@ -18,11 +18,15 @@ class DriverNotificationController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
+            Log::alert('Get driver notifications attempt', [
+                'driver_id' => $driver->id,
+                'unread_only' => $request->get('unread_only')
+            ]);
             $validator = Validator::make($request->all(), [
                 'page' => 'nullable|integer|min:1',
                 'per_page' => 'nullable|integer|min:1|max:50',
-                'unread_only' => 'nullable|boolean'
+                'unread_only' => 'nullable|in:true,false'
             ]);
 
             if ($validator->fails()) {
@@ -36,43 +40,72 @@ class DriverNotificationController extends Controller
             $perPage = $request->get('per_page', 20);
             $unreadOnly = $request->get('unread_only', false);
 
-            // Get notifications from Laravel's built-in notifications table
-            $query = $driver->notifications();
+            // Get notifications using the custom notifications system
+            $query = DB::table('notifications_drivers')
+                ->join('notifications', 'notifications_drivers.notification_id', '=', 'notifications.id')
+                ->where('notifications_drivers.driver_id', $driver->id)
+                ->select([
+                    'notifications.id',
+                    'notifications.title',
+                    'notifications.message as body',
+                    'notifications.type',
+                    'notifications.group',
+                    'notifications_drivers.status as is_read',
+                    'notifications.created_at',
+                    'notifications.updated_at'
+                ]);
 
             if ($unreadOnly) {
-                $query->whereNull('read_at');
+                $query->where('notifications_drivers.status', false);
             }
 
-            $notifications = $query->orderBy('created_at', 'desc')->paginate($perPage);
+            $notifications = $query->orderBy('notifications.created_at', 'desc')->paginate($perPage);
 
             // Format notifications
             $formattedNotifications = $notifications->getCollection()->map(function ($notification) {
-                $data = $notification->data;
                 return [
                     'id' => $notification->id,
-                    'type' => $notification->type,
-                    'title' => $data['title'] ?? 'Notification',
-                    'body' => $data['body'] ?? $data['message'] ?? '',
-                    'data' => $data,
-                    'read_at' => $notification->read_at,
-                    'created_at' => $notification->created_at
+                    'type' => $notification->type ?? 'general',
+                    'title' => $notification->title,
+                    'body' => $notification->body,
+                    'data' => [
+                        'type' => $notification->type ?? 'general',
+                        'group' => $notification->group
+                    ],
+                    'read_at' => $notification->is_read ? $notification->updated_at : null,
+                    'created_at' => $notification->created_at ? date('c', strtotime($notification->created_at)) : date('c')
                 ];
             });
 
             // Get unread count
-            $unreadCount = $driver->unreadNotifications()->count();
+            $unreadCount = DB::table('notifications_drivers')
+                ->where('driver_id', $driver->id)
+                ->where('status', false)
+                ->count();
+
+            Log::info('Driver notifications retrieved', [
+                'driver_id' => $driver->id,
+                'total_notifications' => $notifications->total(),
+                'unread_count' => $unreadCount,
+                'current_page' => $notifications->currentPage(),
+                'Notifications' => $formattedNotifications
+            ]);
+
+
 
             return response()->json([
                 'success' => true,
-                'notifications' => $formattedNotifications,
-                'unread_count' => $unreadCount,
-                'pagination' => [
-                    'current_page' => $notifications->currentPage(),
-                    'last_page' => $notifications->lastPage(),
-                    'per_page' => $notifications->perPage(),
-                    'total' => $notifications->total(),
-                    'from' => $notifications->firstItem(),
-                    'to' => $notifications->lastItem()
+                'data' => [
+                    'notifications' => $formattedNotifications,
+                    'unread_count' => $unreadCount,
+                    'pagination' => [
+                        'current_page' => $notifications->currentPage(),
+                        'last_page' => $notifications->lastPage(),
+                        'per_page' => $notifications->perPage(),
+                        'total' => $notifications->total(),
+                        'from' => $notifications->firstItem(),
+                        'to' => $notifications->lastItem()
+                    ]
                 ]
             ], 200);
 
@@ -96,18 +129,34 @@ class DriverNotificationController extends Controller
     {
         try {
             $driver = $request->user();
-            
-            $notification = $driver->notifications()->find($notificationId);
 
-            if (!$notification) {
+            // Check if notification exists for this driver
+            $notificationDriver = DB::table('notifications_drivers')
+                ->where('driver_id', $driver->id)
+                ->where('notification_id', $notificationId)
+                ->first();
+
+            if (!$notificationDriver) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification not found'
                 ], 404);
             }
 
-            if (!$notification->read_at) {
-                $notification->markAsRead();
+            // Mark as read if not already read
+            if (!$notificationDriver->status) {
+                DB::table('notifications_drivers')
+                    ->where('driver_id', $driver->id)
+                    ->where('notification_id', $notificationId)
+                    ->update([
+                        'status' => true,
+                        'updated_at' => now()
+                    ]);
+
+                Log::info('Notification marked as read', [
+                    'driver_id' => $driver->id,
+                    'notification_id' => $notificationId
+                ]);
             }
 
             return response()->json([
@@ -136,12 +185,25 @@ class DriverNotificationController extends Controller
     {
         try {
             $driver = $request->user();
-            
-            $driver->unreadNotifications()->update(['read_at' => now()]);
+
+            // Mark all unread notifications as read
+            $updatedCount = DB::table('notifications_drivers')
+                ->where('driver_id', $driver->id)
+                ->where('status', false)
+                ->update([
+                    'status' => true,
+                    'updated_at' => now()
+                ]);
+
+            Log::info('All notifications marked as read', [
+                'driver_id' => $driver->id,
+                'updated_count' => $updatedCount
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'All notifications marked as read'
+                'message' => 'All notifications marked as read',
+                'updated_count' => $updatedCount
             ], 200);
 
         } catch (\Exception $e) {
@@ -164,17 +226,30 @@ class DriverNotificationController extends Controller
     {
         try {
             $driver = $request->user();
-            
-            $notification = $driver->notifications()->find($notificationId);
 
-            if (!$notification) {
+            // Check if notification exists for this driver
+            $notificationDriver = DB::table('notifications_drivers')
+                ->where('driver_id', $driver->id)
+                ->where('notification_id', $notificationId)
+                ->first();
+
+            if (!$notificationDriver) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification not found'
                 ], 404);
             }
 
-            $notification->delete();
+            // Delete the notification relationship (not the notification itself)
+            DB::table('notifications_drivers')
+                ->where('driver_id', $driver->id)
+                ->where('notification_id', $notificationId)
+                ->delete();
+
+            Log::info('Notification deleted for driver', [
+                'driver_id' => $driver->id,
+                'notification_id' => $notificationId
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -237,7 +312,7 @@ class DriverNotificationController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             $validator = Validator::make($request->all(), [
                 'new_tasks' => 'nullable|boolean',
                 'task_updates' => 'nullable|boolean',
@@ -256,7 +331,7 @@ class DriverNotificationController extends Controller
 
             // Get current additional data
             $additionalData = $driver->additional_data ?? [];
-            
+
             // Update notification settings
             $additionalData['notification_settings'] = array_merge(
                 $additionalData['notification_settings'] ?? [],

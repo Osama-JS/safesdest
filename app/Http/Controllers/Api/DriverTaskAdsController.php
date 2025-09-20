@@ -7,10 +7,11 @@ use App\Models\Task_Ad;
 use App\Models\Task_Offire;
 use App\Models\Task;
 use App\Models\Driver;
+use App\Helpers\IpHelper;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class DriverTaskAdsController extends Controller
@@ -21,7 +22,8 @@ class DriverTaskAdsController extends Controller
     public function getStats(Request $request)
     {
         try {
-            $driver = Auth::guard('driver')->user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
 
             if (!$driver) {
                 return response()->json([
@@ -40,12 +42,11 @@ class DriverTaskAdsController extends Controller
             $availableAds = Task_Ad::where('status', 'running')
                 ->whereHas('task', function ($query) use ($vehicle_size_id) {
                     $query->where('vehicle_size_id', $vehicle_size_id)
-                          ->whereIn('status', ['advertised', 'in_progress']); // Tasks that can have ads
-                })
-                ->whereDoesntHave('offers', function ($query) use ($driver_id) {
-                    $query->where('driver_id', $driver_id);
+                          ->whereIn('status', ['advertised']); // Tasks that can have ads
                 })
                 ->count();
+            Log::alert('Driver ID: ' . $driver_id . ', Vehicle Size ID: ' . $vehicle_size_id);
+
 
             // Count driver's submitted offers (pending)
             $myOffers = Task_Offire::where('driver_id', $driver_id)
@@ -89,7 +90,8 @@ class DriverTaskAdsController extends Controller
     public function index(Request $request)
     {
         try {
-            $driver = Auth::guard('driver')->user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
 
             if (!$driver) {
                 return response()->json([
@@ -105,7 +107,12 @@ class DriverTaskAdsController extends Controller
             $validator = Validator::make($request->all(), [
                 'page' => 'nullable|integer|min:1',
                 'per_page' => 'nullable|integer|min:1|max:50',
-                'status' => 'nullable|string|in:running,closed,all'
+                'status' => 'nullable|string|in:running,closed,all',
+                'search' => 'nullable|string|max:255',
+                'min_price' => 'nullable|numeric|min:0',
+                'max_price' => 'nullable|numeric|min:0',
+                'sort_by' => 'nullable|string|in:created_at,lowest_price,highest_price',
+                'sort_order' => 'nullable|string|in:asc,desc'
             ]);
 
             if ($validator->fails()) {
@@ -119,6 +126,24 @@ class DriverTaskAdsController extends Controller
             $page = $request->get('page', 1);
             $perPage = $request->get('per_page', 10);
             $statusFilter = $request->get('status', 'running');
+            $search = $request->get('search');
+            $minPrice = $request->get('min_price');
+            $maxPrice = $request->get('max_price');
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+
+            // Debug logging for filters
+            Log::info('DriverTaskAds Filter Parameters', [
+                'page' => $page,
+                'per_page' => $perPage,
+                'status' => $statusFilter,
+                'search' => $search,
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
+                'sort_by' => $sortBy,
+                'sort_order' => $sortOrder,
+                'all_request_params' => $request->all()
+            ]);
 
             // Build query
             $query = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
@@ -146,7 +171,53 @@ class DriverTaskAdsController extends Controller
                 });
             }
 
-            $query->orderBy('id', 'DESC');
+            // Apply search filter
+            if (!empty($search)) {
+                Log::info('Applying search filter', ['search_term' => $search]);
+                $query->where(function ($q) use ($search) {
+                    $q->where('description', 'LIKE', "%{$search}%")
+                      ->orWhereHas('task', function ($taskQ) use ($search) {
+                          $taskQ->where('description', 'LIKE', "%{$search}%")
+                                ->orWhereHas('pickup', function ($pickupQ) use ($search) {
+                                    $pickupQ->where('address', 'LIKE', "%{$search}%");
+                                })
+                                ->orWhereHas('delivery', function ($deliveryQ) use ($search) {
+                                    $deliveryQ->where('address', 'LIKE', "%{$search}%");
+                                });
+                      });
+                });
+            }
+
+            // Apply price filters
+            if (!empty($minPrice)) {
+                Log::info('Applying min price filter', ['min_price' => $minPrice]);
+                $query->where('lowest_price', '>=', $minPrice);
+            }
+            if (!empty($maxPrice)) {
+                Log::info('Applying max price filter', ['max_price' => $maxPrice]);
+                $query->where('highest_price', '<=', $maxPrice);
+            }
+
+            // Apply sorting
+            Log::info('Applying sorting', ['sort_by' => $sortBy, 'sort_order' => $sortOrder]);
+            switch ($sortBy) {
+                case 'lowest_price':
+                    $query->orderBy('lowest_price', $sortOrder);
+                    break;
+                case 'highest_price':
+                    $query->orderBy('highest_price', $sortOrder);
+                    break;
+                case 'created_at':
+                default:
+                    $query->orderBy('created_at', $sortOrder);
+                    break;
+            }
+
+            // Log the final SQL query
+            Log::info('Final SQL Query', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
 
             // Paginate
             $ads = $query->paginate($perPage, ['*'], 'page', $page);
@@ -156,7 +227,7 @@ class DriverTaskAdsController extends Controller
                 return $this->transformTaskAd($ad, $driver_id);
             });
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'data' => [
                     'data' => $transformedAds,
@@ -170,12 +241,21 @@ class DriverTaskAdsController extends Controller
                         'has_more_pages' => $ads->hasMorePages()
                     ]
                 ]
-            ], 200);
+            ];
+
+            Log::info('DriverTaskAds API Response', [
+                'ads_count' => $transformedAds->count(),
+                'current_page' => $ads->currentPage(),
+                'total' => $ads->total(),
+                'has_more_pages' => $ads->hasMorePages()
+            ]);
+
+            return response()->json($response, 200);
 
         } catch (Exception $e) {
             Log::error('Driver Task Ads Index Error', [
                 'error' => $e->getMessage(),
-                'driver_id' => Auth::id(),
+                'driver_id' => $request->user()?->id,
                 'trace' => $e->getTraceAsString()
             ]);
 
@@ -189,10 +269,11 @@ class DriverTaskAdsController extends Controller
     /**
      * Get specific task ad details
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
-            $driver = Auth::user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
             $driver_id = $driver->id;
 
             $ad = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
@@ -221,7 +302,7 @@ class DriverTaskAdsController extends Controller
             Log::error('Driver Task Ad Show Error', [
                 'error' => $e->getMessage(),
                 'ad_id' => $id,
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -237,7 +318,8 @@ class DriverTaskAdsController extends Controller
     public function submitOffer(Request $request, $adId)
     {
         try {
-            $driver = Auth::user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
             $driver_id = $driver->id;
 
             // Validation
@@ -319,7 +401,7 @@ class DriverTaskAdsController extends Controller
             Log::error('Driver Submit Offer Error', [
                 'error' => $e->getMessage(),
                 'ad_id' => $adId,
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -335,7 +417,8 @@ class DriverTaskAdsController extends Controller
     public function updateOffer(Request $request, $offerId)
     {
         try {
-            $driver = Auth::user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
             $driver_id = $driver->id;
 
             // Validation
@@ -401,7 +484,7 @@ class DriverTaskAdsController extends Controller
             Log::error('Driver Update Offer Error', [
                 'error' => $e->getMessage(),
                 'offer_id' => $offerId,
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -417,8 +500,10 @@ class DriverTaskAdsController extends Controller
     public function acceptTask(Request $request, $offerId)
     {
         try {
-            $driver = Auth::user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
             $driver_id = $driver->id;
+
 
             // Find the accepted offer
             $offer = Task_Offire::where('id', $offerId)
@@ -429,6 +514,12 @@ class DriverTaskAdsController extends Controller
             $ad = $offer->ad;
             $task = $ad->task;
 
+            Log::info('Driver accepted task from offer', [
+                'driver_id' => $driver_id,
+                'task_id' => $task->id,
+                'offer_id' => $offerId,
+                'price' => $offer->price
+            ]);
             // Check if task is still available
             if ($task->driver_id !== null) {
                 return response()->json([
@@ -478,7 +569,7 @@ class DriverTaskAdsController extends Controller
             Log::error('Driver Accept Task Error', [
                 'error' => $e->getMessage(),
                 'offer_id' => $offerId,
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -494,7 +585,8 @@ class DriverTaskAdsController extends Controller
     public function getAdOffers(Request $request, $adId)
     {
         try {
-            $driver = Auth::user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
             $driver_id = $driver->id;
 
             // Find the ad
@@ -551,7 +643,7 @@ class DriverTaskAdsController extends Controller
             Log::error('Driver Get Ad Offers Error', [
                 'error' => $e->getMessage(),
                 'ad_id' => $adId,
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -567,7 +659,8 @@ class DriverTaskAdsController extends Controller
     public function myOffers(Request $request)
     {
         try {
-            $driver = Auth::guard('driver')->user();
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
 
             if (!$driver) {
                 return response()->json([
@@ -614,6 +707,11 @@ class DriverTaskAdsController extends Controller
                       ->whereHas('ad', function ($q) {
                           $q->where('status', 'running');
                       });
+            } else {
+                // Default: show only offers from running ads (regardless of offer status)
+                $query->whereHas('ad', function ($q) {
+                    $q->where('status', 'running');
+                });
             }
 
             $query->orderBy('created_at', 'DESC');
@@ -645,7 +743,7 @@ class DriverTaskAdsController extends Controller
         } catch (Exception $e) {
             Log::error('Driver My Offers Error', [
                 'error' => $e->getMessage(),
-                'driver_id' => Auth::id()
+                'driver_id' => $driver->id ?? null
             ]);
 
             return response()->json([
@@ -896,6 +994,123 @@ class DriverTaskAdsController extends Controller
                 'success' => false,
                 'message' => 'Failed to get test statistics',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Assign task by offer (same logic as web controller)
+     */
+    public function assignTaskByOffer(Request $request, $offerId)
+    {
+        DB::beginTransaction();
+        try {
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
+
+            // Find the offer
+            $offer = Task_Offire::find($offerId);
+
+            if (!$offer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Offer not found'
+                ], 404);
+            }
+
+            // Check if this driver owns the offer
+            if ($driver->id !== $offer->driver_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to do actions to this record'
+                ], 403);
+            }
+
+            // Check if offer is accepted
+            if (!$offer->accepted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This Offer is not accepted yet'
+                ], 400);
+            }
+
+            // Get the ad and task
+            $ad = $offer->ad;
+            if ($ad->status !== 'running') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This Task Ad Already Closed'
+                ], 400);
+            }
+
+            $task = $ad->task;
+            if (!in_array($task->status, ['advertised'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This Task already assigned'
+                ], 400);
+            }
+
+            // Get user IP
+            $userIp = IpHelper::getUserIpAddress();
+            $history = [
+                [
+                    'action_type' => 'assign',
+                    'description' => 'assign task By Task Ad Offers',
+                    'ip' => $userIp,
+                    'driver_id' => $driver->id
+                ]
+            ];
+
+            // Update task
+            $task->driver_id = $driver->id;
+            $task->status = 'assign';
+            $task->total_price = $offer->price;
+
+            $driverModel = Driver::findOrFail($driver->id);
+
+            if ($task->commission_type == 'dynamic') {
+                $task->commission = $driverModel->calculateCommission($offer->price);
+            }
+
+            $task->history()->createMany($history);
+            $task->save();
+
+            // Close the ad
+            $ad->status = 'closed';
+            $ad->save();
+
+            DB::commit();
+
+            Log::info('Task assigned by offer', [
+                'driver_id' => $driver->id,
+                'task_id' => $task->id,
+                'offer_id' => $offerId,
+                'price' => $offer->price
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'task assigned successfully',
+                'data' => [
+                    'task_id' => $task->id,
+                    'price' => $offer->price,
+                    'status' => $task->status
+                ]
+            ], 200);
+
+        } catch (Exception $ex) {
+            DB::rollBack();
+
+            Log::error('Assign task by offer error', [
+                'error' => $ex->getMessage(),
+                'offer_id' => $offerId,
+                'driver_id' => $request->user()->id ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $ex->getMessage()
             ], 500);
         }
     }

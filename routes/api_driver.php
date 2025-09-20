@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DriverTaskAdsController;
 use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverWalletController;
 use App\Http\Controllers\Api\DriverNotificationController;
+use App\Http\Controllers\Api\DriverNotificationTestController;
 use App\Http\Controllers\Api\DriverRegistrationController;
 use App\Http\Controllers\Api\DriverProfileController;
 use Illuminate\Support\Facades\Log;
@@ -91,6 +92,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::get('/', [DriverTaskController::class, 'index'])
             ->name('api.driver.tasks.index');
 
+        Route::get('/history/completed', [DriverTaskController::class, 'history'])
+            ->name('api.driver.tasks.history');
+
         Route::get('/{task}', [DriverTaskController::class, 'show'])
             ->name('api.driver.tasks.show');
 
@@ -108,9 +112,6 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::post('/{task}/notes', [DriverTaskController::class, 'addNote'])
             ->name('api.driver.tasks.add-note');
-
-        Route::get('/history/completed', [DriverTaskController::class, 'history'])
-            ->name('api.driver.tasks.history');
     });
 
     // Task Ads routes
@@ -135,11 +136,18 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::post('/offers/{id}/accept', [DriverTaskAdsController::class, 'acceptTask'])
             ->name('api.driver.task-ads.accept-task');
+
+        Route::post('/offers/{id}/assign-task', [DriverTaskAdsController::class, 'assignTaskByOffer'])
+            ->name('api.driver.task-ads.assign-task-by-offer');
     });
 
     // Driver offers routes
     Route::get('/my-offers', [DriverTaskAdsController::class, 'myOffers'])
         ->name('api.driver.my-offers');
+
+    // Direct offers routes (for backward compatibility)
+    Route::post('/offers/{id}/assign-task', [DriverTaskAdsController::class, 'assignTaskByOffer'])
+        ->name('api.driver.offers.assign-task');
 
     // Pending task routes
     Route::get('/pending-task', [DriverTaskController::class, 'getPendingTask'])
@@ -198,6 +206,16 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::put('/settings', [DriverNotificationController::class, 'updateSettings'])
             ->name('api.driver.notifications.update-settings');
+
+        // Test routes (for development only)
+        Route::post('/test/create', [DriverNotificationTestController::class, 'createTestNotifications'])
+            ->name('api.driver.notifications.test.create');
+
+        Route::delete('/test/clear', [DriverNotificationTestController::class, 'clearAllNotifications'])
+            ->name('api.driver.notifications.test.clear');
+
+        Route::get('/test/stats', [DriverNotificationTestController::class, 'getNotificationStats'])
+            ->name('api.driver.notifications.test.stats');
     });
 
 });

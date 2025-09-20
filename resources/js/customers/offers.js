@@ -58,6 +58,7 @@ $(function () {
             hour: '2-digit',
             minute: '2-digit'
           });
+          console.log(offer);
 
           const card = `
             <div class="offer-card ${isAccepted ? 'offer-accepted' : ''}" data-offer-id="${offer.id}">

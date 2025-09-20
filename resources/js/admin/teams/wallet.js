@@ -477,6 +477,9 @@ window.showTeamPaymentRequestOptions = function () {
 
         // Show the payment request modal
         $('#teamPaymentRequestModal').modal('show');
+
+        // Initialize Select2 for team tasks
+        initializeTeamTasksSelect2(team.id);
       } else {
         Swal.fire({
           icon: 'error',
@@ -497,6 +500,23 @@ window.showTeamPaymentRequestOptions = function () {
   });
 };
 
+// Validate team requested amount in real-time
+$(document).on('input', '#teamRequestedAmount', function () {
+  const value = parseFloat($(this).val());
+  const teamWalletData = $('#teamPaymentRequestModal').data('teamWalletData');
+
+  if (teamWalletData && value > teamWalletData.teamWallet.balance) {
+    $('.team_requested_amount-error')
+      .text(
+        `تنبيه: المبلغ أكبر من رصيد المحفظة (${teamWalletData.teamWallet.balance.toFixed(2)} ريال). سيظهر الرصيد المتبقي بالسالب.`
+      )
+      .removeClass('text-danger')
+      .addClass('text-warning');
+  } else {
+    $('.team_requested_amount-error').text('').removeClass('text-warning').addClass('text-danger');
+  }
+});
+
 /**
  * Handle team payment request form submission (exactly like driver wallet)
  */
@@ -511,6 +531,7 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
   const accountNumber = $('#teamAccountNumber').val().trim();
   const ibanNumber = $('#teamIbanNumber').val().trim();
   const notes = $('#teamNotes').val();
+  const selectedTasks = $('#teamSelectedTasks').val() || [];
 
   // Use custom bank name if "other" is selected
   if (bankName === 'other') {
@@ -528,10 +549,14 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
   }
 
   if (requestedAmount > teamWalletData.teamWallet.balance) {
-    $('.team_requested_amount-error').text(
-      `المبلغ المطلوب لا يمكن أن يكون أكبر من رصيد المحفظة (${teamWalletData.teamWallet.balance.toFixed(2)} ريال)`
-    );
-    hasErrors = true;
+    $('.team_requested_amount-error')
+      .text(
+        `تنبيه: المبلغ المطلوب أكبر من رصيد المحفظة (${teamWalletData.teamWallet.balance.toFixed(2)} ريال). سيظهر الرصيد المتبقي بالسالب في طلب السداد.`
+      )
+      .removeClass('text-danger')
+      .addClass('text-warning');
+  } else {
+    $('.team_requested_amount-error').removeClass('text-warning').addClass('text-danger');
   }
 
   if (!bankName || bankName.length < 2) {
@@ -572,6 +597,7 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
     accountNumber: accountNumber,
     ibanNumber: ibanNumber,
     notes: notes,
+    selectedTasks: selectedTasks,
     teamWalletData: teamWalletData
   });
 });
@@ -762,7 +788,8 @@ function generateTeamPaymentRequestDocument(data) {
       teamWalletId: data.teamWalletId,
       amount: data.requestedAmount,
       paymentRequestNumber: referenceNumber,
-      notes: data.notes || null
+      notes: data.notes || null,
+      selectedTasks: data.selectedTasks || []
     });
 
     printWindow.close();
@@ -788,6 +815,49 @@ function generateTeamPaymentRequestDocument(data) {
   }, 1000);
 }
 
+// Function to initialize Select2 for team tasks
+function initializeTeamTasksSelect2(teamId) {
+  $('#teamSelectedTasks').select2({
+    placeholder: 'اختر المهام المرتبطة بطلب السداد',
+    allowClear: true,
+    width: '100%',
+    ajax: {
+      url: `${baseUrl}admin/teams/wallet/team-tasks/${teamId}`,
+      dataType: 'json',
+      delay: 250,
+      processResults: function (data) {
+        if (data.status === 1) {
+          return {
+            results: data.tasks
+          };
+        } else {
+          console.error('Error loading team tasks:', data.error);
+          return {
+            results: []
+          };
+        }
+      },
+      cache: true
+    },
+    templateResult: function (task) {
+      if (task.loading) {
+        return task.text;
+      }
+
+      return $(`
+        <div class="task-option">
+          <div class="fw-bold">مهمة #${task.id}</div>
+          <div class="text-muted small">${task.pickup_address}</div>
+          <div class="text-primary small">${task.total_price} ريال - ${task.status}</div>
+        </div>
+      `);
+    },
+    templateSelection: function (task) {
+      return task.text || `مهمة #${task.id}`;
+    }
+  });
+}
+
 // Function to log team payment request after printing (exactly like driver wallet)
 function logTeamPaymentRequest(data) {
   $.ajax({
@@ -797,6 +867,7 @@ function logTeamPaymentRequest(data) {
       amount: data.amount,
       payment_request_number: data.paymentRequestNumber,
       notes: data.notes,
+      selected_tasks: data.selectedTasks || [],
       team_wallet_id: data.teamWalletId,
       _token: $('meta[name="csrf-token"]').attr('content')
     },

@@ -78,11 +78,18 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::put('/profile', [DriverProfileController::class, 'update'])
         ->name('api.driver.profile.update');
 
+    // Alternative route for multipart form data (POST with _method=PUT)
+    Route::post('/profile', [DriverProfileController::class, 'update'])
+        ->name('api.driver.profile.update.multipart');
+
     Route::post('/change-password', [DriverProfileController::class, 'changePassword'])
         ->name('api.driver.change-password');
 
     Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
         ->name('api.driver.profile.stats');
+
+    Route::get('/profile/additional-data', [DriverProfileController::class, 'getAdditionalData'])
+        ->name('api.driver.profile.additional-data');
 
     Route::post('/refresh-token', [DriverAuthController::class, 'refreshToken'])
         ->name('api.driver.refresh-token');

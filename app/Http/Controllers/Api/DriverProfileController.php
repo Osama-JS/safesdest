@@ -23,6 +23,28 @@ class DriverProfileController extends Controller
             // Load relationships
             $driver->load(['team', 'vehicle_size']);
 
+            // إنشاء username تلقائياً إذا لم يكن موجوداً
+            if (empty($driver->username)) {
+                // إنشاء username من البريد الإلكتروني أو الاسم
+                $generatedUsername = $this->generateUsername($driver);
+                $driver->username = $generatedUsername;
+                $driver->save();
+
+                Log::info('Generated username for driver', [
+                    'driver_id' => $driver->id,
+                    'generated_username' => $generatedUsername
+                ]);
+            }
+
+            // Debug: طباعة معلومات username
+            Log::info('Driver Profile Debug', [
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->name,
+                'username' => $driver->username,
+                'username_is_null' => is_null($driver->username),
+                'username_is_empty' => empty($driver->username),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Profile retrieved successfully',
@@ -31,6 +53,7 @@ class DriverProfileController extends Controller
                         'id' => $driver->id,
                         'name' => $driver->name,
                         'email' => $driver->email,
+                        'username' => $driver->username,
                         'phone' => $driver->phone,
                         'phone_code' => $driver->phone_code,
                         'address' => $driver->address,
@@ -44,7 +67,7 @@ class DriverProfileController extends Controller
                         'commission_value' => $driver->commission_value,
                         'last_activity_at' => $driver->last_activity_at,
                         'app_version' => $driver->app_version,
-                        'additional_data' => $driver->additional_data,
+                        'additional_data' => $driver->driver_visible_additional_data,
                         'created_at' => $driver->created_at,
                         'updated_at' => $driver->updated_at,
                         'team' => $driver->team ? [
@@ -81,9 +104,19 @@ class DriverProfileController extends Controller
         try {
             $driver = $request->user();
 
+            // Log incoming request data for debugging
+            Log::info('Driver profile update request', [
+                'driver_id' => $driver->id,
+                'request_method' => $request->method(),
+                'content_type' => $request->header('Content-Type'),
+                'has_files' => $request->hasFile('image'),
+                'all_data' => $request->all(),
+                'files' => $request->allFiles(),
+            ]);
+
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255|unique:drivers,email,' . $driver->id,
+                // البريد الإلكتروني محذوف لأنه غير قابل للتعديل (يعتبر الهوية الأساسية)
                 'phone' => 'required|string|max:20',
                 'address' => 'required|string|max:500',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -103,9 +136,10 @@ class DriverProfileController extends Controller
                 $driver->name = $request->name;
             }
 
-            if ($request->has('email')) {
-                $driver->email = $request->email;
-            }
+            // Email is not updatable as it's the primary identity for login
+            // if ($request->has('email')) {
+            //     $driver->email = $request->email;
+            // }
 
             if ($request->has('phone')) {
                 $driver->phone = $request->phone;
@@ -301,6 +335,76 @@ class DriverProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to change password'
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate username for driver if not exists
+     */
+    private function generateUsername($driver)
+    {
+        // استخدام البريد الإلكتروني كأساس لـ username
+        $baseUsername = explode('@', $driver->email)[0];
+
+        // تنظيف username من الأحرف غير المسموحة
+        $baseUsername = preg_replace('/[^a-zA-Z0-9_]/', '', $baseUsername);
+
+        // التأكد من أن username فريد
+        $username = $baseUsername;
+        $counter = 1;
+
+        while (\App\Models\Driver::where('username', $username)->where('id', '!=', $driver->id)->exists()) {
+            $username = $baseUsername . $counter;
+            $counter++;
+        }
+
+        return $username;
+    }
+
+    /**
+     * Get driver's additional data with proper filtering
+     */
+    public function getAdditionalData(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            // Load form template relationship
+            $driver->load('formTemplate.fields');
+
+            // Get filtered additional data that driver can read
+            $visibleData = $driver->driver_visible_additional_data;
+
+            Log::info('Driver additional data request', [
+                'driver_id' => $driver->id,
+                'has_template' => $driver->form_template_id ? true : false,
+                'raw_data_count' => is_array($driver->additional_data) ? count($driver->additional_data) : 0,
+                'visible_data_count' => count($visibleData),
+            ]);
+
+            Log::alert('Visible data: ' . json_encode($visibleData));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Additional data retrieved successfully',
+                'data' => [
+                    'additional_data' => $visibleData,
+                    'has_template' => $driver->form_template_id ? true : false,
+                    'template_name' => $driver->formTemplate?->name ?? null,
+                ]
+            ], 200);
+
+
+        } catch (\Exception $e) {
+            Log::error('Get driver additional data error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get additional data'
             ], 500);
         }
     }

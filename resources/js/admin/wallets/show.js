@@ -399,6 +399,7 @@ $(function () {
   $(document).on('click', '#payment-request', function () {
     // $('#paymentRequestModal').modal('show');
 
+    console.log(`walletId: ${walletId}`);
     // Get task details for payment request
     $.get(`${baseUrl}admin/wallets/payment/request/${walletId}`, function (data) {
       if (data.status === 0) {

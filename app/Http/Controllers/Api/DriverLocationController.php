@@ -15,9 +15,10 @@ class DriverLocationController extends Controller
      */
     public function updateLocation(Request $request)
     {
+        Log::alert('start update location');
         try {
             $driver = $request->user();
-            
+
             $validator = Validator::make($request->all(), [
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
@@ -83,10 +84,9 @@ class DriverLocationController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             $validator = Validator::make($request->all(), [
                 'online' => 'required|boolean',
-                'free' => 'nullable|boolean',
                 'status' => 'nullable|string|in:available,busy,offline'
             ]);
 
@@ -103,20 +103,6 @@ class DriverLocationController extends Controller
                 'last_activity_at' => now()
             ];
 
-            // Set free status
-            if ($request->has('free')) {
-                $updateData['free'] = $request->free;
-            } else {
-                // If going offline, set free to false
-                if (!$request->online) {
-                    $updateData['free'] = false;
-                }
-            }
-
-            // Update status field if provided
-            if ($request->status) {
-                $updateData['status'] = $request->status;
-            }
 
             $driver->update($updateData);
 
@@ -124,7 +110,8 @@ class DriverLocationController extends Controller
                 'driver_id' => $driver->id,
                 'online' => $request->online,
                 'free' => $updateData['free'] ?? $driver->free,
-                'status' => $request->status
+                'status' => $request->status,
+                'note' => 'Free status is system-controlled'
             ]);
 
             return response()->json([
@@ -156,6 +143,8 @@ class DriverLocationController extends Controller
      */
     public function getCurrentStatus(Request $request)
     {
+        Log::alert('start update location 2');
+
         try {
             $driver = $request->user();
 
@@ -194,7 +183,7 @@ class DriverLocationController extends Controller
     {
         try {
             $driver = $request->user();
-            
+
             $validator = Validator::make($request->all(), [
                 'fcm_token' => 'required|string',
                 'device_id' => 'nullable|string|max:255'

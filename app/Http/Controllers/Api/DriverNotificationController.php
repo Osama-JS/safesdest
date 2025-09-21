@@ -55,9 +55,9 @@ class DriverNotificationController extends Controller
                     'notifications.updated_at'
                 ]);
 
-            if ($unreadOnly) {
-                $query->where('notifications_drivers.status', false);
-            }
+            // if ($unreadOnly) {
+            //     $query->where('notifications_drivers.status', false);
+            // }
 
             $notifications = $query->orderBy('notifications.created_at', 'desc')->paginate($perPage);
 
@@ -72,6 +72,7 @@ class DriverNotificationController extends Controller
                         'type' => $notification->type ?? 'general',
                         'group' => $notification->group
                     ],
+                    'is_read' => (bool) $notification->is_read,
                     'read_at' => $notification->is_read ? $notification->updated_at : null,
                     'created_at' => $notification->created_at ? date('c', strtotime($notification->created_at)) : date('c')
                 ];

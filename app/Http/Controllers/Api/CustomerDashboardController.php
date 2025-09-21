@@ -25,10 +25,10 @@ class CustomerDashboardController extends Controller
 
             // Get quick stats
             $stats = $this->getQuickStats($customer);
-            
+
             // Get recent activities
-            $recentActivities = $this->getRecentActivities($customer, 5);
-            
+            $recentActivities = $this->getRecentActivitiesData($customer, 5);
+
             // Get unread notifications count
             $unreadNotifications = Notification::where('user_type', 'customer')
                                               ->where('user_id', $customer->id)
@@ -117,13 +117,13 @@ class CustomerDashboardController extends Controller
 
             $financialStats = [
                 'current_balance' => $wallet ? $wallet->balance : 0,
-                'total_deposits' => Wallet_Transaction::whereHas('wallet', function($query) use ($customer) {
+                'total_deposits' => Wallet_Transaction::whereHas('wallet', function ($query) use ($customer) {
                     $query->where('user_type', 'customer')->where('user_id', $customer->id);
                 })->where('transaction_type', 'credit')->sum('amount'),
-                'total_spent' => Wallet_Transaction::whereHas('wallet', function($query) use ($customer) {
+                'total_spent' => Wallet_Transaction::whereHas('wallet', function ($query) use ($customer) {
                     $query->where('user_type', 'customer')->where('user_id', $customer->id);
                 })->where('transaction_type', 'debit')->sum('amount'),
-                'recent_transactions' => Wallet_Transaction::whereHas('wallet', function($query) use ($customer) {
+                'recent_transactions' => Wallet_Transaction::whereHas('wallet', function ($query) use ($customer) {
                     $query->where('user_type', 'customer')->where('user_id', $customer->id);
                 })->where('created_at', '>=', $startDate)->count(),
             ];
@@ -133,7 +133,7 @@ class CustomerDashboardController extends Controller
             for ($i = 5; $i >= 0; $i--) {
                 $monthStart = Carbon::now()->subMonths($i)->startOfMonth();
                 $monthEnd = Carbon::now()->subMonths($i)->endOfMonth();
-                
+
                 $monthlyTrends[] = [
                     'month' => $monthStart->format('Y-m'),
                     'month_name' => $monthStart->format('M Y'),
@@ -143,7 +143,7 @@ class CustomerDashboardController extends Controller
                     'clearances' => Customs_Clearance::where('customer_id', $customer->id)
                                                     ->whereBetween('created_at', [$monthStart, $monthEnd])
                                                     ->count(),
-                    'spending' => Wallet_Transaction::whereHas('wallet', function($query) use ($customer) {
+                    'spending' => Wallet_Transaction::whereHas('wallet', function ($query) use ($customer) {
                         $query->where('user_type', 'customer')->where('user_id', $customer->id);
                     })->where('transaction_type', 'debit')
                       ->whereBetween('created_at', [$monthStart, $monthEnd])
@@ -180,7 +180,7 @@ class CustomerDashboardController extends Controller
             $customer = $request->user();
             $limit = $request->get('limit', 10);
 
-            $activities = $this->getRecentActivities($customer, $limit);
+            $activities = $this->getRecentActivitiesData($customer, $limit);
 
             return response()->json([
                 'success' => true,
@@ -274,9 +274,9 @@ class CustomerDashboardController extends Controller
     }
 
     /**
-     * Get recent activities for customer
+     * Get recent activities for customer (private helper)
      */
-    private function getRecentActivities($customer, $limit = 10)
+    private function getRecentActivitiesData($customer, $limit = 10)
     {
         $activities = collect();
 
@@ -323,7 +323,7 @@ class CustomerDashboardController extends Controller
         }
 
         // Get recent wallet transactions
-        $recentTransactions = Wallet_Transaction::whereHas('wallet', function($query) use ($customer) {
+        $recentTransactions = Wallet_Transaction::whereHas('wallet', function ($query) use ($customer) {
             $query->where('user_type', 'customer')->where('user_id', $customer->id);
         })->orderBy('created_at', 'desc')
           ->limit($limit)

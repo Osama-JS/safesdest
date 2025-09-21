@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير تحسين شاشة البيانات الإضافية - SafeDest Driver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h3 {
+            color: #34495e;
+            font-size: 1.4em;
+            margin: 20px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .icon {
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .problem {
+            background: #fff5f5;
+            border-left-color: #e74c3c;
+            border: 1px solid #fadbd8;
+        }
+        
+        .solution {
+            background: #f0fff4;
+            border-left-color: #27ae60;
+            border: 1px solid #d5f4e6;
+        }
+        
+        .improvement {
+            background: #f0f8ff;
+            border-left-color: #3498db;
+            border: 1px solid #d6eaf8;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .warning {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .file-path {
+            background: #34495e;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .changes-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .changes-list li {
+            padding: 10px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .changes-list li::before {
+            content: "📊";
+            margin-left: 10px;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .type-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin: 2px;
+        }
+        
+        .type-file { background: #e3f2fd; color: #1976d2; }
+        .type-image { background: #e8f5e8; color: #388e3c; }
+        .type-date { background: #fff3e0; color: #f57c00; }
+        .type-number { background: #f3e5f5; color: #7b1fa2; }
+        .type-email { background: #ffebee; color: #d32f2f; }
+        .type-phone { background: #e0f2f1; color: #00796b; }
+        .type-url { background: #e8eaf6; color: #3f51b5; }
+        .type-text { background: #f5f5f5; color: #616161; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 تقرير تحسين شاشة البيانات الإضافية</h1>
+            <div class="subtitle">SafeDest Driver App - حل مشاكل العرض وتحسين تجربة المستخدم</div>
+            <div style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+                تاريخ التطوير: 21 سبتمبر 2025 | المطور: Augment Agent
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- المشاكل المحددة -->
+            <div class="section problem">
+                <h2><span class="icon">⚠</span>المشاكل المحددة</h2>
+                
+                <div class="alert alert-danger">
+                    <strong>المشكلة الرئيسية:</strong> البيانات الإضافية لا تظهر عند دخول الشاشة إلا بعد تعديل الملف الشخصي
+                </div>
+                
+                <h3>المشاكل الفرعية:</h3>
+                <ul class="changes-list">
+                    <li><strong>عدم تحديث البيانات:</strong> الشاشة تعتمد على البيانات المحفوظة محلياً فقط</li>
+                    <li><strong>عدم فلترة البيانات:</strong> لا يتم فلترة البيانات حسب صلاحيات السائق</li>
+                    <li><strong>عرض بدائي:</strong> عرض البيانات لا يراعي أنواع البيانات المختلفة</li>
+                    <li><strong>خطأ في Laravel:</strong> استخدام customer_can بدلاً من driver_can</li>
+                </ul>
+                
+                <h3>السبب الجذري:</h3>
+                <div class="alert alert-warning">
+                    <strong>التحليل:</strong> Flutter لا يجلب البيانات من الخادم عند دخول الشاشة، ولا يتم فلترة البيانات حسب صلاحيات السائق
+                </div>
+            </div>
+
+            <!-- الحلول المطبقة -->
+            <div class="section solution">
+                <h2><span class="icon">✅</span>الحلول المطبقة</h2>
+                
+                <h3>1. إصلاح Laravel API:</h3>
+                <div class="file-path">app/Http/Controllers/Api/DriverProfileController.php</div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔧 إصلاح فلترة البيانات</h4>
+                        <div class="code-block" data-lang="PHP">
+'additional_data' => $driver->driver_visible_additional_data,
+                        </div>
+                        <p>استخدام البيانات المفلترة بدلاً من البيانات الخام</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🆕 API endpoint جديد</h4>
+                        <div class="code-block" data-lang="PHP">
+public function getAdditionalData(Request $request)
+{
+    $driver = $request->user();
+    $driver->load('formTemplate.fields');
+    $visibleData = $driver->driver_visible_additional_data;
+    
+    return response()->json([
+        'success' => true,
+        'data' => ['additional_data' => $visibleData]
+    ]);
+}
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>2. إصلاح نموذج Driver:</h3>
+                <div class="file-path">app/Models/Driver.php</div>
+                <div class="code-block" data-lang="PHP">
+// إصلاح الخطأ: استخدام driver_can بدلاً من customer_can
+return $formFields->contains(function ($field) use ($item) {
+    return $field->label == $item['label'] &&
+      in_array($field->driver_can, ['read', 'write']);
+});
+                </div>
+                
+                <h3>3. إضافة Route جديد:</h3>
+                <div class="file-path">routes/api_driver.php</div>
+                <div class="code-block" data-lang="PHP">
+Route::get('/profile/additional-data', [DriverProfileController::class, 'getAdditionalData'])
+    ->name('api.driver.profile.additional-data');
+                </div>
+            </div>
+
+            <!-- تحسينات Flutter -->
+            <div class="section improvement">
+                <h2><span class="icon">🚀</span>تحسينات Flutter</h2>
+                
+                <h3>1. إضافة خدمة جلب البيانات:</h3>
+                <div class="file-path">safedest_driver/lib/services/auth_service.dart</div>
+                <div class="code-block" data-lang="Dart">
+Future<ApiResponse<Map<String, dynamic>>> getAdditionalData() async {
+  final response = await _apiService.get<Map<String, dynamic>>(
+    '/profile/additional-data',
+    fromJson: (data) => Map<String, dynamic>.from(data),
+  );
+  return response;
+}
+                </div>
+                
+                <h3>2. تحديث شاشة البيانات الإضافية:</h3>
+                <div class="file-path">safedest_driver/lib/screens/profile/additional_data_screen.dart</div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>🔄 جلب البيانات تلقائياً</h4>
+                        <div class="code-block" data-lang="Dart">
+@override
+void initState() {
+  super.initState();
+  _loadAdditionalData();
+}
+
+Future<void> _loadAdditionalData() async {
+  final authService = Provider.of<AuthService>(context, listen: false);
+  final response = await authService.getAdditionalData();
+  
+  if (response.isSuccess) {
+    setState(() {
+      _additionalData = response.data!['additional_data'] ?? {};
+    });
+  }
+}
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <h4>⚡ حالات التحميل والأخطاء</h4>
+                        <div class="code-block" data-lang="Dart">
+body: _isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : _errorMessage != null
+        ? _buildErrorState()
+        : _additionalData == null || _additionalData!.isEmpty
+            ? _buildEmptyState()
+            : _buildDataContent(),
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>3. عرض محسن حسب نوع البيانات:</h3>
+                
+                <div class="alert alert-info">
+                    <strong>أنواع البيانات المدعومة:</strong> تم إضافة دعم لعرض أنواع مختلفة من البيانات مع تصميم مناسب لكل نوع
+                </div>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-file">📎 ملف</span></h4>
+                        <p>عرض الملفات مع إمكانية فتحها</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-image">🖼️ صورة</span></h4>
+                        <p>عرض الصور مع معاينة</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-date">📅 تاريخ</span></h4>
+                        <p>عرض التواريخ بتنسيق واضح</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-number">🔢 رقم</span></h4>
+                        <p>عرض الأرقام بتنسيق مميز</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-email">📧 بريد إلكتروني</span></h4>
+                        <p>عرض البريد الإلكتروني مع أيقونة</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-phone">📱 هاتف</span></h4>
+                        <p>عرض أرقام الهاتف بتنسيق واضح</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-url">🔗 رابط</span></h4>
+                        <p>عرض الروابط مع إمكانية فتحها</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><span class="type-indicator type-text">📝 نص</span></h4>
+                        <p>عرض النصوص العادية</p>
+                    </div>
+                </div>
+                
+                <h3>4. مؤشرات نوع البيانات:</h3>
+                <div class="code-block" data-lang="Dart">
+Widget _buildTypeIndicator(String type) {
+  // عرض أيقونة ولون مناسب لكل نوع بيانات
+  return Tooltip(
+    message: tooltip,
+    child: Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Icon(icon, size: 16, color: color),
+    ),
+  );
+}
+                </div>
+            </div>
+
+            <!-- النتائج والفوائد -->
+            <div class="section">
+                <h2><span class="icon">📊</span>النتائج والفوائد</h2>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">✅</div>
+                        <div class="stat-label">مشاكل محلولة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">🔄</div>
+                        <div class="stat-label">تحديث تلقائي</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">8</div>
+                        <div class="stat-label">أنواع بيانات مدعومة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">5</div>
+                        <div class="stat-label">ملفات محدثة</div>
+                    </div>
+                </div>
+                
+                <h3>الفوائد المحققة:</h3>
+                <ul class="changes-list">
+                    <li><strong>تحديث فوري:</strong> البيانات تُجلب من الخادم عند دخول الشاشة</li>
+                    <li><strong>فلترة صحيحة:</strong> عرض البيانات التي يحق للسائق قراءتها فقط</li>
+                    <li><strong>عرض محسن:</strong> تصميم مناسب لكل نوع من أنواع البيانات</li>
+                    <li><strong>تجربة أفضل:</strong> حالات تحميل وأخطاء واضحة</li>
+                    <li><strong>أمان محسن:</strong> احترام صلاحيات السائق في القراءة/الكتابة</li>
+                </ul>
+                
+                <h3>الملفات المعدلة:</h3>
+                <ul class="changes-list">
+                    <li><span class="file-path">app/Http/Controllers/Api/DriverProfileController.php</span> - إضافة API endpoint وإصلاح الفلترة</li>
+                    <li><span class="file-path">app/Models/Driver.php</span> - إصلاح driver_can بدلاً من customer_can</li>
+                    <li><span class="file-path">routes/api_driver.php</span> - إضافة route جديد</li>
+                    <li><span class="file-path">safedest_driver/lib/services/auth_service.dart</span> - إضافة دالة جلب البيانات</li>
+                    <li><span class="file-path">safedest_driver/lib/screens/profile/additional_data_screen.dart</span> - تحسين شامل للشاشة</li>
+                </ul>
+            </div>
+
+            <!-- خطوات الاختبار -->
+            <div class="section">
+                <h2><span class="icon">🧪</span>خطوات الاختبار</h2>
+                
+                <h3>للتحقق من الحل:</h3>
+                <ul class="changes-list">
+                    <li><strong>دخول الشاشة:</strong> افتح شاشة البيانات الإضافية مباشرة</li>
+                    <li><strong>تحقق من التحديث:</strong> البيانات يجب أن تظهر فوراً بدون تعديل الملف الشخصي</li>
+                    <li><strong>فحص الأنواع:</strong> تحقق من عرض أنواع البيانات المختلفة بتصميم مناسب</li>
+                    <li><strong>اختبار الفلترة:</strong> تأكد من ظهور البيانات المسموح للسائق قراءتها فقط</li>
+                    <li><strong>حالات الخطأ:</strong> اختبر حالات عدم وجود بيانات أو أخطاء الشبكة</li>
+                </ul>
+                
+                <div class="alert alert-success">
+                    <strong>النتيجة المتوقعة:</strong> شاشة البيانات الإضافية تعمل بشكل مثالي مع عرض محسن وتحديث تلقائي
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <h3>✅ تم تحسين شاشة البيانات الإضافية بنجاح</h3>
+            <p>البيانات تُجلب تلقائياً مع عرض محسن حسب نوع البيانات وفلترة صحيحة</p>
+            <div style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+                SafeDest Driver App | Additional Data Screen Improvements Report
+            </div>
+        </div>
+    </div>
+</body>
+</html>

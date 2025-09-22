@@ -512,7 +512,7 @@ $(function () {
     const ibanNumber = $('#ibanNumber').val().trim();
     const paymentRecipient = $('#paymentRecipient').val();
     const notes = $('#notes').val();
-    const selectedTasks = $('#selectedTasks').val() || [];
+    const selectedTasks = $('#selectedTasks').select2('data');
 
     // Use custom bank name if "other" is selected
     if (bankName === 'other') {
@@ -604,6 +604,9 @@ $(function () {
     let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
     let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
 
+    let tasksHtml = data.selectedTasks
+      .map(task => `مهمة #${task.id} - ${task.pickup_address} - ${task.total_price} ريال`)
+      .join(' , ');
     console.log(data);
     const printContent = `
   <!DOCTYPE html>
@@ -741,8 +744,19 @@ $(function () {
         <tr><td class="label">رقم المحفظة</td><td>${data.walletData.id}</td></tr>
         <tr><td class="label">الرصيد المتبقي</td><td> ${remainingAmount.toFixed(2)} ريال</td></tr>
       </table>
-      <h3>ملاحظات</h3>
-      <p> <strong>${data.notes || '<br>'}</strong> </p>
+      ${
+        data.notes
+          ? ` <h3>ملاحظات</h3>
+      <p> <strong>${data.notes || '<br>'}</strong> </p>`
+          : '<br>'
+      }
+      ${
+        tasksHtml
+          ? `<h3>المهام</h3>
+      <p> <strong>${tasksHtml || '<br>'}</strong> </p>`
+          : ''
+      }
+
 
       <!-- Signatures -->
       <h3>التوقيع</h3>
@@ -752,7 +766,7 @@ $(function () {
       <!-- Footer -->
       <div class="footer">
         <p>تم إنشاء المستند إلكترونياً بتاريخ ${new Date().toLocaleDateString('ar-SA')}</p>
-        <p>أنشأ من قبل:  ${data.walletData.user_name}</p>
+
       </div>
 
     </div>
@@ -816,46 +830,46 @@ $(function () {
 
   // Function to initialize Select2 for tasks
   function initializeTasksSelect2(driverId) {
-    console.log(driverId);
+    if (!driverId) {
+      console.error('❌ driverId is required to load tasks.');
+      return;
+    }
+
     $('#selectedTasks').select2({
       placeholder: 'اختر المهام المرتبطة بطلب السداد',
       allowClear: true,
       width: '100%',
+      dropdownParent: $('#paymentRequestModal'),
       ajax: {
         url: `${baseUrl}admin/wallets/driver-tasks/${driverId}`,
         dataType: 'json',
         delay: 250,
-        processResults: function (data) {
-          if (data.status === 1) {
+        cache: true,
+        processResults: data => {
+          if (data.status === 1 && Array.isArray(data.tasks)) {
             return {
-              results: data.tasks
-            };
-          } else {
-            console.error('Error loading tasks:', data.error);
-            return {
-              results: []
+              results: data.tasks.map(task => ({
+                id: task.id,
+                text: `مهمة #${task.id}`,
+                ...task
+              }))
             };
           }
-        },
-        cache: true
-      },
-      templateResult: function (task) {
-        if (task.loading) {
-          return task.text;
+          return { results: [] };
         }
-        console.log(task);
+      },
+      templateResult: task => {
+        if (task.loading) return task.text;
 
         return $(`
-          <div class="task-option">
-            <div class="fw-bold">مهمة #${task.id}</div>
-            <div class="text-muted small">${task.pickup_address}</div>
-            <div class="text-primary small">${task.total_price} ريال - ${task.status}</div>
-          </div>
-        `);
+        <div class="task-option">
+          <div class="fw-bold">مهمة #${task.id}</div>
+          <div class="text-muted small">${task.pickup_address ?? ''}</div>
+          <div class="text-primary small">${task.total_price} ريال - ${task.status}</div>
+        </div>
+      `);
       },
-      templateSelection: function (task) {
-        return task.text || `مهمة #${task.id}`;
-      }
+      templateSelection: task => task.text
     });
   }
 
@@ -928,7 +942,7 @@ $(function () {
             <div class="row">
               <div class="col-md-2">
                 <small class="text-muted">${__('Printing Date')}</small>
-                <div class="fw-semibold">${log.printed_at}</div>
+                <div class="fw-semibold">${moment(log.printed_at).format('DD-MM-YYYY HH:mm')}</div>
               </div>
               <div class="col-md-2">
                 <small class="text-muted">رقم الطلب</small>

@@ -686,6 +686,7 @@ class WalletsController extends Controller
                 'wallet' => [
                     'id' => $wallet->id,
                     'balance' => $wallet->balance,
+                    'driver_id' => $wallet->driver_id,
                     'driver_name' => $driverName,
                     'driver_phone' => $driverPhone,
                     'driver_email' => $driverEmail,
@@ -815,7 +816,7 @@ class WalletsController extends Controller
             if ($wallet->user_type === 'driver' && !$user->checkDriver($wallet->driver_id)) {
                 return response()->json([
                     'status' => 0,
-                    'error' => 'غير مصرح لك بالوصول لهذه المحفظة'
+                    'error' => 'You have no accesss to this wallet'
                 ]);
             }
 
@@ -845,13 +846,13 @@ class WalletsController extends Controller
     {
         try {
             // التحقق من صلاحية المستخدم
-            $user = Auth::user();
-            if (!$user->checkDriver($driverId)) {
-                return response()->json([
-                    'status' => 0,
-                    'error' => 'غير مصرح لك بالوصول لمهام هذا السائق'
-                ]);
-            }
+            // $user = Auth::user();
+            // if (!$user->checkDriver($driverId)) {
+            //     return response()->json([
+            //         'status' => 0,
+            //         'error' => 'غير مصرح لك بالوصول لمهام هذا السائق'
+            //     ]);
+            // }
 
             // جلب المهام المرتبطة بالسائق
             $tasks = Task::with(['pickup', 'delivery'])

@@ -396,10 +396,11 @@ class TeamWalletController extends Controller
                 return [
                     'id' => $log->id,
                     'amount' => $log->formatted_amount,
-                    'notes' => $log->notes ?? 'لا توجد ملاحظات',
-                    'user_name' => $log->user->name ?? 'غير محدد',
-                    'team_leader_name' => $log->teamLeader->name ?? 'غير محدد',
-                    'ip_address' => $log->ip_address ?? 'غير محدد',
+                    'payment_request_number' => $log->payment_request_number ?? '',
+                    'notes' => $log->notes ?? '',
+                    'user_name' => $log->user->name ?? '',
+                    'team_leader_name' => $log->teamLeader->name ?? '',
+                    'ip_address' => $log->ip_address ?? '',
                     'printed_at' => $log->formatted_printed_at,
                 ];
             });

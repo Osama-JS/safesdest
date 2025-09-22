@@ -531,7 +531,7 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
   const accountNumber = $('#teamAccountNumber').val().trim();
   const ibanNumber = $('#teamIbanNumber').val().trim();
   const notes = $('#teamNotes').val();
-  const selectedTasks = $('#teamSelectedTasks').val() || [];
+  const selectedTasks = $('#teamSelectedTasks').select2('data') || [];
 
   // Use custom bank name if "other" is selected
   if (bankName === 'other') {
@@ -637,6 +637,10 @@ function generateTeamPaymentRequestDocument(data) {
   const randomNumber = Math.floor(Math.random() * 900) + 100; // 3-digit random number
   const referenceNumber = `TW${data.teamWalletId}${dateString}${randomNumber}`;
 
+  console.log(data.selectedTasks);
+  let tasksHtml = data.selectedTasks
+    .map(task => `مهمة #${task.id} - ${task.pickup_address} - ${task.total_price} ريال`)
+    .join(' , ');
   // Create the HTML document (matching driver wallet structure)
   const documentHTML = `
     <!DOCTYPE html>
@@ -754,8 +758,18 @@ function generateTeamPaymentRequestDocument(data) {
                 <tr><td class="label">رقم المحفظة</td><td>#${data.teamWalletId}</td></tr>
                 <tr><td class="label">الرصيد المتبقي</td><td> ${remainingAmount.toFixed(2)} ريال</td></tr>
             </table>
-            <h3>ملاحظات</h3>
-            <p> <strong>${data.notes || 'لا توجد ملاحظات'}</strong> </p>
+           ${
+             data.notes
+               ? ` <h3>ملاحظات</h3>
+              <p> <strong>${data.notes || '<br>'}</strong> </p>`
+               : '<br>'
+           }
+              ${
+                tasksHtml
+                  ? `<h3>المهام</h3>
+              <p> <strong>${tasksHtml || '<br>'}</strong> </p>`
+                  : ''
+              }
 
             <!-- Signatures -->
             <h3>التوقيع</h3>
@@ -821,6 +835,8 @@ function initializeTeamTasksSelect2(teamId) {
     placeholder: 'اختر المهام المرتبطة بطلب السداد',
     allowClear: true,
     width: '100%',
+    dropdownParent: $('#teamPaymentRequestModal'),
+
     ajax: {
       url: `${baseUrl}admin/teams/wallet/team-tasks/${teamId}`,
       dataType: 'json',
@@ -913,6 +929,7 @@ window.loadTeamPaymentRequestLogs = function () {
         if (response.data && response.data.length > 0) {
           let logsHtml = '';
           response.data.forEach((log, index) => {
+            console.log(log);
             logsHtml += `
                     <div class="card mb-3">
                       <div class="card-body">
@@ -923,7 +940,7 @@ window.loadTeamPaymentRequestLogs = function () {
                           </div>
                           <div class="col-md-2">
                             <small class="text-muted">رقم الطلب</small>
-                            <div class="fw-semibold text-primary">${log.payment_request_number || 'غير محدد'}</div>
+                            <div class="fw-semibold text-primary">${log.payment_request_number || ''}</div>
                           </div>
                           <div class="col-md-2">
                             <small class="text-muted">${__('Amount')}</small>
@@ -945,7 +962,7 @@ window.loadTeamPaymentRequestLogs = function () {
                         <div class="row mt-2">
                           <div class="col-md-12">
                             <small class="text-muted">${__('Notes')}</small>
-                            <div class="fw-semibold">${log.notes || 'لا توجد ملاحظات'}</div>
+                            <div class="fw-semibold">${log.notes || ''}</div>
                           </div>
                         </div>
                       </div>

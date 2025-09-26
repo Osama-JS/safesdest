@@ -662,12 +662,7 @@ class TeamWalletController extends Controller
         try {
             // التحقق من صلاحية المستخدم
             $user = Auth::user();
-            if (!$user->checkTeam($teamId)) {
-                return response()->json([
-                    'status' => 0,
-                    'error' => 'غير مصرح لك بالوصول لمهام هذا الفريق'
-                ]);
-            }
+
 
             // جلب المهام المرتبطة بالفريق
             $tasks = Task::with(['pickup', 'delivery'])

@@ -39,6 +39,7 @@ use App\Http\Controllers\admin\settings\PricingTemplateController;
 use App\Http\Controllers\admin\settings\SystemStatisticsController;
 use App\Http\Controllers\admin\settings\ClearancePricingTemplateController;
 use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
+use App\Http\Controllers\admin\PlatformReportsController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
 Route::get('/active-account', function () {
@@ -555,98 +556,21 @@ Route::middleware('rate.limit')->group(function () {
                     return view('admin.reports.index');
                 })->name('admin.reports.index');
 
-                Route::get('admin/reports/customer-tasks', function () {
-                    // Get required data for the view
-                    $customers = \App\Models\Customer::select('id', 'name', 'company_name')->get();
-                    $drivers = \App\Models\Driver::select('id', 'name', 'phone')->get();
-                    $teams = \App\Models\Teams::select('id', 'name')->get();
-
-                    $taskStatuses = [
-                        'in_progress' => 'in_progress',
-                        'advertised' => 'advertised',
-                        'assign' => 'assign',
-                        'started' => 'started',
-                        'in pickup point' => 'in pickup point',
-                        'loading' => 'loading',
-                        'in the way' => 'in the way',
-                        'in delivery point' => 'in delivery point',
-                        'unloading' => 'unloading',
-                        'completed' => 'completed',
-                        'canceled' => 'canceled',
-                    ];
-
-                    $paymentStatuses = [
-                         'waiting' => 'waiting',
-                        'completed' => 'completed',
-                        'pending' => 'pending'
-                    ];
-
-                    $paymentMethods = [
-                        'bank_transfer' => 'bank transfer',
-                        'credit_card' => 'credit card',
-                        'wallet' => 'wallet'
-                    ];
-
-                    return view('admin.reports.customer-tasks', compact(
-                        'customers',
-                        'drivers',
-                        'teams',
-                        'taskStatuses',
-                        'paymentStatuses',
-                        'paymentMethods'
-                    ));
-                })->name('admin.reports.customer-tasks');
-
+                Route::get('reports/customer-tasks', [PlatformReportsController::class, 'customerReport'])->name('admin.reports.customer-tasks');
                 // Keep the original controller routes for POST requests
-                Route::post('admin/reports/customer-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
-                Route::post('admin/reports/customer-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
+                Route::post('admin/reports/customer-tasks/generate', [PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
+                Route::post('admin/reports/customer-tasks/preview', [PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
 
                 // Driver Tasks Report Routes
-                Route::get('reports/driver-tasks', function () {
-                    $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
-                    $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
-                    $teams = App\Models\Teams::select('id', 'name')->get();
-
-                    $taskStatuses = [
-                        'pending' => __('Pending'),
-                        'confirmed' => __('Confirmed'),
-                        'in_progress' => __('In Progress'),
-                        'completed' => __('Completed'),
-                        'canceled' => __('Canceled'),
-                        'refund' => __('Refund')
-                    ];
-
-                    $paymentStatuses = [
-                        'pending' => __('Pending'),
-                        'completed' => __('Completed'),
-                        'waiting' => __('Waiting')
-                    ];
-
-                    $paymentMethods = [
-                        'cash' => 'cash',
-                        'bank_transfer' => 'bank transfer',
-                        'credit_card' => 'credit card',
-                        'wallet' => 'wallet'
-                    ];
-
-                    return view('admin.reports.driver-tasks', compact(
-                        'customers',
-                        'drivers',
-                        'teams',
-                        'taskStatuses',
-                        'paymentStatuses',
-                        'paymentMethods'
-                    ));
-                })->name('admin.reports.driver-tasks');
-
-                Route::post('admin/reports/driver-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateDriverTasksReport'])->name('admin.reports.driver-tasks.generate');
-                Route::post('admin/reports/driver-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getDriverTasksPreview'])->name('admin.reports.driver-tasks.preview');
+                Route::get('reports/driver-tasks', [PlatformReportsController::class, 'driverReport'])->name('admin.reports.driver-tasks');
+                Route::post('admin/reports/driver-tasks/generate', [PlatformReportsController::class, 'generateDriverTasksReport'])->name('admin.reports.driver-tasks.generate');
+                Route::post('admin/reports/driver-tasks/preview', [PlatformReportsController::class, 'getDriverTasksPreview'])->name('admin.reports.driver-tasks.preview');
 
                 // Team Tasks Report Routes
                 Route::get('reports/team-tasks', function () {
                     $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
                     $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
-                    $teams = App\Models\Team::select('id', 'name')->get();
+                    $teams = App\Models\Teams::select('id', 'name')->get();
 
                     $taskStatuses = [
                         'pending' => __('Pending'),

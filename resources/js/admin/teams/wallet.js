@@ -517,6 +517,32 @@ $(document).on('input', '#teamRequestedAmount', function () {
   }
 });
 
+// Handle team payment method selection
+$(document).on('change', '#teamPaymentMethod', function () {
+  const selectedValue = $(this).val();
+  const bankTransferFields = $('#teamBankTransferFields');
+  const otherPaymentField = $('#teamOtherPaymentField');
+
+  if (selectedValue === 'bank_transfer') {
+    bankTransferFields.show();
+    otherPaymentField.hide();
+    $('#teamOtherPaymentMethod').removeAttr('required').val('');
+  } else if (selectedValue === 'other') {
+    bankTransferFields.hide();
+    otherPaymentField.show();
+    $('#teamOtherPaymentMethod').attr('required', true);
+    // Clear bank fields
+    $('#teamBankName').val('');
+    $('#teamCustomBankName').val('').hide();
+    $('#teamAccountNumber').val('');
+    $('#teamIbanNumber').val('');
+  } else {
+    bankTransferFields.hide();
+    otherPaymentField.hide();
+    $('#teamOtherPaymentMethod').removeAttr('required').val('');
+  }
+});
+
 /**
  * Handle team payment request form submission (exactly like driver wallet)
  */
@@ -526,10 +552,12 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
 
   // Validate form
   const requestedAmount = parseFloat($('#teamRequestedAmount').val());
+  const paymentMethod = $('#teamPaymentMethod').val();
   let bankName = $('#teamBankName').val().trim();
   const customBankName = $('#teamCustomBankName').val().trim();
   const accountNumber = $('#teamAccountNumber').val().trim();
   const ibanNumber = $('#teamIbanNumber').val().trim();
+  const otherPaymentMethod = $('#teamOtherPaymentMethod').val().trim();
   const notes = $('#teamNotes').val();
   const selectedTasks = $('#teamSelectedTasks').select2('data') || [];
 
@@ -539,12 +567,17 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
   }
 
   // Clear previous errors
-  $('.text-error').text('');
+  $('.text-error').text('').removeClass('text-warning').addClass('text-danger');
 
   let hasErrors = false;
 
   if (!requestedAmount || requestedAmount <= 0) {
     $('.team_requested_amount-error').text('المبلغ المطلوب مطلوب ويجب أن يكون أكبر من صفر');
+    hasErrors = true;
+  }
+
+  if (!paymentMethod) {
+    $('.team_payment_method-error').text('يرجى اختيار طريقة الدفع');
     hasErrors = true;
   }
 
@@ -559,29 +592,22 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
     $('.team_requested_amount-error').removeClass('text-warning').addClass('text-danger');
   }
 
-  if (!bankName || bankName.length < 2) {
-    if ($('#teamBankName').val() === 'other') {
-      $('.team_bank_name-error').text('يرجى إدخال اسم البنك في الحقل المخصص');
-    } else {
-      $('.team_bank_name-error').text('يرجى اختيار البنك');
+  if (paymentMethod === 'other') {
+    if (!otherPaymentMethod) {
+      $('.team_other_payment_method-error').text('يرجى إدخال تفاصيل طريقة الدفع');
+      hasErrors = true;
     }
-    hasErrors = true;
-  }
+  } else if (paymentMethod === 'bank_transfer') {
+    // Bank transfer validation is optional now
+    if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
+      $('.team_iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
+      hasErrors = true;
+    }
 
-  if (!accountNumber || accountNumber.length < 8) {
-    $('.team_account_number-error').text('رقم الحساب مطلوب ويجب أن يكون على الأقل 8 أرقام');
-    hasErrors = true;
-  }
-
-  if (!ibanNumber || ibanNumber.replace(/\s/g, '').length < 15) {
-    $('.team_iban_number-error').text('رقم الآيبان مطلوب ويجب أن يكون صحيحاً (على الأقل 15 رقم)');
-    hasErrors = true;
-  }
-
-  // Validate IBAN format (basic validation)
-  if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
-    $('.team_iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
-    hasErrors = true;
+    if (accountNumber && accountNumber.length < 8) {
+      $('.team_account_number-error').text('رقم الحساب يجب أن يكون على الأقل 8 أرقام');
+      hasErrors = true;
+    }
   }
 
   if (hasErrors) {
@@ -593,9 +619,11 @@ $(document).on('click', '#generateTeamPaymentRequest', function () {
   generateTeamPaymentRequestDocument({
     teamWalletId: teamWalletData.teamWallet.id,
     requestedAmount: requestedAmount,
+    paymentMethod: paymentMethod,
     bankName: bankName,
     accountNumber: accountNumber,
     ibanNumber: ibanNumber,
+    otherPaymentMethod: otherPaymentMethod,
     notes: notes,
     selectedTasks: selectedTasks,
     teamWalletData: teamWalletData
@@ -647,7 +675,7 @@ function generateTeamPaymentRequestDocument(data) {
     <html dir="rtl" lang="ar">
     <head>
         <meta charset="UTF-8">
-        <title>طلب سداد - محفظة الفريق - ${referenceNumber}</title>
+        <title>طلب سداد - فريق - ${referenceNumber}</title>
         <style>
             body {
                 font-family: 'Tajawal', Arial, sans-serif;
@@ -719,8 +747,11 @@ function generateTeamPaymentRequestDocument(data) {
             <div class="title">
                 <h1>Safedests</h1>
                 <h2>طلب سداد مالي - محفظة الفريق</h2>
-                <p>رقم الطلب: TR-${data.teamWalletId}-${Date.now()}</p>
+                <p>رقم الطلب: ${referenceNumber}</p>
                 <p>التاريخ: ${formattedDate}</p>
+                <p style="color: #007bff; font-weight: bold;">
+                  طريقة السداد: ${data.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : data.paymentMethod === 'other' ? 'طريقة أخرى' : 'غير محدد'}
+                </p>
             </div>
 
             <!-- Employee -->
@@ -742,13 +773,29 @@ function generateTeamPaymentRequestDocument(data) {
                 </p>
             </div>
 
-            <!-- Bank Info -->
-            <h3>بيانات البنك</h3>
+            <!-- Payment Method Info -->
+            ${
+              data.paymentMethod === 'bank_transfer'
+                ? `
+            <h3>بيانات التحويل البنكي</h3>
             <table>
-                <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
-                <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
-                <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
+                <tr><td class="label">اسم البنك</td><td>${data.bankName || 'غير محدد'}</td></tr>
+                <tr><td class="label">رقم الحساب</td><td>${data.accountNumber || 'غير محدد'}</td></tr>
+                <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber || 'غير محدد'}</td></tr>
             </table>
+            `
+                : data.paymentMethod === 'other'
+                  ? `
+            <h3>طريقة الدفع</h3>
+            <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f9f9f9;">
+                <p><strong>${data.otherPaymentMethod || 'غير محدد'}</strong></p>
+            </div>
+            `
+                  : `
+            <h3>معلومات الدفع</h3>
+            <p>لم يتم تحديد طريقة الدفع</p>
+            `
+            }
 
             <!-- Team Info -->
             <h3>بيانات الفريق</h3>
@@ -760,14 +807,18 @@ function generateTeamPaymentRequestDocument(data) {
             </table>
            ${
              data.notes
-               ? ` <h3>ملاحظات</h3>
-              <p> <strong>${data.notes || '<br>'}</strong> </p>`
-               : '<br>'
+               ? ` <h3>ملاحظات إضافية</h3>
+              <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f9f9f9; white-space: pre-line;">
+                <strong>${data.notes}</strong>
+              </div>`
+               : ''
            }
               ${
                 tasksHtml
-                  ? `<h3>المهام</h3>
-              <p> <strong>${tasksHtml || '<br>'}</strong> </p>`
+                  ? `<h3>المهام المرتبطة</h3>
+              <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f0f8ff; white-space: pre-line;">
+                <strong>${tasksHtml}</strong>
+              </div>`
                   : ''
               }
 
@@ -802,6 +853,11 @@ function generateTeamPaymentRequestDocument(data) {
       teamWalletId: data.teamWalletId,
       amount: data.requestedAmount,
       paymentRequestNumber: referenceNumber,
+      paymentMethod: data.paymentMethod,
+      bankName: data.bankName,
+      accountNumber: data.accountNumber,
+      ibanNumber: data.ibanNumber,
+      otherPaymentMethod: data.otherPaymentMethod,
       notes: data.notes || null,
       selectedTasks: data.selectedTasks || []
     });
@@ -882,6 +938,11 @@ function logTeamPaymentRequest(data) {
     data: {
       amount: data.amount,
       payment_request_number: data.paymentRequestNumber,
+      payment_method: data.paymentMethod,
+      bank_name: data.bankName,
+      account_number: data.accountNumber,
+      iban_number: data.ibanNumber,
+      other_payment_method: data.otherPaymentMethod,
       notes: data.notes,
       selected_tasks: data.selectedTasks || [],
       team_wallet_id: data.teamWalletId,

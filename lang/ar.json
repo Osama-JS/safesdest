@@ -673,5 +673,17 @@
   "Image ": "الصورة",
   "View the image": "عرض الصورة",
   "close": "إغلاق",
-  "image": "صورة"
+  "image": "صورة",
+  "Include Payment Summary in PDF": "تضمين ملخص المدفوعات في PDF",
+  "Include Commission Information in PDF": "تضمين معلومات العمولة في PDF",
+  "Team Tasks Report - Simple": "تقرير مهام الفريق - مبسط",
+  "Team Tasks Report": "تقرير مهام الفريق",
+  "Payment Summary": "ملخص المدفوعات",
+  "Commission Information": "معلومات العمولة",
+  "Paid Amount": "المبلغ المدفوع",
+  "Pending Amount": "المبلغ المعلق",
+  "Unpaid Amount": "المبلغ غير المدفوع",
+  "Total Commission Deducted": "إجمالي العمولة المخصومة",
+  "Original Total (Before Commission)": "الإجمالي الأصلي (قبل العمولة)",
+  "Team Earnings": "أرباح الفريق"
 }

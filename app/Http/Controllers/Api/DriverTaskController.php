@@ -56,7 +56,7 @@ class DriverTaskController extends Controller
                             $query->where('status', 'accepted');
                             break;
                         case 'in_progress':
-                            $query->whereIn('status', ['assign','accepted', 'started', 'in pickup point', 'picked_up', 'in_transit', 'in delivery point']);
+                            $query->whereIn('status', ['assign','accepted', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','unloading']);
                             break;
                         case 'completed':
                             $query->whereIn('status', ['completed', 'delivered', 'invoiced']);

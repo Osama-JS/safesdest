@@ -10,6 +10,8 @@ use App\Models\Teams;
 use App\Models\User;
 use App\Services\ReportService;
 use App\Exports\CustomerTasksExport;
+use App\Exports\DriverTasksExport;
+use App\Exports\TeamTasksExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
@@ -22,70 +24,47 @@ class PlatformReportsController extends Controller
     public function __construct(ReportService $reportService)
     {
         $this->reportService = $reportService;
+        $this->middleware('permission:view_reports', ['only' => ['index']]);
+        $this->middleware('permission:generate_reports', ['only' => [
+          'customerReport',
+          'generateCustomerTasksReport',
+          'exportToExcel',
+          'exportToPdf',
+          'getReportPreview',
+          'driverReport',
+          'generateDriverTasksReport',
+          'exportDriverTasksToExcel',
+          'exportDriverTasksToPdf',
+          'getDriverTasksPreview',
+          'teamReport',
+          'generateTeamTasksReport',
+          'exportTeamTasksToExcel',
+          'exportTeamTasksToPdf',
+          'getTeamTasksPreview'
+        ]]);
+
     }
 
-    /**
-     * Display the main reports page
-     */
+
     public function index()
     {
-        // Debug: Check if we reach this method
-        \Log::info('PlatformReportsController@index called');
-
-        // Temporarily disable permission check for testing
-        // TODO: Re-enable after fixing permissions
-        /*
-        if (!Auth::user()->can('view_reports')) {
-            abort(403, 'Unauthorized access to reports');
-        }
-        */
-
         try {
             return view('admin.reports.index');
         } catch (\Exception $e) {
-            \Log::error('Error in reports index: ' . $e->getMessage());
             return response('Error: ' . $e->getMessage(), 500);
         }
     }
-
     /**
-     * Display customer tasks report page
-     */
-    public function customerTasks()
+    * View customer tasks report page
+    */
+    public function customerReport()
     {
-        // Temporarily disable permission check for testing
-        // TODO: Re-enable after fixing permissions
-        /*
-        if (!Auth::user()->can('view_reports')) {
-            abort(403, 'Unauthorized access to reports');
-        }
-        */
 
-        $user = Auth::user();
+        // Get required data for the view
+        $customers = Customer::select('id', 'name', 'company_name')->get();
+        $drivers = Driver::select('id', 'name', 'phone')->get();
+        $teams = Teams::select('id', 'name')->get();
 
-        // Get customers based on user permissions
-        if ($user->can('mange_customers')) {
-            $customers = Customer::where('status', '!=', 'deleted')->get();
-        } else {
-            $customers = $user->customers;
-        }
-
-        // Get drivers based on user permissions
-        if ($user->can('mange_drivers')) {
-            $drivers = Driver::where('status', 'active')->get();
-        } else {
-            $teamIds = $user->teams->pluck('id')->toArray();
-            $drivers = Driver::whereIn('team_id', $teamIds)->where('status', 'active')->get();
-        }
-
-        // Get teams based on user permissions
-        if ($user->can('mange_teams')) {
-            $teams = Teams::all();
-        } else {
-            $teams = $user->teams;
-        }
-
-        // Task statuses
         $taskStatuses = [
             'in_progress' => 'in_progress',
             'advertised' => 'advertised',
@@ -96,21 +75,21 @@ class PlatformReportsController extends Controller
             'in the way' => 'in the way',
             'in delivery point' => 'in delivery point',
             'unloading' => 'unloading',
+            'invoiced' => 'invoiced',
             'completed' => 'completed',
-            'canceled' => 'canceled'
+            'canceled' => 'canceled',
+            'refund' => 'refund'
         ];
 
-        // Payment statuses
         $paymentStatuses = [
-            'waiting' => 'waiting',
+             'waiting' => 'waiting',
             'completed' => 'completed',
             'pending' => 'pending'
         ];
 
-        // Payment methods
         $paymentMethods = [
-            'credit' => 'credit',
-            'banking' => 'banking',
+            'bank_transfer' => 'bank transfer',
+            'credit_card' => 'credit card',
             'wallet' => 'wallet'
         ];
 
@@ -215,6 +194,55 @@ class PlatformReportsController extends Controller
         }
     }
 
+
+
+    /**
+       * View Driver tasks report page
+       */
+    public function driverReport()
+    {
+        $customers = Customer::select('id', 'name', 'company_name')->get();
+        $drivers = Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
+        $teams = Teams::select('id', 'name')->get();
+
+        $taskStatuses = [
+             'in_progress' => 'in_progress',
+             'advertised' => 'advertised',
+             'assign' => 'assign',
+             'started' => 'started',
+             'in pickup point' => 'in pickup point',
+             'loading' => 'loading',
+             'in the way' => 'in the way',
+             'in delivery point' => 'in delivery point',
+             'unloading' => 'unloading',
+             'invoiced' => 'invoiced',
+             'completed' => 'completed',
+             'canceled' => 'canceled',
+             'refund' => 'refund'
+         ];
+
+        $paymentStatuses = [
+            'pending' => __('Pending'),
+            'completed' => __('Completed'),
+            'waiting' => __('Waiting')
+        ];
+
+        $paymentMethods = [
+            'cash' => 'cash',
+            'bank_transfer' => 'bank transfer',
+            'credit_card' => 'credit card',
+            'wallet' => 'wallet'
+        ];
+
+        return view('admin.reports.driver-tasks', compact(
+            'customers',
+            'drivers',
+            'teams',
+            'taskStatuses',
+            'paymentStatuses',
+            'paymentMethods'
+        ));
+    }
     /**
      * Generate driver tasks report data
      */
@@ -227,13 +255,14 @@ class PlatformReportsController extends Controller
                 'driver_ids.*' => 'exists:drivers,id',
                 'date_from' => 'required|date',
                 'date_to' => 'required|date|after_or_equal:date_from',
-                'format' => 'required|in:excel,pdf'
+                'columns' => 'required|array|min:4',
+                'export_type' => 'required|in:excel,pdf'
             ]);
 
             // Generate report data
             $reportData = $this->reportService->generateDriverTasksReport($request->all());
 
-            if ($request->format === 'excel') {
+            if ($request->export_type === 'excel') {
                 return $this->exportDriverTasksToExcel($reportData, $request->all());
             } else {
                 return $this->exportDriverTasksToPdf($reportData, $request->all());
@@ -291,13 +320,14 @@ class PlatformReportsController extends Controller
                 'team_ids.*' => 'exists:teams,id',
                 'date_from' => 'required|date',
                 'date_to' => 'required|date|after_or_equal:date_from',
-                'format' => 'required|in:excel,pdf'
+                'columns' => 'required|array|min:4',
+                'export_type' => 'required|in:excel,pdf'
             ]);
 
             // Generate report data
             $reportData = $this->reportService->generateTeamTasksReport($request->all());
 
-            if ($request->format === 'excel') {
+            if ($request->export_type === 'excel') {
                 return $this->exportTeamTasksToExcel($reportData, $request->all());
             } else {
                 return $this->exportTeamTasksToPdf($reportData, $request->all());
@@ -348,9 +378,9 @@ class PlatformReportsController extends Controller
      */
     private function exportDriverTasksToExcel($reportData, $filters)
     {
-        // Implementation similar to customer tasks Excel export
-        // This will be handled by the ReportService
-        return $this->reportService->exportDriverTasksToExcel($reportData, $filters);
+
+        // Use DriverTasksExport class like CustomerTasksExport
+        return Excel::download(new DriverTasksExport($reportData, $filters), 'driver-tasks-report-' . date('Y-m-d-H-i-s') . '.xlsx');
     }
 
     /**
@@ -358,8 +388,12 @@ class PlatformReportsController extends Controller
      */
     private function exportDriverTasksToPdf($reportData, $filters)
     {
-        // Implementation similar to customer tasks PDF export
-        return $this->reportService->exportDriverTasksToPdf($reportData, $filters);
+        // Get driver names for the report
+        $driverIds = $filters['driver_ids'] ?? [];
+        $driverNames = \App\Models\Driver::whereIn('id', $driverIds)->get(['id', 'name', 'phone']);
+
+        // Return view directly for browser printing (like customer tasks)
+        return view('admin.reports.pdf.driver-tasks-simple', compact('reportData', 'filters', 'driverNames'));
     }
 
     /**
@@ -367,8 +401,8 @@ class PlatformReportsController extends Controller
      */
     private function exportTeamTasksToExcel($reportData, $filters)
     {
-        // Implementation similar to customer tasks Excel export
-        return $this->reportService->exportTeamTasksToExcel($reportData, $filters);
+        // Use TeamTasksExport class like CustomerTasksExport
+        return Excel::download(new TeamTasksExport($reportData, $filters), 'team-tasks-report-' . date('Y-m-d-H-i-s') . '.xlsx');
     }
 
     /**
@@ -376,7 +410,11 @@ class PlatformReportsController extends Controller
      */
     private function exportTeamTasksToPdf($reportData, $filters)
     {
-        // Implementation similar to customer tasks PDF export
-        return $this->reportService->exportTeamTasksToPdf($reportData, $filters);
+        // Get team names for the report
+        $teamIds = $filters['team_ids'] ?? [];
+        $teamNames = \App\Models\Teams::whereIn('id', $teamIds)->get(['id', 'name']);
+
+        // Return view directly for browser printing (like driver tasks)
+        return view('admin.reports.pdf.team-tasks-simple', compact('reportData', 'filters', 'teamNames'));
     }
 }

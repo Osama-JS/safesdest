@@ -310,14 +310,11 @@
                                 <br><small style="color: #dc3545;">{{ __('Refunded/Cancelled') }}</small>
                             @else
                                 {{ number_format($displayPrice, 2) }} {{ __('SAR') }}
-                                @if (($task['commission'] ?? 0) > 0)
-                                    <br><small style="color: #6c757d;">{{ __('After Commission') }}</small>
-                                @endif
                             @endif
                         </td>
                         <td class="text-truncate">
-                            <strong>{{ __('From') }}:</strong> {{ $task['pickup_address'] }}<br>
-                            <strong>{{ __('To') }}:</strong> {{ $task['delivery_address'] }}
+                            <strong>{{ __('From') }}:</strong> {{ $task['pickup']['address'] }}<br>
+                            <strong>{{ __('To') }}:</strong> {{ $task['delivery']['address'] }}
                         </td>
                         <td>
                             <strong>{{ $task['customer_name'] }}</strong><br>
@@ -327,13 +324,16 @@
                             <span class="small-text">{{ $task['customer_phone'] ?? '' }}</span>
                         </td>
                         <td>
-                            <strong>{{ $task['driver_name'] }}</strong><br>
-                            <span class="small-text">{{ $task['driver_phone'] ?? '' }}</span>
+                            <strong>{{ $task['driver']['name'] ?? 'غير محدد' }}</strong><br>
+                            <strong>{{ $task['driver']['phone'] ?? 'غير محدد' }}</strong><br>
+                            <strong>{{ $task['team_name'] ?? 'غير محدد' }}</strong><br>
+
                         </td>
+
                         <td>
                             @php
                                 $statusClass = 'status-pending';
-                                if (in_array($task['status'], ['completed'])) {
+                                if (in_array($task['status'], ['completed', 'invoiced'])) {
                                     $statusClass = 'status-completed';
                                 } elseif (in_array($task['status'], ['in_progress', 'started', 'in the way'])) {
                                     $statusClass = 'status-in-progress';
@@ -359,20 +359,15 @@
                         </td>
                         <td>
                             @if ($task['payment_status'] === 'completed')
-                                @if (empty($task['payment_method_ar']))
-                                    <span style="color: #6c757d; font-style: italic;">{{ __('Not Completed') }}</span>
-                                @else
-                                    {{ $task['payment_method_ar'] }}
-                                @endif
+                                {{ $task['payment_method_ar'] }}
                             @endif
-
                         </td>
                         <td>{{ $task['created_at_formatted'] }}</td>
-                        <td>{{ $task['closed_at_formatted'] ?: __('Not closed yet') }}</td>
+                        <td>{{ $task['closed_at_formatted'] }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" style="text-align: center; padding: 20px; color: #6c757d;">
+                        <td colspan="9" style="text-align: center; padding: 20px; color: #6c757d;">
                             {{ __('No tasks match the specified criteria') }}
                         </td>
                     </tr>
@@ -403,29 +398,36 @@
                     </div>
                 </div>
 
-                <!-- Payment Summary -->
-                <div class="summary-title" style="margin-top: 20px; font-size: 16px;">{{ __('Payment Summary') }}</div>
-                <div class="summary-grid">
-                    <div class="summary-item">
-                        <div class="summary-label">{{ __('Paid Amount') }}</div>
-                        <div class="summary-value" style="color: #28a745;">
-                            {{ number_format($reportData['summary']['paid_amount'], 2) }} {{ __('SAR') }}</div>
+                @if (isset($filters['include_payment_summary']) && $filters['include_payment_summary'])
+                    <!-- Payment Summary -->
+                    <div class="summary-title" style="margin-top: 20px; font-size: 16px;">{{ __('Payment Summary') }}
                     </div>
-                    <div class="summary-item">
-                        <div class="summary-label">{{ __('Pending Amount') }}</div>
-                        <div class="summary-value" style="color: #ffc107;">
-                            {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}
-                            {{ __('SAR') }}</div>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-label">{{ __('Paid Amount') }}</div>
+                            <div class="summary-value" style="color: #28a745;">
+                                {{ number_format($reportData['summary']['paid_amount'], 2) }} {{ __('SAR') }}
+                            </div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">{{ __('Pending Amount') }}</div>
+                            <div class="summary-value" style="color: #ffc107;">
+                                {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}
+                                {{ __('SAR') }}</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">{{ __('Unpaid Amount') }}</div>
+                            <div class="summary-value" style="color: #dc3545;">
+                                {{ number_format($reportData['summary']['unpaid_amount'], 2) }} {{ __('SAR') }}
+                            </div>
+                        </div>
                     </div>
-                    <div class="summary-item">
-                        <div class="summary-label">{{ __('Unpaid Amount') }}</div>
-                        <div class="summary-value" style="color: #dc3545;">
-                            {{ number_format($reportData['summary']['unpaid_amount'], 2) }} {{ __('SAR') }}</div>
-                    </div>
-                </div>
+                @endif
 
-                <!-- Commission Information -->
-                @if (!empty($reportData['summary']['total_commission']))
+                @if (isset($filters['include_commission_info']) &&
+                        $filters['include_commission_info'] &&
+                        !empty($reportData['summary']['total_commission']))
+                    <!-- Commission Information -->
                     <div class="summary-title" style="margin-top: 20px; font-size: 16px;">
                         {{ __('Commission Information') }}</div>
                     <div class="summary-grid">

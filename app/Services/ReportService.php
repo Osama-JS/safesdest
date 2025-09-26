@@ -28,9 +28,7 @@ class ReportService
             'user:id,name',
             'pickup:id,task_id,address,contact_name,contact_phone',
             'delivery:id,task_id,address,contact_name,contact_phone',
-            'vehicle_size:id,name',
-            'vehicle_size.type:id,name,vehicle_id',
-            'vehicle_size.type.vehicle:id,name'
+            'vehicle_size',
         ]);
 
         // Apply user permissions filter
@@ -185,7 +183,7 @@ class ReportService
                 'delivery_contact_phone' => $task->delivery->contact_phone ?? '',
                 'vehicle_name' => $this->getVehicleName($task),
                 'status' => $task->status,
-                'status_ar' => $this->getStatusInArabic($task->status),
+                'status_ar' => $$task->status,
                 'payment_status' => $task->payment_status,
                 'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method,
@@ -207,8 +205,8 @@ class ReportService
      */
     private function getVehicleName($task)
     {
-        if ($task->vehicle_size && $task->vehicle_size->type && $task->vehicle_size->type->vehicle) {
-            return $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->name;
+        if ($task->vehicle_size_id) {
+            return $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name;
         }
         return 'غير محدد';
     }
@@ -332,12 +330,24 @@ class ReportService
             $applied['customers'] = implode(', ', $customerNames);
         }
 
+        // Driver filter
+
+        if (!empty($filters['driver_ids'])) {
+            $customerNames = Driver::whereIn('id', $filters['driver_ids'])->pluck('name')->toArray();
+            $applied['drivers'] = implode(', ', $customerNames);
+        }
+
+        if (!empty($filters['team_ids'])) {
+            $customerNames = Teams::whereIn('id', $filters['team_ids'])->pluck('name')->toArray();
+            $applied['teams'] = implode(', ', $customerNames);
+        }
+
         // Date range
         $applied['date_range'] = $filters['date_from'] . ' إلى ' . $filters['date_to'];
 
         // Task statuses
         if (!empty($filters['task_statuses'])) {
-            $applied['task_statuses'] = implode(', ', array_map([$this, 'getStatusInArabic'], $filters['task_statuses']));
+            $applied['task_statuses'] = implode(', ', $filters['task_statuses']);
         }
 
         // Payment status
@@ -472,24 +482,36 @@ class ReportService
         $processedTasks = $tasks->map(function ($task) {
             return [
                 'id' => $task->id,
-                'total_price' => $task->total_price ?? 0,
-                'commission' => $task->commission ?? 0,
-                'pickup_address' => $task->pickup_address ?? '',
-                'delivery_address' => $task->delivery_address ?? '',
-                'customer_name' => $task->customer->name ?? '',
-                'customer_phone' => $task->customer->phone ?? '',
-                'customer_company_name' => $task->customer->company_name ?? '',
-                'driver_name' => $task->driver->name ?? '',
-                'driver_phone' => $task->driver->phone ?? '',
+                'total_price' => ($task->total_price - $task->commission) ?? 0,
+                'pickup' => [
+                    'address' => $task->pickup->address ?? '',
+                    'contact_name' => $task->pickup->contact_name ?? '',
+                    'contact_phone' => $task->pickup->contact_phone ?? ''
+                ],
+                'delivery' => [
+                    'address' => $task->delivery->address ?? '',
+                    'contact_name' => $task->delivery->contact_name ?? '',
+                    'contact_phone' => $task->delivery->contact_phone ?? ''
+                ],
+                'customer' => [
+                    'name' => $task->customer->name ?? '',
+                    'phone' => ($task->customer->phone_code . $task->customer->phone) ?? '',
+                    'company_name' => $task->customer->company_name ?? ''
+                ],
+                'driver' => [
+                    'name' => $task->driver->name ?? '',
+                    'phone' => ($task->driver->phone_code . $task->driver->phone) ?? ''
+                ],
+                'vehicle' =>  $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name,
                 'team_name' => $task->driver->team->name ?? '',
+                'created_by' => $task->user ? 'admin' : 'customer',
+                'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
                 'status' => $task->status ?? '',
-                'status_ar' => $this->translateTaskStatus($task->status ?? ''),
                 'payment_status' => $task->payment_status ?? '',
-                'payment_status_ar' => $this->translatePaymentStatus($task->payment_status ?? ''),
                 'payment_method' => $task->payment_method ?? '',
-                'payment_method_ar' => $this->translatePaymentMethod($task->payment_method ?? ''),
-                'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
-                'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
+                'created_at' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
+                'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : '',
+                'closed_at' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
                 'notes' => $task->notes ?? ''
             ];
         });
@@ -582,16 +604,40 @@ class ReportService
                 'driver_phone' => $task->driver->phone ?? '',
                 'team_name' => $task->driver->team->name ?? '',
                 'status' => $task->status ?? '',
-                'status_ar' => $this->translateTaskStatus($task->status ?? ''),
+                 'pickup' => [
+                    'address' => $task->pickup->address ?? '',
+                    'contact_name' => $task->pickup->contact_name ?? '',
+                    'contact_phone' => $task->pickup->contact_phone ?? ''
+                ],
+                'delivery' => [
+                    'address' => $task->delivery->address ?? '',
+                    'contact_name' => $task->delivery->contact_name ?? '',
+                    'contact_phone' => $task->delivery->contact_phone ?? ''
+                ],
+                'customer' => [
+                    'name' => $task->customer->name ?? '',
+                    'phone' => ($task->customer->phone_code . $task->customer->phone) ?? '',
+                    'company_name' => $task->customer->company_name ?? ''
+                ],
+                'driver' => [
+                    'name' => $task->driver->name ?? '',
+                    'phone' => ($task->driver->phone_code . $task->driver->phone) ?? ''
+                ],
+                'created_by' => $task->user ? 'admin' : 'customer',
+                'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
+
+                'status_ar' => $task->status ?? '',
                 'payment_status' => $task->payment_status ?? '',
-                'payment_status_ar' => $this->translatePaymentStatus($task->payment_status ?? ''),
+                'payment_status_ar' => $task->payment_status ?? '',
                 'payment_method' => $task->payment_method ?? '',
-                'payment_method_ar' => $this->translatePaymentMethod($task->payment_method ?? ''),
+                'payment_method_ar' => $task->payment_method ?? '',
                 'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
                 'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
                 'notes' => $task->notes ?? ''
             ];
         });
+
+
 
         // Calculate summary
         $summary = $this->calculateTeamTasksSummary($processedTasks);
@@ -789,22 +835,5 @@ class ReportService
         ]);
     }
 
-    /**
-     * Export team tasks to PDF
-     */
-    public function exportTeamTasksToPdf($reportData, $filters)
-    {
-        // Get team names for the report
-        $teamIds = $filters['team_ids'] ?? [];
-        $teamNames = \App\Models\Team::whereIn('id', $teamIds)->get(['id', 'name']);
 
-        $pdf = app('dompdf.wrapper');
-        $pdf->loadView('admin.reports.pdf.team-tasks-simple', [
-            'reportData' => $reportData,
-            'filters' => $filters,
-            'teamNames' => $teamNames
-        ]);
-
-        return $pdf->download('team-tasks-report-' . date('Y-m-d-H-i-s') . '.pdf');
-    }
 }

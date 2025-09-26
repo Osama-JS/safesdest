@@ -266,6 +266,10 @@
                                         @endforeach
                                     </select>
                                 </div>
+                            </div>
+
+                            <div class="row">
+
 
                                 <!-- Payment Status -->
                                 <div class="col-md-4 mb-3">
@@ -328,6 +332,29 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <!-- Payment Summary Option -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include_payment_summary"
+                                            name="include_payment_summary" value="1" checked>
+                                        <label class="form-check-label" for="include_payment_summary">
+                                            {{ __('Include Payment Summary in PDF') }}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Commission Information Option -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="include_commission_info"
+                                            name="include_commission_info" value="1" checked>
+                                        <label class="form-check-label" for="include_commission_info">
+                                            {{ __('Include Commission Information in PDF') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Action Buttons -->
                             <div class="row">
                                 <div class="col-12">

@@ -446,7 +446,7 @@ $(function () {
 
       $('#bankName').val(wallet.driver_bank_name);
       $('#accountNumber').val(wallet.driver_account_number);
-      const formattedIban = wallet.driver_iban_number.replace(/(.{4})/g, '$1 ').trim();
+      const formattedIban = (wallet.driver_iban_number || '').replace(/(.{4})/g, '$1 ').trim();
       $('#ibanNumber').val(formattedIban);
 
       console.log(wallet);
@@ -489,6 +489,32 @@ $(function () {
     }
   });
 
+  // Handle payment method selection
+  $(document).on('change', '#paymentMethod', function () {
+    const selectedValue = $(this).val();
+    const bankTransferFields = $('#bankTransferFields');
+    const otherPaymentField = $('#otherPaymentField');
+
+    if (selectedValue === 'bank_transfer') {
+      bankTransferFields.show();
+      otherPaymentField.hide();
+      $('#otherPaymentMethod').removeAttr('required').val('');
+    } else if (selectedValue === 'other') {
+      bankTransferFields.hide();
+      otherPaymentField.show();
+      $('#otherPaymentMethod').attr('required', true);
+      // Clear bank fields
+      $('#bankName').val('');
+      $('#customBankName').val('').hide();
+      $('#accountNumber').val('');
+      $('#ibanNumber').val('');
+    } else {
+      bankTransferFields.hide();
+      otherPaymentField.hide();
+      $('#otherPaymentMethod').removeAttr('required').val('');
+    }
+  });
+
   // Handle bank selection
   $(document).on('change', '#bankName', function () {
     const selectedValue = $(this).val();
@@ -506,10 +532,12 @@ $(function () {
 
     // Validate form
     const requestedAmount = parseFloat($('#requestedAmount').val());
+    const paymentMethod = $('#paymentMethod').val();
     let bankName = $('#bankName').val().trim();
     const customBankName = $('#customBankName').val().trim();
     const accountNumber = $('#accountNumber').val().trim();
     const ibanNumber = $('#ibanNumber').val().trim();
+    const otherPaymentMethod = $('#otherPaymentMethod').val().trim();
     const paymentRecipient = $('#paymentRecipient').val();
     const notes = $('#notes').val();
     const selectedTasks = $('#selectedTasks').select2('data');
@@ -520,12 +548,17 @@ $(function () {
     }
 
     // Clear previous errors
-    $('.text-error').text('');
+    $('.text-error').text('').removeClass('text-warning').addClass('text-danger');
 
     let hasErrors = false;
 
     if (!requestedAmount || requestedAmount <= 0) {
       $('.requested_amount-error').text('المبلغ المطلوب مطلوب ويجب أن يكون أكبر من صفر');
+      hasErrors = true;
+    }
+
+    if (!paymentMethod) {
+      $('.payment_method-error').text('يرجى اختيار طريقة الدفع');
       hasErrors = true;
     }
 
@@ -540,29 +573,22 @@ $(function () {
       $('.requested_amount-error').removeClass('text-warning').addClass('text-danger');
     }
 
-    if (!bankName || bankName.length < 2) {
-      if ($('#bankName').val() === 'other') {
-        $('.bank_name-error').text('يرجى إدخال اسم البنك في الحقل المخصص');
-      } else {
-        $('.bank_name-error').text('يرجى اختيار البنك');
+    if (paymentMethod === 'other') {
+      if (!otherPaymentMethod) {
+        $('.other_payment_method-error').text('يرجى إدخال تفاصيل طريقة الدفع');
+        hasErrors = true;
       }
-      hasErrors = true;
-    }
+    } else if (paymentMethod === 'bank_transfer') {
+      // Bank transfer validation is optional now
+      if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
+        $('.iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
+        hasErrors = true;
+      }
 
-    if (!accountNumber || accountNumber.length < 8) {
-      $('.account_number-error').text('رقم الحساب مطلوب ويجب أن يكون على الأقل 8 أرقام');
-      hasErrors = true;
-    }
-
-    if (!ibanNumber || ibanNumber.replace(/\s/g, '').length < 15) {
-      $('.iban_number-error').text('رقم الآيبان مطلوب ويجب أن يكون صحيحاً (على الأقل 15 رقم)');
-      hasErrors = true;
-    }
-
-    // Validate IBAN format (basic validation)
-    if (ibanNumber && !ibanNumber.replace(/\s/g, '').match(/^SA\d{22}$/)) {
-      $('.iban_number-error').text('تنسيق رقم الآيبان غير صحيح (يجب أن يبدأ بـ SA ويتبعه 22 رقم)');
-      hasErrors = true;
+      if (accountNumber && accountNumber.length < 8) {
+        $('.account_number-error').text('رقم الحساب يجب أن يكون على الأقل 8 أرقام');
+        hasErrors = true;
+      }
     }
 
     if (hasErrors) {
@@ -573,9 +599,11 @@ $(function () {
     generatePaymentRequestDocument({
       taskId: walletData.id,
       requestedAmount: requestedAmount,
+      paymentMethod: paymentMethod,
       bankName: bankName,
       accountNumber: accountNumber,
       ibanNumber: ibanNumber,
+      otherPaymentMethod: otherPaymentMethod,
       paymentRecipient: paymentRecipient,
       notes: notes,
       selectedTasks: selectedTasks,
@@ -704,6 +732,9 @@ $(function () {
         <h2>طلب سداد مالي</h2>
         <p>رقم الطلب: ${referenceNumber}</p>
         <p>التاريخ: ${formattedDate}</p>
+        <p style="color: #007bff; font-weight: bold;">
+          طريقة السداد: ${data.paymentMethod === 'bank_transfer' ? 'تحويل بنكي' : data.paymentMethod === 'other' ? 'طريقة أخرى' : 'غير محدد'}
+        </p>
       </div>
 
       <!-- Employee -->
@@ -728,13 +759,29 @@ $(function () {
         </p>
       </div>
 
-      <!-- Bank Info -->
-      <h3>بيانات البنك</h3>
+      <!-- Payment Method Info -->
+      ${
+        data.paymentMethod === 'bank_transfer'
+          ? `
+      <h3>بيانات التحويل البنكي</h3>
       <table>
-        <tr><td class="label">اسم البنك</td><td>${data.bankName}</td></tr>
-        <tr><td class="label">رقم الحساب</td><td>${data.accountNumber}</td></tr>
-        <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber}</td></tr>
+        <tr><td class="label">اسم البنك</td><td>${data.bankName || 'غير محدد'}</td></tr>
+        <tr><td class="label">رقم الحساب</td><td>${data.accountNumber || 'غير محدد'}</td></tr>
+        <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber || 'غير محدد'}</td></tr>
       </table>
+      `
+          : data.paymentMethod === 'other'
+            ? `
+      <h3>طريقة الدفع</h3>
+      <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f9f9f9;">
+        <p><strong>${data.otherPaymentMethod || 'غير محدد'}</strong></p>
+      </div>
+      `
+            : `
+      <h3>معلومات الدفع</h3>
+      <p>لم يتم تحديد طريقة الدفع</p>
+      `
+      }
 
       <!-- Trip Info -->
       <h3>بيانات المورد</h3>
@@ -746,14 +793,18 @@ $(function () {
       </table>
       ${
         data.notes
-          ? ` <h3>ملاحظات</h3>
-      <p> <strong>${data.notes || '<br>'}</strong> </p>`
-          : '<br>'
+          ? ` <h3>ملاحظات إضافية</h3>
+      <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f9f9f9; white-space: pre-line;">
+        <strong>${data.notes}</strong>
+      </div>`
+          : ''
       }
       ${
         tasksHtml
-          ? `<h3>المهام</h3>
-      <p> <strong>${tasksHtml || '<br>'}</strong> </p>`
+          ? `<h3>المهام المرتبطة</h3>
+      <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #f0f8ff; white-space: pre-line;">
+        <strong>${tasksHtml}</strong>
+      </div>`
           : ''
       }
 
@@ -793,6 +844,11 @@ $(function () {
         walletId: data.walletData.id,
         amount: data.requestedAmount,
         paymentRequestNumber: referenceNumber,
+        paymentMethod: data.paymentMethod,
+        bankName: data.bankName,
+        accountNumber: data.accountNumber,
+        ibanNumber: data.ibanNumber,
+        otherPaymentMethod: data.otherPaymentMethod,
         notes: data.notes || null,
         selectedTasks: data.selectedTasks || []
       });
@@ -881,6 +937,11 @@ $(function () {
       data: {
         amount: data.amount,
         payment_request_number: data.paymentRequestNumber,
+        payment_method: data.paymentMethod,
+        bank_name: data.bankName,
+        account_number: data.accountNumber,
+        iban_number: data.ibanNumber,
+        other_payment_method: data.otherPaymentMethod,
         notes: data.notes,
         selected_tasks: data.selectedTasks || [],
         _token: $('meta[name="csrf-token"]').attr('content')

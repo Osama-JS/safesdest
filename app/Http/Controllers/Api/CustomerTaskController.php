@@ -1010,4 +1010,118 @@ class CustomerTaskController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get map data for customer tasks
+     */
+    public function getMapData(Request $request)
+    {
+        try {
+            $customer = $request->user();
+
+            // جلب المهام النشطة (غير مكتملة وغير مفوترة)
+            $tasks = Task::where('customer_id', $customer->id)
+                ->whereNotIn('status', ['completed', 'invoiced', 'cancelled'])
+                ->with([
+                    'driver:id,name,longitude,altitude,last_seen_at,online,free,status',
+                    'taskPoints:id,task_id,type,latitude,longitude,address,contact_name,contact_phone,notes,scheduled_at'
+                ])
+                ->get();
+
+            $mapData = [];
+
+            foreach ($tasks as $task) {
+                $taskData = [
+                    'id' => $task->id,
+                    'title' => $task->title ?? "مهمة #{$task->id}",
+                    'status' => $task->status,
+                    'driver_id' => $task->driver_id,
+                    'driver_name' => $task->driver ? $task->driver->name : null,
+                    'driver_latitude' => $task->driver ? $task->driver->altitude : null, // altitude stores latitude
+                    'driver_longitude' => $task->driver ? $task->driver->longitude : null,
+                    'driver_last_seen' => $task->driver ? $task->driver->last_seen_at : null,
+                    'points' => $task->taskPoints->map(function ($point) {
+                        return [
+                            'id' => $point->id,
+                            'task_id' => $point->task_id,
+                            'type' => $point->type,
+                            'latitude' => $point->latitude,
+                            'longitude' => $point->longitude,
+                            'address' => $point->address,
+                            'contact_name' => $point->contact_name,
+                            'contact_phone' => $point->contact_phone,
+                            'notes' => $point->notes,
+                            'scheduled_at' => $point->scheduled_at,
+                        ];
+                    }),
+                    'created_at' => $task->created_at,
+                    'updated_at' => $task->updated_at,
+                    'customer_notes' => $task->notes,
+                    'estimated_price' => $task->price,
+                ];
+
+                $mapData[] = $taskData;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $mapData,
+                'message' => 'Map data retrieved successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve map data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get driver locations for customer tasks
+     */
+    public function getDriverLocations(Request $request)
+    {
+        try {
+            $customer = $request->user();
+
+            // جلب السائقين المعينين للمهام النشطة للعميل
+            $drivers = Driver::whereHas('tasks', function ($query) use ($customer) {
+                $query->where('customer_id', $customer->id)
+                      ->whereNotIn('status', ['completed', 'invoiced', 'cancelled']);
+            })
+            ->where('online', true)
+            ->whereNotNull('longitude')
+            ->whereNotNull('altitude')
+            ->select('id', 'name', 'longitude', 'altitude', 'last_seen_at', 'online', 'free', 'status')
+            ->get();
+
+            $driverLocations = $drivers->map(function ($driver) {
+                return [
+                    'driver_id' => $driver->id,
+                    'driver_name' => $driver->name,
+                    'latitude' => $driver->altitude, // altitude field stores latitude
+                    'longitude' => $driver->longitude,
+                    'last_seen' => $driver->last_seen_at,
+                    'is_online' => $driver->online,
+                    'is_free' => $driver->free,
+                    'status' => $driver->status,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $driverLocations,
+                'message' => 'Driver locations retrieved successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve driver locations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

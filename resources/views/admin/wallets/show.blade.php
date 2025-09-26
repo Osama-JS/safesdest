@@ -326,52 +326,80 @@
                                                 <span class="requested_amount-error text-error"></span>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label" for="bankName">* {{ __('Bank Name') }}</label>
-
-                                                <select name="bank_name" id="bankName" class="form-select">
-                                                    <option value="">{{ __('Select Bank') }}</option>
-                                                    <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
-                                                    </option>
-                                                    <option value="بنك الراجحي">بنك الراجحي</option>
-                                                    <option value="بنك الرياض">بنك الرياض</option>
-                                                    <option value="البنك السعودي للاستثمار">البنك السعودي
-                                                        للاستثمار</option>
-                                                    <option value="البنك السعودي الفرنسي">البنك السعودي
-                                                        الفرنسي</option>
-                                                    <option value="البنك السعودي البريطاني">البنك السعودي
-                                                        البريطاني (ساب)</option>
-                                                    <option value="بنك العربي الوطني">بنك العربي الوطني
-                                                    </option>
-                                                    <option value="بنك سامبا">بنك سامبا</option>
-                                                    <option value="البنك الأول">البنك الأول</option>
-                                                    <option value="بنك الجزيرة">بنك الجزيرة</option>
-                                                    <option value="بنك الإنماء">بنك الإنماء</option>
-                                                    <option value="البنك العربي">البنك العربي</option>
-                                                    <option value="other">{{ __('Other') }}</option>
+                                                <label class="form-label" for="paymentMethod">*
+                                                    {{ __('Payment Method') }}</label>
+                                                <select name="payment_method" id="paymentMethod" class="form-select"
+                                                    required>
+                                                    <option value="">{{ __('Select Payment Method') }}</option>
+                                                    <option value="bank_transfer">{{ __('Bank Transfer') }}</option>
+                                                    <option value="other">{{ __('Other Method') }}</option>
                                                 </select>
-                                                <input type="text" class="form-control mt-2" id="customBankName"
-                                                    name="custom_bank_name" placeholder="{{ __('Enter bank name') }}"
-                                                    style="display: none;">
-                                                <span class="bank_name-error text-danger text-error"></span>
+                                                <span class="payment_method-error text-error"></span>
                                             </div>
 
-                                            <div class="mb-3">
-                                                <label class="form-label" for="accountNumber">*
-                                                    {{ __('Account Number') }}</label>
-                                                <input type="text" class="form-control" id="accountNumber"
-                                                    name="account_number" placeholder="1234567890" minlength="8" required>
-                                                <span class="account_number-error text-danger text-error"></span>
-                                            </div>
+                                            <!-- Bank Transfer Fields -->
+                                            <div id="bankTransferFields" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="bankName">{{ __('Bank Name') }}
+                                                        ({{ __('Optional') }})</label>
 
-                                            <div class="mb-3">
-                                                <label class="form-label" for="ibanNumber">* {{ __('IBAN Number') }}</label>
-                                                <input type="text" class="form-control" id="ibanNumber"
-                                                    name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
-                                                    maxlength="29" required>
-                                                <div class="form-text">
-                                                    <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                                    <select name="bank_name" id="bankName" class="form-select">
+                                                        <option value="">{{ __('Select Bank') }}</option>
+                                                        <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                        </option>
+                                                        <option value="بنك الراجحي">بنك الراجحي</option>
+                                                        <option value="بنك الرياض">بنك الرياض</option>
+                                                        <option value="البنك السعودي للاستثمار">البنك السعودي
+                                                            للاستثمار</option>
+                                                        <option value="البنك السعودي الفرنسي">البنك السعودي
+                                                            الفرنسي</option>
+                                                        <option value="البنك السعودي البريطاني">البنك السعودي
+                                                            البريطاني (ساب)</option>
+                                                        <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                        </option>
+                                                        <option value="بنك سامبا">بنك سامبا</option>
+                                                        <option value="البنك الأول">البنك الأول</option>
+                                                        <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                        <option value="بنك الإنماء">بنك الإنماء</option>
+                                                        <option value="البنك العربي">البنك العربي</option>
+                                                        <option value="other">{{ __('Other') }}</option>
+                                                    </select>
+                                                    <input type="text" class="form-control mt-2" id="customBankName"
+                                                        name="custom_bank_name" placeholder="{{ __('Enter bank name') }}"
+                                                        style="display: none;">
+                                                    <span class="bank_name-error text-danger text-error"></span>
                                                 </div>
-                                                <span class="iban_number-error text-danger text-error"></span>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="accountNumber">
+                                                        {{ __('Account Number') }} ({{ __('Optional') }})</label>
+                                                    <input type="text" class="form-control" id="accountNumber"
+                                                        name="account_number" placeholder="1234567890" minlength="8">
+                                                    <span class="account_number-error text-danger text-error"></span>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="ibanNumber">
+                                                        {{ __('IBAN Number') }} ({{ __('Optional') }})</label>
+                                                    <input type="text" class="form-control" id="ibanNumber"
+                                                        name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
+                                                        maxlength="29">
+                                                    <div class="form-text">
+                                                        <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                                    </div>
+                                                    <span class="iban_number-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Other Payment Method Field -->
+                                            <div id="otherPaymentField" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="otherPaymentMethod">*
+                                                        {{ __('Payment Method Details') }}</label>
+                                                    <textarea class="form-control" id="otherPaymentMethod" name="other_payment_method" rows="3"
+                                                        placeholder="{{ __('مثال: عهدة إلى الأخ فلان يسلمها إلى السائق محمد فلان') }}"></textarea>
+                                                    <span class="other_payment_method-error text-error"></span>
+                                                </div>
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label" for="notes">{{ __('Notes') }}</label>

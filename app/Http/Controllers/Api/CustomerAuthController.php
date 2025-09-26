@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Customer;
-use App\Models\Form_Template;
-use App\Models\Form_Field;
-use App\Models\Email_Verifications;
-use App\Models\Email_Verification_Resends;
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\admin\WalletsController;
-use App\Helpers\FileHelper;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 use Exception;
+use Carbon\Carbon;
+use App\Models\Customer;
+use App\Models\Form_Field;
+use App\Helpers\FileHelper;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\Form_Template;
+use Illuminate\Support\Facades\DB;
+use App\Models\Email_Verifications;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Validator;
+use App\Models\Email_Verification_Resends;
+use App\Http\Controllers\admin\WalletsController;
 
 class CustomerAuthController extends Controller
 {
@@ -27,18 +28,22 @@ class CustomerAuthController extends Controller
      */
     public function login(Request $request)
     {
+        Log::alert("start Login");
+
         try {
             // Validate request
             $validator = Validator::make($request->all(), [
-                'login' => 'required|string',
+                'email' => 'required|string',
                 'password' => 'required|string|min:6',
-                'device_name' => 'required|string|max:255',
+                'device_name' => 'nullable|string|max:255',
                 'device_id' => 'nullable|string|max:255',
                 'fcm_token' => 'nullable|string',
                 'app_version' => 'nullable|string|max:50',
             ]);
 
             if ($validator->fails()) {
+                Log::alert($validator->errors());
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -47,9 +52,9 @@ class CustomerAuthController extends Controller
             }
 
             // Find customer by email or phone
-            $login = $request->login;
-            $customer = Customer::where('email', $login)
-                              ->orWhere('phone', $login)
+            $email = $request->email;
+            $customer = Customer::where('email', $email)
+                              ->orWhere('phone', $email)
                               ->first();
 
             // Check if customer exists and password is correct
@@ -69,7 +74,7 @@ class CustomerAuthController extends Controller
             }
 
             // Check if email is verified
-            if (!$customer->email_verified_at) {
+            if ($customer->email_verified_at) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Email not verified',
@@ -118,6 +123,8 @@ class CustomerAuthController extends Controller
             ]);
 
         } catch (Exception $e) {
+            Log::alert($e);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Login failed',

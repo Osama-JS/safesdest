@@ -33,7 +33,7 @@ Route::get('/health', function () {
 
 // Public routes (no authentication required)
 Route::prefix('customer')->group(function () {
-    
+
     // Authentication routes
     Route::post('/login', [CustomerAuthController::class, 'login'])
         ->middleware(['throttle:5,1'])
@@ -144,6 +144,13 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer.guard'])->group
 
     Route::post('/tasks/calculate-pricing', [CustomerTaskController::class, 'calculatePricing'])
         ->name('api.customer.tasks.pricing');
+
+    // Map and location routes
+    Route::get('/tasks/map-data', [CustomerTaskController::class, 'getMapData'])
+        ->name('api.customer.tasks.map-data');
+
+    Route::get('/drivers/locations', [CustomerTaskController::class, 'getDriverLocations'])
+        ->name('api.customer.drivers.locations');
 
     // Wallet management routes
     Route::get('/wallet', [CustomerWalletController::class, 'show'])

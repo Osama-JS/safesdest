@@ -105,6 +105,11 @@ class Task extends Model
         return $this->hasMany(Task_Points::class, 'task_id');
     }
 
+    public function taskPoints()
+    {
+        return $this->hasMany(Task_Points::class, 'task_id');
+    }
+
     public function history()
     {
         return $this->hasMany(Task_History::class, 'task_id');

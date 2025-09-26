@@ -676,5 +676,17 @@
   "Image ": "Image ",
   "View the image": "View the image",
   "close": "close",
-  "image": "image"
+  "image": "image",
+  "Include Payment Summary in PDF": "Include Payment Summary in PDF",
+  "Include Commission Information in PDF": "Include Commission Information in PDF",
+  "Team Tasks Report - Simple": "Team Tasks Report - Simple",
+  "Team Tasks Report": "Team Tasks Report",
+  "Payment Summary": "Payment Summary",
+  "Commission Information": "Commission Information",
+  "Paid Amount": "Paid Amount",
+  "Pending Amount": "Pending Amount",
+  "Unpaid Amount": "Unpaid Amount",
+  "Total Commission Deducted": "Total Commission Deducted",
+  "Original Total (Before Commission)": "Original Total (Before Commission)",
+  "Team Earnings": "Team Earnings"
 }

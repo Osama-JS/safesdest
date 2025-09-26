@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
 use App\Helpers\IpHelper;
+use Illuminate\Support\Str;
 
 class WalletsController extends Controller
 {
@@ -485,7 +486,7 @@ class WalletsController extends Controller
               'user'        => $val->user ? $val->user->name : 'automatic',
               'task'        => $val->task_id ?? '',
               'clearance'        => $val->clearance_id ?? '',
-              'image'       => $val->image ? ($val->image) : '',
+              'image' => $val->image ? (Str::startsWith($val->image, 'storage/') ? $val->image : 'storage/' . $val->image) : '',
               'sequence'    => $val->sequence,
               'status'      => (int) $val->status, // Ensure it's integer
               'created_at'  => $val->created_at->format('Y-m-d H:i'),
@@ -715,6 +716,11 @@ class WalletsController extends Controller
             $validator = Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:0.01',
                 'payment_request_number' => 'required|string|max:50',
+                'payment_method' => 'required|in:bank_transfer,other',
+                'bank_name' => 'nullable|string|max:255',
+                'account_number' => 'nullable|string|max:50',
+                'iban_number' => 'nullable|string|max:34',
+                'other_payment_method' => 'nullable|string|max:1000',
                 'notes' => 'nullable|string|max:1000',
                 'selected_tasks' => 'nullable|array',
                 'selected_tasks.*' => 'integer|exists:tasks,id',
@@ -748,9 +754,36 @@ class WalletsController extends Controller
                 ]);
             }
 
-            // معالجة المهام المحددة وتحديث الملاحظات
+            // معالجة طريقة الدفع والملاحظات
             $finalNotes = $request->notes ?? '';
 
+            // إضافة معلومات طريقة الدفع
+            if ($request->payment_method === 'other' && $request->other_payment_method) {
+                if (!empty($finalNotes)) {
+                    $finalNotes .= "\n\n";
+                }
+                $finalNotes .= "طريقة الدفع: " . $request->other_payment_method;
+            } elseif ($request->payment_method === 'bank_transfer') {
+                $bankInfo = [];
+                if ($request->bank_name) {
+                    $bankInfo[] = "البنك: " . $request->bank_name;
+                }
+                if ($request->account_number) {
+                    $bankInfo[] = "رقم الحساب: " . $request->account_number;
+                }
+                if ($request->iban_number) {
+                    $bankInfo[] = "الآيبان: " . $request->iban_number;
+                }
+
+                if (!empty($bankInfo)) {
+                    if (!empty($finalNotes)) {
+                        $finalNotes .= "\n\n";
+                    }
+                    $finalNotes .= "معلومات التحويل البنكي:\n" . implode("\n", $bankInfo);
+                }
+            }
+
+            // معالجة المهام المحددة
             if ($request->selected_tasks && count($request->selected_tasks) > 0) {
                 // التحقق من أن المهام تنتمي للسائق
                 $tasks = Task::whereIn('id', $request->selected_tasks)
@@ -864,7 +897,7 @@ class WalletsController extends Controller
                         'id' => $task->id,
                         'text' => "مهمة #{$task->id} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
                         'status' => $task->status,
-                        'total_price' => $task->total_price,
+                        'total_price' => $task->total_price - $task->commission,
                         'pickup_address' => $task->pickup->address ?? 'عنوان غير محدد',
                         'delivery_address' => $task->delivery->address ?? 'عنوان غير محدد'
                     ];

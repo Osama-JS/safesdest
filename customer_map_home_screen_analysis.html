@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحليل وتصميم الشاشة الرئيسية بالخريطة - SafeDest Customer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #D32F2F 0%, #FF5722 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #D32F2F 0%, #FF5722 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #D32F2F;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #FF5722;
+            padding-bottom: 10px;
+        }
+
+        .analysis-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 6px solid #D32F2F;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .analysis-card h3 {
+            color: #D32F2F;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .feasibility {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 6px solid #28a745;
+            margin: 20px 0;
+        }
+
+        .challenge {
+            background: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 6px solid #ffc107;
+            margin: 20px 0;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #FF5722;
+            text-align: center;
+        }
+
+        .feature-item .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .implementation-steps {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 6px solid #2196f3;
+            margin: 20px 0;
+        }
+
+        .api-endpoint {
+            background: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #9c27b0;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #eee;
+        }
+
+        ul, ol {
+            padding-right: 25px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .tech-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ تحليل وتصميم الشاشة الرئيسية بالخريطة</h1>
+            <p>تحليل شامل لمتطلبات تطوير شاشة رئيسية تفاعلية بخريطة MapBox</p>
+        </div>
+
+        <div class="content">
+            <!-- Requirements Analysis -->
+            <div class="section">
+                <h2>📋 تحليل المتطلبات</h2>
+                
+                <div class="analysis-card">
+                    <h3>🎯 المتطلبات الأساسية</h3>
+                    <ul>
+                        <li><strong>خريطة MapBox:</strong> تمتد على كامل الشاشة عدا الشريط السفلي</li>
+                        <li><strong>عناصر طافية:</strong> اسم المستخدم، أيقونة الإعدادات، أيقونة الإشعارات</li>
+                        <li><strong>عرض المهام النشطة:</strong> المهام غير المكتملة وغير المفوترة</li>
+                        <li><strong>نقاط ذكية:</strong> نقاط زرقاء للمهام بدون سائق، أيقونة شاحنة للمهام المعينة</li>
+                        <li><strong>معرف المهمة:</strong> عرض ID المهمة فوق كل نقطة</li>
+                        <li><strong>Bottom Sheet:</strong> عرض تفاصيل المهمة عند الضغط على النقطة</li>
+                    </ul>
+                </div>
+
+                <div class="analysis-card">
+                    <h3>🔍 تحليل البيانات المطلوبة</h3>
+                    <div class="highlight">
+                        <strong>من تحليل قاعدة البيانات:</strong>
+                        <ul>
+                            <li><strong>جدول tasks:</strong> يحتوي على driver_id, status, customer_id</li>
+                            <li><strong>جدول tasks_points:</strong> يحتوي على latitude, longitude, type (pickup/delivery)</li>
+                            <li><strong>جدول drivers:</strong> يحتوي على longitude, altitude (latitude), last_seen_at</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Feasibility -->
+            <div class="section">
+                <h2>⚙️ الجدوى التقنية</h2>
+                
+                <div class="feasibility">
+                    <h3>✅ إمكانية التطبيق: عالية جداً</h3>
+                    <ul>
+                        <li><strong>MapBox متوفر:</strong> المشروع يستخدم MapBox بالفعل في الـ Backend</li>
+                        <li><strong>APIs جاهزة:</strong> يوجد APIs لجلب المهام وتتبع السائقين</li>
+                        <li><strong>Dependencies موجودة:</strong> google_maps_flutter و geolocator متوفرة</li>
+                        <li><strong>البيانات متاحة:</strong> جميع البيانات المطلوبة موجودة في قاعدة البيانات</li>
+                    </ul>
+                </div>
+
+                <div class="challenge">
+                    <h3>⚠️ التحديات المتوقعة</h3>
+                    <ul>
+                        <li><strong>تحديث الموقع في الوقت الفعلي:</strong> يحتاج WebSocket أو Polling</li>
+                        <li><strong>أداء الخريطة:</strong> مع عدد كبير من النقاط</li>
+                        <li><strong>MapBox vs Google Maps:</strong> قد نحتاج لتغيير إلى MapBox Flutter</li>
+                        <li><strong>أيقونات مخصصة:</strong> تحتاج تصميم وتحسين</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Technical Stack -->
+            <div class="section">
+                <h2>🛠️ المكدس التقني المطلوب</h2>
+                
+                <div class="tech-stack">
+                    <div class="tech-item">
+                        <h4>📱 Flutter Packages</h4>
+                        <ul>
+                            <li>mapbox_gl (بدلاً من google_maps)</li>
+                            <li>geolocator (موجود)</li>
+                            <li>permission_handler (موجود)</li>
+                            <li>http (للـ APIs)</li>
+                        </ul>
+                    </div>
+                    <div class="tech-item">
+                        <h4>🌐 Backend APIs</h4>
+                        <ul>
+                            <li>GET /customer/tasks/active</li>
+                            <li>GET /customer/tasks/{id}/details</li>
+                            <li>GET /driver/{id}/location</li>
+                            <li>WebSocket للتحديثات الفورية</li>
+                        </ul>
+                    </div>
+                    <div class="tech-item">
+                        <h4>🗺️ MapBox Integration</h4>
+                        <ul>
+                            <li>MapBox Access Token</li>
+                            <li>Custom Markers</li>
+                            <li>Clustering للنقاط المتقاربة</li>
+                            <li>Real-time Updates</li>
+                        </ul>
+                    </div>
+                    <div class="tech-item">
+                        <h4>🎨 UI Components</h4>
+                        <ul>
+                            <li>Floating Action Buttons</li>
+                            <li>Bottom Sheet</li>
+                            <li>Custom Markers</li>
+                            <li>Loading States</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Implementation Plan -->
+            <div class="section">
+                <h2>📝 خطة التطبيق</h2>
+                
+                <div class="implementation-steps">
+                    <h3>🚀 المرحلة الأولى: إعداد الأساسيات</h3>
+                    <ol>
+                        <li><strong>إضافة MapBox Flutter Package:</strong>
+                            <div class="code-block">
+dependencies:
+  mapbox_gl: ^0.16.0
+  # Remove google_maps_flutter if not needed elsewhere
+                            </div>
+                        </li>
+                        <li><strong>إنشاء نماذج البيانات:</strong>
+                            <ul>
+                                <li>TaskMapData model</li>
+                                <li>DriverLocation model</li>
+                                <li>MapMarker model</li>
+                            </ul>
+                        </li>
+                        <li><strong>إعداد MapBox Token:</strong> في app_config.dart</li>
+                    </ol>
+                </div>
+
+                <div class="implementation-steps">
+                    <h3>🗺️ المرحلة الثانية: تطوير الخريطة</h3>
+                    <ol>
+                        <li><strong>إنشاء MapHomeScreen:</strong> شاشة رئيسية جديدة بالخريطة</li>
+                        <li><strong>إضافة العناصر الطافية:</strong> اسم المستخدم والأيقونات</li>
+                        <li><strong>تطبيق Custom Markers:</strong> نقاط زرقاء وأيقونات الشاحنات</li>
+                        <li><strong>إضافة Labels:</strong> عرض ID المهمة فوق كل نقطة</li>
+                    </ol>
+                </div>
+
+                <div class="implementation-steps">
+                    <h3>📡 المرحلة الثالثة: ربط البيانات</h3>
+                    <ol>
+                        <li><strong>إنشاء MapService:</strong> لإدارة بيانات الخريطة</li>
+                        <li><strong>تطوير APIs جديدة:</strong> لجلب المهام النشطة مع المواقع</li>
+                        <li><strong>تطبيق Real-time Updates:</strong> تحديث المواقع كل 30 ثانية</li>
+                        <li><strong>إضافة Bottom Sheet:</strong> لعرض تفاصيل المهام</li>
+                    </ol>
+                </div>
+
+                <div class="implementation-steps">
+                    <h3>🎨 المرحلة الرابعة: التحسينات والتفاعل</h3>
+                    <ol>
+                        <li><strong>تحسين الأداء:</strong> Clustering للنقاط المتقاربة</li>
+                        <li><strong>إضافة Animations:</strong> للانتقالات والتحديثات</li>
+                        <li><strong>تطبيق Error Handling:</strong> للحالات الاستثنائية</li>
+                        <li><strong>اختبار شامل:</strong> على أجهزة مختلفة</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Required APIs -->
+            <div class="section">
+                <h2>🌐 APIs المطلوبة</h2>
+                
+                <div class="analysis-card">
+                    <h3>📡 APIs جديدة مطلوبة</h3>
+                    
+                    <div class="api-endpoint">
+                        <strong>GET /api/customer/tasks/map-data</strong><br>
+                        جلب المهام النشطة مع المواقع الجغرافية
+                    </div>
+                    
+                    <div class="api-endpoint">
+                        <strong>GET /api/customer/drivers/locations</strong><br>
+                        جلب مواقع السائقين للمهام المعينة
+                    </div>
+                    
+                    <div class="api-endpoint">
+                        <strong>WebSocket: /ws/customer/map-updates</strong><br>
+                        تحديثات فورية لمواقع السائقين والمهام
+                    </div>
+                </div>
+
+                <div class="analysis-card">
+                    <h3>🔄 APIs موجودة يمكن استخدامها</h3>
+                    <ul>
+                        <li><strong>/api/customer/tasks:</strong> لجلب قائمة المهام</li>
+                        <li><strong>/api/customer/tasks/{id}:</strong> لتفاصيل المهمة</li>
+                        <li><strong>/api/customer/tasks/{id}/track:</strong> لتتبع المهمة</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Expected Results -->
+            <div class="section">
+                <h2>🎯 النتائج المتوقعة</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="icon">🗺️</div>
+                        <h4>خريطة تفاعلية</h4>
+                        <p>عرض جميع المهام النشطة على خريطة MapBox احترافية</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📍</div>
+                        <h4>نقاط ذكية</h4>
+                        <p>تمييز المهام حسب الحالة بألوان وأيقونات مختلفة</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">🚛</div>
+                        <h4>تتبع السائقين</h4>
+                        <p>عرض مواقع السائقين الحالية للمهام المعينة</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📱</div>
+                        <h4>تفاعل سهل</h4>
+                        <p>عرض تفاصيل المهام في Bottom Sheet عند الضغط</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="section">
+                <h2>⏰ الجدول الزمني المقترح</h2>
+                
+                <div class="analysis-card">
+                    <h3>📅 تقدير الوقت: 5-7 أيام عمل</h3>
+                    <ul>
+                        <li><strong>اليوم 1-2:</strong> إعداد MapBox وتطوير الشاشة الأساسية</li>
+                        <li><strong>اليوم 3-4:</strong> تطوير APIs وربط البيانات</li>
+                        <li><strong>اليوم 5-6:</strong> إضافة التفاعلات والـ Bottom Sheet</li>
+                        <li><strong>اليوم 7:</strong> اختبار وتحسينات نهائية</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>🚀 الخلاصة: المشروع قابل للتطبيق بنجاح عالي!</strong></p>
+            <p>جميع المتطلبات التقنية متوفرة والبيانات جاهزة في قاعدة البيانات</p>
+            <p style="color: #666; font-size: 0.9rem; margin-top: 15px;">
+                تاريخ التحليل: 17 سبتمبر 2025
+            </p>
+        </div>
+    </div>
+</body>
+</html>

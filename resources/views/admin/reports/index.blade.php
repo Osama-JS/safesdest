@@ -95,7 +95,7 @@
                 <div class="card report-card h-100">
                     <div class="card-body text-center">
                         <div class="report-icon primary mx-auto">
-                            <i class="ti ti-truck"></i>
+                            <i class="ti ti-user-circle"></i>
                         </div>
                         <h5 class="card-title">{{ __('Customer Tasks Report') }}</h5>
                         <p class="card-text text-muted">
@@ -115,12 +115,12 @@
                 </div>
             </div>
 
-            {{-- <!-- Driver Tasks Report -->
+            <!-- Driver Tasks Report -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100">
                     <div class="card-body text-center">
                         <div class="report-icon success mx-auto">
-                            <i class="ti ti-user-check"></i>
+                            <i class="ti ti-steering-wheel"></i>
                         </div>
                         <h5 class="card-title">{{ __('Driver Tasks Report') }}</h5>
                         <p class="card-text text-muted">
@@ -129,7 +129,7 @@
                         <div class="mt-3">
                             <span class="badge bg-success me-2">{{ __('Excel Export') }}</span>
                             <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
-                            <span class="badge bg-warning">{{ __('Commission Calc') }}</span>
+                            {{-- <span class="badge bg-warning">{{ __('Commission Calc') }}</span> --}}
                         </div>
                         <div class="mt-4">
                             <a href="{{ route('admin.reports.driver-tasks') }}" class="btn btn-success">
@@ -155,7 +155,7 @@
                         <div class="mt-3">
                             <span class="badge bg-info me-2">{{ __('Excel Export') }}</span>
                             <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
-                            <span class="badge bg-warning">{{ __('Commission Calc') }}</span>
+                            {{-- <span class="badge bg-warning">{{ __('Commission Calc') }}</span> --}}
                         </div>
                         <div class="mt-4">
                             <a href="{{ route('admin.reports.team-tasks') }}" class="btn btn-info">
@@ -165,7 +165,7 @@
                         </div>
                     </div>
                 </div>
-            </div> --}}
+            </div>
 
             <!-- Wallet Reports -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">

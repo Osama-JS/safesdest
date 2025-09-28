@@ -21,6 +21,7 @@ use App\Helpers\FileHelper;
 use App\Models\Tag_Pricing;
 use App\Models\Transaction;
 use App\Models\Task_History;
+use App\Models\Task_Points;
 use Illuminate\Http\Request;
 use App\Models\Form_Template;
 use App\Models\Tag_Customers;
@@ -32,6 +33,10 @@ use App\Models\Pricing_Customer;
 use App\Models\Pricing_Geofence;
 use App\Models\Pricing_Template;
 use App\Models\Wallet_Transaction;
+use App\Models\UserCommission;
+use App\Models\UserWallet;
+use App\Models\UserWalletTransaction;
+use App\Http\Controllers\admin\UserWalletsController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -52,7 +57,7 @@ class TasksController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
-        $this->middleware('permission:create_tasks', ['only' => ['store']]);
+        $this->middleware('permission:create_tasks', ['only' => ['store','duplicateTask']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
@@ -2440,6 +2445,9 @@ class TasksController extends Controller
                 ]);
             }
 
+            // حساب وتوزيع العمولات على المستخدمين
+            $this->calculateAndDistributeUserCommissions($task);
+
             // app(\App\Services\NotificationService::class)->send(
             //     'driver',
             //     $driver->id, // IDs المستلمين
@@ -2868,4 +2876,242 @@ class TasksController extends Controller
 
         dispatch(new SendEmailNotificationJob($emailData));
     }
+
+    /**
+     * حساب وتوزيع العمولات على المستخدمين عند إغلاق المهمة
+     */
+    private function calculateAndDistributeUserCommissions($task)
+    {
+        try {
+            // التحقق من وجود عميل للمهمة
+            if (!$task->customer_id) {
+                return;
+            }
+
+            // جلب العمولات النشطة للعميل
+            $userCommissions = UserCommission::where('customer_id', $task->customer_id)
+                ->where('status', true)
+                ->with('user')
+                ->get();
+
+            if ($userCommissions->isEmpty()) {
+                return;
+            }
+
+            // التحقق من وجود عمولة في المهمة
+            if ($task->commission <= 0) {
+                return;
+            }
+
+            $totalCalculatedCommissions = 0;
+            $commissionsToDistribute = [];
+
+            // حساب إجمالي العمولات المطلوبة
+            foreach ($userCommissions as $userCommission) {
+                $calculatedCommission = $userCommission->calculateCommission($task->commission);
+                $totalCalculatedCommissions += $calculatedCommission;
+
+                $commissionsToDistribute[] = [
+                    'user_commission' => $userCommission,
+                    'amount' => $calculatedCommission
+                ];
+            }
+
+            // التحقق من أن إجمالي العمولات لا يتجاوز عمولة المهمة
+            if ($totalCalculatedCommissions > $task->commission) {
+                Log::warning("User commissions total ({$totalCalculatedCommissions}) exceeds task commission ({$task->commission}) for task #{$task->id}");
+                return;
+            }
+
+            // توزيع العمولات على المستخدمين
+            foreach ($commissionsToDistribute as $commissionData) {
+                $userCommission = $commissionData['user_commission'];
+                $amount = $commissionData['amount'];
+                $user = $userCommission->user;
+
+                if (!$user) {
+                    continue;
+                }
+
+                // إنشاء أو جلب محفظة المستخدم
+                $userWallet = $user->userWallet;
+                if (!$userWallet) {
+                    $userWalletController = new UserWalletsController();
+                    $userWallet = $userWalletController->createWallet($user->id, true);
+                }
+
+                // ✅ التحقق من أن المستخدم لم يستلم عمولته لهذه المهمة من قبل
+                $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $userWallet->id)
+                    ->where('task_id', $task->id)
+                    ->where('transaction_type', 'credit')
+                    ->exists();
+
+                if ($alreadyReceived) {
+                    Log::info("User #{$user->id} has already received commission for task #{$task->id}, skipping...");
+                    continue; // تجاوز المستخدم ولا تكرر العملية
+                }
+
+                // إضافة العمولة إلى محفظة المستخدم
+                UserWalletTransaction::create([
+                    'user_wallet_id' => $userWallet->id,
+                    'amount' => $amount,
+                    'description' => "Commission from Task: #{$task->id} - Customer: {$task->owner->name}",
+                    'transaction_type' => 'credit',
+                    'task_id' => $task->id,
+                    'user_id' => Auth::user()->id,
+                    'status' => true,
+                    'maturity_time' => now(),
+                ]);
+
+                Log::info("Commission of {$amount} SAR added to user #{$user->id} wallet for task #{$task->id}");
+            }
+
+            Log::info("Successfully distributed {$totalCalculatedCommissions} SAR in commissions for task #{$task->id}");
+
+        } catch (Exception $e) {
+            Log::error("Error calculating user commissions for task #{$task->id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Duplicate a task with all related data and files
+     */
+    public function duplicateTask(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+
+            // استرجاع المهمة الأصلية مع جميع العلاقات
+            $originalTask = Task::with(['points', 'ad'])->findOrFail($request->id);
+
+            // إنشاء مصفوفة البيانات الجديدة للمهمة
+            $newTaskData = $originalTask->toArray();
+
+            // إزالة الحقول التي لا نريد تكرارها
+            unset(
+                $newTaskData['id'],
+                $newTaskData['created_at'],
+                $newTaskData['updated_at'],
+                $newTaskData['points'],
+                $newTaskData['ad']
+            );
+
+            // تعيين القيم الجديدة للحقول المطلوبة
+            $newTaskData['driver_id'] = null;
+            $newTaskData['user_id'] = Auth::user()->id;
+            $newTaskData['status'] = 'in_progress';
+            $newTaskData['payment_status'] = 'waiting';
+            $newTaskData['payment_paid'] = 'pending';
+            $newTaskData['closed'] = false;
+            $newTaskData['closed_at'] = null;
+            $newTaskData['completed_at'] = null;
+            $newTaskData['delivery_note'] = null;
+            $newTaskData['delivery_number'] = null;
+            $newTaskData['distribution_attempts'] = 0;
+            $newTaskData['last_attempt_at'] = null;
+            $newTaskData['pending_driver_id'] = null;
+            $newTaskData['payment_pending_amount'] = null;
+
+            // معالجة additional_data وتكرار الملفات
+            $newAdditionalData = [];
+            if ($originalTask->additional_data && is_array($originalTask->additional_data)) {
+                foreach ($originalTask->additional_data as $key => $field) {
+                    if (in_array($field['type'], ['file', 'image', 'file_expiration_date', 'file_with_text']) && !empty($field['value'])) {
+                        // تكرار الملف
+                        $newFilePath = FileHelper::duplicateFile($field['value'], 'tasks/duplicated/files');
+
+                        if ($newFilePath) {
+                            $newAdditionalData[$key] = $field;
+                            $newAdditionalData[$key]['value'] = $newFilePath;
+                        } else {
+                            // إذا فشل تكرار الملف، نحتفظ بالبيانات بدون الملف
+                            $newAdditionalData[$key] = $field;
+                            $newAdditionalData[$key]['value'] = null;
+                        }
+                    } else {
+                        // نسخ البيانات العادية كما هي
+                        $newAdditionalData[$key] = $field;
+                    }
+                }
+            }
+            $newTaskData['additional_data'] = $newAdditionalData;
+
+            // إنشاء المهمة الجديدة
+            $newTask = Task::create($newTaskData);
+
+            if (!$newTask) {
+                throw new Exception('Failed to create new task');
+            }
+
+            // تكرار نقاط المهمة (tasks_points) مع الصور
+            if ($originalTask->points && $originalTask->points->count() > 0) {
+                foreach ($originalTask->points as $point) {
+                    $newPointData = $point->toArray();
+
+                    // إزالة الحقول التي لا نريد تكرارها
+                    unset($newPointData['id'], $newPointData['created_at'], $newPointData['updated_at']);
+
+                    // تعيين معرف المهمة الجديدة
+                    $newPointData['task_id'] = $newTask->id;
+
+                    // تكرار الصورة إذا وجدت
+                    if ($point->image) {
+                        $newImagePath = FileHelper::duplicateFile($point->image, 'tasks/duplicated/points');
+                        $newPointData['image'] = $newImagePath ?: null;
+                    }
+
+                    // إنشاء النقطة الجديدة
+                    $newTask->points()->create($newPointData);
+                }
+            }
+
+            // تكرار إعلان المهمة (tasks_ads) إذا وجد
+            if ($originalTask->ad) {
+                $newAdData = $originalTask->ad->toArray();
+
+                // إزالة الحقول التي لا نريد تكرارها
+                unset($newAdData['id'], $newAdData['created_at'], $newAdData['updated_at']);
+
+                // تعيين القيم الجديدة
+                $newAdData['task_id'] = $newTask->id;
+                $newAdData['status'] = 'running';
+                $newAdData['closed_at'] = null;
+
+                // إنشاء الإعلان الجديد
+                $newTask->ad()->create($newAdData);
+            }
+
+            // إنشاء سجل تاريخي جديد
+            Task_History::create([
+                'task_id' => $newTask->id,
+                'action_type' => 'created',
+                'description' => 'Task duplicated from Task #' . $originalTask->id . ' by ' . Auth::user()->name,
+                'user_id' => Auth::user()->id,
+                'driver_id' => null,
+                'ip' => $request->ip()
+            ]);
+
+            DB::commit();
+
+            Log::info("Task #{$originalTask->id} successfully duplicated to Task #{$newTask->id} by user " . Auth::user()->id);
+
+            return response()->json([
+                'status' => 1,
+                'message' => __('Task duplicated successfully'),
+                'task_id' => $newTask->id,
+                'original_task_id' => $originalTask->id
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error("Error duplicating task #{$request->id}: " . $e->getMessage());
+
+            return response()->json([
+                'status' => 2,
+                'message' => __('Error duplicating task: ') . $e->getMessage()
+            ]);
+        }
+    }
+
 }

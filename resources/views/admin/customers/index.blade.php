@@ -468,4 +468,53 @@
              </div>
          </div>
      </div>
+
+
+     <!-- Commissions Management Modal -->
+     @can('manage_beneficiaries')
+         <div class="modal fade" id="commissionsModal" tabindex="-1" aria-labelledby="commissionsModalTitle"
+             aria-hidden="true">
+             <div class="modal-dialog modal-xl">
+                 <div class="modal-content">
+                     <div class="modal-header">
+                         <h5 class="modal-title" id="commissionsModalTitle">{{ __('Manage Commissions') }}</h5>
+                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                     </div>
+                     <form id="commissionsForm">
+                         @csrf
+                         <div class="modal-body">
+                             <input type="hidden" id="current_customer_id" name="customer_id">
+
+                             <div class="d-flex justify-content-between align-items-center mb-4">
+                                 <h6 class="mb-0">{{ __('User Commissions') }}</h6>
+                                 <button type="button" id="add-commission" class="btn btn-outline-primary ">
+                                     <i class="ti ti-plus me-1"></i>
+                                     {{ __('Add Commission') }}
+                                 </button>
+                             </div>
+
+                             <div id="commissions-container">
+                                 <!-- Commissions will be loaded here -->
+                             </div>
+
+                             <div class="alert alert-info mt-3">
+                                 <i class="ti ti-info-circle me-2"></i>
+                                 {{ __('Note: Total commissions should not exceed the task commission amount when tasks are closed.') }}
+                             </div>
+                         </div>
+                         <div class="modal-footer">
+                             <button type="button" class="btn btn-secondary"
+                                 data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                             <button type="submit" class="btn btn-primary">
+                                 <i class="ti ti-device-floppy me-1"></i>
+                                 {{ __('Save Commissions') }}
+                             </button>
+                         </div>
+                     </form>
+                 </div>
+             </div>
+         </div>
+     @endcan
+
+
  @endsection

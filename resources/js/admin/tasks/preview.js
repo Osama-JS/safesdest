@@ -383,14 +383,15 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" >Edit Task</a></li>
-                    ${task.data.status !== 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" >Edit Task Pricing</a></li>` : ``}
-                    ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" >Edit Task Ad</a></li>` : ``}
-                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  >Tracking Task</a></li>` : ``}
-                    <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  >Assign Driver</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Change Status</a></li>
-                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}">Add Note</a></li>
-                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}">download task status report</a></li>
+                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>Edit Task</a></li>
+                    ${task.data.status !== 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>Edit Task Pricing</a></li>` : ``}
+                    ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>Edit Task Ad</a></li>` : ``}
+                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  ><i class="ti ti-map-pin me-2"></i>Tracking Task</a></li>` : ``}
+                    <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  ><i class="ti ti-steering-wheel me-2"></i>Assign Driver</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-switch-horizontal me-2"></i>Change Status</a></li>
+                    <li><a href="javascript:;" class="dropdown-item duplicate-record" data-id="${task.data.id}" data-name="${task.data.id}"><i class="ti ti-copy me-2"></i>Duplicate Task</a></li>
+                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-note me-2"></i>Add Note</a></li>
+                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>download task status report</a></li>
 
                   </ul>
               </div>
@@ -445,7 +446,7 @@ $(function () {
                 </li>`
                     : ''
                 }
-                
+
                 ${driverInfo}
                 </ul>
                  <div class="divider text-start">
@@ -847,6 +848,25 @@ $(function () {
       method: 'POST'
     });
   });
+
+  $(document).on('click', '.duplicate-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+
+    const fields = `
+        <input type="hidden" name="id" value="${id}">
+        <p> Are you sure you want to duplicate this task? </p>
+              `;
+
+    showFormModal({
+      title: `Duplicate Task: ${name}`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/tasks/duplicate`,
+      method: 'POST'
+    });
+  });
+
   document.addEventListener('statusChange', function (event) {
     loadTasks();
   });

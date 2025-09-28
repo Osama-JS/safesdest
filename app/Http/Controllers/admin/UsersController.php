@@ -62,6 +62,12 @@ class UsersController extends Controller
 
     public function getData(Request $request)
     {
+        // If requesting all users for select dropdown
+        if ($request->has('all')) {
+            $users = User::select('id', 'name')->get();
+            return response()->json(['data' => $users]);
+        }
+
         $columns = [
           1 => 'id',
           2 => 'name',
@@ -122,6 +128,7 @@ class UsersController extends Controller
                 $nestedData['role'] = $user->role->name;
                 $nestedData['status'] = $user->status;
                 $nestedData['reset_password'] = $user->reset_password;
+                $nestedData['can_view_wallet'] = Auth::user()->can('view_beneficiaries_wallet');
 
                 $data[] = $nestedData;
             }

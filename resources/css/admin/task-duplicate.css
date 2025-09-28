@@ -1,0 +1,205 @@
+/**
+ * Task Duplicate Styles
+ * تنسيقات خاصة بميزة تكرار المهام
+ */
+
+/* زر التكرار الأساسي */
+.btn-duplicate {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-duplicate:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+.btn-duplicate:focus {
+    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+}
+
+/* زر التكرار الصغير */
+.btn-duplicate-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.2rem;
+}
+
+/* أيقونة التكرار */
+.duplicate-icon {
+    font-size: 1rem;
+    margin-right: 0.25rem;
+}
+
+/* حالة التحميل */
+.btn-duplicate.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.btn-duplicate.loading .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.1em;
+}
+
+/* عنصر قائمة التكرار */
+.dropdown-item.duplicate-item {
+    color: #17a2b8;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item.duplicate-item:hover {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+}
+
+.dropdown-item.duplicate-item i {
+    color: #17a2b8;
+    width: 1.2rem;
+    text-align: center;
+}
+
+/* رسائل التأكيد المخصصة */
+.duplicate-confirm-modal .modal-header {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.duplicate-confirm-modal .modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* مؤشر التقدم */
+.duplicate-progress {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.duplicate-progress-bar {
+    background-color: #17a2b8;
+    height: 0.5rem;
+    transition: width 0.3s ease;
+}
+
+/* رسائل الحالة */
+.duplicate-status {
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.duplicate-status.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.duplicate-status.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.duplicate-status.info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+/* تأثيرات الحركة */
+@keyframes duplicateSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.duplicate-success-animation {
+    animation: duplicateSuccess 0.6s ease-in-out;
+}
+
+/* تنسيقات responsive */
+@media (max-width: 768px) {
+    .btn-duplicate {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .duplicate-icon {
+        font-size: 0.9rem;
+        margin-right: 0.2rem;
+    }
+    
+    .btn-duplicate .btn-text {
+        display: none;
+    }
+}
+
+/* تنسيقات للوضع المظلم */
+@media (prefers-color-scheme: dark) {
+    .btn-duplicate {
+        background-color: #20c997;
+        border-color: #20c997;
+    }
+    
+    .btn-duplicate:hover {
+        background-color: #1aa085;
+        border-color: #198c73;
+    }
+    
+    .dropdown-item.duplicate-item {
+        color: #20c997;
+    }
+    
+    .dropdown-item.duplicate-item:hover {
+        background-color: #1a2332;
+        color: #20c997;
+    }
+}
+
+/* تنسيقات خاصة بالجداول */
+.table .btn-duplicate {
+    margin: 0 0.125rem;
+}
+
+.table .btn-group .btn-duplicate {
+    margin: 0;
+}
+
+/* تنسيقات tooltip */
+.tooltip.duplicate-tooltip .tooltip-inner {
+    background-color: #17a2b8;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.tooltip.duplicate-tooltip .tooltip-arrow::before {
+    border-top-color: #17a2b8;
+}
+
+/* تأثيرات التفاعل */
+.btn-duplicate:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.2);
+}
+
+/* حالة التعطيل */
+.btn-duplicate:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn-duplicate:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}

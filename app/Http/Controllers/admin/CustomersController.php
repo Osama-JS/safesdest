@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
 use App\Models\Task;
 use App\Models\Wallet;
+use Illuminate\Support\Facades\Auth;
 
 class CustomersController extends Controller
 {
@@ -112,8 +113,10 @@ class CustomersController extends Controller
               'role'       => $customer->role->name ?? "",
               'created_at' => $customer->created_at->format('Y-m-d H:i'),
               'status'     => $customer->status,
+              'can_commission' => Auth::user()->can('manage_beneficiaries')
             ];
         }
+
 
         return response()->json([
           'draw'            => intval($request->input('draw')),

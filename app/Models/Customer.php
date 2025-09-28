@@ -99,6 +99,35 @@ class Customer extends Authenticatable
     }
 
     /**
+     * العلاقة مع عمولات المستخدمين المرتبطين بهذا العميل
+     */
+    public function userCommissions()
+    {
+        return $this->hasMany(UserCommission::class, 'customer_id');
+    }
+
+    /**
+     * الحصول على المستخدمين الذين لديهم عمولات مع هذا العميل
+     */
+    public function usersWithCommissions()
+    {
+        return $this->belongsToMany(User::class, 'user_commissions', 'customer_id', 'user_id')
+            ->wherePivot('status', true)
+            ->withPivot('commission_type', 'commission_value', 'status');
+    }
+
+    /**
+     * الحصول على العمولات النشطة لهذا العميل
+     */
+    public function getActiveCommissions()
+    {
+        return $this->userCommissions()
+            ->where('status', true)
+            ->with('user')
+            ->get();
+    }
+
+    /**
      * Get additional data that customer is allowed to see
      * Similar to driver's getDriverVisibleAdditionalDataAttribute
      */

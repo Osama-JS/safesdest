@@ -135,6 +135,11 @@ class Task extends Model
         return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
     }
 
+
+    public function userWalletTransactions()
+    {
+        return $this->hasMany(UserWalletTransaction::class);
+    }
     /**
      * Get additional data that customer is allowed to see
      */

@@ -125,6 +125,11 @@
                     <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                     <span class="d-none d-sm-inline-block"> {{ __('Add New User') }}</span>
                 </button>
+
+                {{-- <button class="btn btn-outline-warning waves-effect waves-light mt-5 mx-4" id="generate-commissions">
+                    <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> {{ __('Generate Old Commissions') }}</span>
+                </button> --}}
             @endcan
 
         </div>

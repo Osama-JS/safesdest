@@ -92,6 +92,52 @@ class User extends Authenticatable
         return $this->belongsToMany(Customer::class);
     }
 
+    /**
+     * العلاقة مع عمولات المستخدم
+     */
+    public function commissions()
+    {
+        return $this->hasMany(UserCommission::class, 'user_id');
+    }
+
+    /**
+     * العلاقة مع محفظة المستخدم
+     */
+    public function userWallet()
+    {
+        return $this->hasOne(UserWallet::class, 'user_id');
+    }
+
+    /**
+     * العلاقة مع معاملات محفظة المستخدم
+     */
+    public function userWalletTransactions()
+    {
+        return $this->hasMany(UserWalletTransaction::class, 'user_id');
+    }
+
+    /**
+     * الحصول على العمولات النشطة للمستخدم مع عميل معين
+     */
+    public function getActiveCommissionsForCustomer($customerId)
+    {
+        return $this->commissions()
+            ->where('customer_id', $customerId)
+            ->where('status', true)
+            ->get();
+    }
+
+    /**
+     * التحقق من وجود عمولات للمستخدم مع عميل معين
+     */
+    public function hasCommissionsForCustomer($customerId)
+    {
+        return $this->commissions()
+            ->where('customer_id', $customerId)
+            ->where('status', true)
+            ->exists();
+    }
+
     public function tasks()
     {
         return $this->hasMany(Task::class, 'user_id');

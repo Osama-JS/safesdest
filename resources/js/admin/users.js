@@ -279,8 +279,8 @@ $(function () {
                   ${permissions['delete'] ? `<button class="btn btn-sm btn-icon delete-record btn-text-secondary rounded-pill waves-effect" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-trash"></i></button>` : ''}
                   <button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect dropdown-toggle hide-arrow" data-bs-toggle="dropdown"><i class="ti ti-dots-vertical"></i></button>
                   <div class="dropdown-menu dropdown-menu-end m-0">
-                  <a href="${userView}" class="dropdown-item">${__('View')}</a>
-                  <a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}">${__('change status')}</a>
+                  ${full['can_view_wallet'] ? `<a href="${baseUrl}admin/users/${full['id']}/wallet" class="dropdown-item"><i class="ti ti-wallet me-2"></i>${__('View Wallet')}</a>` : ''}
+                  <a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}"><i class="ti ti-switch-horizontal me-2"></i>${__('change status')}</a>
                   </div>
                   </div>`;
           }
@@ -470,5 +470,59 @@ $(function () {
     $('#select-template').val('');
     $('#user-teams').val([]).trigger('change');
     $('#user-customers').val([]).trigger('change');
+  });
+
+  $('#generate-commissions').on('click', function () {
+    Swal.fire({
+      title: `Generate Old Commissions`,
+      text: 'Are you sure to generate old commissions for all Beneficiaries?',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Generate!',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3 waves-effect waves-light',
+        cancelButton: 'btn btn-label-secondary waves-effect waves-light'
+      },
+      buttonsStyling: false
+    }).then(result => {
+      if (result.isConfirmed) {
+        // 🌀 عرض رسالة انتظار (loading)
+        Swal.fire({
+          title: 'Please wait...',
+          text: 'Generating old commissions...',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          showCancelButton: false,
+          footer: '',
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        $.ajax({
+          url: `${baseUrl}admin/commissions/generate-old-commissions`,
+          type: 'GET',
+          success: function (response) {
+            // ✅ إغلاق نافذة الانتظار
+            Swal.close();
+
+            if (response.status === 1) {
+              showAlert('success', response.success, 10000, true);
+              showAlert('tasks', response.count, 10000, true);
+              document.dispatchEvent(new CustomEvent('deletedSuccess'));
+            } else {
+              showAlert('error', response.error, 10000, true);
+            }
+          },
+          error: function () {
+            // ❌ إغلاق نافذة الانتظار
+            Swal.close();
+
+            showAlert('error', 'Failed to process the request', 10000, true);
+          }
+        });
+      }
+    });
   });
 });

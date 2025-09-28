@@ -12,6 +12,8 @@ use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\TeamsController;
 use App\Http\Controllers\admin\UsersController;
+use App\Http\Controllers\admin\UserCommissionsController;
+use App\Http\Controllers\admin\UserWalletsController;
 use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\admin\DriversController;
 use App\Http\Controllers\admin\WalletsController;
@@ -262,6 +264,26 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
                 Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('user.show');
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
+
+                // User Commissions Routes
+                Route::get('/commissions', [UserCommissionsController::class, 'index'])->name('admin.commissions.index');
+                Route::get('/commissions/data', [UserCommissionsController::class, 'getData'])->name('admin.commissions.getData');
+                Route::post('/commissions', [UserCommissionsController::class, 'store'])->name('admin.commissions.store');
+                Route::get('/commissions/edit/{id}', [UserCommissionsController::class, 'edit'])->name('admin.commissions.edit');
+                Route::delete('/commissions', [UserCommissionsController::class, 'destroy'])->name('admin.commissions.destroy');
+                Route::post('/commissions/status', [UserCommissionsController::class, 'changeStatus'])->name('admin.commissions.changeStatus');
+                Route::get('/commissions/customer/{customerId}', [UserCommissionsController::class, 'getCommissionsByCustomer'])->name('admin.commissions.byCustomer');
+                Route::get('/commissions/generate-old-commissions', [UserCommissionsController::class, 'generateOldCommissions'])->name('admin.commissions.generateOldCommissions');
+
+                // User Wallets Routes
+                Route::get('/users/{userId}/wallet', [UserWalletsController::class, 'show'])->name('admin.user-wallets.show');
+                Route::get('/users/{userId}/wallet/transactions', [UserWalletsController::class, 'getTransactions'])->name('admin.user-wallets.getTransactions');
+                Route::post('/user-wallets/transaction', [UserWalletsController::class, 'addTransaction'])->name('admin.user-wallets.addTransaction');
+                Route::get('/user-wallets/transaction/edit/{id}', [UserWalletsController::class, 'editTransaction'])->name('admin.user-wallets.editTransaction');
+                Route::delete('/user-wallets/transaction/delete/{id}', [UserWalletsController::class, 'destroyTransaction'])->name('admin.user-wallets.destroyTransaction');
+
+                Route::post('/user-wallets/withdrawal', [UserWalletsController::class, 'processWithdrawal'])->name('admin.user-wallets.withdrawal');
+                Route::get('/user-wallets/{userId}/stats', [UserWalletsController::class, 'getWalletStats'])->name('admin.user-wallets.stats');
 
 
 
@@ -535,6 +557,7 @@ Route::middleware('rate.limit')->group(function () {
 
 
                 Route::get('/task/{id}/report', [TasksController::class, 'downloadTaskReport'])->name('tasks.report');
+                Route::post('/tasks/duplicate', [TasksController::class, 'duplicateTask'])->name('tasks.duplicate');
 
 
                 Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');

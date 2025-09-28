@@ -24,24 +24,24 @@ class PlatformReportsController extends Controller
     public function __construct(ReportService $reportService)
     {
         $this->reportService = $reportService;
-        $this->middleware('permission:view_reports', ['only' => ['index']]);
-        $this->middleware('permission:generate_reports', ['only' => [
-          'customerReport',
-          'generateCustomerTasksReport',
-          'exportToExcel',
-          'exportToPdf',
-          'getReportPreview',
-          'driverReport',
-          'generateDriverTasksReport',
-          'exportDriverTasksToExcel',
-          'exportDriverTasksToPdf',
-          'getDriverTasksPreview',
-          'teamReport',
-          'generateTeamTasksReport',
-          'exportTeamTasksToExcel',
-          'exportTeamTasksToPdf',
-          'getTeamTasksPreview'
-        ]]);
+        // $this->middleware('permission:view_reports', ['only' => ['index']]);
+        // $this->middleware('permission:generate_reports', ['only' => [
+        //   'customerReport',
+        //   'generateCustomerTasksReport',
+        //   'exportToExcel',
+        //   'exportToPdf',
+        //   'getReportPreview',
+        //   'driverReport',
+        //   'generateDriverTasksReport',
+        //   'exportDriverTasksToExcel',
+        //   'exportDriverTasksToPdf',
+        //   'getDriverTasksPreview',
+        //   'teamReport',
+        //   'generateTeamTasksReport',
+        //   'exportTeamTasksToExcel',
+        //   'exportTeamTasksToPdf',
+        //   'getTeamTasksPreview'
+        // ]]);
 
     }
 
@@ -178,7 +178,9 @@ class PlatformReportsController extends Controller
                 'date_to' => 'required|date|after_or_equal:date_from'
             ]);
 
+
             $reportData = $this->reportService->generateCustomerTasksReport($request->all(), true); // Preview mode
+
 
             return response()->json([
                 'success' => true,

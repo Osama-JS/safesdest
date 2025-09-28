@@ -37,6 +37,7 @@ class ReportService
         // Apply filters
         $this->applyFilters($query, $filters);
 
+
         // Apply date range
         $this->applyDateRange($query, $filters);
 
@@ -44,6 +45,7 @@ class ReportService
         if ($preview) {
             $query->limit(100);
         }
+
 
         // Execute query
         $tasks = $query->orderBy('created_at', 'desc')->get();
@@ -161,11 +163,12 @@ class ReportService
      */
     private function processTasksData($tasks, $filters)
     {
-        return $tasks->map(function ($task) {
+        // dd($tasks);
+
+        $t = $tasks->map(function ($task) {
             // Handle refunded/cancelled tasks - set price to 0
             $effectivePrice = $this->getEffectivePrice($task);
             $effectivePaymentMethod = $this->getEffectivePaymentMethod($task);
-
             return [
                 'id' => $task->id,
                 'total_price' => $effectivePrice,
@@ -183,7 +186,7 @@ class ReportService
                 'delivery_contact_phone' => $task->delivery->contact_phone ?? '',
                 'vehicle_name' => $this->getVehicleName($task),
                 'status' => $task->status,
-                'status_ar' => $$task->status,
+                'status_ar' => $task->status,
                 'payment_status' => $task->payment_status,
                 'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method,
@@ -198,6 +201,7 @@ class ReportService
                 'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
             ];
         })->toArray();
+        return  $t;
     }
 
     /**

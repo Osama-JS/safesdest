@@ -1,0 +1,284 @@
+@extends('layouts/layoutMaster')
+
+@section('title', __('User Wallet') . ' - ' . $user->name)
+
+@section('vendor-style')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+
+    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+@endsection
+
+@section('vendor-script')
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js'])
+@endsection
+
+@section('page-script')
+    @vite(['resources/js/admin/user-wallets.js'])
+@endsection
+
+@section('content')
+    <!-- User Info -->
+    <div class="row g-6 mb-6">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-lg me-4">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ti ti-user ti-lg"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">{{ $user->name }}</h4>
+                            <p class="mb-0 text-muted">{{ $user->email }}</p>
+                            <small class="text-muted">{{ __('User ID') }}: #{{ $user->id }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Statistics -->
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Current Balance') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($balance, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-{{ $balance >= 0 ? 'success' : 'danger' }}">
+                                <i class="ti ti-wallet ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Total Credit') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($credit, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-trending-up ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Total Debit') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($debit, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-trending-down ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Debt Ceiling') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($wallet->debt_ceiling, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-shield-check ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Transactions -->
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">
+                <i class="tf-icons ti ti-list me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                {{ __('Wallet Transactions') }}
+            </h5>
+            <button class="add-transaction btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
+                data-bs-target="#transactionModal">
+                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> {{ __('Add Transaction') }}</span>
+            </button>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="datatables-transactions table">
+                <thead class="border-top">
+                    <tr>
+                        <th></th>
+                        <th>{{ __('#') }}</th>
+                        <th>{{ __('amount') }}</th>
+                        <th>{{ __('description') }}</th>
+                        <th>{{ __('task id') }}</th>
+                        <th>{{ __('user') }}</th>
+                        <th>{{ __('created at') }}</th>
+                        <th>{{ __('action') }}</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal fade " id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modelTitle">{{ __('Add New Transaction') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
+                </div>
+                <form class="add-new-transaction pt-0 form_submit" method="POST"
+                    action="{{ route('admin.user-wallets.addTransaction') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="col-xl-12">
+                            <div class="nav-align-top mb-6">
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active">
+                                        <!-- Hidden wallet_id -->
+                                        <input type="hidden" name="user" id="wallet_id" value="{{ $user->id }}">
+                                        <span class="user-error text-danger text-error"></span>
+
+                                        <input type="hidden" name="id" id="trans_id">
+
+                                        <!-- Amount -->
+                                        <div class="mb-4">
+                                            <label class="form-label" for="amount">* {{ __('Amount') }}</label>
+                                            <input type="number" name="amount" class="form-control" id="trans_amount"
+                                                placeholder="{{ __('Enter the amount') }}" step="0.01"
+                                                min="0">
+                                            <span class="amount-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Transaction Type -->
+                                        <div class="mb-4">
+                                            <label class="form-label d-block">* {{ __('Transaction Type') }}</label>
+                                            <div class="row">
+
+                                                <div class="col-12">
+                                                    <input type="radio" class="btn-check" name="type"
+                                                        id="debit" value="debit" autocomplete="off" required
+                                                        readonly checked>
+                                                    <label class="btn btn-warning w-100 py-2 btn-debit" for="debit">
+                                                        <i class="ti ti-circle-minus me-1"></i> {{ __('Debit') }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <span class="type-error text-danger text-error"></span>
+                                        </div>
+
+
+
+                                        <!-- Maturity Time (Hidden by default) -->
+                                        <div class="mb-4" id="maturity-time-group" style="display: none;">
+                                            <label class="form-label" for="maturity">{{ __('Maturity Time') }}</label>
+                                            <input type="datetime-local" name="maturity" class="form-control"
+                                                id="trans_maturity">
+                                            <span class="maturity-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="mb-4">
+                                            <label class="form-label" for="description">* {{ __('Description') }}</label>
+                                            <textarea name="description" class="form-control" id="trans_description" rows="3"
+                                                placeholder="{{ __('Optional notes...') }}"></textarea>
+                                            <span class="description-error text-danger text-error"></span>
+                                        </div>
+                                        <div class="mb-6">
+
+                                            <div class="form-group mb-3">
+                                                <label for="image" class="form-label">
+                                                    <i class="fas fa-file-upload me-1"></i>
+                                                    {{ __('Upload File') }}
+                                                </label>
+                                                <input type="file" name="image" class="form-control" id="image"
+                                                    accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx,.txt,.csv">
+                                                <div class="form-text text-muted mt-1">
+                                                    <small>
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        {{ __('Supported formats: Images (JPEG, PNG, WebP), Documents (PDF). Max size: 10MB') }}
+                                                    </small>
+                                                </div>
+                                                <span class="image-error text-danger text-error"></span>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">{{ __('View the File') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('close') }}"></button>
+                </div>
+                <div class="modal-body text-center" id="modalContent">
+                    <img id="modalImage" src="" class="img-fluid rounded shadow" alt="{{ __('image') }}" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const baseUrl = '{{ url('/') }}/';
+        const userId = {{ $user->id }};
+        const transactionsDataUrl = '{{ route('admin.user-wallets.getTransactions', $user->id) }}';
+        const addTransactionUrl = '{{ route('admin.user-wallets.addTransaction') }}';
+        const withdrawalUrl = '{{ route('admin.user-wallets.withdrawal') }}';
+        const currentBalance = {{ $wallet->balance }};
+        const debtCeiling = {{ $wallet->debt_ceiling }};
+        const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};
+    </script>
+@endsection

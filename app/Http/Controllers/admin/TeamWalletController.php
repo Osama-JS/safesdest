@@ -662,8 +662,6 @@ class TeamWalletController extends Controller
         try {
             // التحقق من صلاحية المستخدم
             $user = Auth::user();
-
-
             // جلب المهام المرتبطة بالفريق
             $tasks = Task::with(['pickup', 'delivery'])
                 ->where('team_id', $teamId)

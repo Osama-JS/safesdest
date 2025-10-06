@@ -92,6 +92,7 @@ class User extends Authenticatable
         return $this->belongsToMany(Customer::class);
     }
 
+
     /**
      * العلاقة مع عمولات المستخدم
      */

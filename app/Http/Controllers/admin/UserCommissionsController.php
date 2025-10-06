@@ -20,7 +20,7 @@ class UserCommissionsController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_beneficiaries', ['only' => ['index', 'getData']]);
-        $this->middleware('permission:create_beneficiaries', ['only' => ['store', 'edit', 'destroy', 'changeStatus']]);
+        $this->middleware('permission:manage_beneficiaries', ['only' => ['store', 'edit', 'destroy', 'changeStatus']]);
     }
 
 

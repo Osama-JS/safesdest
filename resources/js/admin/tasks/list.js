@@ -268,7 +268,7 @@ $(function () {
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>Payment Task</a></li>
-                    ${1 == 0 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>` : ''}
+                    ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>

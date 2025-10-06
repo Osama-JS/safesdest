@@ -72,6 +72,22 @@
       "permission": "view_ads"
     },
     {
+      "name": "Store",
+      "icon": "menu-icon tf-icons ti ti-building-store",
+      "slug": "products",
+      "permission": "store_management",
+      "submenu": [
+        {
+          "url": "admin/products",
+          "name": "Products",
+          "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+          "slug": "products.products",
+          "isactive": "products-isactive",
+          "permission": "view_products"
+        }
+      ]
+    },
+    {
       "url": "admin/reports",
       "name": "Platform Reports",
       "icon": "menu-icon tf-icons ti ti-report",

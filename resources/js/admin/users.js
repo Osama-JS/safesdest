@@ -127,6 +127,7 @@ $(function () {
         { data: 'name' },
         { data: 'email' },
         { data: 'phone' },
+        { data: 'balance' },
         { data: 'role' },
         { data: 'status' },
         { data: 'reset' },
@@ -173,7 +174,6 @@ $(function () {
               $output;
             $initials = (($initials.shift() || '') + ($initials.pop() || '')).toUpperCase();
             $output = '<span class="avatar-initial rounded-circle bg-label-' + $state + '">' + $initials + '</span>';
-
             // Creates full output for row
             var $row_output =
               '<div class="d-flex justify-content-start align-items-center user-name">' +
@@ -212,8 +212,17 @@ $(function () {
           }
         },
         {
-          // User phone
+          // User balance
           targets: 5,
+          render: function (data, type, full, meta) {
+            var balance = full['balance'];
+
+            return '<span class="text-success">' + balance + 'SAR</span>';
+          }
+        },
+        {
+          // User phone
+          targets: 6,
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -224,7 +233,7 @@ $(function () {
         },
         {
           // status
-          targets: 6,
+          targets: 7,
           searchable: false,
           orderable: false,
           className: 'text-center',
@@ -246,7 +255,7 @@ $(function () {
           }
         },
         {
-          targets: 7,
+          targets: 8,
           searchable: false,
           orderable: false,
 

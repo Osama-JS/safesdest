@@ -127,6 +127,7 @@ class UsersController extends Controller
                 $nestedData['phone'] = $user->phone_code . $user->phone;
                 $nestedData['role'] = $user->role->name;
                 $nestedData['status'] = $user->status;
+                $nestedData['balance'] = $user->userWallet->balance ?? 0;
                 $nestedData['reset_password'] = $user->reset_password;
                 $nestedData['can_view_wallet'] = Auth::user()->can('view_beneficiaries_wallet');
 

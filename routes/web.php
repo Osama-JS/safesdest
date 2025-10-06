@@ -42,6 +42,7 @@ use App\Http\Controllers\admin\settings\SystemStatisticsController;
 use App\Http\Controllers\admin\settings\ClearancePricingTemplateController;
 use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
 use App\Http\Controllers\admin\PlatformReportsController;
+use App\Http\Controllers\admin\ProductController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
 Route::get('/active-account', function () {
@@ -396,6 +397,30 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('platform-wallet/data', [PlatformWalletController::class, 'data'])->name('admin.platform-wallet.data');
                 Route::get('platform-wallet/statistics', [PlatformWalletController::class, 'statistics'])->name('admin.platform-wallet.statistics');
                 Route::get('platform-wallet/export', [PlatformWalletController::class, 'export'])->name('admin.platform-wallet.export');
+
+
+                Route::get('/products', [ProductController::class, 'index'])->name('products.products');
+                Route::get('/products/data', [ProductController::class, 'getData'])->name('products.data');
+                Route::get('/products/details/{id}/{name}', [ProductController::class, 'show'])->name('products.show');
+                Route::post('/products', [ProductController::class, 'store'])->name('products.create');
+                Route::get('/products/edit/{id}', [ProductController::class, 'edit'])->name('products.edit');
+                Route::post('/products/status', [ProductController::class, 'chang_status'])->name('products.status');
+                Route::delete('/products/delete/{id}', [ProductController::class, 'destroy'])->name('products.delete');
+
+                // Products Vehicles Routes
+                Route::get('/products/vehicles/get', [ProductController::class, 'getVehicles'])->name('products.vehicles.get');
+                Route::get('/products/vehicles/data', [ProductController::class, 'getVehiclesData'])->name('products.vehicles.data');
+                Route::post('/products/vehicles/store', [ProductController::class, 'storeVehicle'])->name('products.vehicles.store');
+                Route::get('/products/vehicles/edit/{id}', [ProductController::class, 'editVehicle'])->name('products.vehicles.edit');
+                Route::delete('/products/vehicles/delete/{id}', [ProductController::class, 'destroyVehicle'])->name('products.vehicles.delete');
+
+                // Products Pricing Routes
+                Route::get('/products/pricing/data', [ProductController::class, 'getPricingData'])->name('products.pricing.data');
+                Route::post('/products/pricing/store', [ProductController::class, 'storePricing'])->name('products.pricing.store');
+                Route::get('/products/pricing/edit/{id}', [ProductController::class, 'editPricing'])->name('products.pricing.edit');
+                Route::delete('/products/pricing/delete/{id}', [ProductController::class, 'destroyPricing'])->name('products.pricing.delete');
+
+
 
                 Route::get('/customers', [CustomersController::class, 'index'])->name('customers.customers');
                 Route::get('/customers/account/{id}/{name}', [CustomersController::class, 'show'])->name('customers.show');

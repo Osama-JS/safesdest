@@ -9,21 +9,27 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-  /**
-   * Seed the application's database.
-   */
-  public function run(): void
-  {
-    $this->call([
-      PermissionsSeeder::class,
-      AdminSeeder::class,
-      PricingMethodsSeeder::class,
-      SettingsSeeder::class,
-      VehiclesSeeder::class,
-      CustomsClearancePermissionsSeeder::class,
-      NewPermissionsSeeder::class,
-      NewPermissions2Seeder::class
-    ]);
-    Customer::factory()->count(10)->create();
-  }
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        $this->call([
+          PermissionsSeeder::class,
+          AdminSeeder::class,
+          PricingMethodsSeeder::class,
+          SettingsSeeder::class,
+          VehiclesSeeder::class,
+          CustomsClearancePermissionsSeeder::class,
+          NewPermissionsSeeder::class,
+          NewPermissions2Seeder::class,
+          UserCommisionSeeder::class,
+          ReportsPermissionsSeeder::class,
+          RefundTasksPermissionsSeeder::class,
+          StorePermissionsSeeder::class,
+
+
+        ]);
+        Customer::factory()->count(10)->create();
+    }
 }

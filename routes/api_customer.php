@@ -54,12 +54,28 @@ Route::prefix('customer')->group(function () {
     Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
         ->middleware(['throttle:3,1'])
         ->name('api.customer.forgot-password');
+
+    Route::post('/check-reset-code', [CustomerAuthController::class, 'checkResetCode'])
+    ->middleware(['throttle:3,1'])
+    ->name('api.customer.check-reset-code');
+
+    Route::post('/reset-password', [CustomerAuthController::class, 'verifyResetCode'])
+        ->middleware(['throttle:3,1'])
+        ->name('api.customer.verify-reset-code');
+
+
+    Route::post('/verify-email-code', [CustomerAuthController::class, 'verifyEmailCode'])
+    ->middleware(['throttle:3,1'])
+    ->name('api.customer.verify-email-code');
 });
 
 // Protected routes (require Sanctum authentication)
 Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
 
     // Authentication routes
+    Route::post('/check-token', [CustomerAuthController::class, 'checkToken'])
+        ->name('api.customer.check-token');
+
     Route::post('/logout', [CustomerAuthController::class, 'logout'])
         ->name('api.customer.logout');
 

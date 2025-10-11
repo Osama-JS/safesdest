@@ -28,6 +28,8 @@
     "timestamp": "2024-01-01T12:00:00.000000Z"
 }
 
+
+
 ================================================================================
 🔐 2. AUTHENTICATION ENDPOINTS (Public Routes)
 ================================================================================
@@ -571,6 +573,49 @@ Description: حذف حساب العميل
         "password": ["The password field is required."],
         "confirmation": ["The confirmation field is required."]
     }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔗 3.8 Check Token
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/check-token
+Authentication: مطلوب (Bearer Token)
+Description: فحص Token API
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Login successful",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "اسم العميل",
+            "email": "customer@example.com",
+            "phone": "1234567890",
+            "phone_code": "+966",
+            "image": "http://domain.com/storage/customers/image.jpg",
+            "company_name": "اسم الشركة",
+            "company_address": "عنوان الشركة",
+            "status": "active",
+            "is_customs_clearance_agent": false,
+            "email_verified_at": "2024-01-01T12:00:00.000000Z",
+            "created_at": "2024-01-01T12:00:00.000000Z"
+        },
+        "token": "1|abc123def456...",
+        "token_type": "Bearer"
+    }
+}
+
+📥 Response (Invalid Credentials - 401):
+{
+    "status": 401,
+    "message": "Invalid or expired token"
 }
 
 ================================================================================

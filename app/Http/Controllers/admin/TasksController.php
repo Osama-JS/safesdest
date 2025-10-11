@@ -557,9 +557,8 @@ class TasksController extends Controller
                 $data->commission =  $driver->calculateCommission($data->total_price);
             }
 
-            if ($driver->team) {
-                $data->team_id = $driver->team_id;
-            }
+            $data->team_id = $driver->team_id ?? null;
+
 
             $data->history()->createMany($history);
 

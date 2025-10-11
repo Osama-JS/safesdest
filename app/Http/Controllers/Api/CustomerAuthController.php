@@ -66,13 +66,17 @@ class CustomerAuthController extends Controller
 
     public function sendVerificationEmail($user, $type)
     {
-        $token = ($this)->createVerificationToken($user);
-        $verifyLink = route('verify.email', ['token' => $token]);
+        $code = rand(10000, 99999);
+        $user->update([
+            'verification_code' => $code,
+            'verification_code_expires_at' => now()->addMinutes(10),
+        ]);
 
-        Mail::send("emails.verify-account", ['user' => $user, 'verifyLink' => $verifyLink], function ($message) use ($user) {
-            $message->to($user->email)->subject('Verify Your Email');
+        Mail::send('emails.verify-account-code', ['user' => $user, 'code' => $code], function ($message) use ($user) {
+            $message->to($user->email)->subject('Email Verification Code');
         });
     }
+
 
     public function resendVerification(Request $req)
     {
@@ -154,6 +158,39 @@ class CustomerAuthController extends Controller
 
     }
 
+
+    public function verifyEmailCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|digits:5',
+        ]);
+
+        $user = Customer::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['status' => 404, 'message' => 'User not found']);
+        }
+
+        if ($user->verification_code !== $request->code) {
+            return response()->json(['status' => 400, 'message' => 'Invalid code']);
+        }
+
+        if ($user->verification_code_expires_at < now()) {
+            return response()->json(['status' => 400, 'message' => 'Code expired']);
+        }
+
+        $user->update([
+            'email_verified_at' => now(),
+            'verification_code' => null,
+            'verification_code_expires_at' => null,
+            'status' => 'active',
+        ]);
+
+        return response()->json(['status' => 200, 'message' => 'Email verified successfully']);
+    }
+
+
     public function register(Request $req)
     {
         // 🔹 القواعد الأساسية
@@ -165,6 +202,9 @@ class CustomerAuthController extends Controller
             'password'       => 'required|same:confirm-password',
             'c_name'         => 'nullable|string|max:255',
             'c_address'      => 'nullable|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+                'fcm_token' => 'nullable|string',
+                'app_version' => 'nullable|string|max:50',
         ];
 
         $additionalRules = [];
@@ -274,6 +314,9 @@ class CustomerAuthController extends Controller
                 'password'        => Hash::make($req->password),
                 'company_name'    => $req->c_name,
                 'company_address' => $req->c_address,
+                'device_id' => $req->device_id,
+                'fcm_token' => $req->fcm_token,
+                'app_version' => $req->app_version,
             ];
 
             $structuredFields = [];
@@ -482,6 +525,55 @@ class CustomerAuthController extends Controller
     }
 
 
+    public function checkToken(Request $request)
+    {
+        try {
+            // محاولة الحصول على المستخدم الحالي من خلال الـ token
+            $customer = $request->user();
+
+            // التحقق من وجود المستخدم (يعني أن التوكن صالح)
+            if (!$customer) {
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Invalid or expired token'
+                ]);
+            }
+
+            // إعادة نفس بيانات العميل مثل دالة login
+            return response()->json([
+                'status' => 201,
+                'message' => 'Token is valid',
+                'data' => [
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'email' => $customer->email,
+                        'phone' => $customer->phone,
+                        'phone_code' => $customer->phone_code,
+                        'image' => $customer->image ? asset('storage/' . $customer->image) : null,
+                        'company_name' => $customer->company_name,
+                        'company_address' => $customer->company_address,
+                        'status' => $customer->status,
+                        'is_customs_clearance_agent' => $customer->is_customs_clearance_agent,
+                        'email_verified_at' => $customer->email_verified_at,
+                        'created_at' => $customer->created_at,
+                    ],
+                    'token_type' => 'Bearer',
+                    'token_type' => 'Bearer'
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            Log::alert($e);
+            return response()->json([
+                'status' => 500,
+                'message' => 'Token verification failed',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 
     /**
@@ -513,13 +605,11 @@ class CustomerAuthController extends Controller
     }
 
 
-
     public function forgotPassword(Request $request)
     {
         $request->validate([
-          'email' => 'required|email',
+            'email' => 'required|email',
         ]);
-
 
         $user = Customer::where('email', $request->email)->first();
 
@@ -530,30 +620,101 @@ class CustomerAuthController extends Controller
             ]);
         }
 
-        $token = Str::random(64);
+        // إنشاء كود تحقق (OTP) مكوّن من 5 أرقام
+        $code = rand(10000, 99999);
+
+        // حفظ الكود في جدول password_resets (أو يمكنك تخزينه في جدول المستخدمين)
         DB::table('password_resets')->updateOrInsert(
             ['email' => $user->email, 'type' => 'customer'],
-            ['token' => hash('sha256', $token), 'created_at' => now()]
+            [
+                'token' => hash('sha256', $code), // نخزن الكود مشفر
+                'created_at' => now()
+            ]
         );
 
-        $resetLink = route('password.reset.form', [
-          'token' => $token,
-          'email' => $user->email,
-          'type' => $request->type
-        ]);
-
-        Mail::send('emails.password-reset', [
-          'url' => $resetLink,
-          'name' => $user->name ?? $user->email
+        // إرسال الكود عبر البريد الإلكتروني
+        Mail::send('emails.password-reset-code', [
+            'code' => $code,
+            'name' => $user->name ?? $user->email
         ], function ($message) use ($user) {
-            $message->to($user->email)->subject('Reset Your Password');
+            $message->to($user->email)->subject('Your Password Reset Code');
         });
 
         return response()->json([
             'status' => 200,
-            'message' => 'Password reset link sent successfully'
+            'message' => 'Password reset code sent successfully.'
         ]);
     }
+
+    public function checkResetCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|digits:5',
+        ]);
+
+        $record = DB::table('password_resets')
+            ->where('email', $request->email)
+            ->where('type', 'customer')
+            ->first();
+
+        if (!$record) {
+            return response()->json(['status' => 404, 'message' => 'No reset request found.']);
+        }
+
+        // التحقق من الكود
+        if (!Hash::check($request->code, $record->token)) {
+            return response()->json(['status' => 400, 'message' => 'Invalid code.']);
+        }
+
+        return response()->json(['status' => 200, 'message' => 'Code is valid.']);
+    }
+
+    public function verifyResetCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|digits:5',
+            'password' => 'required|min:6|confirmed',
+            'device_id' => 'nullable|string|max:255',
+            'fcm_token' => 'nullable|string',
+            'app_version' => 'nullable|string|max:50',
+        ]);
+
+        $record = DB::table('password_resets')
+            ->where('email', $request->email)
+            ->where('type', 'customer')
+            ->first();
+
+        if (!$record) {
+            return response()->json(['status' => 404, 'message' => 'No reset request found.']);
+        }
+
+        // التحقق من الكود
+        if (!Hash::check($request->code, $record->token)) {
+            return response()->json(['status' => 400, 'message' => 'Invalid code.']);
+        }
+
+        // التحقق من صلاحية الكود (10 دقائق مثلاً)
+        if (Carbon::parse($record->created_at)->addMinutes(10)->isPast()) {
+            return response()->json(['status' => 400, 'message' => 'Code expired.']);
+        }
+
+        // تحديث كلمة المرور
+        $user = Customer::where('email', $request->email)->first();
+        $user->update([
+          'password' => Hash::make($request->password),
+          'device_id' => $request->device_id,
+          'fcm_token' => $request->fcm_token,
+          'app_version' => $request->app_version,
+        ]);
+
+        // حذف السجل من password_resets
+        DB::table('password_resets')->where('email', $request->email)->delete();
+
+        return response()->json(['status' => 200, 'message' => 'Password reset successfully.']);
+    }
+
 
 
     /**

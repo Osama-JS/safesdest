@@ -51,10 +51,13 @@ use App\Http\Controllers\FunctionsController;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Services\NotificationService;
+use App\Services\PdfService;
 
 class TasksController extends Controller
 {
-    public function __construct()
+    protected $pdfService;
+
+    public function __construct(PdfService $pdfService)
     {
         $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
         $this->middleware('permission:create_tasks', ['only' => ['store','duplicateTask']]);
@@ -67,6 +70,8 @@ class TasksController extends Controller
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
         $this->middleware('permission:refund_tasks', ['only' => ['refundTask']]);
         $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment', 'paymentRequestInfo']]);
+
+        $this->pdfService = $pdfService;
     }
 
     public function index()
@@ -609,6 +614,13 @@ class TasksController extends Controller
             // $pdfPath = storage_path("app/public/task-report-{$task->id}.pdf");
             // Storage::put("public/task-report-{$task->id}.pdf", $pdf->output());
 
+
+
+            // dd(ini_get('pcre.backtrack_limit'), ini_get('pcre.recursion_limit'));
+
+            // return $this->pdfService->generate('admin.tasks.report_pdf', [
+            //     'task' => $task
+            // ], "task_report_{$task->id}.pdf");
             // dd('osama');
             // // إرسال الإشعارات بالبريد الإلكتروني
             // $this->sendTaskAssignmentNotifications($data, $driver);

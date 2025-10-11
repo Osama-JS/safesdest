@@ -1,0 +1,623 @@
+================================================================================
+                    SafeDest Customer API Documentation
+================================================================================
+
+📋 نظرة عامة:
+هذا الملف يحتوي على جميع نقاط API المفعّلة لتطبيق العميل في نظام SafeDest.
+جميع الـ endpoints تستخدم Laravel Sanctum للمصادقة.
+
+🌐 Tester Domain: https://tester.safedest.com/
+🌐 Base URL: /api/customer
+
+================================================================================
+📱 1. HEALTH CHECK
+================================================================================
+
+🔗 Endpoint: GET /api/customer/health
+🔐 Authentication: غير مطلوب
+📝 Description: فحص حالة API
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Customer API is working",
+    "timestamp": "2024-01-01T12:00:00.000000Z"
+}
+
+================================================================================
+🔐 2. AUTHENTICATION ENDPOINTS (Public Routes)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.1 Get Registration Template
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/template
+Authentication: غير مطلوب
+Description: الحصول على قالب التسجيل والحقول المطلوبة
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📥 Response (Success - 200):
+{
+    "template_exists": true,
+    "customer_template": [
+        {
+            "id": 1,
+            "name": "field_name",
+            "label": "Field Label",
+            "type": "text|number|url|date|file|image|file_expiration_date|file_with_text",
+            "value": "default_value",
+            "required": true,
+            "order": 1
+        },
+        ...
+    ]
+}
+
+📥 Response (No Template - 200):
+{
+    "template_exists": false,
+    "customer_template": []
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.2 Customer Registration
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/register
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: تسجيل عميل جديد
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body (Basic Fields):
+{
+    "name": "اسم العميل",
+    "email": "customer@example.com",
+    "phone": "1234567890",
+    "phone_code": "+966",
+    "password": "password123",
+    "confirm-password": "password123",
+    "c_name": "اسم الشركة (اختياري)",
+    "c_address": "عنوان الشركة (اختياري)"
+}
+
+📤 Request Body (With Additional Fields):
+{
+    "name": "اسم العميل",
+    "email": "customer@example.com",
+    "phone": "1234567890",
+    "phone_code": "+966",
+    "password": "password123",
+    "confirm-password": "password123",
+    "c_name": "اسم الشركة",
+    "c_address": "عنوان الشركة",
+    "additional_fields": {
+        "field_name": "field_value",
+        "file_field": "file_upload",
+        "image_field": "image_upload"
+    }
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Your Account Created successfully"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "email": ["The email field is required."],
+        "password": ["The password field is required."],
+        ..
+    }
+}
+
+📥 Response (Server Error - 500):
+{
+    "status": 500,
+    "message": "Error message"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.3 Resend Verification Email
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/resend-verification
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: إعادة إرسال رسالة التحقق من البريد الإلكتروني
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com"
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201
+    "message": "Verification email resent successfully.",
+    "remaining_attempts": 2
+}
+
+📥 Response (Customer Not Found - 404):
+{
+    "status": 404,
+    "message": "Customer not found"
+}
+
+📥 Response (Already Verified - 201):
+{
+    "status": 201,
+    "message": "Your email is already verified."
+}
+
+📥 Response (Rate Limited - 400):
+{
+    "status": 400,
+    "message": "You have reached the maximum resend attempts for today. Try again tomorrow."
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.4 Customer Login
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/login
+Authentication: غير مطلوب
+Rate Limit: 5 requests per minute
+Description: تسجيل دخول العميل
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com",
+    "password": "password123",
+    "device_name": "iPhone 12 (اختياري)",
+    "device_id": "device_unique_id (اختياري)",
+    "fcm_token": "firebase_token (اختياري)",
+    "app_version": "1.0.0 (اختياري)"
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Login successful",
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "اسم العميل",
+            "email": "customer@example.com",
+            "phone": "1234567890",
+            "phone_code": "+966",
+            "image": "http://domain.com/storage/customers/image.jpg",
+            "company_name": "اسم الشركة",
+            "company_address": "عنوان الشركة",
+            "status": "active",
+            "is_customs_clearance_agent": false,
+            "email_verified_at": "2024-01-01T12:00:00.000000Z",
+            "created_at": "2024-01-01T12:00:00.000000Z"
+        },
+        "token": "1|abc123def456...",
+        "token_type": "Bearer"
+    }
+}
+
+📥 Response (Invalid Credentials - 401):
+{
+    "status": 401,
+    "message": "Invalid credentials"
+}
+
+📥 Response (Account Not Active - 403):
+{
+    "status": 403,
+    "message": "Customer account is not active"
+}
+
+📥 Response (Email Not Verified - 403):
+{
+    "status": 403,
+    "message": "Email not verified"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "email": ["The email field is required."],
+        "password": ["The password field is required."],
+        ...
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.5 Forgot Password
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/forgot-password
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: طلب إعادة تعيين كلمة المرور
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com"
+}
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "message": "Password reset link sent successfully"
+}
+
+📥 Response (Customer Not Found - 404):
+{
+    "status": 404,
+    "message": "No account found with this email."
+}
+
+================================================================================
+🔐 3. AUTHENTICATED ENDPOINTS (Protected Routes)
+================================================================================
+
+📝 ملاحظة: جميع الـ endpoints التالية تتطلب مصادقة باستخدام Bearer Token
+📤 Required Headers for All Protected Routes:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.1 Customer Logout
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/logout
+Authentication: مطلوب (Bearer Token)
+Description: تسجيل خروج العميل
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📥 Response (Success - 201):
+{
+    "success": 201,
+    "message": "Logout successful"
+}
+
+📥 Response (Error - 500):
+{
+    "success": 500,
+    "message": "Logout failed",
+    "error": "Error details"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.2 Change Password
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/change-password
+Authentication: مطلوب (Bearer Token)
+Description: تغيير كلمة المرور
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "current_password": "current_password123",
+    "password": "new_password123",
+    "password_confirmation": "new_password123"
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Password changed successfully"
+}
+
+📥 Response (Invalid Current Password - 400):
+{
+    "status": 400,
+    "message": "Current password is incorrect"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "current_password": ["The current password field is required."],
+        "password": ["The password field is required."],
+        ...
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.3 Get Customer Profile
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/profile
+Authentication: مطلوب (Bearer Token)
+Description: الحصول على معلومات الملف الشخصي
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "data": {
+        "customer": {
+            "id": 1,
+            "name": "اسم العميل",
+            "email": "customer@example.com",
+            "phone": "1234567890",
+            "phone_code": "+966",
+            "image": "http://domain.com/storage/customers/image.jpg",
+            "company_name": "اسم الشركة",
+            "company_address": "عنوان الشركة",
+            "status": "active",
+            "created_at": "2024-01-01T12:00:00.000000Z"
+        },
+        "form_template": {
+            "id": 1,
+            "name": "Customer Template",
+            "fields": [
+                {
+                    "id": 1,
+                    "name": "field_name",
+                    "label": "Field Label",
+                    "type": "text",
+                    "required": true,
+                    "customer_can": "write",
+                    "order": 1,
+                    "value": "default_value"
+                },
+                ...
+            ]
+        },
+        "additional_fields": {
+            "field_name": {
+                "label": "Field Label",
+                "value": "field_value",
+                "type": "text"
+            },
+            ...
+        }
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.4 Update Customer Profile
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: PUT /api/customer/profile
+Authentication: مطلوب (Bearer Token)
+Description: تحديث معلومات الملف الشخصي
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "name": "الاسم الجديد",
+    "phone": "9876543210",
+    "phone_code": "+966",
+    "company_name": "اسم الشركة الجديد",
+    "company_address": "عنوان الشركة الجديد"
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Profile updated successfully"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "phone": ["The phone has already been taken."]
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.5 Upload Avatar
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/profile/avatar
+Authentication: مطلوب (Bearer Token)
+Description: رفع صورة الملف الشخصي
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: multipart/form-data
+- Accept: application/json
+
+📤 Request Body (Form Data):
+- avatar: [image file] (jpeg, png, jpg, webp, gif - max 2MB)
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Avatar uploaded successfully",
+    "avatar_url": "http://domain.com/storage/customers/avatar.jpg"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "avatar": ["The avatar field is required."]
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.6 Get Customer Statistics
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/profile/stats
+Authentication: مطلوب (Bearer Token)
+Description: الحصول على إحصائيات العميل
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "data": {
+        "tasks": {
+            "total_tasks": 10,
+            "completed_tasks": 7,
+            "in_progress_tasks": 2,
+            "canceled_tasks": 1
+        },
+        "clearances": {
+            "total_clearances": 5,
+            "completed_clearances": 3,
+            "in_progress_clearances": 2
+        },
+        "wallet": {
+            "balance": 1000.00,
+            "debit": 500.00,
+            "credit": 1500.00
+        }
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 3.7 Delete Customer Account
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: DELETE /api/customer/profile
+Authentication: مطلوب (Bearer Token)
+Description: حذف حساب العميل
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "password": "current_password123",
+    "confirmation": "DELETE_MY_ACCOUNT"
+}
+
+📥 Response (Success - 201):
+{
+    "status": 201,
+    "message": "Account deleted successfully"
+}
+
+📥 Response (Invalid Password - 400):
+{
+    "status": 400,
+    "message": "Invalid password"
+}
+
+📥 Response (Active Tasks/Clearances - 400):
+{
+    "status": 400,
+    "message": "Cannot delete account with active tasks or clearances"
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 422,
+    "errors": {
+        "password": ["The password field is required."],
+        "confirmation": ["The confirmation field is required."]
+    }
+}
+
+================================================================================
+📋 4. ERROR CODES REFERENCE
+================================================================================
+
+🔴 Common Error Status Codes:
+- 200: Success
+- 201: Created/Success
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 422: Validation Error
+- 500: Internal Server Error
+
+🔴 Rate Limiting:
+- Registration: 3 requests per minute
+- Resend Verification: 3 requests per minute
+- Login: 5 requests per minute
+- Forgot Password: 3 requests per minute
+
+================================================================================
+📝 5. ADDITIONAL NOTES
+================================================================================
+
+🔹 Authentication:
+- جميع الـ protected routes تتطلب Bearer Token في header
+- Token يتم الحصول عليه من endpoint تسجيل الدخول
+- Token يجب أن يبدأ بـ "Bearer " متبوعاً بالـ token
+
+🔹 File Uploads:
+- الصور: jpeg, png, jpg (max 2MB)
+- الملفات: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif (max 10MB)
+
+🔹 Form Templates:
+- النظام يدعم قوالب ديناميكية للحقول الإضافية
+- الحقول يمكن أن تكون: text, number, url, date, file, image, file_expiration_date, file_with_text
+
+🔹 Response Format:
+- جميع الـ responses تأتي بصيغة JSON
+- Status codes تتبع HTTP standards
+- Error messages باللغة الإنجليزية
+
+🔹 Security:
+- Rate limiting مطبق على جميع الـ authentication endpoints
+- Password hashing باستخدام Laravel Hash
+- Token-based authentication باستخدام Laravel Sanctum
+
+================================================================================

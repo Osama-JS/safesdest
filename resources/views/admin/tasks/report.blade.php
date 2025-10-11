@@ -166,7 +166,17 @@
 </head>
 
 <body>
-
+    @php
+        $icons = [
+            'pdf' => 'ti ti-file-text',
+            'doc' => 'ti ti-file-description',
+            'docx' => 'ti ti-file-description',
+            'xls' => 'ti ti-file-spreadsheet',
+            'xlsx' => 'ti ti-file-spreadsheet',
+            'ppt' => 'ti ti-presentation',
+            'pptx' => 'ti ti-presentation',
+        ];
+    @endphp
     <header>
         <div class="platform-info">
             <div><strong>{{ __('Safe Dest') }}</strong></div>
@@ -330,15 +340,7 @@
                                         @case('file')
                                             @php
                                                 $ext = strtolower(pathinfo($field['value'], PATHINFO_EXTENSION));
-                                                $icons = [
-                                                    'pdf' => 'ti ti-file-text',
-                                                    'doc' => 'ti ti-file-description',
-                                                    'docx' => 'ti ti-file-description',
-                                                    'xls' => 'ti ti-file-spreadsheet',
-                                                    'xlsx' => 'ti ti-file-spreadsheet',
-                                                    'ppt' => 'ti ti-presentation',
-                                                    'pptx' => 'ti ti-presentation',
-                                                ];
+
                                                 $iconClass = $icons[$ext] ?? 'ti ti-file';
                                             @endphp
                                             <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
@@ -400,15 +402,7 @@
                                     @case('file')
                                         @php
                                             $ext = strtolower(pathinfo($field['value'], PATHINFO_EXTENSION));
-                                            $icons = [
-                                                'pdf' => 'ti ti-file-text',
-                                                'doc' => 'ti ti-file-description',
-                                                'docx' => 'ti ti-file-description',
-                                                'xls' => 'ti ti-file-spreadsheet',
-                                                'xlsx' => 'ti ti-file-spreadsheet',
-                                                'ppt' => 'ti ti-presentation',
-                                                'pptx' => 'ti ti-presentation',
-                                            ];
+
                                             $iconClass = $icons[$ext] ?? 'ti ti-file';
                                         @endphp
                                         <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
@@ -419,6 +413,10 @@
                                     @break
 
                                     @case('file_expiration_date')
+                                        @php
+                                            $ext = strtolower(pathinfo($field['value'], PATHINFO_EXTENSION));
+                                            $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                        @endphp
                                         <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
                                             class="d-flex align-items-center text-decoration-none mt-1">
                                             <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>

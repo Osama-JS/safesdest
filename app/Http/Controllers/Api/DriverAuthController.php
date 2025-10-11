@@ -22,8 +22,7 @@ class DriverAuthController extends Controller
     public function login(Request $request)
     {
         try {
-            Log::info('Login driver (API) attempt', $request->all());
-            // dd('stop');
+            
             // Validate request
             $validator = Validator::make($request->all(), [
                 'login' => 'required|string',

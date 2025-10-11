@@ -20,16 +20,368 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Email_Verification_Resends;
 use App\Http\Controllers\admin\WalletsController;
+use App\Models\Settings;
 
 class CustomerAuthController extends Controller
 {
+    public function getTemplate()
+    {
+        $customerSetting = Settings::where('key', 'customer_template')->first();
+        $template = Form_Template::find($customerSetting->value);
+        if (!$template) {
+            return response()->json([
+                'template_exists' => false,
+                'customer_template' => [],
+            ]);
+        }
+        $customerTemplate = Form_Field::where('form_template_id', $customerSetting->value)
+            ->where('customer_can', 'write')
+            ->get([
+                'id',
+                'name',
+                'label',
+                'type',
+                'value',
+                'required',
+                'order',
+            ]);
+
+        return response()->json([
+            'template_exists' => true,
+            'customer_template' => $customerTemplate,
+        ]);
+    }
+
+    public function createVerificationToken($user)
+    {
+        $token = Str::random(64);
+        Email_Verifications::insert([
+          'verifiable_id' => $user->id,
+          'verifiable_type' => get_class($user),
+          'token' => $token,
+          'created_at' => now(),
+        ]);
+        return $token;
+    }
+
+    public function sendVerificationEmail($user, $type)
+    {
+        $token = ($this)->createVerificationToken($user);
+        $verifyLink = route('verify.email', ['token' => $token]);
+
+        Mail::send("emails.verify-account", ['user' => $user, 'verifyLink' => $verifyLink], function ($message) use ($user) {
+            $message->to($user->email)->subject('Verify Your Email');
+        });
+    }
+
+    public function resendVerification(Request $req)
+    {
+        $req->validate(['email' => 'required|email']);
+
+        $customer = Customer::where('email', $req->email)->first();
+
+
+        if (!$customer) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Customer not found'
+            ]);
+        }
+
+        if ($customer->status !== 'verified') {
+            return response()->json([
+                 'status' => 201,
+                 'message' => 'Your email is already verified.'
+             ]);
+        }
+
+        $ip = $req->ip();
+        $email = $req->email;
+
+        $resend = Email_Verification_Resends::where('email', $email)->first();
+
+        // تحقق من عدد المحاولات اليومية
+        if ($resend && $resend->resend_count >= 3 && Carbon::parse($resend->last_sent_at)->isToday()) {
+            return response()->json([
+                   'status' => 400,
+                   'message' => 'You have reached the maximum resend attempts for today. Try again tomorrow.'
+               ]);
+        }
+
+        // تحقق من وجود مهلة زمنية (Cooldown) بين المحاولات
+        if ($resend && Carbon::parse($resend->last_sent_at)->diffInMinutes(now()) < 2) {
+            return response()->json([
+                    'status' => 400,
+                    'message' => 'Please wait a few minutes before resending verification email.'
+                ]);
+        }
+
+        // أرسل رسالة التحقق
+        $this->sendVerificationEmail($customer, 'customer');
+
+        // تحديث السجل أو إنشاؤه
+        if ($resend) {
+            Email_Verification_Resends::where('email', $email)->update([
+              'resend_count' => Carbon::parse($resend->last_sent_at)->isToday() ? $resend->resend_count + 1 : 1,
+              'last_sent_at' => now(),
+              'ip_address' => $ip,
+              'updated_at' => now(),
+            ]);
+        } else {
+            Email_Verification_Resends::insert([
+              'email' => $email,
+              'resend_count' => 1,
+              'last_sent_at' => now(),
+              'ip_address' => $ip,
+              'created_at' => now(),
+              'updated_at' => now(),
+            ]);
+        }
+
+        $remaining = 3;
+
+        if ($resend) {
+            $remaining = Carbon::parse($resend->last_sent_at)->isToday()
+              ? max(0, 3 - $resend->resend_count)
+              : 3;
+        }
+
+        return response()->json([
+            'status' => 201,
+            'message' => 'Verification email resent successfully.',
+            'remaining_attempts' => $remaining
+        ]);
+
+    }
+
+    public function register(Request $req)
+    {
+        // 🔹 القواعد الأساسية
+        $baseRules = [
+            'name'           => 'required|string|max:255',
+            'email'          => 'required|email|unique:customers,email',
+            'phone'          => 'required|unique:customers,phone',
+            'phone_code'     => 'required|string',
+            'password'       => 'required|same:confirm-password',
+            'c_name'         => 'nullable|string|max:255',
+            'c_address'      => 'nullable|string|max:255',
+        ];
+
+        $additionalRules = [];
+
+        // 🔹 جلب إعداد القالب الحالي
+        $customerSetting = Settings::where('key', 'customer_template')->first();
+        $template = $customerSetting ? Form_Template::find($customerSetting->value) : null;
+
+        if ($template) {
+            // 🔹 جلب الحقول المسموح بها فقط للعميل
+            $fields = Form_Field::where('form_template_id', $template->id)
+                ->where('customer_can', 'write')
+                ->get();
+
+            foreach ($fields as $field) {
+                $fieldKey = 'additional_fields.' . $field->name;
+                $fieldRules = [];
+
+                if ($field->required && !$req->filled('id')) {
+                    $fieldRules[] = 'required';
+                }
+
+                switch ($field->type) {
+                    case 'text':
+                        $fieldRules[] = 'string';
+                        break;
+
+                    case 'number':
+                        $fieldRules[] = 'numeric';
+                        break;
+
+                    case 'url':
+                        $fieldRules[] = 'url';
+                        break;
+
+                    case 'date':
+                        $fieldRules[] = 'date';
+                        break;
+
+                    case 'file':
+                        $fieldRules = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        if ($field->required) {
+                            $fieldRules[] = 'required';
+                        }
+                        break;
+
+                    case 'image':
+                        $fieldRules = ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+                        if ($field->required) {
+                            $fieldRules[] = 'required';
+                        }
+                        break;
+
+                    case 'file_expiration_date':
+                        $fileKey = $fieldKey . '_file';
+                        $expKey  = $fieldKey . '_expiration';
+                        $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        $additionalRules[$expKey]  = ['nullable', 'date'];
+                        if ($field->required) {
+                            $additionalRules[$fileKey][] = 'required_with:' . $expKey;
+                            $additionalRules[$expKey][]  = 'required_with:' . $fileKey;
+                        }
+                        continue 2;
+
+                    case 'file_with_text':
+                        $fileKey = $fieldKey . '_file';
+                        $textKey = $fieldKey . '_text';
+                        $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
+                        if ($field->required) {
+                            $additionalRules[$fileKey][] = 'required';
+                            $additionalRules[$textKey][] = 'required';
+                        }
+                        continue 2;
+
+                    default:
+                        $fieldRules[] = $field->required ? 'string' : 'nullable|string';
+                        break;
+                }
+
+                $additionalRules[$fieldKey] = $fieldRules;
+            }
+        }
+
+        // 🔹 دمج جميع القواعد
+        $allRules = array_merge($baseRules, $additionalRules);
+
+        // 🔹 تنفيذ التحقق
+        $validator = Validator::make($req->all(), $allRules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'errors'  => $validator->errors(),
+            ]);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // 🔹 إعداد بيانات العميل
+            $data = [
+                'name'            => $req->name,
+                'email'           => $req->email,
+                'phone'           => $req->phone,
+                'phone_code'      => $req->phone_code,
+                'password'        => Hash::make($req->password),
+                'company_name'    => $req->c_name,
+                'company_address' => $req->c_address,
+            ];
+
+            $structuredFields = [];
+
+            if ($template) {
+                $data['form_template_id'] = $template->id;
+                $fields = Form_Field::where('form_template_id', $template->id)
+                    ->where('customer_can', 'write')
+                    ->get();
+
+                foreach ($fields as $field) {
+                    $name = $field->name;
+                    $type = $field->type;
+
+                    switch ($type) {
+                        case 'file_expiration_date':
+                            $fileKey = "additional_fields.{$name}_file";
+                            $expKey  = "additional_fields.{$name}_expiration";
+
+                            $filePath = null;
+                            if ($req->hasFile($fileKey)) {
+                                $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
+                            }
+
+                            if ($filePath || $req->filled($expKey)) {
+                                $structuredFields[$name] = [
+                                    'label'      => $field->label,
+                                    'value'      => $filePath,
+                                    'expiration' => $req->input($expKey),
+                                    'type'       => $type,
+                                ];
+                            }
+                            break;
+
+                        case 'file_with_text':
+                            $fileKey = "additional_fields.{$name}_file";
+                            $textKey = "additional_fields.{$name}_text";
+                            $filePath = null;
+
+                            if ($req->hasFile($fileKey)) {
+                                $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
+                            }
+
+                            if ($filePath || $req->filled($textKey)) {
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $filePath,
+                                    'text'  => $req->input($textKey),
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+
+                        case 'file':
+                        case 'image':
+                            if ($req->hasFile("additional_fields.$name")) {
+                                $path = FileHelper::uploadFile($req->file("additional_fields.$name"), 'customers/files');
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $path,
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+
+                        default:
+                            if ($req->filled("additional_fields.$name")) {
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $req->input("additional_fields.$name"),
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+                    }
+                }
+
+                $data['additional_data'] = $structuredFields;
+            }
+
+            // 🔹 إنشاء العميل
+            $customer = Customer::create($data);
+
+            // 🔹 إرسال بريد التحقق
+            $this->sendVerificationEmail($customer, 'customer');
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => 201,
+                'message' => __('Your Account Created successfully'),
+            ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 500,
+                'message'  => $ex->getMessage(),
+            ]);
+        }
+    }
+
+
+
     /**
      * Customer login with Sanctum token
      */
     public function login(Request $request)
     {
-        Log::alert("start Login");
-
         try {
             // Validate request
             $validator = Validator::make($request->all(), [
@@ -45,42 +397,38 @@ class CustomerAuthController extends Controller
                 Log::alert($validator->errors());
 
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
+                    'status' => 422,
                     'errors' => $validator->errors()
-                ], 422);
+                ]);
             }
 
             // Find customer by email or phone
             $email = $request->email;
-            $customer = Customer::where('email', $email)
-                              ->orWhere('phone', $email)
-                              ->first();
+            $customer = Customer::where('email', $email)->first();
 
             // Check if customer exists and password is correct
             if (!$customer || !Hash::check($request->password, $customer->password)) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 401,
                     'message' => 'Invalid credentials'
-                ], 401);
+                ]);
             }
 
             // Check if customer is active
             if ($customer->status !== 'active') {
                 return response()->json([
-                    'success' => false,
+                    'status' => 403,
                     'message' => 'Customer account is not active'
-                ], 403);
+                ]);
             }
 
             // Check if email is verified
             if ($customer->email_verified_at) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 403,
                     'message' => 'Email not verified',
-                    'requires_verification' => true,
-                    'email' => $customer->email
-                ], 403);
+
+                ]);
             }
 
             // Revoke existing tokens for this device (optional - for single device login)
@@ -100,7 +448,7 @@ class CustomerAuthController extends Controller
             ]);
 
             return response()->json([
-                'success' => true,
+                'status' => 201,
                 'message' => 'Login successful',
                 'data' => [
                     'customer' => [
@@ -126,203 +474,15 @@ class CustomerAuthController extends Controller
             Log::alert($e);
 
             return response()->json([
-                'success' => false,
+                'status' => 500,
                 'message' => 'Login failed',
                 'error' => $e->getMessage()
-            ], 500);
+            ]);
         }
     }
 
-    /**
-     * Customer registration
-     */
-    public function register(Request $request)
-    {
-        try {
-            // Base validation rules
-            $baseRules = [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:customers,email',
-                'phone' => 'required|unique:customers,phone',
-                'phone_code' => 'required|string',
-                'password' => 'required|string|min:6|confirmed',
-                'company_name' => 'nullable|string|max:255',
-                'company_address' => 'nullable|string|max:255',
-                'device_name' => 'required|string|max:255',
-                'fcm_token' => 'nullable|string',
-                'captcha' => 'required|captcha',
-            ];
 
-            // Get form template for additional fields
-            $additionalRules = [];
-            $template = null;
 
-            if ($request->filled('form_template_id')) {
-                $template = Form_Template::with('fields')->find($request->form_template_id);
-                if ($template) {
-                    foreach ($template->fields as $field) {
-                        if ($field->customer_can === 'write') {
-                            $fieldKey = 'additional_fields.' . $field->name;
-                            $rules = [];
-
-                            if ($field->required) {
-                                $rules[] = 'required';
-                            }
-
-                            // Add type-specific validation
-                            switch ($field->type) {
-                                case 'email':
-                                    $rules[] = 'email';
-                                    break;
-                                case 'number':
-                                    $rules[] = 'numeric';
-                                    break;
-                                case 'date':
-                                    $rules[] = 'date';
-                                    break;
-                                case 'file':
-                                case 'image':
-                                    $rules[] = 'file';
-                                    if ($field->type === 'image') {
-                                        $rules[] = 'image|mimes:jpeg,png,jpg,webp,gif|max:2048';
-                                    } else {
-                                        $rules[] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv|max:5120';
-                                    }
-                                    break;
-                            }
-
-                            if (!empty($rules)) {
-                                $additionalRules[$fieldKey] = $rules;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Merge validation rules
-            $allRules = array_merge($baseRules, $additionalRules);
-
-            $validator = Validator::make($request->all(), $allRules);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            // Prepare customer data
-            $customerData = [
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'phone_code' => $request->phone_code,
-                'password' => Hash::make($request->password),
-                'company_name' => $request->company_name,
-                'company_address' => $request->company_address,
-                'status' => 'active',
-                'form_template_id' => $request->form_template_id,
-            ];
-
-            // Handle additional fields
-            $structuredFields = [];
-            if ($template) {
-                foreach ($template->fields as $field) {
-                    if ($field->customer_can === 'write') {
-                        $fieldName = $field->name;
-                        $fieldKey = 'additional_fields.' . $fieldName;
-
-                        if ($request->has($fieldKey)) {
-                            $value = $request->input($fieldKey);
-
-                            // Handle file uploads
-                            if (in_array($field->type, ['file', 'image']) && $request->hasFile($fieldKey)) {
-                                $file = $request->file($fieldKey);
-                                $path = FileHelper::uploadFile($file, 'customers/additional_fields');
-                                $value = $path;
-                            }
-
-                            $structuredFields[$fieldName] = [
-                                'label' => $field->label,
-                                'value' => $value,
-                                'type' => $field->type,
-                            ];
-                        }
-                    }
-                }
-                $customerData['additional_data'] = $structuredFields;
-            }
-
-            // Create customer
-            $customer = Customer::create($customerData);
-
-            // Create wallet for customer
-            (new WalletsController())->store('customer', $customer->id, true);
-
-            // Send verification email
-            $this->sendVerificationEmail($customer);
-
-            // Create token
-            $token = $customer->createToken($request->device_name, ['customer'])->plainTextToken;
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful. Please verify your email.',
-                'data' => [
-                    'customer' => [
-                        'id' => $customer->id,
-                        'name' => $customer->name,
-                        'email' => $customer->email,
-                        'phone' => $customer->phone,
-                        'phone_code' => $customer->phone_code,
-                        'company_name' => $customer->company_name,
-                        'company_address' => $customer->company_address,
-                        'status' => $customer->status,
-                        'email_verified_at' => $customer->email_verified_at,
-                        'created_at' => $customer->created_at,
-                    ],
-                    'token' => $token,
-                    'token_type' => 'Bearer',
-                    'requires_verification' => true
-                ]
-            ], 201);
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Registration failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Send verification email
-     */
-    private function sendVerificationEmail($customer)
-    {
-        $token = Str::random(64);
-
-        Email_Verifications::create([
-            'email' => $customer->email,
-            'token' => $token,
-            'user_type' => 'customer',
-            'user_id' => $customer->id,
-            'expires_at' => Carbon::now()->addHours(24),
-        ]);
-
-        // Send email (implement your email template)
-        // Mail::send('emails.verify', ['token' => $token], function($message) use ($customer) {
-        //     $message->to($customer->email);
-        //     $message->subject('Verify Your Email Address');
-        // });
-    }
 
     /**
      * Customer logout
@@ -339,261 +499,62 @@ class CustomerAuthController extends Controller
             $customer->update(['fcm_token' => null]);
 
             return response()->json([
-                'success' => true,
+                'success' => 201,
                 'message' => 'Logout successful'
             ]);
 
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
+                'success' => 500,
                 'message' => 'Logout failed',
                 'error' => $e->getMessage()
-            ], 500);
+            ]);
         }
     }
 
-    /**
-     * Verify email address
-     */
-    public function verifyEmail(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'token' => 'required|string',
-                'email' => 'required|email',
-            ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
 
-            $verification = Email_Verifications::where('token', $request->token)
-                                              ->where('email', $request->email)
-                                              ->where('user_type', 'customer')
-                                              ->where('expires_at', '>', Carbon::now())
-                                              ->first();
-
-            if (!$verification) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired verification token'
-                ], 400);
-            }
-
-            $customer = Customer::find($verification->user_id);
-            if (!$customer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Customer not found'
-                ], 404);
-            }
-
-            // Mark email as verified
-            $customer->update(['email_verified_at' => Carbon::now()]);
-
-            // Delete verification record
-            $verification->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Email verified successfully'
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email verification failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Resend verification email
-     */
-    public function resendVerification(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:customers,email',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $customer = Customer::where('email', $request->email)->first();
-
-            if ($customer->email_verified_at) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Email already verified'
-                ], 400);
-            }
-
-            // Check resend attempts
-            $today = Carbon::today();
-            $resendCount = Email_Verification_Resends::where('email', $request->email)
-                                                    ->whereDate('created_at', $today)
-                                                    ->count();
-
-            if ($resendCount >= 3) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Maximum resend attempts reached for today'
-                ], 429);
-            }
-
-            // Delete old verification tokens
-            Email_Verifications::where('email', $request->email)
-                              ->where('user_type', 'customer')
-                              ->delete();
-
-            // Send new verification email
-            $this->sendVerificationEmail($customer);
-
-            // Record resend attempt
-            Email_Verification_Resends::create([
-                'email' => $request->email,
-                'user_type' => 'customer',
-                'user_id' => $customer->id,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Verification email sent successfully'
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to resend verification email',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Forgot password
-     */
     public function forgotPassword(Request $request)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:customers,email',
-            ]);
+        $request->validate([
+          'email' => 'required|email',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
 
-            $customer = Customer::where('email', $request->email)->first();
+        $user = Customer::where('email', $request->email)->first();
 
-            // Generate reset token
-            $token = Str::random(64);
-
-            // Store reset token (you might want to create a password_resets table)
-            DB::table('password_resets')->updateOrInsert(
-                ['email' => $request->email],
-                [
-                    'token' => Hash::make($token),
-                    'created_at' => Carbon::now()
-                ]
-            );
-
-            // Send reset email (implement your email template)
-            // Mail::send('emails.password-reset', ['token' => $token], function($message) use ($customer) {
-            //     $message->to($customer->email);
-            //     $message->subject('Reset Your Password');
-            // });
-
+        if (!$user) {
             return response()->json([
-                'success' => true,
-                'message' => 'Password reset email sent successfully'
+                'status' => 404,
+                'message' => 'No account found with this email.'
             ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send password reset email',
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        $token = Str::random(64);
+        DB::table('password_resets')->updateOrInsert(
+            ['email' => $user->email, 'type' => 'customer'],
+            ['token' => hash('sha256', $token), 'created_at' => now()]
+        );
+
+        $resetLink = route('password.reset.form', [
+          'token' => $token,
+          'email' => $user->email,
+          'type' => $request->type
+        ]);
+
+        Mail::send('emails.password-reset', [
+          'url' => $resetLink,
+          'name' => $user->name ?? $user->email
+        ], function ($message) use ($user) {
+            $message->to($user->email)->subject('Reset Your Password');
+        });
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Password reset link sent successfully'
+        ]);
     }
 
-    /**
-     * Reset password
-     */
-    public function resetPassword(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'email' => 'required|email|exists:customers,email',
-                'token' => 'required|string',
-                'password' => 'required|string|min:6|confirmed',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $reset = DB::table('password_resets')
-                      ->where('email', $request->email)
-                      ->first();
-
-            if (!$reset || !Hash::check($request->token, $reset->token)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid reset token'
-                ], 400);
-            }
-
-            // Check if token is not expired (24 hours)
-            if (Carbon::parse($reset->created_at)->addHours(24)->isPast()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Reset token has expired'
-                ], 400);
-            }
-
-            $customer = Customer::where('email', $request->email)->first();
-            $customer->update(['password' => Hash::make($request->password)]);
-
-            // Delete reset token
-            DB::table('password_resets')->where('email', $request->email)->delete();
-
-            // Revoke all tokens
-            $customer->tokens()->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset successfully'
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Password reset failed',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Change password (for authenticated users)
@@ -608,34 +569,33 @@ class CustomerAuthController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
+                    'status' => 422,
                     'errors' => $validator->errors()
-                ], 422);
+                ]);
             }
 
             $customer = $request->user();
 
             if (!Hash::check($request->current_password, $customer->password)) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 400,
                     'message' => 'Current password is incorrect'
-                ], 400);
+                ]);
             }
 
             $customer->update(['password' => Hash::make($request->password)]);
 
             return response()->json([
-                'success' => true,
+                'status' => 201,
                 'message' => 'Password changed successfully'
             ]);
 
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => 500,
                 'message' => 'Password change failed',
                 'error' => $e->getMessage()
-            ], 500);
+            ]);
         }
     }
 }

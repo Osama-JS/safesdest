@@ -44,7 +44,7 @@ class PdfService
             'fontdata' => $fontData + [
                 'tajawal' => [
                     'R' => 'Tajawal-Regular.ttf',
-                    'B' => 'Tajawal-Regular.ttf',
+                    'B' => 'Tajawal-Bold.ttf',
                 ],
             ],
             'default_font' => 'tajawal',

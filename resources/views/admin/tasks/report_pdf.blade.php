@@ -6,6 +6,8 @@
     <title>#{{ $task->id }}</title>
     <style>
         body {
+            font-family: 'tajawal';
+
             margin: 0;
             padding: 0;
             color: #2c3e50;

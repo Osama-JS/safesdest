@@ -25,7 +25,6 @@ class NotificationService
             'driver' => Driver::class,
             'customer' => Customer::class,
         ];
-
         if (!isset($modelMap[$type])) {
             throw new \Exception("نوع المستلم غير صحيح");
         }

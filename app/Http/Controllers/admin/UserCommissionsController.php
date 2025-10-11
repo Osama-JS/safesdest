@@ -120,7 +120,7 @@ class UserCommissionsController extends Controller
                 UserWalletTransaction::create([
                     'user_wallet_id' => $userWallet->id,
                     'amount' => $amount,
-                    'description' => "Commission from Task: #{$task->id} - Customer: {$task->owner->name}",
+                    'description' => "Commission from Task: #{$task->id} - Customer: {$task->customer->name}",
                     'transaction_type' => 'credit',
                     'task_id' => $task->id,
                     'user_id' => Auth::user()->id,

@@ -60,7 +60,7 @@ class TasksController extends Controller
     public function __construct(PdfService $pdfService)
     {
         $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
-        $this->middleware('permission:create_tasks', ['only' => ['store','duplicateTask']]);
+        $this->middleware('permission:create_tasks', ['only' => ['store','duplicateTask','fixTeamConnection']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
@@ -710,6 +710,7 @@ class TasksController extends Controller
 
             if ($req->filled('task_driver')) {
                 $task['driver_id'] = $req->task_driver;
+                $task['team_id'] = $driver->team_id ?? null;
                 $driver = Driver::findOrFail($task['driver_id']);
                 $task['commission'] = $driver->calculateCommission($task['total_price']);
                 $task['status'] = 'assign';
@@ -3012,6 +3013,7 @@ class TasksController extends Controller
 
             // تعيين القيم الجديدة للحقول المطلوبة
             $newTaskData['driver_id'] = null;
+            $newTaskData['team_id'] = null;
             $newTaskData['user_id'] = Auth::user()->id;
             $newTaskData['status'] = 'in_progress';
             $newTaskData['payment_status'] = 'waiting';
@@ -3125,6 +3127,25 @@ class TasksController extends Controller
                 'message' => __('Error duplicating task: ') . $e->getMessage()
             ]);
         }
+    }
+
+    public function fixTeamConnection($id)
+    {
+        $task = Task::find($id);
+        if (!$task) {
+            return response()->json([
+                 'status' => 2,
+                 'message' => __('Task Not found')
+             ]);
+        }
+        if ($task->driver_id) {
+            $task->team_id = $task->driver->team_id ?? null;
+            $task->save();
+        }
+        return  response()->json([
+                 'status' => 1,
+                 'message' => __('fix tream connection done')
+             ]);
     }
 
 }

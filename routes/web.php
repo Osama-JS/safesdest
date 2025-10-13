@@ -584,6 +584,9 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/task/{id}/report', [TasksController::class, 'downloadTaskReport'])->name('tasks.report');
                 Route::post('/tasks/duplicate', [TasksController::class, 'duplicateTask'])->name('tasks.duplicate');
 
+                Route::get('/tasks/fix-connection/{id}', [TasksController::class, 'fixTeamConnection'])->name('tasks.fix-connection');
+
+
 
                 Route::get('ads', [TasksAdsController::class, 'index'])->name('ads.ads');
                 Route::get('/ads/data', [TasksAdsController::class, 'getData'])->name('ads.data');

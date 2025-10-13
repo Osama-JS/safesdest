@@ -272,6 +272,7 @@ $(function () {
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>
+                    <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">Fix Connection</a></li>
 
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
                   </ul>
@@ -1149,6 +1150,19 @@ $(function () {
   //       $('#paymentRequestForm')[0].reset();
   //     }, 1000);
   //   }
+
+  $(document).on('click', '.fix-connection-task', function () {
+    const taskId = $(this).data('id');
+    showAlert('warning', 'fixing connection Started ...', 5000, true);
+    $.get(`${baseUrl}admin/tasks/fix-connection/${taskId}`, function (data) {
+      if (data.status === 1) {
+        showAlert('success', data.message, 5000, true);
+        dt_data.draw();
+      } else {
+        showAlert('danger', data.message, 5000, true);
+      }
+    });
+  });
 
   // 🗑️ معالج حذف المهمة باستخدام SweetAlert2
   $(document).on('click', '.delete-task', function () {

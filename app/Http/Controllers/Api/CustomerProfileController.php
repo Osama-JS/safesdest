@@ -39,7 +39,7 @@ class CustomerProfileController extends Controller
             }
 
             return response()->json([
-                'status' => 201,
+                'status' => 200,
                 'data' => [
                     'customer' => [
                         'id' => $customer->id,
@@ -115,7 +115,7 @@ class CustomerProfileController extends Controller
             $customer->update($updateData);
 
             return response()->json([
-                'status' => 201,
+                'status' => 200,
                 'message' => 'Profile updated successfully',
 
             ]);
@@ -162,7 +162,7 @@ class CustomerProfileController extends Controller
             $customer->update(['image' => $path]);
 
             return response()->json([
-                'status' => 201,
+                'status' => 200,
                 'message' => 'Avatar uploaded successfully',
                 'avatar_url' => asset('storage/' . $path)
             ]);
@@ -207,7 +207,7 @@ class CustomerProfileController extends Controller
             ];
 
             return response()->json([
-                'status' => 201,
+                'status' => 200,
                 'data' => [
                     'tasks' => $taskStats,
                     'clearances' => $clearanceStats,
@@ -280,7 +280,7 @@ class CustomerProfileController extends Controller
 
             $customer->delete();
             return response()->json([
-                'status' => 201,
+                'status' => 200,
                 'message' => 'Account deleted successfully'
             ]);
 

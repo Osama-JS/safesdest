@@ -8,6 +8,8 @@ use App\Models\Form_Template;
 use App\Models\Form_Field;
 use App\Models\Pricing_Template;
 use App\Models\Vehicle_Size;
+use App\Models\Settings;
+use App\Models\Vehicle;
 use App\Models\Task_History;
 use App\Models\Driver;
 use App\Http\Controllers\Controller;
@@ -20,6 +22,117 @@ use Exception;
 
 class CustomerTaskController extends Controller
 {
+
+    public function getInitData()
+    {
+        try {
+            // جلب جميع المركبات
+           $vehicles = Vehicle::with([
+                'types' => function ($query) {
+                    $query->select('id', 'vehicle_id', 'name', 'en_name')
+                        ->with(['sizes' => function ($q) {
+                            $q->select('id', 'vehicle_type_id', 'name');
+                        }]);
+                }
+            ])->get(['id', 'name', 'en_name']);
+
+
+            // دالة مساعدة لجلب بيانات القالب بناءً على مفتاح الإعداد
+            $getTemplateFields = function ($settingKey) {
+                $setting = Settings::where('key', $settingKey)->first();
+
+                if (!$setting) {
+                    return null;
+                }
+
+                $template = Form_Template::find($setting->value);
+
+                if (!$template) {
+                    return null;
+                }
+
+                $fields = Form_Field::where('form_template_id', $template->id)
+                    ->where('customer_can', 'write')
+                    ->orderBy('order')
+                    ->get([
+                        'id',
+                        'name',
+                        'label',
+                        'type',
+                        'value',
+                        'required',
+                        'order',
+                    ]);
+
+                return [
+                    'template' => $template,
+                    'fields' => $fields,
+                ];
+            };
+
+            // جلب القوالب الثلاثة
+            $taskTemplate = $getTemplateFields('task_template');
+            $taskFromTemplate = $getTemplateFields('task_from_port_template');
+            $taskToTemplate = $getTemplateFields('task_to_port_template');
+
+            // إرجاع البيانات بصيغة JSON
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'vehicles' => $vehicles,
+                    'task_template' => $taskTemplate,
+                    'task_from_template' => $taskFromTemplate,
+                    'task_to_template' => $taskToTemplate,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            // التعامل مع الأخطاء بشكل منظم
+            return response()->json([
+                'status' => 500,
+                'message' => 'حدث خطأ أثناء جلب البيانات',
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+     public function getTasksMap(Request $request)
+    {
+        $customer = $request->user();
+        $query = Task::where('customer_id', $customer->id)->where('closed', false)->where('status', '!=', 'canceled')->where('status', '!=', 'refund');
+
+        $tasks = $query->get();
+        
+        $tasksData = $tasks->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'status' => $task->status,
+                'pickup' => [
+                    
+                ],
+                'price' => $task->price,
+                'currency' => 'SAR',
+                'driver' => $task->driver ? [
+                    'id' => $task->driver->id,
+                    'name' => $task->driver->name,
+                    'phone' => $task->driver->phone,
+                    'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
+                    'rating' => $task->driver->rating,
+                ] : null,
+                'vehicle_size' => $task->vehicle_size ? [
+                    'id' => $task->vehicle_size->id,
+                    'name' => $task->vehicle_size->name,
+                    'description' => $task->vehicle_size->description,
+                ] : null,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+            ];
+        });
+
+
+
+    }
+
     /**
      * Get customer tasks list
      */

@@ -36,6 +36,9 @@ Route::prefix('customer')->group(function () {
 
     Route::get('/template', [CustomerAuthController::class, 'getTemplate'])
         ->name('api.customer.template');
+ Route::get('/inti-tasks', [CustomerTaskController::class, 'getInitData'])
+        ->name('api.init.tasks');
+        
 
     Route::post('/register', [CustomerAuthController::class, 'register'])
         ->middleware(['throttle:3,1'])
@@ -72,6 +75,8 @@ Route::prefix('customer')->group(function () {
 // Protected routes (require Sanctum authentication)
 Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
 
+    
+   
     // Authentication routes
     Route::post('/check-token', [CustomerAuthController::class, 'checkToken'])
         ->name('api.customer.check-token');

@@ -21,9 +21,9 @@
 - Content-Type: application/json
 - Accept: application/json
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Customer API is working",
     "timestamp": "2024-01-01T12:00:00.000000Z"
 }
@@ -93,7 +93,10 @@ Description: تسجيل عميل جديد
     "password": "password123",
     "confirm-password": "password123",
     "c_name": "اسم الشركة (اختياري)",
-    "c_address": "عنوان الشركة (اختياري)"
+    "c_address": "عنوان الشركة (اختياري)",
+    "fcm_token": "firebase_token (اختياري)",
+    "device_id": "device_unique_id (اختياري)",
+    "app_version": "1.0.0 (اختياري)"
 }
 
 📤 Request Body (With Additional Fields):
@@ -113,9 +116,9 @@ Description: تسجيل عميل جديد
     }
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Your Account Created successfully"
 }
 
@@ -154,9 +157,9 @@ Description: إعادة إرسال رسالة التحقق من البريد ا�
     "email": "customer@example.com"
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201
+    "status": 200
     "message": "Verification email resent successfully.",
     "remaining_attempts": 2
 }
@@ -167,9 +170,9 @@ Description: إعادة إرسال رسالة التحقق من البريد ا�
     "message": "Customer not found"
 }
 
-📥 Response (Already Verified - 201):
+📥 Response (Already Verified - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Your email is already verified."
 }
 
@@ -203,9 +206,9 @@ Description: تسجيل دخول العميل
     "app_version": "1.0.0 (اختياري)"
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Login successful",
     "data": {
         "customer": {
@@ -286,6 +289,130 @@ Description: طلب إعادة تعيين كلمة المرور
     "message": "No account found with this email."
 }
 
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.6 Verify Reset Code
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/check-reset-code
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: التحقق من كود اعداة تعيين كلمة المرور
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com"
+    "code": "12345"
+}
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "message": "Password reset link sent successfully"
+}
+
+📥 Response (Customer Not Found - 404):
+{
+    "status": 404,
+    "message": "No account found with this email."
+}
+
+📥 Response (Invalid code - 400):
+{
+    "status": 400,
+    "message": "Invalid code"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.7 Reset Password
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/reset-password
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: اعادة تعيين كلمة المرور
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com"
+    "code": "12345",
+    "password": "new_password",
+    "fcm_token": "firebase_token (اختياري)",
+    "device_id": "device_unique_id (اختياري)",
+    "app_version": "1.0.0 (اختياري)"
+
+}
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "message": "Password reset link sent successfully"
+}
+
+📥 Response (Reset Request Not Found - 404):
+{
+    "status": 404,
+    "message": "No reset request found."
+}
+
+📥 Response (Invalid code - 400):
+{
+    "status": 400,
+    "message": "Invalid code" / "Code expired."
+}
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.8 Verify Email Code
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/verify-email-code
+Authentication: غير مطلوب
+Rate Limit: 3 requests per minute
+Description: التحقق من كود التحقق من البريد الإلكتروني
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "email": "customer@example.com"
+    "code": "12345",
+    "password": "new_password",
+
+}
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "message": "Password reset link sent successfully"
+}
+
+📥 Response (User not found - 404):
+{
+    "status": 404,
+    "message": "User not found."
+}
+
+📥 Response (Invalid code - 400):
+{
+    "status": 400,
+    "message": "Invalid code" / "Code expired."
+}
 ================================================================================
 🔐 3. AUTHENTICATED ENDPOINTS (Protected Routes)
 ================================================================================
@@ -301,7 +428,7 @@ Description: طلب إعادة تعيين كلمة المرور
 🔗 3.1 Customer Logout
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Endpoint: POST /api/customer/logout
+Endpoint: POST /api/customer/logoutcode
 Authentication: مطلوب (Bearer Token)
 Description: تسجيل خروج العميل
 
@@ -310,9 +437,9 @@ Description: تسجيل خروج العميل
 - Content-Type: application/json
 - Accept: application/json
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "success": 201,
+    "success": 200,
     "message": "Logout successful"
 }
 
@@ -344,9 +471,9 @@ Description: تغيير كلمة المرور
     "password_confirmation": "new_password123"
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Password changed successfully"
 }
 
@@ -379,9 +506,9 @@ Description: الحصول على معلومات الملف الشخصي
 - Authorization: Bearer {token}
 - Accept: application/json
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "data": {
         "customer": {
             "id": 1,
@@ -446,9 +573,9 @@ Description: تحديث معلومات الملف الشخصي
     "company_address": "عنوان الشركة الجديد"
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Profile updated successfully"
 }
 
@@ -477,9 +604,9 @@ Description: رفع صورة الملف الشخصي
 📤 Request Body (Form Data):
 - avatar: [image file] (jpeg, png, jpg, webp, gif - max 2MB)
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Avatar uploaded successfully",
     "avatar_url": "http://domain.com/storage/customers/avatar.jpg"
 }
@@ -505,9 +632,9 @@ Description: الحصول على إحصائيات العميل
 - Authorization: Bearer {token}
 - Accept: application/json
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "data": {
         "tasks": {
             "total_tasks": 10,
@@ -548,9 +675,9 @@ Description: حذف حساب العميل
     "confirmation": "DELETE_MY_ACCOUNT"
 }
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Account deleted successfully"
 }
 
@@ -588,9 +715,9 @@ Description: فحص Token API
 - Content-Type: application/json
 - Accept: application/json
 
-📥 Response (Success - 201):
+📥 Response (Success - 200):
 {
-    "status": 201,
+    "status": 200,
     "message": "Login successful",
     "data": {
         "customer": {
@@ -618,13 +745,205 @@ Description: فحص Token API
     "message": "Invalid or expired token"
 }
 
+
 ================================================================================
-📋 4. ERROR CODES REFERENCE
+🚒 4. Tasks Routtes (Protected Routes)
+================================================================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 2.1 Get Registration Template
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/inti-tasks
+Authentication:   مطلوب (Bearer Token)
+Description: جلب بيانات تهيئة ال form لل tasks
+
+📤 Request Headers:
+- Content-Type: application/json
+- Accept: application/json
+
+📥 Response (Success - 200) (EX):
+مثال لشكل البيانات اذا كانت النتيجة 200
+{
+
+	"status": 200,
+	"data": {
+		"vehicles": [
+			{
+				"id": 1,
+				"name": "دينا",
+				"en_name": "Dyana",
+				"types": [
+					{
+						"id": 1,
+						"vehicle_id": 1,
+						"name": "مفتوحة",
+						"en_name": "Open",
+						"sizes": [
+							{
+								"id": 1,
+								"vehicle_type_id": 1,
+								"name": "12 mtr"
+							}
+						]
+					},
+					{
+						"id": 2,
+						"vehicle_id": 1,
+						"name": "مغلقة",
+						"en_name": "Closed",
+						"sizes": []
+					},
+					{
+						"id": 3,
+						"vehicle_id": 1,
+						"name": "ثلاجة",
+						"en_name": "Refrigerator",
+						"sizes": []
+					},
+					{
+						"id": 4,
+						"vehicle_id": 1,
+						"name": "جوانب",
+						"en_name": "Tow Truck",
+						"sizes": []
+					}
+				]
+			},
+			{
+				"id": 2,
+				"name": "تريلا",
+				"en_name": "Trailer",
+				"types": [
+					{
+						"id": 5,
+						"vehicle_id": 2,
+						"name": "سطحة",
+						"en_name": "Flatbed",
+						"sizes": []
+					},
+					{
+						"id": 6,
+						"vehicle_id": 2,
+						"name": "جوانب",
+						"en_name": "Sides",
+						"sizes": []
+					},
+					{
+						"id": 7,
+						"vehicle_id": 2,
+						"name": "ستارة",
+						"en_name": "Curtain",
+						"sizes": []
+					},
+					{
+						"id": 8,
+						"vehicle_id": 2,
+						"name": "ثلاجة",
+						"en_name": "Refrigerator",
+						"sizes": []
+					}
+				]
+			}
+		],
+		"task_template": {
+			"template": {
+				"id": 1,
+				"name": "customer template",
+				"description": null,
+				"created_at": "2025-10-11T09:22:12.000000Z",
+				"updated_at": "2025-10-11T09:22:12.000000Z"
+			},
+			"fields": [
+				{
+					"id": 1,
+					"name": "company_email",
+					"label": "Company Email - ايميل الشركة",
+					"type": "string",
+					"value": null,
+					"required": false,
+					"order": 1
+				},
+				{
+					"id": 3,
+					"name": "id",
+					"label": "البطاقة الشخصية",
+					"type": "file_with_text",
+					"value": "رقم البطاقة",
+					"required": false,
+					"order": 3
+				},
+				{
+					"id": 4,
+					"name": "expiring",
+					"label": "ملف مع تأريخ انتهاء",
+					"type": "file_expiration_date",
+					"value": "تأريخ الإنتهاء",
+					"required": false,
+					"order": 4
+				}
+			]
+		},
+		"task_from_template": {
+			"template": {
+				"id": 1,
+				"name": "customer template",
+				"description": null,
+				"created_at": "2025-10-11T09:22:12.000000Z",
+				"updated_at": "2025-10-11T09:22:12.000000Z"
+			},
+			"fields": [
+				{
+					"id": 1,
+					"name": "company_email",
+					"label": "Company Email - ايميل الشركة",
+					"type": "string",
+					"value": null,
+					"required": false,
+					"order": 1
+				},
+				{
+					"id": 3,
+					"name": "id",
+					"label": "البطاقة الشخصية",
+					"type": "file_with_text",
+					"value": "رقم البطاقة",
+					"required": false,
+					"order": 3
+				},
+				{
+					"id": 4,
+					"name": "expiring",
+					"label": "ملف مع تأريخ انتهاء",
+					"type": "file_expiration_date",
+					"value": "تأريخ الإنتهاء",
+					"required": false,
+					"order": 4
+				}
+			]
+		},
+		"task_to_template": null
+	}
+
+}
+
+📥 Response (No Template - 500):
+{
+    "status": 500,
+    "message": "Internal Error"
+    "error" : error message
+}
+
+
+
+
+================================================================================
+📋 5. ERROR CODES REFERENCE
 ================================================================================
 
 🔴 Common Error Status Codes:
 - 200: Success
-- 201: Created/Success
+- 200: Created/Success
 - 400: Bad Request
 - 401: Unauthorized
 - 403: Forbidden
@@ -639,7 +958,7 @@ Description: فحص Token API
 - Forgot Password: 3 requests per minute
 
 ================================================================================
-📝 5. ADDITIONAL NOTES
+📝 6. ADDITIONAL NOTES
 ================================================================================
 
 🔹 Authentication:

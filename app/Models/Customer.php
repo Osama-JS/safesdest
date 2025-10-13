@@ -37,7 +37,11 @@ class Customer extends Authenticatable
       'is_customs_clearance_agent',
       'bank_name',
       'account_number',
-      'iban_number'
+      'iban_number',
+      'confirmation_code',
+      'confirmation_code_expires_at',
+      'fcm_token',
+      'device_id'
     ];
 
     protected $casts = [

@@ -104,6 +104,7 @@ class CustomerProfileController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 422,
+                    'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ]);
             }
@@ -142,6 +143,7 @@ class CustomerProfileController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 422,
+                    'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ]);
             }
@@ -238,6 +240,7 @@ class CustomerProfileController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 422,
+                    'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ]);
             }

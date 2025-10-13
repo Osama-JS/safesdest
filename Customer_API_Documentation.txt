@@ -751,7 +751,7 @@ Description: فحص Token API
 ================================================================================
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔗 2.1 Get Registration Template
+🔗 4.1 Get Registration Template
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Endpoint: GET /api/customer/inti-tasks
@@ -759,6 +759,7 @@ Authentication:   مطلوب (Bearer Token)
 Description: جلب بيانات تهيئة ال form لل tasks
 
 📤 Request Headers:
+- Authorization: Bearer {token}
 - Content-Type: application/json
 - Accept: application/json
 
@@ -935,10 +936,306 @@ Description: جلب بيانات تهيئة ال form لل tasks
 }
 
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.2 Get Tasks to Map
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Endpoint: GET /api/customer/tasks/map-data
+Authentication:   مطلوب (Bearer Token)
+Description: جلب مهام العميل لعرضها في الخريطه
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "message": "Login successful",
+    "data": {
+        "customer": {
+            "id": 1,
+            "status": 'in_progress','advertised','assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','invoiced', 'unloading',
+            'price' : سعر المهمة,
+            'currency' : 'SAR',
+            'vehicle' : اسم المركبة الكامل,
+            'additional_data' : البيانات الإضافية,
+            'created_at' : تأريخ انشاء المهمة,
+            'pickup' : [
+                        'lat' ,
+                        'lng' ,
+                        'address' ,
+                        'contact_name' ,
+                        'contact_phone' ,
+                        'note' ,
+                        'scheduled_time' ,
+                        'image' ,
+                    ],
+            'delivery' : [
+                          'lat' ,
+                        'lng' ,
+                        'address' ,
+                        'contact_name' ,
+                        'contact_phone' ,
+                        'note' ,
+                        'scheduled_time' ,
+                        'image' ,
+                    ],
+            'driver' : $task->driver ? [
+                        'name' ,
+                        'phone' ,
+                        'image',
+                        'lat' ,
+                        'lng' ,
+                    ] : null,
+        },
+
+    }
+}
+
+📥 Response (ُError Message - 500):
+{
+    "status": 500,
+    "message": "ُError Message"
+}
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.3 Get Tasks
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Endpoint: GET /api/customer/tasks/data
+Authentication:   مطلوب (Bearer Token)
+Description: جلب جميع مهام العميل مع خيارات الفلترة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "status", // حالة المهمة تقبل قيم متعددة
+    "date_from",
+    "date_to",
+    "search",
+    "sort_by",    // created_at , .....
+    "sort_order",   // desc او asc
+    "per_page",
+    "page"
+
+}
+
+
+📥 Response (Success - 200):
+مثال للبيانات المرتجعة
+{
+  "success": 200,
+  "data": {
+    "tasks": [
+      {
+        "id": 1254,
+        "status": "completed",
+        "closed": false,
+        "payment_status": "paid",
+        "payment_method": "cash",
+        "pickup": {
+          "lat": 24.7136,
+          "lng": 46.6753,
+          "address": "Riyadh - Olaya St.",
+          "contact_name": "Ahmed",
+          "contact_phone": "0501234567",
+          "note": "Pickup before noon",
+          "scheduled_time": "2025-10-13 10:30:00",
+          "image": "https://example.com/storage/pickups/1.jpg"
+        },
+        "delivery": {
+          "lat": 21.4858,
+          "lng": 39.1925,
+          "address": "Jeddah - Tahlia St.",
+          "contact_name": "Omar",
+          "contact_phone": "0559876543",
+          "note": "Leave at reception",
+          "scheduled_time": "2025-10-13 18:00:00",
+          "image": "https://example.com/storage/deliveries/1.jpg"
+        },
+        "price": 150.00,
+        "currency": "SAR",
+        "driver": {
+          "name": "Ali Mohammed",
+          "phone": "0562223333",
+          "image": "https://example.com/storage/drivers/3.jpg"
+        },
+        "vehicle": "Truck - Medium - White",
+        "additional_data": [
+          {
+            "label": "Notes",
+            "value": "Handle with care"
+          },
+          {
+            "label": "Reference No",
+            "value": "AB1234"
+          }
+        ],
+        "created_at": "2025-10-13T09:00:00"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "last_page": 5,
+      "per_page": 15,
+      "total": 73,
+      "from": 1,
+      "to": 15
+    }
+  }
+}
+
+
+📥 Response (ُError Message - 500):
+{
+    "status": 500,
+    "message": "ُError Message"
+}
+
 
 
 ================================================================================
-📋 5. ERROR CODES REFERENCE
+🚒 5. Wallet Routtes (Protected Routes)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 5.1 Get Wallet information & statice & Recent Transactions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Endpoint: GET /api/customer/wallet
+Authentication:   مطلوب (Bearer Token)
+Description: جلب بيانات واحصائيات محفظة العميل
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+
+📥 Response (Success - 200):
+مثال للبيانات المرتجعة
+{
+  "success": 200,
+  "data": {
+    "wallet": {
+        "id": 1254,
+        "status": true,
+        "balance": 9000,
+        "currency": "SAR",
+        "created_at": datetime,
+      },
+      "statistics": {
+        "total_debit": 1254,
+        "total_credit": 500,
+        "net_balance": 9000,
+      },
+      recent_transactions: [
+        {
+          'id' =>  1,
+          'amount' => 6000,
+          'transaction_type' => "credit/debit,
+          'description' => "description",
+          'created_at' => datetime,
+        }, ..
+      ]
+
+  }
+}
+
+
+📥 Response (ُError Message - 500):
+{
+    "status": 500,
+    "message": "ُError Message"
+}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 5.2 Get Wallet Transactions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Endpoint: GET /api/customer/wallet/transactions
+Authentication:   مطلوب (Bearer Token)
+Description: جلب الحركات المالية في المحفظة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+
+📤 Request Body:
+{
+    "transaction_type", // نوع الحركة credit/debit
+    "date_from",
+    "date_to",
+    "amount_min",
+    "amount_max",
+    "search",
+    "sort_by",    // created_at , .....
+    "sort_order",   // desc او asc
+    "per_page",
+    "page"
+
+}
+📥 Response (Success - 200):
+مثال للبيانات المرتجعة
+{
+  "status": 200,
+  "data": {
+    "transactions": [
+      {
+        "id": 1025,
+        "amount": 150.50,
+        "transaction_type": "debit",
+        "description": "Added funds to wallet",
+        "sequence": "TXN-20251013001",
+        "maturity_time": null,
+        "image": "https://example.com/storage/transactions/1025.jpg",
+        "created_at": "2025-10-13T10:22:00",
+        "updated_at": "2025-10-13T10:22:00"
+      },
+      {
+        "id": 1026,
+        "amount": -75.00,
+        "transaction_type": "credit",
+        "description": "Payment for Task #451",
+        "sequence": "TXN-20251013002",
+        "maturity_time": null,
+        "image": null,
+        "created_at": "2025-10-13T11:10:00",
+        "updated_at": "2025-10-13T11:10:00"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "last_page": 3,
+      "per_page": 15,
+      "total": 38,
+      "from": 1,
+      "to": 15
+    }
+  }
+}
+
+
+
+📥 Response (ُError Message - 500):
+{
+    "status": 500,
+    "message": "ُError Message"
+}
+================================================================================
+📋 6. ERROR CODES REFERENCE
 ================================================================================
 
 🔴 Common Error Status Codes:
@@ -958,7 +1255,7 @@ Description: جلب بيانات تهيئة ال form لل tasks
 - Forgot Password: 3 requests per minute
 
 ================================================================================
-📝 6. ADDITIONAL NOTES
+📝 7. ADDITIONAL NOTES
 ================================================================================
 
 🔹 Authentication:

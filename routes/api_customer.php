@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CustomerAdsController;
 use App\Http\Controllers\Api\CustomerPaymentController;
 use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\CustomerSettingsController;
+use App\Http\Controllers\customer\WalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,9 +37,8 @@ Route::prefix('customer')->group(function () {
 
     Route::get('/template', [CustomerAuthController::class, 'getTemplate'])
         ->name('api.customer.template');
- Route::get('/inti-tasks', [CustomerTaskController::class, 'getInitData'])
-        ->name('api.init.tasks');
-        
+
+
 
     Route::post('/register', [CustomerAuthController::class, 'register'])
         ->middleware(['throttle:3,1'])
@@ -75,8 +75,6 @@ Route::prefix('customer')->group(function () {
 // Protected routes (require Sanctum authentication)
 Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
 
-    
-   
     // Authentication routes
     Route::post('/check-token', [CustomerAuthController::class, 'checkToken'])
         ->name('api.customer.check-token');
@@ -103,9 +101,24 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::delete('/profile', [CustomerProfileController::class, 'deleteAccount'])
         ->name('api.customer.profile.delete');
 
+    // Tasks management routes
+    Route::get('/inti-tasks', [CustomerTaskController::class, 'getInitData'])
+       ->name('api.init.tasks');
 
-    // Route::get('/vehicles', [CustomerSettingsController::class, 'getVehicles'])
-    //   ->name('api.customer.vehicles');
+    Route::get('/tasks/map-data', [CustomerTaskController::class, 'getTasksMap'])
+      ->name('api.customer.tasks.map-data');
+
+    Route::get('/tasks/data', [CustomerTaskController::class, 'getTasks'])
+    ->name('api.customer.tasks.data');
+
+
+    // Wallet management routes
+    Route::get('/wallet', [WalletController::class, 'show'])
+    ->name('api.customer.wallet');
+
+    Route::get('/wallet/transactions', [WalletController::class, 'getTransactions'])
+    ->name('api.customer.wallet-transactions');
+
     // // Dashboard routes
     // Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
     //     ->name('api.customer.dashboard');

@@ -22,19 +22,18 @@ use Exception;
 
 class CustomerTaskController extends Controller
 {
-
     public function getInitData()
     {
         try {
             // جلب جميع المركبات
-           $vehicles = Vehicle::with([
-                'types' => function ($query) {
-                    $query->select('id', 'vehicle_id', 'name', 'en_name')
-                        ->with(['sizes' => function ($q) {
-                            $q->select('id', 'vehicle_type_id', 'name');
-                        }]);
-                }
-            ])->get(['id', 'name', 'en_name']);
+            $vehicles = Vehicle::with([
+                 'types' => function ($query) {
+                     $query->select('id', 'vehicle_id', 'name', 'en_name')
+                         ->with(['sizes' => function ($q) {
+                             $q->select('id', 'vehicle_type_id', 'name');
+                         }]);
+                 }
+             ])->get(['id', 'name', 'en_name']);
 
 
             // دالة مساعدة لجلب بيانات القالب بناءً على مفتاح الإعداد
@@ -96,47 +95,68 @@ class CustomerTaskController extends Controller
         }
     }
 
-     public function getTasksMap(Request $request)
+    public function getTasksMap(Request $request)
     {
-        $customer = $request->user();
-        $query = Task::where('customer_id', $customer->id)->where('closed', false)->where('status', '!=', 'canceled')->where('status', '!=', 'refund');
+        try {
+            $customer = $request->user();
+            $query = Task::where('customer_id', $customer->id)->where('closed', false)->where('status', '!=', 'canceled')->where('status', '!=', 'refund');
 
-        $tasks = $query->get();
-        
-        $tasksData = $tasks->map(function ($task) {
-            return [
-                'id' => $task->id,
-                'status' => $task->status,
-                'pickup' => [
-                    
-                ],
-                'price' => $task->price,
-                'currency' => 'SAR',
-                'driver' => $task->driver ? [
-                    'id' => $task->driver->id,
-                    'name' => $task->driver->name,
-                    'phone' => $task->driver->phone,
-                    'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
-                    'rating' => $task->driver->rating,
-                ] : null,
-                'vehicle_size' => $task->vehicle_size ? [
-                    'id' => $task->vehicle_size->id,
-                    'name' => $task->vehicle_size->name,
-                    'description' => $task->vehicle_size->description,
-                ] : null,
-                'created_at' => $task->created_at,
-                'updated_at' => $task->updated_at,
-            ];
-        });
+            $tasks = $query->get();
 
-
+            $tasksData = $tasks->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'pickup' => [
+                        'lat' => $task->pickup->latitude,
+                        'lng' => $task->pickup->longitude,
+                        'address' => $task->pickup->address,
+                        'contact_name' => $task->pickup->contact_name,
+                        'contact_phone' => $task->pickup->contact_phone,
+                        'note' => $task->pickup->note,
+                        'scheduled_time' => $task->pickup->scheduled_time,
+                        'image' => $task->pickup->image ? url('storage/' . $task->pickup->image) : null,
+                    ],
+                    'delivery' => [
+                        'lat' => $task->delivery->latitude,
+                        'lng' => $task->delivery->longitude,
+                        'address' => $task->delivery->address,
+                        'contact_name' => $task->delivery->contact_name,
+                        'contact_phone' => $task->delivery->contact_phone,
+                        'note' => $task->delivery->note,
+                        'scheduled_time' => $task->delivery->scheduled_time,
+                        'image' => $task->delivery->image ? url('storage/' . $task->delivery->image) : null,
+                    ],
+                    'price' => $task->total_price,
+                    'currency' => 'SAR',
+                    'driver' => $task->driver ? [
+                        'name' => $task->driver->name,
+                        'phone' => $task->driver->phone,
+                        'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
+                        'lat' => $task->driver->altitude,
+                        'lng' => $task->driver->longitude,
+                    ] : null,
+                    'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
+                    'additional_data' => $task->customer_visible_additional_data,
+                    'created_at' => $task->created_at,
+                ];
+            });
+            return response()->json([
+                'success' => 200,
+                'data' => $tasksData,
+                'message' => 'Tasks retrieved successfully'
+            ]);
+        } catch (Exception $ex) {
+            return response()->json([
+                'success' => 500,
+                'message' => 'Failed to retrieve tasks',
+                'error' => $ex->getMessage()
+            ]);
+        }
 
     }
 
-    /**
-     * Get customer tasks list
-     */
-    public function index(Request $request)
+    public function getTasks(Request $request)
     {
         try {
             $customer = $request->user();
@@ -149,9 +169,6 @@ class CustomerTaskController extends Controller
                 $query->whereIn('status', $statuses);
             }
 
-            if ($request->filled('task_type')) {
-                $query->where('task_type', $request->task_type);
-            }
 
             if ($request->filled('date_from')) {
                 $query->whereDate('created_at', '>=', $request->date_from);
@@ -165,7 +182,7 @@ class CustomerTaskController extends Controller
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('from_location', 'like', "%{$search}%")
+                    $q->where('id', 'like', "%{$search}%")
                       ->orWhere('to_location', 'like', "%{$search}%")
                       ->orWhere('id', 'like', "%{$search}%");
                 });
@@ -184,37 +201,46 @@ class CustomerTaskController extends Controller
             $tasksData = $tasks->map(function ($task) {
                 return [
                     'id' => $task->id,
-                    'task_type' => $task->task_type,
                     'status' => $task->status,
-                    'from_location' => $task->from_location,
-                    'to_location' => $task->to_location,
-                    'from_lat' => $task->from_lat,
-                    'from_lng' => $task->from_lng,
-                    'to_lat' => $task->to_lat,
-                    'to_lng' => $task->to_lng,
-                    'pickup_time' => $task->pickup_time,
-                    'delivery_time' => $task->delivery_time,
-                    'price' => $task->price,
+                    'closed' => $task->closed,
+                    'payment_status' => $task->payment_status,
+                    'payment_method' => $task->payment_method,
+                    'pickup' => [
+                        'lat' => $task->pickup->latitude,
+                        'lng' => $task->pickup->longitude,
+                        'address' => $task->pickup->address,
+                        'contact_name' => $task->pickup->contact_name,
+                        'contact_phone' => $task->pickup->contact_phone,
+                        'note' => $task->pickup->note,
+                        'scheduled_time' => $task->pickup->scheduled_time,
+                        'image' => $task->pickup->image ? url('storage/' . $task->pickup->image) : null,
+                    ],
+                    'delivery' => [
+                        'lat' => $task->delivery->latitude,
+                        'lng' => $task->delivery->longitude,
+                        'address' => $task->delivery->address,
+                        'contact_name' => $task->delivery->contact_name,
+                        'contact_phone' => $task->delivery->contact_phone,
+                        'note' => $task->delivery->note,
+                        'scheduled_time' => $task->delivery->scheduled_time,
+                        'image' => $task->delivery->image ? url('storage/' . $task->delivery->image) : null,
+                    ],
+                    'price' => $task->total_price,
                     'currency' => 'SAR',
                     'driver' => $task->driver ? [
-                        'id' => $task->driver->id,
                         'name' => $task->driver->name,
                         'phone' => $task->driver->phone,
                         'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
-                        'rating' => $task->driver->rating,
+
                     ] : null,
-                    'vehicle_size' => $task->vehicle_size ? [
-                        'id' => $task->vehicle_size->id,
-                        'name' => $task->vehicle_size->name,
-                        'description' => $task->vehicle_size->description,
-                    ] : null,
+                    'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
+                    'additional_data' => $task->customer_visible_additional_data,
                     'created_at' => $task->created_at,
-                    'updated_at' => $task->updated_at,
                 ];
             });
 
             return response()->json([
-                'success' => true,
+                'success' => 200,
                 'data' => [
                     'tasks' => $tasksData,
                     'pagination' => [
@@ -230,10 +256,10 @@ class CustomerTaskController extends Controller
 
         } catch (Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => 500,
                 'message' => 'Failed to get tasks',
                 'error' => $e->getMessage()
-            ], 500);
+            ]);
         }
     }
 

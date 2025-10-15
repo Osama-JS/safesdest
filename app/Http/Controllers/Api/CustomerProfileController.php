@@ -47,7 +47,7 @@ class CustomerProfileController extends Controller
                         'email' => $customer->email,
                         'phone' => $customer->phone,
                         'phone_code' => $customer->phone_code,
-                        'image' => $customer->image ? asset('storage/' . $customer->image) : null,
+                        'image' => $customer->image ? url($customer->image) : null,
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
@@ -118,6 +118,22 @@ class CustomerProfileController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'Profile updated successfully',
+                'data' => [
+                    'customer' => [
+                        'id' => $customer->id,
+                        'name' => $customer->name,
+                        'email' => $customer->email,
+                        'phone' => $customer->phone,
+                        'phone_code' => $customer->phone_code,
+                        'image' => $customer->image ? url($customer->image) : null,
+                        'company_name' => $customer->company_name,
+                        'company_address' => $customer->company_address,
+                        'status' => $customer->status,
+                        'is_customs_clearance_agent' => $customer->is_customs_clearance_agent,
+                        'email_verified_at' => $customer->email_verified_at,
+                        'created_at' => $customer->created_at,
+                    ],
+                    ]
 
             ]);
 
@@ -166,7 +182,7 @@ class CustomerProfileController extends Controller
             return response()->json([
                 'status' => 200,
                 'message' => 'Avatar uploaded successfully',
-                'avatar_url' => asset('storage/' . $path)
+                'avatar_url' => url($path)
             ]);
 
         } catch (Exception $e) {

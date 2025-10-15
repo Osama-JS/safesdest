@@ -111,6 +111,22 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks/data', [CustomerTaskController::class, 'getTasks'])
     ->name('api.customer.tasks.data');
 
+    // Task creation and validation routes
+    Route::post('/tasks/validate-step1', [CustomerTaskController::class, 'validateStep1'])
+        ->name('api.customer.tasks.validate-step1');
+
+    Route::post('/tasks/validate-step2', [CustomerTaskController::class, 'validateStep2'])
+        ->name('api.customer.tasks.validate-step2');
+
+    Route::post('/tasks', [CustomerTaskController::class, 'store'])
+        ->name('api.customer.tasks.store');
+
+    Route::get('/tasks/{id}/edit', [CustomerTaskController::class, 'edit'])
+        ->name('api.customer.tasks.edit');
+
+    Route::put('/tasks/{id}', [CustomerTaskController::class, 'update'])
+        ->name('api.customer.tasks.update');
+
 
     // Wallet management routes
     Route::get('/wallet', [WalletController::class, 'show'])
@@ -212,27 +228,21 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     // Route::post('/customs-clearances/offers', [CustomerCustomsClearanceController::class, 'submitOffer'])
     //     ->name('api.customer.customs-clearances.offers');
 
-    // // Task ads and bidding routes
-    // Route::get('/ads', [CustomerAdsController::class, 'index'])
-    //     ->name('api.customer.ads');
+    // Task ads and bidding routes
+    Route::get('/ads/data', [CustomerAdsController::class, 'getData'])
+        ->name('api.customer.ads.data');
 
-    // Route::post('/ads', [CustomerAdsController::class, 'store'])
-    //     ->name('api.customer.ads.store');
+    Route::get('/ads/{id}', [CustomerAdsController::class, 'show'])
+        ->name('api.customer.ads.show');
 
-    // Route::get('/ads/{id}', [CustomerAdsController::class, 'show'])
-    //     ->name('api.customer.ads.show');
+    Route::get('/ads/{id}/offers', [CustomerAdsController::class, 'getOffers'])
+        ->name('api.customer.ads.offers');
 
-    // Route::get('/ads/{id}/offers', [CustomerAdsController::class, 'getOffers'])
-    //     ->name('api.customer.ads.offers');
+    Route::post('/ads/offers/{id}/accept', [CustomerAdsController::class, 'acceptOffer'])
+        ->name('api.customer.ads.accept-offer');
 
-    // Route::post('/ads/{id}/offers/{offerId}/accept', [CustomerAdsController::class, 'acceptOffer'])
-    //     ->name('api.customer.ads.accept-offer');
-
-    // Route::post('/ads/{id}/close', [CustomerAdsController::class, 'closeAd'])
-    //     ->name('api.customer.ads.close');
-
-    // Route::post('/ads/{id}/extend', [CustomerAdsController::class, 'extendAd'])
-    //     ->name('api.customer.ads.extend');
+    Route::post('/ads/offers/{id}/retract', [CustomerAdsController::class, 'retractOffer'])
+        ->name('api.customer.ads.retract-offer');
 
     // // Payment routes
     // Route::get('/payments/methods', [CustomerPaymentController::class, 'getPaymentMethods'])

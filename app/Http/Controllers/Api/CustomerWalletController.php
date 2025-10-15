@@ -20,7 +20,7 @@ class CustomerWalletController extends Controller
             $customer = $request->user();
 
             $wallet = Wallet::where('user_type', 'customer')
-                           ->where('user_id', $customer->id)
+                           ->where('customer_id', $customer->id)
                            ->first();
 
             if (!$wallet || !$wallet->status) {
@@ -37,12 +37,18 @@ class CustomerWalletController extends Controller
                                                    ->get()
                                                    ->map(function ($transaction) {
                                                        return [
+
                                                            'id' => $transaction->id,
-                                                           'amount' => $transaction->amount,
-                                                           'transaction_type' => $transaction->transaction_type,
-                                                           'description' => $transaction->description,
-                                                           'status' => $transaction->status,
-                                                           'created_at' => $transaction->created_at,
+                                                            'amount' => $transaction->amount,
+                                                            'transaction_type' => $transaction->transaction_type,
+                                                            'description' => $transaction->description,
+                                                            'sequence' => $transaction->sequence,
+                                                            'image' => $transaction->image ? url($transaction->image) : null,
+                                                            'created_at' => $transaction->created_at,
+                                                            'updated_at' => $transaction->updated_at,
+
+
+
                                                        ];
                                                    });
 
@@ -60,8 +66,10 @@ class CustomerWalletController extends Controller
                         'balance' => $wallet->balance,
                         'currency' => 'SAR',
                         'status' => $wallet->status ?? 'active',
+                        'debt_ceiling' => $wallet->debt_ceiling,
                         'created_at' => $wallet->created_at,
                         'updated_at' => $wallet->updated_at,
+
                     ],
                     'statistics' => [
                         'total_debit' => $totalDebit,
@@ -74,7 +82,7 @@ class CustomerWalletController extends Controller
 
         } catch (Exception $e) {
             return response()->json([
-                'success' => 500,
+                'status' => 500,
                 'message' => 'Failed to get wallet information',
                 'error' => $e->getMessage()
             ]);
@@ -91,7 +99,7 @@ class CustomerWalletController extends Controller
 
             // جلب المحفظة الخاصة بالعميل
             $wallet = Wallet::where('user_type', 'customer')
-                            ->where('user_id', $customer->id)
+                            ->where('customer_id', $customer->id)
                             ->first();
 
             if (!$wallet) {

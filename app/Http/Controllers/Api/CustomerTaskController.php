@@ -12,11 +12,19 @@ use App\Models\Settings;
 use App\Models\Vehicle;
 use App\Models\Task_History;
 use App\Models\Driver;
+use App\Models\Point;
+use App\Models\Pricing;
+use App\Models\Pricing_Method;
+use App\Models\Order;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\FunctionsController;
 use App\Helpers\FileHelper;
+use App\Helpers\IpHelper;
+use App\Services\CustomerTaskPricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Exception;
 
@@ -77,6 +85,7 @@ class CustomerTaskController extends Controller
             // إرجاع البيانات بصيغة JSON
             return response()->json([
                 'status' => 200,
+                'message' => 'Data retrieved successfully',
                 'data' => [
                     'vehicles' => $vehicles,
                     'task_template' => $taskTemplate,
@@ -89,7 +98,7 @@ class CustomerTaskController extends Controller
             // التعامل مع الأخطاء بشكل منظم
             return response()->json([
                 'status' => 500,
-                'message' => 'حدث خطأ أثناء جلب البيانات',
+                'message' => 'Failed to retrieve data',
                 'error' => $e->getMessage(),
             ]);
         }
@@ -104,51 +113,36 @@ class CustomerTaskController extends Controller
             $tasks = $query->get();
 
             $tasksData = $tasks->map(function ($task) {
+                $lat = $task->pickup->latitude;
+                $lng = $task->pickup->longitude;
+                if ($task->driver_id && $task->status->in(['in_progress', 'assign'])) {
+                    $lat = $task->driver->altitude;
+                    $lng = $task->driver->longitude;
+                }
                 return [
                     'id' => $task->id,
                     'status' => $task->status,
-                    'pickup' => [
-                        'lat' => $task->pickup->latitude,
-                        'lng' => $task->pickup->longitude,
-                        'address' => $task->pickup->address,
-                        'contact_name' => $task->pickup->contact_name,
-                        'contact_phone' => $task->pickup->contact_phone,
-                        'note' => $task->pickup->note,
-                        'scheduled_time' => $task->pickup->scheduled_time,
-                        'image' => $task->pickup->image ? url('storage/' . $task->pickup->image) : null,
-                    ],
-                    'delivery' => [
-                        'lat' => $task->delivery->latitude,
-                        'lng' => $task->delivery->longitude,
-                        'address' => $task->delivery->address,
-                        'contact_name' => $task->delivery->contact_name,
-                        'contact_phone' => $task->delivery->contact_phone,
-                        'note' => $task->delivery->note,
-                        'scheduled_time' => $task->delivery->scheduled_time,
-                        'image' => $task->delivery->image ? url('storage/' . $task->delivery->image) : null,
-                    ],
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'pickup_address' => $task->pickup->address,
+                    'delivery_address' => $task->delivery->address,
+                    'driver_name' => $task->driver ? $task->driver->name : null,
+                    'driver_phone' => $task->driver ? $task->driver->phone : null,
+                    'driver_image' => $task->driver ? url($task->driver->image) : null,
                     'price' => $task->total_price,
                     'currency' => 'SAR',
-                    'driver' => $task->driver ? [
-                        'name' => $task->driver->name,
-                        'phone' => $task->driver->phone,
-                        'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
-                        'lat' => $task->driver->altitude,
-                        'lng' => $task->driver->longitude,
-                    ] : null,
                     'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
-                    'additional_data' => $task->customer_visible_additional_data,
                     'created_at' => $task->created_at,
                 ];
             });
             return response()->json([
-                'success' => 200,
+                'status' => 200,
+                'message' => 'Tasks retrieved successfully',
                 'data' => $tasksData,
-                'message' => 'Tasks retrieved successfully'
             ]);
         } catch (Exception $ex) {
             return response()->json([
-                'success' => 500,
+                'status' => 500,
                 'message' => 'Failed to retrieve tasks',
                 'error' => $ex->getMessage()
             ]);
@@ -263,1004 +257,836 @@ class CustomerTaskController extends Controller
         }
     }
 
-    /**
-     * Create new task
-     */
-    public function store(Request $request)
+    public function validateStep1(Request $req)
     {
-        try {
-            $customer = $request->user();
+        $rules = [
+            'vehicles.*.vehicle' => 'required|exists:vehicles,id',
+            'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
+            'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
+            'vehicles.*.quantity' => 'nullable|integer|min:1',
+        ];
 
-            // Base validation rules
-            $baseRules = [
-                'task_type' => 'required|in:normal,task_from,task_to',
-                'from_location' => 'required|string|max:255',
-                'to_location' => 'required|string|max:255',
-                'from_lat' => 'required|numeric|between:-90,90',
-                'from_lng' => 'required|numeric|between:-180,180',
-                'to_lat' => 'required|numeric|between:-90,90',
-                'to_lng' => 'required|numeric|between:-180,180',
-                'pickup_time' => 'required|date|after:now',
-                'delivery_time' => 'nullable|date|after:pickup_time',
-                'vehicle_size_id' => 'required|exists:vehicle_sizes,id',
-                'pricing_template_id' => 'required|exists:pricing_templates,id',
-                'assign_type' => 'required|in:direct,advertised',
-                'driver_id' => 'required_if:assign_type,direct|exists:drivers,id',
-                'description' => 'nullable|string|max:1000',
-            ];
+        $task_template = Settings::where('key', 'task_template')->first();
+        $template_id = $task_template->value;
+        if ($task_template) {
+            $fields = Form_Field::where('form_template_id', $req->template)->get();
+            foreach ($fields as $field) {
+                $fieldKey = 'additional_fields.' . $field->name;
+                $rules[$fieldKey] = [];
+                // لا نضع required للحقول المركبة هنا
+                if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
+                    $rules[$fieldKey][] = 'required';
+                }
 
-            // Get form template for additional fields validation
-            $additionalRules = [];
-            $template = null;
+                // إضافة قواعد بناءً على نوع الحقل
+                switch ($field->type) {
+                    case 'text':
+                        $rules[$fieldKey][] = 'string';
+                        break;
 
-            // Determine which template to use based on task type
-            $templateField = match($request->task_type) {
-                'normal' => 'task_template',
-                'task_from' => 'task_from_port_template',
-                'task_to' => 'task_to_port_template',
-                default => 'task_template'
-            };
+                    case 'number':
+                        $rules[$fieldKey][] = 'numeric';
+                        break;
+                    case 'url':
+                        $rules[$fieldKey][] = 'url';
+                        break;
+                    case 'date':
+                        $rules[$fieldKey][] = 'date';
+                        break;
 
-            if ($request->filled('form_template_id')) {
-                $template = Form_Template::with('fields')->find($request->form_template_id);
-            } else {
-                // Get default template based on task type
-                $template = Form_Template::where('type', $templateField)->first();
-            }
+                    case 'file':
+                        $rules[$fieldKey][] = 'file';
+                        $rules[$fieldKey][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif'; // أنواع موثوقة
+                        $rules[$fieldKey][] = 'max:10240'; // 10MB
+                        break;
 
-            if ($template) {
-                foreach ($template->fields as $field) {
-                    if ($field->customer_can === 'write') {
-                        $fieldKey = 'additional_fields.' . $field->name;
-                        $rules = [];
+                    case 'image':
+                        $rules[$fieldKey][] = 'image';
+                        $rules[$fieldKey][] = 'mimes:jpeg,png,jpg,webp,gif';
+                        $rules[$fieldKey][] = 'max:5120'; // 5MB
+                        break;
 
+                    case 'file_expiration_date':
+                        // إزالة القاعدة العامة للحقل الأساسي
+                        unset($rules[$fieldKey]);
+
+                        // قواعد الملف
+                        $rules[$fieldKey . '_file'] = [];
+                        $rules[$fieldKey . '_file'][] = 'file';
+                        $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+                        $rules[$fieldKey . '_file'][] = 'max:10240';
+
+                        // قواعد تاريخ الانتهاء
+                        $rules[$fieldKey . '_expiration'] = [];
+                        $rules[$fieldKey . '_expiration'][] = 'nullable';
+                        $rules[$fieldKey . '_expiration'][] = 'date';
+                        $rules[$fieldKey . '_expiration'][] = 'after_or_equal:today';
+
+                        // إذا الحقل مطلوب
                         if ($field->required) {
-                            $rules[] = 'required';
-                        }
-
-                        // Add type-specific validation
-                        switch ($field->type) {
-                            case 'email':
-                                $rules[] = 'email';
-                                break;
-                            case 'number':
-                                $rules[] = 'numeric';
-                                break;
-                            case 'date':
-                                $rules[] = 'date';
-                                break;
-                            case 'file':
-                            case 'image':
-                                $rules[] = 'file';
-                                if ($field->type === 'image') {
-                                    $rules[] = 'image|mimes:jpeg,png,jpg,webp,gif|max:2048';
-                                } else {
-                                    $rules[] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv|max:5120';
+                            if (!$req->filled('id')) {
+                                // عند الإنشاء: الملف مطلوب
+                                $rules[$fieldKey . '_file'][] = 'required';
+                                $rules[$fieldKey . '_expiration'][] = 'required';
+                            } else {
+                                // عند التحديث: إذا تم رفع ملف جديد، تاريخ الانتهاء مطلوب
+                                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                                    $rules[$fieldKey . '_expiration'][] = 'required';
                                 }
-                                break;
+                            }
                         }
 
-                        if (!empty($rules)) {
-                            $additionalRules[$fieldKey] = $rules;
+                        // قاعدة مهمة: إذا تم رفع ملف، التاريخ مطلوب (حتى لو الحقل غير مطلوب)
+                        if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                            $rules[$fieldKey . '_expiration'][] = 'required';
                         }
-                    }
+
+                        break;
+
+                    case 'file_with_text':
+                        // إزالة القاعدة العامة للحقل الأساسي
+                        unset($rules[$fieldKey]);
+
+                        // قواعد الملف
+                        $rules[$fieldKey . '_file'] = [];
+                        $rules[$fieldKey . '_file'][] = 'file';
+                        $rules[$fieldKey . '_file'][] = 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif';
+                        $rules[$fieldKey . '_file'][] = 'max:10240';
+
+                        // قواعد النص/الرقم
+                        $rules[$fieldKey . '_text'] = [];
+                        $rules[$fieldKey . '_text'][] = 'nullable';
+                        $rules[$fieldKey . '_text'][] = 'string';
+                        $rules[$fieldKey . '_text'][] = 'max:255';
+
+                        // إذا الحقل مطلوب
+                        if ($field->required) {
+                            if (!$req->filled('id')) {
+                                // عند الإنشاء: الملف مطلوب
+                                $rules[$fieldKey . '_file'][] = 'required';
+                                $rules[$fieldKey . '_text'][] = 'required';
+                            } else {
+                                // عند التحديث: إذا تم رفع ملف جديد، النص مطلوب
+                                if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                                    $rules[$fieldKey . '_text'][] = 'required';
+                                }
+                            }
+                        }
+
+                        // قاعدة مهمة: إذا تم رفع ملف، النص مطلوب (حتى لو الحقل غير مطلوب)
+                        if ($req->hasFile("additional_fields.{$field->name}_file")) {
+                            $rules[$fieldKey . '_text'][] = 'required';
+                        }
+
+                        break;
+
+                    default:
+                        if (!$field->required) {
+                            $rules[$fieldKey][] = 'nullable';
+                        }
+                        $rules[$fieldKey][] = 'string';
+                        break;
                 }
             }
+        }
 
-            // Merge validation rules
-            $allRules = array_merge($baseRules, $additionalRules);
-
-            $validator = Validator::make($request->all(), $allRules);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
+        // إنشاء رسائل خطأ مخصصة لحقول file_expiration_date
+        $customMessages = [];
+        if ($req->filled('template')) {
+            $template = Form_Template::with('fields')->find($req->template);
+            foreach ($template->fields as $field) {
+                if ($field->type === 'file_expiration_date') {
+                    $fieldKey = 'additional_fields.' . $field->name;
+                    $customMessages = array_merge($customMessages, [
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+                    ]);
+                }
             }
+        }
 
-            DB::beginTransaction();
+        $validator = Validator::make($req->all(), $rules, $customMessages);
 
-            // Prepare task data
-            $taskData = [
-                'customer_id' => $customer->id,
-                'task_type' => $request->task_type,
-                'from_location' => $request->from_location,
-                'to_location' => $request->to_location,
-                'from_lat' => $request->from_lat,
-                'from_lng' => $request->from_lng,
-                'to_lat' => $request->to_lat,
-                'to_lng' => $request->to_lng,
-                'pickup_time' => $request->pickup_time,
-                'delivery_time' => $request->delivery_time,
-                'vehicle_size_id' => $request->vehicle_size_id,
-                'pricing_template_id' => $request->pricing_template_id,
-                'description' => $request->description,
-                'form_template_id' => $template ? $template->id : null,
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Validation failed',
+                'error' => $validator->errors()
+            ]);
+        }
+
+        $sizes = collect($req->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+
+        if ($sizes->count() > 1) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('You cannot select more than one truck size in the same order')
+            ]);
+        }
+
+        $task_template = Settings::where('key', 'task_template')->first();
+        if (!$task_template) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('Error to Create the task')
+            ]);
+        }
+
+        $pricingTemplates = Pricing_Template::availableForCustomer(
+            $task_template->value,
+            Auth::user()->id,
+            $sizes
+        )->pluck('id');
+
+        if ($pricingTemplates->count() < 1) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('There is no Role match with your selections')
+            ]);
+        }
+
+        $methodIds = Pricing::whereIn('pricing_template_id', $pricingTemplates)->where('status', true)->pluck('pricing_method_id');
+
+        $methods = Pricing_Method::whereIn('id', $methodIds)->get();
+
+        if ($methods->count() < 1) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('Error to find Pricing Methods')
+            ]);
+        }
+
+        foreach ($methods as $key) {
+            if ($key->type === 'points') {
+                $pricing = $key->pricing()->whereIn('pricing_template_id', $pricingTemplates)->with('parametars')->first(); // eager load parametars
+
+                if ($pricing && $pricing->parametars->isNotEmpty()) {
+                    $fromIds = $pricing->parametars->pluck('from_val')->unique();
+                    $toIds = $pricing->parametars->pluck('to_val')->unique();
+                    $allPointIds = $fromIds->merge($toIds)->unique();
+
+                    $points = Point::whereIn('id', $allPointIds)->get()->keyBy('id'); // تحميل كل النقاط دفعة واحدة
+
+                    $paramData = $pricing->parametars->map(function ($param) use ($points) {
+                        return [
+                            'from_point' => $points->get($param->from_val),
+                            'to_point' => $points->get($param->to_val),
+                            'price' => $param->price,
+                            'param' => $param->id,
+                        ];
+                    });
+
+                    $key->params = $paramData;
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => 200,
+            'success' => __('Validation passed ✅'),
+            'data' => $methods
+        ]);
+    }
+
+    public function validateStep2(Request $request, CustomerTaskPricingService $pricingService)
+    {
+        // تحقق من صحة البيانات
+        $validation = $pricingService->validateRequest($request);
+        if (!$validation['status']) {
+            return response()->json([
+                'status' => 422,
+                'message' => 'Validation failed',
+                'error' => $validation['errors']
+            ]);
+        }
+
+        // احسب السعر
+        try {
+            $pricing = $pricingService->calculatePricing($request);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Error calculating pricing',
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        if (!$pricing['status']) {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Error calculating pricing',
+                'error' => $pricing['errors']
+            ]);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'success' => __('Validation passed ✅'),
+            'data' => $pricing['data']
+        ]);
+    }
+
+    public function store(Request $req, CustomerTaskPricingService $pricingService)
+    {
+        $validation = $pricingService->validateRequest($req);
+        if (!$validation['status']) {
+            return response()->json(['status' => 422, 'message' => 'Validation failed', 'error' => $validation['errors']]);
+        }
+
+        try {
+            $pricing = $pricingService->calculatePricing($req);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'message' => 'Error calculating pricing', 'error' => $e->getMessage()]);
+        }
+
+        if (!$pricing['status']) {
+            return response()->json(['status' => 400, 'message' => 'Error calculating pricing', 'error' => $pricing['errors']]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $userIp = IpHelper::getUserIpAddress();
+            $data = $pricing['data'];
+            $taskData = $pricing['task'];
+            $ad = [];
+            $history = [];
+
+            $task_template = Settings::where('key', 'task_template')->first();
+            $template_id = $task_template->value;
+
+            $task = [
+                'total_price' => $data['total_price'] ?? 0,
+                'form_template_id' => $template_id,
+                'owner' => 'customer',
+                'customer_id' => Auth::id(),
+                'pricing_id' => $taskData['pricing'],
+                'vehicle_size_id' => $taskData['vehicles'][0],
+                'conditions' => $req->conditions
             ];
 
-            // Handle assignment type
-            if ($request->assign_type === 'direct') {
-                $taskData['driver_id'] = $request->driver_id;
-                $taskData['status'] = 'assign';
-            } else {
-                $taskData['status'] = 'advertised';
+            $history = [
+                [
+                    'action_type' => 'created',
+                    'description' => 'Create Task By Customer',
+                    'ip' => $userIp,
+                ],
+                [
+                    'action_type' => 'in_progress',
+                    'description' => 'Task in progress',
+                    'ip' => $userIp,
+                ]
+            ];
+
+            if (isset($data['service_commission']) && $data['service_commission'] !== '') {
+                if ($data['service_commission'] > $task['total_price']) {
+                    DB::rollBack();
+                    return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
+                }
+
+                $task['commission_type'] = 'manual';
+                $task['commission'] = $data['service_commission'];
+                $data['manual_commission'] = $data['service_commission'];
             }
 
-            // Handle additional fields
+            if ($taskData['method'] == 0) {
+                if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
+                    DB::rollBack();
+                    return response()->json(['status' => 2, 'error' => __('You can create Task AD for just one task')]);
+                }
+                if ($req->filled('task_driver')) {
+                    DB::rollBack();
+                    return response()->json(['status' => 2, 'error' => __('You can not assign driver to advertised Task')]);
+                }
+                $task['total_price'] = 0;
+                $task['pricing_type'] = 'manual';
+                $task['status'] = 'advertised';
+                $ad = [
+                    'highest_price' => $req->max_price,
+                    'lowest_price' => $req->min_price,
+                    'description' => $req->note_price,
+                    'included' => $req->included ?? false,
+                    'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
+                    'service_commission' => $data['service_tax_commission'] ?? 0,
+                    'vat_commission' => $data['vat_commission'] ?? 0,
+                ];
+                $history[] = [
+                    'action_type' => 'advertised',
+                    'description' => 'set as Advertised',
+                    'ip' => $userIp,
+                ];
+                $task['driver_id'] = null;
+            }
+
+            if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
+                $order = Order::create([
+                    'customer_id' => $task['customer_id'] ?? null,
+                    'user_id' => Auth::id(),
+                ]);
+                if (!$order) {
+                    DB::rollBack();
+                    return response()->json(['status' => 2, 'error' => 'Errors to create the tasks Collection']);
+                }
+                $task['order_id'] = $order->id;
+            }
+
             $structuredFields = [];
-            if ($template) {
+            $filesToDelete = [];
+            $origenToDelete = [];
+
+            if ($task_template) {
+                $data['form_template_id'] = $template_id;
+                $template = Form_Template::with('fields')->find($template_id);
+
                 foreach ($template->fields as $field) {
-                    if ($field->customer_can === 'write') {
-                        $fieldName = $field->name;
-                        $fieldKey = 'additional_fields.' . $fieldName;
+                    $fieldName = $field->name;
+                    $fieldType = $field->type;
 
-                        if ($request->has($fieldKey)) {
-                            $value = $request->input($fieldKey);
+                    if ($fieldType === 'file_expiration_date') {
+                        $fileFieldName = $fieldName . '_file';
+                        $expirationFieldName = $fieldName . '_expiration';
 
-                            // Handle file uploads
-                            if (in_array($field->type, ['file', 'image']) && $request->hasFile($fieldKey)) {
-                                $file = $request->file($fieldKey);
-                                $path = FileHelper::uploadFile($file, 'tasks/additional_fields');
-                                $value = $path;
-                            }
-
+                        if ($req->hasFile("additional_fields.$fileFieldName")) {
+                            $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
+                            $origenToDelete[] = $path;
+                            $filesToDelete[] = $path;
                             $structuredFields[$fieldName] = [
                                 'label' => $field->label,
-                                'value' => $value,
-                                'type' => $field->type,
+                                'value' => $path,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
+                            ];
+                        } elseif ($req->filled("additional_fields.$expirationFieldName")) {
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => null,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
+                            ];
+                        }
+                    } elseif (in_array($fieldType, ['file', 'image'])) {
+                        if ($req->hasFile("additional_fields.$fieldName")) {
+                            $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
+                            $origenToDelete[] = $path;
+                            $filesToDelete[] = $path;
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => $path,
+                                'type' => $fieldType,
+                            ];
+                        }
+                    } else {
+                        if ($req->has("additional_fields.$fieldName")) {
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => $req->input("additional_fields.$fieldName"),
+                                'type' => $fieldType,
                             ];
                         }
                     }
                 }
-                $taskData['additional_data'] = $structuredFields;
+                $task['additional_data'] = $structuredFields;
             }
 
-            // Calculate pricing (implement your pricing logic)
-            $taskData['price'] = $this->calculateTaskPrice($request);
+            $pickup_point = [
+                'type' => 'pickup',
+                'sequence' => 1,
+                'contact_name' => $req->pickup_name,
+                'contact_phone' => $req->pickup_phone,
+                'contact_emil' => $req->pickup_email,
+                'address' => $req->pickup_address,
+                'latitude' => $req->pickup_latitude,
+                'longitude' => $req->pickup_longitude,
+                'scheduled_time' => $req->pickup_before,
+                'note' => $req->pickup_note,
+            ];
+            $delivery_point = [
+                'type' => 'delivery',
+                'sequence' => 1,
+                'contact_name' => $req->delivery_name,
+                'contact_phone' => $req->delivery_phone,
+                'contact_emil' => $req->delivery_email,
+                'address' => $req->delivery_address,
+                'latitude' => $req->delivery_latitude,
+                'longitude' => $req->delivery_longitude,
+                'scheduled_time' => $req->delivery_before,
+                'note' => $req->delivery_note,
+            ];
 
-            // Create task
-            $task = Task::create($taskData);
-
-            // Create task history entry
-            Task_History::create([
-                'task_id' => $task->id,
-                'status' => $task->status,
-                'description' => 'Task created',
-                'created_by_type' => 'customer',
-                'created_by_id' => $customer->id,
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Task created successfully',
-                'data' => [
-                    'task' => [
-                        'id' => $task->id,
-                        'task_type' => $task->task_type,
-                        'status' => $task->status,
-                        'from_location' => $task->from_location,
-                        'to_location' => $task->to_location,
-                        'pickup_time' => $task->pickup_time,
-                        'delivery_time' => $task->delivery_time,
-                        'price' => $task->price,
-                        'created_at' => $task->created_at,
-                    ]
-                ]
-            ], 201);
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create task',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get task details
-     */
-    public function show(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->with(['driver', 'vehicle_size', 'pricing_template', 'form_template.fields'])
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
+            if ($req->hasFile('pickup_image')) {
+                $pickup_point['image'] = (new FunctionsController())->convert($req->pickup_image, 'tasks/points');
             }
 
-            $taskData = [
-                'id' => $task->id,
-                'task_type' => $task->task_type,
-                'status' => $task->status,
-                'from_location' => $task->from_location,
-                'to_location' => $task->to_location,
-                'from_lat' => $task->from_lat,
-                'from_lng' => $task->from_lng,
-                'to_lat' => $task->to_lat,
-                'to_lng' => $task->to_lng,
-                'pickup_time' => $task->pickup_time,
-                'delivery_time' => $task->delivery_time,
-                'price' => $task->price,
-                'description' => $task->description,
-                'driver' => $task->driver ? [
-                    'id' => $task->driver->id,
-                    'name' => $task->driver->name,
-                    'phone' => $task->driver->phone,
-                    'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
-                    'rating' => $task->driver->rating,
-                    'vehicle_info' => $task->driver->vehicle_info,
-                ] : null,
-                'vehicle_size' => $task->vehicle_size ? [
-                    'id' => $task->vehicle_size->id,
-                    'name' => $task->vehicle_size->name,
-                    'description' => $task->vehicle_size->description,
-                    'max_weight' => $task->vehicle_size->max_weight,
-                    'max_volume' => $task->vehicle_size->max_volume,
-                ] : null,
-                'pricing_template' => $task->pricing_template ? [
-                    'id' => $task->pricing_template->id,
-                    'name' => $task->pricing_template->name,
-                    'base_price' => $task->pricing_template->base_price,
-                ] : null,
-                'additional_data' => $task->additional_data,
-                'form_template' => $task->form_template ? [
-                    'id' => $task->form_template->id,
-                    'name' => $task->form_template->name,
-                    'fields' => $task->form_template->fields->map(function ($field) {
-                        return [
-                            'id' => $field->id,
-                            'name' => $field->name,
-                            'label' => $field->label,
-                            'type' => $field->type,
-                            'required' => $field->required,
-                            'customer_can' => $field->customer_can,
-                            'driver_can' => $field->driver_can,
-                            'order' => $field->order,
+            if ($req->hasFile('delivery_image')) {
+                $delivery_point['image'] = (new FunctionsController())->convert($req->delivery_image, 'tasks/points');
+            }
+
+            $number = $taskData['vehicles_quantity'] ?? 1;
+            $task['pricing_history'] = $data;
+
+            $tasks = collect()->times($number, function ($iteration) use ($task, $pickup_point, $delivery_point, $ad, $history) {
+                $newAdditionalData = [];
+
+                foreach ($task['additional_data'] as $key => $field) {
+                    if (in_array($field['type'], ['file', 'image', 'file_expiration_date']) && !empty($field['value'])) {
+                        $newFilePath = FileHelper::duplicateFile($field['value'], 'tasks/c/files');
+
+                        $newAdditionalData[$key] = [
+                            'label' => $field['label'],
+                            'value' => $newFilePath,
+                            'type' => $field['type'],
                         ];
-                    })
-                ] : null,
-                'created_at' => $task->created_at,
-                'updated_at' => $task->updated_at,
-            ];
 
-            return response()->json([
-                'success' => true,
-                'data' => $taskData
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get task details',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Calculate task pricing
-     */
-    private function calculateTaskPrice(Request $request)
-    {
-        // Implement your pricing calculation logic here
-        // This is a simplified version
-
-        $pricingTemplate = Pricing_Template::find($request->pricing_template_id);
-        $vehicleSize = Vehicle_Size::find($request->vehicle_size_id);
-
-        $basePrice = $pricingTemplate ? $pricingTemplate->base_price : 100;
-        $sizeMultiplier = $vehicleSize ? $vehicleSize->price_multiplier ?? 1 : 1;
-
-        // Calculate distance (simplified)
-        $distance = $this->calculateDistance(
-            $request->from_lat,
-            $request->from_lng,
-            $request->to_lat,
-            $request->to_lng
-        );
-
-        $price = $basePrice * $sizeMultiplier * ($distance / 100); // per 100km
-
-        return max($price, $basePrice); // Minimum base price
-    }
-
-    /**
-     * Calculate distance between two points
-     */
-    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
-    {
-        $earthRadius = 6371; // km
-
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLng / 2) * sin($dLng / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
-    }
-
-    /**
-     * Update task (limited fields)
-     */
-    public function update(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
-            }
-
-            // Only allow updates for certain statuses
-            if (!in_array($task->status, ['advertised', 'in_progress'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task cannot be updated in current status'
-                ], 400);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'pickup_time' => 'sometimes|date|after:now',
-                'delivery_time' => 'sometimes|date|after:pickup_time',
-                'description' => 'sometimes|string|max:1000',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $updateData = $request->only(['pickup_time', 'delivery_time', 'description']);
-            $task->update($updateData);
-
-            // Create history entry
-            Task_History::create([
-                'task_id' => $task->id,
-                'status' => $task->status,
-                'description' => 'Task updated by customer',
-                'created_by_type' => 'customer',
-                'created_by_id' => $customer->id,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Task updated successfully',
-                'data' => [
-                    'task' => [
-                        'id' => $task->id,
-                        'pickup_time' => $task->pickup_time,
-                        'delivery_time' => $task->delivery_time,
-                        'description' => $task->description,
-                        'updated_at' => $task->updated_at,
-                    ]
-                ]
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update task',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Cancel task
-     */
-    public function cancel(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
-            }
-
-            // Check if task can be canceled
-            if (in_array($task->status, ['completed', 'canceled', 'refund'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task cannot be canceled in current status'
-                ], 400);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'reason' => 'required|string|max:500',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            // Update task status
-            $task->update([
-                'status' => 'canceled',
-                'cancellation_reason' => $request->reason,
-                'canceled_at' => now(),
-            ]);
-
-            // Create history entry
-            Task_History::create([
-                'task_id' => $task->id,
-                'status' => 'canceled',
-                'description' => 'Task canceled by customer: ' . $request->reason,
-                'created_by_type' => 'customer',
-                'created_by_id' => $customer->id,
-            ]);
-
-            // Handle refund logic if needed
-            // $this->processTaskRefund($task);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Task canceled successfully'
-            ]);
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to cancel task',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Track task location and status
-     */
-    public function track(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->with(['driver'])
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
-            }
-
-            $trackingData = [
-                'task_id' => $task->id,
-                'status' => $task->status,
-                'current_location' => null,
-                'estimated_arrival' => null,
-                'driver' => null,
-                'route_info' => [
-                    'from' => [
-                        'location' => $task->from_location,
-                        'lat' => $task->from_lat,
-                        'lng' => $task->from_lng,
-                    ],
-                    'to' => [
-                        'location' => $task->to_location,
-                        'lat' => $task->to_lat,
-                        'lng' => $task->to_lng,
-                    ]
-                ],
-                'timeline' => $this->getTaskTimeline($task),
-            ];
-
-            // Add driver info and location if assigned
-            if ($task->driver) {
-                $trackingData['driver'] = [
-                    'id' => $task->driver->id,
-                    'name' => $task->driver->name,
-                    'phone' => $task->driver->phone,
-                    'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
-                    'rating' => $task->driver->rating,
-                ];
-
-                // Get driver's current location (if available)
-                if ($task->driver->current_lat && $task->driver->current_lng) {
-                    $trackingData['current_location'] = [
-                        'lat' => $task->driver->current_lat,
-                        'lng' => $task->driver->current_lng,
-                        'updated_at' => $task->driver->location_updated_at,
-                    ];
+                        if (isset($field['expiration'])) {
+                            $newAdditionalData[$key]['expiration'] = $field['expiration'];
+                        }
+                    } else {
+                        $newAdditionalData[$key] = $field;
+                    }
                 }
+
+                // 🟢 استخدم نسخة جديدة من $task
+                $taskCopy = $task;
+                $taskCopy['additional_data'] = $newAdditionalData;
+
+                $newTask = Task::create($taskCopy);
+                $newTask->point()->create($pickup_point);
+                $newTask->point()->create($delivery_point);
+                $newTask->history()->createMany($history);
+
+                if ($newTask->status === 'advertised') {
+                    $newTask->ad()->create($ad);
+                }
+
+                return $newTask;
+            });
+
+            foreach ($origenToDelete ?? [] as $file) {
+                FileHelper::deleteFileIfExists($file);
             }
-
-            return response()->json([
-                'success' => true,
-                'data' => $trackingData
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get tracking info',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get task history
-     */
-    public function getHistory(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
-            }
-
-            $history = Task_History::where('task_id', $task->id)
-                                  ->orderBy('created_at', 'desc')
-                                  ->get()
-                                  ->map(function ($entry) {
-                                      return [
-                                          'id' => $entry->id,
-                                          'status' => $entry->status,
-                                          'description' => $entry->description,
-                                          'created_by_type' => $entry->created_by_type,
-                                          'created_by_id' => $entry->created_by_id,
-                                          'created_at' => $entry->created_at,
-                                      ];
-                                  });
-
-            return response()->json([
-                'success' => true,
-                'data' => $history
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get task history',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Rate task and driver
-     */
-    public function rate(Request $request, $id)
-    {
-        try {
-            $customer = $request->user();
-
-            $task = Task::where('id', $id)
-                       ->where('customer_id', $customer->id)
-                       ->first();
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task not found'
-                ], 404);
-            }
-
-            if ($task->status !== 'completed') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Can only rate completed tasks'
-                ], 400);
-            }
-
-            if ($task->customer_rating) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Task already rated'
-                ], 400);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'rating' => 'required|integer|min:1|max:5',
-                'comment' => 'nullable|string|max:500',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            // Update task rating
-            $task->update([
-                'customer_rating' => $request->rating,
-                'customer_comment' => $request->comment,
-                'rated_at' => now(),
-            ]);
-
-            // Update driver rating if task has driver
-            if ($task->driver_id) {
-                $this->updateDriverRating($task->driver_id, $request->rating);
-            }
-
             DB::commit();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Task rated successfully'
+                'status' => 200,
+                'message' => "$number Tasks created successfully.",
             ]);
-
-        } catch (Exception $e) {
+        } catch (Exception $ex) {
             DB::rollBack();
+
+            foreach ($filesToDelete ?? [] as $file) {
+                FileHelper::deleteFileIfExists($file);
+            }
+
+            if ($req->hasFile('pickup_image') && isset($pickup_point['image'])) {
+                unlink($pickup_point['image']);
+            }
+
+            if ($req->hasFile('delivery_image') && isset($delivery_point['image'])) {
+                unlink($delivery_point['image']);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Failed to rate task',
-                'error' => $e->getMessage()
-            ], 500);
+                'status' => 500,
+                'message' => 'Error creating tasks',
+                'error' => $ex->getMessage(),
+            ]);
         }
     }
 
-    /**
-     * Get task timeline for tracking
-     */
-    private function getTaskTimeline($task)
+    public function edit(Request $req, $id)
     {
-        $timeline = [];
-
-        $statuses = [
-            'advertised' => 'Task Posted',
-            'in_progress' => 'In Progress',
-            'assign' => 'Driver Assigned',
-            'started' => 'Task Started',
-            'in pickup point' => 'At Pickup Point',
-            'loading' => 'Loading',
-            'in the way' => 'On The Way',
-            'in delivery point' => 'At Delivery Point',
-            'unloading' => 'Unloading',
-            'completed' => 'Completed',
-            'canceled' => 'Canceled',
-        ];
-
-        $history = Task_History::where('task_id', $task->id)
-                              ->orderBy('created_at', 'asc')
-                              ->get();
-
-        foreach ($history as $entry) {
-            $timeline[] = [
-                'status' => $entry->status,
-                'title' => $statuses[$entry->status] ?? ucfirst(str_replace('_', ' ', $entry->status)),
-                'description' => $entry->description,
-                'timestamp' => $entry->created_at,
-                'is_current' => $entry->status === $task->status,
-            ];
+        $data = Task::with('pickup', 'delivery', 'ad')->findOrFail($id);
+        $user = $req->user();
+        if (!$user || $user->id !== $data->customer_id) {
+            return response()->json(['status' => 423,  'message' => __('You do not have permission to do actions to this record')]);
+        }
+        if ($data->closed) {
+            return response()->json(['status' => 400, 'message' => 'This Task is already closed']);
+        }
+        if (!in_array($data->status, ['in_progress', 'advertised'])) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('This task cannot be modified in its current state'),
+            ]);
         }
 
-        return $timeline;
-    }
+        $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
+        $data->vehicle = $data->vehicle_size->type->vehicle_id;
+        $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
-    /**
-     * Update driver rating
-     */
-    private function updateDriverRating($driverId, $newRating)
-    {
-        $driver = Driver::find($driverId);
-        if (!$driver) {
-            return;
-        }
+        $data->fields = $fields;
 
-        $totalRatings = Task::where('driver_id', $driverId)
-                           ->whereNotNull('customer_rating')
-                           ->count();
-
-        $averageRating = Task::where('driver_id', $driverId)
-                            ->whereNotNull('customer_rating')
-                            ->avg('customer_rating');
-
-        $driver->update([
-            'rating' => round($averageRating, 2),
-            'total_ratings' => $totalRatings,
+        return response()->json([
+            'status' => 200,
+            'message' => 'Task retrieved successfully',
+            'data' => $data
         ]);
     }
 
-    /**
-     * Validate task data before creation
-     */
-    public function validateTask(Request $request)
+    public function update(Request $req, CustomerTaskPricingService $pricingService)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'task_type' => 'required|in:normal,task_from,task_to',
-                'from_lat' => 'required|numeric|between:-90,90',
-                'from_lng' => 'required|numeric|between:-180,180',
-                'to_lat' => 'required|numeric|between:-90,90',
-                'to_lng' => 'required|numeric|between:-180,180',
-                'vehicle_size_id' => 'required|exists:vehicle_sizes,id',
-                'pricing_template_id' => 'required|exists:pricing_templates,id',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // Calculate distance and estimated price
-            $distance = $this->calculateDistance(
-                $request->from_lat,
-                $request->from_lng,
-                $request->to_lat,
-                $request->to_lng
-            );
-
-            $estimatedPrice = $this->calculateTaskPrice($request);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'distance_km' => round($distance, 2),
-                    'estimated_price' => $estimatedPrice,
-                    'currency' => 'SAR',
-                    'validation_passed' => true,
-                ]
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'error' => $e->getMessage()
-            ], 500);
+        $oldTask = Task::findOrFail($req->id);
+        $user = $req->user();
+        if (!$user || $user->id !== $oldTask->customer_id) {
+            return response()->json(['status' => 400,  'message' => __('You do not have permission to do actions to this record')]);
         }
-    }
 
-    /**
-     * Calculate pricing for task
-     */
-    public function calculatePricing(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'from_lat' => 'required|numeric|between:-90,90',
-                'from_lng' => 'required|numeric|between:-180,180',
-                'to_lat' => 'required|numeric|between:-90,90',
-                'to_lng' => 'required|numeric|between:-180,180',
-                'vehicle_size_id' => 'required|exists:vehicle_sizes,id',
-                'pricing_template_id' => 'required|exists:pricing_templates,id',
-                'pickup_time' => 'nullable|date',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $distance = $this->calculateDistance(
-                $request->from_lat,
-                $request->from_lng,
-                $request->to_lat,
-                $request->to_lng
-            );
-
-            $pricingTemplate = Pricing_Template::find($request->pricing_template_id);
-            $vehicleSize = Vehicle_Size::find($request->vehicle_size_id);
-
-            $basePrice = $pricingTemplate ? $pricingTemplate->base_price : 100;
-            $sizeMultiplier = $vehicleSize ? ($vehicleSize->price_multiplier ?? 1) : 1;
-            $distancePrice = $distance * ($pricingTemplate->price_per_km ?? 2);
-
-            // Time-based pricing (rush hours, weekends, etc.)
-            $timeMultiplier = 1;
-            if ($request->pickup_time) {
-                $pickupTime = Carbon::parse($request->pickup_time);
-                $hour = $pickupTime->hour;
-
-                // Rush hour pricing (7-9 AM, 5-7 PM)
-                if (($hour >= 7 && $hour <= 9) || ($hour >= 17 && $hour <= 19)) {
-                    $timeMultiplier = 1.2;
-                }
-
-                // Weekend pricing
-                if ($pickupTime->isWeekend()) {
-                    $timeMultiplier *= 1.1;
-                }
-            }
-
-            $totalPrice = ($basePrice + $distancePrice) * $sizeMultiplier * $timeMultiplier;
-            $finalPrice = max($totalPrice, $basePrice); // Minimum base price
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'distance_km' => round($distance, 2),
-                    'base_price' => $basePrice,
-                    'distance_price' => round($distancePrice, 2),
-                    'size_multiplier' => $sizeMultiplier,
-                    'time_multiplier' => $timeMultiplier,
-                    'total_price' => round($finalPrice, 2),
-                    'currency' => 'SAR',
-                    'breakdown' => [
-                        'base_price' => $basePrice,
-                        'distance_cost' => round($distancePrice, 2),
-                        'size_adjustment' => round(($sizeMultiplier - 1) * 100, 0) . '%',
-                        'time_adjustment' => round(($timeMultiplier - 1) * 100, 0) . '%',
-                    ]
-                ]
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to calculate pricing',
-                'error' => $e->getMessage()
-            ], 500);
+        if ($oldTask->closed) {
+            return response()->json(['status' => 400, 'message' => 'This Task is already closed']);
         }
-    }
+        // ✳️ تحقق من صلاحية التعديل
+        if (!in_array($oldTask->status, ['in_progress', 'advertised'])) {
+            return response()->json([
+                'status' => 400,
+                'message' => __('This task cannot be modified in its current state'),
+            ]);
+        }
 
-    /**
-     * Get map data for customer tasks
-     */
-    public function getMapData(Request $request)
-    {
+        // التحقق من الطلب
+        $validation = $pricingService->validateRequest($req, "update");
+        if (!$validation['status']) {
+            return response()->json(['status' => 422, 'message' => 'Validation failed', 'error' => $validation['errors']]);
+        }
+
+        // حساب السعر
         try {
-            $customer = $request->user();
+            $pricing = $pricingService->calculatePricing($req);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 500, 'message' => 'Error calculating pricing', 'error' => $e->getMessage()]);
+        }
 
-            // جلب المهام النشطة (غير مكتملة وغير مفوترة)
-            $tasks = Task::where('customer_id', $customer->id)
-                ->whereNotIn('status', ['completed', 'invoiced', 'cancelled'])
-                ->with([
-                    'driver:id,name,longitude,altitude,last_seen_at,online,free,status',
-                    'taskPoints:id,task_id,type,latitude,longitude,address,contact_name,contact_phone,notes,scheduled_at'
-                ])
-                ->get();
+        if (!$pricing['status']) {
+            return response()->json(['status' => 400, 'message' => 'Error calculating pricing' , 'error' => $pricing['errors']]);
+        }
 
-            $mapData = [];
+        DB::beginTransaction();
+        try {
+            $userIp = IpHelper::getUserIpAddress();
+            $data = $pricing['data'];
+            $taskData = $pricing['task'];
+            $ad = [];
+            $history = [];
 
-            foreach ($tasks as $task) {
-                $taskData = [
-                    'id' => $task->id,
-                    'title' => $task->title ?? "مهمة #{$task->id}",
-                    'status' => $task->status,
-                    'driver_id' => $task->driver_id,
-                    'driver_name' => $task->driver ? $task->driver->name : null,
-                    'driver_latitude' => $task->driver ? $task->driver->altitude : null, // altitude stores latitude
-                    'driver_longitude' => $task->driver ? $task->driver->longitude : null,
-                    'driver_last_seen' => $task->driver ? $task->driver->last_seen_at : null,
-                    'points' => $task->taskPoints->map(function ($point) {
-                        return [
-                            'id' => $point->id,
-                            'task_id' => $point->task_id,
-                            'type' => $point->type,
-                            'latitude' => $point->latitude,
-                            'longitude' => $point->longitude,
-                            'address' => $point->address,
-                            'contact_name' => $point->contact_name,
-                            'contact_phone' => $point->contact_phone,
-                            'notes' => $point->notes,
-                            'scheduled_at' => $point->scheduled_at,
-                        ];
-                    }),
-                    'created_at' => $task->created_at,
-                    'updated_at' => $task->updated_at,
-                    'customer_notes' => $task->notes,
-                    'estimated_price' => $task->price,
+            if ($taskData['vehicles_quantity'] > 1) {
+                DB::rollBack();
+                return response()->json(['status' => 400, 'message' => 'You can not update Task with multiple vehicles']);
+            }
+
+            $task_template = Settings::where('key', 'task_template')->first();
+            $template_id = $task_template->value;
+
+            $task = [
+                'total_price' => $data['total_price'] ?? 0,
+                'form_template_id' => $template_id,
+                'pricing_id' => $taskData['pricing'],
+                'vehicle_size_id' => $taskData['vehicles'][0],
+                'conditions' => $req->conditions
+            ];
+
+            $history = [
+                [
+                    'action_type' => 'updated',
+                    'description' => 'Task updated By Customer',
+                    'ip' => $userIp,
+                ],
+            ];
+
+            if ($taskData['method'] == 0) {
+                if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'You can create Task AD for just one task']);
+                }
+                if ($req->filled('task_driver')) {
+                    DB::rollBack();
+                    return response()->json(['status' => 400, 'message' => 'You can not assign driver to advertised Task']);
+                }
+                $task['total_price'] = 0;
+                $task['pricing_type'] = 'manual';
+                $task['status'] = 'advertised';
+                $ad = [
+                    'highest_price' => $req->max_price,
+                    'lowest_price' => $req->min_price,
+                    'description' => $req->note_price,
+                    'included' => $req->included ?? false,
+                    'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
+                    'service_commission' => $data['service_tax_commission'] ?? 0,
+                    'vat_commission' => $data['vat_commission'] ?? 0,
+                ];
+                $history[] = [
+                    'action_type' => 'advertised',
+                    'description' => 'set as Advertised',
+                    'ip' => $userIp,
                 ];
 
-                $mapData[] = $taskData;
+                $task['driver_id'] = null;
+            }
+
+            $oldAdditionalData = $oldTask->additional_data ?? [];
+            $structuredFields = [];
+            $filesToDelete = [];
+
+            if ($task_template) {
+                $template = Form_Template::with('fields')->find($template_id);
+
+                foreach ($template->fields as $field) {
+                    $fieldName = $field->name;
+                    $fieldType = $field->type;
+
+                    if ($fieldType === 'file_expiration_date') {
+                        $fileFieldName = $fieldName . '_file';
+                        $expirationFieldName = $fieldName . '_expiration';
+
+                        if ($req->hasFile("additional_fields.$fileFieldName")) {
+                            // حذف الملف القديم إن وجد
+                            if (isset($oldAdditionalData[$fieldName]['value'])) {
+                                FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
+                            }
+
+                            $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
+
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => $path,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
+                            ];
+                        } elseif (isset($oldAdditionalData[$fieldName])) {
+                            // لم يتم رفع ملف جديد، نحافظ على الملف القديم مع تحديث تاريخ الانتهاء إذا تم تعديله
+                            $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                            if ($req->filled("additional_fields.$expirationFieldName")) {
+                                $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+                            }
+                        } else {
+                            // لم يتم رفع ملف جديد ولا يوجد ملف قديم، لكن قد يكون هناك تاريخ انتهاء فقط
+                            if ($req->filled("additional_fields.$expirationFieldName")) {
+                                $structuredFields[$fieldName] = [
+                                    'label' => $field->label,
+                                    'value' => null,
+                                    'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                    'type' => $fieldType,
+                                ];
+                            }
+                        }
+                    } elseif (in_array($fieldType, ['file', 'image'])) {
+                        if ($req->hasFile("additional_fields.$fieldName")) {
+                            if (isset($oldAdditionalData[$fieldName]['value'])) {
+                                FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
+                            }
+
+                            $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
+
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => $path,
+                                'type' => $fieldType,
+                            ];
+                        } elseif (isset($oldAdditionalData[$fieldName])) {
+                            $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                        }
+                    } else {
+                        if ($req->has("additional_fields.$fieldName")) {
+                            $structuredFields[$fieldName] = [
+                                'label' => $field->label,
+                                'value' => $req->input("additional_fields.$fieldName"),
+                                'type' => $fieldType,
+                            ];
+                        } elseif (isset($oldAdditionalData[$fieldName])) {
+                            $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                        }
+                    }
+                }
+
+                $task['additional_data'] = $structuredFields;
+            }
+
+            $imageForDelete = [];
+            // نقطة الالتقاط
+            $pickup_point = [
+                'type' => 'pickup',
+                'sequence' => 1,
+                'contact_name' => $req->pickup_name,
+                'contact_phone' => $req->pickup_phone,
+                'contact_emil' => $req->pickup_email,
+                'address' => $req->pickup_address,
+                'latitude' => $req->pickup_latitude,
+                'longitude' => $req->pickup_longitude,
+                'scheduled_time' => $req->pickup_before,
+                'note' => $req->pickup_note,
+            ];
+
+            if ($req->hasFile('pickup_image')) {
+                if ($oldTask->pickup->image) {
+                    $imageForDelete[] = $oldTask->pickup->image;
+                }
+                $pickup_point['image'] = (new FunctionsController())->convert($req->pickup_image, 'tasks/points');
+            }
+
+            // نقطة التسليم
+            $delivery_point = [
+                'type' => 'delivery',
+                'sequence' => 1,
+                'contact_name' => $req->delivery_name,
+                'contact_phone' => $req->delivery_phone,
+                'contact_emil' => $req->delivery_email,
+                'address' => $req->delivery_address,
+                'latitude' => $req->delivery_latitude,
+                'longitude' => $req->delivery_longitude,
+                'scheduled_time' => $req->delivery_before,
+                'note' => $req->delivery_note,
+            ];
+
+            if ($req->hasFile('delivery_image')) {
+                if ($oldTask->delivery->image) {
+                    $imageForDelete[] = $oldTask->delivery->image;
+                }
+                $delivery_point['image'] = (new FunctionsController())->convert($req->delivery_image, 'tasks/points');
+            }
+            $newTask = Task::findOrFail($req->id);
+            $newTask->update($task);
+            $newTask->pickup()->update($pickup_point);
+            $newTask->delivery()->update($delivery_point);
+            $newTask->history()->createMany($history);
+            if ($newTask->status !== 'advertised' && $oldTask->status !== 'advertised') {
+                $oldTask->ad()->delete();
+            }
+            if ($newTask->status === 'advertised') {
+                if ($oldTask->has('ad')) {
+                    $newTask->ad()->update($ad);
+                } else {
+                    $newTask->ad()->create($ad);
+                }
+            }
+            DB::commit();
+            foreach ($imageForDelete ?? [] as $file) {
+                unlink($file);
+                FileHelper::deleteFileIfExists($file);
             }
 
             return response()->json([
-                'success' => true,
-                'data' => $mapData,
-                'message' => 'Map data retrieved successfully'
+                'status' => 200,
+                'message' => "Tasks Updated successfully.",
             ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
 
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve map data',
-                'error' => $e->getMessage()
-            ], 500);
+            foreach ($filesToDelete ?? [] as $file) {
+                FileHelper::deleteFileIfExists($file);
+            }
+
+            if ($req->hasFile('pickup_image') && isset($pickup_point['image'])) {
+                unlink($pickup_point['image']);
+            }
+
+            if ($req->hasFile('delivery_image') && isset($delivery_point['image'])) {
+                unlink($delivery_point['image']);
+            }
+
+            return response()->json(['status' => 500, 'message' => 'Error creating tasks' , 'error' => $ex->getMessage()]);
         }
     }
 
-    /**
-     * Get driver locations for customer tasks
-     */
-    public function getDriverLocations(Request $request)
-    {
-        try {
-            $customer = $request->user();
-
-            // جلب السائقين المعينين للمهام النشطة للعميل
-            $drivers = Driver::whereHas('tasks', function ($query) use ($customer) {
-                $query->where('customer_id', $customer->id)
-                      ->whereNotIn('status', ['completed', 'invoiced', 'cancelled']);
-            })
-            ->where('online', true)
-            ->whereNotNull('longitude')
-            ->whereNotNull('altitude')
-            ->select('id', 'name', 'longitude', 'altitude', 'last_seen_at', 'online', 'free', 'status')
-            ->get();
-
-            $driverLocations = $drivers->map(function ($driver) {
-                return [
-                    'driver_id' => $driver->id,
-                    'driver_name' => $driver->name,
-                    'latitude' => $driver->altitude, // altitude field stores latitude
-                    'longitude' => $driver->longitude,
-                    'last_seen' => $driver->last_seen_at,
-                    'is_online' => $driver->online,
-                    'is_free' => $driver->free,
-                    'status' => $driver->status,
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'data' => $driverLocations,
-                'message' => 'Driver locations retrieved successfully'
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve driver locations',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 }

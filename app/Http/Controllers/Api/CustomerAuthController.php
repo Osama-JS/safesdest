@@ -183,43 +183,43 @@ class CustomerAuthController extends Controller
             return response()->json(['status' => 400, 'message' => 'Code expired']);
         }
 
-      
+
         $token = $user->createToken($request->device_name ?? 'customer-device', ['customer'])->plainTextToken;
 
-            // Update customer login info
-            $user->update([
-                'email_verified_at' => now(),
-                'confirmation_code' => null,
-                'confirmation_code_expires_at' => null,
-                'status' => 'active',
-                'last_login_at' => now(),
-                'fcm_token' => $request->fcm_token,
-                'device_id' => $request->device_id,
-                'app_version' => $request->app_version,
-            ]);
+        // Update customer login info
+        $user->update([
+            'email_verified_at' => now(),
+            'confirmation_code' => null,
+            'confirmation_code_expires_at' => null,
+            'status' => 'active',
+            'last_login_at' => now(),
+            'fcm_token' => $request->fcm_token,
+            'device_id' => $request->device_id,
+            'app_version' => $request->app_version,
+        ]);
 
-            return response()->json([
-                'status' => 200,
-                'message' => 'Login successful',
-                'data' => [
-                    'customer' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'phone' => $user->phone,
-                        'phone_code' => $user->phone_code,
-                        'image' => $user->image ? asset('storage/' . $user->image) : null,
-                        'company_name' => $user->company_name,
-                        'company_address' => $user->company_address,
-                        'status' => $user->status,
-                        'is_customs_clearance_agent' => $user->is_customs_clearance_agent,
-                        'email_verified_at' => $user->email_verified_at,
-                        'created_at' => $user->created_at,
-                    ],
-                    'token' => $token,
-                    'token_type' => 'Bearer'
-                ]
-            ]);
+        return response()->json([
+            'status' => 200,
+            'message' => 'Login successful',
+            'data' => [
+                'customer' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'phone_code' => $user->phone_code,
+                    'image' => $user->image ? url($user->image) : null,
+                    'company_name' => $user->company_name,
+                    'company_address' => $user->company_address,
+                    'status' => $user->status,
+                    'is_customs_clearance_agent' => $user->is_customs_clearance_agent,
+                    'email_verified_at' => $user->email_verified_at,
+                    'created_at' => $user->created_at,
+                ],
+                'token' => $token,
+                'token_type' => 'Bearer'
+            ]
+        ]);
 
         return response()->json(['status' => 200, 'message' => 'Email verified successfully']);
     }
@@ -452,247 +452,247 @@ class CustomerAuthController extends Controller
     //     }
     // }
 
-     public function register(Request $req)
-{
-    // 🔹 القواعد الأساسية
-    $baseRules = [
-        'name'           => 'required|string|max:255',
-        'email'          => 'required|email',
-        'phone'          => 'required|string',
-        'phone_code'     => 'required|string',
-        'password'       => 'required|same:confirm-password',
-        'c_name'         => 'nullable|string|max:255',
-        'c_address'      => 'nullable|string|max:255',
-        'device_id'      => 'nullable|string|max:255',
-        'fcm_token'      => 'nullable|string',
-        'app_version'    => 'nullable|string|max:50',
-    ];
-
-    $additionalRules = [];
-
-    // 🔹 جلب إعداد القالب الحالي
-    $customerSetting = Settings::where('key', 'customer_template')->first();
-    $template = $customerSetting ? Form_Template::find($customerSetting->value) : null;
-
-    if ($template) {
-        // 🔹 جلب الحقول المسموح بها فقط للعميل
-        $fields = Form_Field::where('form_template_id', $template->id)
-            ->where('customer_can', 'write')
-            ->get();
-
-        foreach ($fields as $field) {
-            $fieldKey = 'additional_fields.' . $field->name;
-            $fieldRules = [];
-
-            if ($field->required && !$req->filled('id')) {
-                $fieldRules[] = 'required';
-            }
-
-            switch ($field->type) {
-                case 'text':
-                    $fieldRules[] = 'string';
-                    break;
-
-                case 'number':
-                    $fieldRules[] = 'numeric';
-                    break;
-
-                case 'url':
-                    $fieldRules[] = 'url';
-                    break;
-
-                case 'date':
-                    $fieldRules[] = 'date';
-                    break;
-
-                case 'file':
-                    $fieldRules = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
-                    if ($field->required) {
-                        $fieldRules[] = 'required';
-                    }
-                    break;
-
-                case 'image':
-                    $fieldRules = ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
-                    if ($field->required) {
-                        $fieldRules[] = 'required';
-                    }
-                    break;
-
-                case 'file_expiration_date':
-                    $fileKey = $fieldKey . '_file';
-                    $expKey  = $fieldKey . '_expiration';
-                    $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
-                    $additionalRules[$expKey]  = ['nullable', 'date'];
-                    if ($field->required) {
-                        $additionalRules[$fileKey][] = 'required_with:' . $expKey;
-                        $additionalRules[$expKey][]  = 'required_with:' . $fileKey;
-                    }
-                    continue 2;
-
-                case 'file_with_text':
-                    $fileKey = $fieldKey . '_file';
-                    $textKey = $fieldKey . '_text';
-                    $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
-                    $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
-                    if ($field->required) {
-                        $additionalRules[$fileKey][] = 'required';
-                        $additionalRules[$textKey][] = 'required';
-                    }
-                    continue 2;
-
-                default:
-                    $fieldRules[] = $field->required ? 'string' : 'nullable|string';
-                    break;
-            }
-
-            $additionalRules[$fieldKey] = $fieldRules;
-        }
-    }
-
-    // 🔹 دمج جميع القواعد
-    $allRules = array_merge($baseRules, $additionalRules);
-
-    // 🔹 تنفيذ التحقق
-    $validator = Validator::make($req->all(), $allRules);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'status' => 422,
-            'errors' => $validator->errors(),
-        ]);
-    }
-
-    DB::beginTransaction();
-
-    try {
-        // 🔹 تحقق إن كان العميل موجود بالفعل
-        $existingCustomer = Customer::where('email', $req->email)->first();
-
-        if ($existingCustomer) {
-            // إذا الإيميل موجود → أرسل كود التحقق فقط
-            $this->sendVerificationEmail($existingCustomer, 'customer');
-
-            return response()->json([
-                'status'  => 200,
-                'message' => __('Verification code sent again to your email'),
-            ]);
-        }
-
-        // 🔹 إعداد بيانات العميل الجديد
-        $data = [
-            'name'            => $req->name,
-            'email'           => $req->email,
-            'phone'           => $req->phone,
-            'phone_code'      => $req->phone_code,
-            'password'        => Hash::make($req->password),
-            'company_name'    => $req->c_name,
-            'company_address' => $req->c_address,
-            'device_id'       => $req->device_id,
-            'fcm_token'       => $req->fcm_token,
-            'app_version'     => $req->app_version,
+    public function register(Request $req)
+    {
+        // 🔹 القواعد الأساسية
+        $baseRules = [
+            'name'           => 'required|string|max:255',
+            'email'          => 'required|email',
+            'phone'          => 'required|string',
+            'phone_code'     => 'required|string',
+            'password'       => 'required|same:confirm-password',
+            'c_name'         => 'nullable|string|max:255',
+            'c_address'      => 'nullable|string|max:255',
+            'device_id'      => 'nullable|string|max:255',
+            'fcm_token'      => 'nullable|string',
+            'app_version'    => 'nullable|string|max:50',
         ];
 
-        $structuredFields = [];
+        $additionalRules = [];
 
-        // 🔹 التعامل مع القالب الإضافي
+        // 🔹 جلب إعداد القالب الحالي
+        $customerSetting = Settings::where('key', 'customer_template')->first();
+        $template = $customerSetting ? Form_Template::find($customerSetting->value) : null;
+
         if ($template) {
-            $data['form_template_id'] = $template->id;
+            // 🔹 جلب الحقول المسموح بها فقط للعميل
             $fields = Form_Field::where('form_template_id', $template->id)
                 ->where('customer_can', 'write')
                 ->get();
 
             foreach ($fields as $field) {
-                $name = $field->name;
-                $type = $field->type;
+                $fieldKey = 'additional_fields.' . $field->name;
+                $fieldRules = [];
 
-                switch ($type) {
-                    case 'file_expiration_date':
-                        $fileKey = "additional_fields.{$name}_file";
-                        $expKey  = "additional_fields.{$name}_expiration";
+                if ($field->required && !$req->filled('id')) {
+                    $fieldRules[] = 'required';
+                }
 
-                        $filePath = null;
-                        if ($req->hasFile($fileKey)) {
-                            $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
-                        }
-
-                        if ($filePath || $req->filled($expKey)) {
-                            $structuredFields[$name] = [
-                                'label'      => $field->label,
-                                'value'      => $filePath,
-                                'expiration' => $req->input($expKey),
-                                'type'       => $type,
-                            ];
-                        }
+                switch ($field->type) {
+                    case 'text':
+                        $fieldRules[] = 'string';
                         break;
 
-                    case 'file_with_text':
-                        $fileKey = "additional_fields.{$name}_file";
-                        $textKey = "additional_fields.{$name}_text";
-                        $filePath = null;
+                    case 'number':
+                        $fieldRules[] = 'numeric';
+                        break;
 
-                        if ($req->hasFile($fileKey)) {
-                            $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
-                        }
+                    case 'url':
+                        $fieldRules[] = 'url';
+                        break;
 
-                        if ($filePath || $req->filled($textKey)) {
-                            $structuredFields[$name] = [
-                                'label' => $field->label,
-                                'value' => $filePath,
-                                'text'  => $req->input($textKey),
-                                'type'  => $type,
-                            ];
-                        }
+                    case 'date':
+                        $fieldRules[] = 'date';
                         break;
 
                     case 'file':
-                    case 'image':
-                        if ($req->hasFile("additional_fields.$name")) {
-                            $path = FileHelper::uploadFile($req->file("additional_fields.$name"), 'customers/files');
-                            $structuredFields[$name] = [
-                                'label' => $field->label,
-                                'value' => $path,
-                                'type'  => $type,
-                            ];
+                        $fieldRules = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        if ($field->required) {
+                            $fieldRules[] = 'required';
                         }
                         break;
+
+                    case 'image':
+                        $fieldRules = ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:5120'];
+                        if ($field->required) {
+                            $fieldRules[] = 'required';
+                        }
+                        break;
+
+                    case 'file_expiration_date':
+                        $fileKey = $fieldKey . '_file';
+                        $expKey  = $fieldKey . '_expiration';
+                        $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        $additionalRules[$expKey]  = ['nullable', 'date'];
+                        if ($field->required) {
+                            $additionalRules[$fileKey][] = 'required_with:' . $expKey;
+                            $additionalRules[$expKey][]  = 'required_with:' . $fileKey;
+                        }
+                        continue 2;
+
+                    case 'file_with_text':
+                        $fileKey = $fieldKey . '_file';
+                        $textKey = $fieldKey . '_text';
+                        $additionalRules[$fileKey] = ['nullable', 'file', 'mimes:pdf,doc,docx,xls,xlsx,txt,csv,jpeg,png,jpg,webp,gif', 'max:10240'];
+                        $additionalRules[$textKey] = ['nullable', 'string', 'max:255'];
+                        if ($field->required) {
+                            $additionalRules[$fileKey][] = 'required';
+                            $additionalRules[$textKey][] = 'required';
+                        }
+                        continue 2;
 
                     default:
-                        if ($req->filled("additional_fields.$name")) {
-                            $structuredFields[$name] = [
-                                'label' => $field->label,
-                                'value' => $req->input("additional_fields.$name"),
-                                'type'  => $type,
-                            ];
-                        }
+                        $fieldRules[] = $field->required ? 'string' : 'nullable|string';
                         break;
                 }
-            }
 
-            $data['additional_data'] = $structuredFields;
+                $additionalRules[$fieldKey] = $fieldRules;
+            }
         }
 
-        // 🔹 إنشاء العميل الجديد
-        $customer = Customer::create($data);
+        // 🔹 دمج جميع القواعد
+        $allRules = array_merge($baseRules, $additionalRules);
 
-        // 🔹 إرسال كود التحقق
-        $this->sendVerificationEmail($customer, 'customer');
+        // 🔹 تنفيذ التحقق
+        $validator = Validator::make($req->all(), $allRules);
 
-        DB::commit();
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'errors' => $validator->errors(),
+            ]);
+        }
 
-        return response()->json([
-            'status'  => 200,
-            'message' => __('Your account has been created successfully and a verification code has been sent.'),
-        ]);
-    } catch (Exception $ex) {
-        DB::rollBack();
+        DB::beginTransaction();
 
-        return response()->json([
-            'status' => 500,
-            'message' => $ex->getMessage(),
-        ]);
+        try {
+            // 🔹 تحقق إن كان العميل موجود بالفعل
+            $existingCustomer = Customer::where('email', $req->email)->first();
+
+            if ($existingCustomer) {
+                // إذا الإيميل موجود → أرسل كود التحقق فقط
+                $this->sendVerificationEmail($existingCustomer, 'customer');
+
+                return response()->json([
+                    'status'  => 200,
+                    'message' => __('Verification code sent again to your email'),
+                ]);
+            }
+
+            // 🔹 إعداد بيانات العميل الجديد
+            $data = [
+                'name'            => $req->name,
+                'email'           => $req->email,
+                'phone'           => $req->phone,
+                'phone_code'      => $req->phone_code,
+                'password'        => Hash::make($req->password),
+                'company_name'    => $req->c_name,
+                'company_address' => $req->c_address,
+                'device_id'       => $req->device_id,
+                'fcm_token'       => $req->fcm_token,
+                'app_version'     => $req->app_version,
+            ];
+
+            $structuredFields = [];
+
+            // 🔹 التعامل مع القالب الإضافي
+            if ($template) {
+                $data['form_template_id'] = $template->id;
+                $fields = Form_Field::where('form_template_id', $template->id)
+                    ->where('customer_can', 'write')
+                    ->get();
+
+                foreach ($fields as $field) {
+                    $name = $field->name;
+                    $type = $field->type;
+
+                    switch ($type) {
+                        case 'file_expiration_date':
+                            $fileKey = "additional_fields.{$name}_file";
+                            $expKey  = "additional_fields.{$name}_expiration";
+
+                            $filePath = null;
+                            if ($req->hasFile($fileKey)) {
+                                $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
+                            }
+
+                            if ($filePath || $req->filled($expKey)) {
+                                $structuredFields[$name] = [
+                                    'label'      => $field->label,
+                                    'value'      => $filePath,
+                                    'expiration' => $req->input($expKey),
+                                    'type'       => $type,
+                                ];
+                            }
+                            break;
+
+                        case 'file_with_text':
+                            $fileKey = "additional_fields.{$name}_file";
+                            $textKey = "additional_fields.{$name}_text";
+                            $filePath = null;
+
+                            if ($req->hasFile($fileKey)) {
+                                $filePath = FileHelper::uploadFile($req->file($fileKey), 'customers/files');
+                            }
+
+                            if ($filePath || $req->filled($textKey)) {
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $filePath,
+                                    'text'  => $req->input($textKey),
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+
+                        case 'file':
+                        case 'image':
+                            if ($req->hasFile("additional_fields.$name")) {
+                                $path = FileHelper::uploadFile($req->file("additional_fields.$name"), 'customers/files');
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $path,
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+
+                        default:
+                            if ($req->filled("additional_fields.$name")) {
+                                $structuredFields[$name] = [
+                                    'label' => $field->label,
+                                    'value' => $req->input("additional_fields.$name"),
+                                    'type'  => $type,
+                                ];
+                            }
+                            break;
+                    }
+                }
+
+                $data['additional_data'] = $structuredFields;
+            }
+
+            // 🔹 إنشاء العميل الجديد
+            $customer = Customer::create($data);
+
+            // 🔹 إرسال كود التحقق
+            $this->sendVerificationEmail($customer, 'customer');
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => 200,
+                'message' => __('Your account has been created successfully and a verification code has been sent.'),
+            ]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 500,
+                'message' => $ex->getMessage(),
+            ]);
+        }
     }
-}
 
 
 
@@ -777,7 +777,7 @@ class CustomerAuthController extends Controller
                         'email' => $customer->email,
                         'phone' => $customer->phone,
                         'phone_code' => $customer->phone_code,
-                        'image' => $customer->image ? asset('storage/' . $customer->image) : null,
+                        'image' => $customer->image ? url($customer->image) : null,
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
@@ -828,7 +828,7 @@ class CustomerAuthController extends Controller
                         'email' => $customer->email,
                         'phone' => $customer->phone,
                         'phone_code' => $customer->phone_code,
-                        'image' => $customer->image ? asset('storage/' . $customer->image) : null,
+                        'image' => $customer->image ? url($customer->image) : null,
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
@@ -926,22 +926,22 @@ class CustomerAuthController extends Controller
 
     public function checkResetCode(Request $request)
     {
-     
 
-                $validator = Validator::make($request->all(), [
-                'email' => 'required|email',
+
+        $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
             'code' => 'required|digits:4',
             ]);
 
-            if ($validator->fails()) {
-                Log::alert($validator->errors());
+        if ($validator->fails()) {
+            Log::alert($validator->errors());
 
-                return response()->json([
-                    'status' => 422,
-                    'message' => 'valdation faild',
-                    'errors' => $validator->errors()
-                ]);
-            }
+            return response()->json([
+                'status' => 422,
+                'message' => 'valdation faild',
+                'errors' => $validator->errors()
+            ]);
+        }
 
         $record = DB::table('password_resets')
             ->where('email', $request->email)
@@ -953,7 +953,7 @@ class CustomerAuthController extends Controller
         }
 
         // التحقق من الكود
-        if  (hash('sha256', $request->code) !== $record->token) {
+        if (hash('sha256', $request->code) !== $record->token) {
             return response()->json(['status' => 400, 'message' => 'Invalid code.']);
         }
 
@@ -962,9 +962,9 @@ class CustomerAuthController extends Controller
 
     public function verifyResetCode(Request $request)
     {
-       
 
-                   $validator = Validator::make($request->all(), [
+
+        $validator = Validator::make($request->all(), [
                  'email' => 'required|email',
             'code' => 'required|digits:4',
             'password' => 'required|min:6|confirmed',
@@ -973,15 +973,15 @@ class CustomerAuthController extends Controller
             'app_version' => 'nullable|string|max:50',
             ]);
 
-            if ($validator->fails()) {
-                Log::alert($validator->errors());
+        if ($validator->fails()) {
+            Log::alert($validator->errors());
 
-                return response()->json([
-                    'status' => 422,
-                    'message' => 'valdation faild',
-                    'errors' => $validator->errors()
-                ]);
-            }
+            return response()->json([
+                'status' => 422,
+                'message' => 'valdation faild',
+                'errors' => $validator->errors()
+            ]);
+        }
 
         $record = DB::table('password_resets')
             ->where('email', $request->email)

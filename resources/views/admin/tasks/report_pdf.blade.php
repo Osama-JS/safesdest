@@ -112,7 +112,7 @@
                 </td>
                 <td style="text-align: right">
                     <div class="logo">
-                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('assets/img/logo.png'))) }}"
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(url('assets/img/logo.png'))) }}"
                             alt="Logo" height="40">
                     </div>
                 </td>
@@ -277,17 +277,17 @@
                                                 <img src="{{ $src }}" alt="{{ $field['label'] }}"
                                                     style="max-width: 100%; max-height: 150px; border-radius: 4px; object-fit: cover;">
                                             @else
-                                                <p style="color:red;">❌ لم يتم العثور على الصورة</p>
+                                                <p style="color:red;">❌ {{ __('Image not found') }}</p>
                                             @endif
                                         @break
 
                                         @case('file')
-                                            <a href="{{ public_path('storage/' . $field['value']) }}"
+                                            <a href="{{ url('storage/' . $field['value']) }}"
                                                 target="_blank">{{ basename($field['value']) }}</a>
                                         @break
 
                                         @case('file_expiration_date')
-                                            <a href="{{ public_path('storage/' . $field['value']) }}"
+                                            <a href="{{ url('storage/' . $field['value']) }}"
                                                 target="_blank">{{ basename($field['value']) }}</a>
                                             <div>{{ __('expiration date') }}: {{ $field['expiration'] ?? '-' }}</div>
                                         @break
@@ -360,17 +360,17 @@
                                                 <img src="{{ $src }}" alt="{{ $field['label'] }}"
                                                     style="max-width: 100%; max-height: 150px; border-radius: 4px; object-fit: cover;">
                                             @else
-                                                <p style="color:red;">❌ لم يتم العثور على الصورة</p>
+                                                <p style="color:red;">❌ {{ __('Image not found') }}</p>
                                             @endif
                                         @break
 
                                         @case('file')
-                                            <a href="{{ public_path('storage/' . $field['value']) }}"
+                                            <a href="{{ url('storage/' . $field['value']) }}"
                                                 target="_blank">{{ basename($field['value']) }}</a>
                                         @break
 
                                         @case('file_expiration_date')
-                                            <a href="{{ public_path('storage/' . $field['value']) }}"
+                                            <a href="{{ url('storage/' . $field['value']) }}"
                                                 target="_blank">{{ basename($field['value']) }}</a>
                                             <div>{{ __('expiration date') }}: {{ $field['expiration'] ?? '-' }}</div>
                                         @break
@@ -408,62 +408,50 @@
 
         <div>
             <ul>
-                <li>يحدد عقد النقل نوع وطبيعة البضاعة المتعاقد على نقلها، والحجم أو الوزن أو العدد أو الكمية حسب نوع
-                    البضاعة، وبيانات أطراف العقد، وأجور النقل، وطريقة الدفع، ومكان وتاريخ ووقت انتقال مسؤولية
-                    البضاعة للناقل، ومكان وفترة تسليمها للمرسل إليه، كما يحدد آلية الاستلام والتسليم بما فيها عمليات
-                    التحميل والتفريغ والمناولة والتصفيف والتخزين، ومتطلبات واشتراطات عملية النقل الخاصة بنوع وطبيعة
-                    البضاعة، ويجوز باتفاق طرفي عقد النقل استخدام التعاملات الإلكترونية في كل ما يخص معاملات عقد
-                    النقل طبقاً للأنظمة واللوائح والتعليمات المعمول بها في المملكة.</li>
-                <li>يجوز اتفاق أطراف العقد على شروط إضافية في عقد النقل بما لا يخالف أحكام هذه اللائحة والأنظمة
-                    واللوائح والتعليمات ذات العلاقة.</li>
-                <li>يجوز للناقل –تحت مسئوليته وإشرافه– إسناد جزء أو كل من المهام الموكلة له لتنفيذ بنود عقد النقل،
-                    ما لم يتفق على خلاف ذلك في العقد، ويكون الناقل مسؤولاً مسؤولية مباشرة عن كل تصرفات وأفعال تابعيه
-                    في تنفيذ الالتزامات المترتبة على عقد النقل، ويقع باطلاً كل شرط يقضي بإعفاء الناقل من المسؤولية
-                    عن تصرفات وأفعال تابعيه.</li>
-                <li>الناقل مسؤول عن البضاعة من وقت استلامه لها أو قيام الطرف المكلف من قبله بتنفيذ أي من المهام
-                    الموكلة إليه، وتنتهي مسؤوليته عند تسليمه للبضاعة للمرسل إليه أو المفوض باستلامها في مقصدها.</li>
-                <li>لا يتحمل الناقل المسؤولية عن الأضرار الناجمة عن تحميل البضائع أو تفريغها من الشاحنة أو عليها،
-                    إلا في حالة أن يكون التحميل والتفريغ قد تم من قبل الناقل بطلب من المرسل أو المرسل إليه.</li>
-                <li>للناقل إذا اقتضت الضرورة للمحافظة على البضاعة أن يقوم عند استلامها بإعادة التحزيم أو إصلاح
-                    الأغلفة أو زيادتها أو تخفيضها أو غير ذلك من التدابير الضرورية التي يقتضي القيام بها بمقابل أو
-                    بدون مقابل حسب الاتفاق مع المرسل أو من ينوب عنه.</li>
-                <li>يكون الناقل مسؤولاً عن الخسارة الناتجة عن تلف أو فقد البضاعة وكذلك عن التأخير في التسليم إذا وقع
-                    الحادث الذي سبب التلف أو الفقد أو التأخير في التسليم في الوقت الذي كانت فيه البضاعة في عهدته إلا
-                    إذا أثبت عدم صدور أي خطأ أو إهمال عنه أو عن أي من موظفيه أو وكلائه تسبب أو ساهم في تأخير تسليم
-                    البضاعة أو خسارتها أو تلفها، كما يمكن إعفاؤه من المسؤولية إذا أثبت أن تأخير تسليم البضاعة أو
-                    خسارتها أو تلفها يعود إلى أحد الأسباب التالية:</li>
-                <ul>
-                    <li>خطأ صادر عن المرسل أو المرسل إليه أو أي من وكلائهما أو ممثليهما.</li>
-                    <li>قوة قاهرة.</li>
-                    <li>عيب كامن أو خفي في البضاعة.</li>
-                    <li>حدوث نقص في الحجم أو الوزن أثناء النقل لأسباب تعود إلى طبيعة البضاعة المنقولة مثل التبخر أو
-                        الجفاف أو النضوج.</li>
-                    <li>سبب آخر يكون خارج سيطرة الناقل ويمنعه من تنفيذ بنود عقد النقل.</li>
-                </ul>
-                <li>يكون الناقل مسؤولاً عن التلف أو الخسارة الناجمة عن تأخير تسليم البضاعة في الموعد المحدد إذا كان
-                    المرسل قد أعلن كتابةً عن رغبته في تسليم البضاعة في هذا الموعد المحدد ووافق عليه الناقل.</li>
-                <li>في حال عدم وجود اتفاق مسبق بشأن موعد تسليم البضاعة يكون الناقل مسؤولاً عن التأخير في التسليم إذا
-                    لم يجر تسليمها خلال فترة زمنية تعتبر مناسبة بعد أن تؤخذ في الاعتبار الظروف التي قد تؤدي إلى هذا
-                    التأخير.</li>
-                <li>تعامل البضاعة كأنها مفقودة ويتحمل الناقل مسؤولية فقدها في الحالات التالية:</li>
-                <ul>
-                    <li>إذا لم تصل البضاعة خلال (30) ثلاثون يوماً بعد تاريخ التسليم المتفق عليه.</li>
-                    <li>بعد انقضاء (60) ستين يوماً من تسلم الناقل للبضاعة؛ إذا لم يحدد موعد للتسليم.</li>
-                </ul>
-                <li>لا يكون الناقل مسؤولاً عن الخسارة الناجمة عن التأخير في تسليم البضاعة أو تلفها أو فقدها إذا كان
-                    ذلك قد نتج عن تقديم المرسل بيانات أو معلومات خاطئة عن طبيعة البضاعة في عقد النقل أو وثيقة النقل.
+                <li>{{ __('The transport contract specifies the type and nature of the goods contracted for transport, the size, weight, number or quantity according to the type of goods, the data of the contracting parties, transport fees, payment method, place, date and time of transfer of responsibility for the goods to the carrier, and the place and period of delivery to the consignee. It also defines the mechanism of receipt and delivery including loading, unloading, handling, stacking and storage operations, and the requirements and conditions of the transport process specific to the type and nature of the goods. The contracting parties may agree to use electronic transactions in all matters related to transport contract transactions in accordance with the regulations, bylaws and instructions in force in the Kingdom.') }}
                 </li>
-                <li>لا يكون الناقل مسؤولاً عما يلحق بالبضاعة بحكم طبيعتها من نقص في الوزن أو الحجم أثناء النقل، على
-                    ألا يزيد هذا النقص عن النسبة المقررة طبقاً للقواعد العامة المعتمدة في نقل مثل هذه البضاعة. وإذا
-                    شملت وثيقة النقل بضاعة مختلفة مقسمة إلى مجموعات أو طرود وكان وزن كل منها مبيناً في الوثيقة فيحدد
-                    النقص المسموح به على أساس وزن كل مجموعة أو طرد كلاً على حدة.</li>
-                <li>لا يتحمل الناقل النقص الذي يظهر في البضاعة المنقولة في حاوية أو ما شابهها المجهزة من قبل المرسل
-                    والمختومة بختمه إذا سلمها الناقل إلى المرسل إليه بختمها السليم وفي الوقت المحدد للتسليم.</li>
-                <li>يلتزم الناقل باستيفاء المبالغ التي أُشترط بموجب شروط عقد النقل استيفاؤها من المرسل إليه لحساب
-                    المرسل عند التسليم، وإذا تم تسليم البضاعة دون استيفاء تلك المبالغ فيلزم الناقل بدفع تلك المبالغ
-                    إلى المرسل دون الإخلال بحقه في الرجوع على المرسل إليه.</li>
-                <li>يكون الناقل مسؤولاً عن فقدان الوثائق المرفقة بوثيقة النقل أو الواردة فيها أو المودعة لديه، أو
-                    على استعمالها بصورة غير صحيحة بشرط ألا يزيد التعويض الواجب الدفع على اعتبار أن البضاعة مفقودة.
+                <li>{{ __('The contracting parties may agree on additional conditions in the transport contract that do not violate the provisions of this regulation and related regulations, bylaws and instructions.') }}
+                </li>
+                <li>{{ __('The carrier may - under his responsibility and supervision - assign part or all of the tasks assigned to him to implement the terms of the transport contract, unless otherwise agreed in the contract. The carrier shall be directly responsible for all actions and acts of his subordinates in implementing the obligations arising from the transport contract, and any condition that exempts the carrier from responsibility for the actions and acts of his subordinates shall be null and void.') }}
+                </li>
+                <li>{{ __('The carrier is responsible for the goods from the time he receives them or when the party assigned by him performs any of the tasks assigned to him, and his responsibility ends when he delivers the goods to the consignee or the authorized person to receive them at their destination.') }}
+                </li>
+                <li>{{ __('The carrier does not bear responsibility for damages resulting from loading or unloading goods from or onto the truck, except in the case that loading and unloading was done by the carrier at the request of the sender or consignee.') }}
+                </li>
+                <li>{{ __('If necessary to preserve the goods, the carrier may, upon receiving them, repack, repair, increase or decrease the packaging, or take other necessary measures that need to be taken with or without compensation according to the agreement with the sender or his representative.') }}
+                </li>
+                <li>{{ __('The carrier shall be liable for loss resulting from damage or loss of goods as well as delay in delivery if the incident that caused the damage, loss or delay in delivery occurred at the time when the goods were in his custody, unless he proves that no error or negligence was issued by him or any of his employees or agents that caused or contributed to the delay in delivery, loss or damage of the goods. He may also be exempted from liability if he proves that the delay in delivery, loss or damage of the goods is due to one of the following reasons:') }}
+                </li>
+                <ul>
+                    <li>{{ __('Error by the sender or consignee or any of their agents or representatives.') }}</li>
+                    <li>{{ __('Force majeure.') }}</li>
+                    <li>{{ __('Inherent or hidden defect in the goods.') }}</li>
+                    <li>{{ __('Decrease in volume or weight during transport for reasons related to the nature of the transported goods such as evaporation, drying or ripening.') }}
+                    </li>
+                    <li>{{ __('Another reason that is beyond the control of the carrier and prevents him from implementing the terms of the transport contract.') }}
+                    </li>
+                </ul>
+                <li>{{ __('The carrier shall be liable for damage or loss resulting from delay in delivery of goods at the specified time if the sender has declared in writing his desire to deliver the goods at this specified time and the carrier has agreed to it.') }}
+                </li>
+                <li>{{ __('In the absence of a prior agreement regarding the delivery date of the goods, the carrier shall be liable for delay in delivery if it is not delivered within a reasonable period of time after taking into account the circumstances that may lead to this delay.') }}
+                </li>
+                <li>{{ __('Goods are treated as lost and the carrier bears responsibility for their loss in the following cases:') }}
+                </li>
+                <ul>
+                    <li>{{ __('If the goods do not arrive within (30) thirty days after the agreed delivery date.') }}
+                    </li>
+                    <li>{{ __('After the expiry of (60) sixty days from the carriers receipt of the goods; if no delivery date is specified.') }}
+                    </li>
+                </ul>
+                <li>{{ __('The carrier shall not be liable for loss resulting from delay in delivery, damage or loss of goods if this resulted from the sender providing incorrect data or information about the nature of the goods in the transport contract or transport document.') }}
+                </li>
+                <li>{{ __('The carrier shall not be liable for any decrease in weight or volume that affects the goods by virtue of their nature during transport, provided that this decrease does not exceed the percentage determined according to the general rules adopted in transporting such goods. If the transport document includes different goods divided into groups or packages and the weight of each is indicated in the document, the permissible shortage shall be determined on the basis of the weight of each group or package separately.') }}
+                </li>
+                <li>{{ __('The carrier does not bear the shortage that appears in goods transported in a container or similar equipment prepared by the sender and sealed with his seal if the carrier delivers it to the consignee with its intact seal and at the specified time for delivery.') }}
+                </li>
+                <li>{{ __('The carrier is obligated to collect the amounts that were stipulated under the terms of the transport contract to be collected from the consignee for the account of the sender upon delivery. If the goods are delivered without collecting those amounts, the carrier is obligated to pay those amounts to the sender without prejudice to his right to recourse against the consignee.') }}
+                </li>
+                <li>{{ __('The carrier shall be liable for the loss of documents attached to the transport document or contained therein or deposited with him, or for their incorrect use, provided that the compensation to be paid does not exceed considering that the goods are lost.') }}
                 </li>
             </ul>
 

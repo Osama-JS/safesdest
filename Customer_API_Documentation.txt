@@ -1102,14 +1102,735 @@ Description: جلب جميع مهام العميل مع خيارات الفلت�
 }
 
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.4 Validate Task Step 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/tasks/validate-step1
+Authentication: مطلوب (Bearer Token)
+Description: التحقق من صحة بيانات الخطوة الأولى لإنشاء المهمة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "vehicles": [
+        {
+            "vehicle": 1,
+            "vehicle_type": 1,
+            "vehicle_size": 1,
+            "quantity": 1
+        }
+    ],
+    "template": 1,
+    "additional_fields": {
+        "field_name": "field_value",
+        "file_field": "file_upload",
+        "file_expiration_date_file": "file_upload",
+        "file_expiration_date_expiration": "2024-12-31",
+        "file_with_text_file": "file_upload",
+        "file_with_text_text": "text_value"
+    }
+}
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "Validation passed ✅",
+    "data": [
+        {
+            "id": 1,
+            "name": "Distance Based",
+            "type": "distance",
+            "params": null
+        },
+        {
+            "id": 2,
+            "name": "Points Based",
+            "type": "points",
+            "params": [
+                {
+                    "from_point": {
+                        "id": 1,
+                        "name": "Riyadh"
+                    },
+                    "to_point": {
+                        "id": 2,
+                        "name": "Jeddah"
+                    },
+                    "price": 500,
+                    "param": 1
+                }
+            ]
+        }
+    ]
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 0,
+    "error": {
+        "vehicles.0.vehicle": ["The vehicle field is required."],
+        "additional_fields.field_name": ["The field name is required."]
+    }
+}
+
+📥 Response (Business Logic Error - 400):
+{
+    "status": 2,
+    "error": "You cannot select more than one truck size in the same order"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.5 Validate Task Step 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/tasks/validate-step2
+Authentication: مطلوب (Bearer Token)
+Description: التحقق من صحة بيانات الخطوة الثانية وحساب السعر
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 Request Body:
+{
+    "pricing_method": 1,
+    "pickup_name": "أحمد محمد",
+    "pickup_phone": "0501234567",
+    "pickup_email": "ahmed@example.com",
+    "pickup_address": "الرياض - شارع العليا",
+    "pickup_latitude": 24.7136,
+    "pickup_longitude": 46.6753,
+    "pickup_before": "2024-12-31 10:00:00",
+    "pickup_note": "ملاحظات الاستلام",
+    "delivery_name": "عمر أحمد",
+    "delivery_phone": "0559876543",
+    "delivery_email": "omar@example.com",
+    "delivery_address": "جدة - شارع التحلية",
+    "delivery_latitude": 21.4858,
+    "delivery_longitude": 39.1925,
+    "delivery_before": "2024-12-31 18:00:00",
+    "delivery_note": "ملاحظات التسليم",
+    "conditions": "شروط المهمة"
+}
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "Validation passed ✅",
+    "data": {
+        "total_price": 500.00,
+        "distance": 950,
+        "pricing_method": "distance",
+        "service_commission": 50.00,
+        "vat_commission": 25.00,
+        "breakdown": {
+            "base_price": 425.00,
+            "service_fee": 50.00,
+            "vat": 25.00
+        }
+    }
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 0,
+    "error": {
+        "pickup_name": ["The pickup name field is required."],
+        "delivery_address": ["The delivery address field is required."]
+    }
+}
+
+📥 Response (Business Logic Error - 400):
+{
+    "status": 2,
+    "error": "Unable to calculate pricing for this route"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.6 Create Task
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/tasks
+Authentication: مطلوب (Bearer Token)
+Description: إنشاء مهمة جديدة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: multipart/form-data
+- Accept: application/json
+
+📤 Request Body (Form Data):
+{
+    "pricing_method": 1,
+    "vehicles": [
+        {
+            "vehicle": 1,
+            "vehicle_type": 1,
+            "vehicle_size": 1,
+            "quantity": 1
+        }
+    ],
+    "pickup_name": "أحمد محمد",
+    "pickup_phone": "0501234567",
+    "pickup_email": "ahmed@example.com",
+    "pickup_address": "الرياض - شارع العليا",
+    "pickup_latitude": 24.7136,
+    "pickup_longitude": 46.6753,
+    "pickup_before": "2024-12-31 10:00:00",
+    "pickup_note": "ملاحظات الاستلام",
+    "pickup_image": "[image file]",
+    "delivery_name": "عمر أحمد",
+    "delivery_phone": "0559876543",
+    "delivery_email": "omar@example.com",
+    "delivery_address": "جدة - شارع التحلية",
+    "delivery_latitude": 21.4858,
+    "delivery_longitude": 39.1925,
+    "delivery_before": "2024-12-31 18:00:00",
+    "delivery_note": "ملاحظات التسليم",
+    "delivery_image": "[image file]",
+    "conditions": "شروط المهمة",
+    "additional_fields": {
+        "field_name": "field_value",
+        "file_field": "[file upload]"
+    },
+    // For advertised tasks (method = 0)
+    "max_price": 600,
+    "min_price": 400,
+    "note_price": "ملاحظات السعر",
+    "included": true
+}
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "1 Tasks created successfully."
+}
+
+📥 Response (Multiple Tasks Success - 200):
+{
+    "status": 1,
+    "success": "3 Tasks created successfully."
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 0,
+    "error": {
+        "pickup_name": ["The pickup name field is required."],
+        "delivery_address": ["The delivery address field is required."]
+    }
+}
+
+📥 Response (Business Logic Error - 400):
+{
+    "status": 2,
+    "error": "Commission cannot be greater than total price"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.7 Get Task for Edit
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/tasks/{id}/edit
+Authentication: مطلوب (Bearer Token)
+Description: جلب بيانات المهمة للتعديل
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "data": {
+        "id": 1,
+        "status": "in_progress",
+        "total_price": 500.00,
+        "conditions": "شروط المهمة",
+        "vehicle_type": 1,
+        "vehicle": 1,
+        "pickup": {
+            "id": 1,
+            "contact_name": "أحمد محمد",
+            "contact_phone": "0501234567",
+            "contact_emil": "ahmed@example.com",
+            "address": "الرياض - شارع العليا",
+            "latitude": 24.7136,
+            "longitude": 46.6753,
+            "scheduled_time": "2024-12-31 10:00:00",
+            "note": "ملاحظات الاستلام",
+            "image": "http://domain.com/storage/tasks/pickup.jpg"
+        },
+        "delivery": {
+            "id": 2,
+            "contact_name": "عمر أحمد",
+            "contact_phone": "0559876543",
+            "contact_emil": "omar@example.com",
+            "address": "جدة - شارع التحلية",
+            "latitude": 21.4858,
+            "longitude": 39.1925,
+            "scheduled_time": "2024-12-31 18:00:00",
+            "note": "ملاحظات التسليم",
+            "image": "http://domain.com/storage/tasks/delivery.jpg"
+        },
+        "ad": {
+            "highest_price": 600,
+            "lowest_price": 400,
+            "description": "ملاحظات السعر",
+            "included": true
+        },
+        "fields": [
+            {
+                "id": 1,
+                "name": "field_name",
+                "label": "Field Label",
+                "type": "text",
+                "required": true
+            }
+        ],
+        "additional_data": {
+            "field_name": {
+                "label": "Field Label",
+                "value": "field_value",
+                "type": "text"
+            }
+        }
+    }
+}
+
+📥 Response (Permission Error - 403):
+{
+    "status": 2,
+    "error": "You do not have permission to do actions to this record"
+}
+
+📥 Response (Task Closed - 400):
+{
+    "status": 2,
+    "error": "This Task is already closed"
+}
+
+📥 Response (Invalid Status - 400):
+{
+    "status": 2,
+    "error": "This task cannot be modified in its current state"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.8 Update Task
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: PUT /api/customer/tasks/{id}
+Authentication: مطلوب (Bearer Token)
+Description: تحديث مهمة موجودة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: multipart/form-data
+- Accept: application/json
+
+📤 Request Body (Form Data):
+{
+    "id": 1,
+    "pricing_method": 1,
+    "vehicles": [
+        {
+            "vehicle": 1,
+            "vehicle_type": 1,
+            "vehicle_size": 1,
+            "quantity": 1
+        }
+    ],
+    "pickup_name": "أحمد محمد المحدث",
+    "pickup_phone": "0501234567",
+    "pickup_email": "ahmed@example.com",
+    "pickup_address": "الرياض - شارع العليا الجديد",
+    "pickup_latitude": 24.7136,
+    "pickup_longitude": 46.6753,
+    "pickup_before": "2024-12-31 10:00:00",
+    "pickup_note": "ملاحظات الاستلام المحدثة",
+    "pickup_image": "[image file - optional]",
+    "delivery_name": "عمر أحمد المحدث",
+    "delivery_phone": "0559876543",
+    "delivery_email": "omar@example.com",
+    "delivery_address": "جدة - شارع التحلية الجديد",
+    "delivery_latitude": 21.4858,
+    "delivery_longitude": 39.1925,
+    "delivery_before": "2024-12-31 18:00:00",
+    "delivery_note": "ملاحظات التسليم المحدثة",
+    "delivery_image": "[image file - optional]",
+    "conditions": "شروط المهمة المحدثة",
+    "additional_fields": {
+        "field_name": "field_value_updated",
+        "file_field": "[file upload - optional]"
+    },
+    // For advertised tasks (method = 0)
+    "max_price": 700,
+    "min_price": 450,
+    "note_price": "ملاحظات السعر المحدثة",
+    "included": true
+}
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "Tasks Updated successfully."
+}
+
+📥 Response (Validation Error - 422):
+{
+    "status": 0,
+    "error": {
+        "pickup_name": ["The pickup name field is required."],
+        "delivery_address": ["The delivery address field is required."]
+    }
+}
+
+📥 Response (Permission Error - 403):
+{
+    "status": 2,
+    "error": "You do not have permission to do actions to this record"
+}
+
+📥 Response (Task Closed - 400):
+{
+    "status": 2,
+    "error": "This Task is already closed"
+}
+
+📥 Response (Invalid Status - 400):
+{
+    "status": 2,
+    "error": "This task cannot be modified in its current state"
+}
+
+📥 Response (Business Logic Error - 400):
+{
+    "status": 2,
+    "error": "You can not update Task with multiple vehicles"
+}
+
 
 ================================================================================
-🚒 5. Wallet Routtes (Protected Routes)
+🚒 6. Ads Management Routes (Protected Routes)
 ================================================================================
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔗 5.1 Get Wallet information & statice & Recent Transactions
+🔗 6.1 Get Ads Data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/ads/data
+Authentication: مطلوب (Bearer Token)
+Description: جلب قائمة إعلانات المهام مع إمكانية البحث والفلترة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📤 Query Parameters:
+- per_page: عدد النتائج في الصفحة (افتراضي: 8)
+- page: رقم الصفحة (افتراضي: 1)
+- search: نص البحث (اختياري)
+- status: حالة الإعلان (اختياري) - running, closed, etc.
+- price: نطاق السعر (اختياري) - 0-100, 100-500, 500+
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "data": {
+        "data": [
+            {
+                "id": 1,
+                "task_id": 123,
+                "low_price": 400,
+                "high_price": 600,
+                "note": "ملاحظات الإعلان",
+                "status": "running",
+                "user": 1,
+                "customer": {
+                    "owner": "customer",
+                    "id": 1,
+                    "name": "أحمد محمد",
+                    "phone": "0501234567",
+                    "email": "ahmed@example.com",
+                    "image": "http://domain.com/storage/customers/1.jpg"
+                },
+                "from_address": "الرياض - شارع العليا",
+                "to_address": "جدة - شارع التحلية",
+                "from_location": [46.6753, 24.7136],
+                "to_location": [39.1925, 21.4858]
+            }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "last_page": 5,
+            "per_page": 8,
+            "total": 35,
+            "from": 1,
+            "to": 8,
+            "has_more_pages": true
+        }
+    },
+    "count": 35
+}
+
+📥 Response (Error - 500):
+{
+    "status": 500,
+    "message": "Failed to get ads data",
+    "error": "Error details"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 6.2 Get Ad Details
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/ads/{id}
+Authentication: مطلوب (Bearer Token)
+Description: جلب تفاصيل إعلان محدد
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "data": {
+        "id": 1,
+        "task_id": 123,
+        "low_price": 400,
+        "high_price": 600,
+        "note": "ملاحظات الإعلان",
+        "status": "running",
+        "included": true,
+        "service_commission_type": 0,
+        "service_commission": 50.00,
+        "vat_commission": 25.00,
+        "task": {
+            "id": 123,
+            "status": "advertised",
+            "total_price": 0,
+            "conditions": "شروط المهمة",
+            "pickup": {
+                "contact_name": "أحمد محمد",
+                "address": "الرياض - شارع العليا",
+                "latitude": 24.7136,
+                "longitude": 46.6753
+            },
+            "delivery": {
+                "contact_name": "عمر أحمد",
+                "address": "جدة - شارع التحلية",
+                "latitude": 21.4858,
+                "longitude": 39.1925
+            },
+            "additional_data": {
+                "field_name": {
+                    "label": "Field Label",
+                    "value": "field_value",
+                    "type": "text"
+                }
+            }
+        },
+        "customer": {
+            "owner": "customer",
+            "id": 1,
+            "name": "أحمد محمد",
+            "phone": "0501234567",
+            "email": "ahmed@example.com",
+            "image": "http://domain.com/storage/customers/1.jpg"
+        }
+    }
+}
+
+📥 Response (Permission Error - 403):
+{
+    "status": 2,
+    "error": "You do not have permission to view this ad"
+}
+
+📥 Response (Error - 500):
+{
+    "status": 500,
+    "message": "Failed to get ad details",
+    "error": "Error details"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 6.3 Get Ad Offers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/customer/ads/{id}/offers
+Authentication: مطلوب (Bearer Token)
+Description: جلب العروض المقدمة على إعلان محدد
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Accept: application/json
+
+📤 Query Parameters:
+- id: معرف الإعلان (في الـ URL)
+
+📥 Response (Success - 200):
+{
+    "status": 200,
+    "data": [
+        {
+            "id": 1,
+            "driver": {
+                "id": 5,
+                "name": "علي محمد",
+                "phone": "0562223333",
+                "image": "http://domain.com/storage/drivers/5.jpg"
+            },
+            "driver_id": 5,
+            "price": 550.00,
+            "accepted": false,
+            "description": "أستطيع تنفيذ المهمة بجودة عالية"
+        },
+        {
+            "id": 2,
+            "driver": {
+                "id": 8,
+                "name": "محمد أحمد",
+                "phone": "0551112222",
+                "image": "http://domain.com/storage/drivers/8.jpg"
+            },
+            "driver_id": 8,
+            "price": 520.00,
+            "accepted": true,
+            "description": "خبرة 5 سنوات في النقل"
+        }
+    ],
+    "count": 2
+}
+
+📥 Response (Error - 500):
+{
+    "status": 500,
+    "message": "Failed to get offers",
+    "error": "Error details"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 6.4 Accept Offer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/ads/offers/{id}/accept
+Authentication: مطلوب (Bearer Token)
+Description: قبول عرض محدد من السائق
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 URL Parameters:
+- id: معرف العرض
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "The Offer accepted successfully"
+}
+
+📥 Response (Permission Error - 403):
+{
+    "status": 2,
+    "error": "You do not have the right permission to do this action"
+}
+
+📥 Response (Ad Closed - 400):
+{
+    "status": 2,
+    "error": "This Task ad is already closed"
+}
+
+📥 Response (Already Accepted - 400):
+{
+    "status": 2,
+    "error": "This offer is already accepted"
+}
+
+📥 Response (Error - 500):
+{
+    "status": 500,
+    "message": "Failed to accept offer",
+    "error": "Error details"
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 6.5 Retract Offer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/ads/offers/{id}/retract
+Authentication: مطلوب (Bearer Token)
+Description: سحب قبول عرض محدد
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: application/json
+- Accept: application/json
+
+📤 URL Parameters:
+- id: معرف العرض
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "The Offer retracted successfully"
+}
+
+📥 Response (Permission Error - 403):
+{
+    "status": 2,
+    "error": "You do not have the right permission to do this action"
+}
+
+📥 Response (Ad Closed - 400):
+{
+    "status": 2,
+    "error": "This Task ad is already closed"
+}
+
+📥 Response (Already Retracted - 400):
+{
+    "status": 2,
+    "error": "This offer is already retracted"
+}
+
+📥 Response (Error - 500):
+{
+    "status": 500,
+    "message": "Failed to retract offer",
+    "error": "Error details"
+}
+
+
+
+================================================================================
+🚒 7. Wallet Routes (Protected Routes)
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 7.1 Get Wallet information & statice & Recent Transactions
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Endpoint: GET /api/customer/wallet
 Authentication:   مطلوب (Bearer Token)
@@ -1161,7 +1882,7 @@ Description: جلب بيانات واحصائيات محفظة العميل
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔗 5.2 Get Wallet Transactions
+🔗 7.2 Get Wallet Transactions
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Endpoint: GET /api/customer/wallet/transactions
 Authentication:   مطلوب (Bearer Token)
@@ -1235,7 +1956,7 @@ Description: جلب الحركات المالية في المحفظة
     "message": "ُError Message"
 }
 ================================================================================
-📋 6. ERROR CODES REFERENCE
+📋 8. ERROR CODES REFERENCE
 ================================================================================
 
 🔴 Common Error Status Codes:
@@ -1255,7 +1976,7 @@ Description: جلب الحركات المالية في المحفظة
 - Forgot Password: 3 requests per minute
 
 ================================================================================
-📝 7. ADDITIONAL NOTES
+📝 9. ADDITIONAL NOTES
 ================================================================================
 
 🔹 Authentication:

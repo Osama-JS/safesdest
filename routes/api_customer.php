@@ -128,6 +128,8 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
         ->name('api.customer.tasks.update');
 
 
+
+
     // Wallet management routes
     Route::get('/wallet', [WalletController::class, 'show'])
     ->name('api.customer.wallet');

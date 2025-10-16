@@ -48,6 +48,8 @@ class PdfService
                 ],
             ],
             'default_font' => 'tajawal',
+            'tempDir' => storage_path('app/mpdf-temp'),
+
         ]);
 
 

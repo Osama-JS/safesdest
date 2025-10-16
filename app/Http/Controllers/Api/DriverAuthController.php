@@ -22,7 +22,7 @@ class DriverAuthController extends Controller
     public function login(Request $request)
     {
         try {
-            
+
             // Validate request
             $validator = Validator::make($request->all(), [
                 'login' => 'required|string',
@@ -246,8 +246,23 @@ class DriverAuthController extends Controller
             if (!$driver || !$currentToken) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid token'
+                    'message' => 'Invalid token',
+                    'error_code' => 'TOKEN_INVALID',
+                    'action' => 'logout'
                 ], 401);
+            }
+
+            // Check if driver account is still active
+            if ($driver->status !== 'active') {
+                // Revoke all tokens for this driver
+                $driver->revokeAllTokens();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver account is not active',
+                    'error_code' => 'ACCOUNT_INACTIVE',
+                    'action' => 'logout'
+                ], 403);
             }
 
             // Create new token with same abilities
@@ -276,7 +291,91 @@ class DriverAuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Token refresh failed'
+                'message' => 'Token refresh failed',
+                'error_code' => 'TOKEN_REFRESH_FAILED',
+                'action' => 'logout'
+            ], 500);
+        }
+    }
+
+    /**
+     * Check driver status and token validity
+     */
+    public function checkStatus(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or expired token',
+                    'error_code' => 'TOKEN_INVALID',
+                    'action' => 'logout'
+                ], 401);
+            }
+
+            // Check if driver account is active
+            if ($driver->status !== 'active') {
+                // Revoke all tokens for this driver
+                $driver->revokeAllTokens();
+
+                Log::warning('Driver account not active', [
+                    'driver_id' => $driver->id,
+                    'status' => $driver->status,
+                    'action' => 'force_logout'
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Driver account is not active',
+                    'error_code' => 'ACCOUNT_INACTIVE',
+                    'action' => 'logout',
+                    'status' => $driver->status
+                ], 403);
+            }
+
+            // Update last activity
+            $driver->update(['last_activity_at' => now()]);
+
+            // Return driver data with status
+            return response()->json([
+                'success' => true,
+                'message' => 'Driver status is valid',
+                'data' => [
+                    'driver' => [
+                        'id' => $driver->id,
+                        'name' => $driver->name,
+                        'email' => $driver->email,
+                        'phone' => $driver->phone,
+                        'phone_code' => $driver->phone_code,
+                        'image' => $driver->image ? url($driver->image) : null,
+                        'status' => $driver->status,
+                        'online' => $driver->online,
+                        'free' => $driver->free,
+                        'address' => $driver->address,
+                        'commission_type' => $driver->commission_type,
+                        'commission_value' => $driver->commission_value,
+                        'wallet_balance' => $driver->walletBalance ?? 0,
+                        'app_version' => $driver->app_version,
+                        'last_activity_at' => $driver->last_activity_at,
+                        'created_at' => $driver->created_at,
+                    ],
+                    'token_valid' => true
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Driver status check failed', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Status check failed',
+                'error_code' => 'STATUS_CHECK_FAILED',
+                'action' => 'retry'
             ], 500);
         }
     }

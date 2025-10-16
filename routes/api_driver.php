@@ -94,6 +94,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::post('/refresh-token', [DriverAuthController::class, 'refreshToken'])
         ->name('api.driver.refresh-token');
 
+    Route::get('/check-status', [DriverAuthController::class, 'checkStatus'])
+        ->name('api.driver.check-status');
+
     // Task management routes
     Route::prefix('tasks')->group(function () {
         Route::get('/', [DriverTaskController::class, 'index'])

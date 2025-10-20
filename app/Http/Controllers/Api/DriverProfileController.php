@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver;
+use App\Models\Task;
+use App\Models\Customs_Clearance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\FunctionsController;
+use Exception;
 
 class DriverProfileController extends Controller
 {
@@ -406,6 +409,74 @@ class DriverProfileController extends Controller
                 'success' => false,
                 'message' => 'Failed to get additional data'
             ], 500);
+        }
+    }
+
+
+    public function deleteAccount(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string',
+                'confirmation' => 'required|string|in:DELETE_MY_ACCOUNT',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ]);
+            }
+
+            $driver = $request->user();
+
+            // Verify password
+            if (!Hash::check($request->password, $driver->password)) {
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Invalid password'
+                ]);
+            }
+
+            // Check for active tasks or clearances
+            $activeTasks = Task::where('driver_id', $driver->id)
+                              ->whereNotIn('status', ['completed', 'canceled', 'refund'])
+                              ->count();
+
+            $activeClearances = Customs_Clearance::where('driver_id', $driver->id)
+                                                 ->whereNotIn('status', ['completed', 'canceled'])
+                                                 ->count();
+
+            if ($activeTasks > 0 || $activeClearances > 0) {
+                return response()->json([
+                    'status' => 400,
+                    'message' => 'Cannot delete account with active tasks or clearances'
+                ]);
+            }
+
+
+
+            // Revoke all tokens
+            $driver->tokens()->delete();
+
+            // Soft delete or anonymize driver data
+            $driver->update([
+                'status' => 'blocked',
+            ]);
+
+            $driver->delete();
+            return response()->json([
+                'status' => 200,
+                'message' => 'Account deleted successfully'
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to delete account',
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

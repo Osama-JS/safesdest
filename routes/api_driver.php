@@ -85,6 +85,8 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::post('/change-password', [DriverProfileController::class, 'changePassword'])
         ->name('api.driver.change-password');
 
+    Route::post('/delete-account', [DriverProfileController::class, 'deleteAccount'])->name('api.driver.delete.account');
+
     Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
         ->name('api.driver.profile.stats');
 

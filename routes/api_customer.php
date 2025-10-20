@@ -108,7 +108,7 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks/map-data', [CustomerTaskController::class, 'getTasksMap'])
       ->name('api.customer.tasks.map-data');
 
-    Route::get('/tasks/data', [CustomerTaskController::class, 'getTasks'])
+    Route::post('/tasks/data', [CustomerTaskController::class, 'getTasks'])
     ->name('api.customer.tasks.data');
 
     // Task creation and validation routes
@@ -131,10 +131,10 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
 
 
     // Wallet management routes
-    Route::get('/wallet', [WalletController::class, 'show'])
+    Route::post('/wallet', [WalletController::class, 'show'])
     ->name('api.customer.wallet');
 
-    Route::get('/wallet/transactions', [WalletController::class, 'getTransactions'])
+    Route::post('/wallet/transactions', [WalletController::class, 'getTransactions'])
     ->name('api.customer.wallet-transactions');
 
     // // Dashboard routes

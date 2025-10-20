@@ -189,7 +189,7 @@ class CustomerTaskController extends Controller
 
             // Pagination
             $perPage = $request->get('per_page', 15);
-            $tasks = $query->with(['driver', 'vehicle_size', 'pricing_template'])
+            $tasks = $query->with(['driver', 'vehicle_size', 'pricingTemplate'])
                           ->paginate($perPage);
 
             $tasksData = $tasks->map(function ($task) {
@@ -234,7 +234,7 @@ class CustomerTaskController extends Controller
             });
 
             return response()->json([
-                'success' => 200,
+                'status' => 200,
                 'data' => [
                     'tasks' => $tasksData,
                     'pagination' => [
@@ -420,7 +420,18 @@ class CustomerTaskController extends Controller
             ]);
         }
 
-        $sizes = collect($req->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+        $user = $req->user();
+        Log::alert("vehicles: ".$req->input('vehicles') );
+
+        // $sizes = collect($req->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+        $vehicles = json_decode($req->input('vehicles'), true); // تحويل JSON إلى array
+        $sizes = collect($vehicles)
+            ->pluck('vehicle_size')
+            ->unique()
+            ->filter()
+            ->values();
+
+        Log::alert("sizes: ".$sizes);
 
         if ($sizes->count() > 1) {
             return response()->json([
@@ -439,9 +450,10 @@ class CustomerTaskController extends Controller
 
         $pricingTemplates = Pricing_Template::availableForCustomer(
             $task_template->value,
-            Auth::user()->id,
+            $user->id,
             $sizes
         )->pluck('id');
+        Log::alert("user: ".$req->user()->id . " sizes: ". $sizes . "  pricingTemplates: " .  $pricingTemplates );
 
         if ($pricingTemplates->count() < 1) {
             return response()->json([
@@ -533,6 +545,9 @@ class CustomerTaskController extends Controller
 
     public function store(Request $req, CustomerTaskPricingService $pricingService)
     {
+
+        Log::alert("Start store");
+
         $validation = $pricingService->validateRequest($req);
         if (!$validation['status']) {
             return response()->json(['status' => 422, 'message' => 'Validation failed', 'error' => $validation['errors']]);

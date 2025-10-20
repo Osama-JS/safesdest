@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\MapboxService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 
 class CustomerTaskPricingService
 {
@@ -247,7 +248,14 @@ class CustomerTaskPricingService
 
     protected function validateVehicleSizes($vehicles)
     {
-        $sizes = collect($vehicles)->pluck('vehicle_size')->unique()->filter()->values();
+        // $sizes = collect($vehicles)->pluck('vehicle_size')->unique()->filter()->values();
+
+        $vehicles = json_decode($vehicles, true); // تحويل JSON إلى array
+        $sizes = collect($vehicles)
+            ->pluck('vehicle_size')
+            ->unique()
+            ->filter()
+            ->values();
         if ($sizes->count() > 1) {
             return __('You cannot select more than one truck size in the same order');
         }
@@ -259,15 +267,34 @@ class CustomerTaskPricingService
     public function calculatePricing($request)
     {
 
+        Log::alert("start calculatePricing");
+
         $task_template = Settings::where('key', 'task_template')->first();
         $template_id = $task_template->value;
+        $user = $request->user();
 
-        $sizes = collect($request->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+        Log::alert('V: '.$request->input('vehicles'));
+
+
+        // $sizes = collect($request->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+
+        $vehicles = json_decode($request->input('vehicles'), true); // ← هنا التحويل الصحيح
+
+        $sizes = collect($vehicles)
+            ->pluck('vehicle_size')
+            ->unique()
+            ->filter()
+            ->values();
+
+        Log::alert('sizes: ' . json_encode($sizes));
         $pricingTemplate = Pricing_Template::availableForCustomer(
             $template_id,
-            Auth::user()->id,
+            $user->id,
             $sizes
         )->first();
+
+        Log::alert("Template: ". $pricingTemplate);
+
 
         if (!$pricingTemplate) {
             return ['status' => false, 'errors' => __('There is no Pricing Role match with your selections')];
@@ -299,9 +326,11 @@ class CustomerTaskPricingService
 
         $taskData = [
           'pricing' => $pricingTemplate->id,
-          'vehicles' => $vehicles = array_column($request->vehicles, 'vehicle_size'),
+          'vehicles' => $sizes,
           'method' => $method->id ?? 0,
         ];
+
+        Log::alert("okkkkk");
 
 
 
@@ -331,6 +360,8 @@ class CustomerTaskPricingService
                 $data['service_commission'] =  $serviceCommission;
             }
 
+            Log::alert("okkkkk22");
+            Log::alert("okkkkk222");
 
 
 
@@ -356,17 +387,21 @@ class CustomerTaskPricingService
             $data['vat_commission'] = $pricingTemplate->vat_commission;
         }
 
-        if (Auth::user()->can('tasks_meltable')) {
-            $vehicles = array_column($request->vehicles, 'quantity');
-            $totalVehicles = array_sum($vehicles);
-            if ($totalVehicles > 1) {
-                $data['vehicles'] = "You want {$totalVehicles} vehicles, so we will create {$totalVehicles} tasks with the same information.";
-            }
-            $taskData['vehicles_quantity'] = $totalVehicles;
-        } else {
-            $taskData['vehicles_quantity'] = 1;
-        }
 
+        // if (Auth::user()->can('tasks_meltable')) {
+        //     $vehicles = array_column($request->vehicles, 'quantity');
+        //     $totalVehicles = array_sum($vehicles);
+        //     if ($totalVehicles > 1) {
+        //         $data['vehicles'] = "You want {$totalVehicles} vehicles, so we will create {$totalVehicles} tasks with the same information.";
+        //     }
+        //     $taskData['vehicles_quantity'] = $totalVehicles;
+        // } else {
+        $taskData['vehicles_quantity'] = 1;
+        // }
+
+
+
+        // Log::alert("taskData: ".$taskData);
 
 
 

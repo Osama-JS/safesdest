@@ -87,10 +87,12 @@ $(function () {
           onUnblock: function () {
             const running = response.data.running;
             const completeUnClosed = response.data.completeUnClosed;
+            const overdue = response.data.overdue;
             console.log('data loaded');
 
             renderTasks(running, '#task-running-container', '.count-running');
             renderTasks(completeUnClosed, '#task-complete-container', '.count-complete');
+            renderTasks(overdue, '#task-overdue-container', '.count-overdue');
 
             const allTasks = [...running, ...completeUnClosed];
             updateMapMarkers(taskMapInstance, allTasks);
@@ -147,7 +149,7 @@ $(function () {
 
       const card = `
       <div class="mb-4">
-        <div class="card p-3 shadow-sm task-card" data-task-id="${task.id}">
+        <div class="card p-3 shadow-sm task-card ${task.overdue ? 'overdue-task' : ''}" data-task-id="${task.id}">
           <div class="d-flex justify-content-between">
             <div class="d-flex align-items-center">
               <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">
@@ -161,7 +163,9 @@ $(function () {
 
               </div>
             </div>
-            <div class="d-flex align-items-center gap-50">
+            <div class="d-flex align-items-center gap-50 flex-column">
+              ${task.overdue ? `<span class="badge bg-danger text-capitalize">overdue ${task.delivery_before}</span>` : ''}
+
               <span class="badge bg-${statusClass} text-capitalize">${task.status.replace('_', ' ')}</span>
             </div>
           </div>

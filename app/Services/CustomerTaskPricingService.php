@@ -250,12 +250,16 @@ class CustomerTaskPricingService
     {
         // $sizes = collect($vehicles)->pluck('vehicle_size')->unique()->filter()->values();
 
-        $vehicles = json_decode($vehicles, true); // تحويل JSON إلى array
+        if (is_string($vehicles)) {
+            $vehicles = json_decode($vehicles, true);
+        } // تحويل JSON إلى array
         $sizes = collect($vehicles)
             ->pluck('vehicle_size')
             ->unique()
             ->filter()
             ->values();
+
+
         if ($sizes->count() > 1) {
             return __('You cannot select more than one truck size in the same order');
         }
@@ -271,20 +275,33 @@ class CustomerTaskPricingService
 
         $task_template = Settings::where('key', 'task_template')->first();
         $template_id = $task_template->value;
-        $user = $request->user();
 
-        Log::alert('V: '.$request->input('vehicles'));
+        // 👇 الحل الذكي:
+        $user = $request->user() ?? Auth::user();
+
+        Log::alert('User: ' . ($user ? $user->id : 'No user found'));
 
 
         // $sizes = collect($request->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
 
-        $vehicles = json_decode($request->input('vehicles'), true); // ← هنا التحويل الصحيح
+        // $vehicles = json_decode($request->input('vehicles'), true); // ← هنا التحويل الصحيح
+
+        // $sizes = collect($vehicles)
+        //     ->pluck('vehicle_size')
+        //     ->unique()
+        //     ->filter()
+        //     ->values();
+
+        $vehicles = is_array($request->vehicles)
+    ? $request->vehicles
+    : json_decode($request->vehicles, true);
 
         $sizes = collect($vehicles)
             ->pluck('vehicle_size')
             ->unique()
             ->filter()
             ->values();
+
 
         Log::alert('sizes: ' . json_encode($sizes));
         $pricingTemplate = Pricing_Template::availableForCustomer(

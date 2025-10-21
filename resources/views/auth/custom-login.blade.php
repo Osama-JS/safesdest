@@ -318,8 +318,89 @@
 
         </div>
         <!--/ Language -->
+
+        <div class="nav-item dropdown-language dropdown" style="position: fixed; right: 0px; top: 20px; z-index: 1000;">
+            <button type="button" class="btn btn-light "
+                style="background: white; padding: 10px 20px; border-radius: 10px;margin: 0 20px;" data-bs-toggle="modal"
+                data-bs-target="#helpModal">
+                <i class="fas fa-headset text-primary fs-5 mx-2"></i> {{ __('Help') }}
+            </button>
+        </div>
+
+        <!-- Help Modal -->
+        <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true"
+            dir="rtl">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0 rounded-4">
+
+                    <!-- Header -->
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold text-center" id="helpModalLabel">
+                            <i class="fas fa-headset me-2"></i> {{ __('Contact, Complaints and Suggestions') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="{{ __('Close') }}"></button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="modal-body text-center p-4">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <!-- Website -->
+                                <a href="https://www.safedest.com" target="_blank"
+                                    class="d-block py-3 mb-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                    <i class="bi bi-globe2 text-success fs-3 mb-2 d-block"></i>
+                                    <div class="fw-bold">{{ __('Website') }}</div>
+                                    <small class="text-muted">www.safedest.com</small>
+                                </a>
+                            </div>
+                            <div class="col-sm-6">
+                                <!-- Email -->
+                                <a href="mailto:Info@safedest.com"
+                                    class="d-block py-3 mb-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                    <i class="bi bi-envelope-fill text-primary fs-3 mb-2 d-block"></i>
+                                    <div class="fw-bold">{{ __('Email') }}</div>
+                                    <small class="text-muted">Info@safedest.com</small>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="divider text-center">
+                            <div class="divider-text">
+                                <strong>{{ __('Contact Us') }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <!-- First Phone -->
+                                <a href="tel:0556978782"
+                                    class="d-block py-3 mb-2 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                    <i class="bi bi-telephone-fill text-danger fs-3 mb-2 d-block"></i>
+                                    <div class="fw-bold">{{ __('First Number') }}</div>
+                                    <small class="text-muted">0556978782</small>
+                                </a>
+                            </div>
+                            <div class="col-sm-6">
+                                <!-- Second Phone -->
+                                <a href="tel:0545366466"
+                                    class="d-block py-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                    <i class="bi bi-telephone-fill text-danger fs-3 mb-2 d-block"></i>
+                                    <div class="fw-bold">{{ __('Second Number') }}</div>
+                                    <small class="text-muted">0545366466</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
         <div class="authentication-wrapper authentication-basic container-p-y">
             <div class="authentication-inner py-6">
+
                 <!-- Login -->
                 <div class="card login-card">
                     <div class="card-body p-5">
@@ -338,7 +419,8 @@
 
                         <div class="login-header">
                             <h4>{{ __('Welcome to') }} {{ config('variables.templateName') }}! 👋</h4>
-                            <p>{{ __('sign in to request a delivery or start completing delivery tasks') }}</p>
+                            <p>{{ __('Welcome to the page dedicated to') }}</p>
+                            <p>{{ __('companies, factories, brokers, transporters, and customs clearance agents') }}</p>
                         </div>
 
                         <form id="formAuthentication" action="{{ route('login') }}" method="POST">
@@ -498,6 +580,9 @@
                         <!-- Team Leader Sign In Link -->
 
                     </div>
+                </div>
+                <div class="alert alert-info">
+
                 </div>
                 <!-- /Login -->
                 <div class="text-center mt-3">

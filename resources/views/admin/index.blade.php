@@ -64,6 +64,13 @@
             border-top-color: rgba(0, 0, 0, 0.85) !important;
             /* مثلث السهم نفس لون الخلفية */
         }
+
+        .overdue-task {
+            border: 2px solid red !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            transition: all 0.3s ease;
+            transform: scale(1.02);
+        }
     </style>
 
 @endsection
@@ -143,7 +150,7 @@
                             <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
                                 data-bs-target="#tab-running" aria-controls="tab-running" aria-selected="true">
                                 <span class="d-none d-sm-block">
-                                    {{ __('Running Tasks') }}
+                                    {{ __('Running') }}
                                     <span
                                         class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-success ms-1_5 pt-50 count-running">0</span>
                                 </span>
@@ -161,6 +168,18 @@
                                 <i class="ti ti-check ti-sm d-sm-none"></i>
                             </button>
                         </li>
+
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#tab-overdue" aria-controls="tab-overdue" aria-selected="false">
+                                <span class="d-none d-sm-block">
+                                    {{ __('Overdue') }}
+                                    <span
+                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-1_5 pt-50 count-overdue">0</span>
+                                </span>
+                                <i class="ti ti-check ti-sm d-sm-none"></i>
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" style="max-height: calc(75vh - 60px); overflow-y: auto;">
@@ -170,6 +189,10 @@
 
                         <div class="tab-pane fade" id="tab-complete" role="tabpanel">
                             <div id="task-complete-container"></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-overdue" role="tabpanel">
+                            <div id="task-overdue-container"></div>
                         </div>
                     </div>
                 </div>

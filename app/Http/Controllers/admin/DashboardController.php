@@ -29,7 +29,7 @@ class DashboardController extends Controller
             abort(403);
         }
 
-        $query = Task::with('points', 'customer', 'user', 'driver');
+        $query = Task::with('points', 'customer', 'user', 'driver', 'delivery');
 
         // ⛔️ فلترة بناءً على الصلاحيات
         if (!$user->can('manage_tasks')) {
@@ -77,6 +77,7 @@ class DashboardController extends Controller
         $grouped = [
           'running' => [],
           'completeUnClosed' => [],
+          'overdue' => [],
         ];
 
         foreach ($tasks as $task) {
@@ -94,6 +95,15 @@ class DashboardController extends Controller
               'owner' => $customer ? 'customer' : 'admin',
               'status' => $task->status,
               'complete_at' => $task->completed_at,
+              'overdue' => $task->delivery()->where('scheduled_time', '<', now())->exists(),
+              'delivery_before' => $task->delivery && $task->delivery->scheduled_time < now()
+                  ? now()->diffForHumans($task->delivery->scheduled_time, [
+                      'parts' => 2,       // لعرض جزأين فقط (مثلاً: "2 ساعات 15 دقيقة")
+                      'short' => true,    // صيغة مختصرة مثل "2h 15m"
+                      'syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE, // بدون كلمة "ago"
+                    ])
+                  : null,
+
               'avatar' => $avatar,
               'point' => $task->point()->where('type', 'pickup')->first(),
               'closed' => $task->closed,
@@ -115,6 +125,9 @@ class DashboardController extends Controller
 
             if (in_array($task->status, $runningStatuses)) {
                 $grouped['running'][] = $item;
+                if ($task->delivery()->where('scheduled_time', '<', now())->exists()) {
+                    $grouped['overdue'][] = $item;
+                }
             } elseif ($task->status === 'completed' && !$task->closed) {
                 $grouped['completeUnClosed'][] = $item;
             }

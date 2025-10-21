@@ -276,7 +276,7 @@
 @endsection
 @section('content')
     <!-- Language -->
-    <div class="nav-item dropdown-language dropdown " style="position: fixed; z-index: 1000;bottom: 0;">
+    <div class="nav-item dropdown-language dropdown " style="position: fixed; z-index: 1000;bottom: 50px;">
 
         <a class="nav-link btn btn-text-secondary   dropdown-toggle hide-arrow "
             style="margin: 20px;
@@ -306,6 +306,87 @@
 
     </div>
     <!--/ Language -->
+
+    <div class="nav-item dropdown-language dropdown" style="position: fixed;  bottom: 0; z-index: 1000;">
+        <button type="button" class="btn btn-light "
+            style="background: white; padding: 10px ; border-radius: 10px;margin: 20px;" data-bs-toggle="modal"
+            data-bs-target="#helpModal">
+            <i class="fas fa-headset text-primary fs-5 mx-2"></i> {{ __('Help') }}
+        </button>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true"
+        dir="rtl">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+
+                <!-- Header -->
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-center" id="helpModalLabel">
+                        <i class="fas fa-headset me-2"></i> {{ __('Contact, Complaints and Suggestions') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="{{ __('Close') }}"></button>
+                </div>
+
+                <!-- Body -->
+                <div class="modal-body text-center p-4">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <!-- Website -->
+                            <a href="https://www.safedest.com" target="_blank"
+                                class="d-block py-3 mb-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                <i class="bi bi-globe2 text-success fs-3 mb-2 d-block"></i>
+                                <div class="fw-bold">{{ __('Website') }}</div>
+                                <small class="text-muted">www.safedest.com</small>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <!-- Email -->
+                            <a href="mailto:Info@safedest.com"
+                                class="d-block py-3 mb-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                <i class="bi bi-envelope-fill text-primary fs-3 mb-2 d-block"></i>
+                                <div class="fw-bold">{{ __('Email') }}</div>
+                                <small class="text-muted">Info@safedest.com</small>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="divider text-center">
+                        <div class="divider-text">
+                            <strong>{{ __('Contact Us') }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <!-- First Phone -->
+                            <a href="tel:0556978782"
+                                class="d-block py-3 mb-2 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                <i class="bi bi-telephone-fill text-danger fs-3 mb-2 d-block"></i>
+                                <div class="fw-bold">{{ __('First Number') }}</div>
+                                <small class="text-muted">0556978782</small>
+                            </a>
+                        </div>
+                        <div class="col-sm-6">
+                            <!-- Second Phone -->
+                            <a href="tel:0545366466"
+                                class="d-block py-3 text-decoration-none border rounded-3 shadow-sm contact-link">
+                                <i class="bi bi-telephone-fill text-danger fs-3 mb-2 d-block"></i>
+                                <div class="fw-bold">{{ __('Second Number') }}</div>
+                                <small class="text-muted">0545366466</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
     <div class="authentication-wrapper authentication-cover">
         <!-- Logo -->
         <a href="{{ url('/') }}" class="app-brand auth-cover-brand">
@@ -342,8 +423,9 @@
                             <div class="account-type-card">
                                 <input type="radio" id="customer" name="account_type" value="customer"
                                     class="account-type-input" checked />
-                                <label for="customer" class="account-type-label active" role="tab" data-bs-toggle="tab"
-                                    data-bs-target="#navs-customers" aria-controls="navs-customers" aria-selected="true">
+                                <label for="customer" class="account-type-label active" role="tab"
+                                    data-bs-toggle="tab" data-bs-target="#navs-customers" aria-controls="navs-customers"
+                                    aria-selected="true">
                                     <i class="ti ti-user account-type-icon customer-icon"></i>
                                     <span class="account-type-title">{{ __('Customer') }}</span>
                                 </label>

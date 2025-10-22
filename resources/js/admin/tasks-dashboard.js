@@ -149,7 +149,7 @@ $(function () {
 
       const card = `
       <div class="mb-4">
-        <div class="card p-3 shadow-sm task-card ${task.overdue ? 'overdue-task' : ''}" data-task-id="${task.id}">
+        <div class="card p-3 shadow-sm task-card ${task.overdue && completeAt ? 'overdue-task' : ''}" data-task-id="${task.id}">
           <div class="d-flex justify-content-between">
             <div class="d-flex align-items-center">
               <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">

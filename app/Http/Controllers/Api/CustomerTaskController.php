@@ -25,6 +25,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Exception;
 
@@ -115,7 +116,7 @@ class CustomerTaskController extends Controller
             $tasksData = $tasks->map(function ($task) {
                 $lat = $task->pickup->latitude;
                 $lng = $task->pickup->longitude;
-                if ($task->driver_id && $task->status->in(['in_progress', 'assign'])) {
+                if ($task->driver_id && in_array($task->status, ['in_progress', 'assign'])) {
                     $lat = $task->driver->altitude;
                     $lng = $task->driver->longitude;
                 }
@@ -128,7 +129,7 @@ class CustomerTaskController extends Controller
                     'delivery_address' => $task->delivery->address,
                     'driver_name' => $task->driver ? $task->driver->name : null,
                     'driver_phone' => $task->driver ? $task->driver->phone : null,
-                    'driver_image' => $task->driver ? url($task->driver->image) : null,
+                    'driver_image' => $task->driver ? $task->driver->image ? url($task->driver->image) : null : null,
                     'price' => $task->total_price,
                     'currency' => 'SAR',
                     'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
@@ -199,6 +200,9 @@ class CustomerTaskController extends Controller
                     'closed' => $task->closed,
                     'payment_status' => $task->payment_status,
                     'payment_method' => $task->payment_method,
+                    'conditions' => $task->conditions,
+                    'pricing_method' => $task->pricing_history['pricing_method_id'],
+
                     'pickup' => [
                         'lat' => $task->pickup->latitude,
                         'lng' => $task->pickup->longitude,
@@ -227,8 +231,30 @@ class CustomerTaskController extends Controller
                         'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
 
                     ] : null,
-                    'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
-                    'additional_data' => $task->customer_visible_additional_data,
+                    'ad' => $task->ad ? [
+                        'description' => $task->ad->description,
+                        'min' => $task->ad->lowest_price,
+                        'max' => $task->ad->highest_price
+                    ] : null,
+                    'vehicle' => $task->vehicle_size
+                        ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name
+                        : null,
+                    'vehicle_id' => $task->vehicle_size->type->vehicle->id,
+                    'vehicle_type_id' => $task->vehicle_size->type->id,
+                    'vehicle_size_id' => $task->vehicle_size->id,
+                    // 👇 هنا التعديل المطلوب بدقة
+                    'additional_data' => collect($task->customer_visible_additional_data)->map(function ($item) {
+                        if (
+                            isset($item['type'], $item['value'])
+                            && in_array($item['type'], ['image', 'file_expiration_date'])
+                            && is_string($item['value'])
+                            && !str_starts_with($item['value'], 'http')
+                        ) {
+                            $item['value'] = url('storage/' . $item['value']);
+                        }
+                        return $item;
+                    }),
+
                     'created_at' => $task->created_at,
                 ];
             });
@@ -259,6 +285,8 @@ class CustomerTaskController extends Controller
 
     public function validateStep1(Request $req)
     {
+        Log::alert($req);
+
         $rules = [
             'vehicles.*.vehicle' => 'required|exists:vehicles,id',
             'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
@@ -274,7 +302,7 @@ class CustomerTaskController extends Controller
                 $fieldKey = 'additional_fields.' . $field->name;
                 $rules[$fieldKey] = [];
                 // لا نضع required للحقول المركبة هنا
-                if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
+                if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text','image','file'])) {
                     $rules[$fieldKey][] = 'required';
                 }
 
@@ -421,7 +449,7 @@ class CustomerTaskController extends Controller
         }
 
         $user = $req->user();
-        Log::alert("vehicles: ".$req->input('vehicles') );
+        Log::alert("vehicles: ".$req->input('vehicles'));
 
         // $sizes = collect($req->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
         $vehicles = json_decode($req->input('vehicles'), true); // تحويل JSON إلى array
@@ -453,7 +481,7 @@ class CustomerTaskController extends Controller
             $user->id,
             $sizes
         )->pluck('id');
-        Log::alert("user: ".$req->user()->id . " sizes: ". $sizes . "  pricingTemplates: " .  $pricingTemplates );
+        Log::alert("user: ".$req->user()->id . " sizes: ". $sizes . "  pricingTemplates: " .  $pricingTemplates);
 
         if ($pricingTemplates->count() < 1) {
             return response()->json([

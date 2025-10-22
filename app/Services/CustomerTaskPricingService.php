@@ -49,6 +49,8 @@ class CustomerTaskPricingService
 
     protected function buildValidationRules($request, $type)
     {
+        Log::alert($request);
+
         $rules = [
 
           'vehicles.*.vehicle' => 'required|exists:vehicles,id',
@@ -67,7 +69,7 @@ class CustomerTaskPricingService
 
           'pickup_name' => 'required|string|max:200',
           'pickup_phone' => 'required|string|max:200',
-          'pickup_email' => 'required|email',
+          'pickup_email' => 'email',
           'pickup_before' => 'required|date',
           'pickup_longitude' => 'required|string',
           'pickup_latitude' => 'required|string',
@@ -75,7 +77,7 @@ class CustomerTaskPricingService
           'pickup_image' => 'nullable|file',
           'delivery_name' => 'required|string|max:200',
           'delivery_phone' => 'required|string|max:200',
-          'delivery_email' => 'required|email',
+          'delivery_email' => 'email',
           'delivery_before' => 'required|date',
           'delivery_longitude' => 'required|string',
           'delivery_latitude' => 'required|string',

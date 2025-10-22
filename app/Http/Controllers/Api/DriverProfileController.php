@@ -413,8 +413,9 @@ class DriverProfileController extends Controller
     }
 
 
-    public function deleteAccount(Request $request)
+       public function deleteAccount(Request $request)
     {
+        Log::alert("Start delete account");
         try {
             $validator = Validator::make($request->all(), [
                 'password' => 'required|string',
@@ -442,16 +443,15 @@ class DriverProfileController extends Controller
             // Check for active tasks or clearances
             $activeTasks = Task::where('driver_id', $driver->id)
                               ->whereNotIn('status', ['completed', 'canceled', 'refund'])
+                              ->where('closed', true)
                               ->count();
 
-            $activeClearances = Customs_Clearance::where('driver_id', $driver->id)
-                                                 ->whereNotIn('status', ['completed', 'canceled'])
-                                                 ->count();
 
-            if ($activeTasks > 0 || $activeClearances > 0) {
+
+            if ($activeTasks > 0 ) {
                 return response()->json([
                     'status' => 400,
-                    'message' => 'Cannot delete account with active tasks or clearances'
+                    'message' => 'Cannot delete account with active tasks'
                 ]);
             }
 
@@ -466,12 +466,15 @@ class DriverProfileController extends Controller
             ]);
 
             $driver->delete();
+
+            Log::alert("Delete account done");
             return response()->json([
                 'status' => 200,
                 'message' => 'Account deleted successfully'
             ]);
 
         } catch (Exception $e) {
+            Log::alert('Failed to delete account: '.$e->getMessage());
             return response()->json([
                 'status' => 500,
                 'message' => 'Failed to delete account',

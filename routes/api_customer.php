@@ -124,7 +124,7 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks/{id}/edit', [CustomerTaskController::class, 'edit'])
         ->name('api.customer.tasks.edit');
 
-    Route::put('/tasks/{id}', [CustomerTaskController::class, 'update'])
+    Route::post('/tasks/update', [CustomerTaskController::class, 'update'])
         ->name('api.customer.tasks.update');
 
 

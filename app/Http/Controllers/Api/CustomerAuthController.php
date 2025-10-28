@@ -454,6 +454,7 @@ class CustomerAuthController extends Controller
 
     public function register(Request $req)
     {
+        Log::alert("start regester");
         // 🔹 القواعد الأساسية
         $baseRules = [
             'name'           => 'required|string|max:255',
@@ -542,8 +543,11 @@ class CustomerAuthController extends Controller
                         continue 2;
 
                     default:
-                        $fieldRules[] = $field->required ? 'string' : 'nullable|string';
+                        $fieldRules = $field->required
+                            ? ['string']
+                            : ['nullable', 'string'];
                         break;
+
                 }
 
                 $additionalRules[$fieldKey] = $fieldRules;

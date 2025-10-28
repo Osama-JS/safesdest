@@ -1,0 +1,46 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 4.6 Payment For Task
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: POST /api/customer/initiate-payment
+Authentication: مطلوب (Bearer Token)
+Description: دفع قيمة مهمة
+
+📤 Request Headers:
+- Authorization: Bearer {token}
+- Content-Type: multipart/form-data
+- Accept: application/json
+
+📤 Request Body (Form Data):
+{
+    "id": 1, // Task ID
+    "payment_method": "banking" or "wallet" ,
+    "receipt_number": "1234567890", // Required if payment_method is banking
+    "receipt_image": "file", // Required if payment_method is banking
+    "note": "Optional note" //  if payment_method is banking
+}
+
+📥 Response (Success - 200):
+{
+    "status": 1,
+    "success": "Payment initiated successfully"
+}
+
+
+
+📥 Response (Validation Error - 422):
+{
+    "status": 0,
+    "error": {
+     "payment_method": ["The payment method field is required."]
+     "receipt_number": ["The receipt number field is required."]
+     "receipt_image": ["The receipt image field is required."]
+    }
+}
+
+📥 Response (Business Logic Error - 400):
+{
+    "status": 2,
+    "error": "This task cannot be Payed in its current state"
+}

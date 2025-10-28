@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\CustomerAdsController;
 use App\Http\Controllers\Api\CustomerPaymentController;
 use App\Http\Controllers\Api\CustomerNotificationController;
 use App\Http\Controllers\Api\CustomerSettingsController;
-use App\Http\Controllers\customer\WalletController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -128,13 +128,16 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
         ->name('api.customer.tasks.update');
 
 
+    Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('api.customer.payment.initiate');
+
+
 
 
     // Wallet management routes
-    Route::post('/wallet', [WalletController::class, 'show'])
+    Route::post('/wallet', [CustomerWalletController::class, 'show'])
     ->name('api.customer.wallet');
 
-    Route::post('/wallet/transactions', [WalletController::class, 'getTransactions'])
+    Route::post('/wallet/transactions', [CustomerWalletController::class, 'getTransactions'])
     ->name('api.customer.wallet-transactions');
 
     // // Dashboard routes
@@ -231,13 +234,13 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     //     ->name('api.customer.customs-clearances.offers');
 
     // Task ads and bidding routes
-    Route::get('/ads/data', [CustomerAdsController::class, 'getData'])
+    Route::post('/ads/data', [CustomerAdsController::class, 'getData'])
         ->name('api.customer.ads.data');
 
-    Route::get('/ads/{id}', [CustomerAdsController::class, 'show'])
+    Route::post('/ads/{id}', [CustomerAdsController::class, 'show'])
         ->name('api.customer.ads.show');
 
-    Route::get('/ads/{id}/offers', [CustomerAdsController::class, 'getOffers'])
+    Route::post('/ads/{id}/offers', [CustomerAdsController::class, 'getOffers'])
         ->name('api.customer.ads.offers');
 
     Route::post('/ads/offers/{id}/accept', [CustomerAdsController::class, 'acceptOffer'])

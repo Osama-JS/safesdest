@@ -149,7 +149,7 @@ $(function () {
 
       const card = `
       <div class="mb-4">
-        <div class="card p-3 shadow-sm task-card ${task.overdue && completeAt ? 'overdue-task' : ''}" data-task-id="${task.id}">
+        <div class="card p-3 shadow-sm task-card ${task.overdue && !completeAt ? 'overdue-task' : ''}" data-task-id="${task.id}">
           <div class="d-flex justify-content-between">
             <div class="d-flex align-items-center">
               <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">
@@ -164,8 +164,7 @@ $(function () {
               </div>
             </div>
             <div class="d-flex align-items-center gap-50 flex-column">
-              ${task.overdue ? `<span class="badge bg-danger text-capitalize">overdue ${task.delivery_before}</span>` : ''}
-
+              ${task.overdue && !completeAt ? `<span class="badge bg-danger text-capitalize">overdue ${task.delivery_before}</span>` : ''}
               <span class="badge bg-${statusClass} text-capitalize">${task.status.replace('_', ' ')}</span>
             </div>
           </div>

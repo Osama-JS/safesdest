@@ -2089,9 +2089,13 @@ class TasksController extends Controller
     public function downloadTaskReport($id)
     {
         $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($id);
+        $file_name = "#{$task->id}_{$task->customer->name}_{$task->pickup->address}_{$task->delivery->address}";
+        if ($task->driver) {
+            $file_name .= "_{$task->driver->name}";
+        }
         return $this->pdfService->generate('admin.tasks.report_pdf', [
             'task' => $task
-        ], "task_report_{$task->id}.pdf");
+        ], "{$file_name}.pdf");
 
     }
 

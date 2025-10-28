@@ -186,7 +186,9 @@ class CustomerAdsController extends Controller
             $transformed = $offers->map(function ($offer) {
                 return [
                     'id' => $offer->id,
-                    'driver' => $offer->driver,
+                    'driver_name' => $offer->driver->name,
+                    'driver_image' => $offer->driver->image ? url($offer->driver->image) : null,
+
                     'driver_id' => $offer->driver_id,
                     'price' => $offer->price,
                     'accepted' => $offer->accepted,
@@ -217,21 +219,21 @@ class CustomerAdsController extends Controller
             if ($offer->ad && $offer->ad->task && $offer->ad->task->customer_id !== Auth::id()) {
                 return response()->json([
                     'status' => 2,
-                    'error' => 'You do not have the right permission to do this action'
+                    'message' => 'You do not have the right permission to do this action'
                 ]);
             }
 
             if ($offer->ad->status !== 'running') {
                 return response()->json([
-                    'status' => 2,
-                    'error' => 'This Task ad is already closed'
+                    'status' => 400,
+                    'message' => 'This Task ad is already closed'
                 ]);
             }
 
             if ($offer->accepted) {
                 return response()->json([
-                    'status' => 2,
-                    'error' => 'This offer is already accepted'
+                    'status' => 400,
+                    'message' => 'This offer is already accepted'
                 ]);
             }
 
@@ -243,8 +245,8 @@ class CustomerAdsController extends Controller
             $offer->save();
 
             return response()->json([
-                'status' => 1,
-                'success' => __('The Offer accepted successfully')
+                'status' => 200,
+                'message' => __('The Offer accepted successfully')
             ]);
 
         } catch (Exception $e) {
@@ -263,22 +265,22 @@ class CustomerAdsController extends Controller
 
             if ($offer->ad && $offer->ad->task && $offer->ad->task->customer_id !== Auth::id()) {
                 return response()->json([
-                    'status' => 2,
-                    'error' => 'You do not have the right permission to do this action'
+                    'status' => 403,
+                    'message' => 'You do not have the right permission to do this action'
                 ]);
             }
 
             if ($offer->ad->status !== 'running') {
                 return response()->json([
-                    'status' => 2,
-                    'error' => 'This Task ad is already closed'
+                    'status' => 400,
+                    'message' => 'This Task ad is already closed'
                 ]);
             }
 
             if (!$offer->accepted) {
                 return response()->json([
-                    'status' => 2,
-                    'error' => 'This offer is already retracted'
+                    'status' => 400,
+                    'message' => 'This offer is already retracted'
                 ]);
             }
 
@@ -287,8 +289,8 @@ class CustomerAdsController extends Controller
             $offer->save();
 
             return response()->json([
-                'status' => 1,
-                'success' => __('The Offer retracted successfully')
+                'status' => 200,
+                'message' => __('The Offer retracted successfully')
             ]);
 
         } catch (Exception $e) {

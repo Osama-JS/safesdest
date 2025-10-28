@@ -120,9 +120,20 @@ class CustomerTaskController extends Controller
                     $lat = $task->driver->altitude;
                     $lng = $task->driver->longitude;
                 }
+                $main_status = 'in_progress';
+                if ($task->status == 'completed') {
+                    $main_status = 'completed';
+                }
+                if ($task->status == 'advertised') {
+                    $main_status = 'advertised';
+                }
+                if (in_array($task->status, ['assign','started','in pickup point','loading','in the way','in delivery point','unloading'])) {
+                    $main_status = 'running';
+                }
                 return [
                     'id' => $task->id,
                     'status' => $task->status,
+                    'main_status' =>  $main_status,
                     'lat' => $lat,
                     'lng' => $lng,
                     'pickup_address' => $task->pickup->address,
@@ -153,16 +164,35 @@ class CustomerTaskController extends Controller
 
     public function getTasks(Request $request)
     {
+        Log::alert($request->all());
+
         try {
             $customer = $request->user();
 
             $query = Task::where('customer_id', $customer->id);
 
+            Log::alert("status ". $request->status);
             // Apply filters
             if ($request->filled('status')) {
-                $statuses = is_array($request->status) ? $request->status : [$request->status];
+                if ($request->status === 'running') {
+                    $statuses = [
+                        'advertised',
+                        'in_progress',
+                        'assign',
+                        'started',
+                        'in pickup point',
+                        'loading',
+                        'in the way',
+                        'in delivery point',
+                        'unloading'
+                    ];
+                } else {
+                    $statuses = ['completed', 'canceld', 'refund'];
+                }
+
                 $query->whereIn('status', $statuses);
             }
+
 
 
             if ($request->filled('date_from')) {
@@ -194,9 +224,11 @@ class CustomerTaskController extends Controller
                           ->paginate($perPage);
 
             $tasksData = $tasks->map(function ($task) {
+                // $runing = $task->status->in(['advertised', 'in_progress', 'assign','started','in pickup point','loading','in the way','in delivery point','unloading']) ?? 0;
                 return [
                     'id' => $task->id,
                     'status' => $task->status,
+                    // 'runing' => $runing,
                     'closed' => $task->closed,
                     'payment_status' => $task->payment_status,
                     'payment_method' => $task->payment_method,
@@ -831,6 +863,7 @@ class CustomerTaskController extends Controller
             if ($req->hasFile('delivery_image') && isset($delivery_point['image'])) {
                 unlink($delivery_point['image']);
             }
+            Log::alert($ex->getMessage());
 
             return response()->json([
                 'status' => 500,
@@ -918,6 +951,7 @@ class CustomerTaskController extends Controller
                 DB::rollBack();
                 return response()->json(['status' => 400, 'message' => 'You can not update Task with multiple vehicles']);
             }
+            Log::alert("note: ".$req->note_price);
 
             $task_template = Settings::where('key', 'task_template')->first();
             $template_id = $task_template->value;

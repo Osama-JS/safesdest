@@ -63,7 +63,7 @@ class CustomerWalletController extends Controller
                 'data' => [
                     'wallet' => [
                         'id' => $wallet->id,
-                        'balance' => $wallet->balance,
+                        'balance' => (string) ($totalDebit - $totalCredit),
                         'currency' => 'SAR',
                         'status' => $wallet->status ?? 'active',
                         'debt_ceiling' => $wallet->debt_ceiling,
@@ -74,7 +74,8 @@ class CustomerWalletController extends Controller
                     'statistics' => [
                         'total_debit' => $totalDebit,
                         'total_credit' => $totalCredit,
-                        'net_balance' => $totalDebit - $totalCredit,
+                        'net_balance' => (string) ($totalDebit - $totalCredit),
+
                     ],
                     'recent_transactions' => $recentTransactions,
                 ]
@@ -115,6 +116,11 @@ class CustomerWalletController extends Controller
             // ✅ تطبيق الفلاتر
             if ($request->filled('transaction_type')) {
                 $query->where('transaction_type', $request->transaction_type);
+            }
+
+
+            if ($request->filled('image') && $request->image == 1) {
+                $query->where('image', '!=', null);
             }
 
 

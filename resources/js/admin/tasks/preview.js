@@ -165,7 +165,7 @@ $(function () {
               <div class="d-flex align-items-center">
                 <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">
                 <div class="px-3">
-                  <h6 class="mb-1">${task.name}</h6>
+                  <h6 class="mb-1">#${task.id} - ${task.name}</h6>
                   <p>${task.point.address || ''} (${task.point.longitude} - ${task.point.latitude})</p>
                    ${driverHtml}
                 ${teamHtml}

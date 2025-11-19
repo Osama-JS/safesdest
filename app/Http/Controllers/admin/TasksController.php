@@ -1718,17 +1718,18 @@ class TasksController extends Controller
     public function getListData(Request $request)
     {
         $columns = [
-          1 => 'id',
-          2 => 'order',
-          2 => 'price',
-          3 => 'team',
-          4 => 'driver',
-          5 => 'address',
-          6 => 'start',
-          7 => 'complete',
-          7 => 'delevery',
-          8 => 'status',
-          9 => 'created_at'
+         1 => 'id',
+         2 => 'order',
+         2 => 'price',
+         3 => 'team',
+         4 => 'driver',
+         5 => 'driver_price',
+         6 => 'address',
+         7 => 'start',
+         8 => 'complete',
+         9 => 'delevery',
+         10 => 'status',
+         11 => 'created_at'
         ];
 
         $totalData = Task::count();
@@ -1826,7 +1827,7 @@ class TasksController extends Controller
                   'customer' => $task->customer->name ?? '-',
                   default => '-',
               },
-              'address'    => $task->pickup->address ?? "-",
+              'address'    => $task->pickup->address .' - To - '. $task->delivery->address ,
               'start'      => ($task->pickup && $task->pickup->scheduled_time)
                 ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
                 : "",
@@ -1834,6 +1835,7 @@ class TasksController extends Controller
                 ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
                 : "",
               'status'     => $task->status,
+              'driver_price' => $task->total_price - $task->commission,
               'closed'     => $task->closed,
               'delivery'     => $task->delivery_number ?? '',
               'payment'     => $task->payment_status,

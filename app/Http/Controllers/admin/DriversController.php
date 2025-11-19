@@ -97,7 +97,8 @@ class DriversController extends Controller
                   ->orWhere('name', 'LIKE', "%{$search}%")
                   ->orWhere('username', 'LIKE', "%{$search}%")
                   ->orWhere('email', 'LIKE', "%{$search}%")
-                  ->orWhere('phone', 'LIKE', "%{$search}%");
+                  ->orWhere('phone', 'LIKE', "%{$search}%")
+                  ->orWhereRaw("additional_data::text ILIKE ?", ["%{$search}%"]);
             });
         }
         if (!empty($statusFilter)) {

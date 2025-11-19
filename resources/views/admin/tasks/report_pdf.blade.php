@@ -120,7 +120,11 @@
         </table>
     </header>
 
-    <h1>{{ __('Task Status Report') }} #{{ $task->id }}</h1>
+    <h1>
+        {{ __('Task Status Report') }}
+        <!-- Shipping Consignee -->
+        #{{ $task->id }}
+    </h1>
 
     {{-- Task Info --}}
     <div class="section">

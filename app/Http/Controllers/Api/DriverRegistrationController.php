@@ -149,9 +149,9 @@ class DriverRegistrationController extends Controller
                 'password'              => 'required|string|min:8|confirmed',
                 'password_confirmation' => 'required|string|min:8',
                 'address'               => 'required|string|max:500',
-                'vehicle_size_id'       => 'nullable|exists:vehicles,id',
+                'vehicle_size_id'       => 'nullable|exists:vehicle_sizes,id',
                 'team_id'               => 'nullable|exists:teams,id',
-                'phone_is_whatsapp'     => 'nullable|in:true,false',
+                'phone_is_whatsapp'     => 'nullable|in:true,false,0,1',
                 'whatsapp_country_code' => 'nullable|string|max:10',
                 'whatsapp_number'       => 'nullable|string|max:20',
                 // إن كان لديك كابتشا في الـ API أضِفها هنا

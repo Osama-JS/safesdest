@@ -135,6 +135,10 @@ class Task extends Model
         return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
     }
 
+    public function invoice()
+    {
+        return $this->belongsTo(Sales_invoice::class, 'sales_invoice_id');
+    }
 
     public function userWalletTransactions()
     {

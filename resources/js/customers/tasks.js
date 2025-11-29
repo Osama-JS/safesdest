@@ -324,6 +324,51 @@ $(function () {
     });
   }
 
+  // Initialize Excel report date range picker
+  if ($('#excelReportDateRange').length) {
+    $('#excelReportDateRange').daterangepicker({
+      opens: 'left',
+      locale: {
+        format: 'DD MMM YYYY',
+        cancelLabel: 'إلغاء',
+        applyLabel: 'تطبيق'
+      },
+      startDate: moment().startOf('month'),
+      endDate: moment().endOf('month')
+    });
+  }
+
+  // Initialize Select2 for Excel modal filters
+  var excelSelect2Status = $('.excel-flitter-status');
+  if (excelSelect2Status.length) {
+    excelSelect2Status.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select status'),
+      dropdownParent: excelSelect2Status.parent(),
+      closeOnSelect: false
+    });
+  }
+
+  var excelSelect2Payment = $('.excel-flitter-payment');
+  if (excelSelect2Payment.length) {
+    excelSelect2Payment.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select payment status'),
+      dropdownParent: excelSelect2Payment.parent(),
+      closeOnSelect: false
+    });
+  }
+
+  var excelSelect2PaymentType = $('.excel-flitter-payment-type');
+  if (excelSelect2PaymentType.length) {
+    excelSelect2PaymentType.wrap('<div class="position-relative"></div>').select2({
+      allowClear: true,
+      placeholder: __('Select payment type'),
+      dropdownParent: excelSelect2PaymentType.parent(),
+      closeOnSelect: false
+    });
+  }
+
   // Handle report generation
   $('#generateReportBtn').on('click', function () {
     const dateRange = $('#reportDateRange').data('daterangepicker');
@@ -365,6 +410,102 @@ $(function () {
       $(this).prop('disabled', false).html('<i class="ti ti-file-type-pdf me-2"></i>Generate PDF Report');
       $('#reportModal').modal('hide');
     }, 1000);
+  });
+
+  // Handle Excel export
+  $('#generateExcelReportBtn').on('click', function () {
+    const dateRange = $('#excelReportDateRange').data('daterangepicker');
+    const startDate = dateRange.startDate.format('YYYY-MM-DD');
+    const endDate = dateRange.endDate.format('YYYY-MM-DD');
+
+    // Get multiple selected values
+    const statuses = $('#excelReportStatus').val() || [];
+    const paymentStatuses = $('#excelReportPaymentStatus').val() || [];
+    const paymentMethods = $('#excelReportPaymentMethod').val() || [];
+
+    // Show loading state
+    $(this).prop('disabled', true).html('<i class="ti ti-loader me-2"></i>Exporting...');
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('from_date', startDate);
+    formData.append('to_date', endDate);
+
+    // Add multiple values for each filter
+    statuses.forEach(status => {
+      if (status) formData.append('status[]', status);
+    });
+
+    paymentStatuses.forEach(paymentStatus => {
+      if (paymentStatus) formData.append('payment_status[]', paymentStatus);
+    });
+
+    paymentMethods.forEach(paymentMethod => {
+      if (paymentMethod) formData.append('payment_method[]', paymentMethod);
+    });
+
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Send request to export Excel
+    fetch(`${baseUrl}customer/tasks/export-excel`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken
+      },
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `customer_tasks_report_${startDate}_to_${endDate}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+        // Reset button state and close modal
+        $('#generateExcelReportBtn')
+          .prop('disabled', false)
+          .html('<i class="ti ti-file-spreadsheet me-2"></i>Export to Excel');
+        $('#excelReportModal').modal('hide');
+
+        // Show success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Excel report has been exported successfully.',
+          customClass: {
+            confirmButton: 'btn btn-success'
+          }
+        });
+      })
+      .catch(error => {
+        console.error('Error:', error);
+
+        // Reset button state
+        $('#generateExcelReportBtn')
+          .prop('disabled', false)
+          .html('<i class="ti ti-file-spreadsheet me-2"></i>Export to Excel');
+
+        // Show error message
+        Swal.fire({
+          icon: 'error',
+          title: 'Error!',
+          text: 'Failed to export Excel report. Please try again.',
+          customClass: {
+            confirmButton: 'btn btn-danger'
+          }
+        });
+      });
   });
 
   // Load statistics

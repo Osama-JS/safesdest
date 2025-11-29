@@ -664,7 +664,8 @@ class TasksController extends Controller
               'user_id'          => Auth::id(),
               'pricing_id'       => $taskData['pricing'],
               'vehicle_size_id'  => $taskData['vehicles'][0],
-              'conditions'       => $req->conditions
+              'conditions'       => $req->conditions,
+              'sales_invoice_id' => $req->sales_invoice_id ?? null
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -3154,4 +3155,39 @@ class TasksController extends Controller
              ]);
     }
 
+    public function createFromInvoice(Request $request)
+    {
+        $invoice_id = $request->query('invoice_id');
+        if (!$invoice_id) {
+            return redirect()->route('tasks.index')->with('error', __('Invoice ID is required'));
+        }
+
+        $invoice = \App\Models\Sales_invoice::with(['details', 'customer'])->findOrFail($invoice_id);
+
+        // Ensure invoice is paid
+        if ($invoice->status !== 'paid') {
+            return redirect()->route('sales.show', $invoice_id)->with('error', __('Invoice must be paid first'));
+        }
+
+        // Get product details (assuming single product or primary product for location)
+        $detail = $invoice->details->first();
+        if (!$detail || !$detail->product) {
+             return redirect()->route('sales.show', $invoice_id)->with('error', __('Product details not found'));
+        }
+        $product = $detail->product;
+
+        // Prepare data for view
+        $customers = Customer::where('status', 'active')->get();
+        $vehicles = Vehicle::all();
+        $templates = Form_Template::all();
+
+        // We need to pass the product location as pickup point
+        $pickup_point = [
+            'latitude' => $product->latitude,
+            'longitude' => $product->longitude,
+            'address' => $product->address
+        ];
+
+        return view('admin.tasks.create_from_invoice', compact('invoice', 'product', 'pickup_point', 'customers', 'vehicles', 'templates'));
+    }
 }

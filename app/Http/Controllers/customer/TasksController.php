@@ -24,6 +24,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\CustomerTasksExportForCustomer;
 
 class TasksController extends Controller
 {
@@ -1234,5 +1236,234 @@ class TasksController extends Controller
     private function buildReportHTML($customer, $tasks, $statistics, $data)
     {
         return view('customers.tasks.report', compact('customer', 'tasks', 'statistics', 'data'))->render();
+    }
+
+    /**
+     * Export tasks to Excel
+     */
+    public function exportToExcel(Request $request)
+    {
+        try {
+            $customer = Auth::user();
+
+            // Build query with filters (same as generateReport)
+            $query = Task::with(['driver', 'driver.team', 'pickup', 'delivery', 'vehicle_size.type.vehicle', 'payments'])
+                ->where('customer_id', $customer->id);
+
+            // Apply date filter
+            if ($request->from_date && $request->to_date) {
+                $query->whereBetween('created_at', [
+                    Carbon::parse($request->from_date)->startOfDay(),
+                    Carbon::parse($request->to_date)->endOfDay()
+                ]);
+            }
+
+            // Apply status filter (multiple values)
+            if ($request->has('status') && is_array($request->status) && !empty($request->status)) {
+                $query->whereIn('status', $request->status);
+            }
+
+            // Apply payment status filter (multiple values)
+            if ($request->has('payment_status') && is_array($request->payment_status) && !empty($request->payment_status)) {
+                $query->whereIn('payment_status', $request->payment_status);
+            }
+
+            // Apply payment method filter (multiple values)
+            if ($request->has('payment_method') && is_array($request->payment_method) && !empty($request->payment_method)) {
+                $query->whereIn('payment_method', $request->payment_method);
+            }
+
+            $tasks = $query->orderBy('created_at', 'desc')->get();
+
+            // Prepare report data
+            $reportData = $this->prepareReportData($tasks, $customer, $request);
+
+            // Generate Excel file
+            $filename = 'customer_tasks_report_' . $customer->id . '_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            return Excel::download(
+                new CustomerTasksExportForCustomer($reportData, $request->all(), $customer),
+                $filename
+            );
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 2,
+                'error' => 'خطأ في إنشاء التقرير: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Prepare report data for Excel export
+     */
+    private function prepareReportData($tasks, $customer, $request)
+    {
+        // Process tasks data
+        $processedTasks = $tasks->map(function ($task) {
+            // Get effective price (0 for refunded/cancelled)
+            $effectivePrice = $this->getEffectivePrice($task);
+
+            return [
+                'id' => $task->id,
+                'total_price' => $effectivePrice,
+                'original_price' => $task->total_price,
+                'pickup_address' => $task->pickup->address ?? 'غير محدد',
+                'pickup_contact_name' => $task->pickup->contact_name ?? '',
+                'pickup_contact_phone' => $task->pickup->contact_phone ?? '',
+                'delivery_address' => $task->delivery->address ?? 'غير محدد',
+                'delivery_contact_name' => $task->delivery->contact_name ?? '',
+                'delivery_contact_phone' => $task->delivery->contact_phone ?? '',
+                'vehicle_name' => $this->getVehicleName($task),
+                'driver_name' => $task->driver->name ?? 'غير محدد',
+                'driver_phone' => $task->driver->phone ?? '',
+                'team_name' => $task->driver->team->name ?? 'غير محدد',
+                'status' => $task->status,
+                'status_ar' => $this->getStatusInArabic($task->status),
+                'payment_status' => $task->payment_status,
+                'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
+                'payment_method' => $task->payment_method,
+                'payment_method_ar' => $this->getEffectivePaymentMethod($task),
+                'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
+                'completed_at_formatted' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : '',
+                'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
+            ];
+        })->toArray();
+
+        // Calculate summary
+        $summary = $this->calculateSummary($tasks);
+
+        return [
+            'tasks' => $processedTasks,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
+     * Get effective price (0 for refunded/cancelled tasks)
+     */
+    private function getEffectivePrice($task)
+    {
+        if (in_array($task->status, ['refund', 'canceled', 'cancelled'])) {
+            return 0;
+        }
+        return $task->total_price;
+    }
+
+    /**
+     * Get vehicle name
+     */
+    private function getVehicleName($task)
+    {
+        if ($task->vehicle_size_id && $task->vehicle_size) {
+            return $task->vehicle_size->type->vehicle->name . ' - ' .
+                   $task->vehicle_size->type->name . ' - ' .
+                   $task->vehicle_size->name;
+        }
+        return 'غير محدد';
+    }
+
+    /**
+     * Get status in Arabic
+     */
+    private function getStatusInArabic($status)
+    {
+        $statuses = [
+            'in_progress' => 'قيد التنفيذ',
+            'advertised' => 'معلن عنها',
+            'assign' => 'مُعيّنة',
+            'started' => 'بدأت',
+            'in pickup point' => 'في نقطة الاستلام',
+            'loading' => 'جاري التحميل',
+            'in the way' => 'في الطريق',
+            'in delivery point' => 'في نقطة التسليم',
+            'unloading' => 'جاري التفريغ',
+            'invoiced' => 'مفوتر',
+            'completed' => 'مكتملة',
+            'canceled' => 'ملغية',
+            'refund' => 'مرتجعة'
+        ];
+
+        return $statuses[$status] ?? $status;
+    }
+
+    /**
+     * Get payment status in Arabic
+     */
+    private function getPaymentStatusInArabic($status)
+    {
+        $statuses = [
+            'waiting' => 'في الانتظار',
+            'completed' => 'مكتمل',
+            'pending' => 'معلق'
+        ];
+
+        return $statuses[$status] ?? $status;
+    }
+
+    /**
+     * Get effective payment method (empty for incomplete payments)
+     */
+    private function getEffectivePaymentMethod($task)
+    {
+        if (in_array($task->payment_status, ['pending', 'waiting'])) {
+            return '';
+        }
+
+        return $this->getPaymentMethodInArabic($task->payment_method);
+    }
+
+    /**
+     * Get payment method in Arabic
+     */
+    private function getPaymentMethodInArabic($method)
+    {
+        $methods = [
+            'cash' => 'نقدي',
+            'credit' => 'ائتمان',
+            'credit_card' => 'بطاقة ائتمان',
+            'bank_transfer' => 'تحويل بنكي',
+            'banking' => 'تحويل بنكي',
+            'wallet' => 'محفظة إلكترونية'
+        ];
+
+        return $methods[$method] ?? $method;
+    }
+
+    /**
+     * Calculate summary statistics
+     */
+    private function calculateSummary($tasks)
+    {
+        $totalTasks = $tasks->count();
+
+        // Calculate effective amounts (excluding refunded/cancelled)
+        $effectiveAmounts = $tasks->map(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        $totalAmount = $effectiveAmounts->sum();
+        $paidAmount = $tasks->where('payment_status', 'completed')->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+        $pendingAmount = $tasks->where('payment_status', 'pending')->sum(function ($task) {
+            return $this->getEffectivePrice($task);
+        });
+
+        // Status breakdown
+        $statusBreakdown = [];
+        $statusCounts = $tasks->groupBy('status');
+        foreach ($statusCounts as $status => $group) {
+            $statusBreakdown[$this->getStatusInArabic($status)] = $group->count();
+        }
+
+        return [
+            'total_tasks' => $totalTasks,
+            'total_amount' => $totalAmount,
+            'average_amount' => $totalTasks > 0 ? $totalAmount / $totalTasks : 0,
+            'paid_amount' => $paidAmount,
+            'pending_amount' => $pendingAmount,
+            'status_breakdown' => $statusBreakdown,
+        ];
     }
 }

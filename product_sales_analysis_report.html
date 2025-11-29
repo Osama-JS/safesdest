@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>نظام مبيعات وفواتير المنتجات - SafeDest</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap"
+      rel="stylesheet" />
+    <style>
+      :root {
+        --primary-color: #1a237e; /* Deep Indigo */
+        --secondary-color: #283593; /* Indigo */
+        --accent-color: #ff6f00; /* Amber */
+        --success-color: #2e7d32; /* Green */
+        --background-color: #f5f7fa;
+        --text-color: #37474f;
+        --card-bg: #ffffff;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      body {
+        font-family: 'Tajawal', sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        line-height: 1.8;
+      }
+
+      header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 4rem 0;
+        text-align: center;
+        margin-bottom: 3rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        position: relative;
+        overflow: hidden;
+      }
+
+      header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 10px;
+        background: var(--accent-color);
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+
+      header p {
+        margin-top: 15px;
+        font-size: 1.3rem;
+        opacity: 0.95;
+        font-weight: 300;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 25px;
+      }
+
+      .section {
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 3rem;
+        margin-bottom: 2.5rem;
+        box-shadow: var(--box-shadow);
+        border-right: 6px solid var(--secondary-color);
+        transition: transform 0.3s ease;
+      }
+
+      .section:hover {
+        transform: translateY(-5px);
+      }
+
+      h2 {
+        color: var(--primary-color);
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 15px;
+        margin-top: 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+      }
+
+      h2::before {
+        content: '•';
+        color: var(--accent-color);
+        font-size: 2rem;
+        margin-left: 10px;
+        line-height: 0;
+      }
+
+      h3 {
+        color: var(--secondary-color);
+        margin-top: 2.5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+
+      .workflow-step {
+        display: flex;
+        margin-bottom: 2rem;
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .step-number {
+        background-color: var(--secondary-color);
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        width: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .step-content {
+        padding: 20px;
+        flex-grow: 1;
+      }
+
+      .step-title {
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .db-schema {
+        background-color: #263238;
+        color: #eceff1;
+        padding: 20px;
+        border-radius: 8px;
+        font-family: 'Consolas', monospace;
+        direction: ltr;
+        text-align: left;
+        margin-top: 15px;
+        border-left: 5px solid var(--accent-color);
+      }
+
+      .highlight-box {
+        background-color: #e8f5e9;
+        border: 1px solid #c8e6c9;
+        color: #1b5e20;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+      }
+
+      .highlight-box i {
+        font-size: 1.5rem;
+        margin-left: 15px;
+      }
+
+      .invoice-preview {
+        border: 1px solid #ddd;
+        background: #fafafa;
+        padding: 20px;
+        margin-top: 20px;
+        border-radius: 8px;
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .invoice-table th,
+      .invoice-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+
+      .invoice-table th {
+        background-color: #eee;
+        font-weight: bold;
+      }
+
+      ul {
+        padding-right: 20px;
+      }
+
+      ul li {
+        margin-bottom: 10px;
+      }
+
+      footer {
+        text-align: center;
+        padding: 3rem 0;
+        color: #78909c;
+        margin-top: 4rem;
+        border-top: 1px solid #e0e0e0;
+        background-color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <h1>نظام مبيعات وفواتير المنتجات</h1>
+        <p>رؤية شاملة لتحويل طلبات المنتجات إلى دورة مبيعات متكاملة وموثقة</p>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Executive Summary -->
+      <div class="section">
+        <h2>1. الرؤية والملخص التنفيذي</h2>
+        <p>
+          بناءً على التوجيهات الجديدة، ننتقل من مجرد "طلب توصيل" إلى <strong>"نظام مبيعات متكامل"</strong>. الهدف هو
+          توثيق كل عملية شراء بفاتورة رسمية (Sales Invoice) تحتوي على تفاصيل دقيقة للمنتج والسعر، تتبع حالة الدفع، ومن
+          ثم ربط هذه الفاتورة بمهمة التوصيل (Delivery Task). هذا يضمن دقة مالية، مرجعية قانونية، وتسلسلاً منطقياً
+          للعمليات.
+        </p>
+      </div>
+
+      <!-- The Workflow -->
+      <div class="section">
+        <h2>2. دورة العمل المقترحة (The Workflow)</h2>
+        <p>تم تصميم دورة العمل لتكون احترافية وتغطي كافة الجوانب المالية واللوجستية:</p>
+
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <span class="step-title">إنشاء أمر الشراء (Purchase Order)</span>
+            <p>يقوم المدير باختيار العميل (المستفيد) والمنتج والكمية.</p>
+            <ul>
+              <li>
+                يقوم النظام بعرض <strong>اسم المنتج</strong>، <strong>سعر الوحدة</strong>، و<strong>الكمية</strong>
+                بوضوح.
+              </li>
+              <li>حساب السعر الإجمالي (سعر الوحدة × الكمية) تلقائياً.</li>
+              <li>إضافة أي رسوم إضافية (ضرائب، رسوم خدمة).</li>
+              <li>
+                <strong>المخرج:</strong> إنشاء سجل "فاتورة مبيعات" (Sales Invoice) وسجلات "تفاصيل الفاتورة" (Invoice
+                Items).
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <span class="step-title">تفاصيل الفاتورة والدفع (Invoice Details & Payment)</span>
+            <p>يتم عرض الفاتورة بشكل تفصيلي قبل الدفع، وتحتوي على:</p>
+            <div class="invoice-preview">
+              <strong>نموذج محتويات الفاتورة:</strong>
+              <table class="invoice-table">
+                <thead>
+                  <tr>
+                    <th>المنتج (Product)</th>
+                    <th>الكمية (Qty)</th>
+                    <th>سعر الوحدة (Unit Price)</th>
+                    <th>الإجمالي (Total)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>اسم المنتج المختار</td>
+                    <td>10</td>
+                    <td>50 ر.س</td>
+                    <td>500 ر.س</td>
+                  </tr>
+                  <tr>
+                    <td colspan="3" style="text-align: left"><strong>المجموع الكلي (Grand Total)</strong></td>
+                    <td><strong>500 ر.س</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ul>
+              <li>تحديد طريقة الدفع (نقد، تحويل بنكي، محفظة إلكترونية).</li>
+              <li>عند تأكيد الدفع، تتحول حالة الفاتورة إلى "مدفوع" (Paid).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <span class="step-title">التنفيذ اللوجستي (Fulfillment)</span>
+            <p>بعد تأكيد الدفع، يتم إنشاء مهمة التوصيل.</p>
+            <ul>
+              <li>ربط المهمة برقم الفاتورة (Sales Invoice ID) لضمان التتبع.</li>
+              <li>تعبئة بيانات "نقطة الاستلام" من موقع المنتج، و"نقطة التسليم" من عنوان العميل.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Enhancements -->
+      <div class="section">
+        <h2>3. الهيكل البرمجي وقاعدة البيانات</h2>
+        <p>
+          لتحقيق هذا النظام باحترافية، سنعتمد هيكلية (Master-Detail) للفواتير، حيث يتم فصل بيانات الفاتورة الأساسية عن
+          تفاصيل المنتجات.
+        </p>
+
+        <h3>أ. جدول فواتير المبيعات (sales_invoice) - Master</h3>
+        <p>يحتوي على البيانات العامة للفاتورة.</p>
+        <div class="db-schema">
+          Schema::table('sales_invoice', function (Blueprint $table) {<br />
+          &nbsp;&nbsp;$table->string('invoice_number')->unique(); // رقم الفاتورة المرجعي<br />
+          &nbsp;&nbsp;$table->enum('status', ['pending', 'paid', 'cancelled', 'refunded'])->default('pending');<br />
+          &nbsp;&nbsp;$table->string('payment_method')->nullable(); // cash, bank_transfer, wallet<br />
+          &nbsp;&nbsp;$table->timestamp('paid_at')->nullable(); // تاريخ الدفع<br />
+          &nbsp;&nbsp;$table->decimal('total_amount', 10, 2); // مجموع أسعار المنتجات<br />
+          &nbsp;&nbsp;$table->decimal('tax_amount', 10, 2)->default(0);<br />
+          &nbsp;&nbsp;$table->decimal('delivery_fee', 10, 2)->default(0);<br />
+          &nbsp;&nbsp;$table->decimal('final_total', 10, 2); // المبلغ النهائي المطلوب<br />
+          &nbsp;&nbsp;$table->text('notes')->nullable();<br />
+          &nbsp;&nbsp;$table->unsignedBigInteger('created_by'); // Admin User ID<br />
+          });
+        </div>
+
+        <h3>ب. جدول تفاصيل الفاتورة (sales_invoice_details) - Detail</h3>
+        <p>يحتوي على المنتجات المشمولة في الفاتورة (يتم تخزين بيانات هذا الجدول عند إنشاء الفاتورة).</p>
+        <div class="db-schema">
+          Schema::create('sales_invoice_details', function (Blueprint $table) {<br />
+          &nbsp;&nbsp;$table->id();<br />
+          &nbsp;&nbsp;$table->unsignedBigInteger('sales_invoice_id');<br />
+          &nbsp;&nbsp;$table->unsignedBigInteger('product_id');<br />
+          &nbsp;&nbsp;$table->string('product_name'); // Snapshot of product name<br />
+          &nbsp;&nbsp;$table->integer('quantity');<br />
+          &nbsp;&nbsp;$table->decimal('unit_price', 10, 2);<br />
+          &nbsp;&nbsp;$table->decimal('line_total', 10, 2); // quantity * unit_price<br />
+          &nbsp;&nbsp;$table->timestamps();<br />
+          <br />
+          &nbsp;&nbsp;$table->foreign('sales_invoice_id')->references('id')->on('sales_invoice')->onDelete('cascade');<br />
+          &nbsp;&nbsp;$table->foreign('product_id')->references('id')->on('products');<br />
+          });
+        </div>
+
+        <h3>ج. تحديث جدول المهام (tasks)</h3>
+        <div class="db-schema">
+          Schema::table('tasks', function (Blueprint $table) {<br />
+          &nbsp;&nbsp;$table->unsignedBigInteger('sales_invoice_id')->nullable();<br />
+          &nbsp;&nbsp;$table->foreign('sales_invoice_id')->references('id')->on('sales_invoice');<br />
+          });
+        </div>
+      </div>
+
+      <!-- Implementation Strategy -->
+      <div class="section">
+        <h2>4. استراتيجية التنفيذ والتطوير</h2>
+
+        <h3>وحدة إدارة المبيعات (Sales Module)</h3>
+        <ul>
+          <li><strong>SalesController:</strong> وحدة تحكم جديدة لإدارة الفواتير (Master) وتفاصيلها (Details).</li>
+          <li>
+            <strong>Invoice View:</strong> تصميم صفحة فاتورة احترافية تقوم بجلب البيانات من جدول
+            <code>sales_invoice_details</code> لعرض قائمة المنتجات.
+          </li>
+        </ul>
+
+        <h3>الربط مع المهام (Task Integration)</h3>
+        <ul>
+          <li>إضافة زر "Create Delivery Task" في صفحة عرض الفاتورة.</li>
+          <li>هذا الزر ينقل المستخدم لإنشاء المهمة مع تمرير بيانات الفاتورة.</li>
+        </ul>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="section">
+        <h2>5. توصيات للجودة والاحترافية</h2>
+        <div class="highlight-box">
+          <i>💡</i>
+          <div><strong>التدقيق المالي:</strong> يجب أن لا يسمح النظام بتعديل الفاتورة بعد دفعها إلا بصلاحيات خاصة.</div>
+        </div>
+        <ul>
+          <li><strong>تنبيهات تلقائية:</strong> إرسال إشعار للعميل عند إصدار الفاتورة، وعند تأكيد الدفع.</li>
+          <li><strong>لوحة تحكم (Dashboard):</strong> إضافة قسم يعرض "إجمالي المبيعات" و"الفواتير غير المدفوعة".</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      <p>SafeDest Advanced Solutions &copy; 2025</p>
+    </footer>
+  </body>
+</html>

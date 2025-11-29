@@ -197,6 +197,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/show/{id}', [App\Http\Controllers\customer\TasksController::class, 'show'])->name('customer.tasks.show');
                 Route::get('/tasks/track/{id}', [App\Http\Controllers\customer\TasksController::class, 'track'])->name('customer.tasks.track');
                 Route::get('/tasks/report', [App\Http\Controllers\customer\TasksController::class, 'generateReport'])->name('customer.tasks.report');
+                Route::post('/tasks/export-excel', [App\Http\Controllers\customer\TasksController::class, 'exportToExcel'])->name('customer.tasks.export-excel');
 
                 // Customer Wallet Management
                 Route::get('/wallet', [App\Http\Controllers\customer\WalletController::class, 'index'])->name('customer.wallet.index');
@@ -550,6 +551,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/data', [TasksController::class, 'getData'])->name('tasks.data');
                 Route::get('/tasks/show/{id}', [TasksController::class, 'show'])->name('task.show');
                 Route::post('tasks', [TasksController::class, 'store'])->name('tasks.create');
+                Route::get('/tasks/create-from-invoice', [App\Http\Controllers\admin\TasksController::class, 'createFromInvoice'])->name('tasks.create_from_invoice');
                 Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');
                 Route::post('/tasks/validate-step2', [TasksController::class, 'validateStep2'])->name('tasks.validateStep2');
                 Route::post('/tasks/status', [TasksController::class, 'chang_status'])->name('tasks.status');
@@ -664,8 +666,23 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('reports/wallet/generate', [App\Http\Controllers\admin\WalletReportsController::class, 'generateReport'])->name('admin.reports.wallet.generate');
                 Route::post('reports/wallet/get-owners', [App\Http\Controllers\admin\WalletReportsController::class, 'getOwnersByType'])->name('admin.reports.wallet.get-owners');
 
+                // Sales Routes
+                Route::group(['prefix' => 'sales'], function () {
+                    Route::get('/', [App\Http\Controllers\admin\SalesController::class, 'index'])->name('sales.index');
+                    Route::get('/data', [App\Http\Controllers\admin\SalesController::class, 'getData'])->name('sales.data');
+                    Route::get('/products', [App\Http\Controllers\admin\SalesController::class, 'getProducts'])->name('sales.products');
+                    Route::post('/matching-vehicles', [App\Http\Controllers\admin\SalesController::class, 'getMatchingVehicles'])->name('sales.matching_vehicles');
+                    Route::post('/calculate-price', [App\Http\Controllers\admin\SalesController::class, 'calculatePrice'])->name('sales.calculate_price');
+                    Route::get('/create', [App\Http\Controllers\admin\SalesController::class, 'create'])->name('sales.create');
+                    Route::post('/store', [App\Http\Controllers\admin\SalesController::class, 'store'])->name('sales.store');
+                    Route::get('/{id}', [App\Http\Controllers\admin\SalesController::class, 'show'])->name('sales.show');
+                    Route::post('/{id}/status', [App\Http\Controllers\admin\SalesController::class, 'updateStatus'])->name('sales.status');
+                    Route::get('/{id}/create-task', [App\Http\Controllers\admin\SalesController::class, 'createTask'])->name('sales.create_task');
+                });
             });
         });
+
+
     });
 });
 

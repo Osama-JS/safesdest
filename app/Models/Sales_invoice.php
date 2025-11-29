@@ -8,23 +8,36 @@ class Sales_invoice extends Model
 {
     protected $table = 'sales_invoice';
     protected $fillable = [
-        'quantity',
-        'unit_price',
-        'total_price',
+        'invoice_number',
         'customer_id',
-        'product_id',
-        'vehicle_size_id'
+        'status',
+        'payment_method',
+        'paid_at',
+        'total_amount',
+        'tax_amount',
+        'delivery_fee',
+        'final_total',
+        'notes',
+        'created_by'
     ];
+
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
-    public function product()
+
+    public function details()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->hasMany(Sales_invoice_detail::class, 'sales_invoice_id');
     }
-    public function vehicle()
+
+    public function tasks()
     {
-        return $this->belongsTo(Vehicle_Size::class, 'vehicle_size_id');
+        return $this->hasMany(Task::class, 'sales_invoice_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

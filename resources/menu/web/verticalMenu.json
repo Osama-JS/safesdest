@@ -84,6 +84,13 @@
           "slug": "products.products",
           "isactive": "products-isactive",
           "permission": "view_products"
+        },
+        {
+          "url": "admin/sales",
+          "name": "Sales",
+          "icon": "menu-icon tf-icons ti ti-file-invoice",
+          "slug": "sales.index",
+          "isactive": "sales-isactive"
         }
       ]
     },

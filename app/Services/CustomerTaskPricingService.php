@@ -100,6 +100,9 @@ class CustomerTaskPricingService
                 // لا نضع required للحقول المركبة هنا
                 if (!$request->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
                     $rules[$fieldKey][] = 'required';
+                } else{
+                    $rules[$fieldKey][] = 'nullable';
+
                 }
 
                 // إضافة قواعد بناءً على نوع الحقل
@@ -108,9 +111,9 @@ class CustomerTaskPricingService
                         $rules[$fieldKey][] = 'string';
                         break;
 
-                    case 'number':
-                        $rules[$fieldKey][] = 'numeric';
-                        break;
+                    // case 'number':
+                    //     $rules[$fieldKey][] = 'numeric';
+                    //     break;
                     case 'url':
                         $rules[$fieldKey][] = 'url';
                         break;

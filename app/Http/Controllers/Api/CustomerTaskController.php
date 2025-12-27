@@ -28,9 +28,23 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Exception;
-
+use App\Services\PdfService;
 class CustomerTaskController extends Controller
 {
+
+     protected $pdfService;
+
+    public function __construct(PdfService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
+    /**
+     * Get task details with history
+     */
+
+
+
+
     public function getInitData()
     {
         try {
@@ -141,7 +155,7 @@ class CustomerTaskController extends Controller
                     'driver_name' => $task->driver ? $task->driver->name : null,
                     'driver_phone' => $task->driver ? $task->driver->phone : null,
                     'driver_image' => $task->driver ? $task->driver->image ? url($task->driver->image) : null : null,
-                    'price' => $task->total_price,
+                    'price' => (string) $task->total_price, // ✅ تحويل إلى string
                     'currency' => 'SAR',
                     'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
                     'created_at' => $task->created_at,
@@ -187,7 +201,8 @@ class CustomerTaskController extends Controller
                         'unloading'
                     ];
                 } else {
-                    $statuses = ['completed', 'canceld', 'refund'];
+                    // completed filter includes: completed, canceled, cancelled, refund
+                    $statuses = ['completed', 'canceled', 'cancelled', 'refund'];
                 }
 
                 $query->whereIn('status', $statuses);
@@ -315,6 +330,224 @@ class CustomerTaskController extends Controller
         }
     }
 
+    /**
+     * Get task details with history
+     */
+    public function show($id)
+    {
+        try {
+            $customer = request()->user();
+
+            $task = Task::where('customer_id', $customer->id)
+                ->where('id', $id)
+                ->with(['driver', 'vehicle_size', 'pickup', 'delivery', 'ad', 'history'])
+                ->first();
+
+            if (!$task) {
+                return response()->json([
+                    'status' => 404,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+
+            // Get task history
+            $history = $task->history()
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'action_type' => $item->action_type,
+                        'description' => $item->description,
+                        'status' => $item->action_type,
+                        'note' => $item->description,
+                        'created_at' => $item->created_at,
+                        'timestamp' => $item->created_at,
+                    ];
+                });
+
+            $taskData = [
+                'id' => $task->id,
+                'status' => $task->status,
+                'closed' => $task->closed,
+                'payment_status' => $task->payment_status,
+                'payment_method' => $task->payment_method,
+                'pricing_method' => $task->pricing_history['pricing_method_id'] ?? null,
+                'pickup' => [
+                    'lat' => $task->pickup->latitude,
+                    'lng' => $task->pickup->longitude,
+                    'address' => $task->pickup->address,
+                    'contact_name' => $task->pickup->contact_name,
+                    'contact_phone' => $task->pickup->contact_phone,
+                    'note' => $task->pickup->note,
+                    'scheduled_time' => $task->pickup->scheduled_time,
+                    'image' => $task->pickup->image ? url('storage/' . $task->pickup->image) : null,
+                ],
+                'delivery' => [
+                    'lat' => $task->delivery->latitude,
+                    'lng' => $task->delivery->longitude,
+                    'address' => $task->delivery->address,
+                    'contact_name' => $task->delivery->contact_name,
+                    'contact_phone' => $task->delivery->contact_phone,
+                    'note' => $task->delivery->note,
+                    'scheduled_time' => $task->delivery->scheduled_time,
+                    'image' => $task->delivery->image ? url('storage/' . $task->delivery->image) : null,
+                ],
+                'price' => $task->total_price,
+                'currency' => 'SAR',
+                'driver' => $task->driver ? [
+                    'name' => $task->driver->name,
+                    'phone' => $task->driver->phone,
+                    'image' => $task->driver->image ? asset('storage/' . $task->driver->image) : null,
+                ] : null,
+                'ad' => $task->ad ? [
+                    'description' => $task->ad->description,
+                    'min' => $task->ad->lowest_price,
+                    'max' => $task->ad->highest_price
+                ] : null,
+                'vehicle' => $task->vehicle_size
+                    ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name
+                    : null,
+                'additional_data' => collect($task->customer_visible_additional_data)->map(function ($item) {
+                    if (
+                        isset($item['type'], $item['value'])
+                        && in_array($item['type'], ['image', 'file_expiration_date'])
+                        && is_string($item['value'])
+                        && !str_starts_with($item['value'], 'http')
+                    ) {
+                        $item['value'] = url('storage/' . $item['value']);
+                    }
+                    return $item;
+                }),
+                'created_at' => $task->created_at,
+                'history' => $history,
+            ];
+
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $taskData
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to get task details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadTaskReport($id, Request $request)
+    {
+        try {
+            // Manual Authentication for file download (supports query param token)
+            $user = auth()->guard('sanctum')->user();
+
+            if (!$user) {
+                // Try getting token from query string
+                $token = $request->query('token');
+                if ($token) {
+                    $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                    if ($accessToken && $accessToken->tokenable) {
+                         // Check if token is valid/not expired if using expiration
+                        $user = $accessToken->tokenable;
+                    }
+                }
+            }
+
+            if (!$user) {
+                 return response()->json([
+                    'status' => 401,
+                    'message' => 'Unauthenticated.'
+                ], 401);
+            }
+
+            $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])
+                ->where('customer_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            $file_name = "#{$task->id}_{$task->customer->name}_{$task->pickup->address}_{$task->delivery->address}";
+            if ($task->driver) {
+                $file_name .= "_{$task->driver->name}";
+            }
+
+            return $this->pdfService->generate('admin.tasks.report_pdf', [
+                'task' => $task
+            ], "{$file_name}.pdf", true);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+             return response()->json([
+                'status' => 404,
+                'message' => 'Task not found or you do not have permission to view it'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to generate report',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadTaskInvoice($id, Request $request)
+    {
+        try {
+            // Manual Authentication for file download (supports query param token)
+            $user = auth()->guard('sanctum')->user();
+
+            if (!$user) {
+                // Try getting token from query string
+                $token = $request->query('token');
+                if ($token) {
+                    $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                    if ($accessToken && $accessToken->tokenable) {
+                        $user = $accessToken->tokenable;
+                    }
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Unauthenticated.'
+                ], 401);
+            }
+
+            $task = Task::with([
+                'customer',
+                'pickup',
+                'delivery',
+                'vehicle_size.type.vehicle'
+            ])
+                ->where('customer_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
+            $file_name = "{$invoice_number}_{$task->customer->name}";
+
+            return $this->pdfService->generate('admin.tasks.invoice_pdf', [
+                'task' => $task,
+                'invoice_number' => $invoice_number,
+                'invoice_date' => now()
+            ], "{$file_name}.pdf", true);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Task not found or you do not have permission to view it'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to generate invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function validateStep1(Request $req)
     {
         Log::alert($req);
@@ -336,17 +569,18 @@ class CustomerTaskController extends Controller
                 // لا نضع required للحقول المركبة هنا
                 if (!$req->filled('id') && $field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text','image','file'])) {
                     $rules[$fieldKey][] = 'required';
+                }else{
+                    $rules[$fieldKey][] = 'nullable';
                 }
-
                 // إضافة قواعد بناءً على نوع الحقل
                 switch ($field->type) {
                     case 'text':
                         $rules[$fieldKey][] = 'string';
                         break;
 
-                    case 'number':
-                        $rules[$fieldKey][] = 'numeric';
-                        break;
+                    // case 'number':
+                    //     $rules[$fieldKey][] = 'numeric';
+                    //     break;
                     case 'url':
                         $rules[$fieldKey][] = 'url';
                         break;
@@ -684,7 +918,7 @@ class CustomerTaskController extends Controller
                     'highest_price' => $req->max_price,
                     'lowest_price' => $req->min_price,
                     'description' => $req->note_price,
-                    'included' => $req->included ?? false,
+                    'included' => $req->included ?? true,
                     'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
                     'service_commission' => $data['service_tax_commission'] ?? 0,
                     'vat_commission' => $data['vat_commission'] ?? 0,
@@ -1164,6 +1398,39 @@ class CustomerTaskController extends Controller
 
             return response()->json(['status' => 500, 'message' => 'Error creating tasks' , 'error' => $ex->getMessage()]);
         }
+    }
+
+    public function customerCancelTask(Request $req, $id){
+      try {
+          $data = Task::findOrFail($id);
+           $user = $req->user();
+          if (!$user || $user->id !== $data->customer_id) {
+              return response()->json(['status' => 423,  'message' => __('You do not have permission to do actions to this record')]);
+          }
+        $data->update([
+          'status' => 'pending',
+          'customer_cancel' => true,
+          'customer_cancel_reason' => $req->reason,
+        ]);
+        $data->history()->create([
+            'action_type' => 'customer_cancel',
+            'description' => 'Customer Cancel Task. ' . $req->reason,
+            'file_path' => null,
+            'file_type' => null,
+            'task_id' => $data->id,
+        ]);
+        $data->ad()->delete();
+        return response()->json([
+          'status' => 200,
+          'message' => "Task cancelled successfully.",
+        ]);
+      } catch (Exception $ex) {
+        return response()->json([
+          'status' => 500,
+          'message' => "Error cancelling task.",
+          'error' => $ex->getMessage(),
+        ]);
+      }
     }
 
 }

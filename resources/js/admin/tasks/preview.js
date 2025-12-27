@@ -404,17 +404,27 @@ $(function () {
                <div class="divider text-start">
                       <div class="divider-text"><strong>Driver info</strong></div>
                   </div>
-              <div class=" d-flex align-items-center">
-                <img src="${baseUrl}${task.data.driver.image || 'assets/img/person.png'}"
-                    alt="Driver Image"
-                    class="rounded-circle me-3 border"
-                    style="width: 70px; height: 70px; object-fit: cover;">
-                <ul class="list-unstyled mb-0">
-                  <li><strong>Name:</strong> ${task.data.driver.name}</li>
-                  <li class="my-2"><strong>Phone:</strong> ${task.data.driver.phone}</li>
-                  <li><strong>Email:</strong> ${task.data.driver.email}</li>
-                  <li><a href="https://wa.me/${task.data.driver.whatsapp}" target="_blank" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
-                </ul>
+              <div class=" d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                  <img src="${baseUrl}${task.data.driver.image || 'assets/img/person.png'}"
+                      alt="Driver Image"
+                      class="rounded-circle me-3 border"
+                      style="width: 70px; height: 70px; object-fit: cover;">
+                  <ul class="list-unstyled mb-0">
+                    <li><strong>Name:</strong> ${task.data.driver.name}</li>
+                    <li class="my-2"><strong>Phone:</strong> ${task.data.driver.phone}</li>
+                    <li><strong>Email:</strong> ${task.data.driver.email}</li>
+                    <li><a href="https://wa.me/${task.data.driver.whatsapp}" target="_blank" class="btn btn-sm btn-success mt-2"> <i class="ti ti-brand-whatsapp me-1"></i> ${task.data.driver.whatsapp}</a></li>
+                  </ul>
+                </div>
+                <button class="btn btn-sm btn-primary send-task-driver-notification"
+                        data-task-id="${task.data.id}"
+                        data-driver-id="${task.data.driver.id}"
+                        data-driver-name="${task.data.driver.name}"
+                        title="إرسال إشعار للسائق">
+                  <i class="ti ti-bell me-1"></i>
+                  إشعار
+                </button>
               </div>
 
             `
@@ -533,7 +543,17 @@ $(function () {
         const htmlCustomer = `
           <div class="card shadow-sm ">
             <div class="card-body">
-              <h5 class="card-title mb-3"><i class="ti ti-user me-2"></i>Customer Info</h5>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0"><i class="ti ti-user me-2"></i>Customer Info</h5>
+                <button class="btn btn-sm btn-primary send-task-customer-notification"
+                        data-task-id="${task.data.id}"
+                        data-customer-id="${task.data.customer.id}"
+                        data-customer-name="${task.data.customer.name}"
+                        title="إرسال إشعار للعميل">
+                  <i class="ti ti-bell me-1"></i>
+                  إشعار
+                </button>
+              </div>
               <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Owner</strong>
@@ -947,6 +967,28 @@ $(function () {
   $(document).on('click', '.task-report', function () {
     const id = $(this).data('id');
     const reportWindow = window.open(`${baseUrl}admin/task/${id}/report`, '_blank');
+  });
+
+  // Handle send notification to task driver
+  $(document).on('click', '.send-task-driver-notification', function () {
+    const taskId = $(this).data('task-id');
+    const driverName = $(this).data('driver-name');
+
+    console.log('Notification button clicked for task driver:', taskId, driverName);
+
+    // Call the global function with task type
+    window.openNotificationModal(taskId, 'task', driverName);
+  });
+
+  // Handle send notification to task customer
+  $(document).on('click', '.send-task-customer-notification', function () {
+    const taskId = $(this).data('task-id');
+    const customerName = $(this).data('customer-name');
+
+    console.log('Notification button clicked for task customer:', taskId, customerName);
+
+    // Call the global function with task-customer type
+    window.openNotificationModal(taskId, 'task-customer', customerName);
   });
 
   function delay(ms) {

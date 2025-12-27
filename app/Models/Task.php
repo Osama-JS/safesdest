@@ -38,7 +38,11 @@ class Task extends Model
       'form_template_id',
       'pricing_id',
       'vehicle_size_id',
-      'created_at'
+      'created_at',
+      'customer_cancel',
+      'customer_cancel_reason',
+      'driver_cancel',
+      'driver_cancel_reason',
     ];
 
     protected $casts = [

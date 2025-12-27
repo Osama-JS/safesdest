@@ -344,6 +344,8 @@
 
 
 
+    {{-- Include Notification Modal --}}
+    @include('admin.partials.notification-modal')
 
     @include('admin.tasks.from-modal')
 

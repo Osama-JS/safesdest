@@ -281,6 +281,12 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-icon btn-primary send-notification-btn"
+                        data-id="${full.id}"
+                        data-name="${full.name}"
+                        title="إرسال إشعار">
+                  <i class="ti ti-bell"></i>
+                </button>
                 <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
                   <i class="ti ti-edit"></i>
                 </button>
@@ -522,6 +528,17 @@ $(function () {
       method: 'POST',
       dataTable: dt_data // إعادة تحميل الجدول إذا موجود
     });
+  });
+
+  // Handle send notification button click
+  $(document).on('click', '.send-notification-btn', function () {
+    const driverId = $(this).data('id');
+    const driverName = $(this).data('name');
+
+    console.log('Notification button clicked for driver:', driverId, driverName);
+
+    // Call the global function
+    window.openNotificationModal(driverId, 'driver', driverName);
   });
 
   $('#submitModal').on('hidden.bs.modal', function () {

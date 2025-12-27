@@ -13,6 +13,10 @@ return [
 
     'currency' => env('CURRENCY', 'SAR'),
 
+    'base_url' => env('HYPERPAY_BASE_URL', 'https://eu-test.oppwa.com'),
+
+    'script_url' => env('HYPERPAY_SCRIPT_URL', 'https://eu-test.oppwa.com/v1/paymentWidgets.js'),
+
     'redirect_url' => '/hyperpay/finalize',
 
     'model' => env('PAYMENT_MODEL', class_exists(App\Models\User::class) ? App\Models\User::class : App\User::class),

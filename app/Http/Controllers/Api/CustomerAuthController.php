@@ -459,8 +459,8 @@ class CustomerAuthController extends Controller
         $baseRules = [
             'name'           => 'required|string|max:255',
             'email'          => 'required|email',
-            'phone'          => 'required|string',
-            'phone_code'     => 'required|string',
+            'phone'          => 'nullable|string',
+            'phone_code'     => 'nullable|string',
             'password'       => 'required|same:confirm-password',
             'c_name'         => 'nullable|string|max:255',
             'c_address'      => 'nullable|string|max:255',
@@ -728,7 +728,7 @@ class CustomerAuthController extends Controller
 
             // Find customer by email or phone
             $email = $request->email;
-            $customer = Customer::where('email', $email)->first();
+            $customer = Customer::where('email', $email)->orWhere('phone', $email)->first();
 
             // Check if customer exists and password is correct
             if (!$customer || !Hash::check($request->password, $customer->password)) {

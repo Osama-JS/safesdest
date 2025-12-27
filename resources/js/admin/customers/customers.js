@@ -234,6 +234,12 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-icon btn-primary send-notification-btn"
+                        data-id="${full.id}"
+                        data-name="${full.name}"
+                        title="إرسال إشعار">
+                  <i class="ti ti-bell"></i>
+                </button>
                 <button class="btn btn-sm btn-icon edit-record " data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#submitModal">
                   <i class="ti ti-edit"></i>
                 </button>
@@ -474,6 +480,17 @@ $(function () {
     $('#modelTitle').html(__('Add New Customer'));
     $('#additional-form').html('');
     $('#select-template').val('');
+  });
+
+  // Handle send notification button click for customers
+  $(document).on('click', '.send-notification-btn', function () {
+    const customerId = $(this).data('id');
+    const customerName = $(this).data('name');
+
+    console.log('Notification button clicked for customer:', customerId, customerName);
+
+    // Call the global function
+    window.openNotificationModal(customerId, 'customer', customerName);
   });
 
   // Manage Commissions

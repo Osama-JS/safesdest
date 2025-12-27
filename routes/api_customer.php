@@ -70,6 +70,11 @@ Route::prefix('customer')->group(function () {
     Route::post('/verify-email-code', [CustomerAuthController::class, 'verifyEmailCode'])
     ->middleware(['throttle:3,1'])
     ->name('api.customer.verify-email-code');
+
+    Route::get('/tasks/{id}/report', [CustomerTaskController::class, 'downloadTaskReport'])
+        ->name('api.customer.tasks.report');
+    Route::get('/tasks/{id}/invoice', [CustomerTaskController::class, 'downloadTaskInvoice'])
+        ->name('api.customer.tasks.invoice');
 });
 
 // Protected routes (require Sanctum authentication)
@@ -160,8 +165,15 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     // Route::post('/tasks', [CustomerTaskController::class, 'store'])
     //     ->name('api.customer.tasks.store');
 
-    // Route::get('/tasks/{id}', [CustomerTaskController::class, 'show'])
-    //     ->name('api.customer.tasks.show');
+
+    Route::get('/tasks/{id}', [CustomerTaskController::class, 'show'])
+        ->name('api.customer.tasks.show');
+
+
+
+    Route::post('/tasks/{id}/cancel', [CustomerTaskController::class, 'customerCancelTask'])
+        ->name('api.customer.tasks.cancel');
+
 
     // Route::put('/tasks/{id}', [CustomerTaskController::class, 'update'])
     //     ->name('api.customer.tasks.update');
@@ -211,27 +223,33 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     // Route::get('/wallet/statements', [CustomerWalletController::class, 'getStatements'])
     //     ->name('api.customer.wallet.statements');
 
-    // // Customs clearance routes
-    // Route::get('/customs-clearances', [CustomerCustomsClearanceController::class, 'index'])
-    //     ->name('api.customer.customs-clearances');
+    // Customs clearance routes
+    Route::get('/customs-clearances/template', [CustomerCustomsClearanceController::class, 'getTemplate'])
+        ->name('api.customer.customs-clearances.template');
 
-    // Route::post('/customs-clearances', [CustomerCustomsClearanceController::class, 'store'])
-    //     ->name('api.customer.customs-clearances.store');
+    Route::post('/customs-clearances/data', [CustomerCustomsClearanceController::class, 'index'])
+        ->name('api.customer.customs-clearances.index');
 
-    // Route::get('/customs-clearances/{id}', [CustomerCustomsClearanceController::class, 'show'])
-    //     ->name('api.customer.customs-clearances.show');
+    Route::post('/customs-clearances', [CustomerCustomsClearanceController::class, 'store'])
+        ->name('api.customer.customs-clearances.store');
 
-    // Route::post('/customs-clearances/{id}/documents', [CustomerCustomsClearanceController::class, 'uploadDocuments'])
-    //     ->name('api.customer.customs-clearances.documents');
+    Route::post('/customs-clearances/{id}', [CustomerCustomsClearanceController::class, 'show'])
+        ->name('api.customer.customs-clearances.show');
 
-    // Route::get('/customs-clearances/{id}/status', [CustomerCustomsClearanceController::class, 'getStatus'])
-    //     ->name('api.customer.customs-clearances.status');
+    Route::post('/customs-clearances/{id}/documents', [CustomerCustomsClearanceController::class, 'uploadDocuments'])
+        ->name('api.customer.customs-clearances.documents');
 
-    // Route::get('/customs-clearances/ads', [CustomerCustomsClearanceController::class, 'getAds'])
-    //     ->name('api.customer.customs-clearances.ads');
+    Route::post('/customs-clearances/{id}/status', [CustomerCustomsClearanceController::class, 'getStatus'])
+        ->name('api.customer.customs-clearances.status');
 
-    // Route::post('/customs-clearances/offers', [CustomerCustomsClearanceController::class, 'submitOffer'])
-    //     ->name('api.customer.customs-clearances.offers');
+    Route::post('/customs-clearances/{id}/update', [CustomerCustomsClearanceController::class, 'update'])
+        ->name('api.customer.customs-clearances.update');
+
+    Route::post('/customs-clearances/{id}/offers', [CustomerCustomsClearanceController::class, 'offers'])
+        ->name('api.customer.customs-clearances.offers');
+
+    Route::post('/customs-clearances/offers/{id}/accept', [CustomerCustomsClearanceController::class, 'acceptOffer'])
+        ->name('api.customer.customs-clearances.accept-offer');
 
     // Task ads and bidding routes
     Route::post('/ads/data', [CustomerAdsController::class, 'getData'])

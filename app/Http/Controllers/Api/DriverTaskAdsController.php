@@ -579,6 +579,38 @@ class DriverTaskAdsController extends Controller
         }
     }
 
+
+    /**
+     * Accept task after offer is approved
+     */
+    public function deleteOffer(Request $request, $offerId){
+      try {
+        $driver = $request->user();
+        $driver_id = $driver->id;
+
+
+        $offer = Task_Offire::where('driver_id', $driver_id)->where('id', $offerId)->firstOrFail();
+
+        $offer->delete();
+
+        return response()->json([
+          'success' => true,
+          'message' => 'Offer deleted successfully'
+        ], 200);
+      } catch (\Throwable $th) {
+          Log::error('Driver Accept Task Error', [
+          'error' => $th->getMessage(),
+          'offer_id' => $offerId,
+          'driver_id' => $driver->id ?? null
+        ]);
+
+        return response()->json([
+          'success' => false,
+          'message' => 'Failed to accept task'
+        ], 500);
+      }
+    }
+
     /**
      * Get offers for a specific task ad
      */

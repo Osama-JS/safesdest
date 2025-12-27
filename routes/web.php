@@ -243,6 +243,27 @@ Route::middleware('rate.limit')->group(function () {
             Route::prefix('admin')->group(function () {
 
                 Route::get('/', [DashboardController::class, 'index'])->name('user.dashboard');
+
+                // Task Invoice Download
+                Route::get('/tasks/{id}/invoice', [TasksController::class, 'downloadTaskInvoice'])->name('tasks.invoice');
+
+                // Manual Notifications Routes
+                Route::prefix('notifications')->name('admin.notifications.')->group(function () {
+                    Route::post('send-to-driver', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToDriver'])
+                        ->name('send.driver');
+
+                    Route::post('send-to-multiple-drivers', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToMultipleDrivers'])
+                        ->name('send.multiple.drivers');
+
+                    Route::post('send-to-customer', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToCustomer'])
+                        ->name('send.customer');
+
+                    Route::post('send-to-task-driver', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToTaskDriver'])
+                        ->name('send.task.driver');
+
+                    Route::post('send-to-task-customer', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToTaskCustomer'])
+                        ->name('send.task.customer');
+                });
                 Route::get('/dashboard', [DashboardController::class, 'driversIndex'])->name('dashboard.dashboard');
                 Route::get('dashboard/tasks/data', [DashboardController::class, 'getTasksData'])->name('dashboard.tasks.data');
                 Route::get('dashboard/drivers/data', [DashboardController::class, 'getDriversData'])->name('dashboard.drivers.data');

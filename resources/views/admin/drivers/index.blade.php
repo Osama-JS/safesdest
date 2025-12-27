@@ -595,4 +595,7 @@
             </div>
         </div>
     </div>
+
+    {{-- Include Notification Modal --}}
+    @include('admin.partials.notification-modal')
 @endsection

@@ -86,8 +86,8 @@ class PaymentController extends Controller
                       'checkout_id' => $checkoutData['id']
                     ]);
 
-                    $paymentUrl = "https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=" . $checkoutData['id'];
-                    $url = route('payment.form', ['checkout_id' => $checkoutData['id']]);
+                    $paymentUrl = $this->hyperpay->getScriptUrl() . "?checkoutId=" . $checkoutData['id'];
+                    $url = route('payment.form', ['checkout_id' => $checkoutData['id'], 'script_url' => $this->hyperpay->getScriptUrl()]);
                     $task->update([
                       'payment_method' => $request->payment_method,
                       'payment_status' => 'pending',
@@ -372,8 +372,8 @@ class PaymentController extends Controller
                       'checkout_id' => $checkoutData['id']
                     ]);
 
-                    $paymentUrl = "https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=" . $checkoutData['id'];
-                    $url = route('payment.form', ['checkout_id' => $checkoutData['id']]);
+                    $paymentUrl = $this->hyperpay->getScriptUrl() . "?checkoutId=" . $checkoutData['id'];
+                    $url = route('payment.form', ['checkout_id' => $checkoutData['id'], 'script_url' => $this->hyperpay->getScriptUrl()]);
                     $task->update([
                       'payment_method' => $request->payment_method,
                       'payment_status' => 'pending',

@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pricing_templates', function (Blueprint $table) {
-            // إضافة حقل تفعيل/تعطيل العمولة
-            $table->boolean('service_commission_status')->default(true)->after('service_tax_commission');
-            
-            // إضافة حقل نوع العمولة (ثابت أو نسبة)
-            $table->enum('service_commission_type', ['fixed', 'percentage'])->default('percentage')->after('service_commission_status');
+            if (!Schema::hasColumn('pricing_templates', 'service_commission_status')) {
+                // إضافة حقل تفعيل/تعطيل العمولة
+                $table->boolean('service_commission_status')->default(true)->after('service_tax_commission');
+            }
+
+            if (!Schema::hasColumn('pricing_templates', 'service_commission_type')) {
+                // إضافة حقل نوع العمولة (ثابت أو نسبة)
+                $table->enum('service_commission_type', ['fixed', 'percentage'])->default('percentage')->after('service_commission_status');
+            }
         });
     }
 

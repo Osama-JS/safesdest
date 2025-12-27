@@ -46,6 +46,7 @@ class DriverAuthController extends Controller
             $login = $request->login;
             $driver = Driver::where('email', $login)
                            ->orWhere('username', $login)
+                           ->orWhere('phone', $login)
                            ->first();
 
             // Check if driver exists and password is correct

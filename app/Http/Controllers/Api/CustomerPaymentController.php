@@ -199,7 +199,7 @@ class CustomerPaymentController extends Controller
 
             // For HyperPay payments, check status with gateway
             if (str_starts_with($payment->payment_method, 'hyperpay_') && $payment->status === 'pending') {
-                // $this->checkHyperPayStatus($payment);
+                $this->checkHyperPayStatus($payment);
             }
 
             return response()->json([
@@ -612,15 +612,55 @@ class CustomerPaymentController extends Controller
      */
     private function processHyperPayPayment($payment)
     {
-        // This would integrate with HyperPay API
-        // For now, return mock response
+        $checkout = $this->hyperpay->createCheckout($payment->amount);
+
+        if (!$checkout || !isset($checkout['id'])) {
+            throw new Exception('Failed to create HyperPay checkout');
+        }
+
+        // Save checkout ID (transaction_reference in payments table)
+        $payment->update([
+            'transaction_reference' => $checkout['id'],
+            'gateway_name' => 'hyperpay'
+        ]);
 
         return [
             'requires_action' => true,
             'action_type' => 'redirect',
-            'payment_url' => 'https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=mock_checkout_id',
-            'checkout_id' => 'mock_checkout_id',
+            'payment_url' => $this->hyperpay->getScriptUrl() . "?checkoutId=" . $checkout['id'],
+            'checkout_id' => $checkout['id'],
         ];
+    }
+
+    private function checkHyperPayStatus($payment)
+    {
+        $checkoutId = $payment->transaction_reference;
+        if (!$checkoutId) return;
+
+        $result = $this->hyperpay->getPaymentStatus($checkoutId);
+
+        if (!$result || !isset($result['result']['code'])) {
+            return;
+        }
+
+        $code = $result['result']['code'];
+
+        if (Str::startsWith($code, ['000.000', '000.100'])) {
+            // Update payment record
+            $payment->update([
+                'status' => 'completed',
+                'gateway_reference' => $result['id'] ?? null,
+                'gateway_response' => json_encode($result),
+                'completed_at' => Carbon::now(),
+            ]);
+
+            // Process completion fulfillment
+            $this->processPaymentCompletion($payment);
+        } elseif (Str::startsWith($code, '000.400')) {
+            $payment->update(['status' => 'review']);
+        } elseif (!Str::startsWith($code, '000.200')) {
+             $payment->update(['status' => 'failed']);
+        }
     }
 
     /**

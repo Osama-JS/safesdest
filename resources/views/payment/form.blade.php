@@ -29,7 +29,7 @@
         <p class="mb-6 text-gray-600">{{ __('يرجى تعبئة بيانات البطاقة لإتمام عملية الدفع بأمان') }}</p>
 
         <!-- HyperPay Widget -->
-        <script src="https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId={{ $checkout_id }}"></script>
+        <script src="{{ $script_url }}?checkoutId={{ $checkout_id }}"></script>
         <form action="{{ route('payment.callback') }}" class="paymentWidgets" data-brands="VISA MASTER MADA"></form>
 
         <div class="mt-6 text-sm text-gray-500">

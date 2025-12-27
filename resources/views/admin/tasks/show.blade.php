@@ -117,6 +117,11 @@
                                 {{ __('Download Report') }}
                             </a>
 
+                            <a href="{{ route('tasks.invoice', $task->id) }}" class="btn btn-sm btn-success" target="_blank">
+                                <i class="fas fa-file-invoice me-1"></i>
+                                {{ __('Download Invoice') }}
+                            </a>
+
                             <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>
                                 {{ __('Back to Tasks') }}

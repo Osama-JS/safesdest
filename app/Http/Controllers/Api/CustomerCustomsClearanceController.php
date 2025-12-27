@@ -8,15 +8,65 @@ use App\Models\Customs_Clearance_History;
 use App\Models\Customs_Clearance_Offer;
 use App\Http\Controllers\Controller;
 use App\Helpers\FileHelper;
+use App\Models\Form_Field;
+use App\Models\Form_Template;
+use App\Models\Settings;
+use App\Models\Clearance_Pricing_Template;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Exception;
 
 class CustomerCustomsClearanceController extends Controller
 {
+    /**
+     * Get the active customs clearance template
+     */
+    public function getTemplate()
+    {
+        try {
+            $templateId = Settings::getValue('customs_clearance_template');
+
+            if (!$templateId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customs clearance template not configured'
+                ], 404);
+            }
+
+            $template = Form_Template::with(['fields' => function($query) {
+                $query->orderBy('order', 'ASC');
+            }])->find($templateId);
+
+            if (!$template) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Template not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'description' => $template->description,
+                    'fields' => $template->fields
+                ]
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get template',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Get customer customs clearances list
      */
@@ -25,16 +75,13 @@ class CustomerCustomsClearanceController extends Controller
         try {
             $customer = $request->user();
 
-            $query = Customs_Clearance::where('customer_id', $customer->id);
+            $query = Customs_Clearance::where('customer_id', $customer->id)
+                                      ->with(['clearanceAgent', 'pricing']);
 
             // Apply filters
             if ($request->filled('status')) {
                 $statuses = is_array($request->status) ? $request->status : [$request->status];
                 $query->whereIn('status', $statuses);
-            }
-
-            if ($request->filled('clearance_type')) {
-                $query->where('clearance_type', $request->clearance_type);
             }
 
             if ($request->filled('date_from')) {
@@ -45,12 +92,11 @@ class CustomerCustomsClearanceController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
-            // Search
+            // Search in notes or additional_data
             if ($request->filled('search')) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('goods_description', 'like', "%{$search}%")
-                      ->orWhere('origin_country', 'like', "%{$search}%")
+                    $q->where('notes', 'like', "%{$search}%")
                       ->orWhere('id', 'like', "%{$search}%");
                 });
             }
@@ -62,28 +108,42 @@ class CustomerCustomsClearanceController extends Controller
 
             // Pagination
             $perPage = $request->get('per_page', 15);
-            $clearances = $query->with(['agent'])->paginate($perPage);
+            $clearances = $query->paginate($perPage);
 
-            $clearancesData = $clearances->map(function ($clearance) {
+            $clearancesData = $clearances->getCollection()->map(function ($clearance) {
+                $pricing = $clearance->pricing;
+                $totalPrice = $clearance->total_price;
+
+                // Simple pricing calculation if not included and no agent yet
+                if ($totalPrice > 0 && !$clearance->included && $clearance->commission == 0 && $clearance->clearance_agent_id == null && $pricing) {
+                    $vat = floatval($pricing->vat_commission);
+                    $commission = floatval($pricing->service_commission);
+                    $commissionType = $pricing->service_commission_type;
+
+                    $commissionAmount = 0;
+                    if ($commission > 0) {
+                        $commissionAmount = ($commissionType === 'percentage') ? ($commission / 100) * $totalPrice : $commission;
+                    }
+
+                    $priceWithCommission = $totalPrice + $commissionAmount;
+                    $vatAmount = ($vat > 0) ? ($vat / 100) * $priceWithCommission : 0;
+                    $totalPrice += $commissionAmount + $vatAmount;
+                }
+
                 return [
                     'id' => $clearance->id,
-                    'clearance_type' => $clearance->clearance_type,
                     'status' => $clearance->status,
-                    'goods_description' => $clearance->goods_description,
-                    'goods_value' => $clearance->goods_value,
-                    'goods_weight' => $clearance->goods_weight,
-                    'origin_country' => $clearance->origin_country,
-                    'destination_port' => $clearance->destination_port,
-                    'expected_arrival' => $clearance->expected_arrival,
-                    'agent' => $clearance->agent ? [
-                        'id' => $clearance->agent->id,
-                        'name' => $clearance->agent->name,
-                        'company_name' => $clearance->agent->company_name,
-                        'phone' => $clearance->agent->phone,
-                        'rating' => $clearance->agent->rating ?? 0,
+                    'status_label' => __($clearance->status),
+                    'total_price' => $totalPrice,
+                    'is_public' => (bool)$clearance->public,
+                    'closed' => (bool)$clearance->closed,
+                    'payment_status' => $clearance->payment_status,
+                    'notes' => $clearance->notes,
+                    'agent' => $clearance->clearanceAgent ? [
+                        'id' => $clearance->clearanceAgent->id,
+                        'name' => $clearance->clearanceAgent->name,
+                        'phone' => $clearance->clearanceAgent->phone,
                     ] : null,
-                    'total_cost' => $clearance->total_cost,
-                    'currency' => 'SAR',
                     'created_at' => $clearance->created_at,
                     'updated_at' => $clearance->updated_at,
                 ];
@@ -98,8 +158,6 @@ class CustomerCustomsClearanceController extends Controller
                         'last_page' => $clearances->lastPage(),
                         'per_page' => $clearances->perPage(),
                         'total' => $clearances->total(),
-                        'from' => $clearances->firstItem(),
-                        'to' => $clearances->lastItem(),
                     ]
                 ]
             ]);
@@ -114,125 +172,143 @@ class CustomerCustomsClearanceController extends Controller
     }
 
     /**
-     * Create new customs clearance request
+     * Create/Store new customs clearance request
      */
     public function store(Request $request)
     {
         try {
-            $customer = $request->user();
+            $customer = Auth::user();
+            $templateId = Settings::getValue('customs_clearance_template');
 
-            $validator = Validator::make($request->all(), [
-                'clearance_type' => 'required|in:import,export,transit',
-                'goods_description' => 'required|string|max:500',
-                'goods_value' => 'required|numeric|min:1',
-                'goods_weight' => 'required|numeric|min:0.1',
-                'origin_country' => 'required|string|max:100',
-                'destination_port' => 'required|string|max:100',
-                'expected_arrival' => 'required|date|after:today',
-                'assign_type' => 'required|in:direct,advertised',
-                'agent_id' => 'required_if:assign_type,direct|exists:customers,id',
-                'notes' => 'nullable|string|max:1000',
-                'documents.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
+            if (!$templateId) {
+                return response()->json(['success' => false, 'message' => 'Template not configured'], 422);
             }
 
-            // Validate agent if direct assignment
-            if ($request->assign_type === 'direct') {
-                $agent = Customer::where('id', $request->agent_id)
-                                ->where('is_customs_clearance_agent', true)
-                                ->first();
+            $fields = Form_Field::where('form_template_id', $templateId)->get();
+            $rules = [
+                'notes' => 'nullable|string',
+                'is_public' => 'nullable|boolean',
+                'included' => 'nullable|boolean',
+                'price' => 'nullable|numeric|min:0',
+            ];
+            Log::alert('start recording');
+            foreach ($fields as $field) {
+                $fieldKey = 'additional_fields.' . $field->name;
 
-                if (!$agent) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid customs clearance agent'
-                    ], 422);
+                if ($field->required && !in_array($field->type, ['file_expiration_date', 'file_with_text'])) {
+                    $rules[$fieldKey] = 'required';
+                }
+
+                switch ($field->type) {
+                    case 'file':
+                    case 'image':
+                        $rules[$fieldKey] = ($field->required ? 'required|' : 'nullable|') . 'file|max:10240';
+                        break;
+                    case 'file_expiration_date':
+                        $rules[$fieldKey . '_file'] = ($field->required ? 'required|' : 'nullable|') . 'file|max:10240';
+                        $rules[$fieldKey . '_expiration'] = ($field->required ? 'required|' : 'nullable|') . 'date|after_or_equal:today';
+                        break;
+                    case 'file_with_text':
+                        $rules[$fieldKey . '_file'] = ($field->required ? 'required|' : 'nullable|') . 'file|max:10240';
+                        $rules[$fieldKey . '_text'] = ($field->required ? 'required|' : 'nullable|') . 'string|max:255';
+                        break;
                 }
             }
 
+            $validator = Validator::make($request->all(), $rules);
+            if ($validator->fails()) {
+                Log::alert('validation failed');
+
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            }
+
+            Log::alert('validation passed');
             DB::beginTransaction();
 
-            // Prepare clearance data
-            $clearanceData = [
-                'customer_id' => $customer->id,
-                'clearance_type' => $request->clearance_type,
-                'goods_description' => $request->goods_description,
-                'goods_value' => $request->goods_value,
-                'goods_weight' => $request->goods_weight,
-                'origin_country' => $request->origin_country,
-                'destination_port' => $request->destination_port,
-                'expected_arrival' => $request->expected_arrival,
-                'notes' => $request->notes,
-            ];
+            $structuredFields = [];
+            foreach ($fields as $field) {
+                $fieldName = $field->name;
+                $fieldType = $field->type;
 
-            // Handle assignment type
-            if ($request->assign_type === 'direct') {
-                $clearanceData['agent_id'] = $request->agent_id;
-                $clearanceData['status'] = 'assigned';
-            } else {
-                $clearanceData['status'] = 'advertised';
-            }
-
-            // Create clearance
-            $clearance = Customs_Clearance::create($clearanceData);
-
-            // Handle document uploads
-            if ($request->hasFile('documents')) {
-                $documents = [];
-                foreach ($request->file('documents') as $index => $file) {
-                    $path = FileHelper::uploadFile($file, 'customs_clearances/documents');
-                    $documents[] = [
-                        'name' => $file->getClientOriginalName(),
-                        'path' => $path,
-                        'size' => $file->getSize(),
-                        'type' => $file->getMimeType(),
-                        'uploaded_at' => now(),
-                    ];
+                if ($fieldType === 'file_expiration_date') {
+                    if ($request->hasFile("additional_fields.{$fieldName}_file")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.{$fieldName}_file"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'expiration' => $request->input("additional_fields.{$fieldName}_expiration"),
+                            'type' => $fieldType,
+                        ];
+                    }
+                } else if ($fieldType === 'file_with_text') {
+                    if ($request->hasFile("additional_fields.{$fieldName}_file")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.{$fieldName}_file"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'text' => $request->input("additional_fields.{$fieldName}_text"),
+                            'type' => $fieldType,
+                        ];
+                    }
+                } else if (in_array($fieldType, ['file', 'image'])) {
+                    if ($request->hasFile("additional_fields.$fieldName")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.$fieldName"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'type' => $fieldType,
+                        ];
+                    }
+                } else {
+                    if ($request->has("additional_fields.$fieldName")) {
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $request->input("additional_fields.$fieldName"),
+                            'type' => $fieldType,
+                        ];
+                    }
                 }
-                $clearance->update(['documents' => $documents]);
             }
 
-            // Create history entry
-            Customs_Clearance_History::create([
-                'clearance_id' => $clearance->id,
-                'status' => $clearance->status,
-                'description' => 'Customs clearance request created',
-                'created_by_type' => 'customer',
-                'created_by_id' => $customer->id,
+            $pricing = Clearance_Pricing_Template::availableForCustomer($templateId, $customer->id)->first();
+            if (!$pricing) {
+                return response()->json(['success' => false, 'message' => 'No pricing template found for this request'], 422);
+            }
+
+            Log::alert('pricing found');
+            $clearance = Customs_Clearance::create([
+                'customer_id' => $customer->id,
+                'form_template_id' => $templateId,
+                'pricing_id' => $pricing->id,
+                'total_price' => $request->price ?? 0,
+                'included' => $request->included ?? 0,
+                'public' => $request->is_public ?? 0,
+                'notes' => $request->notes,
+                'status' => 'in_progress',
+                'additional_data' => $structuredFields,
             ]);
+
+            Customs_Clearance_History::create([
+                'customs_clearance_id' => $clearance->id,
+                'action_type' => 'created',
+                'description' => 'Customs clearance request created via Mobile App',
+                'ip' => $request->ip()
+            ]);
+            Log::alert('clearance created');
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Customs clearance request created successfully',
-                'data' => [
-                    'clearance' => [
-                        'id' => $clearance->id,
-                        'clearance_type' => $clearance->clearance_type,
-                        'status' => $clearance->status,
-                        'goods_description' => $clearance->goods_description,
-                        'goods_value' => $clearance->goods_value,
-                        'expected_arrival' => $clearance->expected_arrival,
-                        'created_at' => $clearance->created_at,
-                    ]
-                ]
+                'data' => $clearance
             ], 201);
 
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create customs clearance request',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::alert('error creating clearance');
+
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -246,7 +322,7 @@ class CustomerCustomsClearanceController extends Controller
 
             $clearance = Customs_Clearance::where('id', $id)
                                          ->where('customer_id', $customer->id)
-                                         ->with(['agent'])
+                                         ->with(['clearanceAgent', 'pricing', 'history'])
                                          ->first();
 
             if (!$clearance) {
@@ -256,42 +332,35 @@ class CustomerCustomsClearanceController extends Controller
                 ], 404);
             }
 
-            $clearanceData = [
-                'id' => $clearance->id,
-                'clearance_type' => $clearance->clearance_type,
-                'status' => $clearance->status,
-                'goods_description' => $clearance->goods_description,
-                'goods_value' => $clearance->goods_value,
-                'goods_weight' => $clearance->goods_weight,
-                'origin_country' => $clearance->origin_country,
-                'destination_port' => $clearance->destination_port,
-                'expected_arrival' => $clearance->expected_arrival,
-                'notes' => $clearance->notes,
-                'agent' => $clearance->agent ? [
-                    'id' => $clearance->agent->id,
-                    'name' => $clearance->agent->name,
-                    'company_name' => $clearance->agent->company_name,
-                    'phone' => $clearance->agent->phone,
-                    'email' => $clearance->agent->email,
-                    'rating' => $clearance->agent->rating ?? 0,
-                ] : null,
-                'total_cost' => $clearance->total_cost,
-                'documents' => $clearance->documents ? collect($clearance->documents)->map(function ($doc) {
-                    return [
-                        'name' => $doc['name'],
-                        'url' => asset('storage/' . $doc['path']),
-                        'size' => $doc['size'],
-                        'type' => $doc['type'],
-                        'uploaded_at' => $doc['uploaded_at'],
-                    ];
-                }) : [],
-                'created_at' => $clearance->created_at,
-                'updated_at' => $clearance->updated_at,
-            ];
+            // Map additional data values with full URLs for files
+            $additionalData = collect($clearance->additional_data)->map(function($field) {
+                if (isset($field['type']) && in_array($field['type'], ['file', 'image', 'file_expiration_date', 'file_with_text'])) {
+                    $field['url'] = asset('storage/' . $field['value']);
+                }
+                return $field;
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $clearanceData
+                'data' => [
+                    'id' => $clearance->id,
+                    'status' => $clearance->status,
+                    'status_label' => __($clearance->status),
+                    'total_price' => $clearance->total_price,
+                    'included' => (bool)$clearance->included,
+                    'is_public' => (bool)$clearance->public,
+                    'notes' => $clearance->notes,
+                    'additional_data' => $additionalData,
+                    'agent' => $clearance->clearanceAgent ? [
+                        'id' => $clearance->clearanceAgent->id,
+                        'name' => $clearance->clearanceAgent->name,
+                        'phone' => $clearance->clearanceAgent->phone,
+                        'email' => $clearance->clearanceAgent->email,
+                    ] : null,
+                    'history' => $clearance->history,
+                    'created_at' => $clearance->created_at,
+                    'updated_at' => $clearance->updated_at,
+                ]
             ]);
 
         } catch (Exception $e) {
@@ -304,309 +373,269 @@ class CustomerCustomsClearanceController extends Controller
     }
 
     /**
-     * Upload additional documents
+     * Upload additional documents (kept for compatibility or future use, adjusted for corrected structure)
      */
     public function uploadDocuments(Request $request, $id)
     {
-        try {
-            $customer = $request->user();
+        // This method might need rethink if we want to add to additional_data,
+        // but for now let's just return success if we don't strictly need it or adjust it.
+        return response()->json(['success' => false, 'message' => 'Not implemented in dynamic mode'], 501);
+    }
 
+    /**
+     * Get clearance status used by UI timeline
+     */
+    public function getStatus(Request $request, $id)
+    {
+        try {
+            $customer = Auth::user();
+            $clearance = Customs_Clearance::where('id', $id)
+                                         ->where('customer_id', $customer->id)
+                                         ->with('history')
+                                         ->first();
+
+            if (!$clearance) {
+                return response()->json(['success' => false, 'message' => 'Not found'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $clearance->id,
+                    'status' => $clearance->status,
+                    'status_label' => __($clearance->status),
+                    'history' => $clearance->history,
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update an existing customs clearance request
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $customer = Auth::user();
             $clearance = Customs_Clearance::where('id', $id)
                                          ->where('customer_id', $customer->id)
                                          ->first();
 
             if (!$clearance) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Customs clearance not found'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Customs clearance not found'], 404);
             }
 
-            $validator = Validator::make($request->all(), [
-                'documents.*' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
-                'document_types.*' => 'nullable|string|max:100',
-            ]);
+            if ($clearance->status !== 'in_progress') {
+                return response()->json(['success' => false, 'message' => 'Only requests in "in_progress" status can be edited'], 422);
+            }
 
+            $templateId = $clearance->form_template_id;
+            $fields = Form_Field::where('form_template_id', $templateId)->get();
+
+            $rules = [
+                'notes' => 'nullable|string',
+                'is_public' => 'nullable|boolean',
+                'included' => 'nullable|boolean',
+                'price' => 'nullable|numeric|min:0',
+            ];
+
+            foreach ($fields as $field) {
+                $fieldKey = 'additional_fields.' . $field->name;
+                // Files are not required in update if they already exist
+                if ($field->required && !in_array($field->type, ['file', 'image', 'file_expiration_date', 'file_with_text'])) {
+                    $rules[$fieldKey] = 'required';
+                }
+            }
+
+            $validator = Validator::make($request->all(), $rules);
             if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            if (!$request->hasFile('documents')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No documents provided'
-                ], 422);
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
 
             DB::beginTransaction();
 
-            $existingDocuments = $clearance->documents ?? [];
-            $newDocuments = [];
+            $structuredFields = $clearance->additional_data ?? [];
+            foreach ($fields as $field) {
+                $fieldName = $field->name;
+                $fieldType = $field->type;
 
-            foreach ($request->file('documents') as $index => $file) {
-                $path = FileHelper::uploadFile($file, 'customs_clearances/documents');
-                $documentType = $request->input("document_types.{$index}") ?? 'Additional Document';
-
-                $newDocuments[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'path' => $path,
-                    'size' => $file->getSize(),
-                    'type' => $file->getMimeType(),
-                    'document_type' => $documentType,
-                    'uploaded_at' => now(),
-                ];
+                if ($fieldType === 'file_expiration_date') {
+                    if ($request->hasFile("additional_fields.{$fieldName}_file")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.{$fieldName}_file"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'expiration' => $request->input("additional_fields.{$fieldName}_expiration"),
+                            'type' => $fieldType,
+                        ];
+                    } elseif ($request->has("additional_fields.{$fieldName}_expiration")) {
+                         // Update expiration if file is not changed
+                         if (isset($structuredFields[$fieldName])) {
+                             $structuredFields[$fieldName]['expiration'] = $request->input("additional_fields.{$fieldName}_expiration");
+                         }
+                    }
+                } else if ($fieldType === 'file_with_text') {
+                    if ($request->hasFile("additional_fields.{$fieldName}_file")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.{$fieldName}_file"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'text' => $request->input("additional_fields.{$fieldName}_text"),
+                            'type' => $fieldType,
+                        ];
+                    } elseif ($request->has("additional_fields.{$fieldName}_text")) {
+                        if (isset($structuredFields[$fieldName])) {
+                            $structuredFields[$fieldName]['text'] = $request->input("additional_fields.{$fieldName}_text");
+                        }
+                    }
+                } else if (in_array($fieldType, ['file', 'image'])) {
+                    if ($request->hasFile("additional_fields.$fieldName")) {
+                        $path = FileHelper::uploadFile($request->file("additional_fields.$fieldName"), 'customs_clearances/files');
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $path,
+                            'type' => $fieldType,
+                        ];
+                    }
+                } else {
+                    if ($request->has("additional_fields.$fieldName")) {
+                        $structuredFields[$fieldName] = [
+                            'label' => $field->label,
+                            'value' => $request->input("additional_fields.$fieldName"),
+                            'type' => $fieldType,
+                        ];
+                    }
+                }
             }
 
-            // Merge with existing documents
-            $allDocuments = array_merge($existingDocuments, $newDocuments);
-            $clearance->update(['documents' => $allDocuments]);
+            $clearance->update([
+                'total_price' => $request->price ?? $clearance->total_price,
+                'included' => $request->included ?? $clearance->included,
+                'public' => $request->is_public ?? $clearance->public,
+                'notes' => $request->notes ?? $clearance->notes,
+                'additional_data' => $structuredFields,
+            ]);
 
-            // Create history entry
             Customs_Clearance_History::create([
-                'clearance_id' => $clearance->id,
-                'status' => $clearance->status,
-                'description' => 'Additional documents uploaded (' . count($newDocuments) . ' files)',
-                'created_by_type' => 'customer',
-                'created_by_id' => $customer->id,
+                'customs_clearance_id' => $clearance->id,
+                'action_type' => 'updated',
+                'description' => 'Customs clearance request updated via Mobile App',
+                'ip' => $request->ip()
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Documents uploaded successfully',
-                'data' => [
-                    'uploaded_count' => count($newDocuments),
-                    'total_documents' => count($allDocuments),
-                ]
+                'message' => 'Customs clearance request updated successfully',
+                'data' => $clearance
             ]);
 
         } catch (Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to upload documents',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Get clearance status and history
+     * Get offers for a specific customs clearance request
      */
-    public function getStatus(Request $request, $id)
+    public function offers(Request $request, $id)
     {
         try {
-            $customer = $request->user();
-
+            $customer = Auth::user();
             $clearance = Customs_Clearance::where('id', $id)
                                          ->where('customer_id', $customer->id)
                                          ->first();
 
             if (!$clearance) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Customs clearance not found'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Customs clearance not found'], 404);
             }
 
-            // Get history
-            $history = Customs_Clearance_History::where('clearance_id', $clearance->id)
-                                               ->orderBy('created_at', 'desc')
-                                               ->get()
-                                               ->map(function ($entry) {
-                                                   return [
-                                                       'id' => $entry->id,
-                                                       'status' => $entry->status,
-                                                       'description' => $entry->description,
-                                                       'created_by_type' => $entry->created_by_type,
-                                                       'created_at' => $entry->created_at,
-                                                   ];
-                                               });
-
-            // Get timeline
-            $timeline = $this->getClearanceTimeline($clearance);
+            $offers = Customs_Clearance_Offer::where('customs_clearance_id', $id)
+                                            ->with('broker')
+                                            ->orderBy('created_at', 'desc')
+                                            ->get();
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'clearance_id' => $clearance->id,
-                    'current_status' => $clearance->status,
-                    'progress_percentage' => $this->calculateProgress($clearance->status),
-                    'estimated_completion' => $this->estimateCompletion($clearance),
-                    'timeline' => $timeline,
-                    'history' => $history,
-                ]
+                'data' => $offers->map(function($offer) {
+                    return [
+                        'id' => $offer->id,
+                        'price' => $offer->price,
+                        'description' => $offer->description,
+                        'accepted' => (bool)$offer->accepted,
+                        'created_at' => $offer->created_at,
+                        'broker' => $offer->broker ? [
+                            'id' => $offer->broker->id,
+                            'name' => $offer->broker->name,
+                            'phone' => $offer->broker->phone,
+                            'avatar' => $offer->broker->avatar ? asset('storage/' . $offer->broker->avatar) : null,
+                        ] : null,
+                    ];
+                })
             ]);
-
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get clearance status',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Get available clearance ads (for agents)
+     * Accept a specific offer for a customs clearance request
      */
-    public function getAds(Request $request)
+    public function acceptOffer(Request $request, $id)
     {
         try {
-            $query = Customs_Clearance::where('status', 'advertised');
+            $customer = Auth::user();
+            $offer = Customs_Clearance_Offer::with('customsClearance')->find($id);
 
-            // Apply filters
-            if ($request->filled('clearance_type')) {
-                $query->where('clearance_type', $request->clearance_type);
+            if (!$offer || $offer->customsClearance->customer_id !== $customer->id) {
+                return response()->json(['success' => false, 'message' => 'Offer not found'], 404);
             }
 
-            if ($request->filled('origin_country')) {
-                $query->where('origin_country', $request->origin_country);
+            $clearance = $offer->customsClearance;
+
+            if ($clearance->clearance_agent_id) {
+                return response()->json(['success' => false, 'message' => 'Request already assigned to an agent'], 422);
             }
 
-            if ($request->filled('destination_port')) {
-                $query->where('destination_port', $request->destination_port);
-            }
+            DB::beginTransaction();
 
-            if ($request->filled('value_min')) {
-                $query->where('goods_value', '>=', $request->value_min);
-            }
+            // Accept this offer
+            $offer->update(['accepted' => 1]);
 
-            if ($request->filled('value_max')) {
-                $query->where('goods_value', '<=', $request->value_max);
-            }
+            // Decline all other offers for this request
+            Customs_Clearance_Offer::where('customs_clearance_id', $clearance->id)
+                                  ->where('id', '!=', $offer->id)
+                                  ->update(['accepted' => 0]);
 
-            // Sorting
-            $sortBy = $request->get('sort_by', 'created_at');
-            $sortOrder = $request->get('sort_order', 'desc');
-            $query->orderBy($sortBy, $sortOrder);
+            // Update clearance request
+            $clearance->update([
+                'clearance_agent_id' => $offer->clearance_agent_id,
+                'status' => 'assigned', // Or whatever the next status should be
+                'total_price' => $offer->price,
+            ]);
 
-            // Pagination
-            $perPage = $request->get('per_page', 15);
-            $ads = $query->with(['customer'])->paginate($perPage);
+            Customs_Clearance_History::create([
+                'customs_clearance_id' => $clearance->id,
+                'action_type' => 'offer_accepted',
+                'description' => 'Offer from agent accepted. Request assigned.',
+                'ip' => $request->ip()
+            ]);
 
-            $adsData = $ads->map(function ($clearance) {
-                return [
-                    'id' => $clearance->id,
-                    'clearance_type' => $clearance->clearance_type,
-                    'goods_description' => $clearance->goods_description,
-                    'goods_value' => $clearance->goods_value,
-                    'goods_weight' => $clearance->goods_weight,
-                    'origin_country' => $clearance->origin_country,
-                    'destination_port' => $clearance->destination_port,
-                    'expected_arrival' => $clearance->expected_arrival,
-                    'customer' => [
-                        'name' => $clearance->customer->name,
-                        'company_name' => $clearance->customer->company_name,
-                        'rating' => $clearance->customer->rating ?? 0,
-                    ],
-                    'offers_count' => Customs_Clearance_Offer::where('clearance_id', $clearance->id)->count(),
-                    'created_at' => $clearance->created_at,
-                ];
-            });
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'ads' => $adsData,
-                    'pagination' => [
-                        'current_page' => $ads->currentPage(),
-                        'last_page' => $ads->lastPage(),
-                        'per_page' => $ads->perPage(),
-                        'total' => $ads->total(),
-                        'from' => $ads->firstItem(),
-                        'to' => $ads->lastItem(),
-                    ]
-                ]
+                'message' => 'Offer accepted successfully',
+                'data' => $clearance
             ]);
 
         } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get clearance ads',
-                'error' => $e->getMessage()
-            ], 500);
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
-    }
-
-    /**
-     * Get clearance timeline
-     */
-    private function getClearanceTimeline($clearance)
-    {
-        $statuses = [
-            'advertised' => 'Request Posted',
-            'assigned' => 'Agent Assigned',
-            'in_progress' => 'Processing',
-            'documents_review' => 'Documents Under Review',
-            'customs_processing' => 'Customs Processing',
-            'payment_required' => 'Payment Required',
-            'completed' => 'Completed',
-            'canceled' => 'Canceled',
-        ];
-
-        $timeline = [];
-        $history = Customs_Clearance_History::where('clearance_id', $clearance->id)
-                                           ->orderBy('created_at', 'asc')
-                                           ->get();
-
-        foreach ($history as $entry) {
-            $timeline[] = [
-                'status' => $entry->status,
-                'title' => $statuses[$entry->status] ?? ucfirst(str_replace('_', ' ', $entry->status)),
-                'description' => $entry->description,
-                'timestamp' => $entry->created_at,
-                'is_current' => $entry->status === $clearance->status,
-            ];
-        }
-
-        return $timeline;
-    }
-
-    /**
-     * Calculate progress percentage
-     */
-    private function calculateProgress($status)
-    {
-        $progressMap = [
-            'advertised' => 10,
-            'assigned' => 25,
-            'in_progress' => 40,
-            'documents_review' => 60,
-            'customs_processing' => 80,
-            'payment_required' => 90,
-            'completed' => 100,
-            'canceled' => 0,
-        ];
-
-        return $progressMap[$status] ?? 0;
-    }
-
-    /**
-     * Estimate completion date
-     */
-    private function estimateCompletion($clearance)
-    {
-        $daysMap = [
-            'advertised' => 7,
-            'assigned' => 5,
-            'in_progress' => 4,
-            'documents_review' => 3,
-            'customs_processing' => 2,
-            'payment_required' => 1,
-        ];
-
-        $daysRemaining = $daysMap[$clearance->status] ?? 0;
-
-        if ($daysRemaining > 0) {
-            return Carbon::now()->addDays($daysRemaining)->format('Y-m-d');
-        }
-
-        return null;
     }
 }

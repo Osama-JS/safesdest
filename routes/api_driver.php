@@ -149,6 +149,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::post('/offers/{id}/accept', [DriverTaskAdsController::class, 'acceptTask'])
             ->name('api.driver.task-ads.accept-task');
 
+        Route::post('/offers/{id}/delete', [DriverTaskAdsController::class, 'deleteOffer'])
+            ->name('api.driver.task-ads.delete-task');
+
         Route::post('/offers/{id}/assign-task', [DriverTaskAdsController::class, 'assignTaskByOffer'])
             ->name('api.driver.task-ads.assign-task-by-offer');
     });

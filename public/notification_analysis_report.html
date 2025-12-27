@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تحليل نظام الإشعارات - SafeDest</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        line-height: 1.8;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .section {
+        margin-bottom: 40px;
+        padding: 30px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border-right: 5px solid #667eea;
+      }
+
+      .section h2 {
+        color: #667eea;
+        font-size: 2em;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #667eea;
+      }
+
+      .section h3 {
+        color: #764ba2;
+        font-size: 1.5em;
+        margin: 25px 0 15px 0;
+      }
+
+      .section h4 {
+        color: #555;
+        font-size: 1.2em;
+        margin: 20px 0 10px 0;
+      }
+
+      .info-box {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-box.success {
+        border-right: 4px solid #28a745;
+      }
+
+      .info-box.warning {
+        border-right: 4px solid #ffc107;
+      }
+
+      .info-box.info {
+        border-right: 4px solid #17a2b8;
+      }
+
+      .info-box.danger {
+        border-right: 4px solid #dc3545;
+      }
+
+      .code-block {
+        background: #2d2d2d;
+        color: #f8f8f2;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+        overflow-x: auto;
+        font-family: 'Courier New', monospace;
+        direction: ltr;
+        text-align: left;
+      }
+
+      .code-block code {
+        font-size: 0.9em;
+        line-height: 1.6;
+        white-space: pre;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px;
+        text-align: right;
+        font-weight: bold;
+      }
+
+      table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      table tr:hover {
+        background: #f8f9fa;
+      }
+
+      ul,
+      ol {
+        margin: 15px 0 15px 30px;
+      }
+
+      li {
+        margin: 10px 0;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: bold;
+        margin: 5px;
+      }
+
+      .badge.primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .badge.success {
+        background: #28a745;
+        color: white;
+      }
+
+      .badge.warning {
+        background: #ffc107;
+        color: #333;
+      }
+
+      .badge.info {
+        background: #17a2b8;
+        color: white;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-card h4 {
+        color: #667eea;
+        margin-bottom: 15px;
+      }
+
+      .timeline {
+        position: relative;
+        padding: 20px 0;
+      }
+
+      .timeline-item {
+        position: relative;
+        padding: 20px 0 20px 40px;
+        border-right: 3px solid #667eea;
+      }
+
+      .timeline-item::before {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 25px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #667eea;
+      }
+
+      .timeline-item h4 {
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      .footer {
+        background: #2d2d2d;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .highlight {
+        background: #fff3cd;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      .architecture-diagram {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 20px 0;
+        text-align: center;
+      }
+
+      .flow-item {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        margin: 10px;
+        font-weight: bold;
+      }
+
+      .arrow {
+        display: inline-block;
+        color: #667eea;
+        font-size: 2em;
+        margin: 0 10px;
+      }
+
+      @media print {
+        body {
+          background: white;
+          padding: 0;
+        }
+        .container {
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔔 تحليل شامل لنظام الإشعارات</h1>
+        <p>تقرير تفصيلي عن نظام الإشعارات الحالي وخطة إضافة الإشعارات اليدوية</p>
+        <p style="font-size: 0.9em; margin-top: 10px">مشروع SafeDest - نظام إدارة المهام والسائقين</p>
+      </div>
+
+      <div class="content">
+        <!-- القسم الأول: نظرة عامة -->
+        <div class="section">
+          <h2>📋 نظرة عامة على النظام</h2>
+
+          <div class="info-box success">
+            <h4>✅ النظام الحالي</h4>
+            <p>يحتوي المشروع على نظام إشعارات متقدم يعمل على مستويين:</p>
+            <ul>
+              <li><strong>إشعارات Firebase Cloud Messaging (FCM):</strong> للتطبيقات المحمولة (Flutter)</li>
+              <li><strong>إشعارات المتصفح (WebPush):</strong> للإشعارات عبر المتصفح</li>
+            </ul>
+          </div>
+
+          <div class="architecture-diagram">
+            <h3 style="color: #667eea; margin-bottom: 20px">معمارية النظام الحالي</h3>
+            <div>
+              <div class="flow-item">لوحة التحكم</div>
+              <span class="arrow">→</span>
+              <div class="flow-item">NotificationService</div>
+              <span class="arrow">→</span>
+              <div class="flow-item">FirebaseService</div>
+            </div>
+            <div style="margin-top: 20px">
+              <div class="flow-item">FCM Token</div>
+              <span class="arrow">→</span>
+              <div class="flow-item">Firebase Cloud</div>
+              <span class="arrow">→</span>
+              <div class="flow-item">تطبيق الموبايل</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم الثاني: البنية التحتية -->
+        <div class="section">
+          <h2>🏗️ البنية التحتية الحالية</h2>
+
+          <h3>1. قاعدة البيانات</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>اسم الجدول</th>
+                <th>الوصف</th>
+                <th>الحقول الرئيسية</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>notifications</code></td>
+                <td>جدول الإشعارات الرئيسي</td>
+                <td>id, title, message, group, type</td>
+              </tr>
+              <tr>
+                <td><code>notifications_drivers</code></td>
+                <td>ربط الإشعارات بالسائقين</td>
+                <td>id, notification_id, driver_id, status</td>
+              </tr>
+              <tr>
+                <td><code>notifications_customers</code></td>
+                <td>ربط الإشعارات بالعملاء</td>
+                <td>id, notification_id, customer_id, status</td>
+              </tr>
+              <tr>
+                <td><code>notifications_users</code></td>
+                <td>ربط الإشعارات بالمستخدمين</td>
+                <td>id, notification_id, user_id, status</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3>2. الخدمات (Services)</h3>
+
+          <div class="info-box info">
+            <h4>📦 NotificationService.php</h4>
+            <p><strong>المسار:</strong> <code>app/Services/NotificationService.php</code></p>
+            <p><strong>الوظائف الرئيسية:</strong></p>
+            <ul>
+              <li><code>send()</code> - إرسال إشعار لمجموعة من المستخدمين</li>
+              <li><code>sendNewTaskNotificationToDriver()</code> - إشعار السائق بمهمة جديدة</li>
+              <li><code>sendTaskUpdateNotificationToDriver()</code> - إشعار السائق بتحديث المهمة</li>
+              <li><code>sendPaymentNotificationToDriver()</code> - إشعار السائق بعملية دفع</li>
+            </ul>
+          </div>
+
+          <div class="code-block">
+            <code
+              >// مثال على استخدام NotificationService $notificationService = new NotificationService(); // إرسال إشعار
+              لسائقين محددين $notificationService->send( type: 'driver', ids: [1, 2, 3], title: 'إشعار جديد', body:
+              'لديك مهمة جديدة', notif_type: 'new_task' );</code
+            >
+          </div>
+
+          <div class="info-box info">
+            <h4>🔥 FirebaseService.php</h4>
+            <p><strong>المسار:</strong> <code>app/Services/FirebaseService.php</code></p>
+            <p><strong>الوظائف الرئيسية:</strong></p>
+            <ul>
+              <li><code>sendToDevice()</code> - إرسال إشعار لجهاز واحد</li>
+              <li><code>sendToMultipleDevices()</code> - إرسال إشعار لعدة أجهزة</li>
+              <li><code>sendToTopic()</code> - إرسال إشعار لموضوع معين</li>
+              <li><code>mainSendNotification()</code> - الدالة الرئيسية للإرسال</li>
+            </ul>
+          </div>
+
+          <div class="code-block">
+            <code
+              >// مثال على استخدام FirebaseService $firebaseService = new FirebaseService(); // إرسال إشعار لجهاز واحد
+              $result = $firebaseService->sendToDevice( fcmToken: $driver->fcm_token, title: 'مهمة جديدة', body: 'لديك
+              مهمة جديدة من الرياض إلى جدة', data: [ 'type' => 'new_task', 'task_id' => '123', 'click_action' =>
+              'FLUTTER_NOTIFICATION_CLICK' ] );</code
+            >
+          </div>
+
+          <h3>3. النماذج (Models)</h3>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>👤 Driver Model</h4>
+              <p><strong>الحقول المتعلقة بالإشعارات:</strong></p>
+              <ul>
+                <li><code>fcm_token</code> - رمز Firebase</li>
+                <li><code>device_id</code> - معرف الجهاز</li>
+                <li><code>last_activity_at</code> - آخر نشاط</li>
+              </ul>
+              <p><strong>Traits:</strong></p>
+              <span class="badge primary">HasPushSubscriptions</span>
+              <span class="badge info">HasApiTokens</span>
+            </div>
+
+            <div class="feature-card">
+              <h4>👥 Customer Model</h4>
+              <p><strong>الحقول المتعلقة بالإشعارات:</strong></p>
+              <ul>
+                <li><code>fcm_token</code> - رمز Firebase</li>
+                <li><code>device_id</code> - معرف الجهاز</li>
+              </ul>
+              <p><strong>Traits:</strong></p>
+              <span class="badge primary">HasPushSubscriptions</span>
+              <span class="badge info">HasApiTokens</span>
+            </div>
+          </div>
+
+          <h3>4. إشعارات Laravel (Notifications)</h3>
+
+          <div class="info-box warning">
+            <h4>🔔 GeneralPushNotification</h4>
+            <p><strong>المسار:</strong> <code>app/Notifications/GeneralPushNotification.php</code></p>
+            <p><strong>القناة:</strong> WebPushChannel (إشعارات المتصفح)</p>
+            <p><strong>البيانات المدعومة:</strong></p>
+            <ul>
+              <li>title - عنوان الإشعار</li>
+              <li>body - محتوى الإشعار</li>
+              <li>icon - أيقونة الإشعار</li>
+              <li>image - صورة الإشعار</li>
+              <li>url - رابط الإشعار</li>
+              <li>type - نوع الإشعار</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- القسم الثالث: الإشعارات التلقائية الحالية -->
+        <div class="section">
+          <h2>⚡ الإشعارات التلقائية الحالية</h2>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <h4>1. إشعار مهمة جديدة (New Task)</h4>
+              <p><strong>المحفز:</strong> عند إنشاء مهمة جديدة وتعيينها لسائق</p>
+              <p><strong>المستلم:</strong> السائق المعين</p>
+              <p><strong>البيانات:</strong> عنوان الاستلام، عنوان التسليم، السعر</p>
+              <div class="code-block">
+                <code>$notificationService->sendNewTaskNotificationToDriver($driver, $task);</code>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <h4>2. إشعار تحديث المهمة (Task Update)</h4>
+              <p><strong>المحفز:</strong> عند تغيير حالة المهمة</p>
+              <p><strong>المستلم:</strong> السائق المعين</p>
+              <p><strong>الحالات:</strong> accepted, in_progress, completed, cancelled</p>
+              <div class="code-block">
+                <code>$notificationService->sendTaskUpdateNotificationToDriver($driver, $task, $status);</code>
+              </div>
+            </div>
+
+            <div class="timeline-item">
+              <h4>3. إشعار الدفع (Payment)</h4>
+              <p><strong>المحفز:</strong> عند إضافة مبلغ للمحفظة</p>
+              <p><strong>المستلم:</strong> السائق</p>
+              <p><strong>البيانات:</strong> المبلغ، نوع العملية</p>
+              <div class="code-block">
+                <code
+                  >$notificationService->sendPaymentNotificationToDriver($driver, $amount, 'payment_received');</code
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم الرابع: الميزة المقترحة -->
+        <div class="section">
+          <h2>🎯 الميزة المقترحة: الإشعارات اليدوية</h2>
+
+          <div class="info-box success">
+            <h4>📝 الهدف</h4>
+            <p>إضافة خاصية تسمح للمدير بإرسال إشعارات مخصصة يدوياً للسائقين والعملاء من لوحة التحكم</p>
+          </div>
+
+          <h3>نقاط الإدخال المقترحة</h3>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>1️⃣ صفحة إدارة السائقين</h4>
+              <p><strong>المسار:</strong> <code>/admin/drivers</code></p>
+              <p><strong>الوظيفة:</strong></p>
+              <ul>
+                <li>زر "إرسال إشعار" لكل سائق</li>
+                <li>زر "إرسال إشعار جماعي" للسائقين المحددين</li>
+                <li>نافذة منبثقة لكتابة الإشعار</li>
+              </ul>
+              <span class="badge success">أولوية عالية</span>
+            </div>
+
+            <div class="feature-card">
+              <h4>2️⃣ صفحة تفاصيل السائق</h4>
+              <p><strong>المسار:</strong> <code>/admin/drivers/{id}</code></p>
+              <p><strong>الوظيفة:</strong></p>
+              <ul>
+                <li>زر "إرسال إشعار" في صفحة التفاصيل</li>
+                <li>عرض سجل الإشعارات المرسلة</li>
+              </ul>
+              <span class="badge info">أولوية متوسطة</span>
+            </div>
+
+            <div class="feature-card">
+              <h4>3️⃣ صفحة إدارة المهام</h4>
+              <p><strong>المسار:</strong> <code>/admin/tasks</code></p>
+              <p><strong>الوظيفة:</strong></p>
+              <ul>
+                <li>زر "إشعار السائق" لكل مهمة</li>
+                <li>إرسال إشعار للسائق المرتبط بالمهمة</li>
+                <li>إشعار العميل المرتبط بالمهمة</li>
+              </ul>
+              <span class="badge success">أولوية عالية</span>
+            </div>
+
+            <div class="feature-card">
+              <h4>4️⃣ صفحة إدارة العملاء</h4>
+              <p><strong>المسار:</strong> <code>/admin/customers</code></p>
+              <p><strong>الوظيفة:</strong></p>
+              <ul>
+                <li>زر "إرسال إشعار" لكل عميل</li>
+                <li>إرسال إشعارات جماعية</li>
+              </ul>
+              <span class="badge warning">أولوية منخفضة</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم الخامس: خطة التنفيذ -->
+        <div class="section">
+          <h2>🚀 خطة التنفيذ التفصيلية</h2>
+
+          <h3>المرحلة 1: إنشاء Controller جديد</h3>
+
+          <div class="info-box info">
+            <h4>📁 الملف: ManualNotificationController.php</h4>
+            <p><strong>المسار:</strong> <code>app/Http/Controllers/admin/ManualNotificationController.php</code></p>
+          </div>
+
+          <div class="code-block">
+            <code
+              >&lt;?php namespace App\Http\Controllers\admin; use App\Http\Controllers\Controller; use
+              App\Services\NotificationService; use App\Models\Driver; use App\Models\Customer; use App\Models\Task; use
+              Illuminate\Http\Request; class ManualNotificationController extends Controller { protected
+              $notificationService; public function __construct(NotificationService $notificationService) {
+              $this->notificationService = $notificationService; } /** * إرسال إشعار لسائق واحد */ public function
+              sendToDriver(Request $request) { $request->validate([ 'driver_id' => 'required|exists:drivers,id', 'title'
+              => 'required|string|max:255', 'body' => 'required|string|max:500', 'type' => 'nullable|string' ]); $result
+              = $this->notificationService->send( type: 'driver', ids: [$request->driver_id], title: $request->title,
+              body: $request->body, notif_type: $request->type ?? 'admin_message' ); return response()->json([ 'success'
+              => true, 'message' => 'تم إرسال الإشعار بنجاح' ]); } /** * إرسال إشعار لعدة سائقين */ public function
+              sendToMultipleDrivers(Request $request) { $request->validate([ 'driver_ids' => 'required|array',
+              'driver_ids.*' => 'exists:drivers,id', 'title' => 'required|string|max:255', 'body' =>
+              'required|string|max:500', 'type' => 'nullable|string' ]); $result = $this->notificationService->send(
+              type: 'driver', ids: $request->driver_ids, title: $request->title, body: $request->body, notif_type:
+              $request->type ?? 'admin_message' ); return response()->json([ 'success' => true, 'message' => 'تم إرسال
+              الإشعارات بنجاح', 'count' => count($request->driver_ids) ]); } /** * إرسال إشعار للسائق من صفحة المهمة */
+              public function sendToTaskDriver(Request $request) { $request->validate([ 'task_id' =>
+              'required|exists:tasks,id', 'title' => 'required|string|max:255', 'body' => 'required|string|max:500' ]);
+              $task = Task::with('driver')->findOrFail($request->task_id); if (!$task->driver_id) { return
+              response()->json([ 'success' => false, 'message' => 'لا يوجد سائق معين لهذه المهمة' ], 400); } $result =
+              $this->notificationService->send( type: 'driver', ids: [$task->driver_id], title: $request->title, body:
+              $request->body, notif_type: 'task_message' ); return response()->json([ 'success' => true, 'message' =>
+              'تم إرسال الإشعار للسائق بنجاح', 'driver' => $task->driver->name ]); } }</code
+            >
+          </div>
+
+          <h3>المرحلة 2: إضافة Routes</h3>
+
+          <div class="code-block">
+            <code
+              >// إضافة هذه المسارات في مجموعة admin Route::prefix('admin')->middleware(['auth:web'])->group(function ()
+              { // مسارات الإشعارات اليدوية Route::prefix('notifications')->name('admin.notifications.')->group(function
+              () { Route::post('send-to-driver', [ManualNotificationController::class, 'sendToDriver'])
+              ->name('send.driver'); Route::post('send-to-multiple-drivers', [ManualNotificationController::class,
+              'sendToMultipleDrivers']) ->name('send.multiple.drivers'); Route::post('send-to-task-driver',
+              [ManualNotificationController::class, 'sendToTaskDriver']) ->name('send.task.driver'); }); });</code
+            >
+          </div>
+
+          <h3>المرحلة 3: إنشاء Modal للإشعارات</h3>
+
+          <div class="code-block">
+            <code
+              >&lt;!-- Modal لإرسال إشعار --&gt; &lt;div class="modal fade" id="sendNotificationModal" tabindex="-1"&gt;
+              &lt;div class="modal-dialog"&gt; &lt;div class="modal-content"&gt; &lt;div class="modal-header"&gt; &lt;h5
+              class="modal-title"&gt;إرسال إشعار&lt;/h5&gt; &lt;button type="button" class="btn-close"
+              data-bs-dismiss="modal"&gt;&lt;/button&gt; &lt;/div&gt; &lt;div class="modal-body"&gt; &lt;form
+              id="notificationForm"&gt; @csrf &lt;input type="hidden" id="notification_target_id" name="target_id"&gt;
+              &lt;input type="hidden" id="notification_target_type" name="target_type"&gt; &lt;div class="mb-3"&gt;
+              &lt;label for="notification_title" class="form-label"&gt;عنوان الإشعار&lt;/label&gt; &lt;input type="text"
+              class="form-control" id="notification_title" name="title" required maxlength="255"&gt; &lt;/div&gt;
+              &lt;div class="mb-3"&gt; &lt;label for="notification_body" class="form-label"&gt;محتوى
+              الإشعار&lt;/label&gt; &lt;textarea class="form-control" id="notification_body" name="body" rows="4"
+              required maxlength="500"&gt;&lt;/textarea&gt; &lt;/div&gt; &lt;div class="mb-3"&gt; &lt;label
+              for="notification_type" class="form-label"&gt;نوع الإشعار&lt;/label&gt; &lt;select class="form-control"
+              id="notification_type" name="type"&gt; &lt;option value="admin_message"&gt;رسالة إدارية&lt;/option&gt;
+              &lt;option value="important"&gt;مهم&lt;/option&gt; &lt;option value="reminder"&gt;تذكير&lt;/option&gt;
+              &lt;option value="warning"&gt;تحذير&lt;/option&gt; &lt;/select&gt; &lt;/div&gt; &lt;/form&gt; &lt;/div&gt;
+              &lt;div class="modal-footer"&gt; &lt;button type="button" class="btn btn-secondary"
+              data-bs-dismiss="modal"&gt;إلغاء&lt;/button&gt; &lt;button type="button" class="btn btn-primary"
+              onclick="sendNotification()"&gt; إرسال الإشعار &lt;/button&gt; &lt;/div&gt; &lt;/div&gt; &lt;/div&gt;
+              &lt;/div&gt;</code
+            >
+          </div>
+
+          <h3>المرحلة 4: تعديل صفحة السائقين</h3>
+
+          <div class="code-block">
+            <code
+              >&lt;!-- في جدول السائقين، إضافة زر إرسال إشعار --&gt; &lt;td&gt; &lt;button type="button" class="btn
+              btn-sm btn-primary" onclick="openNotificationModal({{ $driver->id }}, 'driver', '{{ $driver->name
+              }}')"&gt; &lt;i class="fas fa-bell"&gt;&lt;/i&gt; إرسال إشعار &lt;/button&gt; &lt;/td&gt; &lt;!-- في نهاية
+              الصفحة --&gt; @include('admin.partials.notification-modal')</code
+            >
+          </div>
+        </div>
+
+        <!-- القسم السادس: الميزات الإضافية -->
+        <div class="section">
+          <h2>✨ ميزات إضافية مقترحة</h2>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <h4>📊 سجل الإشعارات</h4>
+              <p>إنشاء صفحة لعرض سجل جميع الإشعارات المرسلة يدوياً</p>
+              <ul>
+                <li>التاريخ والوقت</li>
+                <li>المرسل (المدير)</li>
+                <li>المستلم</li>
+                <li>المحتوى</li>
+                <li>حالة التسليم</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h4>📝 قوالب الإشعارات</h4>
+              <p>إنشاء قوالب جاهزة للإشعارات الشائعة</p>
+              <ul>
+                <li>تذكير بتحديث البيانات</li>
+                <li>إشعار بتغيير السياسات</li>
+                <li>رسائل تحفيزية</li>
+                <li>تنبيهات أمنية</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h4>🎯 إشعارات مجدولة</h4>
+              <p>جدولة إرسال الإشعارات في وقت محدد</p>
+              <ul>
+                <li>تحديد تاريخ ووقت الإرسال</li>
+                <li>إشعارات متكررة</li>
+                <li>إلغاء الإشعارات المجدولة</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h4>📈 إحصائيات الإشعارات</h4>
+              <p>عرض إحصائيات تفصيلية عن الإشعارات</p>
+              <ul>
+                <li>عدد الإشعارات المرسلة</li>
+                <li>معدل الفتح</li>
+                <li>معدل التفاعل</li>
+                <li>الإشعارات الفاشلة</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- القسم السابع: الاعتبارات الأمنية -->
+        <div class="section">
+          <h2>🔒 الاعتبارات الأمنية</h2>
+
+          <div class="info-box danger">
+            <h4>⚠️ نقاط مهمة يجب مراعاتها</h4>
+            <ul>
+              <li><strong>التحقق من الصلاحيات:</strong> التأكد من أن المستخدم لديه صلاحية إرسال الإشعارات</li>
+              <li><strong>تحديد معدل الإرسال:</strong> منع إرسال عدد كبير من الإشعارات في وقت قصير (Rate Limiting)</li>
+              <li><strong>التحقق من المدخلات:</strong> تنظيف وتحقق من جميع المدخلات لمنع XSS</li>
+              <li><strong>سجل الأنشطة:</strong> تسجيل جميع الإشعارات المرسلة للمراجعة</li>
+              <li><strong>التحقق من FCM Token:</strong> التأكد من صلاحية الـ token قبل الإرسال</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- القسم الثامن: الخلاصة والتوصيات -->
+        <div class="section">
+          <h2>📌 الخلاصة والتوصيات</h2>
+
+          <div class="info-box success">
+            <h4>✅ ملخص النظام الحالي</h4>
+            <ul>
+              <li>نظام إشعارات متقدم يعمل على مستويين (FCM + WebPush)</li>
+              <li>بنية تحتية قوية وقابلة للتوسع</li>
+              <li>إشعارات تلقائية للأحداث الرئيسية (مهام، دفعات)</li>
+              <li>دعم كامل للسائقين والعملاء</li>
+            </ul>
+          </div>
+
+          <div class="info-box info">
+            <h4>🎯 التوصيات للتنفيذ</h4>
+            <ol>
+              <li><strong>البدء بالمرحلة الأساسية:</strong> تنفيذ Controller والـ Routes والـ Modal</li>
+              <li><strong>الاختبار الشامل:</strong> اختبار الإرسال لسائق واحد قبل الإرسال الجماعي</li>
+              <li><strong>إضافة الصلاحيات:</strong> التأكد من وجود صلاحيات مناسبة</li>
+              <li><strong>تسجيل الأنشطة:</strong> حفظ سجل بجميع الإشعارات المرسلة</li>
+              <li><strong>واجهة مستخدم محسنة:</strong> تصميم واجهة سهلة وبديهية</li>
+              <li><strong>الميزات الإضافية:</strong> إضافة القوالب والجدولة لاحقاً</li>
+            </ol>
+          </div>
+
+          <h3>الجدول الزمني المقترح</h3>
+
+          <table>
+            <thead>
+              <tr>
+                <th>المرحلة</th>
+                <th>المهام</th>
+                <th>الوقت المقدر</th>
+                <th>الأولوية</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>المرحلة 1</td>
+                <td>إنشاء Controller والـ Routes</td>
+                <td>2-3 ساعات</td>
+                <td><span class="badge success">عالية</span></td>
+              </tr>
+              <tr>
+                <td>المرحلة 2</td>
+                <td>إنشاء Modal والواجهة</td>
+                <td>3-4 ساعات</td>
+                <td><span class="badge success">عالية</span></td>
+              </tr>
+              <tr>
+                <td>المرحلة 3</td>
+                <td>تعديل صفحات السائقين والمهام</td>
+                <td>2-3 ساعات</td>
+                <td><span class="badge success">عالية</span></td>
+              </tr>
+              <tr>
+                <td>المرحلة 4</td>
+                <td>الاختبار والتحسينات</td>
+                <td>2-3 ساعات</td>
+                <td><span class="badge info">متوسطة</span></td>
+              </tr>
+              <tr>
+                <td>المرحلة 5</td>
+                <td>الميزات الإضافية (قوالب، سجل)</td>
+                <td>4-6 ساعات</td>
+                <td><span class="badge warning">منخفضة</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="footer">
+        <h3>📧 تقرير تحليل نظام الإشعارات</h3>
+        <p>مشروع SafeDest - نظام إدارة المهام والسائقين</p>
+        <p style="margin-top: 10px; font-size: 0.9em">تم إنشاء هذا التقرير بواسطة Antigravity AI</p>
+        <p style="margin-top: 5px; font-size: 0.85em; opacity: 0.8">التاريخ: 2025-11-30</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -16,10 +16,15 @@ class HyperpayService
   public function __construct()
   {
     $this->client = new Client();
-    $this->apiUrl = env('HYPERPAY_API_URL');
-    $this->apiToken = env('HYPERPAY_API_TOKEN');
-    $this->entityId = env('HYPERPAY_ENTITY_ID');
-    $this->currency = env('HYPERPAY_CURRENCY');
+    $this->apiUrl = config('hyperpay.base_url');
+    $this->apiToken = config('hyperpay.access_token');
+    $this->entityId = config('hyperpay.entityId'); // Corrected key to match config file if needed, checking config...
+    $this->currency = config('hyperpay.currency');
+  }
+
+  public function getScriptUrl()
+  {
+      return config('hyperpay.script_url');
   }
 
   public function createCheckout($amount)
@@ -65,8 +70,9 @@ class HyperpayService
 
   public function getPaymentStatus($checkoutId)
   {
-    $entityId = config('hyperpay.entity_id'); // تأكد أن هذا معرف في .env
-    $url = "https://eu-test.oppwa.com/v1/checkouts/{$checkoutId}/payment?entityId={$entityId}";
+    $entityId = config('hyperpay.entityId'); // تأكد أن هذا معرف في .env
+    $baseUrl = config('hyperpay.base_url');
+    $url = "{$baseUrl}/v1/checkouts/{$checkoutId}/payment?entityId={$entityId}";
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);

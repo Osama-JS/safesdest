@@ -48,6 +48,8 @@ use App\Models\Team_Wallet_Transaction;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\FunctionsController;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NotificationMail;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Services\NotificationService;
@@ -607,22 +609,28 @@ class TasksController extends Controller
 
 
 
-            // $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
-            // $pdf = Pdf::loadView('admin.tasks.report_pdf', compact('task'));
+            $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
+            $file_name = "#{$task->id}_{$task->customer->name}_{$task->pickup->address}_{$task->delivery->address}";
+            if ($task->driver) {
+                $file_name .= "_{$task->driver->name}";
+            }
 
-            // $pdfPath = storage_path("app/public/task-report-{$task->id}.pdf");
-            // Storage::put("public/task-report-{$task->id}.pdf", $pdf->output());
+            $pdfContent = $this->pdfService->generateRaw(
+                'admin.tasks.report_pdf',
+                ['task' => $task]
+            );
 
+            // تجهيز المرفق
+            $attachments = [
+                [
+                    'data' => $pdfContent, // محتوى الـ PDF الخام
+                    'as' => $file_name . '.pdf', // اسم الملف
+                    'mime' => 'application/pdf', // نوع الملف
+                ]
+            ];
+            // إرسال الإشعارات بالبريد الإلكتروني مع المرفقات
+            $this->sendTaskAssignmentNotifications($data, $driver, $attachments);
 
-
-            // dd(ini_get('pcre.backtrack_limit'), ini_get('pcre.recursion_limit'));
-
-            // return $this->pdfService->generate('admin.tasks.report_pdf', [
-            //     'task' => $task
-            // ], "task_report_{$task->id}.pdf");
-            // dd('osama');
-            // // إرسال الإشعارات بالبريد الإلكتروني
-            // $this->sendTaskAssignmentNotifications($data, $driver);
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('task assigned successfully')]);
@@ -2102,6 +2110,25 @@ class TasksController extends Controller
 
     }
 
+    public function downloadTaskInvoice($id)
+    {
+        $task = Task::with([
+            'customer',
+            'pickup',
+            'delivery',
+            'vehicle_size.type.vehicle'
+        ])->findOrFail($id);
+
+        $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
+        $file_name = "{$invoice_number}_{$task->customer->name}";
+
+        return $this->pdfService->generate('admin.tasks.invoice_pdf', [
+            'task' => $task,
+            'invoice_number' => $invoice_number,
+            'invoice_date' => now()
+        ], "{$file_name}.pdf");
+    }
+
 
     public function destroy(Request $req)
     {
@@ -2779,7 +2806,7 @@ class TasksController extends Controller
      * @param Driver $driver
      * @return void
      */
-    private function sendTaskAssignmentNotifications($task, $driver)
+    private function sendTaskAssignmentNotifications($task, $driver, $attachments = [])
     {
         try {
             // إعداد بيانات المهمة المشتركة
@@ -2795,10 +2822,10 @@ class TasksController extends Controller
             ];
 
             // إرسال إشعار للسائق
-            $this->sendDriverAssignmentNotification($driver, $task, $taskData);
+            $this->sendDriverAssignmentNotification($driver, $task, $taskData, $attachments);
             $taskData['Price'] = $task->total_price . ' SAR';
             // إرسال إشعار لصاحب المهمة (Admin أو Customer)
-            $this->sendTaskOwnerNotification($task, $driver, $taskData);
+            $this->sendTaskOwnerNotification($task, $driver, $taskData, $attachments);
         } catch (Exception $e) {
             // تسجيل الخطأ دون إيقاف العملية الأساسية
             Log::error('Failed to send task assignment notifications', [
@@ -2817,7 +2844,7 @@ class TasksController extends Controller
      * @param array $taskData
      * @return void
      */
-    private function sendDriverAssignmentNotification($driver, $task, $taskData)
+    private function sendDriverAssignmentNotification($driver, $task, $taskData, $attachments = [])
     {
         if (!$driver->email) {
             return;
@@ -2839,7 +2866,7 @@ class TasksController extends Controller
           ])
         ];
 
-        dispatch(new SendEmailNotificationJob($emailData));
+        dispatch(new SendEmailNotificationJob($emailData, $attachments));
     }
 
     /**
@@ -2850,7 +2877,7 @@ class TasksController extends Controller
      * @param array $taskData
      * @return void
      */
-    private function sendTaskOwnerNotification($task, $driver, $taskData)
+    private function sendTaskOwnerNotification($task, $driver, $taskData, $attachments = [])
     {
         $owner = null;
         $ownerEmail = null;
@@ -2895,7 +2922,7 @@ class TasksController extends Controller
           ])
         ];
 
-        dispatch(new SendEmailNotificationJob($emailData));
+        dispatch(new SendEmailNotificationJob($emailData, $attachments));
     }
 
     /**

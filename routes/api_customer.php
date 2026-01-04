@@ -106,6 +106,9 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::delete('/profile', [CustomerProfileController::class, 'deleteAccount'])
         ->name('api.customer.profile.delete');
 
+    Route::post('/delete-account', [CustomerProfileController::class, 'deleteAccount'])
+        ->name('api.customer.delete-account');
+
     // Tasks management routes
     Route::get('/inti-tasks', [CustomerTaskController::class, 'getInitData'])
        ->name('api.init.tasks');
@@ -173,6 +176,12 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
 
     Route::post('/tasks/{id}/cancel', [CustomerTaskController::class, 'customerCancelTask'])
         ->name('api.customer.tasks.cancel');
+
+    Route::post('/tasks/{id}/undo-cancel', [CustomerTaskController::class, 'undoCustomerCancelTask'])
+        ->name('api.customer.tasks.undo-cancel');
+
+    Route::get('/tasks/{id}/payment-status', [CustomerTaskController::class, 'getPaymentStatus'])
+        ->name('api.customer.tasks.payment-status');
 
 
     // Route::put('/tasks/{id}', [CustomerTaskController::class, 'update'])

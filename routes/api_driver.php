@@ -27,8 +27,12 @@ use Illuminate\Support\Facades\Log;
 Route::prefix('driver')->group(function () {
 
     Route::get('/health', function () {
-        Log::alert("check connection is ok ");
-        return true;
+        return response()->json([
+            'success' => true,
+            'min_version' => \App\Models\Settings::getValue('min_driver_app_version', '1.0.0'),
+            'update_url' => \App\Models\Settings::getValue('driver_app_update_url', 'https://play.google.com/store/apps'),
+            'server_time' => now()->toDateTimeString(),
+        ]);
     });
 
     // Test endpoint for debugging task ads (no auth required)
@@ -124,6 +128,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::post('/{task}/notes', [DriverTaskController::class, 'addNote'])
             ->name('api.driver.tasks.add-note');
+
+        Route::post('/{task}/cancel', [DriverTaskController::class, 'cancelTask'])
+            ->name('api.driver.tasks.cancel');
     });
 
     // Task Ads routes

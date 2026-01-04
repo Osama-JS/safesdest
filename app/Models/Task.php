@@ -43,6 +43,7 @@ class Task extends Model
       'customer_cancel_reason',
       'driver_cancel',
       'driver_cancel_reason',
+      'is_broadcast',
     ];
 
     protected $casts = [
@@ -180,5 +181,10 @@ class Task extends Model
                 return $field->label === $item['label'] && ($field->driver_can === 'read' || $field->driver_can === 'write');
             });
         })->values()->all(); // إعادة ترقيم المفاتيح
+    }
+
+    public function attempts()
+    {
+        return $this->hasMany(TaskDriverAttempt::class, 'task_id');
     }
 }

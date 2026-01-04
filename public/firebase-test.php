@@ -20,21 +20,22 @@
 <body>
     <div class="container">
         <h1>🔥 Firebase Integration Test</h1>
-        
+
         <?php
         $baseDir = dirname(__DIR__);
-        
+
         echo '<div class="section">';
         echo '<h2>1. ✅ ملفات النظام</h2>';
-        
+
         $files = [
-            'Flutter google-services.json' => 'safedests-app/android/app/google-services.json',
+            'Driver App google-services.json' => 'safedest_driver/android/app/google-services.json',
+            'Customer App google-services.json' => 'app_safedest_customer/android/app/google-services.json',
             'Firebase Service Class' => 'app/Services/FirebaseService.php',
             'Notification Service' => 'app/Services/NotificationService.php',
             'Test Controller' => 'app/Http/Controllers/TestFirebaseController.php',
             'Laravel .env' => '.env'
         ];
-        
+
         foreach ($files as $name => $path) {
             $fullPath = $baseDir . '/' . $path;
             echo '<div class="file-check">';
@@ -54,10 +55,10 @@
             echo '</div>';
         }
         echo '</div>';
-        
+
         echo '<div class="section">';
         echo '<h2>2. 🔧 إعدادات Firebase</h2>';
-        
+
         $envPath = $baseDir . '/.env';
         if (file_exists($envPath)) {
             $envContent = file_get_contents($envPath);
@@ -66,7 +67,7 @@
                 'FIREBASE_CREDENTIALS' => 'مسار ملف الاعتماد',
                 'FCM_SERVER_KEY' => 'مفتاح الخادم'
             ];
-            
+
             foreach ($firebaseVars as $var => $desc) {
                 echo '<div class="file-check">';
                 if (strpos($envContent, $var) !== false) {
@@ -85,10 +86,11 @@
             }
         }
         echo '</div>';
-        
+
         echo '<div class="section">';
-        echo '<h2>3. 🔑 ملف اعتماد Firebase</h2>';
-        
+        echo '<h2>3. 🔑 ملف اعتماد Laravel (Service Account)</h2>';
+        echo '<p>هذا الملف هو الذي يسمح للوحة التحكم (Laravel) بإرسال الإشعارات عبر Firebase.</p>';
+
         $credentialsPath = $baseDir . '/storage/firebase/service-account-key.json';
         echo '<div class="file-check">';
         if (file_exists($credentialsPath)) {
@@ -97,21 +99,22 @@
             $json = json_decode($content, true);
             if ($json && isset($json['project_id'])) {
                 echo '<span class="success">✅ صيغة JSON: صحيحة</span><br>';
-                echo '<span class="success">📝 معرف المشروع: ' . htmlspecialchars($json['project_id']) . '</span>';
+                echo '<span class="success">📝 معرف المشروع في الملف: ' . htmlspecialchars($json['project_id']) . '</span>';
             } else {
-                echo '<span class="error">❌ صيغة JSON: غير صحيحة</span>';
+                echo '<span class="error">❌ صيغة JSON: غير صحيحة أو الملف تالف</span>';
             }
         } else {
             echo '<span class="error">❌ ملف الاعتماد: مفقود</span><br>';
-            echo '<span class="warning">📝 المسار المتوقع: storage/firebase/service-account-key.json</span>';
+            echo '<span class="warning">📝 المسار المطلوب: storage/firebase/service-account-key.json</span>';
+            echo '<br><br><a href="https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk" target="_blank" class="btn">احصل على الملف من هنا</a>';
         }
         echo '</div>';
         echo '</div>';
-        
+
         echo '<div class="section">';
         echo '<h2>4. 📱 إعدادات Flutter</h2>';
-        
-        $pubspecPath = $baseDir . '/safedests-app/pubspec.yaml';
+
+        $pubspecPath = $baseDir . '/safedest_driver/pubspec.yaml';
         if (file_exists($pubspecPath)) {
             $pubspecContent = file_get_contents($pubspecPath);
             $packages = [
@@ -119,7 +122,7 @@
                 'firebase_messaging' => 'Firebase Messaging',
                 'flutter_local_notifications' => 'Local Notifications'
             ];
-            
+
             foreach ($packages as $package => $name) {
                 echo '<div class="file-check">';
                 if (strpos($pubspecContent, $package . ':') !== false && strpos($pubspecContent, '# ' . $package) === false) {
@@ -131,26 +134,26 @@
             }
         }
         echo '</div>';
-        
+
         // Overall status
         $allGood = true;
         $issues = [];
-        
-        if (!file_exists($baseDir . '/safedests-app/android/app/google-services.json')) {
-            $issues[] = 'ملف google-services.json مفقود';
+
+        if (!file_exists($baseDir . '/safedest_driver/android/app/google-services.json')) {
+            $issues[] = 'ملف google-services.json للسائق مفقود';
             $allGood = false;
         }
-        
+
         if (!file_exists($credentialsPath)) {
             $issues[] = 'ملف اعتماد Firebase مفقود';
             $allGood = false;
         }
-        
+
         if (!file_exists($envPath) || !strpos(file_get_contents($envPath), 'FIREBASE_PROJECT_ID')) {
             $issues[] = 'إعدادات Firebase في .env مفقودة';
             $allGood = false;
         }
-        
+
         echo '<div class="section">';
         if ($allGood) {
             echo '<h2 class="success">🎉 النظام جاهز!</h2>';
@@ -172,7 +175,7 @@
         }
         echo '</div>';
         ?>
-        
+
         <div class="section">
             <h2>🔗 روابط الاختبار</h2>
             <a href="/safedestsss/public/test-firebase/connection" class="btn">اختبار الاتصال</a>
@@ -180,7 +183,7 @@
             <a href="#" onclick="testNotification()" class="btn">اختبار إشعار</a>
         </div>
     </div>
-    
+
     <script>
         function testNotification() {
             alert('سيتم إضافة اختبار الإشعارات قريباً!');

@@ -37,7 +37,7 @@ class PaymentController extends Controller
     {
         $validator = Validator::make($request->all(), [
           'id' => 'nullable|exists:tasks,id',
-          'payment_method' => 'required|in:banking,wallet,cash',
+          'payment_method' => 'required|in:banking,wallet,cash,credit',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -47,14 +47,16 @@ class PaymentController extends Controller
         if (!$task) {
             return response()->json([
               'status' => 2,
+              'message' => __('Task not found'),
               'error' => __('Task not found'),
             ]);
         }
 
-        if (in_array($task->status, ['in_progress', 'advertised','canceled','refunded'])) {
+        if (in_array($task->status, ['canceled','refunded'])) {
             return response()->json([
               'status' => 2,
-              'error' => __('This task cannot be Payed in its current state'),
+              'message' => __('This task cannot be paid in its current state'),
+              'error' => __('This task cannot be paid in its current state'),
             ]);
         }
 
@@ -102,16 +104,28 @@ class PaymentController extends Controller
                       'success' => __('You will now be redirected to the payment completion page'),
                     ]);
                 }
+
+                Log::error('HyperPay Checkout Failed', [
+                  'task_id' => $task->id,
+                  'amount' => $amount,
+                  'payment_method' => $request->payment_method,
+                  'checkout_response' => $checkoutData,
+                  'expected_code' => '000.200.100',
+                  'actual_code' => $checkoutData['result']['code'] ?? 'N/A',
+                ]);
+
                 return response()->json([
                   'status' => 2,
-                  'error' => __('An error occurred while starting the payment process'),
+                  'message' => __('An error occurred while starting the payment process'),
+                  'error' => $checkoutData['result']['description'] ?? __('An error occurred while starting the payment process'),
+                  'debug' => $checkoutData ?? null,
                 ]);
             } elseif ($request->payment_method === 'banking') {
                 $validator = Validator::make($request->all(), [
                   'id' => 'nullable|exists:tasks,id',
                   'payment_method' => 'required|in:banking,wallet,cash',
                   'receipt_number' => 'required|string|max:255',
-                  'receipt_image' => 'required|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
+                  'receipt_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:10240',
                   'note' => 'nullable|string|max:1000',
 
                 ]);
@@ -157,7 +171,8 @@ class PaymentController extends Controller
                 if ($task->owner !== 'customer') {
                     return response()->json([
                       'status' => 2,
-                      'success' => __('You can not pay using this method! you can not hav a wallet'),
+                      'message' => __('You can not pay using this method! you do not have a wallet'),
+                      'error' => __('You can not pay using this method! you do not have a wallet'),
                     ]);
                 }
                 $amount = $task->total_price;
@@ -234,12 +249,14 @@ class PaymentController extends Controller
             DB::rollBack();
             return response()->json([
               'status' => 2,
+              'message' => __('طريقة الدفع غير مدعومة'),
               'error' => __('طريقة الدفع غير مدعومة'),
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
             return response()->json([
               'status' => 2,
+              'message' => $ex->getMessage(),
               'error' => $ex->getMessage(),
             ]);
         }

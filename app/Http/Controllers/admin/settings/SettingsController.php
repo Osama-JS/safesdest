@@ -22,6 +22,9 @@ class SettingsController extends Controller
       return [
         'value' => $item->value,
         'description' => $item->description,
+        'name' => $item->name,
+        'type' => $item->type,
+        'options' => $item->options,
       ];
     })->toArray();
 

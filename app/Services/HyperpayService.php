@@ -40,8 +40,15 @@ class HyperpayService
 
     // إنشاء طلب cURL
     try {
+      Log::info('HyperPay Checkout Request', [
+        'amount' => $amount,
+        'currency' => $this->currency,
+        'entityId' => $this->entityId,
+        'apiUrl' => $this->apiUrl,
+      ]);
+
       $ch = curl_init();
-      curl_setopt($ch, CURLOPT_URL, $this->apiUrl);
+      curl_setopt($ch, CURLOPT_URL, $this->apiUrl . '/v1/checkouts');
       curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Authorization: Bearer ' . $this->apiToken
       ]);
@@ -53,7 +60,10 @@ class HyperpayService
       $responseData = curl_exec($ch);
 
       if (curl_errno($ch)) {
-        Log::error('Error with cURL: ' . curl_error($ch));
+        Log::error('HyperPay cURL Error', [
+          'error' => curl_error($ch),
+          'errno' => curl_errno($ch),
+        ]);
         curl_close($ch);
         return null;
       }
@@ -61,9 +71,19 @@ class HyperpayService
       curl_close($ch);
 
       // تحليل الاستجابة وتحويلها إلى مصفوفة
-      return json_decode($responseData, true);
+      $response = json_decode($responseData, true);
+
+      Log::info('HyperPay Checkout Response', [
+        'response' => $response,
+        'raw_response' => $responseData,
+      ]);
+
+      return $response;
     } catch (\Exception $e) {
-      Log::error('Error creating HyperPay checkout: ' . $e->getMessage());
+      Log::error('HyperPay Exception', [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
       return null;
     }
   }

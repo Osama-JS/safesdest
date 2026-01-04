@@ -256,6 +256,8 @@ class CustomerProfileController extends Controller
             if ($validator->fails()) {
                 return response()->json([
                     'status' => 422,
+                    'status_code' => 422,
+                    'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ]);
@@ -267,6 +269,8 @@ class CustomerProfileController extends Controller
             if (!Hash::check($request->password, $customer->password)) {
                 return response()->json([
                     'status' => 400,
+                    'status_code' => 400,
+                    'success' => false,
                     'message' => 'Invalid password'
                 ]);
             }
@@ -283,6 +287,8 @@ class CustomerProfileController extends Controller
             if ($activeTasks > 0 || $activeClearances > 0) {
                 return response()->json([
                     'status' => 400,
+                    'status_code' => 400,
+                    'success' => false,
                     'message' => 'Cannot delete account with active tasks or clearances'
                 ]);
             }
@@ -300,12 +306,16 @@ class CustomerProfileController extends Controller
             $customer->delete();
             return response()->json([
                 'status' => 200,
+                'status_code' => 200,
+                'success' => true,
                 'message' => 'Account deleted successfully'
             ]);
 
         } catch (Exception $e) {
             return response()->json([
                 'status' => 500,
+                'status_code' => 500,
+                'success' => false,
                 'message' => 'Failed to delete account',
                 'error' => $e->getMessage()
             ]);

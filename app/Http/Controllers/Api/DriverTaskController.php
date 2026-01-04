@@ -267,7 +267,8 @@ class DriverTaskController extends Controller
                     'payment_method' => $task->payment_method,
                     'payment_status' => $task->payment_status,
                     'items' => $task->additional_data['items'] ?? [],
-                    'special_instructions' => $task->additional_data['special_instructions'] ?? null
+                    'special_instructions' => $task->additional_data['special_instructions'] ?? null,
+                    'additional_data' => $task->driver_visible_additional_data
                     ]
                 ]
             ], 200);
@@ -296,8 +297,17 @@ class DriverTaskController extends Controller
 
             DB::beginTransaction();
 
-            $task = Task::where('pending_driver_id', $driver->id)
-                       ->whereNull('driver_id')
+            $task = Task::whereNull('driver_id')
+                       ->where(function($q) use ($driver) {
+                           $q->where('pending_driver_id', $driver->id)
+                             ->orWhere(function($q2) use ($driver) {
+                                 $q2->where('is_broadcast', true)
+                                    ->whereHas('attempts', function($q3) use ($driver) {
+                                        $q3->where('driver_id', $driver->id);
+                                    });
+                             });
+                       })
+                       ->lockForUpdate()
                        ->find($taskId);
 
             if (!$task) {
@@ -587,6 +597,98 @@ class DriverTaskController extends Controller
     }
 
 
+
+
+
+    /**
+     * Cancel a task
+     */
+    public function cancelTask(Request $request, $taskId)
+    {
+        try {
+            $driver = $request->user();
+            Log::alert('Driver Cancel Task Attempt', [
+                'driver_id' => $driver->id,
+                'task_id' => $taskId,
+                'reason' => $request->reason
+            ]);
+
+            $validator = Validator::make($request->all(), [
+                'reason' => 'required|string|max:1000'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Find the task assigned to this driver
+            $task = Task::where('driver_id', $driver->id)->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found or not assigned to you'
+                ], 404);
+            }
+
+            // Check if task can be cancelled (must be active but not completed)
+            if ($task->closed || in_array($task->status, ['completed', 'cancelled', 'refund'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This task cannot be cancelled in its current state.'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            $task->update([
+                'status' => 'pending',
+                'driver_cancel' => true,
+                'driver_cancel_reason' => $request->reason
+            ]);
+
+            // Add to history
+            Task_History::create([
+                'task_id' => $task->id,
+                'action_type' => 'driver_cancel',
+                'description' => 'Driver requested cancellation. Reason: ' . $request->reason,
+                'driver_id' => $driver->id,
+            ]);
+
+            DB::commit();
+
+            Log::info('Task cancelled by driver successfully', [
+                'task_id' => $taskId,
+                'driver_id' => $driver->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cancellation request submitted successfully',
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Driver cancel task error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel task'
+            ], 500);
+        }
+    }
 
 
     /**

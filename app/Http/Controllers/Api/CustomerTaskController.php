@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Task;
 use App\Models\Form_Template;
 use App\Models\Form_Field;
+use App\Models\Transaction;
 use App\Models\Pricing_Template;
 use App\Models\Vehicle_Size;
 use App\Models\Settings;
@@ -192,6 +193,7 @@ class CustomerTaskController extends Controller
                     $statuses = [
                         'advertised',
                         'in_progress',
+                        'pending',
                         'assign',
                         'started',
                         'in pickup point',
@@ -1402,6 +1404,8 @@ class CustomerTaskController extends Controller
 
     public function customerCancelTask(Request $req, $id){
       try {
+        Log::alert('customer Cancel Task Start');
+        Log::info($req->all());
           $data = Task::findOrFail($id);
            $user = $req->user();
           if (!$user || $user->id !== $data->customer_id) {
@@ -1430,6 +1434,177 @@ class CustomerTaskController extends Controller
           'message' => "Error cancelling task.",
           'error' => $ex->getMessage(),
         ]);
+      }
+    }
+
+    public function undoCustomerCancelTask(Request $req, $id){
+      try {
+          $data = Task::findOrFail($id);
+           $user = $req->user();
+          if (!$user || $user->id !== $data->customer_id) {
+              return response()->json(['status' => 423,  'message' => __('You do not have permission to do actions to this record')]);
+          }
+
+          if ($data->status !== 'pending') {
+              return response()->json(['status' => 400, 'message' => __('This task is not in pending status')]);
+          }
+
+        $data->update([
+          'status' => 'in_progress',
+          'customer_cancel' => false,
+        ]);
+
+        $data->history()->create([
+            'action_type' => 'undo_customer_cancel',
+            'description' => 'Customer Undid Cancellation Request.',
+            'task_id' => $data->id,
+        ]);
+
+        return response()->json([
+          'status' => 200,
+          'message' => "Cancellation request undone successfully.",
+        ]);
+      } catch (Exception $ex) {
+        return response()->json([
+          'status' => 500,
+          'message' => "Error undoing cancellation.",
+          'error' => $ex->getMessage(),
+        ]);
+      }
+    }
+
+    public function getPaymentStatus(Request $req, $id)
+    {
+      try {
+          Log::info('Payment Status Request', [
+              'task_id' => $id,
+              'user_id' => $req->user() ? $req->user()->id : 'null',
+              'has_auth_header' => $req->hasHeader('Authorization'),
+          ]);
+
+          $user = $req->user();
+
+          if (!$user) {
+              Log::error('Payment Status: No authenticated user');
+              return response()->json([
+                  'status' => 401,
+                  'success' => false,
+                  'message' => __('Unauthenticated. Please login again.'),
+                  'error' => 'No authenticated user found',
+              ], 401);
+          }
+
+          $task = Task::findOrFail($id);
+
+          if ($user->id !== $task->customer_id) {
+              Log::warning('Payment Status: Permission denied', [
+                  'user_id' => $user->id,
+                  'customer_id' => $task->customer_id,
+              ]);
+              return response()->json([
+                  'status' => 403,
+                  'success' => false,
+                  'message' => __('You do not have permission to view this payment'),
+              ]);
+          }
+
+          // Check if task has payment
+          if (!$task->payment_id) {
+              return response()->json([
+                  'status' => 404,
+                  'message' => __('No payment found for this task'),
+              ]);
+          }
+
+          $paymentData = [
+              'payment_method' => $task->payment_method,
+              'payment_status' => $task->payment_status,
+              'payment_paid' => $task->payment_paid,
+              'total_price' => $task->total_price,
+              'transaction' => null,
+          ];
+
+          // Fetch transaction details based on payment method
+          if (in_array($task->payment_method, ['banking', 'credit', 'cash'])) {
+              // Query transactions table
+              $transaction = Transaction::find($task->payment_id);
+
+              if ($transaction) {
+                  $paymentData['transaction'] = [
+                      'id' => $transaction->id,
+                      'amount' => $transaction->amount,
+                      'status' => $transaction->status,
+                      'payment_type' => $transaction->payment_type,
+                      'created_at' => $transaction->created_at,
+                  ];
+
+                  // Banking-specific fields
+                  if ($task->payment_method === 'banking') {
+                      $paymentData['transaction']['receipt_number'] = $transaction->receipt_number;
+
+                      // Handle receipt image URL properly
+                      if ($transaction->receipt_image) {
+                          $imagePath = $transaction->receipt_image;
+                          Log::info('Receipt Image Path', ['original' => $imagePath]);
+
+                          // Check if path already starts with 'storage/' or 'public/'
+                          if (strpos($imagePath, 'storage/') === 0) {
+                              $paymentData['transaction']['receipt_image'] = url($imagePath);
+                          } elseif (strpos($imagePath, 'public/') === 0) {
+                              $paymentData['transaction']['receipt_image'] = url(str_replace('public/', 'storage/', $imagePath));
+                          } else {
+                              $paymentData['transaction']['receipt_image'] = url('storage/' . $imagePath);
+                          }
+
+                          Log::info('Receipt Image URL', ['final' => $paymentData['transaction']['receipt_image']]);
+                      } else {
+                          $paymentData['transaction']['receipt_image'] = null;
+                      }
+
+                      $paymentData['transaction']['note'] = $transaction->note;
+                  }
+
+                  // Credit card specific fields
+                  if (in_array($task->payment_method, ['credit', 'cash'])) {
+                      $paymentData['transaction']['checkout_id'] = $transaction->checkout_id;
+                      $paymentData['transaction']['gateway_code'] = $transaction->gateway_code ?? null;
+                      $paymentData['transaction']['gateway_msg'] = $transaction->gateway_msg ?? null;
+                      $paymentData['transaction']['processed_at'] = $transaction->processed_at ?? null;
+                  }
+              }
+          } elseif ($task->payment_method === 'wallet') {
+              // Query wallet_transactions table
+              // The receipt_number in transactions table stores the wallet transaction sequence
+              $walletTransaction = Wallet_Transaction::where('task_id', $task->id)
+                  ->where('wallet_id', $task->customer->wallet->id)
+                  ->first();
+
+              if ($walletTransaction) {
+                  $paymentData['transaction'] = [
+                      'id' => $walletTransaction->id,
+                      'amount' => $walletTransaction->amount,
+                      'sequence' => $walletTransaction->sequence,
+                      'transaction_type' => $walletTransaction->transaction_type,
+                      'description' => $walletTransaction->description,
+                      'maturity_time' => $walletTransaction->maturity_time,
+                      'status' => $walletTransaction->status ?? 'completed',
+                      'created_at' => $walletTransaction->created_at,
+                  ];
+              }
+          }
+
+          return response()->json([
+              'status' => 200,
+              'success' => true,
+              'data' => $paymentData,
+          ]);
+
+      } catch (Exception $ex) {
+          return response()->json([
+              'status' => 500,
+              'message' => 'Error fetching payment status',
+              'error' => $ex->getMessage(),
+          ]);
       }
     }
 

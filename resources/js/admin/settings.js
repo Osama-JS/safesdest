@@ -14,15 +14,26 @@ $(function () {
     var settingKey = $(this).data('key');
     var settingValue = $(this).val();
 
-    if (!settingKey) return;
+    updateSetting(settingKey, settingValue);
+  });
+
+  $('.update-setting-checkbox').on('change', function () {
+    var settingKey = $(this).data('key');
+    var settingValue = $(this).is(':checked') ? '1' : '0';
+
+    updateSetting(settingKey, settingValue);
+  });
+
+  function updateSetting(key, value) {
+    if (!key) return;
 
     $.ajax({
       url: baseUrl + 'admin/settings/set-template',
       type: 'POST',
       data: {
         _token: $('meta[name="csrf-token"]').attr('content'),
-        key: settingKey,
-        value: settingValue
+        key: key,
+        value: value
       },
       success: function (response) {
         if (response.success) {
@@ -35,7 +46,7 @@ $(function () {
         showAlert('error', 'An error occurred:', xhr.responseText, 5000, true);
       }
     });
-  });
+  }
 
   // Quick backup function
   window.createQuickBackup = function () {

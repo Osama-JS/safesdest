@@ -237,7 +237,78 @@
             </div>
         </div>
     </div>
+    <div class="row">
+        <!-- Task Distribution Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Task Distribution Settings') }}</strong></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label class="mb-2 d-flex justify-content-between align-items-center">
+                            {{ __('Auto Distribution Enabled') }}
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input update-setting-checkbox" type="checkbox"
+                                    data-key="auto_distribution_enabled"
+                                    {{ ($settings['auto_distribution_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
+                            </div>
+                        </label>
+                        <p class="text-muted small">{{ $settings['auto_distribution_enabled']['description'] ?? '' }}</p>
+                    </div>
 
+                    <div class="form-group mb-4">
+                        <label for="distribution_mode" class="mb-2">{{ __('Distribution Mode') }}</label>
+                        <select class="form-select update-setting-select" data-key="distribution_mode">
+                            <option value="sequential" {{ ($settings['distribution_mode']['value'] ?? 'sequential') == 'sequential' ? 'selected' : '' }}>
+                                {{ __('Sequential (One by one)') }}
+                            </option>
+                            <option value="broadcast" {{ ($settings['distribution_mode']['value'] ?? '') == 'broadcast' ? 'selected' : '' }}>
+                                {{ __('Broadcast (Top 5 nearby)') }}
+                            </option>
+                        </select>
+                        <p class="text-muted small">{{ $settings['distribution_mode']['description'] ?? '' }}</p>
+                    </div>
 
+                    <div class="form-group mb-4">
+                        <label for="max_distribution_distance" class="mb-2">{{ __('Max Distribution Distance (Meters)') }}</label>
+                        <input type="number" data-key="max_distribution_distance"
+                            value="{{ $settings['max_distribution_distance']['value'] ?? '1000' }}"
+                            class="form-control update-setting-input">
+                        <p class="text-muted small">{{ $settings['max_distribution_distance']['description'] ?? '' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <!-- App Update Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Driver App Update Settings') }}</strong></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label for="min_driver_app_version" class="mb-2">{{ __('Minimum App Version') }}</label>
+                        <input type="text" data-key="min_driver_app_version"
+                            value="{{ $settings['min_driver_app_version']['value'] ?? '1.0.0' }}"
+                            class="form-control update-setting-input" placeholder="e.g., 1.0.5">
+                        <p class="text-muted small">{{ $settings['min_driver_app_version']['description'] ?? '' }}</p>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="driver_app_update_url" class="mb-2">{{ __('App Update URL') }}</label>
+                        <input type="url" data-key="driver_app_update_url"
+                            value="{{ $settings['driver_app_update_url']['value'] ?? '' }}"
+                            class="form-control update-setting-input" placeholder="https://play.google.com/store/apps/details?id=...">
+                        <p class="text-muted small">{{ $settings['driver_app_update_url']['description'] ?? '' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

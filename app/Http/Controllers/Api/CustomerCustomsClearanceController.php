@@ -80,8 +80,15 @@ class CustomerCustomsClearanceController extends Controller
 
             // Apply filters
             if ($request->filled('status')) {
-                $statuses = is_array($request->status) ? $request->status : [$request->status];
-                $query->whereIn('status', $statuses);
+                $status = $request->status;
+                if ($status === 'active') {
+                    $query->whereNotIn('status', ['completed', 'canceled', 'cancelled', 'rejected', 'refund']);
+                } elseif ($status === 'finished') {
+                    $query->whereIn('status', ['completed', 'canceled', 'cancelled', 'rejected', 'refund']);
+                } else {
+                    $statuses = is_array($status) ? $status : [$status];
+                    $query->whereIn('status', $statuses);
+                }
             }
 
             if ($request->filled('date_from')) {

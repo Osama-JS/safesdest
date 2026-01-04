@@ -29,6 +29,12 @@ class DistributeTask implements ShouldQueue
 
     public function handle(): void
     {
+        // التحقق مما إذا كان التوزيع التلقائي مفعلاً
+        if (!\App\Models\Settings::getValue('auto_distribution_enabled', true)) {
+            Log::info('⏸️ Automatic distribution is disabled in settings.');
+            return;
+        }
+
         Log::info('🔄 Running job work for task ID: ' . $this->task->id);
 
         if ($this->task->status !== 'in_progress') {
@@ -36,8 +42,12 @@ class DistributeTask implements ShouldQueue
             return;
         }
 
+        $distributionMode = \App\Models\Settings::getValue('distribution_mode', 'sequential');
+        $maxDistance = \App\Models\Settings::getValue('max_distribution_distance', 1000);
+
         // إذا كان هناك سائق في الانتظار ولم يرد، وأكملت 3 دقائق، قم بإلغاء التخصيص
-        if ($this->task->pending_driver_id !== null) {
+        // في وضع الـ broadcast، قد نحتاج لتغيير هذا المنطق، ولكن حالياً سنبقيه للحفاظ على التوافق
+        if ($this->task->pending_driver_id !== null && !$this->task->is_broadcast) {
             if (!$this->task->last_attempt_at || $this->task->last_attempt_at->lte(now()->subMinutes(3))) {
                 Log::info('⛔ No response from pending driver. Releasing task for reassignment.');
 
@@ -71,6 +81,7 @@ class DistributeTask implements ShouldQueue
 
         $drivers = Driver::where('vehicle_size_id', $this->task->vehicle_size_id)
             ->where('online', true)
+            ->where('free', true) // التأكد أن السائق متاح
             ->when(!empty($excludedIds), function ($query) use ($excludedIds) {
                 $query->whereNotIn('id', $excludedIds);
             })
@@ -85,10 +96,9 @@ class DistributeTask implements ShouldQueue
             ])
             ->get();
 
-        // تصفية السائقين لمسافة أقصاها 1 كم
+        // تصفية السائقين حسب المسافة المحددة في الإعدادات
         $drivers = $drivers->filter(function ($driver) {
-            $distance = $driver->distance;
-            return $distance <= 1000;
+            return $driver->distance <= \App\Models\Settings::getValue('max_distribution_distance', 1000);
         });
 
         if ($drivers->isEmpty()) {
@@ -107,7 +117,7 @@ class DistributeTask implements ShouldQueue
                     'action_type' => 'canceled',
                     'description' => 'The task was canceled because no driver accepted it after 5 distribution attempts.',
                     'ip' => IpHelper::getUserIpAddress(),
-                    'user_id' => null, // تم الإلغاء تلقائيًا
+                    'user_id' => null,
                 ]);
 
                 Log::info('🚫 Task canceled on 5th attempt due to no driver acceptance.', [
@@ -125,22 +135,50 @@ class DistributeTask implements ShouldQueue
             return;
         }
 
-        // إرسال المهمة لأقرب سائق
-        $nextDriver = $drivers->first();
-        Log::info('✔ Assigned to driver: ' . $nextDriver->name);
+        if ($distributionMode === 'broadcast') {
+            // وضع البث: إرسال لأقرب 5 سائقين
+            $nextDrivers = $drivers->take(5);
+            Log::info('📢 Broadcasting to ' . $nextDrivers->count() . ' drivers.');
 
-        $this->task->update([
-            'pending_driver_id' => $nextDriver->id,
-            'distribution_attempts' => $this->task->distribution_attempts + 1,
-            'last_attempt_at' => now(),
-        ]);
+            $this->task->update([
+                'is_broadcast' => true,
+                'distribution_attempts' => $this->task->distribution_attempts + 1,
+                'last_attempt_at' => now(),
+                'pending_driver_id' => null, // في وضع البث لا نخصص لسائق واحد
+            ]);
 
-        // تسجيل محاولة التوزيع
-        TaskDriverAttempt::create([
-            'task_id' => $this->task->id,
-            'driver_id' => $nextDriver->id,
-            'attempted_at' => now(),
-            'status' => 'ignored',
-        ]);
+            foreach ($nextDrivers as $driver) {
+                TaskDriverAttempt::create([
+                    'task_id' => $this->task->id,
+                    'driver_id' => $driver->id,
+                    'attempted_at' => now(),
+                    'status' => 'ignored',
+                ]);
+
+                // هنا يمكن إضافة إرسال إشعار FCM لكل سائق
+                // app(\App\Services\NotificationService::class)->sendNewTaskNotificationToDriver($driver, $this->task);
+            }
+        } else {
+            // الوضع المتسلسل: إرسال لأقرب سائق واحد فقط
+            $nextDriver = $drivers->first();
+            Log::info('✔ Assigned to driver (Sequential): ' . $nextDriver->name);
+
+            $this->task->update([
+                'is_broadcast' => false,
+                'pending_driver_id' => $nextDriver->id,
+                'distribution_attempts' => $this->task->distribution_attempts + 1,
+                'last_attempt_at' => now(),
+            ]);
+
+            TaskDriverAttempt::create([
+                'task_id' => $this->task->id,
+                'driver_id' => $nextDriver->id,
+                'attempted_at' => now(),
+                'status' => 'ignored',
+            ]);
+
+            // إرسال إشعار FCM
+            // app(\App\Services\NotificationService::class)->sendNewTaskNotificationToDriver($nextDriver, $this->task);
+        }
     }
 }

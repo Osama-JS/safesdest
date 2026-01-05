@@ -544,7 +544,7 @@ class DriverTaskAdsController extends Controller
             // Add task history
             $task->history()->create([
                 'action_type' => 'assigned',
-                'description' => "Task assigned to driver through advertisement offer (Price: {$offer->price})",
+                'description' => "Task assigned to driver through advertisement offer",
                 'ip' => $request->ip()
             ]);
 
@@ -579,9 +579,69 @@ class DriverTaskAdsController extends Controller
         }
     }
 
+    /**
+     * Reject task assignment (revert offer acceptance)
+     */
+    public function rejectTask(Request $request, $offerId)
+    {
+        try {
+            // Get authenticated driver from Sanctum
+            $driver = $request->user();
+            $driver_id = $driver->id;
+
+            // Find the accepted offer
+            $offer = Task_Offire::where('id', $offerId)
+                               ->where('driver_id', $driver_id)
+                               ->where('accepted', true)
+                               ->firstOrFail();
+
+            $ad = $offer->ad;
+            $task = $ad->task;
+
+            // Update offer status to not accepted (pending)
+            $offer->update([
+                'accepted' => false
+            ]);
+
+            // Add task history
+            $task->history()->create([
+                'action_type' => 'rejected',
+                'description' => "Driver rejected the task assignment offer",
+                'ip' => $request->ip()
+            ]);
+
+            Log::info('Driver rejected task assignment', [
+                'driver_id' => $driver_id,
+                'task_id' => $task->id,
+                'offer_id' => $offerId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task rejected successfully',
+                'data' => [
+                    'offer_id' => $offer->id,
+                    'accepted' => false
+                ]
+            ], 200);
+
+        } catch (Exception $e) {
+            Log::error('Driver Reject Task Error', [
+                'error' => $e->getMessage(),
+                'offer_id' => $offerId,
+                'driver_id' => $driver->id ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reject task'
+            ], 500);
+        }
+    }
+
 
     /**
-     * Accept task after offer is approved
+     * Delete Offer
      */
     public function deleteOffer(Request $request, $offerId){
       try {

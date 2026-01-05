@@ -531,7 +531,7 @@ class DriverTaskAdsController extends Controller
             // Assign task to driver
             $task->update([
                 'driver_id' => $driver_id,
-                'status' => 'assigned',
+                'status' => 'assign',
                 'total_price' => $offer->price
             ]);
 

@@ -152,7 +152,7 @@ class DriverTaskController extends Controller
             $to = $request->get('to');
 
             // Build query for completed tasks - include all completed statuses
-            $query = Task::with(['customer', 'pickup_point', 'delivery_point'])
+            $query = Task::with(['customer', 'pickup', 'delivery'])
                 ->where('driver_id', $driver->id)
                 ->whereIn('status', ['completed', 'delivered', 'invoiced']);
 
@@ -347,7 +347,7 @@ class DriverTaskController extends Controller
             ]);
 
             // Load task with relationships for complete response
-            $task->load(['customer', 'pickup_point', 'delivery_point']);
+            $task->load(['customer', 'pickup', 'delivery']);
 
             return response()->json([
                 'success' => true,
@@ -357,15 +357,15 @@ class DriverTaskController extends Controller
                     'total_price' => $task->total_price,
                     'commission' => $task->commission,
                     'customer_name' => $task->customer->name ?? null,
-                    'pickup_address' => $task->pickup_point->address ?? null,
+                    'pickup_address' => $task->pickup->address ?? null,
                     'delivery_address' => $task->delivery_point->address ?? null,
                     'status' => $task->status,
                     'driver_id' => $task->driver_id,
                     'pending_driver_id' => $task->pending_driver_id,
                     'accepted_at' => $task->accepted_at,
                     'created_at' => $task->created_at,
-                    'pickup_point' => $task->pickup_point,
-                    'delivery_point' => $task->delivery_point,
+                    'pickup_point' => $task->pickup,
+                    'delivery_point' => $task->delivery,
                     'customer' => $task->customer
                 ]
             ], 200);

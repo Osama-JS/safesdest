@@ -314,6 +314,7 @@
                             <th>
                                 <i class="ti ti-clock me-1"></i>{{ __('Created At') }}
                             </th>
+                            <th>{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody></tbody>

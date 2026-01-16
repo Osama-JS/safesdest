@@ -166,12 +166,17 @@ class Driver extends Authenticatable
 
         $formFields = $this->formTemplate?->fields ?? collect();
 
-        return collect($this->additional_data)->filter(function ($item, $key) use ($formFields) {
+        return (object)collect($this->additional_data)->filter(function ($item, $key) use ($formFields) {
+            // تأكد أن $item مصفوفة ولها مفتاح label قبل الفحص
+            if (!is_array($item) || !isset($item['label'])) {
+                return false;
+            }
+
             return $formFields->contains(function ($field) use ($item) {
                 return $field->label == $item['label'] &&
                   in_array($field->driver_can, ['read', 'write']);
             });
-        })->all(); // إزالة values() للحفاظ على المفاتيح الأصلية
+        })->all();
     }
 
     /**

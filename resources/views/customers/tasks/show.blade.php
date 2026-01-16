@@ -35,6 +35,11 @@
                                 <i class="ti ti-map-pin me-1"></i>{{ __('Track Task') }}
                             </a>
                         @endif
+                        @if ($task->payment_status === 'paid' || $task->payment_status === 'completed' || $task->status === 'completed')
+                             <a href="javascript:void(0);" onclick="downloadInvoice({{ $task->id }})" class="btn btn-outline-primary btn-sm ms-2">
+                                <i class="ti ti-file-invoice me-1"></i>{{ __('Download Invoice') }}
+                            </a>
+                        @endif
                         <span
                             class="badge bg-label-{{ $task->status === 'completed' ? 'success' : ($task->status === 'cancelled' ? 'danger' : 'warning') }} ms-2">
                             {{ ucfirst($task->status) }}
@@ -295,4 +300,67 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('page-script')
+    <script>
+        function downloadInvoice(taskId) {
+            Swal.fire({
+                title: '{{ __('Generating Invoice...') }}',
+                text: '{{ __('Please wait while we generate your invoice.') }}',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Construct the URL dynamically
+            const url = "{{ route('customer.tasks.invoice', ':id') }}".replace(':id', taskId);
+
+            fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || '{{ __('Failed to generate invoice.') }}');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // Create a link element, hide it, push it onto the page
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Attempt to extract filename from headers or default
+                    a.download = `invoice_${taskId}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'success',
+                        title: '{{ __('Success') }}',
+                        text: '{{ __('Invoice downloaded successfully.') }}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                })
+                .catch(error => {
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __('Error') }}',
+                        text: error.message
+                    });
+                });
+        }
+    </script>
 @endsection

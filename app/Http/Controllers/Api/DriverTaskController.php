@@ -56,7 +56,7 @@ class DriverTaskController extends Controller
                             $query->where('status', 'accepted');
                             break;
                         case 'in_progress':
-                            $query->whereIn('status', ['assign','accepted', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','unloading']);
+                            $query->whereIn('status', ['assign','assigned','accepted', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','unloading']);
                             break;
                         case 'completed':
                             $query->whereIn('status', ['completed', 'delivered', 'invoiced']);
@@ -569,6 +569,39 @@ class DriverTaskController extends Controller
                 'new_status' => $request->status
             ]);
 
+            // Notify Customer and User
+            $notiMessages = [
+                'customer' => [
+                    'title' => 'تحديث حالة طلبك',
+                    'msg'   => "السائق قام بتحديث حالة المهمة رقم #{$task->id} إلى '{$request->status}'."
+                ],
+                'user' => [
+                    'title' => 'تحديث في تنفيذ المهمة',
+                    'msg'   => "المهمة رقم #{$task->id} أصبحت الآن في حالة '{$request->status}'."
+                ],
+            ];
+
+            $recipients = [
+                'customer' => [$task->customer_id],
+                'user'     => [$task->user_id],
+            ];
+
+            foreach ($recipients as $type => $ids) {
+                $ids = array_filter($ids);
+                if (!empty($ids) && isset($notiMessages[$type])) {
+                    app(\App\Services\NotificationService::class)->send(
+                        $type,
+                        $ids,
+                        $notiMessages[$type]['title'],
+                        $notiMessages[$type]['msg'],
+                        '/images/admin-icon.png',
+                        '/images/banner.png',
+                        "/tasks/{$task->id}",
+                        'task_status_update'
+                    );
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Task status updated successfully',
@@ -665,6 +698,39 @@ class DriverTaskController extends Controller
                 'task_id' => $taskId,
                 'driver_id' => $driver->id
             ]);
+
+            // Notify Customer and admin
+            $notiMessages = [
+                'customer' => [
+                    'title' => 'تنبيه: اعتذار السائق',
+                    'msg'   => "اعتذر السائق عن تنفيذ المهمة رقم #{$task->id}. جاري إعادة تعيين سائق آخر."
+                ],
+                'user' => [
+                    'title' => 'تنبيه: اعتذار السائق',
+                    'msg'   => "قام السائق {$driver->name} بالاعتذار عن المهمة رقم #{$task->id}."
+                ],
+            ];
+
+            $recipients = [
+                'customer' => [$task->customer_id],
+                'user'     => [$task->user_id],
+            ];
+
+            foreach ($recipients as $type => $ids) {
+                $ids = array_filter($ids);
+                if (!empty($ids) && isset($notiMessages[$type])) {
+                    app(\App\Services\NotificationService::class)->send(
+                        $type,
+                        $ids,
+                        $notiMessages[$type]['title'],
+                        $notiMessages[$type]['msg'],
+                        '/images/admin-icon.png',
+                        '/images/banner.png',
+                        "/tasks/{$task->id}",
+                        'driver_cancel'
+                    );
+                }
+            }
 
             return response()->json([
                 'success' => true,

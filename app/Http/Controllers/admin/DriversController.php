@@ -175,7 +175,39 @@ class DriversController extends Controller
             if (!$user || !$user->checkDriver($req->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
             }
-            $done = Driver::find($req->id)->update(['status' => $req->status]);
+            $driver = Driver::find($req->id);
+            $done = $driver->update(['status' => $req->status]);
+
+            if ($done) {
+                // Send notification to driver
+                $statusMessages = [
+                    'active' => [
+                        'title' => 'تم تفعيل حسابك! 🎉',
+                        'msg' => 'تمت الموافقة على حسابك، يمكنك الآن البدء في استقبال المهام.'
+                    ],
+                    'blocked' => [
+                        'title' => 'تنبيه: إيقاف الحساب',
+                        'msg' => 'تم إيقاف حسابك مؤقتاً، يرجى التواصل مع الإدارة لمزيد من التفاصيل.'
+                    ],
+                    'verified' => [
+                        'title' => 'توثيق الحساب',
+                        'msg' => 'تم توثيق حسابك بنجاح.'
+                    ]
+                ];
+
+                if (isset($statusMessages[$req->status])) {
+                    app(\App\Services\NotificationService::class)->send(
+                        'driver',
+                        [$driver->id],
+                        $statusMessages[$req->status]['title'],
+                        $statusMessages[$req->status]['msg'],
+                        '/images/admin-icon.png',
+                        '/images/banner.png',
+                        "/profile",
+                        'account_status'
+                    );
+                }
+            }
 
             if (!$done) {
                 return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Driver Status')]);

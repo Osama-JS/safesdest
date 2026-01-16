@@ -18,8 +18,16 @@ class NotificationService
     }
 
 
+    /**
+     * Send generic notification
+     */
     public function send($type, array $ids, $title, $body, $icon = null, $image = null, $url = null, $notif_type = 'general')
     {
+        // For general notifications, user wants "Process of sending notifications" to be a job.
+        // However, this method iterates IDs and sends one by one (or uses multicast if rewritten).
+        // Current implementation: loops and sends individually.
+        // I will keep the loop but dispatch a job for each recipient to be safe and scalable.
+
         $modelMap = [
             'user' => User::class,
             'driver' => Driver::class,
@@ -32,28 +40,12 @@ class NotificationService
         $recipients = $modelMap[$type]::whereIn('id', $ids)->get();
 
         foreach ($recipients as $recipient) {
-            Log::alert('start send notification');
-
             if (isset($recipient->fcm_token) && $recipient->fcm_token) {
-                Log::alert('start send notification from firebase');
-                $result = $this->firebaseService->mainSendNotification($recipient->fcm_token, $title, $body, $notif_type);
+                 \App\Jobs\SendFirebaseNotification::dispatch(
+                    'mainSendNotification',
+                    [$recipient->fcm_token, $title, $body, $notif_type]
+                );
             }
-            // التأكد أن الموديل يدعم notify ومشترك في الإشعارات
-            // if (method_exists($recipient, 'notify')) {
-            //     $recipient->notify(new GeneralPushNotification([
-            //         'title' => $title,
-            //         'body' => $body,
-            //         'icon' => $icon ?? '/images/admin-icon.png',
-            //         'image' => $image ?? '/images/banner.png',
-            //         'url' => $url ?? '/',
-            //         'type' => $notif_type,
-            //     ]));
-            // }
-
-
-
-            Log::alert("message: ".$recipient->name);
-
         }
 
         return true;
@@ -65,24 +57,24 @@ class NotificationService
     public function sendNewTaskNotificationToDriver($driver, $task)
     {
         try {
-            $result = $this->firebaseService->sendNewTaskNotification($driver, $task);
+            // Dispatch the job
+            // Note: driver and task models will be serialized
+            \App\Jobs\SendFirebaseNotification::dispatch(
+                'sendNewTaskNotification',
+                [$driver, $task]
+            );
 
-            if ($result['success']) {
-                Log::info('New task notification sent to driver', [
-                    'driver_id' => $driver->id,
-                    'task_id' => $task->id
-                ]);
-            } else {
-                Log::error('Failed to send new task notification', [
-                    'driver_id' => $driver->id,
-                    'task_id' => $task->id,
-                    'error' => $result['message']
-                ]);
-            }
+            Log::info('New task notification queued for driver', [
+                'driver_id' => $driver->id,
+                'task_id' => $task->id
+            ]);
 
-            return $result;
+            return [
+                'success' => true,
+                'message' => 'Notification queued successfully'
+            ];
         } catch (\Exception $e) {
-            Log::error('Exception in sendNewTaskNotificationToDriver', [
+            Log::error('Exception in sendNewTaskNotificationToDriver queueing', [
                 'driver_id' => $driver->id,
                 'task_id' => $task->id,
                 'error' => $e->getMessage()
@@ -101,26 +93,23 @@ class NotificationService
     public function sendTaskUpdateNotificationToDriver($driver, $task, $status)
     {
         try {
-            $result = $this->firebaseService->sendTaskUpdateNotification($driver, $task, $status);
+            \App\Jobs\SendFirebaseNotification::dispatch(
+                'sendTaskUpdateNotification',
+                [$driver, $task, $status]
+            );
 
-            if ($result['success']) {
-                Log::info('Task update notification sent to driver', [
-                    'driver_id' => $driver->id,
-                    'task_id' => $task->id,
-                    'status' => $status
-                ]);
-            } else {
-                Log::error('Failed to send task update notification', [
-                    'driver_id' => $driver->id,
-                    'task_id' => $task->id,
-                    'status' => $status,
-                    'error' => $result['message']
-                ]);
-            }
+            Log::info('Task update notification queued for driver', [
+                'driver_id' => $driver->id,
+                'task_id' => $task->id,
+                'status' => $status
+            ]);
 
-            return $result;
+            return [
+                'success' => true,
+                'message' => 'Notification queued successfully'
+            ];
         } catch (\Exception $e) {
-            Log::error('Exception in sendTaskUpdateNotificationToDriver', [
+            Log::error('Exception in sendTaskUpdateNotificationToDriver queueing', [
                 'driver_id' => $driver->id,
                 'task_id' => $task->id,
                 'status' => $status,
@@ -140,26 +129,23 @@ class NotificationService
     public function sendPaymentNotificationToDriver($driver, $amount, $type = 'payment_received')
     {
         try {
-            $result = $this->firebaseService->sendPaymentNotification($driver, $amount, $type);
+            \App\Jobs\SendFirebaseNotification::dispatch(
+                'sendPaymentNotification',
+                [$driver, $amount, $type]
+            );
 
-            if ($result['success']) {
-                Log::info('Payment notification sent to driver', [
-                    'driver_id' => $driver->id,
-                    'amount' => $amount,
-                    'type' => $type
-                ]);
-            } else {
-                Log::error('Failed to send payment notification', [
-                    'driver_id' => $driver->id,
-                    'amount' => $amount,
-                    'type' => $type,
-                    'error' => $result['message']
-                ]);
-            }
+            Log::info('Payment notification queued for driver', [
+                'driver_id' => $driver->id,
+                'amount' => $amount,
+                'type' => $type
+            ]);
 
-            return $result;
+            return [
+                'success' => true,
+                'message' => 'Notification queued successfully'
+            ];
         } catch (\Exception $e) {
-            Log::error('Exception in sendPaymentNotificationToDriver', [
+            Log::error('Exception in sendPaymentNotificationToDriver queueing', [
                 'driver_id' => $driver->id,
                 'amount' => $amount,
                 'type' => $type,

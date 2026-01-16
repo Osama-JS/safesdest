@@ -763,7 +763,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Highest Price') }}</small>
                                                 <div class="fw-bold text-danger fs-5">
-                                                    {{ number_format($ad->highest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_highest_price, 0) }} <small>SAR</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -779,7 +779,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Lowest Price') }}</small>
                                                 <div class="fw-bold text-success fs-5">
-                                                    {{ number_format($ad->lowest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_lowest_price, 0) }} <small>SAR</small>
                                                 </div>
                                             </div>
                                         </div>

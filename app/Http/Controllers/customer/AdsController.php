@@ -79,8 +79,8 @@ class AdsController extends Controller
       return [
         'id' => $ad->id,
         'task_id' => $ad->task_id,
-        'low_price' => $ad->lowest_price,
-        'high_price' => $ad->highest_price,
+        'low_price' => $ad->final_lowest_price,
+        'high_price' => $ad->final_highest_price,
         'note' => $ad->description,
         'status' => $ad->status,
         'user' => Auth::user()->id,
@@ -140,6 +140,7 @@ class AdsController extends Controller
         'price' => $offer->price,
         'accepted' => $offer->accepted,
         'description' => $offer->description,
+        'ad_status' =>  $offer->ad->status
       ];
     });
 

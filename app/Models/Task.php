@@ -44,6 +44,8 @@ class Task extends Model
       'driver_cancel',
       'driver_cancel_reason',
       'is_broadcast',
+      'signature_request_id',
+      'signature_status'
     ];
 
     protected $casts = [

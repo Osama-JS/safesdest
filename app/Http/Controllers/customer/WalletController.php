@@ -9,8 +9,129 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+use App\Services\PdfService;
+
 class WalletController extends Controller
 {
+    protected $pdfService;
+
+    public function __construct(PdfService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
+
+    public function downloadCreditReceipt($id)
+    {
+        $transaction = Wallet_Transaction::with(['wallet.customer'])->findOrFail($id);
+
+        if ($transaction->wallet->customer_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($transaction->transaction_type !== 'credit') {
+            return redirect()->back()->with('error', __('Receipt is available only for credit transactions.'));
+        }
+
+        $amountInWords = $this->convertNumberToArabicWords($transaction->amount);
+
+        $customerName = optional($transaction->wallet->customer)->name ?? 'Customer';
+        $safeName = preg_replace('/[^A-Za-z0-9_\p{Arabic}]/u', '_', $customerName); // Support Arabic chars or just slug
+        // Actually, for filename, better to use slug or simple chars.
+        // Let's use Str::slug but it removes Arabic.
+        // If I want to keep name recognizable, usually browsers handle UTF-8 filenames.
+        $safeName = str_replace(' ', '_', $customerName);
+
+        $file_name = "Receipt_{$transaction->wallet->id}_{$transaction->sequence}_{$safeName}";
+
+        $pdfContent = $this->pdfService->generateRaw('admin.wallets.receipt_pdf', [
+            'transaction' => $transaction,
+            'wallet' => $transaction->wallet,
+            'amountInWords' => $amountInWords
+        ]);
+
+        return response($pdfContent)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', "attachment; filename=\"{$file_name}.pdf\"")
+            ->header('Content-Length', strlen($pdfContent));
+    }
+
+    private function convertNumberToArabicWords($number)
+    {
+        $number = floatval($number);
+        $integerPart = floor($number);
+        $decimalPart = round(($number - $integerPart) * 100);
+
+        $ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+        $tens = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+        $hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+        $teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+
+        $result = '';
+
+        if ($integerPart == 0) {
+            $result = 'صفر';
+        } else {
+            // Thousands
+            $thousands = floor($integerPart / 1000);
+            if ($thousands > 0) {
+                if ($thousands == 1) {
+                    $result .= 'ألف ';
+                } elseif ($thousands == 2) {
+                    $result .= 'ألفان ';
+                } elseif ($thousands >= 3 && $thousands <= 10) {
+                    $result .= $ones[$thousands] . ' آلاف ';
+                } else {
+                    $result .= $this->convertNumberToArabicWords($thousands) . ' ألف ';
+                }
+            }
+
+            // Hundreds
+            $remainder = $integerPart % 1000;
+            $hundredsDigit = floor($remainder / 100);
+            if ($hundredsDigit > 0) {
+                $result .= $hundreds[$hundredsDigit] . ' ';
+            }
+
+            // Tens and ones
+            $remainder = $remainder % 100;
+            if ($remainder >= 10 && $remainder < 20) {
+                $result .= $teens[$remainder - 10] . ' ';
+            } else {
+                $tensDigit = floor($remainder / 10);
+                $onesDigit = $remainder % 10;
+
+                if ($tensDigit > 0) {
+                    $result .= $tens[$tensDigit] . ' ';
+                }
+                if ($onesDigit > 0) {
+                    $result .= ($tensDigit > 0 ? 'و' : '') . $ones[$onesDigit] . ' ';
+                }
+            }
+        }
+
+        $result = trim($result) . ' ريال';
+
+        // Add decimal part (halalas)
+        if ($decimalPart > 0) {
+            $result .= ' و';
+            if ($decimalPart >= 10 && $decimalPart < 20) {
+                $result .= ' ' . $teens[$decimalPart - 10];
+            } else {
+                $tensDigit = floor($decimalPart / 10);
+                $onesDigit = $decimalPart % 10;
+
+                if ($tensDigit > 0) {
+                    $result .= ' ' . $tens[$tensDigit];
+                }
+                if ($onesDigit > 0) {
+                    $result .= ($tensDigit > 0 ? ' و' : ' ') . $ones[$onesDigit];
+                }
+            }
+            $result .= ' هللة';
+        }
+
+        return $result;
+    }
   public function index()
   {
     $data = Wallet::where('customer_id', Auth::user()->id)->first();

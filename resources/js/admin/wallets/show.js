@@ -141,8 +141,17 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            // Print Receipt button for credit transactions
+            const printReceiptBtn =
+              full.type === 'credit'
+                ? `<a href="${baseUrl}admin/wallets/transactions/${full.id}/receipt" target="_blank" class="btn btn-sm btn-icon btn-success" title="Print Receipt">
+                  <i class="ti ti-printer"></i>
+                </a>`
+                : '';
+
             return `
               <div class="text-end">
+                ${printReceiptBtn}
                 ${
                   (full.task || full.clearance) !== ''
                     ? `

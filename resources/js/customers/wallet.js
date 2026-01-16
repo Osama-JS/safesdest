@@ -56,7 +56,8 @@ $(function () {
         { data: 'description' },
         { data: 'maturity' },
         { data: 'task' },
-        { data: 'created_at' }
+        { data: 'created_at' },
+        { data: 'action' }
       ],
       columnDefs: [
         {
@@ -123,6 +124,20 @@ $(function () {
           targets: 6,
           render: function (data, type, full, meta) {
             return `<span>${full.created_at}</span>`;
+          }
+        },
+        {
+          targets: 7,
+          title: 'Actions',
+          orderable: false,
+          searchable: false,
+          render: function (data, type, full, meta) {
+            if (full.type === 'credit') {
+              return `<a href="${baseUrl}customer/wallet/transactions/${full.id}/receipt" target="_blank" class="btn btn-sm btn-icon btn-label-secondary waves-effect" title="Print Receipt">
+                     <i class="ti ti-printer"></i>
+                 </a>`;
+            }
+            return '';
           }
         }
       ],

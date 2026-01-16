@@ -78,8 +78,8 @@ class CustomerAdsController extends Controller
                 return [
                     'id' => $ad->id,
                     'task_id' => $ad->task_id,
-                    'low_price' => $ad->lowest_price,
-                    'high_price' => $ad->highest_price,
+                    'low_price' => $ad->final_lowest_price,
+                    'high_price' => $ad->final_highest_price,
                     'note' => $ad->description,
                     'status' => $ad->status,
                     'from_address' => $ad->task->pickup->address,
@@ -137,8 +137,8 @@ class CustomerAdsController extends Controller
             $transformedAd = [
                 'id' => $ad->id,
                 'task_id' => $ad->task_id,
-                'low_price' => $ad->lowest_price,
-                'high_price' => $ad->highest_price,
+                'low_price' => $ad->final_lowest_price,
+                'high_price' => $ad->final_highest_price,
                 'note' => $ad->description,
                 'status' => $ad->status,
                 'included' => $ad->included,
@@ -244,6 +244,18 @@ class CustomerAdsController extends Controller
             $offer->accepted = true;
             $offer->save();
 
+            // Send notification to driver
+            app(\App\Services\NotificationService::class)->send(
+                'driver',
+                [$offer->driver_id],
+                '🎉 تم قبول عرضك!',
+                "تم قبول عرضك للمهمة رقم #{$offer->ad->task_id} من قبل العميل. يرجى الدخول للتأكيد.",
+                '/images/admin-icon.png',
+                '/images/banner.png',
+                "/task-ads/{$offer->task_ad_id}",
+                'offer_accepted'
+            );
+
             return response()->json([
                 'status' => 200,
                 'message' => __('The Offer accepted successfully')
@@ -287,6 +299,18 @@ class CustomerAdsController extends Controller
             // Retract this offer
             $offer->accepted = false;
             $offer->save();
+
+            // Send notification to driver
+            app(\App\Services\NotificationService::class)->send(
+                'driver',
+                [$offer->driver_id],
+                '⚠️ تم التراجع عن قبول عرضك',
+                "قام العميل بالتراجع عن قبول عرضك للمهمة رقم #{$offer->ad->task_id}.",
+                '/images/admin-icon.png',
+                '/images/banner.png',
+                "/task-ads/{$offer->task_ad_id}",
+                'offer_retracted'
+            );
 
             return response()->json([
                 'status' => 200,

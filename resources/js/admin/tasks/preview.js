@@ -133,6 +133,7 @@ $(function () {
     $(containerSelector).html('');
 
     tasks.forEach(task => {
+      console.log(task);
       const statusClass = getStatusBadgeClass(task.status);
       const driverHtml = task.driver
         ? `<div class="mt-2  small bg-primary  text-white p-1 rounded ">
@@ -158,6 +159,15 @@ $(function () {
         </div>`
         : '';
 
+      const signatureHtml = task.signature_request_id
+        ? `<div class="mt-2 d-flex justify-content-between align-items-center bg-info text-white p-1 rounded">
+            <div><i class="ti ti-edit"></i> Signature: <span class="text-capitalize">${task.signature_status || 'Pending'}</span></div>
+            <button class="btn btn-sm btn-icon text-white verify-signature p-0" data-id="${task.id}" title="Verify Signature Status">
+                <i class="ti ti-refresh"></i>
+            </button>
+         </div>`
+        : '';
+
       const card = `
         <div class="mb-4">
           <div class="card p-3 shadow-sm task-card" data-task-id="${task.id}">
@@ -171,6 +181,7 @@ $(function () {
                 ${teamHtml}
                 ${conditionsHtml}
                 ${completeAt}
+                ${signatureHtml}
                 </div>
               </div>
               <div class="d-flex align-items-center gap-50">
@@ -391,6 +402,8 @@ $(function () {
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-switch-horizontal me-2"></i>Change Status</a></li>
                     <li><a href="javascript:;" class="dropdown-item duplicate-record" data-id="${task.data.id}" data-name="${task.data.id}"><i class="ti ti-copy me-2"></i>Duplicate Task</a></li>
                     <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-note me-2"></i>Add Note</a></li>
+                    <li><a href="${baseUrl}admin/tasks/${task.data.id}/invoice" target="_blank" class="dropdown-item"><i class="ti ti-file-invoice me-2"></i>Print Invoice</a></li>
+                    ${task.data.signature_request_id ? `<li><a href="javascript:;" class="dropdown-item verify-signature" data-id="${task.data.id}"><i class="ti ti-refresh me-2"></i>Verify Signature Status</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>download task status report</a></li>
 
                   </ul>
@@ -447,7 +460,14 @@ $(function () {
                   <strong>Created At</strong>
                   <span>${task.data.created_at || '—'}</span>
                 </li>
-                </li>
+                ${
+                  task.data.signature_request_id
+                    ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-info text-white">
+                  <strong>Signature Status</strong>
+                  <span class="text-capitalize">${task.data.signature_status || 'Pending'}</span>
+                </li>`
+                    : ''
+                }
                 ${
                   task.data.conditions
                     ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-warning">
@@ -642,6 +662,34 @@ $(function () {
         // زر الإغلاق
         $('#close-task-details').on('click', function () {
           $('#task-details-view').stop().fadeOut(200);
+        });
+
+        // تحقق من حالة التوقيع
+        $(document).on('click', '.verify-signature', function (e) {
+          e.stopPropagation(); // منع تفعيل فتح تفاصيل المهمة عند الضغط على الزر في البطاقة
+
+          const taskId = $(this).data('id');
+          const $btn = $(this);
+          const originalHtml = $btn.html();
+
+          $btn.addClass('disabled').html('<i class="ti ti-refresh ti-spin"></i>');
+
+          $.get(`${baseUrl}admin/tasks/verify-signature/${taskId}`, function (response) {
+            if (response.status === 1) {
+              showAlert('success', response.message);
+              // إذا كانت التفاصيل مفتوحة لهذه المهمة، نحدثها
+              if ($('#task-details-view').is(':visible')) {
+                showTaskDetails(taskId);
+              }
+              loadTasks(); // تحديث القائمة لإظهار الحالة الجديدة على البطاقة
+            } else {
+              showAlert('error', response.error);
+              $btn.removeClass('disabled').html(originalHtml);
+            }
+          }).fail(function () {
+            showAlert('error', 'Failed to verify signature status');
+            $btn.removeClass('disabled').html(originalHtml);
+          });
         });
 
         // تحريك الخريطة لنقطة المهمة

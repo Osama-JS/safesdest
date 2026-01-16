@@ -139,30 +139,16 @@ class TasksAdsController extends Controller
 
         // إضافة المعالجة المخصصة داخل صفحة البيانات
         $products->getCollection()->transform(function ($ad) {
-            $low_price = $ad->lowest_price;
-            $high_price = $ad->highest_price;
+            $low_price = $ad->final_lowest_price;
+            $high_price = $ad->final_highest_price;
+
+
 
             // تأكد من أن الأسعار أرقام صالحة
             $low_price = is_numeric($low_price) ? $low_price : 0;
             $high_price = is_numeric($high_price) ? $high_price : 0;
 
-            if (!$ad->included) {
-                $commission = is_numeric($ad->service_commission) ? $ad->service_commission : 0;
-                $vat = is_numeric($ad->vat_commission) ? $ad->vat_commission : 0;
 
-                if ($ad->service_commission_type === 1) {
-                    // مبلغ ثابت
-                    $low_price += $commission;
-                    $high_price += $commission;
-                } else {
-                    // نسبة مئوية
-                    $low_price += $low_price * ($commission / 100);
-                    $high_price += $high_price * ($commission / 100);
-                }
-
-                $low_price += $low_price * ($vat / 100);
-                $high_price += $high_price * ($vat / 100);
-            }
 
             return [
               'id' => $ad->id,

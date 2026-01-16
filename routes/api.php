@@ -20,6 +20,9 @@ Route::get('/user', function (Request $request) {
 // HyperPay Webhook
 Route::any('/hyperpay/webhook', [\App\Http\Controllers\Api\HyperPayWebhookController::class, 'handleWebhook']);
 
+// Signit Webhook
+Route::post('/signit/webhook', [\App\Http\Controllers\Api\SignitWebhookController::class, 'handleWebhook']);
+
 // Include driver API routes
 require __DIR__.'/api_driver.php';
 require __DIR__.'/api_customer.php';

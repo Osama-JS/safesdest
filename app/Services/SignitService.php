@@ -78,9 +78,9 @@ class SignitService
     }
 
     /**
-     * رفع مستند PDF وإنشاء طلب توقيع
+     * رفع مستند PDF وإنشاء طلب توقيع لعدة أطراف
      */
-    public function createSignatureRequest($filePath, $signerEmail, $signerName)
+    public function createSignatureRequest($filePath, $signers, $title = 'Task Policy Signature')
     {
         $token = $this->getAccessToken();
 
@@ -93,9 +93,8 @@ class SignitService
             ])
             ->post($this->baseUrl . '/documents', [
                 'metadata_document' => json_encode([
-                    'tags' => ['tag1', 'tag2', 'tag3'],
+                    'tags' => ['task', 'policy'],
                     'document_type' => 'Offer Letter'
-                    // لم نعد نستخدم custom_fields
                 ])
             ]);
 
@@ -108,47 +107,68 @@ class SignitService
             throw new \Exception('لم يتم إرجاع اسم المستند من API.');
         }
 
-        // 2️⃣ إنشاء طلب التوقيع بدون أي custom_fields
+        // 0️⃣ حساب عدد صفحات الملف ديناميكياً
+        $totalPages = $this->getPdfPageCount($filePath);
+
+        // 2️⃣ تجهيز قائمة الموقعين
+        $signatories = [];
+        foreach ($signers as $index => $signer) {
+            // توزيع أماكن التوقيع في الصفحة المخصصة للتوقيع
+            // السائق (أول عنصر) في المربع الأيمن، العميل (ثاني عنصر) في المربع الأيسر
+            // الإحداثيات محسوبة لصفحة A4 (595x842) حيث y=0 في الأعلى
+
+            if ($index == 0) {
+                // السائق - يمين
+                $posX = 320;
+                $posY = 580;
+            } else {
+                // العميل - يسار
+                $posX = 50;
+                $posY = 580;
+            }
+
+            $signatories[] = [
+                'full_name' => $signer['name'],
+                'order' => $index,
+                'verification_method' => [
+                    'email' => $signer['email']
+                ],
+                'notification_method' => [
+                    'email' => $signer['email']
+                ],
+                'fields' => [
+                    [
+                        'position' => [
+                            'page' => $totalPages, // استهداف الصفحة الأخيرة ديناميكياً
+                            'x' => $posX,
+                            'y' => $posY,
+                            'height' => 80,
+                            'width' => 180
+                        ],
+                        'properties' => [
+                            'required' => true
+                        ],
+                        'placeholder' => $signer['label'] ?? 'sign here',
+                        'kind' => 'signature'
+                    ]
+                ]
+            ];
+        }
+
+        // 3️⃣ إنشاء طلب التوقيع
         $payload = [
             'document_name' => $documentName,
             'signature_request' => [
-                'title' => 'Company NDA',
+                'title' => $title,
                 'metadata_document' => [
-                    'tags' => ['tag1', 'tag2', 'tag3'],
+                    'tags' => ['task', 'policy'],
                     'document_type' => 'Offer Letter'
                 ],
-                'signatories' => [
-                    [
-                        'full_name' => $signerName,
-                        'order' => 0,
-                        'verification_method' => [
-                            'email' => $signerEmail
-                        ],
-                        'notification_method' => [
-                            'email' => $signerEmail
-                        ],
-                        'fields' => [
-                            [
-                                'position' => [
-                                    'page' => 1,
-                                    'x' => 200,
-                                    'y' => 200,
-                                    'height' => 50,
-                                    'width' => 100
-                                ],
-                                'properties' => [
-                                    'required' => true
-                                ],
-                                'placeholder' => 'sign here',
-                                'kind' => 'signature'
-                            ]
-                        ]
-                    ]
-                ]
+                'signatories' => $signatories
             ]
         ];
 
-        // 3️⃣ إرسال طلب التوقيع
+        // 4️⃣ إرسال طلب التوقيع
         $signatureResponse = Http::withToken($token)
             ->post($this->baseUrl . '/signature-requests', $payload);
 
@@ -160,16 +180,8 @@ class SignitService
     }
 
 
-
-
-
-
-
-
-
-
     /**
-     * التحقق من حالة طلب التوقيع
+     * جلب حالة طلب التوقيع
      */
     public function getSignatureStatus($requestId)
     {
@@ -183,5 +195,48 @@ class SignitService
         }
 
         return $response->json();
+    }
+
+    /**
+     * تحميل المستند الموقع
+     */
+    public function downloadSignedDocument($requestId)
+    {
+        $token = $this->getAccessToken();
+
+        $response = Http::withToken($token)
+            ->get($this->baseUrl . "/signature-requests/{$requestId}/signed-document");
+
+        if ($response->failed()) {
+            throw new \Exception('فشل تحميل المستند الموقع: ' . $response->body());
+        }
+
+        return $response->body(); // محتوى الملف binary
+    }
+
+    /**
+     * جلب عدد صفحات ملف PDF ديناميكياً
+     */
+    private function getPdfPageCount($filePath)
+    {
+        try {
+            if (!file_exists($filePath)) return 2;
+
+            $content = file_get_contents($filePath);
+
+            // الطريقة الأولى لإيجاد الرقم خلف /Count (أكثر دقة في بعض الهياكل)
+            if (preg_match_all("/\/Count\s+(\d+)/", $content, $matches)) {
+                $count = (int) max($matches[1]);
+                if ($count > 0) return $count;
+            }
+
+            // الطريقة الثانية: حساب كائنات /Page
+            $count = preg_match_all("/\/Page\W/", $content, $dummy);
+            return $count > 0 ? $count : 2;
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Signit Page Count Error: " . $e->getMessage());
+            return 2; // احتياطياً
+        }
     }
 }

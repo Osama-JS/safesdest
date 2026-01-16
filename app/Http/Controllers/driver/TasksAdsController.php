@@ -64,8 +64,8 @@ class TasksAdsController extends Controller
       return [
         'id' => $ad->id,
         'task_id' => $ad->task_id,
-        'low_price' => $ad->lowest_price,
-        'high_price' => $ad->highest_price,
+        'low_price' => $ad->final_lowest_price,
+        'high_price' => $ad->final_highest_price,
         'price' => $ad->lowest_price, // للتوافق مع الكود الحالي
         'note' => $ad->description,
         'status' => $ad->status,

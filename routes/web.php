@@ -197,16 +197,20 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/show/{id}', [App\Http\Controllers\customer\TasksController::class, 'show'])->name('customer.tasks.show');
                 Route::get('/tasks/track/{id}', [App\Http\Controllers\customer\TasksController::class, 'track'])->name('customer.tasks.track');
                 Route::get('/tasks/report', [App\Http\Controllers\customer\TasksController::class, 'generateReport'])->name('customer.tasks.report');
+                Route::get('/tasks/download-policy/{id}', [App\Http\Controllers\customer\TasksController::class, 'downloadTaskPolicy'])->name('customer.tasks.download-policy');
+                Route::get('/tasks/invoice/{id}', [App\Http\Controllers\customer\TasksController::class, 'downloadTaskInvoice'])->name('customer.tasks.invoice');
                 Route::post('/tasks/export-excel', [App\Http\Controllers\customer\TasksController::class, 'exportToExcel'])->name('customer.tasks.export-excel');
 
                 // Customer Wallet Management
                 Route::get('/wallet', [App\Http\Controllers\customer\WalletController::class, 'index'])->name('customer.wallet.index');
                 Route::get('/wallet/data', [App\Http\Controllers\customer\WalletController::class, 'getData'])->name('customer.wallet.data');
+                Route::get('/wallet/transactions/{id}/receipt', [App\Http\Controllers\customer\WalletController::class, 'downloadCreditReceipt'])->name('customer.wallet.receipt');
 
                 // Customer Ads Management
                 Route::get('/ads', [App\Http\Controllers\customer\AdsController::class, 'index'])->name('customer.ads.index');
                 Route::get('/ads/data', [App\Http\Controllers\customer\AdsController::class, 'getData'])->name('customer.ads.data');
                 Route::get('/ads/show/{id}', [App\Http\Controllers\customer\AdsController::class, 'show'])->name('customer.ads.show');
+                Route::get('/tasks/invoice/{id}', [App\Http\Controllers\customer\TasksController::class, 'downloadTaskInvoice'])->name('customer.tasks.invoice');
                 Route::get('/ads/offers/show/', [App\Http\Controllers\customer\AdsController::class, 'getOffers'])->name('customer.offers.data');
                 Route::get('/ads/offers/accept/{id}', [App\Http\Controllers\customer\AdsController::class, 'acceptOffer'])->name('customer.ads.offers.accept');
                 Route::get('/ads/offers/retract/{id}', [App\Http\Controllers\customer\AdsController::class, 'retractOffer'])->name('customer.ads.offers.retract');
@@ -246,6 +250,9 @@ Route::middleware('rate.limit')->group(function () {
 
                 // Task Invoice Download
                 Route::get('/tasks/{id}/invoice', [TasksController::class, 'downloadTaskInvoice'])->name('tasks.invoice');
+
+                // Wallet Credit Receipt Download
+                Route::get('/wallets/transactions/{id}/receipt', [WalletsController::class, 'downloadCreditReceipt'])->name('wallets.transaction.receipt');
 
                 // Manual Notifications Routes
                 Route::prefix('notifications')->name('admin.notifications.')->group(function () {
@@ -579,6 +586,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/tasks/add-note', [TasksController::class, 'taskAddNote'])->name('tasks.note');
                 Route::get('/tasks/assign/{id}', [TasksController::class, 'getToAssign'])->name('tasks.get.assign');
                 Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
+                Route::get('/tasks/verify-signature/{id}', [TasksController::class, 'verifySignatureStatus'])->name('tasks.verify_signature');
                 Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
                 Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
                 Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');

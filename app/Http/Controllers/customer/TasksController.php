@@ -22,13 +22,22 @@ use App\Models\Order;
 use App\Services\CustomerTaskPricingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\CustomerTasksExportForCustomer;
+use App\Services\PdfService;
 
 class TasksController extends Controller
 {
+    protected $pdfService;
+
+    public function __construct(PdfService $pdfService)
+    {
+        $this->pdfService = $pdfService;
+    }
+
     public function index()
     {
         return view('customers.tasks.index');
@@ -235,6 +244,130 @@ class TasksController extends Controller
         return view('customers.tasks.track', compact('task'));
     }
 
+
+
+
+    // public function downloadTaskInvoice($id)
+    // {
+    //   Log::info('downloadTaskInvoice Start');
+    //     try {
+    //         $task = Task::with([
+    //             'customer',
+    //             'pickup',
+    //             'delivery',
+    //             'vehicle_size.type.vehicle'
+    //         ])
+    //             ->where('customer_id', Auth::user()->id)
+    //             ->where('id', $id)
+    //             ->firstOrFail();
+
+    //         // if ($task->payment_status !== 'paid' && $task->payment_status !== 'completed' && $task->status !== 'completed') {
+    //         //      if (request()->ajax()) {
+    //         //         return response()->json(['error' => __('Invoice is not available yet.')], 403);
+    //         //      }
+    //         //      return redirect()->back()->with('error', __('Invoice is not available yet.'));
+    //         // }
+
+    //         Log::info('downloadTaskInvoice going to generate pdf');
+
+    //         $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
+    //         $file_name = "{$invoice_number}_{$task->customer->name}";
+    //         Log::info('downloadTaskInvoice going to generate pdf');
+
+    //         // Generate raw PDF content
+    //         $pdfContent = $this->pdfService->generateRaw('admin.tasks.invoice_pdf', [
+    //             'task' => $task,
+    //             'invoice_number' => $invoice_number,
+    //             'invoice_date' => now()
+    //         ]);
+
+    //         return response($pdfContent)
+    //             ->header('Content-Type', 'application/pdf')
+    //             ->header('Content-Disposition', "attachment; filename=\"{$file_name}.pdf\"")
+    //             ->header('Content-Length', strlen($pdfContent));
+
+    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+    //         Log::info('downloadTaskInvoice ModelNotFoundException');
+    //         if (request()->ajax()) {
+    //             return response()->json(['error' => __('Task not found.')], 404);
+    //         }
+    //         return redirect()->back()->with('error', __('Task not found.'));
+    //     } catch (Exception $e) {
+    //         Log::info('downloadTaskInvoice Exception: '. $e->getMessage());
+    //         if (request()->ajax()) {
+    //             return response()->json(['error' => __('Failed to generate invoice.')], 500);
+    //         }
+    //         return redirect()->back()->with('error', __('Failed to generate invoice.'));
+    //     }
+    // }
+
+    public function downloadTaskInvoice($id, Request $request)
+    {
+      Log::info('downloadTaskInvoice Start');
+        try {
+            // Manual Authentication for file download (supports query param token)
+            $user = Auth::user();
+
+            if (!$user) {
+                // Try getting token from query string
+                $token = $request->query('token');
+                if ($token) {
+                    $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+                    if ($accessToken && $accessToken->tokenable) {
+                        $user = $accessToken->tokenable;
+                    }
+                }
+            }
+
+            Log::info('downloadTaskInvoice user: '. $user->id);
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Unauthenticated.'
+                ], 401);
+            }
+
+            $task = Task::with([
+                'customer',
+                'pickup',
+                'delivery',
+                'vehicle_size.type.vehicle'
+            ])
+                ->where('customer_id', $user->id)
+                ->where('id', $id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            if ($task->payment_status !== 'completed') {
+                 if (request()->ajax()) {
+                    return response()->json(['error' => __('Invoice is not available until payment is completed.')], 403);
+                 }
+                 return redirect()->back()->with('error', __('Invoice is not available until payment is completed.'));
+            }
+
+            $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
+            $file_name = "{$invoice_number}_{$task->customer->name}";
+
+            return $this->pdfService->generate('admin.tasks.invoice_pdf', [
+                'task' => $task,
+                'invoice_number' => $invoice_number,
+                'invoice_date' => now()
+            ], "{$file_name}.pdf", true);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 404,
+                'message' => 'Task not found or you do not have permission to view it'
+            ], 404);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to generate invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function validateStep1(Request $req)
     {

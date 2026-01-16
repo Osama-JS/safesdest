@@ -54,6 +54,8 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Services\NotificationService;
 use App\Services\PdfService;
+use App\Services\SignitService;
+use Illuminate\Support\Str;
 
 class TasksController extends Controller
 {
@@ -163,7 +165,9 @@ class TasksController extends Controller
               'status' => $task->status,
               'conditions' => $task->conditions,
               'avatar' => $avatar,
-              'point' => $task->point()->where('type', 'pickup')->first()
+              'point' => $task->point()->where('type', 'pickup')->first(),
+              'signature_status' => $task->signature_status,
+              'signature_request_id' => $task->signature_request_id,
             ];
 
             if ($driver) {
@@ -608,9 +612,8 @@ class TasksController extends Controller
             }
 
 
-
             $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
-            $file_name = "#{$task->id}_{$task->customer->name}_{$task->pickup->address}_{$task->delivery->address}";
+            $file_name = "#{$task->id}_{$task->customer?->name}_{$task->pickup->address}_{$task->delivery->address}";
             if ($task->driver) {
                 $file_name .= "_{$task->driver->name}";
             }
@@ -631,15 +634,98 @@ class TasksController extends Controller
             // إرسال الإشعارات بالبريد الإلكتروني مع المرفقات
             $this->sendTaskAssignmentNotifications($data, $driver, $attachments);
 
+            // 🟢 التوقيع الإلكتروني عبر Signit
+            try {
+                $signitService = app(SignitService::class);
+
+                $signers = [
+                    [
+                        'name' => $driver->name,
+                        'email' => $driver->email,
+                        'label' => 'Driver Signature'
+                    ],
+                    [
+                        'name' => $data->customer ? $data->customer->name : $data->user->name,
+                        'email' => $data->customer ? $data->customer->email : $data->user->email,
+                        'label' => 'Customer Signature'
+                    ]
+                ];
+
+                $title = "بوليصة المهمة رقم #{$data->id}";
+
+                // حفظ ملف مؤقت للإرسال
+                $tempPath = storage_path("app/public/temp_task_{$data->id}.pdf");
+                file_put_contents($tempPath, $pdfContent);
+
+                $signitResponse = $signitService->createSignatureRequest($tempPath, $signers, $title);
+                Log::alert("print response");
+                Log::alert($signitResponse);
+                // تحديث المهمة بمعرف التوقيع
+                if (isset($signitResponse['id'])) {
+                  Log::alert("update signit data");
+                    $data->update([
+                        'signature_request_id' => $signitResponse['id'],
+                        'signature_status' => 'pending'
+                    ]);
+                }
+                Log::alert("Fnish response");
+
+
+                // حذف الملف المؤقت
+                if (file_exists($tempPath)) {
+                    unlink($tempPath);
+                }
+            } catch (Exception $signitEx) {
+                // نسجل الخطأ ولكن لا نوقف عملية الـ assign الأساسية
+                Log::error("Signit Error for task #{$data->id}: " . $signitEx->getMessage());
+            }
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('task assigned successfully')]);
         } catch (Exception $ex) {
             DB::rollBack();
-            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+            return response()->json(['status' => 0, 'error' => $ex->getMessage()]);
         }
     }
 
+    /**
+     * تحقق من حالة التوقيع عبر Signit وتحديث قاعدة البيانات
+     */
+    public function verifySignatureStatus($id)
+    {
+        try {
+            $task = Task::findOrFail($id);
+            if (!$task->signature_request_id) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => __('No signature request found for this task')
+                ]);
+            }
+
+            $signitService = app(SignitService::class);
+            $statusResponse = $signitService->getSignatureStatus($task->signature_request_id);
+
+            // استخراج الحالة من الاستجابة
+            // نتحقق من وجود الحالة في الجذر أولاً ثم في الكائن المتداخل (كاحتياط)
+            $newStatus = $statusResponse['status'] ?? ($statusResponse['signature_request']['status'] ?? 'pending');
+
+            // تحويل حالات Signit لحالاتنا الداخلية (اختياري، هنا سنخزنها كما هي)
+            $task->update(['signature_status' => $newStatus]);
+
+            return response()->json([
+                'status' => 1,
+                'signature_status' => $newStatus,
+                'message' => __('Signature status updated successfully')
+            ]);
+
+        } catch (Exception $e) {
+            Log::error("Verify Signature Error for task #$id: " . $e->getMessage());
+            return response()->json([
+                'status' => 0,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
 
     public function store(Request $req, TaskPricingService $pricingService)
     {
@@ -1401,9 +1487,48 @@ class TasksController extends Controller
                 }
             }
             DB::commit();
-            foreach ($imageForDelete ?? [] as $file) {
-                unlink($file);
 
+            // Notify everyone involved
+            $notiMessages = [
+                'user' => [
+                    'title' => 'تعديل على المهمة',
+                    'msg'   => "قام المسؤول بتحديث بيانات المهمة رقم #{$newTask->id}."
+                ],
+                'customer' => [
+                    'title' => 'تحديث في المهمة الخاصة بك',
+                    'msg'   => "تم تعديل بعض التفاصيل في المهمة رقم #{$newTask->id}."
+                ],
+                'driver' => [
+                    'title' => 'تنبيه: تغيير في تفاصيل المهمة',
+                    'msg'   => "تم تحديث بيانات المهمة رقم #{$newTask->id} المسندة إليك. يرجى مراجعتها."
+                ],
+            ];
+
+            $recipients = [
+                'user'     => $newTask->user_id,
+                'customer' => $newTask->customer_id,
+                'driver'   => $newTask->driver_id,
+            ];
+
+            foreach ($recipients as $type => $id) {
+                if ($id && isset($notiMessages[$type])) {
+                    app(\App\Services\NotificationService::class)->send(
+                        $type,
+                        [$id],
+                        $notiMessages[$type]['title'],
+                        $notiMessages[$type]['msg'],
+                        '/images/admin-icon.png',
+                        '/images/banner.png',
+                        "/tasks/{$newTask->id}",
+                        'task_update'
+                    );
+                }
+            }
+
+            foreach ($imageForDelete ?? [] as $file) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
                 FileHelper::deleteFileIfExists($file);
             }
 
@@ -1848,6 +1973,8 @@ class TasksController extends Controller
               'closed'     => $task->closed,
               'delivery'     => $task->delivery_number ?? '',
               'payment'     => $task->payment_status,
+              'signature_status' => $task->signature_status,
+              'signature_request_id' => $task->signature_request_id,
               'created_at' => $task->created_at->format('Y-m-d H:i'),
             ];
         }
@@ -2100,7 +2227,18 @@ class TasksController extends Controller
     public function downloadTaskReport($id)
     {
         $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($id);
-        $file_name = "#{$task->id}_{$task->customer->name}_{$task->pickup->address}_{$task->delivery->address}";
+
+        $customerName = optional($task->customer)->name ?? optional($task->user)->name ?? 'user';
+        $pickup      = optional($task->pickup)->address ?? 'pickup';
+        $delivery    = optional($task->delivery)->address ?? 'delivery';
+
+        $file_name = sprintf(
+            '%s_%s_%s_%s',
+            $task->id,
+            Str::slug($customerName, '_'),
+            Str::slug($pickup, '_'),
+            Str::slug($delivery, '_')
+        );
         if ($task->driver) {
             $file_name .= "_{$task->driver->name}";
         }
@@ -2110,24 +2248,7 @@ class TasksController extends Controller
 
     }
 
-    public function downloadTaskInvoice($id)
-    {
-        $task = Task::with([
-            'customer',
-            'pickup',
-            'delivery',
-            'vehicle_size.type.vehicle'
-        ])->findOrFail($id);
 
-        $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
-        $file_name = "{$invoice_number}_{$task->customer->name}";
-
-        return $this->pdfService->generate('admin.tasks.invoice_pdf', [
-            'task' => $task,
-            'invoice_number' => $invoice_number,
-            'invoice_date' => now()
-        ], "{$file_name}.pdf");
-    }
 
 
     public function destroy(Request $req)
@@ -3216,5 +3337,51 @@ class TasksController extends Controller
         ];
 
         return view('admin.tasks.create_from_invoice', compact('invoice', 'product', 'pickup_point', 'customers', 'vehicles', 'templates'));
+    }
+    public function downloadTaskInvoice($id)
+    {
+        try {
+            $task = Task::with([
+                'customer',
+                'pickup',
+                'delivery',
+                'vehicle_size.type.vehicle'
+            ])
+                ->findOrFail($id);
+
+            $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
+            $name = $task->customer
+                ? $task->customer->name
+                : optional($task->user)->name;
+
+            $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $name ?? 'user');
+
+            $file_name = "{$invoice_number}_{$safeName}";
+
+            // Generate raw PDF content
+            $pdfContent = $this->pdfService->generateRaw('admin.tasks.invoice_pdf', [
+                'task' => $task,
+                'invoice_number' => $invoice_number,
+                'invoice_date' => now()
+            ]);
+
+            return response($pdfContent)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', "attachment; filename=\"{$file_name}.pdf\"")
+                ->header('Content-Length', strlen($pdfContent));
+
+        } catch (ModelNotFoundException $e) {
+            if (request()->ajax()) {
+                return response()->json(['error' => __('Task not found.')], 404);
+            }
+            return redirect()->back()->with('error', __('Task not found.'));
+        } catch (Exception $e) {
+            Log::error('downloadTaskInvoice Exception: ' . $e->getMessage());
+            if (request()->ajax()) {
+                return response()->json(['error' => __('Failed to generate invoice.')], 500);
+            }
+
+            return redirect()->back()->with('error', __('Failed to generate invoice.'));
+        }
     }
 }

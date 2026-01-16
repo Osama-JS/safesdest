@@ -747,7 +747,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Highest Price') }}</small>
                                                 <div class="fw-bold text-danger fs-5">
-                                                    {{ number_format($ad->highest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_highest_price, 0) }} <small>SAR</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -763,7 +763,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Lowest Price') }}</small>
                                                 <div class="fw-bold text-success fs-5">
-                                                    {{ number_format($ad->lowest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_lowest_price, 0) }} <small>SAR</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -1050,7 +1050,7 @@
                     <!-- Offer Actions -->
                     <div class="p-3 border-bottom">
                         @if ($offer)
-                        
+
                         <div class="p-3 ">
                             <div class="offer-alert">
                               @if ($offer->accepted)
@@ -1059,7 +1059,7 @@
                                     Your offer has been accepted!
                                 </div>
                               @endif
-                                
+
                                 <div class="mb-3">
                                     <strong class="d-block mb-1">Accepted Price:</strong>
                                  @php
@@ -1093,14 +1093,14 @@
                                 @endif
                             </div>
                         </div>
-                    
+
                         @if (!$offer->accepted)
                            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#offerModal">
                                 <i class="ti ti-edit me-1"></i>
                                 {{ __('Update your offer') }}
                             </button>
                         @endif
-                           
+
 
                         @elseif (!$offer)
                             <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#offerModal">
@@ -1111,7 +1111,7 @@
                     </div>
 
                     <!-- Accepted Offer Alert -->
-                    
+
 
                     <!-- Offers Container -->
                     <div class="card-body p-0" id="offers-container">
@@ -1149,7 +1149,7 @@
                               @if ($offer)
                                   You will receive: {{ number_format($net, 2) }} SAR (after {{ number_format($deduction, 2) }} SAR deductions)
                               @endif
-                          </span>                            
+                          </span>
 
 
                          <span class="price-error text-danger text-error"></span>

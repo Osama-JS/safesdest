@@ -58,6 +58,9 @@ class DriverTaskAdsController extends Controller
 
             // Count driver's accepted offers
             $acceptedOffers = Task_Offire::where('driver_id', $driver_id)
+                ->whereHas('ad', function ($query) {
+                    $query->where('status', 'running');
+                })
                 ->where('accepted', true)
                 ->count();
 
@@ -191,21 +194,21 @@ class DriverTaskAdsController extends Controller
             // Apply price filters
             if (!empty($minPrice)) {
                 Log::info('Applying min price filter', ['min_price' => $minPrice]);
-                $query->where('lowest_price', '>=', $minPrice);
+                $query->where('final_lowest_price', '>=', $minPrice);
             }
             if (!empty($maxPrice)) {
                 Log::info('Applying max price filter', ['max_price' => $maxPrice]);
-                $query->where('highest_price', '<=', $maxPrice);
+                $query->where('final_highest_price', '<=', $maxPrice);
             }
 
             // Apply sorting
             Log::info('Applying sorting', ['sort_by' => $sortBy, 'sort_order' => $sortOrder]);
             switch ($sortBy) {
                 case 'lowest_price':
-                    $query->orderBy('lowest_price', $sortOrder);
+                    $query->orderBy('final_lowest_price', $sortOrder);
                     break;
                 case 'highest_price':
-                    $query->orderBy('highest_price', $sortOrder);
+                    $query->orderBy('final_highest_price', $sortOrder);
                     break;
                 case 'created_at':
                 default:
@@ -531,7 +534,7 @@ class DriverTaskAdsController extends Controller
             // Assign task to driver
             $task->update([
                 'driver_id' => $driver_id,
-                'status' => 'assign',
+                'status' => 'assigned',
                 'total_price' => $offer->price
             ]);
 
@@ -554,6 +557,20 @@ class DriverTaskAdsController extends Controller
                 'offer_id' => $offerId,
                 'price' => $offer->price
             ]);
+
+            // Notify customer
+            if ($task->customer_id) {
+                app(\App\Services\NotificationService::class)->send(
+                    'customer',
+                    [$task->customer_id],
+                    '✅ سائق جديد في الطريق!',
+                    "قام السائق {$driver->name} بتأكيد قبول المهمة رقم #{$task->id}. يمكنك متابعة الحالة الآن.",
+                    '/images/admin-icon.png',
+                    '/images/banner.png',
+                    "/tasks/{$task->id}",
+                    'driver_accepted_task'
+                );
+            }
 
             return response()->json([
                 'success' => true,
@@ -580,7 +597,7 @@ class DriverTaskAdsController extends Controller
     }
 
     /**
-     * Reject task assignment (revert offer acceptance)
+     * Reject task/offer after it was approved by customer
      */
     public function rejectTask(Request $request, $offerId)
     {
@@ -598,7 +615,13 @@ class DriverTaskAdsController extends Controller
             $ad = $offer->ad;
             $task = $ad->task;
 
-            // Update offer status to not accepted (pending)
+            Log::info('Driver rejected accepted offer', [
+                'driver_id' => $driver_id,
+                'task_id' => $task->id,
+                'offer_id' => $offerId
+            ]);
+
+            // Revert offer to pending
             $offer->update([
                 'accepted' => false
             ]);
@@ -606,23 +629,27 @@ class DriverTaskAdsController extends Controller
             // Add task history
             $task->history()->create([
                 'action_type' => 'rejected',
-                'description' => "Driver rejected the task assignment offer",
+                'description' => "Driver rejected the accepted offer",
                 'ip' => $request->ip()
             ]);
 
-            Log::info('Driver rejected task assignment', [
-                'driver_id' => $driver_id,
-                'task_id' => $task->id,
-                'offer_id' => $offerId
-            ]);
+            // Notify customer
+            if ($task->customer_id) {
+                app(\App\Services\NotificationService::class)->send(
+                    'customer',
+                    [$task->customer_id],
+                    '⚠️ تحديث حول عرض السائق',
+                    "اعتذر السائق {$driver->name} عن تنفيذ المهمة رقم #{$task->id}. يمكنك مراجعة العروض الأخرى.",
+                    '/images/admin-icon.png',
+                    '/images/banner.png',
+                    "/task-ads/{$ad->id}",
+                    'driver_rejected_offer'
+                );
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Task rejected successfully',
-                'data' => [
-                    'offer_id' => $offer->id,
-                    'accepted' => false
-                ]
+                'message' => 'Offer rejected successfully'
             ], 200);
 
         } catch (Exception $e) {
@@ -634,14 +661,14 @@ class DriverTaskAdsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject task'
+                'message' => 'Failed to reject offer'
             ], 500);
         }
     }
 
 
     /**
-     * Delete Offer
+     * Accept task after offer is approved
      */
     public function deleteOffer(Request $request, $offerId){
       try {
@@ -865,8 +892,8 @@ class DriverTaskAdsController extends Controller
             'task_id' => $ad->task_id,
             'description' => $ad->description,
             'status' => $ad->status,
-            'lowest_price' => (float) $ad->lowest_price,
-            'highest_price' => (float) $ad->highest_price,
+            'lowest_price' => (float) $ad->final_lowest_price,
+            'highest_price' => (float) $ad->final_highest_price,
             'included' => (bool) $ad->included,
             'created_at' => $ad->created_at,
             'task' => [

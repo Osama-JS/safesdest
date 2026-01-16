@@ -18,11 +18,15 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
 use App\Helpers\IpHelper;
 use Illuminate\Support\Str;
+use App\Services\PdfService;
 
 class WalletsController extends Controller
 {
-    public function __construct()
+    protected $pdfService;
+
+    public function __construct(PdfService $pdfService)
     {
+        $this->pdfService = $pdfService;
         $this->middleware('permission:view_wallets', ['only' => ['index', 'getData']]);
         $this->middleware('permission:save_wallets', ['only' => ['update']]);
         $this->middleware('permission:details_wallets', ['only' => ['show', 'getDataTransactions']]);
@@ -395,6 +399,18 @@ class WalletsController extends Controller
 
             DB::commit();
 
+            // Notify Driver
+            app(\App\Services\NotificationService::class)->send(
+                'driver',
+                [$wallet->driver_id],
+                '✅ تم إيداع مستحقاتك!',
+                "تمت معالجة مبلغ {$request->total_amount} ريال وتحويله إلى حسابك بنجاح.",
+                '/images/admin-icon.png',
+                '/images/banner.png',
+                "/wallet",
+                'payment_processed'
+            );
+
             return response()->json([
               'success' => true,
               'message' => 'Payment processed successfully',
@@ -610,7 +626,25 @@ class WalletsController extends Controller
 
             DB::commit();
 
-            return response()->json(['status' => 1, 'success' => __('Transaction Saved successfully')]);
+            // Notify Driver if wallet owner is driver
+            if ($wallet->user_type === 'driver' && $wallet->driver_id) {
+                $typeText = $req->type === 'credit' ? 'إيداع' : 'خصم';
+                app(\App\Services\NotificationService::class)->send(
+                    'driver',
+                    [$wallet->driver_id],
+                    "تحديث في المحفظة: {$typeText}",
+                    "تمت إضافة عملية {$typeText} بقيمة {$req->amount} ريال في محفظتك. السبب: {$req->description}",
+                    '/images/admin-icon.png',
+                    '/images/banner.png',
+                    "/wallet",
+                    'wallet_adjustment'
+                );
+            }
+return response()->json([
+    'status'  => 1,
+    'success' => __('Transaction saved successfully'),
+]);
+
         } catch (\Exception $ex) {
             DB::rollBack();
 
@@ -914,6 +948,133 @@ class WalletsController extends Controller
                 'error' => 'حدث خطأ أثناء جلب المهام: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Download credit receipt for a wallet transaction
+     */
+    public function downloadCreditReceipt($transactionId)
+    {
+        try {
+            $transaction = Wallet_Transaction::with(['wallet.customer', 'wallet.driver', 'task'])
+                ->findOrFail($transactionId);
+
+            // Verify transaction type is credit
+            if ($transaction->transaction_type !== 'credit') {
+                return redirect()->back()->with('error', __('Receipt is only available for credit transactions.'));
+            }
+
+            $wallet = $transaction->wallet;
+
+            // Check user permission
+            $user = Auth::user();
+            if ($wallet->user_type === 'driver') {
+                if (!$user || !$user->checkDriver($wallet->driver_id)) {
+                    abort(403);
+                }
+            } else {
+                if (!$user || !$user->checkCustomer($wallet->customer_id)) {
+                    abort(403);
+                }
+            }
+
+            // Convert amount to Arabic words
+            $amountInWords = $this->convertNumberToArabicWords($transaction->amount);
+
+            $file_name = "receipt_{$wallet->id}_{$transaction->sequence}";
+
+            return $this->pdfService->generate('admin.wallets.receipt_pdf', [
+                'transaction' => $transaction,
+                'wallet' => $wallet,
+                'amountInWords' => $amountInWords
+            ], "{$file_name}.pdf", true);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->with('error', __('Transaction not found.'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', __('Failed to generate receipt: ') . $e->getMessage());
+        }
+    }
+
+    /**
+     * Convert number to Arabic words
+     */
+    private function convertNumberToArabicWords($number)
+    {
+        $number = floatval($number);
+        $integerPart = floor($number);
+        $decimalPart = round(($number - $integerPart) * 100);
+
+        $ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+        $tens = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+        $hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+        $teens = ['عشرة', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+
+        $result = '';
+
+        if ($integerPart == 0) {
+            $result = 'صفر';
+        } else {
+            // Thousands
+            $thousands = floor($integerPart / 1000);
+            if ($thousands > 0) {
+                if ($thousands == 1) {
+                    $result .= 'ألف ';
+                } elseif ($thousands == 2) {
+                    $result .= 'ألفان ';
+                } elseif ($thousands >= 3 && $thousands <= 10) {
+                    $result .= $ones[$thousands] . ' آلاف ';
+                } else {
+                    $result .= $this->convertNumberToArabicWords($thousands) . ' ألف ';
+                }
+            }
+
+            // Hundreds
+            $remainder = $integerPart % 1000;
+            $hundredsDigit = floor($remainder / 100);
+            if ($hundredsDigit > 0) {
+                $result .= $hundreds[$hundredsDigit] . ' ';
+            }
+
+            // Tens and ones
+            $remainder = $remainder % 100;
+            if ($remainder >= 10 && $remainder < 20) {
+                $result .= $teens[$remainder - 10] . ' ';
+            } else {
+                $tensDigit = floor($remainder / 10);
+                $onesDigit = $remainder % 10;
+
+                if ($tensDigit > 0) {
+                    $result .= $tens[$tensDigit] . ' ';
+                }
+                if ($onesDigit > 0) {
+                    $result .= ($tensDigit > 0 ? 'و' : '') . $ones[$onesDigit] . ' ';
+                }
+            }
+        }
+
+        $result = trim($result) . ' ريال';
+
+        // Add decimal part (halalas)
+        if ($decimalPart > 0) {
+            $result .= ' و';
+            if ($decimalPart >= 10 && $decimalPart < 20) {
+                $result .= ' ' . $teens[$decimalPart - 10];
+            } else {
+                $tensDigit = floor($decimalPart / 10);
+                $onesDigit = $decimalPart % 10;
+
+                if ($tensDigit > 0) {
+                    $result .= ' ' . $tens[$tensDigit];
+                }
+                if ($onesDigit > 0) {
+                    $result .= ($tensDigit > 0 ? ' و' : ' ') . $ones[$onesDigit];
+                }
+            }
+            $result .= ' هللة';
+        }
+
+        return $result;
     }
 
 }

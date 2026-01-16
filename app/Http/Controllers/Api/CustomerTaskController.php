@@ -33,11 +33,13 @@ use App\Services\PdfService;
 class CustomerTaskController extends Controller
 {
 
-     protected $pdfService;
+    protected $pdfService;
+    protected $signitService;
 
-    public function __construct(PdfService $pdfService)
+    public function __construct(PdfService $pdfService, \App\Services\SignitService $signitService)
     {
         $this->pdfService = $pdfService;
+        $this->signitService = $signitService;
     }
     /**
      * Get task details with history
@@ -475,6 +477,24 @@ class CustomerTaskController extends Controller
                 $file_name .= "_{$task->driver->name}";
             }
 
+            // 1. محاولة تحميل الملف الموقع من Signit
+            if (!empty($task->signature_request_id)) {
+                try {
+                    // يمكن إضافة فحص إضافي هنا للحالة إذا لزم الأمر، لكن الوجود يكفي للمحاولة
+                    // if ($task->signature_status === 'completed') { ... }
+
+                    $fileContent = $this->signitService->downloadSignedDocument($task->signature_request_id);
+
+                    return response($fileContent)
+                        ->header('Content-Type', 'application/pdf')
+                        ->header('Content-Disposition', "attachment; filename=\"{$file_name}_Signed.pdf\"");
+                } catch (\Exception $e) {
+                    // Log the error but fallback to local generation
+                    Log::warning("Failed to download signed document for Task #{$task->id} from Signit: " . $e->getMessage());
+                }
+            }
+
+            // 2. Fallback: Generate generic PDF locally
             return $this->pdfService->generate('admin.tasks.report_pdf', [
                 'task' => $task
             ], "{$file_name}.pdf", true);

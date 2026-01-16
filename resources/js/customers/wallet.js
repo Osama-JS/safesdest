@@ -141,7 +141,7 @@ $(function () {
           }
         }
       ],
-      order: [[1, 'asc']],
+      order: [[1, 'desc']],
       dom:
         '<"row"' +
         '<"col-md-2"l>' +

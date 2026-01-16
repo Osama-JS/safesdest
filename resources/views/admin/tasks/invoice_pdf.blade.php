@@ -155,7 +155,7 @@
 
     {{-- Title --}}
     <div class="invoice-title">
-        فاتورة ضريبية / Tax Invoice
+        فاتورة شحن / Shipment Invoice
     </div>
 
     {{-- Invoice Info Sections --}}
@@ -208,7 +208,7 @@
                 </div>
                 <div>
                     <span class="info-label">رقم الهاتف:</span>
-                    <span class="info-value">{{ $task->phone_number ?? $task->customer->phone ?? 'N/A' }}</span>
+                    <span class="info-value">{{ $task->customer->phone ?? $task->user->phone ?? 'N/A' }}</span>
                 </div>
                 @if($task->pickup)
                 <div>
@@ -242,7 +242,7 @@
                     <strong>خدمة توصيل / Delivery Service</strong><br>
                     <span style="font-size: 11px; color: #666;">
                         مهمة رقم #{{ $task->id }}<br>
-                        نوع المركبة: {{ $task->vehicle_size->name ?? 'N/A' }}
+                        نوع المركبة: {{ ($task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name) ?? 'N/A' }}
                     </span>
                 </td>
                 <td>1</td>

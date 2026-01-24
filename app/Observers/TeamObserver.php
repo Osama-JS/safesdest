@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class TeamObserver
 {
-    protected $adminEmail = 'osama.samomy@gmail.com';
+    protected $adminEmail = 'nawafr81aug@gmail.com';
 
     public function created(Teams $team)
     {

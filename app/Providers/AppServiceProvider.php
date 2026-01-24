@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use App\Models\Task;
+use App\Models\Task_Offire;
+use App\Models\Driver;
+use App\Models\Customer;
+use App\Models\Teams;
+use App\Observers\TaskObserver;
+use App\Observers\TaskOfferObserver;
+use App\Observers\DriverObserver;
+use App\Observers\CustomerObserver;
+use App\Observers\TeamObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +39,13 @@ class AppServiceProvider extends ServiceProvider
     {
         // Define rate limiters for API endpoints
         $this->configureRateLimiters();
+
+        // Register Observers
+        Task::observe(TaskObserver::class);
+        Task_Offire::observe(TaskOfferObserver::class);
+        Driver::observe(DriverObserver::class);
+        Customer::observe(CustomerObserver::class);
+        Teams::observe(TeamObserver::class);
 
         // كود Vite كما هو
         Vite::useStyleTagAttributes(function (?string $src, string $url, ?array $chunk, ?array $manifest) {

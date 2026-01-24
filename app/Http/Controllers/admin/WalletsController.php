@@ -24,7 +24,7 @@ class WalletsController extends Controller
 {
     protected $pdfService;
 
-    public function __construct(PdfService $pdfService)
+    public function __construct(PdfService $pdfService = null)
     {
         $this->pdfService = $pdfService;
         $this->middleware('permission:view_wallets', ['only' => ['index', 'getData']]);

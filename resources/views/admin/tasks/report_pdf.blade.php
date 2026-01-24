@@ -228,7 +228,15 @@
             <tr>
                 <td colspan="3">
                     <div class="label">{{ __('Address') }}</div>
-                    <div class="value">{{ $task->pickup?->address ?? '-' }}</div>
+                    <div class="value">
+                        {{ $task->pickup?->address ?? '-' }}
+                        @if ($task->pickup?->latitude && $task->pickup?->longitude)
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ $task->pickup->latitude }},{{ $task->pickup->longitude }}"
+                                style="color: #3498db; text-decoration: none; font-size: 10px; margin-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}: 10px;">
+                                [{{ __('Open in Maps') }}]
+                            </a>
+                        @endif
+                    </div>
                 </td>
             </tr>
         </table>
@@ -255,7 +263,15 @@
             <tr>
                 <td colspan="3">
                     <div class="label">{{ __('Address') }}</div>
-                    <div class="value">{{ $task->delivery?->address ?? '-' }}</div>
+                    <div class="value">
+                        {{ $task->delivery?->address ?? '-' }}
+                        @if ($task->delivery?->latitude && $task->delivery?->longitude)
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ $task->delivery->latitude }},{{ $task->delivery->longitude }}"
+                                style="color: #3498db; text-decoration: none; font-size: 10px; margin-{{ app()->getLocale() === 'ar' ? 'right' : 'left' }}: 10px;">
+                                [{{ __('Open in Maps') }}]
+                            </a>
+                        @endif
+                    </div>
                 </td>
             </tr>
         </table>
@@ -279,8 +295,190 @@
                     <div class="value">{{ $task->driver?->team?->name ?? '-' }}</div>
                 </td>
             </tr>
+            @if ($task->driver && !empty((array) $task->driver->driver_visible_additional_data))
+                @php
+                    $driverData = (array) $task->driver->driver_visible_additional_data;
+                    $chunks = array_chunk($driverData, 3, true);
+                @endphp
+                @foreach ($chunks as $chunk)
+                    <tr>
+                        @foreach ($chunk as $item)
+                            <td>
+                                <div class="label">{{ $item['label'] ?? '-' }}</div>
+                                    @php
+                                        $val = $item['value'];
+                                        $isImage = false;
+                                        $imageSrc = null;
+
+                                        // Check if value looks like an image
+                                        if (
+                                            !empty($val) &&
+                                            is_string($val) &&
+                                            preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $val)
+                                        ) {
+                                            // 1. Clean path (remove storage/ prefix if present to normalize)
+                                            $cleanVal = preg_replace('/^storage\//', '', $val);
+
+                                            // Define potential absolute paths
+                                            $possiblePaths = [
+                                                public_path($val), // Direct public path
+                                                public_path('storage/' . $cleanVal), // Storage link in public
+                                                storage_path('app/public/' . $cleanVal), // Direct storage path
+                                                storage_path('app/' . $cleanVal), // Fallback storage path
+                                            ];
+
+                                            foreach ($possiblePaths as $path) {
+                                                if (file_exists($path) && is_file($path)) {
+                                                    try {
+                                                        $fileContent = file_get_contents($path);
+                                                        $mimeType = mime_content_type($path);
+                                                        // Ensure mime type is valid image
+                                                        if (strpos($mimeType, 'image/') === 0) {
+                                                            $imageSrc = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+                                                            $isImage = true;
+                                                            break;
+                                                        }
+                                                    } catch (\Exception $e) {
+                                                        // Ignore read errors
+                                                    }
+                                                }
+                                            }
+
+                                            // Fallback: Try URL if local file not found (mimic logo approach strictly if requested)
+                                            if (!$isImage) {
+                                                try {
+                                                     // Only try if it looks like a relative path, construct URL
+                                                     $url = url(str_starts_with($val, 'storage') ? $val : 'storage/' . $cleanVal);
+                                                     // Warning: file_get_contents on URL might be blocked.
+                                                     // But user asked to mimic logo: file_get_contents(url('...'))
+                                                     // We'll try this as last resort if allow_url_fopen is on.
+                                                     if (ini_get('allow_url_fopen')) {
+                                                         $headers = @get_headers($url);
+                                                         if ($headers && strpos($headers[0], '200')) {
+                                                             $fileContent = @file_get_contents($url);
+                                                             if ($fileContent) {
+                                                                 $imageSrc = 'data:image/jpeg;base64,' . base64_encode($fileContent); // Default to jpeg if mime unknown from URL stream
+                                                                 $isImage = true;
+                                                             }
+                                                         }
+                                                     }
+                                                } catch (\Exception $e) {}
+                                            }
+                                        }
+                                    @endphp
+
+                                    @if ($isImage && $imageSrc)
+                                        <div style="margin-top: 5px;">
+                                            <img src="{{ $imageSrc }}"
+                                                style="max-width: 250px; max-height: 250px; border: 1px solid #eee; border-radius: 4px;">
+                                        </div>
+                                    @else
+                                        {{ $item['value'] ?? '-' }}
+                                    @endif
+                                </div>
+                            </td>
+                        @endforeach
+                        @for ($i = count($chunk); $i < 3; $i++)
+                            <td></td>
+                        @endfor
+                    </tr>
+                @endforeach
+            @endif
         </table>
     </div>
+
+    {{-- Task Additional Data --}}
+    @if (!empty((array) $task->pdf_visible_additional_data))
+        <div class="section">
+            <div class="section-title">{{ __('Task Additional Data') }}</div>
+            <table class="info-table">
+                @php
+                    $taskData = (array) $task->pdf_visible_additional_data;
+                    $chunks = array_chunk($taskData, 3, true);
+                @endphp
+                @foreach ($chunks as $chunk)
+                    <tr>
+                        @foreach ($chunk as $item)
+                            <td>
+                                <div class="label">{{ $item['label'] ?? '-' }}</div>
+                                <div class="value">
+                                    @php
+                                        $val = $item['value'];
+                                        $isImage = false;
+                                        $imageSrc = null;
+
+                                        // Check if value looks like an image
+                                        if (
+                                            !empty($val) &&
+                                            is_string($val) &&
+                                            preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $val)
+                                        ) {
+                                            // 1. Clean path (remove storage/ prefix if present to normalize)
+                                            $cleanVal = preg_replace('/^storage\//', '', $val);
+
+                                            // Define potential absolute paths
+                                            $possiblePaths = [
+                                                public_path($val), // Direct public path
+                                                public_path('storage/' . $cleanVal), // Storage link in public
+                                                storage_path('app/public/' . $cleanVal), // Direct storage path
+                                                storage_path('app/' . $cleanVal), // Fallback storage path
+                                            ];
+
+                                            foreach ($possiblePaths as $path) {
+                                                if (file_exists($path) && is_file($path)) {
+                                                    try {
+                                                        $fileContent = file_get_contents($path);
+                                                        $mimeType = mime_content_type($path);
+                                                        // Ensure mime type is valid image
+                                                        if (strpos($mimeType, 'image/') === 0) {
+                                                            $imageSrc = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+                                                            $isImage = true;
+                                                            break;
+                                                        }
+                                                    } catch (\Exception $e) {
+                                                        // Ignore read errors
+                                                    }
+                                                }
+                                            }
+
+                                            // Fallback: Try URL if local file not found
+                                            if (!$isImage) {
+                                                try {
+                                                     $url = url(str_starts_with($val, 'storage') ? $val : 'storage/' . $cleanVal);
+                                                     if (ini_get('allow_url_fopen')) {
+                                                         $headers = @get_headers($url);
+                                                         if ($headers && strpos($headers[0], '200')) {
+                                                             $fileContent = @file_get_contents($url);
+                                                             if ($fileContent) {
+                                                                 $imageSrc = 'data:image/jpeg;base64,' . base64_encode($fileContent);
+                                                                 $isImage = true;
+                                                             }
+                                                         }
+                                                     }
+                                                } catch (\Exception $e) {}
+                                            }
+                                        }
+                                    @endphp
+
+                                    @if ($isImage && $imageSrc)
+                                        <div style="margin-top: 5px;">
+                                            <img src="{{ $imageSrc }}"
+                                                style="max-width: 250px; max-height: 250px; border: 1px solid #eee; border-radius: 4px;">
+                                        </div>
+                                    @else
+                                        {{ $item['value'] ?? '-' }}
+                                    @endif
+                                </div>
+                            </td>
+                        @endforeach
+                        @for ($i = count($chunk); $i < 3; $i++)
+                            <td></td>
+                        @endfor
+                    </tr>
+                @endforeach
+            </table>
+        </div>
+    @endif
 
     {{-- Conditions --}}
     <div class="section conditions">
@@ -365,7 +563,7 @@
 
                 </td>
                 {{-- Customer Side --}}
-                <td style="border: 1px solid #e1e1e1; padding: 20px; background: #ffffff; vertical-align: top; border-radius: 10px;">
+                <td style="border: 1px solid #e1e1e1; padding: 20px; background: #ffffff; vertical-align: top; border-radius: 10px; padding-bottom: 150px;">
                     <div style="font-weight: bold; margin-bottom: 12px; font-size: 15px; color: #1a2733; border-bottom: 2px solid #34495e; padding-bottom: 8px; display: inline-block;">
                         {{ __('Customer Signature') }}
                     </div>
@@ -374,10 +572,11 @@
                         <strong>{{ __('Phone') }}:</strong> <span style="color: #2c3e50;">{{ $task->customer?->phone ?? $task->user->phone ?? '-' }}</span>
                     </div>
 
-                    <div style="margin-top: 15px; text-align: center;">
+                    <div style="margin-top: 30px; text-align: center; margin-bottom: 150px;">
+
                         <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 110px; position: relative; overflow: hidden;">
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
-                                {{ __('Sign Here') }}
+                             {{ __('Sign Here') }}
                             </div>
                         </div>
                     </div>

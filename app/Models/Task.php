@@ -185,6 +185,23 @@ class Task extends Model
         })->values()->all(); // إعادة ترقيم المفاتيح
     }
 
+    public function getPdfVisibleAdditionalDataAttribute()
+    {
+        if (!is_array($this->additional_data)) {
+            return [];
+        }
+
+        $formFields = $this->formTemplate?->fields ?? collect();
+
+        return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+            return $formFields->contains(function ($field) use ($item) {
+                return $field->label == $item['label'] &&
+                  (in_array($field->customer_can, ['read', 'write']) &&
+                   in_array($field->driver_can, ['read', 'write']));
+            });
+        })->values()->all();
+    }
+
     public function attempts()
     {
         return $this->hasMany(TaskDriverAttempt::class, 'task_id');

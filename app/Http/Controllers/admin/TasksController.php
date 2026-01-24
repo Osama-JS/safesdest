@@ -657,7 +657,7 @@ class TasksController extends Controller
                 $tempPath = storage_path("app/public/temp_task_{$data->id}.pdf");
                 file_put_contents($tempPath, $pdfContent);
 
-                $signitResponse = $signitService->createSignatureRequest($tempPath, $signers, $title);
+                // $signitResponse = $signitService->createSignatureRequest($tempPath, $signers, $title);
                 Log::alert("print response");
                 Log::alert($signitResponse);
                 // تحديث المهمة بمعرف التوقيع
@@ -2232,12 +2232,23 @@ class TasksController extends Controller
         $pickup      = optional($task->pickup)->address ?? 'pickup';
         $delivery    = optional($task->delivery)->address ?? 'delivery';
 
+        // دالة مساعدة لتنظيف اسم الملف مع الحفاظ على الأحرف العربية
+        $sanitize = function ($str) {
+            $str = str_replace(' ', '_', $str);
+            // إزالة الرموز غير المسموحة مع الحفاظ على الحروف (بما فيها العربية) والأرقام والشرطة السفلية
+            $str = preg_replace('/[^\p{L}\p{N}_]+/u', '_', $str);
+            // تقليل الشرطات المتكررة وحذف الشرطات من البداية والنهاية
+            $str = trim(preg_replace('/_+/', '_', $str), '_');
+            return mb_substr($str, 0, 30); // تحديد طول كل جزء بـ 30 حرف كحد أقصى
+        };
+
+
         $file_name = sprintf(
-            '%s_%s_%s_%s',
+            '%s_%s',
             $task->id,
             Str::slug($customerName, '_'),
-            Str::slug($pickup, '_'),
-            Str::slug($delivery, '_')
+           // Str::slug($pickup, '_'),
+           // Str::slug($delivery, '_')
         );
         if ($task->driver) {
             $file_name .= "_{$task->driver->name}";

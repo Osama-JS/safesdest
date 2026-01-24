@@ -193,11 +193,9 @@ class Task extends Model
 
         $formFields = $this->formTemplate?->fields ?? collect();
 
-        return collect($this->additional_data)->filter(function ($item) use ($formFields) {
+         return collect($this->additional_data)->filter(function ($item) use ($formFields) {
             return $formFields->contains(function ($field) use ($item) {
-                return $field->label == $item['label'] &&
-                  (in_array($field->customer_can, ['read', 'write']) &&
-                   in_array($field->driver_can, ['read', 'write']));
+                return $field->label === $item['label'] && ($field->driver_can === 'read' || $field->driver_can === 'write');
             });
         })->values()->all();
     }

@@ -31,6 +31,7 @@ Route::prefix('driver')->group(function () {
             'success' => true,
             'min_version' => \App\Models\Settings::getValue('min_driver_app_version', '1.0.0'),
             'update_url' => \App\Models\Settings::getValue('driver_app_update_url', 'https://play.google.com/store/apps'),
+            'update_url_ios' => \App\Models\Settings::getValue('driver_app_ios_update_url', 'https://apps.apple.com/us/'),
             'server_time' => now()->toDateTimeString(),
         ]);
     });

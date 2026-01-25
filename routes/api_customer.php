@@ -24,16 +24,27 @@ use App\Http\Controllers\PaymentController;
 */
 
 // Health check
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 201,
-        'message' => 'Customer API is working',
-        'timestamp' => now()
-    ]);
-});
+// Route::get('/health', function () {
+//     return response()->json([
+//         'status' => 201,
+//         'message' => 'Customer API is working',
+//         'timestamp' => now()
+//     ]);
+// });
 
 // Public routes (no authentication required)
 Route::prefix('customer')->group(function () {
+
+  Route::get('/health', function () {
+        return response()->json([
+            'success' => true,
+            'min_version' => \App\Models\Settings::getValue('min_customer_app_version', '1.0.0'),
+            'update_url' => \App\Models\Settings::getValue('customer_app_update_url', 'https://play.google.com/store/apps'),
+            'update_url_ios' => \App\Models\Settings::getValue('customer_app_ios_update_url', 'https://apps.apple.com/us/'),
+            'server_time' => now()->toDateTimeString(),
+        ]);
+    });
+
 
     Route::get('/template', [CustomerAuthController::class, 'getTemplate'])
         ->name('api.customer.template');

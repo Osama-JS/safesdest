@@ -61,7 +61,11 @@ class PdfService
 
         Log::info('TD count: ' . $tds->length . ', TR count: ' . $trs->length);
 
-        $mpdf->WriteHTML($html);
+        $chunks = str_split($html, 50000); // 50 ألف حرف لكل جزء
+
+        foreach ($chunks as $chunk) {
+            $mpdf->WriteHTML($chunk);
+        }
 
         $fileName = $filename ?? 'document.pdf';
 

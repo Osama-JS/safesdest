@@ -156,7 +156,7 @@
             </td>
             <td style="text-align: {{ app()->getLocale() === 'ar' ? 'left' : 'right' }}">
                 <div class="logo">
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(url('assets/img/logo.png'))) }}"
+                    <img src="{{ public_path('assets/img/logo.png') }}"
                         alt="Logo" height="40">
                 </div>
             </td>
@@ -329,40 +329,11 @@
 
                                             foreach ($possiblePaths as $path) {
                                                 if (file_exists($path) && is_file($path)) {
-                                                    try {
-                                                        $fileContent = file_get_contents($path);
-                                                        $mimeType = mime_content_type($path);
-                                                        // Ensure mime type is valid image
-                                                        if (strpos($mimeType, 'image/') === 0) {
-                                                            $imageSrc = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
-                                                            $isImage = true;
-                                                            break;
-                                                        }
-                                                    } catch (\Exception $e) {
-                                                        // Ignore read errors
-                                                    }
+                                                    // Use direct path for mPDF
+                                                    $imageSrc = $path;
+                                                    $isImage = true;
+                                                    break;
                                                 }
-                                            }
-
-                                            // Fallback: Try URL if local file not found (mimic logo approach strictly if requested)
-                                            if (!$isImage) {
-                                                try {
-                                                     // Only try if it looks like a relative path, construct URL
-                                                     $url = url(str_starts_with($val, 'storage') ? $val : 'storage/' . $cleanVal);
-                                                     // Warning: file_get_contents on URL might be blocked.
-                                                     // But user asked to mimic logo: file_get_contents(url('...'))
-                                                     // We'll try this as last resort if allow_url_fopen is on.
-                                                     if (ini_get('allow_url_fopen')) {
-                                                         $headers = @get_headers($url);
-                                                         if ($headers && strpos($headers[0], '200')) {
-                                                             $fileContent = @file_get_contents($url);
-                                                             if ($fileContent) {
-                                                                 $imageSrc = 'data:image/jpeg;base64,' . base64_encode($fileContent); // Default to jpeg if mime unknown from URL stream
-                                                                 $isImage = true;
-                                                             }
-                                                         }
-                                                     }
-                                                } catch (\Exception $e) {}
                                             }
                                         }
                                     @endphp
@@ -426,36 +397,11 @@
 
                                             foreach ($possiblePaths as $path) {
                                                 if (file_exists($path) && is_file($path)) {
-                                                    try {
-                                                        $fileContent = file_get_contents($path);
-                                                        $mimeType = mime_content_type($path);
-                                                        // Ensure mime type is valid image
-                                                        if (strpos($mimeType, 'image/') === 0) {
-                                                            $imageSrc = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
-                                                            $isImage = true;
-                                                            break;
-                                                        }
-                                                    } catch (\Exception $e) {
-                                                        // Ignore read errors
-                                                    }
+                                                    // Use direct path for mPDF
+                                                    $imageSrc = $path;
+                                                    $isImage = true;
+                                                    break;
                                                 }
-                                            }
-
-                                            // Fallback: Try URL if local file not found
-                                            if (!$isImage) {
-                                                try {
-                                                     $url = url(str_starts_with($val, 'storage') ? $val : 'storage/' . $cleanVal);
-                                                     if (ini_get('allow_url_fopen')) {
-                                                         $headers = @get_headers($url);
-                                                         if ($headers && strpos($headers[0], '200')) {
-                                                             $fileContent = @file_get_contents($url);
-                                                             if ($fileContent) {
-                                                                 $imageSrc = 'data:image/jpeg;base64,' . base64_encode($fileContent);
-                                                                 $isImage = true;
-                                                             }
-                                                         }
-                                                     }
-                                                } catch (\Exception $e) {}
                                             }
                                         }
                                     @endphp
@@ -572,11 +518,10 @@
                         <strong>{{ __('Phone') }}:</strong> <span style="color: #2c3e50;">{{ $task->customer?->phone ?? $task->user->phone ?? '-' }}</span>
                     </div>
 
-                    <div style="margin-top: 30px; text-align: center; margin-bottom: 150px;">
-
+                    <div style="margin-top: 20px; text-align: center;">
                         <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 110px; position: relative; overflow: hidden;">
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
-                             {{ __('Sign Here') }}
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 30px; font-style: italic;">
+                                {{ __('Sign Here') }}
                             </div>
                         </div>
                     </div>

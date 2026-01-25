@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class TaskObserver
 {
-    protected $adminEmail = 'nawafr81aug@gmail.com';
+    protected $adminEmail = 'nawafmh81@gmail.com';
 
     /**
      * Handle the Task "created" event.

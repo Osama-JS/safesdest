@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class CustomerObserver
 {
-    protected $adminEmail = 'nawafr81aug@gmail.com';
+    protected $adminEmail = 'nawafmh81@gmail.com';
 
     public function created(Customer $customer)
     {

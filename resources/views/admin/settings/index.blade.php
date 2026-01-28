@@ -174,7 +174,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <!-- <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
                     <div class="divider text-start">
@@ -210,8 +210,8 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
+        </div> -->
+        <div class="col-md-8">
 
             <div class="card border ">
                 <div class="card-header">
@@ -235,12 +235,10 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="row">
+            <div class="row">
         <!-- Task Distribution Settings -->
-        <div class="col-md-6">
-            <div class="card">
+        <div class="col-md-12">
+            <div class="card mt-3">
                 <div class="card-header">
                     <div class="divider text-start">
                         <div class="divider-text"><strong>{{ __('Task Distribution Settings') }}</strong></div>
@@ -284,8 +282,8 @@
         </div>
 
         <!-- App Update Settings -->
-        <div class="col-md-6">
-            <div class="card">
+        <div class="col-md-12">
+            <div class="card mt-3">
                 <div class="card-header">
                     <div class="divider text-start">
                         <div class="divider-text"><strong>{{ __('Driver App Update Settings') }}</strong></div>
@@ -301,14 +299,57 @@
                     </div>
 
                     <div class="form-group mb-4">
-                        <label for="driver_app_update_url" class="mb-2">{{ __('App Update URL') }}</label>
+                        <label for="driver_app_update_url" class="mb-2">{{ __('ِAndroid App Update URL') }}</label>
                         <input type="url" data-key="driver_app_update_url"
                             value="{{ $settings['driver_app_update_url']['value'] ?? '' }}"
                             class="form-control update-setting-input" placeholder="https://play.google.com/store/apps/details?id=...">
                         <p class="text-muted small">{{ $settings['driver_app_update_url']['description'] ?? '' }}</p>
                     </div>
+                    <div class="form-group mb-4">
+                        <label for="driver_app_ios_update_url" class="mb-2">{{ __('IOS App Update URL') }}</label>
+                        <input type="url" data-key="driver_app_ios_update_url"
+                            value="{{ $settings['driver_app_ios_update_url']['value'] ?? '' }}"
+                            class="form-control update-setting-input" placeholder="https://">
+                        <p class="text-muted small">{{ $settings['driver_app_ios_update_url']['description'] ?? '' }}</p>
+                    </div>
+                </div>
+            </div>
+
+             <div class="card mt-3">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Customer App Update Settings') }}</strong></div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label for="min_customer_app_version" class="mb-2">{{ __('Minimum App Version') }}</label>
+                        <input type="text" data-key="min_customer_app_version"
+                            value="{{ $settings['min_customer_app_version']['value'] ?? '1.0.0' }}"
+                            class="form-control update-setting-input" placeholder="e.g., 1.0.5">
+                        <p class="text-muted small">{{ $settings['min_customer_app_version']['description'] ?? '' }}</p>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label for="customer_app_update_url" class="mb-2">{{ __('ِAndroid App Update URL') }}</label>
+                        <input type="url" data-key="customer_app_update_url"
+                            value="{{ $settings['customer_app_update_url']['value'] ?? '' }}"
+                            class="form-control update-setting-input" placeholder="https://play.google.com/store/apps/details?id=...">
+                        <p class="text-muted small">{{ $settings['customer_app_update_url']['description'] ?? '' }}</p>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="customer_app_ios_update_url" class="mb-2">{{ __('IOS App Update URL') }}</label>
+                        <input type="url" data-key="customer_app_ios_update_url"
+                            value="{{ $settings['customer_app_ios_update_url']['value'] ?? '' }}"
+                            class="form-control update-setting-input" placeholder="https://">
+                        <p class="text-muted small">{{ $settings['customer_app_ios_update_url']['description'] ?? '' }}</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+        </div>
+    </div>
+
 @endsection

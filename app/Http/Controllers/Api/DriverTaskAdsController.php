@@ -572,6 +572,14 @@ class DriverTaskAdsController extends Controller
                 );
             }
 
+            // Notify Team Users
+            app(\App\Services\NotificationService::class)->notifyTeamUsers(
+                $task,
+                'تأكيد قبول المهمة',
+                "قام السائق {$driver->name} بتأكيد قبول المهمة رقم #{$task->id} عبر الإعلانات",
+                "/tasks/{$task->id}"
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Task accepted successfully',

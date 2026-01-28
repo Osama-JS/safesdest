@@ -40,11 +40,32 @@ class NotificationService
         $recipients = $modelMap[$type]::whereIn('id', $ids)->get();
 
         foreach ($recipients as $recipient) {
-            if (isset($recipient->fcm_token) && $recipient->fcm_token) {
-                 \App\Jobs\SendFirebaseNotification::dispatch(
-                    'mainSendNotification',
-                    [$recipient->fcm_token, $title, $body, $notif_type]
-                );
+            // 1. Firebase (FCM)
+            try {
+                if (isset($recipient->fcm_token) && $recipient->fcm_token) {
+                    \App\Jobs\SendFirebaseNotification::dispatch(
+                        'mainSendNotification',
+                        [$recipient->fcm_token, $title, $body, $notif_type]
+                    );
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to dispatch Firebase notification to ID {$recipient->id}: " . $e->getMessage());
+            }
+
+            // 2. Web Push (Browser) - specifically for User/Customer/Driver who might have subscriptions
+            try {
+                if ($recipient instanceof \App\Models\User || $type === 'user') {
+                    $recipient->notify(new \App\Notifications\GeneralPushNotification([
+                        'title' => $title,
+                        'body' => $body,
+                        'icon' => $icon ?? '/images/admin-icon.png',
+                        'image' => $image,
+                        'url' => $url,
+                        'type' => $notif_type,
+                    ]));
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to dispatch WebPush notification to ID {$recipient->id}: " . $e->getMessage());
             }
         }
 
@@ -157,6 +178,45 @@ class NotificationService
                 'message' => 'Exception: ' . $e->getMessage()
             ];
         }
-    }
+      }
+    /**
+     * Notify all users in the team about task activity
+     */
+    public function notifyTeamUsers(\App\Models\Task $task, $title, $body, $url = '/', $notifType = 'team_activity')
+    {
+        try {
+            if (!$task->team_id) {
+                return;
+            }
 
+            $team = \App\Models\Teams::find($task->team_id);
+            if (!$team) {
+                return;
+            }
+
+            // Get all user_has_teams entries and eager load users
+            $teamUsers = $team->users()->with('user')->get();
+
+            foreach ($teamUsers as $tu) {
+                try {
+                    $user = $tu->user;
+                    if ($user) {
+                        $user->notify(new \App\Notifications\TeamActivityNotification([
+                            'title' => $title,
+                            'body' => $body,
+                            'url' => $url,
+                            'type' => $notifType,
+                            'task_id' => $task->id
+                        ]));
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to send WebPush/Database notification to User ID {$tu->user_id}: " . $e->getMessage());
+                }
+            }
+
+            Log::info("Team activity notification sent to team #{$task->team_id} for Task #{$task->id}");
+        } catch (\Exception $e) {
+            Log::error("Error notifying team users: " . $e->getMessage());
+        }
+    }
 }

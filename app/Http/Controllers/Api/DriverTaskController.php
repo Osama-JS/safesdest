@@ -602,6 +602,14 @@ class DriverTaskController extends Controller
                 }
             }
 
+            // Notify Team Users
+            app(\App\Services\NotificationService::class)->notifyTeamUsers(
+                $task,
+                'تحديث مهمة من السائق',
+                "قام السائق {$driver->name} بتحديث المهمة رقم #{$task->id} إلى: " . __($request->status),
+                "/tasks/{$task->id}"
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Task status updated successfully',

@@ -368,6 +368,15 @@ class TasksController extends Controller
                     );
                 }
             }
+
+            // Notify Team Users
+            app(\App\Services\NotificationService::class)->notifyTeamUsers(
+                $find,
+                'تحديث حالة المهمة',
+                "تغيرت حالة المهمة رقم #{$find->id} إلى: " . __($req->status),
+                "/tasks/{$find->id}"
+            );
+
             return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Task Status changed']);
         } catch (Exception $ex) {
             return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
@@ -676,9 +685,15 @@ class TasksController extends Controller
                     unlink($tempPath);
                 }
             } catch (Exception $signitEx) {
-                // نسجل الخطأ ولكن لا نوقف عملية الـ assign الأساسية
-                Log::error("Signit Error for task #{$data->id}: " . $signitEx->getMessage());
             }
+
+            // Notify Team Users
+            app(\App\Services\NotificationService::class)->notifyTeamUsers(
+                $data,
+                'تم تعيين مهمة جديدة',
+                "تم تعيين المهمة رقم #{$data->id} للسائق {$driver->name}",
+                "/tasks/{$data->id}"
+            );
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('task assigned successfully')]);
@@ -2585,6 +2600,14 @@ class TasksController extends Controller
             ];
 
             $task->update($updateData);
+
+            // Notify Team Users
+            app(\App\Services\NotificationService::class)->notifyTeamUsers(
+                $task,
+                'إغلاق مهمة',
+                "تم إغلاق المهمة رقم #{$task->id} بنجاح",
+                "/tasks/{$task->id}"
+            );
 
             $task->history()->create([
               'action_type' => 'closed',

@@ -4,15 +4,20 @@ namespace App\Notifications;
 
 use NotificationChannels\WebPush\WebPushMessage;
 use NotificationChannels\WebPush\WebPushChannel;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class GeneralPushNotification extends Notification
+class GeneralPushNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public $data;
 
     public function __construct(array $data = [])
     {
         $this->data = $data;
+        $this->queue = 'noti';
     }
 
     public function via($notifiable)

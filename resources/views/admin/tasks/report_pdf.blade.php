@@ -147,18 +147,56 @@
 
     <table class="header-table">
         <tr>
-            <td style="text-align: {{ app()->getLocale() === 'ar' ? 'right' : 'left' }}">
-                <div class="platform-info">
+            {{-- Platform Info (Safe Dest) --}}
+            <td style="width: 50%; text-align: {{ app()->getLocale() === 'ar' ? 'right' : 'left' }}; vertical-align: top;">
+                <div class="logo">
+                    <img src="{{ public_path('assets/img/logo.png') }}" alt="Logo" height="50">
+                </div>
+                <div class="platform-info" style="margin-top: 10px;">
                     <div><strong>{{ __('Safe Dest') }}</strong></div>
                     <div>{{ __('info@safedest.com') }}</div>
                     <div>{{ __('+966556978782') }}</div>
                 </div>
             </td>
-            <td style="text-align: {{ app()->getLocale() === 'ar' ? 'left' : 'right' }}">
-                <div class="logo">
-                    <img src="{{ public_path('assets/img/logo.png') }}"
-                        alt="Logo" height="40">
-                </div>
+
+            {{-- Task Owner Info (Customer) --}}
+            <td style="width: 50%; text-align: {{ app()->getLocale() === 'ar' ? 'left' : 'right' }}; vertical-align: top;">
+                @if ($task->customer)
+                    @php
+                        $customerLogo = null;
+                        if ($task->customer->image) {
+                            $cleanPath = preg_replace('/^storage\//', '', $task->customer->image);
+                            $possiblePaths = [
+                                public_path('storage/' . $cleanPath),
+                                storage_path('app/public/' . $cleanPath),
+                                storage_path('app/' . $cleanPath),
+                            ];
+                            foreach ($possiblePaths as $path) {
+                                if (file_exists($path) && is_file($path)) {
+                                    $customerLogo = $path;
+                                    break;
+                                }
+                            }
+                        }
+                    @endphp
+                    @if ($customerLogo)
+                        <div class="logo">
+                            <img src="{{ $customerLogo }}" alt="Customer Logo" height="50">
+                        </div>
+                    @endif
+                    <div class="platform-info" style="margin-top: 10px;">
+                        <div><strong>{{ $task->customer->company_name ?? $task->customer->name }}</strong></div>
+                        @if ($task->customer->phone)
+                            <div>{{ $task->customer->phone }}</div>
+                        @endif
+                        @if ($task->customer->email)
+                            <div>{{ $task->customer->email }}</div>
+                        @endif
+                        @if ($task->customer->company_address)
+                            <div>{{ $task->customer->company_address }}</div>
+                        @endif
+                    </div>
+                @endif
             </td>
         </tr>
     </table>
@@ -520,7 +558,7 @@
 
                     <div style="margin-top: 20px; text-align: center;">
                         <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 110px; position: relative; overflow: hidden;">
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 30px; font-style: italic;">
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
                                 {{ __('Sign Here') }}
                             </div>
                         </div>

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class TeamObserver
 {
-    protected $adminEmail = 'nawafmh81@gmail.com';
+    protected $adminEmail = 'info@safedest.com';
 
     public function created(Teams $team)
     {
@@ -24,6 +24,9 @@ class TeamObserver
     protected function notifyManager($subject, $content, $teamId)
     {
         try {
+            // 1. Create notification in database
+            $this->createNotificationRecord($subject, $content);
+
             $emailData = [
                 'to' => $this->adminEmail,
                 'subject' => "[Safedest Admin] " . $subject,
@@ -41,6 +44,35 @@ class TeamObserver
             dispatch(new SendEmailNotificationJob($emailData));
         } catch (\Exception $e) {
             Log::error("TeamObserver Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create notification record in database.
+     */
+    protected function createNotificationRecord($title, $message)
+    {
+        try {
+            // 1. Create the notification
+            $notification = \App\Models\Notification::create([
+                'title' => $title,
+                'message' => $message,
+                'group' => 'users',
+                'type' => 'by person'
+            ]);
+
+            // 2. Link to admin user
+            $adminUser = \App\Models\User::where('email', $this->adminEmail)->first();
+
+            if ($adminUser) {
+                \App\Models\Notification_Users::create([
+                    'notification_id' => $notification->id,
+                    'user_id' => $adminUser->id,
+                    'status' => false // Unread
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("TeamObserver: Failed to save notification to DB: " . $e->getMessage());
         }
     }
 }

@@ -53,7 +53,14 @@ class DashboardController extends Controller
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('id', 'ILIKE', '%' . $search . '%');
+                $q->where('tasks.id', 'ILIKE', '%' . $search . '%')
+                  ->orWhereHas('customer', function ($q) use ($search) {
+                      $q->where('name', 'ILIKE', '%' . $search . '%')
+                        ->orWhere('company_name', 'ILIKE', '%' . $search . '%');
+                  })
+                  ->orWhereHas('user', function ($q) use ($search) {
+                      $q->where('name', 'ILIKE', '%' . $search . '%');
+                  });
             });
         }
 

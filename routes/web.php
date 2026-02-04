@@ -254,6 +254,14 @@ Route::middleware('rate.limit')->group(function () {
                 // Wallet Credit Receipt Download
                 Route::get('/wallets/transactions/{id}/receipt', [WalletsController::class, 'downloadCreditReceipt'])->name('wallets.transaction.receipt');
 
+                // Admin System Notifications
+                Route::middleware(['can:view_notifications'])->group(function () {
+                    Route::get('/system-notifications', [App\Http\Controllers\admin\NotificationController::class, 'index'])->name('system.notifications.index');
+                    Route::get('/system-notifications/unread-count', [App\Http\Controllers\admin\NotificationController::class, 'unreadCount'])->name('system.notifications.unread-count');
+                    Route::post('/system-notifications/{id}/read', [App\Http\Controllers\admin\NotificationController::class, 'markAsRead'])->name('system.notifications.read');
+                    Route::post('/system-notifications/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('system.notifications.mark-all-read');
+                });
+
                 // Manual Notifications Routes
                 Route::prefix('notifications')->name('admin.notifications.')->group(function () {
                     Route::post('send-to-driver', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToDriver'])

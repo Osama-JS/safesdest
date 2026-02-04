@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class TaskOfferObserver
 {
-    protected $adminEmail = 'nawafmh81@gmail.com';
+    protected $adminEmail = 'info@safedest.com';
 
     /**
      * Handle the Task_Offire "created" event.
@@ -52,9 +52,15 @@ class TaskOfferObserver
     /**
      * Send email notification to manager.
      */
+    /**
+     * Send email notification to manager.
+     */
     protected function notifyManager($offer, $subject, $content)
     {
         try {
+            // 1. Create notification in database
+            $this->createNotificationRecord($subject, $content);
+
             $task = $offer->ad->task;
             $emailData = [
                 'to' => $this->adminEmail,
@@ -75,6 +81,35 @@ class TaskOfferObserver
             dispatch(new SendEmailNotificationJob($emailData));
         } catch (\Exception $e) {
             Log::error("TaskOfferObserver Error: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create notification record in database.
+     */
+    protected function createNotificationRecord($title, $message)
+    {
+        try {
+            // 1. Create the notification
+            $notification = \App\Models\Notification::create([
+                'title' => $title,
+                'message' => $message,
+                'group' => 'users',
+                'type' => 'by person'
+            ]);
+
+            // 2. Link to admin user
+            $adminUser = \App\Models\User::where('email', $this->adminEmail)->first();
+
+            if ($adminUser) {
+                \App\Models\Notification_Users::create([
+                    'notification_id' => $notification->id,
+                    'user_id' => $adminUser->id,
+                    'status' => false // Unread
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("TaskOfferObserver: Failed to save notification to DB: " . $e->getMessage());
         }
     }
 }

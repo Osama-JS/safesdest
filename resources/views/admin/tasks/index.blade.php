@@ -200,6 +200,11 @@
                 {{-- Populate via JS if needed --}}
             </select>
         </div>
+
+        <!-- Search Input -->
+        <div>
+            <input type="text" id="task-search-input" class="form-control" placeholder="{{ __('Search by ID, Customer or Admin...') }}">
+        </div>
     </div>
 @endsection
 @section('content')

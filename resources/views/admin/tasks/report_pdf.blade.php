@@ -333,6 +333,14 @@
                     <div class="value">{{ $task->driver?->team?->name ?? '-' }}</div>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <div class="label">{{ __('Driver email') }}</div>
+                    <div class="value">{{ $task->driver?->email ?? '-' }}</div>
+                </td>
+                <td></td>
+                <td></td>
+            </tr>
             @if ($task->driver && !empty((array) $task->driver->driver_visible_additional_data))
                 @php
                     $driverData = (array) $task->driver->driver_visible_additional_data;

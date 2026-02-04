@@ -139,9 +139,11 @@
 
         <div class=" col-md-4   overflow-auto " style="z-index: 1000">
             <div class="card mb-2">
-                <div class="card-header py-1 sticky-top" style="top: 0; z-index: 1020;">
-
-
+                <div class="card-header py-2 sticky-top bg-white" style="top: 0; z-index: 1020;">
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text" id="basic-addon-search31"><i class="ti ti-search"></i></span>
+                        <input type="text" id="task-search" class="form-control" placeholder="{{ __('Search by ID, Customer or Admin...') }}" aria-label="Search..." aria-describedby="basic-addon-search31">
+                    </div>
                 </div>
                 <div class="nav-align-top overflow-auto" style="min-height: 75vh">
                     <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top" style="top: 0; z-index: 1030;"

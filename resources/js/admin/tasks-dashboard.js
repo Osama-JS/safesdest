@@ -50,6 +50,16 @@ $(function () {
     loadTasks();
   });
 
+  // 🔍 البحث مع Debounce
+  let searchTimer;
+  $(document).on('keyup', '#task-search', function () {
+    const searchValue = $(this).val();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      loadTasks(1, searchValue);
+    }, 500); // 500ms delay
+  });
+
   // دالة لتحميل المهام
   function loadTasks(page = 1, search = '', retries = 3) {
     const filter = $('#filter-by-day').val();

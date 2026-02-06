@@ -96,6 +96,10 @@
         function openReport() {
             const reportWindow = window.open('{{ route('tasks.report', $task->id) }}', '_blank');
         }
+
+        function openCustomPolicy() {
+            window.open('{{ route('tasks.policy_custom', $task->id) }}', '_blank');
+        }
     </script>
 @endsection
 @section('task-isactive', 'active')
@@ -108,7 +112,7 @@
                     <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 text-dark">
                             <i class="fas fa-tasks me-2 text-primary"></i>
-                            {{ __('Task Details') }} #{{ $task->id }}
+                            {{ __('Task Details') }} (New) #{{ $task->id }}
                         </h5>
 
                         <div class="d-flex gap-2">
@@ -116,6 +120,13 @@
                                 <i class="fas fa-download me-1"></i>
                                 {{ __('Download Report') }}
                             </a>
+
+                            @if($task->customer && $task->customer->policy_file_name)
+                            <a href="#" class="btn btn-sm btn-info" onclick="openCustomPolicy()">
+                                <i class="fas fa-print me-1"></i>
+                                {{ __('Print Policy') }}
+                            </a>
+                            @endif
 
                             <a href="{{ route('tasks.invoice', $task->id) }}" class="btn btn-sm btn-success" target="_blank">
                                 <i class="fas fa-file-invoice me-1"></i>

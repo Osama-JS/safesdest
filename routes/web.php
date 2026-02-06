@@ -621,6 +621,7 @@ Route::middleware('rate.limit')->group(function () {
 
 
                 Route::get('/task/{id}/report', [TasksController::class, 'downloadTaskReport'])->name('tasks.report');
+                Route::get('/task/{id}/policy-custom', [TasksController::class, 'printCustomPolicy'])->name('tasks.policy_custom');
                 Route::post('/tasks/duplicate', [TasksController::class, 'duplicateTask'])->name('tasks.duplicate');
 
                 Route::get('/tasks/fix-connection/{id}', [TasksController::class, 'fixTeamConnection'])->name('tasks.fix-connection');

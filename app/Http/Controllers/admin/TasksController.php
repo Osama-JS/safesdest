@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\TaskPricingService;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Jobs\SendEmailNotificationJob;
@@ -2272,6 +2273,57 @@ class TasksController extends Controller
             'task' => $task
         ], "{$file_name}.pdf");
 
+    }
+
+    /**
+     * Print the custom shipping policy PDF for a specific customer.
+     */
+    public function printCustomPolicy($id)
+    {
+        $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'user', 'driver'])->findOrFail($id);
+
+        if (!$task->customer || empty($task->customer->policy_file_name)) {
+            \Illuminate\Support\Facades\Log::info('PrintCustomPolicy: No customer or policy file name', ['customer_id' => $task->customer_id ?? 'null', 'policy' => $task->customer?->policy_file_name]);
+            return redirect()->back()->with('error', __('This task does not belong to a customer with a custom policy.'));
+        }
+
+        $viewName = str_replace(['.blade.php', '.blade', '.php'], '', $task->customer->policy_file_name);
+        \Illuminate\Support\Facades\Log::info('PrintCustomPolicy: Checking view', ['original' => $task->customer->policy_file_name, 'sanitized' => $viewName]);
+
+        // Ensure the view exists
+        if (!View::exists($viewName)) {
+             // Try with admin.tasks prefix if absolute path fails
+             if (View::exists('admin.tasks.' . $viewName)) {
+                 $viewName = 'admin.tasks.' . $viewName;
+             } else {
+                 \Illuminate\Support\Facades\Log::error('Custom policy view not found', ['viewName' => $viewName, 'prefixed' => 'admin.tasks.' . $viewName]);
+                 return redirect()->back()->with('error', __('Custom policy template not found.') . ' (' . $viewName . ')');
+             }
+        }
+
+        $customerName = $task->customer->company_name ?? $task->customer->name ?? 'customer';
+        $file_name = "Shipping_Policy_{$task->id}_" . Str::slug($customerName, '_') . ".pdf";
+
+        $customerLogo = null;
+        if ($task->customer && $task->customer->image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->customer->image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $customerLogo = $path;
+                    break;
+                }
+            }
+        }
+
+        return $this->pdfService->generate($viewName, [
+            'task' => $task,
+            'watermark_image' => $customerLogo
+        ], $file_name);
     }
 
 

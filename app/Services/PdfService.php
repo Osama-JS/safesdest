@@ -63,6 +63,11 @@ class PdfService
 
         $chunks = str_split($html, 50000); // 50 ألف حرف لكل جزء
 
+        if (isset($data['watermark_image']) && !empty($data['watermark_image'])) {
+            $mpdf->SetWatermarkImage($data['watermark_image'], 0.1, [150, 150]);
+            $mpdf->showWatermarkImage = true;
+        }
+
         foreach ($chunks as $chunk) {
             $mpdf->WriteHTML($chunk);
         }
@@ -107,6 +112,8 @@ class PdfService
             ],
             'default_font' => 'tajawal',
             'tempDir' => storage_path('app/mpdf-temp'),
+            'dpi' => 300,
+            'img_dpi' => 300,
         ]);
 
         $mpdf->WriteHTML($html);

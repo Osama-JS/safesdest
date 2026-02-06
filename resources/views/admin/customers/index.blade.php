@@ -319,6 +319,17 @@
                                                          </div>
                                                      </div>
 
+                                                     <div class="col-md-6">
+                                                         <div class="mb-4">
+                                                             <label class="form-label" for="customer-policy-file">
+                                                                 {{ __('Policy File Name') }}</label>
+                                                             <input type="text" name="policy_file_name" class="form-control"
+                                                                 id="customer-policy-file"
+                                                                 placeholder="{{ __('config.file_name_blade') }}" />
+                                                             <span class="policy_file_name-error text-danger text-error"></span>
+                                                         </div>
+                                                     </div>
+
 
                                                      <div class="col-md-6">
                                                          <div class="  mb-6">

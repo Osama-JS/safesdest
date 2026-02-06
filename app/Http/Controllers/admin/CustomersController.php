@@ -263,6 +263,7 @@ class CustomersController extends Controller
           'custom_bank_name'        => 'nullable|string|max:255',
           'account_number'          => 'nullable|string|min:8|max:20|regex:/^[0-9]+$/',
           'iban_number'             => 'nullable|string|size:24|regex:/^SA[0-9]{22}$/',
+          'policy_file_name'        => 'nullable|string|max:255',
         ];
 
         if ($req->filled('template')) {
@@ -443,6 +444,7 @@ class CustomersController extends Controller
               'role_id'         => $req->role ?? null,
               'company_name'    => $req->c_name,
               'company_address' => $req->c_address,
+              'policy_file_name' => $req->policy_file_name,
               // Bank details processing
               'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
               'account_number' => $req->account_number,

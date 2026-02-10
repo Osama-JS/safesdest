@@ -22,6 +22,10 @@
 @yield('page-script')
 <!-- END: Page JS-->
 
+@can('view_notifications')
+    @vite(['resources/js/admin/notifications.js'])
+@endcan
+
 <script>
     async function subscribeForPush() {
         const register = await navigator.serviceWorker.register("{{ url('/sw.js') }}");

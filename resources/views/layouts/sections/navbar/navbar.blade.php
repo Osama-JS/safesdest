@@ -261,8 +261,6 @@
                 </li> --}}
             </ul>
         </li>
-        <!-- Load Notification Script -->
-        @vite(['resources/js/admin/notifications.js'])
         @endcan
         <!--/ Notification -->
 

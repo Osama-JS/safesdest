@@ -13,7 +13,7 @@ $(function () {
   const headerBadge = $('.dropdown-header .badge');
 
   // Base URL for API
-  const apiBase = '/admin/system-notifications';
+  const apiBase = (typeof baseUrl !== 'undefined' ? baseUrl : '/') + 'admin/system-notifications';
 
   // Template for notification item
   function notificationTemplate(notification) {

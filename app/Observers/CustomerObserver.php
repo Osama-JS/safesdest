@@ -5,8 +5,10 @@ namespace App\Observers;
 use App\Models\Customer;
 use App\Jobs\SendEmailNotificationJob;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
-class CustomerObserver
+class CustomerObserver implements ShouldHandleEventsAfterCommit
 {
     protected $adminEmail = 'info@safedest.com';
 
@@ -25,7 +27,7 @@ class CustomerObserver
     protected function notifyManager($subject, $content, $customerId)
     {
         try {
-            // 1. Create notification in database
+            // 1. Create notification in database (in separate transaction)
             $this->createNotificationRecord($subject, $content);
 
             $emailData = [
@@ -42,7 +44,7 @@ class CustomerObserver
                 ]
             ];
 
-            dispatch(new SendEmailNotificationJob($emailData));
+            dispatch(new SendEmailNotificationJob($emailData))->afterCommit();
         } catch (\Exception $e) {
             Log::error("CustomerObserver Error: " . $e->getMessage());
         }
@@ -54,25 +56,29 @@ class CustomerObserver
     protected function createNotificationRecord($title, $message)
     {
         try {
-            // 1. Create the notification
-            $notification = \App\Models\Notification::create([
-                'title' => $title,
-                'message' => $message,
-                'group' => 'users',
-                'type' => 'by person'
-            ]);
-
-            // 2. Link to admin user
-            $adminUser = \App\Models\User::where('email', $this->adminEmail)->first();
-
-            if ($adminUser) {
-                \App\Models\Notification_Users::create([
-                    'notification_id' => $notification->id,
-                    'user_id' => $adminUser->id,
-                    'status' => false // Unread
+            // Use a separate database connection/transaction
+            DB::transaction(function () use ($title, $message) {
+                // 1. Create the notification
+                $notification = \App\Models\Notification::create([
+                    'title' => $title,
+                    'message' => $message,
+                    'group' => 'users',
+                    'type' => 'bay person'
                 ]);
-            }
+
+                // 2. Link to admin user
+                $adminUser = \App\Models\User::where('email', $this->adminEmail)->first();
+
+                if ($adminUser) {
+                    \App\Models\Notification_Users::create([
+                        'notification_id' => $notification->id,
+                        'user_id' => $adminUser->id,
+                        'status' => false // Unread
+                    ]);
+                }
+            });
         } catch (\Exception $e) {
+            // Log error but don't throw - this should not affect customer creation
             Log::error("CustomerObserver: Failed to save notification to DB: " . $e->getMessage());
         }
     }

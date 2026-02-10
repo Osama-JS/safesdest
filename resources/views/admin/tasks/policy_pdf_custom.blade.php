@@ -40,6 +40,11 @@
         .text-right { text-align: right; }
         .text-left { text-align: left; }
         .bold { font-weight: bold; }
+        .ltr-content {
+            direction: ltr;
+            display: inline-block;
+            unicode-bidi: embed;
+        }
 
         /* ==================== HEADER SECTION ==================== */
         .header-table {
@@ -337,11 +342,53 @@
             $hijriDate = '-';
         }
 
-        $driverName = $task->driver?->name ?? '';
+          $driverName = $task->driver?->name ?? '';
         $driverPhone = $task->driver?->phone_code . $task->driver?->phone ?? '';
         $driverIdNumber = $task->driver?->identity_number ?? '';
         $vehicleNumber = $task->driver?->vehicle_number ?? '';
-        $vehicleType = $task->vehicle_size?->name ?? '';
+        $vehicleType = $task->vehicle_size?->type?->vehicle?->name . $task->vehicle_size?->type?->name . ' ' . $task->vehicle_size?->name ?? '';
+        $platnumber =( $task->driver?->additional_data['right_letter']['value'] ?? '') .' '. ($task->driver?->additional_data['middle_letter']['value'] ?? '') .' '. ($task->driver?->additional_data['left_letter']['value'] ?? '') . ' '. ($task->driver?->additional_data['vehicle_number']['value'] ?? '') ;
+        $carowner = $task->driver?->additional_data['car_car_owner']['value'] ?? ' ';
+        $license_number = $task->driver?->additional_data['license_number']['value'] ?? ' ';
+        $from_issued = $task->driver?->additional_data['from_issued']['value'] ?? ' ';
+        $ld_number = $task->driver?->additional_data['ld_number']['value'] ?? ' ';
+        $ld_date = $task->driver?->additional_data['ld_date']['value'] ?? ' ';
+        $ld_from = $task->driver?->additional_data['ld_from']['value'] ?? ' ';
+
+        // Internal Signatures Logic
+        $internalSignaturesEnabled = \App\Models\Settings::getValue('internal_signatures_enabled', '0') == '1';
+
+        $driverSignaturePath = null;
+        if ($internalSignaturesEnabled && $task->driver && $task->driver->signature_image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->driver->signature_image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $driverSignaturePath = $path;
+                    break;
+                }
+            }
+        }
+
+        $customerSignaturePath = null;
+        if ($internalSignaturesEnabled && $task->customer && $task->customer->signature_image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->customer->signature_image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $customerSignaturePath = $path;
+                    break;
+                }
+            }
+        }
     @endphp
 
 
@@ -378,7 +425,7 @@
                 </div>
                 <div>
                     <span class="date-label">الموافق :</span>
-                    <span class="date-value">{{ $gregorianFormatted }}</span>
+                    <span class="date-value ltr-content">{{ $gregorianFormatted }}</span>
                 </div>
             </td>
 
@@ -402,7 +449,7 @@
                  So it should be on the left side of page.
                  Table order in RTL: Cell 1 is Right. Cell 2 Center. Cell 3 Left.
                  -->
-                 <div class="task-number">{{ $task->id }}</div>
+                 <div class="task-number ltr-content">#{{ $task->id }}</div>
                  </div>
             </td>
         </tr>
@@ -413,7 +460,7 @@
         <tr>
             <td width="15%" class="text-right bold">المكرم السادة :</td>
             <td width="70%" class="messrs-dots">....................................................................................................................</td>
-            <td width="15%" class="text-left bold" dir="ltr">: Messrs.</td>
+            <td width="15%" class="text-left bold" dir="ltr">Messrs: </td>
         </tr>
     </table>
 
@@ -425,15 +472,15 @@
                 <!-- Inner Tables for each row to ensure perfect alignment -->
                 @foreach([
                     ['label_ar' => 'اسم السائق:', 'val' => $driverName, 'label_en' => 'Driver Name:'],
-                    ['label_ar' => 'رقم السيارة:', 'val' => "", 'label_en' => 'Car No:'],
-                    ['label_ar' => 'رقم رخصة التشغيل:', 'val' =>"", 'label_en' => 'Work Lic. No: '],
-                    ['label_ar' => 'مالك السيارة:', 'val' =>"", 'label_en' => 'T.Owner Name:'],
-                    ['label_ar' => 'جهة صدوره:', 'val' => "", 'label_en' => 'from Issued:'],
+                    ['label_ar' => 'رقم السيارة:', 'val' => $platnumber, 'label_en' => 'Car No:'],
+                    ['label_ar' => 'رقم رخصة التشغيل:', 'val' => $license_number, 'label_en' => 'Work Lic. No: '],
+                    ['label_ar' => 'مالك السيارة:', 'val' => $carowner, 'label_en' => 'T.Owner Name:'],
+                    ['label_ar' => 'جهة صدوره:', 'val' => $from_issued, 'label_en' => 'from Issued:'],
                 ] as $row)
                 <table class="inner-row-table">
                     <tr>
                         <td class="info-label-ar">{{ $row['label_ar'] }}</td>
-                        <td class="info-value">{{ $row['val'] ?: '...............................' }}</td>
+                        <td class="info-value"><span class="ltr-content">{{ $row['val'] ?: '...............................' }}</span></td>
                         <td class="info-label-en">{{ $row['label_en'] }}</td>
                     </tr>
                 </table>
@@ -443,16 +490,16 @@
             <!-- LEFT COLUMN (Delivery Info) -->
             <td class="info-col-left">
                 @foreach([
-                    ['label_ar' => 'رقم الحفيظة الاقامة:', 'val' => "", 'label_en' => 'L.D. No:'],
-                    ['label_ar' => 'تاريخها:', 'val' => "", 'label_en' => 'Date:'],
-                    ['label_ar' => 'مصدرها:', 'val' => "", 'label_en' => 'Issued At:'],
+                    ['label_ar' => 'رقم الحفيظة الاقامة:', 'val' => $ld_number, 'label_en' => 'L.D. No:'],
+                    ['label_ar' => 'تاريخها:', 'val' => $ld_date, 'label_en' => 'Date:'],
+                    ['label_ar' => 'مصدرها:', 'val' => $ld_from, 'label_en' => 'Issued At:'],
                     ['label_ar' => 'نوع السيارة:', 'val' => $vehicleType, 'label_en' => 'Kind Of Car:'],
                     ['label_ar' => 'تلفون السائق:', 'val' => $driverPhone, 'label_en' => 'Driver Tel:'],
                 ] as $row)
                 <table class="inner-row-table">
                     <tr>
                         <td class="info-label-ar">{{ $row['label_ar'] }}</td>
-                        <td class="info-value">{{ $row['val'] ?: '...............................' }}</td>
+                        <td class="info-value"><span class="ltr-content">{{ $row['val'] ?: '...............................' }}</span></td>
                         <td class="info-label-en">{{ $row['label_en'] }}</td>
                     </tr>
                 </table>
@@ -478,7 +525,7 @@
     </div>
 
     <!-- DESTINATION & UNLOADING -->
-    <div class="section-box">
+<div class="section-box">
         <div class="section-label">منطقة التنزيل :</div>
 
 
@@ -493,15 +540,23 @@
             </thead>
             <tbody>
                 @if(isset($task->delivery))
-                      <tr style="padding-top:20px;padding-bottom:20px">
+                     <tr>
+                        <td>
+                            {{ $task->delivery->address }}
 
-                        <td>{{ $task->delivery->address }}  <a href="https://www.google.com/maps/search/?api=1&query={{ $task->delivery->latitude }},{{ $task->delivery->longitude }}" class="maps-link" style="margin-left: 10px;">
-                        [ رابط الخريطة / Maps Link ]
-                    </a></td>
-                        <td>{{ $task->delivery->arrival_time ?? '' }}</td>
-                        <td>{{ $task->delivery->departure_time ?? '' }}</td>
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ $task->delivery->latitude }},{{ $task->delivery->longitude }}"
+                            target="_blank"
+                            class="maps-link"
+                            style="margin-left: 10px; color: #1a73e8; text-decoration: none; font-weight: bold;">
+                                [ رابط الخريطة / Maps Link ]
+                            </a>
+                        </td>
+
+                        <td>{{ $task->delivery->arrival_time ?? '--:--' }}</td>
+                        <td>{{ $task->delivery->departure_time ?? '--:--' }}</td>
+
                         <td>&nbsp;</td>
-                      </tr>
+                    </tr>
                 @else
                     <tr>
                         <td>{{ $task->delivery?->address }}</td>
@@ -518,11 +573,17 @@
             <table>
               <tr>
                 <td>
-                <div style="margin-top: 10px;">المستلم: .......................................</div>
+                <div style="margin-top: 10px;">المستلم: {{$task->delivery->contact_name}}</div>
 
                 </td>
                 <td>
-                <div>التوقيع: <span class="sig-line"></span></div>
+                <div>التوقيع:
+                    @if ($customerSignaturePath)
+                        <img src="{{ $customerSignaturePath }}" style="max-height: 50px; vertical-align: middle; position: absolute;">
+                    @else
+                        <span class="sig-line"></span>
+                    @endif
+                </div>
 
                 </td>
               </tr>
@@ -559,20 +620,25 @@
     </table>
 
     <!-- FINAL SIGNATURE -->
-    <div style="width: 100%; text-align: left;">
-        <div style="display: inline-block; width: 300px; text-align: right;">
+    <div style="width: 100%; text-align: left; margin:0; padding:0;">
+        <div style="display: flex ; justify-content: flex-end;align-items: center; width: 300px; text-align: right;">
             <strong>توقيع السائق :</strong>
-            <div style="margin-top: 15px; border-bottom: 2px solid #000; width: 100%;"></div>
+                @if ($driverSignaturePath)
+                    <img src="{{ $driverSignaturePath }}" style="max-height: 60px; display: block; margin-right: auto; position: absolute;">
+                @else
+                    <div style="border-bottom: 2px solid #000; width: 100%; margin-top: 15px;"></div>
+                @endif
+
         </div>
     </div>
 
     <!-- CONTACT INFO -->
-    <div style="width: 100%; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; line-height: 1.8;">
+     <div style="width: 100%; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; line-height: 1.8;">
         <div style="margin-bottom: 5px;">
-            جوال: 0551498217 - 0502187991 - الرمز البريدي: 14264 - الرمز الاضافي : 3943 - عضوية الرقم : 171899 - وحدة رقم : 312
+            جوال: <span class="ltr-content">0551498217 - 0502187991</span> - الرمز البريدي: 14264 - الرمز الاضافي : 3943 - عضوية الرقم : 171899 - وحدة رقم : 312
         </div>
         <div dir="ltr" style="margin-bottom: 5px; font-family: sans-serif;">
-            mob: 0551498217 - 0502187991 - add code : 14264 - add code : 3943 - c.c.no.: 171899 - unit no.: 312
+            mob: <span class="ltr-content">0551498217 - 0502187991</span> - add code : 14264 - add code : 3943 - c.c.no.: 171899 - unit no.: 312
         </div>
         <div dir="ltr" style="font-family: sans-serif; font-weight: bold; color: #1a2733;">
             afaqal3ml@afaqal3ml.com.se

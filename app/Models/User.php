@@ -44,7 +44,8 @@ class User extends Authenticatable
       'is_customs_clearance_agent',
       'bank_name',
       'account_number',
-      'iban_number'
+      'iban_number',
+      'signature_image'
     ];
 
     protected $casts = [

@@ -598,4 +598,7 @@
 
     {{-- Include Notification Modal --}}
     @include('admin.partials.notification-modal')
+
+    {{-- Include Signature Modal --}}
+    @include('admin.partials.signature-modal')
 @endsection

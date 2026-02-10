@@ -164,7 +164,7 @@
 
 <!-- Page Scripts -->
 @section('page-script')
-    <script src="{{ asset('js/admin/reports/driver-tasks.js') }}"></script>
+    @vite(['resources/js/admin/reports/driver-tasks.js'])
 
     <script>
         // Set up routes for the JavaScript class
@@ -239,7 +239,7 @@
                                 <div class="col-md-4 mb-3">
                                     <label for="driver_ids" class="form-label">{{ __('Select Drivers') }} <span
                                             class="text-danger">*</span></label>
-                                    <select class="form-select  flitter-select" id="driver_ids" name="driver_ids[]" multiple
+                                    <select class="form-select  filter-select" id="driver_ids" name="driver_ids[]" multiple
                                         required>
                                         @foreach ($drivers as $driver)
                                             <option value="{{ $driver->id }}">{{ $driver->name }} - {{ $driver->phone }}
@@ -263,7 +263,7 @@
                                 <!-- Task Status -->
                                 <div class="col-md-4 mb-3">
                                     <label for="task_statuses" class="form-label">{{ __('Task Status') }}</label>
-                                    <select class="form-select flitter-select" id="task_statuses" name="task_statuses[]"
+                                    <select class="form-select filter-select" id="task_statuses" name="task_statuses[]"
                                         multiple>
                                         @foreach ($taskStatuses as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -274,7 +274,7 @@
                                 <!-- Payment Status -->
                                 <div class="col-md-4 mb-3">
                                     <label for="payment_status" class="form-label">{{ __('Payment Status') }}</label>
-                                    <select class=" flitter-select form-select" id="payment_status" name="payment_status">
+                                    <select class=" filter-select form-select" id="payment_status" name="payment_status">
                                         <option value="">{{ __('All Payment Statuses') }}</option>
                                         @foreach ($paymentStatuses as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -285,7 +285,7 @@
                                 <!-- Payment Method -->
                                 <div class="col-md-4 mb-3">
                                     <label for="payment_method" class="form-label">{{ __('Payment Method') }}</label>
-                                    <select class="form-select flitter-select" id="payment_method" name="payment_method">
+                                    <select class="form-select filter-select" id="payment_method" name="payment_method">
                                         <option value="">{{ __('All Payment Methods') }}</option>
                                         @foreach ($paymentMethods as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -296,7 +296,7 @@
                                 <!-- Customer Selection -->
                                 <div class="col-md-4 mb-3">
                                     <label for="customer_ids" class="form-label">{{ __('Select Customers') }}</label>
-                                    <select class="form-select flitter-select" id="customer_ids" name="customer_ids[]"
+                                    <select class="form-select filter-select" id="customer_ids" name="customer_ids[]"
                                         multiple>
                                         @foreach ($customers as $customer)
                                             <option value="{{ $customer->id }}">{{ $customer->name }} @if ($customer->company_name)
@@ -309,7 +309,7 @@
                                 <!-- Team Selection -->
                                 <div class="col-md-4 mb-3">
                                     <label for="team_ids" class="form-label">{{ __('Select Teams') }}</label>
-                                    <select class="form-select flitter-select" id="team_ids" name="team_ids[]" multiple>
+                                    <select class="form-select filter-select" id="team_ids" name="team_ids[]" multiple>
                                         @foreach ($teams as $team)
                                             <option value="{{ $team->id }}">{{ $team->name }}</option>
                                         @endforeach

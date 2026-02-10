@@ -290,6 +290,7 @@ $(function () {
                   <div class="dropdown-menu dropdown-menu-end m-0">
                   ${full['can_view_wallet'] ? `<a href="${baseUrl}admin/users/${full['id']}/wallet" class="dropdown-item"><i class="ti ti-wallet me-2"></i>${__('View Wallet')}</a>` : ''}
                   <a href="javascript:;" class="dropdown-item status-record" data-id="${full['id']}" data-name="${full['name']}" data-status="${full['status']}"><i class="ti ti-switch-horizontal me-2"></i>${__('change status')}</a>
+                  <a href="javascript:;" class="dropdown-item signature-record" data-id="${full['id']}" data-name="${full['name']}"><i class="ti ti-signature me-2"></i>${__('Manage Signature')}</a>
                   </div>
                   </div>`;
           }
@@ -534,4 +535,18 @@ $(function () {
       }
     });
   });
+
+  $(document).on('click', '.signature-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    if (window.signatureModalManager) {
+      window.signatureModalManager.open('user', id);
+    }
+  });
+
+  window.refreshDataTable = function () {
+    if (dt_data) {
+      dt_data.draw();
+    }
+  };
 });

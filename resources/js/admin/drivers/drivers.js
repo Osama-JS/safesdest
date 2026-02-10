@@ -306,7 +306,7 @@ $(function () {
                         </a>
                     </li>
                     <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" >${__('Create Wallet')}</a></li>
-
+                    <li><a href="javascript:;" class="dropdown-item signature-record" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-signature me-2"></i>${__('Manage Signature')}</a></li>
                   </ul>
                 </div>
               </div>`;
@@ -557,6 +557,20 @@ $(function () {
     $('#whatsapp-number').val('');
     toggleWhatsAppFields();
   });
+
+  $(document).on('click', '.signature-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    if (window.signatureModalManager) {
+      window.signatureModalManager.open('driver', id);
+    }
+  });
+
+  window.refreshDataTable = function () {
+    if (dt_data) {
+      dt_data.draw();
+    }
+  };
 });
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;

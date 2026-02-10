@@ -262,6 +262,13 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/system-notifications/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('system.notifications.mark-all-read');
                 });
 
+                // Signature Management Routes
+                Route::prefix('signature')->name('admin.signature.')->group(function () {
+                    Route::post('/upload', [App\Http\Controllers\admin\SignatureController::class, 'upload'])->name('upload');
+                    Route::get('/get', [App\Http\Controllers\admin\SignatureController::class, 'get'])->name('get');
+                    Route::post('/delete', [App\Http\Controllers\admin\SignatureController::class, 'delete'])->name('delete');
+                });
+
                 // Manual Notifications Routes
                 Route::prefix('notifications')->name('admin.notifications.')->group(function () {
                     Route::post('send-to-driver', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToDriver'])

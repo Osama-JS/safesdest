@@ -89,6 +89,7 @@ class WalletReports {
     // Initialize wallet type select
     if (this.walletTypeSelect.length) {
       this.walletTypeSelect.select2({
+        theme: 'bootstrap-5',
         placeholder: 'اختر نوع المحفظة',
         allowClear: false
       });
@@ -97,6 +98,7 @@ class WalletReports {
     // Initialize owner select
     if (this.ownerSelect.length) {
       this.ownerSelect.select2({
+        theme: 'bootstrap-5',
         placeholder: 'اختر المالك',
         allowClear: false
       });
@@ -104,6 +106,7 @@ class WalletReports {
 
     // Initialize other selects
     $('#transactionType, #status').select2({
+      theme: 'bootstrap-5',
       allowClear: true
     });
   }
@@ -524,6 +527,9 @@ class WalletReports {
 }
 
 // Initialize when document is ready
+// Expose to window for global access
+window.WalletReports = WalletReports;
+
 $(document).ready(() => {
   new WalletReports();
 });

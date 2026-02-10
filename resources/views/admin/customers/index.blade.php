@@ -528,4 +528,7 @@
      @endcan
 
 
- @endsection
+     {{-- Include Signature Modal --}}
+    @include('admin.partials.signature-modal')
+
+@endsection

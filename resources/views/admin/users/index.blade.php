@@ -421,4 +421,7 @@
         </div>
     @endcan
 
+    {{-- Include Signature Modal --}}
+    @include('admin.partials.signature-modal')
+
 @endsection

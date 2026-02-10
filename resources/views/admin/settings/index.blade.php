@@ -173,6 +173,29 @@
 
                 </div>
             </div>
+        <div class="col-md-4">
+            <div class="card mt-3">
+                <div class="card-header">
+                    <div class="divider text-start">
+                        <div class="divider-text"><strong>{{ __('Policies & Reports Settings') }}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label class="mb-2 d-flex justify-content-between align-items-center">
+                            {{ __('Enable Internal Signatures') }}
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input update-setting-checkbox" type="checkbox"
+                                    data-key="internal_signatures_enabled"
+                                    {{ ($settings['internal_signatures_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
+                            </div>
+                        </label>
+                        <p class="text-muted small">{{ $settings['internal_signatures_enabled']['description'] ?? __('Enable display of stored signatures in PDF policies and reports.') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
         </div>
         <!-- <div class="col-md-4">
             <div class="card">

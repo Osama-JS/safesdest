@@ -11,6 +11,102 @@
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
+@section('page-style')
+    @vite(['resources/css/app.css'])
+    <style>
+        /* Select2 Bootstrap 5 Compatibility */
+        .select2-container--bootstrap-5 .select2-selection {
+            border: 1px solid #d0d7de;
+            border-radius: 0.375rem;
+            min-height: calc(2.25rem + 2px);
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            background-color: #fff;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection:focus-within {
+            border-color: #86b7fe;
+            outline: 0;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single {
+            height: calc(2.25rem + 2px);
+            padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            padding: 0;
+            line-height: 1.5;
+            color: #212529;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+            height: calc(2.25rem);
+            right: 0.75rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple {
+            min-height: calc(2.25rem + 2px);
+            padding: 0.125rem 0.75rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+            background-color: #0d6efd;
+            border: 1px solid #0d6efd;
+            border-radius: 0.25rem;
+            color: #fff;
+            font-size: 0.75rem;
+            margin: 0.125rem 0.25rem 0.125rem 0;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+            color: #fff;
+            margin-right: 0.25rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #f8f9fa;
+        }
+
+        .select2-dropdown {
+            border: 1px solid #d0d7de;
+            border-radius: 0.375rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .select2-container--bootstrap-5 .select2-results__option {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .select2-container--bootstrap-5 .select2-results__option--highlighted {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+
+        .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+            border: 1px solid #d0d7de;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* RTL Support */
+        [dir="rtl"] .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+            left: 0.75rem;
+            right: auto;
+        }
+
+        [dir="rtl"] .select2-container--bootstrap-5 .select2-selection--single {
+            padding: 0.375rem 0.75rem 0.375rem 2.25rem;
+        }
+    </style>
+@endsection
+
 @section('page-script')
     <script>
         const walletReportRoutes = {

@@ -530,6 +530,41 @@
     </div>
 
     {{-- Dedicated Signature Page --}}
+    @php
+        $internalSignaturesEnabled = \App\Models\Settings::getValue('internal_signatures_enabled', '0') == '1';
+
+        $driverSignaturePath = null;
+        if ($internalSignaturesEnabled && $task->driver && $task->driver->signature_image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->driver->signature_image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $driverSignaturePath = $path;
+                    break;
+                }
+            }
+        }
+
+        $customerSignaturePath = null;
+        if ($internalSignaturesEnabled && $task->customer && $task->customer->signature_image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->customer->signature_image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $customerSignaturePath = $path;
+                    break;
+                }
+            }
+        }
+    @endphp
     <div class="signature-section">
         <div class="signature-title">{{ __('Electronic Signature Page') }}</div>
 
@@ -546,10 +581,14 @@
                     </div>
 
                     <div style="margin-top: 15px; text-align: center;">
-                        <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 110px; position: relative; overflow: hidden;">
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
-                                {{ __('Sign Here') }}
-                            </div>
+                        <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 60px; position: relative; overflow: hidden;">
+                            @if ($driverSignaturePath)
+                                <img src="{{ $driverSignaturePath }}" style="max-height: 100px; max-width: 100%;">
+                            @else
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
+                                    {{ __('Sign Here') }}
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -565,10 +604,14 @@
                     </div>
 
                     <div style="margin-top: 20px; text-align: center;">
-                        <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 110px; position: relative; overflow: hidden;">
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
-                                {{ __('Sign Here') }}
-                            </div>
+                        <div class="signature-box" style="border: 2px dashed #d1d5db; border-radius: 8px; background: #f9fafb; height: 600px; position: relative; overflow: hidden;">
+                            @if ($customerSignaturePath)
+                                <img src="{{ $customerSignaturePath }}" style="max-height: 100px; max-width: 100%;">
+                            @else
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #9ca3af; font-size: 11px; font-style: italic;">
+                                    {{ __('Sign Here') }}
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </td>

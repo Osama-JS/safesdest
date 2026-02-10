@@ -42,7 +42,8 @@ class Customer extends Authenticatable
       'confirmation_code_expires_at',
       'fcm_token',
       'device_id',
-      'policy_file_name'
+      'policy_file_name',
+      'signature_image'
     ];
 
     protected $casts = [

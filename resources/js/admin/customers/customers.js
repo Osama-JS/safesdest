@@ -256,6 +256,7 @@ $(function () {
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-broker-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.broker}"><i class="ti ti-switch-horizontal me-2"></i> ${__('Change Broker Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" ><i class="ti ti-wallet me-2"></i>${__('Create Wallet')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item signature-record" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-signature me-2"></i>${__('Manage Signature')}</a></li>
                   </ul>
                 </div>
               </div>`;
@@ -677,4 +678,18 @@ $(function () {
       }
     });
   });
+
+  $(document).on('click', '.signature-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    if (window.signatureModalManager) {
+      window.signatureModalManager.open('customer', id);
+    }
+  });
+
+  window.refreshDataTable = function () {
+    if (dt_data) {
+      dt_data.draw();
+    }
+  };
 });

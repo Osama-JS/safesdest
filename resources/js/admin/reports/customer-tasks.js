@@ -142,10 +142,11 @@ class CustomerTasksReport {
     }
 
     try {
-      $('.flitter-select').each(function () {
+      $('.filter-select').each(function () {
         const $this = $(this);
         if (!$this.hasClass('select2-hidden-accessible')) {
           $this.select2({
+            theme: 'bootstrap-5',
             placeholder: $this.attr('multiple') ? 'Select one or more...' : 'Select...',
             allowClear: true,
             language: {
@@ -160,7 +161,7 @@ class CustomerTasksReport {
         }
       });
 
-      console.log('CustomerTasksReport: Select2 initialized for', $('.flitter-select').length, 'elements');
+      console.log('CustomerTasksReport: Select2 initialized for', $('.filter-select').length, 'elements');
     } catch (error) {
       console.error('Error initializing Select2:', error);
     }
@@ -471,7 +472,7 @@ class CustomerTasksReport {
 
   resetFilters() {
     $('#reportForm')[0].reset();
-    $('.flitter-select').val(null).trigger('change');
+    $('.filter-select').val(null).trigger('change');
 
     if ($('#dateRange').data('daterangepicker')) {
       $('#dateRange').data('daterangepicker').setStartDate(moment().subtract(29, 'days'));
@@ -632,3 +633,6 @@ class CustomerTasksReport {
 }
 
 // Class will be initialized from the Blade template
+
+// Expose to window for global access
+window.CustomerTasksReport = CustomerTasksReport;

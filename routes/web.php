@@ -496,6 +496,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/transaction/edit/{id}', [WalletsController::class, 'editTransaction'])->name('wallets.transaction.edit');
                 Route::delete('/wallets/transaction/delete/{id}', [WalletsController::class, 'destroy'])->name('wallets.transaction.delete');
 
+                // Withdrawal Requests Routes
+                Route::get('/wallets/withdrawals', [App\Http\Controllers\admin\WithdrawalRequestsController::class, 'index'])->name('wallets.withdrawals.index');
+                Route::get('/wallets/withdrawals/data', [App\Http\Controllers\admin\WithdrawalRequestsController::class, 'getData'])->name('wallets.withdrawals.data');
+                Route::post('/wallets/withdrawals/{id}/process', [App\Http\Controllers\admin\WithdrawalRequestsController::class, 'process'])->name('wallets.withdrawals.process');
+
                 Route::get('/wallets/payment/request/{id}', [WalletsController::class, 'paymentRequest'])->name('wallets.payment_request');
 
 

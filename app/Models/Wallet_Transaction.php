@@ -57,4 +57,9 @@ class Wallet_Transaction extends Model
   {
     return $this->belongsTo(User::class, 'user_id');
   }
+
+  public function withdrawalRequest()
+  {
+    return $this->hasOne(WithdrawalRequest::class, 'wallet_transaction_id');
+  }
 }

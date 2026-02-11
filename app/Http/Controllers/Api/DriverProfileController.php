@@ -82,7 +82,7 @@ class DriverProfileController extends Controller
                             'name' => $driver->vehicle_size->type->vehicle->name . ' - ' . $driver->vehicle_size->type->name .' - '.  $driver->vehicle_size->name,
                             'description' => $driver->vehicle_size->description,
                         ] : null,
-                        'signature_image' => $driver->signature_image,
+                        'signature_image' => $driver->signature_image ? url($driver->signature_image) : null,
                         'bank_name' => $driver->bank_name,
                         'account_number' => $driver->account_number,
                         'iban_number' => $driver->iban_number,
@@ -195,7 +195,7 @@ class DriverProfileController extends Controller
                         'phone' => $driver->phone,
                         'phone_code' => $driver->phone_code,
                         'address' => $driver->address,
-                        'image' => $driver->image,
+                        'image' => $driver->image ? url($driver->image) : null,
                         'status' => $driver->status,
                         'online' => $driver->online,
                         'free' => $driver->free,
@@ -229,6 +229,60 @@ class DriverProfileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update profile'
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Update driver signature
+     */
+    public function updateSignature(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'signature_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            if ($request->hasFile('signature_image')) {
+                $oldImage = $driver->signature_image;
+                $driver->signature_image = (new FunctionsController())->convert($request->file('signature_image'), 'drivers/signatures');
+
+                // Delete old image if exists
+                if ($oldImage && file_exists(public_path($oldImage))) {
+                    unlink(public_path($oldImage));
+                }
+            }
+
+            $driver->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Signature updated successfully',
+                'data' => [
+                    'signature_image' => $driver->signature_image ? url($driver->signature_image) : null
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Update driver signature error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update signature'
             ], 500);
         }
     }

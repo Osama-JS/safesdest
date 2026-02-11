@@ -82,6 +82,10 @@ class DriverProfileController extends Controller
                             'name' => $driver->vehicle_size->type->vehicle->name . ' - ' . $driver->vehicle_size->type->name .' - '.  $driver->vehicle_size->name,
                             'description' => $driver->vehicle_size->description,
                         ] : null,
+                        'signature_image' => $driver->signature_image,
+                        'bank_name' => $driver->bank_name,
+                        'account_number' => $driver->account_number,
+                        'iban_number' => $driver->iban_number,
                     ]
                 ]
             ], 200);

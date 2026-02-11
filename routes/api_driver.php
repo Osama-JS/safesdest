@@ -98,6 +98,12 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/profile/additional-data', [DriverProfileController::class, 'getAdditionalData'])
         ->name('api.driver.profile.additional-data');
 
+    Route::post('/profile/signature', [DriverProfileController::class, 'updateSignature'])
+        ->name('api.driver.profile.signature');
+
+    Route::post('/profile/bank-details', [DriverProfileController::class, 'updateBankDetails'])
+        ->name('api.driver.profile.bank-details');
+
     Route::post('/refresh-token', [DriverAuthController::class, 'refreshToken'])
         ->name('api.driver.refresh-token');
 

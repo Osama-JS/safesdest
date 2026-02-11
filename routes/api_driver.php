@@ -211,6 +211,12 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::get('/earnings/stats', [DriverWalletController::class, 'getEarningsStats'])
             ->name('api.driver.wallet.earnings-stats');
+
+        Route::post('/withdraw', [DriverWalletController::class, 'requestWithdrawal'])
+            ->name('api.driver.wallet.withdraw');
+
+        Route::get('/withdrawals', [DriverWalletController::class, 'getWithdrawalHistory'])
+            ->name('api.driver.wallet.withdrawals');
     });
 
     // Notification routes

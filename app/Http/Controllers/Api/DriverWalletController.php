@@ -34,22 +34,33 @@ class DriverWalletController extends Controller
             // Calculate total earnings from completed tasks
             $totalEarnings = $wallet->credit;
 
-
             // Get pending amount (from tasks not yet paid)
             $pendingAmount = $wallet->debit;
 
+            // Calculate pending withdrawals
+            $pendingWithdrawals = $wallet->withdrawalRequests()
+                ->where('status', 'pending')
+                ->sum('amount_requested');
+
             Log::alert("Pending amount: " . $pendingAmount);
             Log::alert("Total earnings: " . $totalEarnings);
+
+            // Calculate available balance (Total - Paid - Pending Withdrawals)
+            // Note: Balance from getBalanceAttribute is Credit - Debit.
+            // We should subtract pending withdrawals from the available balance.
+            $availableBalance = $wallet->balance - $pendingWithdrawals;
 
             return response()->json([
                 'success' => true,
                 'message' => 'Wallet information retrieved successfully',
                 'data' => [
                     'wallet' => [
-                        'balance' => (float) $wallet->balance,
+                        'balance' => (float) $availableBalance, // Show available balance
+                        'current_balance' => (float) $wallet->balance, // Show actual ledger balance
                         'debt_ceiling' => (float) $wallet->debt_ceiling,
                         'pending_amount' => (float) $pendingAmount,
                         'total_earnings' => (float) $totalEarnings,
+                        'pending_withdrawal' => (float) $pendingWithdrawals,
                         'currency' => 'SAR' // Assuming Saudi Riyal
                     ],
                     'commission' => [
@@ -68,6 +79,111 @@ class DriverWalletController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get wallet information'
+            ], 500);
+        }
+    }
+
+    /**
+     * Request a withdrawal
+     */
+    public function requestWithdrawal(Request $request)
+    {
+        try {
+            $driver = $request->user();
+            $wallet = $driver->wallet;
+
+            if (!$wallet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wallet not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:1',
+                'notes' => 'nullable|string|max:255'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            // Calculate pending withdrawals
+            $pendingWithdrawals = $wallet->withdrawalRequests()
+                ->where('status', 'pending')
+                ->sum('amount_requested');
+
+            // Available balance = Ledger Balance - Pending Withdrawals
+            $availableBalance = $wallet->balance - $pendingWithdrawals;
+
+            if ($request->amount > $availableBalance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient available balance'
+                ], 400);
+            }
+
+            // Create Withdrawal Request
+            $withdrawal = \App\Models\WithdrawalRequest::create([
+                'driver_id' => $driver->id,
+                'wallet_id' => $wallet->id,
+                'amount_requested' => $request->amount,
+                'status' => 'pending',
+                'admin_notes' => $request->notes, // Storing user notes in admin_notes for now or separate field if exists
+                'payment_method' => 'cash', // Default or from request
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Withdrawal request submitted successfully',
+                'data' => $withdrawal
+            ], 200);
+
+        } catch (\Exception $e) {
+             Log::error('Withdrawal request error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit withdrawal request'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get withdrawal history
+     */
+    public function getWithdrawalHistory(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $withdrawals = \App\Models\WithdrawalRequest::where('driver_id', $driver->id)
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'withdrawals' => $withdrawals->items(),
+                    'pagination' => [
+                        'current_page' => $withdrawals->currentPage(),
+                        'last_page' => $withdrawals->lastPage(),
+                        'per_page' => $withdrawals->perPage(),
+                        'total' => $withdrawals->total(),
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch withdrawal history'
             ], 500);
         }
     }

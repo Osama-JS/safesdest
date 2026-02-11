@@ -88,4 +88,9 @@ class Wallet extends Model
   {
     return $this->hasMany(Wallet_Transaction::class, 'wallet_id');
   }
+
+  public function withdrawalRequests()
+  {
+    return $this->hasMany(WithdrawalRequest::class, 'wallet_id');
+  }
 }

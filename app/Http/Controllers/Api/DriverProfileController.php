@@ -541,4 +541,55 @@ class DriverProfileController extends Controller
         }
     }
 
+    /**
+     * Update bank details
+     */
+    public function updateBankDetails(Request $request)
+    {
+        try {
+            $driver = $request->user();
+
+            $validator = Validator::make($request->all(), [
+                'bank_name' => 'required|string|max:255',
+                'account_number' => 'required|string|max:255',
+                'iban_number' => 'required|string|max:255',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $driver->bank_name = $request->bank_name;
+            $driver->account_number = $request->account_number;
+            $driver->iban_number = $request->iban_number;
+            $driver->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank details updated successfully',
+                'data' => [
+                    'bank_details' => [
+                        'bank_name' => $driver->bank_name,
+                        'account_number' => $driver->account_number,
+                        'iban_number' => $driver->iban_number,
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Update bank details error', [
+                'error' => $e->getMessage(),
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update bank details'
+            ], 500);
+        }
+    }
 }

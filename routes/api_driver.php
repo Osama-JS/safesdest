@@ -38,9 +38,11 @@ Route::prefix('driver')->group(function () {
 
     // Test endpoint for debugging task ads (no auth required)
     Route::get('/task-ads/test-stats', [DriverTaskAdsController::class, 'testStats']);
-    // Get reCAPTCHA site key
-    // Route::get('/recaptcha-site-key', [DriverAuthController::class, 'getRecaptchaSiteKey'])
-    //     ->name('api.driver.recaptcha-site-key');
+    // Download routes (accessible via token in query string)
+    Route::get('/tasks/{task}/waybill', [DriverTaskController::class, 'downloadWaybill'])
+        ->name('api.driver.tasks.waybill');
+    Route::get('/tasks/{task}/customer-policy', [DriverTaskController::class, 'downloadCustomerPolicy'])
+        ->name('api.driver.tasks.customer-policy');
 
     // Authentication routes
     Route::post('/login', [DriverAuthController::class, 'login'])
@@ -120,12 +122,6 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::get('/{task}', [DriverTaskController::class, 'show'])
             ->name('api.driver.tasks.show');
-
-        Route::get('/{task}/waybill', [DriverTaskController::class, 'downloadWaybill'])
-            ->name('api.driver.tasks.waybill');
-
-        Route::get('/{task}/customer-policy', [DriverTaskController::class, 'downloadCustomerPolicy'])
-            ->name('api.driver.tasks.customer-policy');
 
         Route::post('/{task}/accept', [DriverTaskController::class, 'accept'])
             ->name('api.driver.tasks.accept');

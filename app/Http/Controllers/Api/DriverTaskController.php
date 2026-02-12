@@ -241,7 +241,8 @@ class DriverTaskController extends Controller
                     'customer' => [
                         'name' => $task->customer->name ?? 'Unknown',
                         'phone' => $task->customer->phone ?? null,
-                        'email' => $task->customer->email ?? null
+                        'email' => $task->customer->email ?? null,
+                        'policy_file_name' => $task->customer->policy_file_name ?? null
                     ],
                     'pickup_point' => $task->pickup ? [
                         'address' => $task->pickup->address,
@@ -1019,11 +1020,20 @@ class DriverTaskController extends Controller
         try {
             // Allow token in query string for launchUrl compatibility
             if (!$request->user() && $request->has('token')) {
-                $driver = Driver::whereHas('tokens', function($q) use ($request) {
-                    $q->where('token', hash('sha256', $request->token));
-                })->first();
-                if ($driver) {
-                    auth()->login($driver);
+                $token = $request->token;
+                if (strpos($token, '|') !== false) {
+                    $token = explode('|', $token)[1];
+                }
+
+                $accessToken = DB::table('personal_access_tokens')
+                    ->where('token', hash('sha256', $token))
+                    ->first();
+
+                if ($accessToken && $accessToken->tokenable_type === 'App\Models\Driver') {
+                    $driver = Driver::find($accessToken->tokenable_id);
+                    if ($driver) {
+                        auth()->login($driver);
+                    }
                 }
             }
 
@@ -1057,11 +1067,20 @@ class DriverTaskController extends Controller
         try {
             // Allow token in query string for launchUrl compatibility
             if (!$request->user() && $request->has('token')) {
-                $driver = Driver::whereHas('tokens', function($q) use ($request) {
-                    $q->where('token', hash('sha256', $request->token));
-                })->first();
-                if ($driver) {
-                    auth()->login($driver);
+                $token = $request->token;
+                if (strpos($token, '|') !== false) {
+                    $token = explode('|', $token)[1];
+                }
+
+                $accessToken = DB::table('personal_access_tokens')
+                    ->where('token', hash('sha256', $token))
+                    ->first();
+
+                if ($accessToken && $accessToken->tokenable_type === 'App\Models\Driver') {
+                    $driver = Driver::find($accessToken->tokenable_id);
+                    if ($driver) {
+                        auth()->login($driver);
+                    }
                 }
             }
 

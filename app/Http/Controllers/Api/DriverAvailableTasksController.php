@@ -29,13 +29,15 @@ class DriverAvailableTasksController extends Controller
             $query = Task::query()
                 ->with(['customer', 'pickup', 'delivery', 'vehicle_size'])
                 ->where('status', 'in_progress')
-                ->whereNull('driver_id')
-                ->where('is_broadcast', true);
+                ->whereNull('driver_id');
+                // ->where('is_broadcast', true);
+
+            // Important: We need to select all tasks columns first
+            $query->select('tasks.*');
 
             // If driver has location, sort by distance to pickup point
             if ($driverLat && $driverLng) {
-                $query->select('tasks.*')
-                    ->join('tasks_points', function ($join) {
+                $query->join('tasks_points', function ($join) {
                         $join->on('tasks.id', '=', 'tasks_points.task_id')
                             ->where('tasks_points.type', '=', 'pickup');
                     });
@@ -51,21 +53,21 @@ class DriverAvailableTasksController extends Controller
 
             $tasks = $query->paginate($perPage);
 
+            Log::info("Driver available tasks - Page: {$tasks->currentPage()}, Total: {$tasks->total()}, Count: " . count($tasks->items()));
+            Log::debug('Driver available tasks data: ' . json_encode($tasks->items()));
+
             // Check if driver has already claimed any of these tasks
-            $taskIds = $tasks->pluck('id')->toArray();
+            $taskIds = collect($tasks->items())->pluck('id')->toArray();
             $myClaims = TaskClaimRequest::where('driver_id', $driver->id)
                 ->whereIn('task_id', $taskIds)
                 ->pluck('status', 'task_id')
                 ->toArray();
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'tasks' => $tasks->map(function ($task) use ($myClaims) {
+            $Avtasks = $tasks->map(function ($task) use ($myClaims) {
                         return [
                             'id' => $task->id,
                             'customer_task_number' => $task->customer_task_number,
-                            'total_price' => $task->total_price,
+                            'total_price' => round($task->total_price - ($task->commission ?? 0), 2),
                             'customer_name' => $task->customer->name ?? 'Unknown',
                             'pickup_address' => $task->pickup->address ?? 'N/A',
                             'delivery_address' => $task->delivery->address ?? 'N/A',
@@ -75,7 +77,12 @@ class DriverAvailableTasksController extends Controller
                             'claim_status' => $myClaims[$task->id] ?? null,
                             'vehicle_size' => $task->vehicle_size->name ?? 'N/A',
                         ];
-                    }),
+                    });
+                Log::debug('Driver available tasks data: ' . json_encode($Avtasks));
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'tasks' => $Avtasks,
                     'pagination' => [
                         'total' => $tasks->total(),
                         'per_page' => $tasks->perPage(),
@@ -104,7 +111,6 @@ class DriverAvailableTasksController extends Controller
             $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'formTemplate'])
                 ->where('status', 'in_progress')
                 ->whereNull('driver_id')
-                ->where('is_broadcast', true)
                 ->findOrFail($id);
 
             $claim = TaskClaimRequest::where('driver_id', $driver->id)
@@ -117,7 +123,7 @@ class DriverAvailableTasksController extends Controller
                     'task' => [
                         'id' => $task->id,
                         'customer_task_number' => $task->customer_task_number,
-                        'total_price' => $task->total_price,
+                        'total_price' => round($task->total_price - ($task->commission ?? 0), 2),
                         'customer' => [
                             'name' => $task->customer->name ?? 'Unknown',
                             'phone' => $task->customer->phone ?? null,
@@ -162,7 +168,6 @@ class DriverAvailableTasksController extends Controller
 
             $task = Task::where('status', 'in_progress')
                 ->whereNull('driver_id')
-                ->where('is_broadcast', true)
                 ->findOrFail($id);
 
             // Check if already claimed

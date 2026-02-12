@@ -125,6 +125,7 @@
                     <tr>
                         <th></th>
                         <th>{{ __('task id') }}</th>
+                        <th>{{ __('customer task no') }}</th>
                         <th>{{ __('order id') }}</th>
                         <th>{{ __('price') }}</th>
                         <th>{{ __('Driver price') }}</th>

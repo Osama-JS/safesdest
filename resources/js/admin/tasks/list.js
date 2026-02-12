@@ -91,6 +91,7 @@ $(function () {
       columns: [
         { data: '' }, // للـ control (responsive)
         { data: 'id' }, // الترقيم التسلسلي
+        { data: 'customer_task_number' },
         { data: 'order' }, // الاسم مع الأفاتار
         { data: 'price' }, // الاسم مع الأفاتار
         { data: 'driver_price' }, // الاسم مع الأفاتار
@@ -102,6 +103,7 @@ $(function () {
         { data: 'status' }, // الحالة
         { data: 'task' }, // الحالة
         { data: 'created_at' }, // تاريخ الإنشاء
+        { data: null }, // closed
         { data: null } // actions
       ],
       columnDefs: [
@@ -127,15 +129,15 @@ $(function () {
         {
           targets: 2,
           render: function (data, type, full, meta) {
-            return `<span>${full.order}</span>`;
+            return full.customer_task_number
+              ? `<span class="badge bg-info">C#${full.customer_task_number}</span>`
+              : `<span>-</span>`;
           }
         },
         {
           targets: 3,
-          responsivePriority: 2,
-          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
+            return `<span>${full.order}</span>`;
           }
         },
         {
@@ -143,17 +145,25 @@ $(function () {
           responsivePriority: 2,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-info rounded text-wihte px-2"><strong>${full.driver_price} SAR</strong></span>`;
+            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
           }
         },
         {
           targets: 5,
+          responsivePriority: 2,
+          className: 'text-nowrap w-auto',
+          render: function (data, type, full, meta) {
+            return `<span class="border border-info rounded text-wihte px-2"><strong>${full.driver_price} SAR</strong></span>`;
+          }
+        },
+        {
+          targets: 6,
           render: function (data, type, full, meta) {
             return `<span>${full.team}</span>`;
           }
         },
         {
-          targets: 6,
+          targets: 7,
           responsivePriority: 7,
           render: function (data, type, full, meta) {
             return full.driver === '-'
@@ -167,31 +177,31 @@ $(function () {
           }
         },
         {
-          targets: 7,
+          targets: 8,
           render: function (data, type, full, meta) {
             return `<span>${full.owner} <br> (${full.owner_info})</span>`;
           }
         },
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             return `<span>${full.address}</span>`;
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             return `<span>${full.start}</span>`;
           }
         },
         {
-          targets: 10,
+          targets: 11,
           render: function (data, type, full, meta) {
             return `<span>${full.complete}</span>`;
           }
         },
         {
-          targets: 11,
+          targets: 12,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -226,7 +236,7 @@ $(function () {
           }
         },
         {
-          targets: 12,
+          targets: 13,
           responsivePriority: 5,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -248,14 +258,14 @@ $(function () {
           }
         },
         {
-          targets: 13,
+          targets: 14,
           responsivePriority: 6,
           render: function (data, type, full, meta) {
             return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span> <p>Delivery no: ${full.delivery} </p>` : `<span class="px-2 rounded bg-success text-white">Open</span> `}`;
           }
         },
         {
-          targets: 14,
+          targets: 15,
           title: 'Actions',
           searchable: false,
           orderable: false,

@@ -120,6 +120,7 @@
                         <th></th>
                         <th>{{ __('#') }}</th>
                         <th>{{ __('Task ID') }}</th>
+                        <th>{{ __('My Task #') }}</th>
                         <th>{{ __('Total Price') }}</th>
                         <th>{{ __('Pickup Address') }}</th>
                         <th>{{ __('Delivery Address') }}</th>

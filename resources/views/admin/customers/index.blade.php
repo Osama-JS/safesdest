@@ -434,6 +434,45 @@
                                                          </div>
                                                      </div>
 
+                                                    <!-- Task Numbering Section -->
+                                                    <div class="col-md-12">
+                                                        <div class="divider text-start">
+                                                            <div class="divider-text">
+                                                                <strong><i
+                                                                        class="ti ti-hash me-2"></i>{{ __('Task Numbering') }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="customer-task-number-start">{{ __('Task Number Start') }}</label>
+                                                            <input type="number" name="task_number_start"
+                                                                id="customer-task-number-start" class="form-control"
+                                                                placeholder="{{ __('e.g. 3000') }}" min="1">
+                                                            <div class="form-text">
+                                                                <small
+                                                                    class="text-muted">{{ __('Starting number for custom task numbering') }}</small>
+                                                            </div>
+                                                            <span class="task_number_start-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-4">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="customer-task-number-next">{{ __('Next Task Number') }}</label>
+                                                            <input type="number"
+                                                                id="customer-task-number-next" class="form-control"
+                                                                readonly disabled>
+                                                            <div class="form-text">
+                                                                <small
+                                                                    class="text-muted">{{ __('Auto-calculated, read only') }}</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
 
                                                  </div>
                                              </div>

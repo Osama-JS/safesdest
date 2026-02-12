@@ -142,6 +142,7 @@ class TasksController extends Controller
 
             $data[] = [
               'id'               => $task->id,
+              'customer_task_number' => $task->customer_task_number,
               'fake_id'          => ++$fakeId,
               'pickup_address'   => $task->pickup->address ?? 'N/A',
               'delivery_address' => $task->delivery->address ?? 'N/A',

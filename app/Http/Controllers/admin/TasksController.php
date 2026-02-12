@@ -161,6 +161,7 @@ class TasksController extends Controller
 
             $item = [
               'id'     => $task->id,
+              'customer_task_number' => $task->customer_task_number,
               'name'   => $customer ? $customer->name : ($user->name ?? 'غير معروف'),
               'owner'  => $customer ? 'customer' : 'admin',
               'status' => $task->status,
@@ -202,6 +203,7 @@ class TasksController extends Controller
           'success' => true,
           'data'    => [
             'id'         => $task->id,
+            'customer_task_number' => $task->customer_task_number,
             'status'     => $task->status,
             'driver'     => $task->driver->name ?? "",
             'team'       => $task->team->name ?? "",
@@ -1967,7 +1969,8 @@ class TasksController extends Controller
         foreach ($tasks as $task) {
             $data[] = [
               'id'         => $task->id,
-              'order'      => $task->order->id ?? "-",
+          'customer_task_number' => $task->customer_task_number,
+          'order'      => $task->order->id ?? "-",
               'price'      => $task->total_price,
               'team'       => $task->team->name ?? "-",
               'driver'     => $task->driver ?? '-',

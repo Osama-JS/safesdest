@@ -398,6 +398,10 @@ $(function () {
       }
       toggleCustomBankFieldCustomer();
 
+      // Load task numbering
+      $('#customer-task-number-start').val(data.task_number_start || '');
+      $('#customer-task-number-next').val(data.task_number_next || '');
+
       generateFields(data.fields, data.additional_data);
 
       $('#modelTitle').html(`Edit User: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
@@ -482,6 +486,9 @@ $(function () {
     $('#modelTitle').html(__('Add New Customer'));
     $('#additional-form').html('');
     $('#select-template').val('');
+    // Reset task numbering fields
+    $('#customer-task-number-start').val('');
+    $('#customer-task-number-next').val('');
   });
 
   // Handle send notification button click for customers

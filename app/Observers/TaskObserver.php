@@ -3,8 +3,10 @@
 namespace App\Observers;
 
 use App\Models\Task;
+use App\Models\Customer;
 use App\Jobs\SendEmailNotificationJob;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class TaskObserver
 {
@@ -19,6 +21,30 @@ class TaskObserver
     public function created(Task $task)
     {
         Log::info("TaskObserver: New task created #{$task->id}");
+
+        // Auto-assign customer task number if the customer has custom numbering
+        if ($task->customer_id) {
+            try {
+                DB::transaction(function () use ($task) {
+                    $customer = Customer::where('id', $task->customer_id)->lockForUpdate()->first();
+
+                    if ($customer && $customer->hasCustomTaskNumbering()) {
+                        $nextNumber = $customer->task_number_next ?? $customer->task_number_start;
+
+                        $task->customer_task_number = $nextNumber;
+                        $task->saveQuietly(); // Avoid re-triggering observer
+
+                        $customer->task_number_next = $nextNumber + 1;
+                        $customer->saveQuietly();
+
+                        Log::info("TaskObserver: Assigned customer_task_number={$nextNumber} to task #{$task->id} for customer #{$customer->id}");
+                    }
+                });
+            } catch (\Exception $e) {
+                Log::error("TaskObserver: Failed to assign customer task number for task #{$task->id}: " . $e->getMessage());
+            }
+        }
+
         $this->notifyManager($task, 'إنشاء مهمة جديدة', "تم إنشاء مهمة جديدة رقم #{$task->id} في المنصة.");
     }
 

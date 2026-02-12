@@ -43,16 +43,52 @@ class Customer extends Authenticatable
       'fcm_token',
       'device_id',
       'policy_file_name',
-      'signature_image'
+      'signature_image',
+      'task_number_start',
+      'task_number_next',
     ];
 
     protected $casts = [
       'additional_data' => 'array',
       'is_customs_clearance_agent' => 'boolean',
+      'task_number_start' => 'integer',
+      'task_number_next' => 'integer',
     ];
 
     protected $dates = ['deleted_at'];
 
+
+    /**
+     * Check if customer has custom task numbering enabled
+     */
+    public function hasCustomTaskNumbering()
+    {
+        return $this->task_number_start !== null;
+    }
+
+    /**
+     * Get the next task number atomically and increment the counter
+     * Uses DB-level locking to prevent race conditions
+     *
+     * @return int|null Returns the next number or null if numbering not enabled
+     */
+    public function getNextTaskNumber()
+    {
+        if (!$this->hasCustomTaskNumbering()) {
+            return null;
+        }
+
+        // Use pessimistic locking to prevent race conditions
+        $customer = Customer::where('id', $this->id)->lockForUpdate()->first();
+
+        $nextNumber = $customer->task_number_next ?? $customer->task_number_start;
+
+        // Increment the counter
+        $customer->task_number_next = $nextNumber + 1;
+        $customer->saveQuietly();
+
+        return $nextNumber;
+    }
 
     public function form_template()
     {

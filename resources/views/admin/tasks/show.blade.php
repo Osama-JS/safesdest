@@ -113,6 +113,9 @@
                         <h5 class="mb-0 text-dark">
                             <i class="fas fa-tasks me-2 text-primary"></i>
                             {{ __('Task Details') }} (New) #{{ $task->id }}
+                            @if($task->customer_task_number)
+                                <span class="badge bg-info ms-2">{{ __('Customer #') }}{{ $task->customer_task_number }}</span>
+                            @endif
                         </h5>
 
                         <div class="d-flex gap-2">

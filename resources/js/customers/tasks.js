@@ -55,6 +55,7 @@ $(function () {
         { data: '' },
         { data: 'fake_id' },
         { data: 'id' },
+        { data: 'customer_task_number' },
         { data: 'total_price' },
         { data: 'pickup_address' },
         { data: 'delivery_address' },
@@ -88,25 +89,33 @@ $(function () {
         },
         {
           targets: 3,
+          render: function (data, type, full, meta) {
+            return full.customer_task_number
+              ? `<span class="badge bg-label-info">C#${full.customer_task_number}</span>`
+              : `<span class="text-muted">-</span>`;
+          }
+        },
+        {
+          targets: 4,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
             return `<span class="text-primary fw-bold rounded border px-2">${full.total_price}</span>`;
           }
         },
         {
-          targets: 4,
+          targets: 5,
           render: function (data, type, full, meta) {
             return `<span class="text-truncate" title="${full.pickup_address}">${full.pickup_address}</span>`;
           }
         },
         {
-          targets: 5,
+          targets: 6,
           render: function (data, type, full, meta) {
             return `<span class="text-truncate" title="${full.delivery_address}">${full.delivery_address}</span>`;
           }
         },
         {
-          targets: 6,
+          targets: 7,
           render: function (data, type, full, meta) {
             let whatsapp = '';
             if (full.driver) {
@@ -131,14 +140,14 @@ $(function () {
           }
         },
         {
-          targets: 7,
+          targets: 8,
           render: function (data, type, full, meta) {
             return `<small class="text-muted">${full.vehicle_info}</small>`;
           }
         },
 
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             var statusObj = {
               in_progress: { title: 'In Progress', class: 'bg-label-warning' },
@@ -157,7 +166,7 @@ $(function () {
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             return full.created_at;
           }

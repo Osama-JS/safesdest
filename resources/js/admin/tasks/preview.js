@@ -185,7 +185,7 @@ $(function () {
               <div class="d-flex align-items-center">
                 <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">
                 <div class="px-3">
-                  <h6 class="mb-1">#${task.id} - ${task.name}</h6>
+                  <h6 class="mb-1">#${task.id} ${task.customer_task_number ? `<span class="badge bg-info ms-1">C#${task.customer_task_number}</span>` : ''} - ${task.name}</h6>
                   <p>${task.point.address || ''} (${task.point.longitude} - ${task.point.latitude})</p>
                    ${driverHtml}
                 ${teamHtml}
@@ -394,7 +394,7 @@ $(function () {
 
         console.log(task);
         $('#taskDetailsControl').html(`
-           <h5>#${task.data.id}</h5>
+           <h5>#${task.data.id} ${task.data.customer_task_number ? `<span class="badge bg-info ms-1">C#${task.data.customer_task_number}</span>` : ''}</h5>
            <div class="d-flex">
                <button id="close-task-details" class="btn btn-sm  mb-3">
                   <i class="ti ti-x"></i>

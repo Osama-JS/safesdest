@@ -121,6 +121,12 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::get('/{task}', [DriverTaskController::class, 'show'])
             ->name('api.driver.tasks.show');
 
+        Route::get('/{task}/waybill', [DriverTaskController::class, 'downloadWaybill'])
+            ->name('api.driver.tasks.waybill');
+
+        Route::get('/{task}/customer-policy', [DriverTaskController::class, 'downloadCustomerPolicy'])
+            ->name('api.driver.tasks.customer-policy');
+
         Route::post('/{task}/accept', [DriverTaskController::class, 'accept'])
             ->name('api.driver.tasks.accept');
 

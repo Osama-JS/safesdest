@@ -985,8 +985,7 @@ class DriverTaskController extends Controller
                         'note' => $log->description,
                         'file_name' => $fileName,
                         'file_path' => $log->file_path,
-                        'created_at' => $log->created_at,
-                        'type' => $log->driver_id ? 'driver_note' : 'status_change'
+                'type' => $log->driver_id ? 'driver_note' : 'status_change'
                     ];
                 });
 
@@ -1008,6 +1007,82 @@ class DriverTaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to get task logs'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download waybill
+     */
+          public function downloadWaybill(Request $request, $taskId)
+    {
+        try {
+            // Allow token in query string for launchUrl compatibility
+            if (!$request->user() && $request->has('token')) {
+                $driver = Driver::whereHas('tokens', function($q) use ($request) {
+                    $q->where('token', hash('sha256', $request->token));
+                })->first();
+                if ($driver) {
+                    auth()->login($driver);
+                }
+            }
+
+            $driver = $request->user();
+            if (!$driver) return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+
+            $task = Task::with(['customer', 'pickup', 'delivery', 'driver', 'team'])
+                ->where('driver_id', $driver->id)
+                ->findOrFail($taskId);
+
+            return $this->pdfService->generate('admin.tasks.report_pdf', ['task' => $task], "Waybill-{$task->id}.pdf", true);
+        } catch (\Exception $e) {
+            Log::error('Download waybill error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to download waybill'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download custom customer policy
+     */
+    public function downloadCustomerPolicy(Request $request, $taskId)
+    {
+        try {
+            // Allow token in query string for launchUrl compatibility
+            if (!$request->user() && $request->has('token')) {
+                $driver = Driver::whereHas('tokens', function($q) use ($request) {
+                    $q->where('token', hash('sha256', $request->token));
+                })->first();
+                if ($driver) {
+                    auth()->login($driver);
+                }
+            }
+
+            $driver = $request->user();
+            if (!$driver) return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+
+            $task = Task::with(['customer', 'pickup', 'delivery', 'driver', 'team'])
+                ->where('driver_id', $driver->id)
+                ->findOrFail($taskId);
+
+            return $this->pdfService->generate('admin.tasks.policy_pdf_custom', ['task' => $task], "Policy-{$task->id}.pdf", true);
+        } catch (\Exception $e) {
+            Log::error('Download customer policy error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to download customer policy'
             ], 500);
         }
     }

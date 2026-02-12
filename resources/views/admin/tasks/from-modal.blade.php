@@ -810,7 +810,7 @@
                 <!-- زر مهمة داخلية -->
                 <button
                     class="task_type_template btn btn-outline-primary d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill"
-                    data-template="{{ $task_template->value }}">
+                    data-template="{{ $task_template?->value }}">
                     <i class="fas fa-tasks"></i>
                     <span>إنشاء مهمة داخلية</span>
                 </button>

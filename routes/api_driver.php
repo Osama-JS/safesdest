@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DriverWalletController;
 use App\Http\Controllers\Api\DriverNotificationController;
 use App\Http\Controllers\Api\DriverNotificationTestController;
 use App\Http\Controllers\Api\DriverRegistrationController;
+use App\Http\Controllers\Api\DriverAvailableTasksController;
 use App\Http\Controllers\Api\DriverProfileController;
 use Illuminate\Support\Facades\Log;
 
@@ -119,6 +120,16 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::get('/history/completed', [DriverTaskController::class, 'history'])
             ->name('api.driver.tasks.history');
+
+        // Available Tasks & Claims Routes
+        Route::get('/available', [DriverAvailableTasksController::class, 'index'])
+            ->name('api.driver.tasks.available');
+        Route::get('/available/{id}', [DriverAvailableTasksController::class, 'show'])
+            ->name('api.driver.tasks.available.show');
+        Route::post('/available/{id}/claim', [DriverAvailableTasksController::class, 'claim'])
+            ->name('api.driver.tasks.available.claim');
+        Route::get('/my-claims', [DriverAvailableTasksController::class, 'myClaims'])
+            ->name('api.driver.tasks.my-claims');
 
         Route::get('/{task}', [DriverTaskController::class, 'show'])
             ->name('api.driver.tasks.show');

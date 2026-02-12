@@ -18,6 +18,7 @@ use App\Http\Controllers\Auth\CaptchaController;
 use App\Http\Controllers\admin\DriversController;
 use App\Http\Controllers\admin\WalletsController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\admin\TaskClaimsController;
 use App\Http\Controllers\admin\TasksAdsController;
 use App\Http\Controllers\admin\CustomersController;
 use App\Http\Controllers\admin\DashboardController;
@@ -598,6 +599,12 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('tasks', [TasksController::class, 'index'])->name('tasks.tasks');
                 Route::get('/tasks/data', [TasksController::class, 'getData'])->name('tasks.data');
                 Route::get('/tasks/show/{id}', [TasksController::class, 'show'])->name('task.show');
+
+                // Task Claim Management Routes
+                Route::get('task-claims', [TaskClaimsController::class, 'index'])->name('admin.task-claims.index');
+                Route::get('task-claims/data', [TaskClaimsController::class, 'getData'])->name('admin.task-claims.data');
+                Route::post('task-claims/{id}/approve', [TaskClaimsController::class, 'approve'])->name('admin.task-claims.approve');
+                Route::post('task-claims/{id}/reject', [TaskClaimsController::class, 'reject'])->name('admin.task-claims.reject');
                 Route::post('tasks', [TasksController::class, 'store'])->name('tasks.create');
                 Route::get('/tasks/create-from-invoice', [App\Http\Controllers\admin\TasksController::class, 'createFromInvoice'])->name('tasks.create_from_invoice');
                 Route::post('/tasks/validate-step1', [TasksController::class, 'validateStep1'])->name('tasks.validateStep1');

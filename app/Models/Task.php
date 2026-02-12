@@ -205,4 +205,9 @@ class Task extends Model
     {
         return $this->hasMany(TaskDriverAttempt::class, 'task_id');
     }
+
+    public function claimRequests()
+    {
+        return $this->hasMany(TaskClaimRequest::class, 'task_id');
+    }
 }

@@ -72,6 +72,14 @@
       "permission": "view_ads"
     },
     {
+      "url": "admin/task-claims",
+      "name": "Claim Requests",
+      "icon": "menu-icon tf-icons ti ti-file-certificate",
+      "slug": "admin.task-claims.index",
+      "isactive": "task-claims-isactive",
+      "permission": "view_tasks"
+    },
+    {
       "name": "Store",
       "icon": "menu-icon tf-icons ti ti-building-store",
       "slug": "products",

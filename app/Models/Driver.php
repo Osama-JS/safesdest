@@ -285,4 +285,9 @@ class Driver extends Authenticatable
 
         return in_array($ability, $token->abilities);
     }
+
+    public function claimRequests()
+    {
+        return $this->hasMany(TaskClaimRequest::class, 'driver_id');
+    }
 }

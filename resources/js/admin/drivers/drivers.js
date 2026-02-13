@@ -128,6 +128,7 @@ $(function () {
         // columns according to JSON
         { data: '' },
         { data: 'fake_id' },
+        { data: 'driver_code' },
         { data: 'name' },
         { data: 'username' },
         { data: 'email' },
@@ -162,6 +163,12 @@ $(function () {
         },
         {
           targets: 2,
+          render: function (data, type, full, meta) {
+            return `<span class="badge bg-label-primary">${full.driver_code || 'N/A'}</span>`;
+          }
+        },
+        {
+          targets: 3,
           responsivePriority: 2,
           render: function (data, type, full, meta) {
             var $name = full.name;
@@ -191,25 +198,25 @@ $(function () {
           }
         },
         {
-          targets: 3,
+          targets: 4,
           render: function (data, type, full, meta) {
             return `<span>${full.username}</span>`;
           }
         },
         {
-          targets: 4,
+          targets: 5,
           render: function (data, type, full, meta) {
             return `<span>${full.email}</span>`;
           }
         },
         {
-          targets: 5,
+          targets: 6,
           render: function (data, type, full, meta) {
             return `<span>${full.phone}</span>`;
           }
         },
         {
-          targets: 6,
+          targets: 7,
           render: function (data, type, full, meta) {
             if (full.whatsapp && full.whatsapp !== 'Not provided') {
               const cleanNumber = full.whatsapp.replace(/[+\s-]/g, '');
@@ -225,25 +232,25 @@ $(function () {
           }
         },
         {
-          targets: 7,
+          targets: 8,
           render: function (data, type, full, meta) {
             return `<span class="badge bg-label-info">${full.team || 'No Team'}</span>`;
           }
         },
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             return `<span>${full.role}</span>`;
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             return `<span>${full.tags || ''}</span>`;
           }
         },
         {
-          targets: 10,
+          targets: 11,
           className: 'text-center',
           render: function (data, type, full, meta) {
             let icon = '';
@@ -267,13 +274,13 @@ $(function () {
           }
         },
         {
-          targets: 11,
+          targets: 12,
           render: function (data, type, full, meta) {
             return full.created_at;
           }
         },
         {
-          targets: 12,
+          targets: 13,
           title: 'Actions',
           searchable: false,
           orderable: false,

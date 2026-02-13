@@ -96,6 +96,7 @@ class DriversController extends Controller
                 $q->where('id', 'LIKE', "%{$search}%")
                   ->orWhere('name', 'LIKE', "%{$search}%")
                   ->orWhere('username', 'LIKE', "%{$search}%")
+                  ->orWhere('driver_code', 'LIKE', "%{$search}%")
                   ->orWhere('email', 'LIKE', "%{$search}%")
                   ->orWhere('phone', 'LIKE', "%{$search}%")
                   ->orWhereRaw("additional_data::text ILIKE ?", ["%{$search}%"]);
@@ -124,6 +125,7 @@ class DriversController extends Controller
             $data[] = [
               'id' => $val->id,
               'fake_id' => ++$fakeId,
+              'driver_code' => $val->driver_code,
               'name' => $val->name,
               'image'      => $val->image ? url($val->image) : null,
               'username' => $val->username,

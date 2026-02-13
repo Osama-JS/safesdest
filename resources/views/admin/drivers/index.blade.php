@@ -198,6 +198,7 @@
                     <tr>
                         <th></th>
                         <th>#</th>
+                        <th>{{ __('Driver Code') }}</th>
                         <th>{{ __('name') }}</th>
                         <th>{{ __('username') }}</th>
                         <th>{{ __('email') }}</th>

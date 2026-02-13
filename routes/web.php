@@ -59,6 +59,9 @@ Route::get('/test-signit', [SignatureController::class, 'testOAuth']);
 
 Route::get('/test-signature', [SignatureController::class, 'testSignatureRequest']);
 
+// Public Share Task Route
+Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::class, 'share'])->name('admin.tasks.share_link');
+
 Route::middleware('rate.limit')->group(function () {
 
     Route::middleware('guest')->group(function () {

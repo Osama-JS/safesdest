@@ -16,6 +16,14 @@
       "permission": "view_tasks"
     },
     {
+      "url": "admin/task-claims",
+      "name": "Claim Requests",
+      "icon": "menu-icon tf-icons ti ti-file-certificate",
+      "slug": "admin.task-claims.index",
+      "isactive": "task-claims-isactive",
+      "permission": "view_task_claims"
+    },
+    {
       "url": "admin/customs-clearances",
       "name": "Customes Clearances",
       "icon": "menu-icon tf-icons ti ti-clipboard-check",
@@ -64,20 +72,20 @@
       "permission": "view_wallets"
     },
     {
+      "url": "admin/wallets/withdrawals",
+      "name": "Withdrawal Requests",
+      "icon": "menu-icon tf-icons ti ti-cash-banknote",
+      "slug": "wallets.withdrawals.index",
+      "isactive": "withdrawals-isactive",
+      "permission": "view_withdrawal_requests"
+    },
+    {
       "url": "admin/ads",
       "name": "Tasks Ads",
       "icon": "menu-icon tf-icons ti ti-speakerphone",
       "slug": "ads.ads",
       "isactive": "ad-isactive",
       "permission": "view_ads"
-    },
-    {
-      "url": "admin/task-claims",
-      "name": "Claim Requests",
-      "icon": "menu-icon tf-icons ti ti-file-certificate",
-      "slug": "admin.task-claims.index",
-      "isactive": "task-claims-isactive",
-      "permission": "view_tasks"
     },
     {
       "name": "Store",

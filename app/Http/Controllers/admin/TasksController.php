@@ -1907,7 +1907,7 @@ class TasksController extends Controller
         $search    = $request->input('search.value'); // البحث من DataTables
         $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
-        $query = Task::query();
+        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type']);
 
         // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
         if ($fromDate && $toDate) {
@@ -1989,7 +1989,9 @@ class TasksController extends Controller
                   'customer' => $task->customer->name ?? '-',
                   default => '-',
               },
-              'address'    => $task->pickup->address .' - To - '. $task->delivery->address ,
+              'address'    => ($task->pickup->address ?? '-') .' - To - '. ($task->delivery->address ?? '-') ,
+              'pickup_address' => $task->pickup->address ?? '-',
+              'delivery_address' => $task->delivery->address ?? '-',
               'start'      => ($task->pickup && $task->pickup->scheduled_time)
                 ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
                 : "",
@@ -2004,6 +2006,10 @@ class TasksController extends Controller
               'signature_status' => $task->signature_status,
               'signature_request_id' => $task->signature_request_id,
               'created_at' => $task->created_at->format('Y-m-d H:i'),
+              'vehicle_info' => $task->vehicle_size ? [
+                  'name' => $task->vehicle_size->name,
+                  'type' => $task->vehicle_size->type->name ?? '-',
+              ] : null,
             ];
         }
 

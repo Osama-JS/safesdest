@@ -153,7 +153,7 @@ $(function () {
           responsivePriority: 2,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-info rounded text-wihte px-2"><strong>${full.driver_price} SAR</strong></span>`;
+            return `<span class="border border-info rounded text-white px-2"><strong>${full.driver_price} SAR</strong></span>`;
           }
         },
         {
@@ -290,7 +290,7 @@ $(function () {
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
-                    <li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.price}" data-start="${full.start}" data-end="${full.complete}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>
+                    ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-vehicle-name="${full.vehicle_info ? full.vehicle_info.name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>
                     <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">Fix Connection</a></li>
 
@@ -804,39 +804,39 @@ $(function () {
   $(document).on('click', '.share-task-whatsapp', function () {
     var id = $(this).data('id');
     var price = $(this).data('price');
-    var start = $(this).data('start');
-    var end = $(this).data('end');
+    var pickup = $(this).data('pickup');
+    var delivery = $(this).data('delivery');
+    var vehicleName = $(this).data('vehicle-name');
+    var vehicleType = $(this).data('vehicle-type');
     var customerRef = $(this).data('customer') || '';
 
-    // Clean up HTML tags if present
+    // Clean up HTML tags if present (just in case they come from elsewhere, though addresses should be clean now)
     var div = document.createElement('div');
 
-    div.innerHTML = start;
-    start = div.textContent || div.innerText || '';
+    div.innerHTML = pickup;
+    pickup = div.textContent || div.innerText || '';
 
-    div.innerHTML = end;
-    end = div.textContent || div.innerText || '';
-
-    div.innerHTML = price;
-    price = div.textContent || div.innerText || '';
-    price = price.replace('SAR', '').trim(); // Remove currency if present
-
-    // Remove any extra whitespace
-    start = start.trim();
-    end = end.trim();
+    div.innerHTML = delivery;
+    delivery = div.textContent || div.innerText || '';
 
     var link = `${baseUrl}share/task/${id}`;
 
     var message = `مهمة جديدة 🚚\n`;
     if (customerRef && customerRef !== 'undefined' && customerRef !== 'null') message += `رقم مرجعي: #${customerRef}\n`;
-    message += `رقم المهمة: #${id}\n`;
-    message += `من: ${start}\n`;
-    message += `إلى: ${end}\n`;
-    // message += `السعر: ${price} ريال\n\n`; // Price is often rendered with HTML, cleaner to extract number or just leave it
-    // Let's keep it simple for now, formatted price
-    message += `السعر: ${price}\n\n`;
+    message += `رقم المهمة: #${id}\n\n`;
 
-    message += `رابط المهمة: ${link}`;
+    // Detailed Addresses
+    message += `📍 من (Pickup):\n${pickup.trim()}\n\n`;
+    message += `🏁 إلى (Delivery):\n${delivery.trim()}\n\n`;
+
+    // Vehicle Info
+    if (vehicleName && vehicleName !== '-') {
+      message += `🚛 المركبة: ${vehicleName} (${vehicleType})\n`;
+    }
+
+    message += `💰 السعر: ${price} ريال\n\n`;
+
+    message += `🔗 رابط المهمة (للقبول): ${link}`;
 
     var whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

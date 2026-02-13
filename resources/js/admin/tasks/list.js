@@ -290,7 +290,7 @@ $(function () {
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
-                    ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-vehicle-name="${full.vehicle_info ? full.vehicle_info.name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>` : ''}
+                    ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-truck-name="${full.vehicle_info ? full.vehicle_info.truck_name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-vehicle-size="${full.vehicle_info ? full.vehicle_info.size : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>
                     <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">Fix Connection</a></li>
 
@@ -806,8 +806,9 @@ $(function () {
     var price = $(this).data('price');
     var pickup = $(this).data('pickup');
     var delivery = $(this).data('delivery');
-    var vehicleName = $(this).data('vehicle-name');
+    var truckName = $(this).data('truck-name');
     var vehicleType = $(this).data('vehicle-type');
+    var vehicleSize = $(this).data('vehicle-size');
     var customerRef = $(this).data('customer') || '';
 
     // Clean up HTML tags if present (just in case they come from elsewhere, though addresses should be clean now)
@@ -830,8 +831,8 @@ $(function () {
     message += `🏁 إلى (Delivery):\n${delivery.trim()}\n\n`;
 
     // Vehicle Info
-    if (vehicleName && vehicleName !== '-') {
-      message += `🚛 المركبة: ${vehicleName} (${vehicleType})\n`;
+    if (truckName && truckName !== '-') {
+      message += `🚛 المركبة: ${truckName} - ${vehicleType} - ${vehicleSize}\n`;
     }
 
     message += `💰 السعر: ${price} ريال\n\n`;

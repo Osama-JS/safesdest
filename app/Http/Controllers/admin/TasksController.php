@@ -1907,7 +1907,7 @@ class TasksController extends Controller
         $search    = $request->input('search.value'); // البحث من DataTables
         $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
-        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type']);
+        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle']);
 
         // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
         if ($fromDate && $toDate) {
@@ -2007,8 +2007,9 @@ class TasksController extends Controller
               'signature_request_id' => $task->signature_request_id,
               'created_at' => $task->created_at->format('Y-m-d H:i'),
               'vehicle_info' => $task->vehicle_size ? [
-                  'name' => $task->vehicle_size->name,
+                  'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
                   'type' => $task->vehicle_size->type->name ?? '-',
+                  'size' => $task->vehicle_size->name ?? '-',
               ] : null,
             ];
         }

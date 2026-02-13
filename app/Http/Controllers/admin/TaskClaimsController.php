@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Yajra\DataTables\Facades\DataTables;
 
 class TaskClaimsController extends Controller
 {
@@ -28,41 +27,76 @@ class TaskClaimsController extends Controller
      */
     public function getData(Request $request)
     {
-        $claims = TaskClaimRequest::with(['task.customer', 'driver', 'reviewer'])
-            ->select('task_claim_requests.*')
-            ->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'approved' THEN 2 ELSE 3 END ASC")
+        $query = TaskClaimRequest::with(['task.customer', 'driver', 'reviewer'])
+            ->select('task_claim_requests.*');
+
+        // Total count before filtering
+        $totalData = $query->count();
+
+        // Search logic if needed (optional since JS might handle filtering if not large)
+        if ($request->search['value']) {
+            $search = $request->search['value'];
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhereHas('driver', function($dq) use ($search) {
+                      $dq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('task', function($tq) use ($search) {
+                      $tq->where('customer_task_number', 'like', "%{$search}%")
+                        ->orWhere('id', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $totalFiltered = $query->count();
+
+        // Order logic
+        $query->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'approved' THEN 2 ELSE 3 END ASC")
             ->orderBy('created_at', 'desc');
 
-        return DataTables::of($claims)
-            ->addColumn('task_number', function ($claim) {
-                return $claim->task?->customer_task_number ?? "#{$claim->task_id}";
-            })
-            ->addColumn('driver_name', function ($claim) {
-                return $claim->driver?->name ?? 'N/A';
-            })
-            ->addColumn('customer_name', function ($claim) {
-                return $claim->task?->customer?->name ?? 'N/A';
-            })
-            ->editColumn('status', function ($claim) {
-                $class = [
-                    'pending' => 'warning',
-                    'approved' => 'success',
-                    'rejected' => 'danger'
-                ][$claim->status] ?? 'secondary';
+        // Pagination
+        $limit = $request->input('length') ?? 10;
+        $start = $request->input('start') ?? 0;
 
-                return '<span class="badge badge-' . $class . '">' . ucfirst($claim->status) . '</span>';
-            })
-            ->addColumn('actions', function ($claim) {
-                if ($claim->status === 'pending') {
-                    return '
-                        <button class="btn btn-sm btn-success approve-claim" data-id="' . $claim->id . '">Approve</button>
-                        <button class="btn btn-sm btn-danger reject-claim" data-id="' . $claim->id . '">Reject</button>
-                    ';
-                }
-                return '-';
-            })
-            ->rawColumns(['status', 'actions'])
-            ->make(true);
+        $claims = $query->offset($start)
+            ->limit($limit)
+            ->get();
+
+        $data = [];
+        foreach ($claims as $claim) {
+            $statusClass = [
+                'pending' => 'warning',
+                'approved' => 'success',
+                'rejected' => 'danger'
+            ][$claim->status] ?? 'secondary';
+
+            $actions = '';
+            if ($claim->status === 'pending') {
+                $actions = '
+                    <button class="btn btn-sm btn-success approve-claim" data-id="' . $claim->id . '">Approve</button>
+                    <button class="btn btn-sm btn-danger reject-claim" data-id="' . $claim->id . '">Reject</button>
+                ';
+            } else {
+                $actions = '-';
+            }
+
+            $data[] = [
+                'id' => '', // Placeholder for control column
+                'task_number' => $claim->task?->customer_task_number ?? "#{$claim->task_id}",
+                'driver_name' => $claim->driver?->name ?? 'N/A',
+                'customer_name' => $claim->task?->customer?->name ?? 'N/A',
+                'status' => '<span class="badge bg-label-' . $statusClass . '">' . ucfirst($claim->status) . '</span>',
+                'created_at' => $claim->created_at->toIso8601String(),
+                'actions' => $actions
+            ];
+        }
+
+        return response()->json([
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalData,
+            'recordsFiltered' => $totalFiltered,
+            'data' => $data,
+        ]);
     }
 
     /**

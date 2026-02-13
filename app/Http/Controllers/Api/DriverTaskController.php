@@ -1201,6 +1201,8 @@ class DriverTaskController extends Controller
                 'message' => 'Failed to add note'
             ], 500);
         }
+    }
+
     /**
      * Calculate task related road distances
      */

@@ -41,7 +41,7 @@ class TaskClaimsController extends Controller
             ->select('task_claim_requests.*');
 
         // Status filter
-        if ($request->has('status_filter') && $request->status_filter !== '') {
+        if ($request->filled('status_filter')) {
             $query->where('status', $request->status_filter);
         }
 

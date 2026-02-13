@@ -57,6 +57,7 @@ use App\Services\NotificationService;
 use App\Services\PdfService;
 use App\Services\SignitService;
 use Illuminate\Support\Str;
+use App\Models\TaskClaimRequest;
 
 class TasksController extends Controller
 {
@@ -581,6 +582,9 @@ class TasksController extends Controller
             $data->history()->createMany($history);
 
             $data->save();
+
+            // Auto-reject all pending claim requests for this task
+            TaskClaimRequest::rejectAllPending($data->id, 'تم رفض الطلب تلقائياً - تم إسناد المهمة يدوياً من قبل الإدارة', Auth::id());
 
 
             // رسائل مخصصة لكل نوع
@@ -1505,6 +1509,11 @@ class TasksController extends Controller
                 }
             }
             DB::commit();
+
+            // Auto-reject all pending claim requests if driver was assigned
+            if ($req->filled('task_driver')) {
+                TaskClaimRequest::rejectAllPending($newTask->id, 'تم رفض الطلب تلقائياً - تم إسناد المهمة يدوياً من قبل الإدارة', Auth::id());
+            }
 
             // Notify everyone involved
             $notiMessages = [

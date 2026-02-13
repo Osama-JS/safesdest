@@ -51,4 +51,20 @@ class TaskClaimRequest extends Model
     {
         return $query->where('status', 'rejected');
     }
+
+    /**
+     * Reject all pending claim requests for a task.
+     * Called when a task is assigned through any channel.
+     */
+    public static function rejectAllPending(int $taskId, ?string $reason = null, ?int $reviewerId = null): int
+    {
+        return self::where('task_id', $taskId)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'rejected',
+                'admin_note' => $reason ?? 'تم رفض الطلب تلقائياً لأن المهمة تم إسنادها',
+                'reviewed_by' => $reviewerId,
+                'reviewed_at' => now(),
+            ]);
+    }
 }

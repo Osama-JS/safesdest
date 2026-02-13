@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\PdfService;
 use App\Services\MapboxService;
+use App\Models\TaskClaimRequest;
 
 class DriverTaskController extends Controller
 {
@@ -353,6 +354,9 @@ class DriverTaskController extends Controller
             ]);
 
             DB::commit();
+
+            // Auto-reject all pending claim requests for this task
+            TaskClaimRequest::rejectAllPending($taskId, 'تم رفض الطلب تلقائياً - قام سائق آخر بقبول المهمة');
 
             Log::info('Task accepted by driver', [
                 'task_id' => $taskId,
@@ -873,6 +877,9 @@ class DriverTaskController extends Controller
                 'status' => 'accepted',
                 'accepted_at' => now()
             ]);
+
+            // Auto-reject all pending claim requests for this task
+            TaskClaimRequest::rejectAllPending($task->id, 'تم رفض الطلب تلقائياً - قام السائق بقبول المهمة الموزعة آلياً');
 
             return response()->json([
                 'success' => true,

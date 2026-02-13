@@ -7,6 +7,14 @@
 $(function () {
   var dt_withdrawals_table = $('.datatables-withdrawals');
 
+  // Select2
+  $('.select2').select2();
+
+  // Handle Filter Change
+  $('#filter_status, #filter_driver').on('change', function () {
+    dt_withdrawals.ajax.reload();
+  });
+
   // DataTable
   if (dt_withdrawals_table.length) {
     var dt_withdrawals = dt_withdrawals_table.DataTable({
@@ -15,7 +23,8 @@ $(function () {
       ajax: {
         url: withdrawalDataUrl,
         data: function (d) {
-          d.status = $('#filter-status').val();
+          d.status = $('#filter_status').val();
+          d.driver_id = $('#filter_driver').val();
         }
       },
       columns: [
@@ -28,11 +37,17 @@ $(function () {
           }
         },
         {
+          data: 'approved_amount',
+          render: function (data) {
+            return '<span class="fw-bold text-success">' + data + ' SAR</span>';
+          }
+        },
+        {
           data: 'status',
           render: function (data) {
             var statusObj = {
               pending: { title: 'Pending', class: 'bg-label-warning' },
-              completed: { title: 'Completed', class: 'bg-label-success' },
+              completed: { title: 'Approved', class: 'bg-label-success' },
               rejected: { title: 'Rejected', class: 'bg-label-danger' },
               cancelled: { title: 'Cancelled', class: 'bg-label-secondary' }
             };
@@ -41,7 +56,8 @@ $(function () {
         },
         { data: 'payment_method' },
         { data: 'created_at' },
-        { data: 'id' }
+        { data: 'processed_by_name', defaultContent: 'N/A' },
+        { data: 'actions' }
       ],
       columnDefs: [
         {
@@ -51,18 +67,25 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            var actions = '';
+
+            // View Details Button
+            actions +=
+              '<button class="btn btn-sm btn-icon btn-label-info me-1 view-withdrawal" data-id="' +
+              full.id +
+              '" title="View Details"><i class="ti ti-eye"></i></button>';
+
             if (full.status === 'pending') {
-              return (
+              actions +=
                 '<button class="btn btn-sm btn-primary process-btn" data-id="' +
-                data +
+                full.id +
                 '" data-amount="' +
                 full.amount_requested +
                 '">' +
                 '<i class="ti ti-edit me-1"></i> Process' +
-                '</button>'
-              );
+                '</button>';
             }
-            return '<span class="text-muted">No Actions</span>';
+            return actions || '<span class="text-muted">No Actions</span>';
           }
         }
       ],
@@ -146,5 +169,51 @@ $(function () {
         });
       }
     });
+  });
+
+  // View Withdrawal Details
+  $(document).on('click', '.view-withdrawal', function () {
+    var tr = $(this).closest('tr');
+    var row = dt_withdrawals_table.DataTable().row(tr);
+    var data = row.data();
+
+    if (!data) return;
+
+    // Basic Info
+    $('#view_request_id').text(data.id);
+    $('#view_driver_name').text(data.driver_name);
+    $('#view_wallet_id').text(data.wallet_id);
+    $('#view_amount_requested').text(data.amount_requested + ' SAR');
+    $('#view_created_at').text(data.created_at);
+
+    // Status Badge
+    var statusClass = 'bg-label-secondary';
+    if (data.status === 'pending') statusClass = 'bg-label-warning';
+    else if (data.status === 'completed') statusClass = 'bg-label-success';
+    else if (data.status === 'rejected') statusClass = 'bg-label-danger';
+
+    $('#view_status').html('<span class="badge ' + statusClass + '">' + data.status + '</span>');
+
+    // Processing Details
+    if (data.status === 'pending') {
+      $('#processing_details_section').hide();
+    } else {
+      $('#processing_details_section').show();
+      $('#view_processed_by').text(data.processed_by_name);
+      $('#view_processed_at').text(data.processed_at);
+      $('#view_amount_paid').text(data.amount_paid + ' SAR');
+      $('#view_payment_method').text(data.payment_method || '-');
+      $('#view_admin_notes').text(data.admin_notes || 'No notes');
+
+      if (data.receipt_image) {
+        $('#view_receipt_container').show();
+        $('#view_receipt_img').attr('src', data.receipt_image);
+        $('#view_receipt_link').attr('href', data.receipt_image);
+      } else {
+        $('#view_receipt_container').hide();
+      }
+    }
+
+    $('#viewWithdrawalModal').modal('show');
   });
 });

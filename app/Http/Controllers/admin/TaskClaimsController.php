@@ -10,7 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class TaskClaimsController extends Controller
 {
@@ -19,7 +20,16 @@ class TaskClaimsController extends Controller
      */
     public function index()
     {
-        return view('admin.task-claims.index');
+        $stats = [
+            'total' => TaskClaimRequest::count(),
+            'pending' => TaskClaimRequest::where('status', 'pending')->count(),
+            'approved' => TaskClaimRequest::where('status', 'approved')->count(),
+            'rejected' => TaskClaimRequest::where('status', 'rejected')->count(),
+            'today' => TaskClaimRequest::whereDate('created_at', today())->count(),
+            'today_pending' => TaskClaimRequest::where('status', 'pending')->whereDate('created_at', today())->count(),
+        ];
+
+        return view('admin.task-claims.index', compact('stats'));
     }
 
     /**
@@ -30,11 +40,16 @@ class TaskClaimsController extends Controller
         $query = TaskClaimRequest::with(['task.customer', 'driver', 'reviewer'])
             ->select('task_claim_requests.*');
 
-        // Total count before filtering
-        $totalData = $query->count();
+        // Status filter
+        if ($request->has('status_filter') && $request->status_filter !== '') {
+            $query->where('status', $request->status_filter);
+        }
 
-        // Search logic if needed (optional since JS might handle filtering if not large)
-        if ($request->search['value']) {
+        // Total count before filtering
+        $totalData = TaskClaimRequest::count();
+
+        // Search logic
+        if (!empty($request->search['value'])) {
             $search = $request->search['value'];
             $query->where(function($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
@@ -44,6 +59,9 @@ class TaskClaimsController extends Controller
                   ->orWhereHas('task', function($tq) use ($search) {
                       $tq->where('customer_task_number', 'like', "%{$search}%")
                         ->orWhere('id', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('task.customer', function($cq) use ($search) {
+                      $cq->where('name', 'like', "%{$search}%");
                   });
             });
         }
@@ -70,22 +88,56 @@ class TaskClaimsController extends Controller
                 'rejected' => 'danger'
             ][$claim->status] ?? 'secondary';
 
+            $statusIcon = [
+                'pending' => 'ti-clock',
+                'approved' => 'ti-check',
+                'rejected' => 'ti-x'
+            ][$claim->status] ?? 'ti-minus';
+
+            $statusLabel = [
+                'pending' => __('Pending'),
+                'approved' => __('Approved'),
+                'rejected' => __('Rejected')
+            ][$claim->status] ?? ucfirst($claim->status);
+
             $actions = '';
             if ($claim->status === 'pending') {
                 $actions = '
-                    <button class="btn btn-sm btn-success approve-claim" data-id="' . $claim->id . '">Approve</button>
-                    <button class="btn btn-sm btn-danger reject-claim" data-id="' . $claim->id . '">Reject</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-icon btn-label-success approve-claim" data-id="' . $claim->id . '" data-bs-toggle="tooltip" title="' . __('Approve') . '">
+                            <i class="ti ti-check ti-sm"></i>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-label-danger reject-claim" data-id="' . $claim->id . '" data-bs-toggle="tooltip" title="' . __('Reject') . '">
+                            <i class="ti ti-x ti-sm"></i>
+                        </button>
+                    </div>
                 ';
             } else {
-                $actions = '-';
+                $reviewerName = $claim->reviewer?->name ?? '-';
+                $actions = '<span class="text-muted small"><i class="ti ti-user-check me-1"></i>' . $reviewerName . '</span>';
             }
 
+            // Driver info with avatar
+            $driverName = $claim->driver?->name ?? 'N/A';
+            $driverImage = $claim->driver?->image ? asset('storage/' . $claim->driver->image) : asset('assets/img/person.png');
+            $driverHtml = '
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm me-2">
+                        <img src="' . $driverImage . '" alt="' . e($driverName) . '" class="rounded-circle" onerror="this.src=\'' . asset('assets/img/person.png') . '\'">
+                    </div>
+                    <span class="fw-medium">' . e($driverName) . '</span>
+                </div>
+            ';
+
             $data[] = [
-                'id' => '', // Placeholder for control column
-                'task_number' => $claim->task?->customer_task_number ?? "#{$claim->task_id}",
-                'driver_name' => $claim->driver?->name ?? 'N/A',
-                'customer_name' => $claim->task?->customer?->name ?? 'N/A',
-                'status' => '<span class="badge bg-label-' . $statusClass . '">' . ucfirst($claim->status) . '</span>',
+                'id' => '',
+                'task_number' => '<span class="fw-medium text-primary">' . e($claim->task?->customer_task_number ?? "#{$claim->task_id}") . '</span>',
+                'driver_name' => $driverHtml,
+                'customer_name' => e($claim->task?->customer?->name ?? 'N/A'),
+                'note' => $claim->note
+                    ? '<span class="text-truncate d-inline-block" style="max-width: 150px;" data-bs-toggle="tooltip" title="' . e($claim->note) . '">' . e(Str::limit($claim->note, 30)) . '</span>'
+                    : '<span class="text-muted">-</span>',
+                'status' => '<span class="badge bg-label-' . $statusClass . '"><i class="ti ' . $statusIcon . ' me-1 ti-xs"></i>' . $statusLabel . '</span>',
                 'created_at' => $claim->created_at->toIso8601String(),
                 'actions' => $actions
             ];

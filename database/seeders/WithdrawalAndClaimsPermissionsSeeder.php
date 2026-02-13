@@ -25,14 +25,14 @@ class WithdrawalAndClaimsPermissionsSeeder extends Seeder
 
         foreach ($types as $typeData) {
             Permissions_Type::firstOrCreate(
-                ['slug' => $typeData['slug']], // Search by slug
                 ['name' => $typeData['name'], 'guard_name' => 'web']
             );
         }
 
         // Get IDs for relationship
-        $withdrawalType = Permissions_Type::where('slug', 'withdrawals_permissions')->first();
-        $claimsType = Permissions_Type::where('slug', 'claims_permissions')->first();
+        $withdrawalType = Permissions_Type::where('name', 'Withdrawals Permissions')->first();
+        $claimsType = Permissions_Type::where('name', 'Task Claims Permissions')->first();
+
 
         // 2. Define Permissions
         $permissions = [

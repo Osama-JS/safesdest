@@ -29,17 +29,19 @@ class TaskClaimsController extends Controller
     public function getData(Request $request)
     {
         $claims = TaskClaimRequest::with(['task.customer', 'driver', 'reviewer'])
-            ->select('task_claim_requests.*');
+            ->select('task_claim_requests.*')
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 1 WHEN status = 'approved' THEN 2 ELSE 3 END ASC")
+            ->orderBy('created_at', 'desc');
 
         return DataTables::of($claims)
             ->addColumn('task_number', function ($claim) {
-                return $claim->task->customer_task_number ?? "#{$claim->task_id}";
+                return $claim->task?->customer_task_number ?? "#{$claim->task_id}";
             })
             ->addColumn('driver_name', function ($claim) {
-                return $claim->driver->name ?? 'N/A';
+                return $claim->driver?->name ?? 'N/A';
             })
             ->addColumn('customer_name', function ($claim) {
-                return $claim->task->customer->name ?? 'N/A';
+                return $claim->task?->customer?->name ?? 'N/A';
             })
             ->editColumn('status', function ($claim) {
                 $class = [

@@ -14,14 +14,20 @@ class DriverObserver implements ShouldHandleEventsAfterCommit
 
     public function created(Driver $driver)
     {
-        Log::info("DriverObserver: New driver registered #{$driver->id}");
+        // Generate Driver Code (S00001)
+        $driver->update([
+            'driver_code' => 'S' . str_pad($driver->id, 5, '0', STR_PAD_LEFT)
+        ]);
+
+        Log::info("DriverObserver: New driver registered #{$driver->id} with code {$driver->driver_code}");
 
         $content = "تم تسجيل سائق جديد في المنصة:\n" .
                    "- الاسم: {$driver->name}\n" .
+                   "- الكود: {$driver->driver_code}\n" .
                    "- الجوال: {$driver->phone}\n" .
                    "- البريد الإلكتروني: " . ($driver->email ?? 'N/A');
 
-        $this->notifyManager("تسجيل سائق جديد: {$driver->name}", $content, $driver->id);
+        $this->notifyManager("تسجيل سائق جديد: {$driver->name} ({$driver->driver_code})", $content, $driver->id);
     }
 
     protected function notifyManager($subject, $content, $driverId)

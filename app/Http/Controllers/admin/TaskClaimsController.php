@@ -175,6 +175,16 @@ class TaskClaimsController extends Controller
             // Assign driver to task
             $task->update([
                 'driver_id' => $claim->driver_id,
+                'status' => 'assign',
+                'pending_driver_id' => null,
+            ]);
+
+            // Log assignment in task history
+            $task->history()->create([
+                'action_type' => 'assign',
+                'description' => 'تم إسناد المهمة عبر الموافقة على طلب الحصول - السائق: ' . ($claim->driver?->name ?? 'N/A'),
+                'user_id' => Auth::id(),
+                'driver_id' => $claim->driver_id,
             ]);
 
             // Update claim status

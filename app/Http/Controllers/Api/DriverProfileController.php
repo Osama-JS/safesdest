@@ -57,6 +57,7 @@ class DriverProfileController extends Controller
                         'name' => $driver->name,
                         'email' => $driver->email,
                         'username' => $driver->username,
+                        'driver_code' => $driver->driver_code,
                         'phone' => $driver->phone,
                         'phone_code' => $driver->phone_code,
                         'address' => $driver->address,

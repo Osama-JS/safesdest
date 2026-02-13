@@ -22,6 +22,7 @@ class Driver extends Authenticatable
     protected $table = 'drivers';
     protected $fillable = [
       'name',
+      'driver_code',
       'phone',
       'phone_code',
       'email',

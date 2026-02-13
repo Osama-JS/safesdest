@@ -6,44 +6,33 @@ use Illuminate\Support\Facades\Http;
 
 class MapboxService
 {
-  public function calculateRoute(array $pickup, array $delivery): array
-  {
-    $accessToken = config('services.mapbox.token');
+    public function calculateRoute(array $origin, array $destination): array
+    {
+        $accessToken = config('services.mapbox.token');
 
-    $url = "https://api.mapbox.com/directions/v5/mapbox/driving/"
-      . implode(',', $pickup) . ';' . implode(',', $delivery)
-      . "?geometries=geojson&steps=true&overview=full&access_token={$accessToken}";
+        // Mapbox expects [longitude, latitude]
+        $originStr = $origin[1] . ',' . $origin[0];
+        $destStr = $destination[1] . ',' . $destination[0];
 
-    $response = Http::get($url);
+        $url = "https://api.mapbox.com/directions/v5/mapbox/driving/"
+            . $originStr . ';' . $destStr
+            . "?geometries=geojson&access_token={$accessToken}";
 
-    if (!$response->successful() || !isset($response['routes'][0])) {
-      return ['error' => 'تعذر حساب المسار'];
-    }
+        try {
+            $response = Http::get($url);
 
-    $route = $response['routes'][0];
+            if (!$response->successful() || !isset($response['routes'][0])) {
+                return ['error' => 'Unable to calculate road distance'];
+            }
 
-    // تحقق من الطرق المغلقة
-    $blocked = [
-      ['lat' => 24.774265, 'lng' => 46.738586],
-      ['lat' => 24.798524, 'lng' => 46.675214],
-      ['lat' => 24.761234, 'lng' => 46.690000],
-    ];
+            $route = $response['routes'][0];
 
-    $blockedThreshold = 0.003;
-    foreach ($route['geometry']['coordinates'] as $coord) {
-      foreach ($blocked as $block) {
-        if (
-          abs($coord[0] - $block['lng']) < $blockedThreshold &&
-          abs($coord[1] - $block['lat']) < $blockedThreshold
-        ) {
-          return ['error' => '🚧 الطريق يمر عبر نقطة مغلقة'];
+            return [
+                'distance_km' => round($route['distance'] / 1000, 2),
+                'duration_min' => round($route['duration'] / 60, 1),
+            ];
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
         }
-      }
     }
-
-    return [
-      'distance_km' => round($route['distance'] / 1000, 2),
-      'duration_min' => round($route['duration'] / 60, 1),
-    ];
-  }
 }

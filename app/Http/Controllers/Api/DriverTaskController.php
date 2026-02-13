@@ -11,14 +11,17 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\PdfService;
+use App\Services\MapboxService;
 
 class DriverTaskController extends Controller
 {
     protected $pdfService;
+    protected $mapboxService;
 
-    public function __construct(PdfService $pdfService)
+    public function __construct(PdfService $pdfService, MapboxService $mapboxService)
     {
         $this->pdfService = $pdfService;
+        $this->mapboxService = $mapboxService;
     }
 
     /**
@@ -277,7 +280,8 @@ class DriverTaskController extends Controller
                     'payment_status' => $task->payment_status,
                     'items' => $task->additional_data['items'] ?? [],
                     'special_instructions' => $task->additional_data['special_instructions'] ?? null,
-                    'additional_data' => $task->driver_visible_additional_data
+                    'additional_data' => $task->driver_visible_additional_data,
+                    'distances' => $this->calculateTaskDistances($task, $driver)
                     ]
                 ]
             ], 200);
@@ -1197,5 +1201,54 @@ class DriverTaskController extends Controller
                 'message' => 'Failed to add note'
             ], 500);
         }
+    /**
+     * Calculate task related road distances
+     */
+    private function calculateTaskDistances($task, $driver)
+    {
+        $distances = [
+            'pickup_to_delivery' => null,
+            'driver_to_pickup' => null,
+            'driver_to_delivery' => null,
+        ];
+
+        try {
+            // 1. Pickup to Delivery
+            if ($task->pickup && $task->delivery) {
+                $route = $this->mapboxService->calculateRoute(
+                    [$task->pickup->latitude, $task->pickup->longitude],
+                    [$task->delivery->latitude, $task->delivery->longitude]
+                );
+                $distances['pickup_to_delivery'] = $route['distance_km'] ?? null;
+            }
+
+            // Driver location
+            $driverLat = $driver->altitude; // Using altitude as latitude as per project convention
+            $driverLng = $driver->longitude;
+
+            if ($driverLat && $driverLng) {
+                // 2. Driver to Pickup
+                if ($task->pickup) {
+                    $route = $this->mapboxService->calculateRoute(
+                        [$driverLat, $driverLng],
+                        [$task->pickup->latitude, $task->pickup->longitude]
+                    );
+                    $distances['driver_to_pickup'] = $route['distance_km'] ?? null;
+                }
+
+                // 3. Driver to Delivery
+                if ($task->delivery) {
+                    $route = $this->mapboxService->calculateRoute(
+                        [$driverLat, $driverLng],
+                        [$task->delivery->latitude, $task->delivery->longitude]
+                    );
+                    $distances['driver_to_delivery'] = $route['distance_km'] ?? null;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Distance calculation error: ' . $e->getMessage());
+        }
+
+        return $distances;
     }
 }

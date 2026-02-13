@@ -799,7 +799,7 @@ $(function () {
 
   //     if (!taskData) return;
 
-  });
+  //   });
 
   $(document).on('click', '.share-task-whatsapp', function () {
     var id = $(this).data('id');
@@ -809,16 +809,16 @@ $(function () {
     var customerRef = $(this).data('customer') || '';
 
     // Clean up HTML tags if present
-    var div = document.createElement("div");
+    var div = document.createElement('div');
 
     div.innerHTML = start;
-    start = div.textContent || div.innerText || "";
+    start = div.textContent || div.innerText || '';
 
     div.innerHTML = end;
-    end = div.textContent || div.innerText || "";
+    end = div.textContent || div.innerText || '';
 
     div.innerHTML = price;
-    price = div.textContent || div.innerText || "";
+    price = div.textContent || div.innerText || '';
     price = price.replace('SAR', '').trim(); // Remove currency if present
 
     // Remove any extra whitespace

@@ -72,7 +72,10 @@ class WithdrawalAndClaimsPermissionsSeeder extends Seeder
 
         if ($role) {
             foreach ($permissions as $perm) {
-                $role->givePermissionTo($perm['name']);
+                $permission = Permission::where('name', $perm['name'])->first();
+                if ($permission) {
+                    $role->givePermissionTo($permission);
+                }
             }
             $this->command->info('Permissions assigned to Owner role.');
         } else {

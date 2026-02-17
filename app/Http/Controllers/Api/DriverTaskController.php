@@ -110,6 +110,7 @@ class DriverTaskController extends Controller
                           'delivery_point' => $task->delivery,
                           'driver_cancel' => (bool)$task->driver_cancel,
                           'driver_cancel_reason' => $task->driver_cancel_reason
+
                         ];
                     }),
                     'pagination' => [

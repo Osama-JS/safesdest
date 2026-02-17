@@ -134,6 +134,7 @@ class DriverAvailableTasksController extends Controller
                         'delivery_point' => $task->delivery,
                         'vehicle_size' => $task->vehicle_size->name ?? 'N/A',
                         'additional_data' => $task->driver_visible_additional_data,
+                        'conditions' => $task->conditions,
                         'claim_status' => $claim->status ?? null,
                         'claim_note' => $claim->driver_note ?? null,
                         'admin_note' => $claim->admin_note ?? null,

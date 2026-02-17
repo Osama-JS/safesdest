@@ -617,6 +617,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/assign/{id}', [TasksController::class, 'getToAssign'])->name('tasks.get.assign');
                 Route::post('/tasks/assign/', [TasksController::class, 'assign'])->name('tasks.assign');
                 Route::post('/tasks/drop', [TasksController::class, 'dropTask'])->name('tasks.drop');
+                Route::post('/tasks/approve-cancellation', [TasksController::class, 'approveCancellation'])->name('tasks.approve_cancellation');
+                Route::post('/tasks/reject-cancellation', [TasksController::class, 'rejectCancellation'])->name('tasks.reject_cancellation');
                 Route::get('/tasks/verify-signature/{id}', [TasksController::class, 'verifySignatureStatus'])->name('tasks.verify_signature');
                 Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
                 Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');

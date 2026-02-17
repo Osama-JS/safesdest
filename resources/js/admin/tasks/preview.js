@@ -506,6 +506,10 @@ $(function () {
                 <li class="list-group-item bg-danger text-white">
                   <strong>⚠️ طلب إلغاء من السائق</strong><br>
                   <span>${task.data.driver_cancel_reason || 'لم يتم تحديد سبب'}</span>
+                  <div class="mt-2 d-flex gap-2">
+                    <button class="btn btn-sm btn-success approve-cancellation" data-id="${task.data.id}">قبول الإلغاء</button>
+                    <button class="btn btn-sm btn-outline-light reject-cancellation" data-id="${task.data.id}">رفض الإلغاء</button>
+                  </div>
                 </li>`
                     : ''
                 }
@@ -1280,6 +1284,77 @@ $(function () {
   $(document).on('click', '.delete-record', function () {
     let url = baseUrl + 'admin/teams/delete/' + $(this).data('id');
     deleteRecord($(this).data('name'), url);
+  });
+
+  // Handle Cancellation Approval
+  $(document).on('click', '.approve-cancellation', function () {
+    const taskId = $(this).data('id');
+    Swal.fire({
+      title: 'قبول طلب الإلغاء',
+      text: 'هل تريد إسقاط المهمة من السائق فقط أم إلغاء المهمة بالكامل؟',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'إسقاط المهمة فقط',
+      denyButtonText: 'إلغاء المهمة بالكامل',
+      cancelButtonText: 'تراجع',
+      confirmButtonColor: '#3085d6',
+      denyButtonColor: '#d33'
+    }).then(result => {
+      if (result.isConfirmed || result.isDenied) {
+        const cancelTask = result.isDenied ? 1 : 0;
+        $.ajax({
+          url: baseUrl + 'admin/tasks/approve-cancellation',
+          type: 'POST',
+          data: {
+            task_id: taskId,
+            cancel_task: cancelTask
+          },
+          success: function (response) {
+            if (response.status == 1) {
+              showAlert('success', response.message);
+              showTaskDetails(taskId);
+              loadTasks();
+            } else {
+              showAlert('error', response.message);
+            }
+          }
+        });
+      }
+    });
+  });
+
+  // Handle Cancellation Rejection
+  $(document).on('click', '.reject-cancellation', function () {
+    const taskId = $(this).data('id');
+    Swal.fire({
+      title: 'رفض طلب الإلغاء',
+      text: 'هل أنت متأكد من رفض طلب الإلغاء وإبقاء المهمة مع السائق؟',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، أرفض الطلب',
+      cancelButtonText: 'تراجع',
+      confirmButtonColor: '#d33'
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: baseUrl + 'admin/tasks/reject-cancellation',
+          type: 'POST',
+          data: {
+            task_id: taskId
+          },
+          success: function (response) {
+            if (response.status == 1) {
+              showAlert('success', response.message);
+              showTaskDetails(taskId);
+              loadTasks();
+            } else {
+              showAlert('error', response.message);
+            }
+          }
+        });
+      }
+    });
   });
 
   $('#submitModal, #assignModal, #adModal, #pricingModal').on('hidden.bs.modal', function () {

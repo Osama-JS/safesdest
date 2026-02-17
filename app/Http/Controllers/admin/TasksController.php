@@ -769,6 +769,125 @@ class TasksController extends Controller
         }
     }
 
+    public function approveCancellation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|exists:tasks,id',
+            'cancel_task' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()->first()]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $task = Task::findOrFail($request->task_id);
+            $oldDriverId = $task->driver_id;
+
+            if (!$task->driver_cancel) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'No pending cancellation request.']);
+            }
+
+            // Update Task meta
+            $task->driver_cancel = false;
+            $task->driver_cancel_reason = null;
+            $task->driver_id = null;
+            $task->pending_driver_id = null;
+
+            if ($request->cancel_task) {
+                $task->status = 'canceled';
+                $description = 'Admin approved cancellation request and CANCELED the task.';
+            } else {
+                $task->status = 'in_progress';
+                $description = 'Admin approved cancellation request and DROPPED the task from driver.';
+            }
+
+            $task->save();
+
+            // Log History
+            Task_History::create([
+                'task_id' => $task->id,
+                'action_type' => 'approve_cancellation',
+                'description' => $description,
+                'user_id' => Auth::id(),
+                'driver_id' => $oldDriverId,
+                'ip' => IpHelper::getUserIpAddress(),
+            ]);
+
+            // Notify Driver
+            if ($oldDriverId) {
+                app(\App\Services\NotificationService::class)->send(
+                    'driver',
+                    [$oldDriverId],
+                    'تم قبول طلب الإلغاء',
+                    "تم قبول طلب إلغاء المهمة رقم #{$task->id}. تم إسقاط المهمة من حسابك.",
+                    '/images/admin-icon.png',
+                    '/images/banner.png',
+                    "tasks/{$task->id}",
+                    'task_cancellation_approved'
+                );
+            }
+
+            DB::commit();
+            return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Cancellation request approved.')]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+        }
+    }
+
+    public function rejectCancellation(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|exists:tasks,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()->first()]);
+        }
+
+        try {
+            $task = Task::findOrFail($request->task_id);
+
+            if (!$task->driver_cancel) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'No pending cancellation request.']);
+            }
+
+            $task->update([
+                'driver_cancel' => false,
+                'driver_cancel_reason' => null,
+            ]);
+
+            Task_History::create([
+                'task_id' => $task->id,
+                'action_type' => 'reject_cancellation',
+                'description' => 'Admin rejected driver cancellation request.',
+                'user_id' => Auth::id(),
+                'driver_id' => $task->driver_id,
+                'ip' => IpHelper::getUserIpAddress(),
+            ]);
+
+            // Notify Driver
+            if ($task->driver_id) {
+                app(\App\Services\NotificationService::class)->send(
+                    'driver',
+                    [$task->driver_id],
+                    'تم رفض طلب الإلغاء',
+                    "تم رفض طلب إلغاء المهمة رقم #{$task->id}. يرجى الاستمرار في تنفيذ المهمة.",
+                    '/images/admin-icon.png',
+                    '/images/banner.png',
+                    "tasks/{$task->id}",
+                    'task_cancellation_rejected'
+                );
+            }
+
+            return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Cancellation request rejected.')]);
+        } catch (Exception $ex) {
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+        }
+    }
+
     /**
      * تحقق من حالة التوقيع عبر Signit وتحديث قاعدة البيانات
      */

@@ -107,8 +107,9 @@ class DriverTaskController extends Controller
                           'pending_driver_id' => $task->pending_driver_id,
                           'created_at' => $task->created_at,
                           'pickup_point' => $task->pickup,
-                          'delivery_point' => $task->delivery
-
+                          'delivery_point' => $task->delivery,
+                          'driver_cancel' => (bool)$task->driver_cancel,
+                          'driver_cancel_reason' => $task->driver_cancel_reason
                         ];
                     }),
                     'pagination' => [
@@ -282,6 +283,8 @@ class DriverTaskController extends Controller
                     'items' => $task->additional_data['items'] ?? [],
                     'special_instructions' => $task->additional_data['special_instructions'] ?? null,
                     'additional_data' => $task->driver_visible_additional_data,
+                    'driver_cancel' => (bool)$task->driver_cancel,
+                    'driver_cancel_reason' => $task->driver_cancel_reason,
                     'distances' => $this->calculateTaskDistances($task, $driver)
                     ]
                 ]
@@ -515,6 +518,13 @@ class DriverTaskController extends Controller
                 ], 404);
             }
 
+            if ($task->driver_cancel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot update status while cancellation request is pending.'
+                ], 400);
+            }
+
             // ترتيب الحالات
             $statuses = [
                 'assign',
@@ -698,6 +708,13 @@ class DriverTaskController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'This task cannot be cancelled in its current state.'
+                ], 400);
+            }
+
+            if ($task->driver_cancel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cancellation request already submitted.'
                 ], 400);
             }
 

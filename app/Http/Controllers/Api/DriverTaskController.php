@@ -284,6 +284,7 @@ class DriverTaskController extends Controller
                     'items' => $task->additional_data['items'] ?? [],
                     'special_instructions' => $task->additional_data['special_instructions'] ?? null,
                     'additional_data' => $task->driver_visible_additional_data,
+                    'conditions' => $task->conditions,
                     'driver_cancel' => (bool)$task->driver_cancel,
                     'driver_cancel_reason' => $task->driver_cancel_reason,
                     'distances' => $this->calculateTaskDistances($task, $driver)

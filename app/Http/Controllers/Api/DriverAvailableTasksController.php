@@ -77,6 +77,8 @@ class DriverAvailableTasksController extends Controller
                             'created_at' => $task->created_at,
                             'claim_status' => $myClaims[$task->id] ?? null,
                             'vehicle_size' => $task->vehicle_size->name ?? 'N/A',
+                            'additional_data' => $task->driver_visible_additional_data,
+                            'conditions' => $task->conditions,
                         ];
                     });
                 Log::debug('Driver available tasks data: ' . json_encode($Avtasks));

@@ -704,7 +704,6 @@ class DriverTaskController extends Controller
             DB::beginTransaction();
 
             $task->update([
-                'status' => 'pending',
                 'driver_cancel' => true,
                 'driver_cancel_reason' => $request->reason
             ]);

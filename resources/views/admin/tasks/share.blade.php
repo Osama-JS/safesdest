@@ -7,7 +7,6 @@
 
     <!-- WhatsApp Metadata -->
     <meta property="og:title" content="مهمة جديدة #{{ $data['task']->id }}">
-    <meta property="og:description" content="من: {{ $data['task']->address }} - السعر: {{ $data['task']->total_price }} ريال">
     <meta property="og:image" content="{{ asset('images/logo.png') }}">
 
     <title>SafeDest Driver - Redirecting...</title>

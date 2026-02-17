@@ -153,7 +153,7 @@ $(function () {
           responsivePriority: 2,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-info rounded text-white px-2"><strong>${full.driver_price} SAR</strong></span>`;
+            return `<span class="border border-info rounded text-info px-2"><strong>${full.driver_price} SAR</strong></span>`;
           }
         },
         {

@@ -6,23 +6,26 @@
     <title>بوليصة شحن #{{ $task->id }}</title>
     <style>
         body {
-            font-family: 'tajawal', sans-serif; /* Add fallback */
+            font-family: 'tajawal', sans-serif;
             margin: 0;
-            padding: 0; /* mPDF handles margins in the page definition usually */
+            padding: 0;
             color: #2c3e50;
-            font-size: 12px;
+            font-size: 11px; /* Reduced from 12px */
             direction: rtl;
             text-align: right;
+            line-height: 1.2; /* Added line-height */
         }
 
         /* mPDF Specific Page Settings */
         @page {
             header: page-header;
             footer: page-footer;
-            margin-top: 30px;
-            margin-bottom: 30px;
-            margin-left: 20px;
-            margin-right: 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            margin-left: 15px;
+            margin-right: 15px;
+            background-image-resize: 6; /* Equivalent to object-fit: contain */
+            background-image-opacity: 0.1;
         }
 
         table {
@@ -49,7 +52,7 @@
         /* ==================== HEADER SECTION ==================== */
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border: none;
         }
 
@@ -58,7 +61,7 @@
         }
 
         .customer-name {
-            font-size: 22px;
+            font-size: 18px; /* Reduced from 22px */
             font-weight: bold;
             color: #1a2733;
         }
@@ -78,7 +81,7 @@
         /* ==================== DATE & TITLE SECTION ==================== */
         .date-title-table {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .date-label {
@@ -92,13 +95,11 @@
 
         .title-box {
             text-align: center;
-            padding: 10px;
+            padding: 5px; /* Reduced from 10px */
             border: 2px solid #1a2733;
             border-radius: 6px;
-            /* margin: 0 auto; Removed auto margin, relying on parent align center + inline-block */
-            /* display: inline-block; OLD problematic */
             display: block;
-            width: 60%; /* Shrink to fit content - modified to fixed % for stable border */
+            width: 60%;
             margin: 0 auto;
         }
 
@@ -136,9 +137,8 @@
         /* ==================== INFO SECTION (Two Columns) ==================== */
         .info-main-table {
             width: 100%;
-            border: 2px solid #1a2733; /* Outer Container Border */
-            /* border-radius in mPDF for tables can be tricky, relying on standard border */
-            margin-bottom: 20px;
+            border: 2px solid #1a2733;
+            margin-bottom: 5px; /* Reduced from 10px */
         }
 
         /* The vertical separator line */
@@ -194,8 +194,8 @@
         /* ==================== LOCATIONS & TABLE ==================== */
         .section-box {
             width: 100%;
-            margin-bottom: 15px;
-            padding: 10px;
+            margin-bottom: 5px; /* Reduced from 10px */
+            padding: 2px 5px; /* Reduced padding */
         }
 
         .section-label {
@@ -222,7 +222,7 @@
 
         .destination-table-inner th, .destination-table-inner td {
             border: 1px solid #1a2733;
-            padding: 5px;
+            padding: 2px 4px;
             text-align: center;
             font-size: 10px;
         }
@@ -260,25 +260,27 @@
             background-color: #fff3cd;
             border: 1px solid #ffeeba;
             color: #856404;
-            padding: 10px;
+            padding: 4px; /* Reduced from 8px */
             border-radius: 6px;
-            margin-bottom: 15px;
+            margin-bottom: 5px; /* Reduced from 10px */
             font-weight: bold;
             text-align: center;
+            font-size: 10px; /* Added explicit small size */
         }
 
         .declaration-table {
             width: 100%;
             border: 1px solid #1a2733;
             background-color: #fcfcfc;
-            margin-bottom: 15px;
+            margin-bottom: 5px; /* Reduced from 15px */
         }
 
         .decl-cell {
             width: 50%;
-            padding: 12px;
-            line-height: 1.6;
+            padding: 5px; /* Reduced from 8px */
+            line-height: 1.2; /* Reduced from 1.4 */
             vertical-align: top;
+            font-size: 10px; /* Standardized to 10px */
         }
 
         .decl-ar {
@@ -288,10 +290,10 @@
 
         .decl-en {
             text-align: justify;
-            font-size: 10px;
+            font-size: 9px; /* Reduced from 10px */
             color: #555;
             font-style: italic;
-            direction: ltr; /* Important for English block */
+            direction: ltr;
         }
 
         .footer {
@@ -555,14 +557,22 @@
                         <td>{{ $task->delivery->arrival_time ?? '--:--' }}</td>
                         <td>{{ $task->delivery->departure_time ?? '--:--' }}</td>
 
-                        <td>&nbsp;</td>
+                        <td>
+                            <div style="height: 0; overflow: visible;">
+                                <img src="{{ public_path('khatm/afaq.png') }}" style="max-height: 100px; margin-top: -30px; vertical-align: middle;" alt="">
+                            </div>
+                        </td>
                     </tr>
                 @else
                     <tr>
                         <td>{{ $task->delivery?->address }}</td>
                         <td></td>
                         <td></td>
-                        <td></td>
+                        <td>
+                             <div style="height: 0; overflow: visible;">
+                                <img src="{{ public_path('khatm/afaq.png') }}" style="max-height: 90px; margin-top: -50px; vertical-align: middle;" alt="">
+                            </div>
+                        </td>
                     </tr>
                 @endif
             </tbody>
@@ -577,10 +587,14 @@
 
                 </td>
                 <td>
-                <div>التوقيع:
+                <div>
                     @if ($customerSignaturePath)
-                        <img src="{{ $customerSignaturePath }}" style="max-height: 50px; vertical-align: middle; position: absolute;">
-                    @else
+                        <div style="height: 0; overflow: visible;">
+                            <img src="{{ $customerSignaturePath }}" style="max-height: 60px; margin-top: -5px; margin-left: -30px; vertical-align: middle;">
+                        </div>
+                    @endif
+                    <span style="font-weight: bold; position: relative;">التوقيع:</span>
+                    @if (!$customerSignaturePath)
                         <span class="sig-line"></span>
                     @endif
                 </div>
@@ -620,17 +634,24 @@
     </table>
 
     <!-- FINAL SIGNATURE -->
-    <div style="width: 100%; text-align: left; margin:0; padding:0;">
-        <div style="display: flex ; justify-content: flex-end;align-items: center; width: 300px; text-align: right;">
-            <strong>توقيع السائق :</strong>
-                @if ($driverSignaturePath)
-                    <img src="{{ $driverSignaturePath }}" style="max-height: 60px; display: block; margin-right: auto; position: absolute;">
-                @else
-                    <div style="border-bottom: 2px solid #000; width: 100%; margin-top: 15px;"></div>
-                @endif
-
-        </div>
-    </div>
+    <table style="width: 100%; border: none; margin: 0; border-collapse: collapse;">
+        <tr>
+            <td width="70%">&nbsp;</td>
+            <td width="30%" class="text-right" style="padding: 0;">
+                <div style="position: relative;">
+                    @if ($driverSignaturePath)
+                        <div style="height: 0; overflow: visible; text-align: right;">
+                            <img src="{{ $driverSignaturePath }}" style="max-height: 60px; margin-top: -5px;">
+                        </div>
+                    @endif
+                    <span style="font-weight: bold; position: relative;">توقيع السائق :</span>
+                    @if (!$driverSignaturePath)
+                        <div style="border-bottom: 2px solid #000; width: 100%; margin-top: 8px;"></div>
+                    @endif
+                </div>
+            </td>
+        </tr>
+    </table>
 
     <!-- CONTACT INFO -->
      <div style="width: 100%; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; line-height: 1.8;">

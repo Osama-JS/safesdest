@@ -93,7 +93,21 @@ class TaskObserver
             $changes[] = "تم إرجاع المهمة (Refunded).";
         }
 
-        // 6. Generic update if other important info changed but no specific event caught
+        // 6. Check for driver cancellation request
+        if ($task->isDirty('driver_cancel') && $task->driver_cancel) {
+            $reason = $task->driver_cancel_reason ?? 'لم يتم تحديد سبب';
+            $driverName = optional($task->driver)->name ?? 'غير معروف';
+            $changes[] = "⚠️ طلب السائق ({$driverName}) إلغاء المهمة. السبب: {$reason}";
+        }
+
+        // 7. Check for customer cancellation request
+        if ($task->isDirty('customer_cancel') && $task->customer_cancel) {
+            $reason = $task->customer_cancel_reason ?? 'لم يتم تحديد سبب';
+            $customerName = optional($task->customer)->name ?? 'غير معروف';
+            $changes[] = "⚠️ طلب العميل ({$customerName}) إلغاء المهمة. السبب: {$reason}";
+        }
+
+        // 8. Generic update if other important info changed but no specific event caught
         if (empty($changes) && $task->isDirty(['total_price', 'commission', 'additional_data'])) {
             $changes[] = "تم تعديل بيانات أساسية في المهمة (السعر، العمولة، أو البيانات الإضافية).";
         }

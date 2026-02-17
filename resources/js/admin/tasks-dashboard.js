@@ -175,6 +175,7 @@ $(function () {
             </div>
             <div class="d-flex align-items-center gap-50 flex-column">
               ${task.overdue && !completeAt ? `<span class="badge bg-danger text-capitalize">overdue ${task.delivery_before}</span>` : ''}
+              ${task.driver_cancel ? `<span class="badge bg-danger"><i class="bi bi-exclamation-triangle"></i> ⚠️ طلب إلغاء</span>` : ''}
               <span class="badge bg-${statusClass} text-capitalize">${task.status.replace('_', ' ')}</span>
             </div>
           </div>
@@ -440,6 +441,24 @@ $(function () {
                     : ''
                 }
                 ${driverInfo}
+                ${
+                  task.data.driver_cancel
+                    ? `
+                <li class="list-group-item d-flex flex-column bg-danger text-white">
+                  <strong>⚠️ طلب إلغاء من السائق</strong>
+                  <span>${task.data.driver_cancel_reason || 'لم يتم تحديد سبب'}</span>
+                </li>`
+                    : ''
+                }
+                ${
+                  task.data.customer_cancel
+                    ? `
+                <li class="list-group-item d-flex flex-column bg-warning text-dark">
+                  <strong>⚠️ طلب إلغاء من العميل</strong>
+                  <span>${task.data.customer_cancel_reason || 'لم يتم تحديد سبب'}</span>
+                </li>`
+                    : ''
+                }
                 </ul>
                  <div class="divider text-start">
                       <div class="divider-text"><strong>Pickup info</strong></div>

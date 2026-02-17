@@ -171,6 +171,10 @@ class TasksController extends Controller
               'point' => $task->point()->where('type', 'pickup')->first(),
               'signature_status' => $task->signature_status,
               'signature_request_id' => $task->signature_request_id,
+              'driver_cancel' => $task->driver_cancel,
+              'driver_cancel_reason' => $task->driver_cancel_reason,
+              'customer_cancel' => $task->customer_cancel,
+              'customer_cancel_reason' => $task->customer_cancel_reason,
             ];
 
             if ($driver) {
@@ -214,6 +218,10 @@ class TasksController extends Controller
             'total_price'      => $task->total_price,
             'conditions'      => $task->conditions,
             'commission'      => $task->commission,
+            'driver_cancel'   => $task->driver_cancel,
+            'driver_cancel_reason' => $task->driver_cancel_reason,
+            'customer_cancel' => $task->customer_cancel,
+            'customer_cancel_reason' => $task->customer_cancel_reason,
             'pickup' => $task->pickup,
             'delivery' => $task->delivery,
             'driver_id' => $task->driver_id,

@@ -115,6 +115,10 @@ class DashboardController extends Controller
               'point' => $task->point()->where('type', 'pickup')->first(),
               'closed' => $task->closed,
               'conditions' => $task->conditions,
+              'driver_cancel' => $task->driver_cancel,
+              'driver_cancel_reason' => $task->driver_cancel_reason,
+              'customer_cancel' => $task->customer_cancel,
+              'customer_cancel_reason' => $task->customer_cancel_reason,
             ];
 
             if ($driver) {

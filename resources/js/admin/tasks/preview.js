@@ -178,6 +178,16 @@ $(function () {
          </div>`
         : '';
 
+      const cancelRequestHtml = task.driver_cancel
+        ? `<div class="mt-2 small bg-danger text-white p-1 rounded">
+            <i class="ti ti-alert-triangle"></i> ⚠️ طلب إلغاء من السائق
+         </div>`
+        : task.customer_cancel
+          ? `<div class="mt-2 small bg-warning text-dark p-1 rounded">
+              <i class="ti ti-alert-triangle"></i> ⚠️ طلب إلغاء من العميل
+           </div>`
+          : '';
+
       const card = `
         <div class="mb-4">
           <div class="card p-3 shadow-sm task-card" data-task-id="${task.id}">
@@ -192,6 +202,7 @@ $(function () {
                 ${conditionsHtml}
                 ${completeAt}
                 ${signatureHtml}
+                ${cancelRequestHtml}
                 </div>
               </div>
               <div class="d-flex align-items-center gap-50">
@@ -489,6 +500,24 @@ $(function () {
                 }
 
                 ${driverInfo}
+                ${
+                  task.data.driver_cancel
+                    ? `
+                <li class="list-group-item bg-danger text-white">
+                  <strong>⚠️ طلب إلغاء من السائق</strong><br>
+                  <span>${task.data.driver_cancel_reason || 'لم يتم تحديد سبب'}</span>
+                </li>`
+                    : ''
+                }
+                ${
+                  task.data.customer_cancel
+                    ? `
+                <li class="list-group-item bg-warning text-dark">
+                  <strong>⚠️ طلب إلغاء من العميل</strong><br>
+                  <span>${task.data.customer_cancel_reason || 'لم يتم تحديد سبب'}</span>
+                </li>`
+                    : ''
+                }
                 </ul>
                  <div class="divider text-start">
                       <div class="divider-text"><strong>Pickup info</strong></div>

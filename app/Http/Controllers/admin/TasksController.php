@@ -629,7 +629,7 @@ class TasksController extends Controller
 
 
             $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
-            $file_name = "#{$task->id}_{$task->customer??->name}_{$task->pickup->address}_{$task->delivery->address}";
+            $file_name = "#{$task->id}_{$task->customer?->name}_{$task->pickup->address}_{$task->delivery->address}";
             if ($task->driver) {
                 $file_name .= "_{$task->driver->name}";
             }

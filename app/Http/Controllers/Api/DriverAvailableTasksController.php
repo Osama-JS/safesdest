@@ -29,7 +29,8 @@ class DriverAvailableTasksController extends Controller
             $query = Task::query()
                 ->with(['customer', 'pickup', 'delivery', 'vehicle_size'])
                 ->where('status', 'in_progress')
-                ->whereNull('driver_id');
+                ->whereNull('driver_id')
+                ->where('vehicle_size_id', $driver->vehicle_size_id);
                 // ->where('is_broadcast', true);
 
             // Important: We need to select all tasks columns first
@@ -111,6 +112,7 @@ class DriverAvailableTasksController extends Controller
             $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'formTemplate'])
                 ->where('status', 'in_progress')
                 ->whereNull('driver_id')
+                ->where('vehicle_size_id', $driver->vehicle_size_id)
                 ->findOrFail($id);
 
             $claim = TaskClaimRequest::where('driver_id', $driver->id)
@@ -168,6 +170,7 @@ class DriverAvailableTasksController extends Controller
 
             $task = Task::where('status', 'in_progress')
                 ->whereNull('driver_id')
+                ->where('vehicle_size_id', $driver->vehicle_size_id)
                 ->findOrFail($id);
 
             // Check if already claimed

@@ -754,6 +754,7 @@ $(function () {
       method: 'POST'
     });
   });
+
   document.addEventListener('statusChange', function (event) {
     loadTasks();
   });

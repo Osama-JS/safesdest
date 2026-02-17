@@ -280,6 +280,9 @@ class DriverTaskAdsController extends Controller
             $driver_id = $driver->id;
 
             $ad = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
+                         ->whereHas('task', function($q) use ($driver) {
+                             $q->where('vehicle_size_id', $driver->vehicle_size_id);
+                         })
                          ->findOrFail($id);
 
             // Check if driver can view this ad
@@ -339,8 +342,10 @@ class DriverTaskAdsController extends Controller
                 ], 422);
             }
 
-            // Check if ad exists and is valid
-            $ad = Task_Ad::findOrFail($adId);
+            // Check if ad exists and matches vehicle size
+            $ad = Task_Ad::whereHas('task', function($q) use ($driver) {
+                $q->where('vehicle_size_id', $driver->vehicle_size_id);
+            })->findOrFail($adId);
 
             if ($ad->status !== 'running') {
                 return response()->json([

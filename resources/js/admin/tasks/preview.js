@@ -414,6 +414,7 @@ $(function () {
                     <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-note me-2"></i>Add Note</a></li>
                     <li><a href="${baseUrl}admin/tasks/${task.data.id}/invoice" target="_blank" class="dropdown-item"><i class="ti ti-file-invoice me-2"></i>Print Invoice</a></li>
                     ${task.data.signature_request_id ? `<li><a href="javascript:;" class="dropdown-item verify-signature" data-id="${task.data.id}"><i class="ti ti-refresh me-2"></i>Verify Signature Status</a></li>` : ''}
+                    ${task.data.driver_id && !task.data.closed ? `<li><a href="javascript:;" class="dropdown-item drop-task text-danger" data-id="${task.data.id}"><i class="ti ti-user-minus me-2"></i>Drop Task from Driver</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>download task status report</a></li>
 
                   </ul>
@@ -942,6 +943,50 @@ $(function () {
       fields: fields,
       url: `${baseUrl}admin/tasks/duplicate`,
       method: 'POST'
+    });
+  });
+
+  $(document).on('click', '.drop-task', function () {
+    const id = $(this).data('id');
+
+    Swal.fire({
+      title: 'Drop Task from Driver?',
+      text: 'This will remove the task from the driver and set it back to "In Progress". You can enter a reason below (optional):',
+      input: 'text',
+      inputPlaceholder: 'Reason for dropping...',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Drop it!',
+      cancelButtonText: 'Cancel',
+      customClass: {
+        confirmButton: 'btn btn-danger me-3',
+        cancelButton: 'btn btn-label-secondary'
+      },
+      buttonsStyling: false,
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then(result => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: `${baseUrl}admin/tasks/drop`,
+          type: 'POST',
+          data: {
+            task_id: id,
+            reason: result.value
+          },
+          success: function (response) {
+            if (response.status === 1) {
+              showAlert('success', response.message);
+              $('#task-details-view').fadeOut(200);
+              loadTasks();
+            } else {
+              showAlert('error', response.message);
+            }
+          },
+          error: function (xhr) {
+            showAlert('error', 'Something went wrong. Please try again.');
+          }
+        });
+      }
     });
   });
 

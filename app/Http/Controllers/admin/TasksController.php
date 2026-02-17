@@ -70,7 +70,7 @@ class TasksController extends Controller
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
-        $this->middleware('permission:status_tasks', ['only' => ['chang_status', 'taskAddNote']]);
+        $this->middleware('permission:status_tasks', ['only' => ['chang_status', 'taskAddNote', 'dropTask']]);
         $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign']]);
         $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
@@ -629,7 +629,7 @@ class TasksController extends Controller
 
 
             $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($req->id);
-            $file_name = "#{$task->id}_{$task->customer?->name}_{$task->pickup->address}_{$task->delivery->address}";
+            $file_name = "#{$task->id}_{$task->customer??->name}_{$task->pickup->address}_{$task->delivery->address}";
             if ($task->driver) {
                 $file_name .= "_{$task->driver->name}";
             }
@@ -707,6 +707,57 @@ class TasksController extends Controller
         } catch (Exception $ex) {
             DB::rollBack();
             return response()->json(['status' => 0, 'error' => $ex->getMessage()]);
+        }
+    }
+
+    public function dropTask(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|exists:tasks,id',
+            'reason' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()->first()]);
+        }
+
+        try {
+            $task = Task::findOrFail($request->task_id);
+
+            if ($task->closed || in_array($task->status, ['completed', 'canceled', 'refund'])) {
+                return response()->json([
+                    'status' => 2,
+                    'type' => 'error',
+                    'message' => __('This task cannot be dropped in its current state.')
+                ]);
+            }
+
+            $oldDriverId = $task->driver_id;
+
+            // Drop the task
+            $task->update([
+                'driver_id' => null,
+                'pending_driver_id' => null,
+                'status' => 'in_progress'
+            ]);
+
+            // Add to history
+            Task_History::create([
+                'task_id' => $task->id,
+                'action_type' => 'drop_task',
+                'description' => 'Admin dropped task from driver. Reason: ' . ($request->reason ?? 'No reason provided'),
+                'user_id' => Auth::id(),
+                'driver_id' => $oldDriverId, // Log which driver it was dropped from
+                'ip' => IpHelper::getUserIpAddress(),
+            ]);
+
+            return response()->json([
+                'status' => 1,
+                'type' => 'success',
+                'message' => __('Task dropped from driver successfully.')
+            ]);
+        } catch (Exception $ex) {
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
         }
     }
 

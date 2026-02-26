@@ -155,7 +155,10 @@
                     <tr>
                         <th></th>
                         <th>{{ __('Task #') }}</th>
+                        <th>{{ __('Price / Earnings') }}</th>
                         <th>{{ __('Driver') }}</th>
+                        <th>{{ __('Route') }}</th>
+                        <th>{{ __('Vehicle') }}</th>
                         <th>{{ __('Customer') }}</th>
                         <th>{{ __('Note') }}</th>
                         <th>{{ __('Status') }}</th>

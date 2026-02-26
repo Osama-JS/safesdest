@@ -37,7 +37,7 @@ class TaskClaimsController extends Controller
      */
     public function getData(Request $request)
     {
-        $query = TaskClaimRequest::with(['task.customer', 'driver', 'reviewer'])
+        $query = TaskClaimRequest::with(['task.customer', 'task.pickup', 'task.delivery', 'task.vehicle_size.type.vehicle', 'driver', 'reviewer'])
             ->select('task_claim_requests.*');
 
         // Status filter
@@ -129,16 +129,61 @@ class TaskClaimsController extends Controller
                 </div>
             ';
 
+            $taskPrice = $claim->task?->total_price ?? 0;
+            $commission = $claim->task?->commission ?? 0;
+            $driverEarnings = $taskPrice - $commission;
+
+            $pickupAddress  = $claim->task?->pickup?->address  ?? '-';
+            $deliveryAddress = $claim->task?->delivery?->address ?? '-';
+            $vehicleSize    = $claim->task?->vehicle_size?->vehicle_name ?? '-';
+            $driverPhone    = $claim->driver?->phone ?? '-';
+
+            $locationHtml = '
+                <div class="small">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="ti ti-map-pin-filled text-primary me-1" style="font-size:11px"></i>
+                        <span class="text-truncate" style="max-width:160px" data-bs-toggle="tooltip" title="' . e($pickupAddress) . '">' . e(Str::limit($pickupAddress, 25)) . '</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="ti ti-map-pin text-danger me-1" style="font-size:11px"></i>
+                        <span class="text-truncate" style="max-width:160px" data-bs-toggle="tooltip" title="' . e($deliveryAddress) . '">' . e(Str::limit($deliveryAddress, 25)) . '</span>
+                    </div>
+                </div>
+            ';
+
+            $priceHtml = '
+                <div class="small">
+                    <div class="fw-medium text-dark">' . number_format($taskPrice, 2) . ' <span class="text-muted">SAR</span></div>
+                    <div class="text-success"><i class="ti ti-wallet me-1 ti-xs"></i>' . number_format($driverEarnings, 2) . ' SAR</div>
+                </div>
+            ';
+
+            $driverHtmlFull = '
+                <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm me-2">
+                        <img src="' . $driverImage . '" alt="' . e($driverName) . '" class="rounded-circle" onerror="this.src=\'' . asset('assets/img/person.png') . '\'">
+                    </div>
+                    <div>
+                        <div class="fw-medium">' . e($driverName) . '</div>
+                        <div class="small text-muted"><i class="ti ti-phone ti-xs me-1"></i>' . e($driverPhone) . '</div>
+                    </div>
+                </div>
+            ';
+
             $data[] = [
                 'id' => '',
                 'task_number' => '<span class="fw-medium text-primary">' . e($claim->task?->customer_task_number ?? "#{$claim->task_id}") . '</span>',
-                'driver_name' => $driverHtml,
+                'task_price' => $priceHtml,
+                'driver_name' => $driverHtmlFull,
+                'driver_phone' => e($driverPhone),
+                'location' => $locationHtml,
+                'vehicle_size' => '<span class="badge bg-label-secondary"><i class="ti ti-truck me-1 ti-xs"></i>' . e($vehicleSize) . '</span>',
                 'customer_name' => e($claim->task?->customer?->name ?? 'N/A'),
                 'note' => $claim->note
-                    ? '<span class="text-truncate d-inline-block" style="max-width: 150px;" data-bs-toggle="tooltip" title="' . e($claim->note) . '">' . e(Str::limit($claim->note, 30)) . '</span>'
+                    ? '<span class="text-truncate d-inline-block" style="max-width: 130px;" data-bs-toggle="tooltip" title="' . e($claim->note) . '">' . e(Str::limit($claim->note, 25)) . '</span>'
                     : '<span class="text-muted">-</span>',
                 'status' => '<span class="badge bg-label-' . $statusClass . '"><i class="ti ' . $statusIcon . ' me-1 ti-xs"></i>' . $statusLabel . '</span>',
-                'created_at' => $claim->created_at->toIso8601String(),
+                'created_at' => $claim->created_at?->toIso8601String(),
                 'actions' => $actions
             ];
         }

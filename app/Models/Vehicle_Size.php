@@ -12,6 +12,7 @@ class Vehicle_Size extends Model
     'vehicle_type_id'
   ];
 
+
   public function type()
   {
     return $this->belongsTo(Vehicle_Type::class, 'vehicle_type_id');
@@ -21,4 +22,10 @@ class Vehicle_Size extends Model
   {
     return $this->hasMany(Driver::class, 'vehicle_size_id');
   }
+
+  public function getVehicleNameAttribute(){
+    return $this->type->vehicle->name . ' - ' . $this->type->name . ' - ' . $this->name;
+  }
+
+
 }

@@ -36,7 +36,10 @@ $(function () {
       columns: [
         { data: '' },
         { data: 'task_number' },
+        { data: 'task_price' },
         { data: 'driver_name' },
+        { data: 'location' },
+        { data: 'vehicle_size' },
         { data: 'customer_name' },
         { data: 'note' },
         { data: 'status' },
@@ -64,7 +67,7 @@ $(function () {
           }
         },
         {
-          // Driver - raw HTML
+          // Task Price / Driver Earnings
           targets: 2,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -72,8 +75,33 @@ $(function () {
           }
         },
         {
-          // Customer Name
+          // Driver Name + Phone
           targets: 3,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return data;
+          }
+        },
+        {
+          // Route: Pickup → Delivery
+          targets: 4,
+          orderable: false,
+          responsivePriority: 3,
+          render: function (data, type, full, meta) {
+            return data;
+          }
+        },
+        {
+          // Vehicle Size
+          targets: 5,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            return data;
+          }
+        },
+        {
+          // Customer Name
+          targets: 6,
           orderable: false,
           render: function (data, type, full, meta) {
             return '<span class="fw-medium">' + data + '</span>';
@@ -81,7 +109,7 @@ $(function () {
         },
         {
           // Note
-          targets: 4,
+          targets: 7,
           orderable: false,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
@@ -90,7 +118,7 @@ $(function () {
         },
         {
           // Status
-          targets: 5,
+          targets: 8,
           orderable: false,
           render: function (data, type, full, meta) {
             return data;
@@ -98,7 +126,7 @@ $(function () {
         },
         {
           // Created At
-          targets: 6,
+          targets: 9,
           render: function (data, type, full, meta) {
             if (!data) return '-';
             var date = new Date(data);
@@ -137,7 +165,7 @@ $(function () {
         },
         {
           // Actions
-          targets: 7,
+          targets: 10,
           orderable: false,
           searchable: false,
           render: function (data, type, full, meta) {
@@ -145,7 +173,7 @@ $(function () {
           }
         }
       ],
-      order: [[6, 'desc']],
+      order: [[9, 'desc']],
       dom:
         '<"row mx-2"' +
         '<"col-md-2"<"me-3"l>>' +
@@ -185,31 +213,31 @@ $(function () {
               extend: 'print',
               text: '<i class="ti ti-printer me-2"></i>Print',
               className: 'dropdown-item',
-              exportOptions: { columns: [1, 2, 3, 4, 5, 6] }
+              exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
               extend: 'csv',
               text: '<i class="ti ti-file-text me-2"></i>CSV',
               className: 'dropdown-item',
-              exportOptions: { columns: [1, 2, 3, 4, 5, 6] }
+              exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
               extend: 'excel',
               text: '<i class="ti ti-file-spreadsheet me-2"></i>Excel',
               className: 'dropdown-item',
-              exportOptions: { columns: [1, 2, 3, 4, 5, 6] }
+              exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
               extend: 'pdf',
               text: '<i class="ti ti-file-description me-2"></i>PDF',
               className: 'dropdown-item',
-              exportOptions: { columns: [1, 2, 3, 4, 5, 6] }
+              exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             },
             {
               extend: 'copy',
               text: '<i class="ti ti-copy me-2"></i>Copy',
               className: 'dropdown-item',
-              exportOptions: { columns: [1, 2, 3, 4, 5, 6] }
+              exportOptions: { columns: [1, 2, 3, 4, 5, 6, 7, 8, 9] }
             }
           ]
         }

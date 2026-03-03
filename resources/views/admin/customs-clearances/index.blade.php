@@ -325,7 +325,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form class="add-new-user pt-0 payment_submit payment_form" method="POST"
-                    action="{{ route('payment.clearance.initiate') }}">
+                    action="{{ route('payment.initiate') }}">
                     @csrf
                     <div class="modal-body">
                         <div class="col-xl-12">
@@ -341,7 +341,8 @@
                                             <label class="form-label" for="task-payment-method">*
                                                 {{ __('Payment Method') }}</label>
                                             <select name="payment_method" id="task-payment-method" class="form-select">
-                                                <option value="credit">{{ __('Credit Card') }}</option>
+                                                <option value="hyperpay_mada">{{ __('Mada') }}</option>
+                                                <option value="credit">{{ __('Credit Card (Visa/Mastercard)') }}</option>
                                                 <option value="banking">{{ __('Bank transfer') }}</option>
                                                 <option value="wallet" id="wallet-option">{{ __('Use your Wallet') }}
                                                 </option>

@@ -62,6 +62,16 @@ Route::get('/test-signature', [SignatureController::class, 'testSignatureRequest
 // Public Share Task Route
 Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::class, 'share'])->name('admin.tasks.share_link');
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Payment Routes (no session auth required — secured via payment_token)
+// ──────────────────────────────────────────────────────────────────────────────
+Route::prefix('payment')->name('payment.')->group(function () {
+    Route::post('/initiate',            [PaymentController::class, 'initiatePayment'])->name('initiate');
+    Route::get('/{token}',              [PaymentController::class, 'showPaymentPage'])->name('page');
+    Route::get('/callback',             [PaymentController::class, 'handleCallback'])->name('callback');
+    Route::get('/result/{status}/{token}', [PaymentController::class, 'showResult'])->name('result');
+});
+
 Route::middleware('rate.limit')->group(function () {
 
     Route::middleware('guest')->group(function () {
@@ -96,25 +106,7 @@ Route::middleware('rate.limit')->group(function () {
 
 
     Route::middleware([config('jetstream.auth_session')])->group(function () {
-        Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
-        Route::post('clearance/initiate-payment', [PaymentController::class, 'initiatePaymentClearance'])->name('payment.clearance.initiate');
-
-        // Route لاستقبال الـ callback من HyperPay
-        Route::get('/payment-callback', [PaymentController::class, 'handlePaymentCallback'])->name('payment.callback');
-
-        Route::get('/payment/form', function (Request $request) {
-            return view('payment.form', ['checkout_id' => $request->checkout_id]);
-        })->name('payment.form');
-
-        // Route لعرض صفحة النجاح
-        Route::get('/payment/success', function () {
-            return view('payment.success');
-        })->name('payment.success');
-
-        // Route لعرض صفحة الفشل
-        Route::get('/payment/failure', function () {
-            return view('payment.failure');
-        })->name('payment.failure');
+        // Payment routes have been moved to the unified 'payment.' prefix earlier in this file.
 
         Route::get('/', function () {
             if (Auth::guard('driver')->check()) {

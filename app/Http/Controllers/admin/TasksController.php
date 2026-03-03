@@ -2057,18 +2057,15 @@ class TasksController extends Controller
     public function getListData(Request $request)
     {
         $columns = [
-         1 => 'id',
-         2 => 'order',
-         2 => 'price',
-         3 => 'team',
-         4 => 'driver',
-         5 => 'driver_price',
-         6 => 'address',
-         7 => 'start',
-         8 => 'complete',
-         9 => 'delevery',
-         10 => 'status',
-         11 => 'created_at'
+            1 => 'id',
+            2 => 'customer_task_number',
+            3 => 'order_id',
+            4 => 'total_price',
+            5 => 'team_id',
+            6 => 'driver_id',
+            7 => 'total_price', // driver_price is computed but we can sort by total_price
+            8 => 'address',
+            13 => 'created_at'
         ];
 
         $totalData = Task::count();
@@ -2088,11 +2085,15 @@ class TasksController extends Controller
         $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle']);
 
         // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
-        if ($fromDate && $toDate) {
-            $query->whereBetween('created_at', [
-              Carbon::parse($fromDate)->startOfDay(),
-              Carbon::parse($toDate)->endOfDay()
-            ]);
+        try {
+            if ($fromDate && $toDate && $fromDate !== 'undefined' && $toDate !== 'undefined') {
+                $query->whereBetween('created_at', [
+                  Carbon::parse($fromDate)->startOfDay(),
+                  Carbon::parse($toDate)->endOfDay()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning("Invalid date format in getListData: {$fromDate} - {$toDate}");
         }
 
         if ($owner === 'customer') {

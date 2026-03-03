@@ -61,6 +61,7 @@ class DriverWalletController extends Controller
                         'pending_amount' => (float) $pendingAmount,
                         'total_earnings' => (float) $totalEarnings,
                         'pending_withdrawal' => (float) $pendingWithdrawals,
+                        'max_withdrawable_amount' => (float) ($availableBalance + $wallet->debt_ceiling),
                         'currency' => 'SAR' // Assuming Saudi Riyal
                     ],
                     'commission' => [
@@ -119,10 +120,13 @@ class DriverWalletController extends Controller
             // Available balance = Ledger Balance - Pending Withdrawals
             $availableBalance = $wallet->balance - $pendingWithdrawals;
 
-            if ($request->amount > $availableBalance) {
+            // Limit = Available Balance + Debt Ceiling
+            $maxLimit = $availableBalance + $wallet->debt_ceiling;
+
+            if ($request->amount > $maxLimit) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Insufficient available balance'
+                    'message' => __('Insufficient balance. Your limit is :limit SAR (including debt ceiling)', ['limit' => number_format($maxLimit, 2)])
                 ], 400);
             }
 

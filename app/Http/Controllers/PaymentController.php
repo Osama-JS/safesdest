@@ -62,7 +62,11 @@ class PaymentController extends Controller
         // ── Resolve owner ─────────────────────────────────────────────────────
         $owner = $this->resolveOwner($request);
         if (!$owner) {
-            return response()->json(['success' => false, 'message' => __('Unauthenticated')], 401);
+            return response()->json([
+                'success' => false,
+                'status'  => 2,
+                'error'   => __('Unauthenticated')
+            ]);
         }
 
         // ── Resolve subject (task or clearance) ───────────────────────────────
@@ -158,7 +162,11 @@ class PaymentController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('initiatePayment exception', ['msg' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'status'  => 2,
+                'error'   => $e->getMessage()
+            ]);
         }
     }
 
@@ -411,8 +419,20 @@ class PaymentController extends Controller
 
     private function processWalletPayment($owner, float $amount, $subject, string $purpose): array
     {
+        // 1. Determine target customer whose wallet will be debited
+        $customerId = null;
+        if ($owner instanceof \App\Models\Customer) {
+            $customerId = $owner->id;
+        } elseif ($subject && isset($subject->customer_id)) {
+            $customerId = $subject->customer_id;
+        }
+
+        if (!$customerId) {
+            throw new Exception(__('Customer not found for this payment'));
+        }
+
         $wallet = Wallet::where('user_type', 'customer')
-                        ->where('user_id', $owner->id)
+                        ->where('customer_id', $customerId)
                         ->first();
 
         if (!$wallet || !$wallet->status) {
@@ -424,24 +444,23 @@ class PaymentController extends Controller
             throw new Exception(__('Insufficient wallet balance'));
         }
 
-        $wallet->decrement('balance', $amount);
-
         $seq = (Wallet_Transaction::max('sequence') ?? 1000000) + 1;
         $wt  = Wallet_Transaction::create([
             'wallet_id'        => $wallet->id,
             'amount'           => $amount,
             'transaction_type' => 'debit',
             'description'      => 'Payment: ' . ($subject ? class_basename($subject) . ' #' . $subject->id : $purpose),
-            'status'           => 'completed',
+            'status'           => 1,
             'maturity_time'    => now()->addDays(3),
             'task_id'          => ($subject instanceof Task) ? $subject->id : null,
             'sequence'         => $seq,
+            'user_id'          => Auth::user()->id,
         ]);
 
         $payment = Payments::create([
-            'owner_type'     => 'customer',
+            'owner_type'     => ($owner instanceof \App\Models\Customer) ? 'customer' : 'user',
             'owner_id'       => $owner->id,
-            'customer_id'    => $owner->id,
+            'customer_id'    => $customerId,
             'amount'         => $amount,
             'payment_method' => 'wallet',
             'purpose'        => $purpose,
@@ -461,7 +480,7 @@ class PaymentController extends Controller
         ]);
 
         return [
-            'success' => true,
+            'success' => __('Payment completed successfully via wallet'),
             'status'  => 1,
             'message' => __('Payment completed successfully via wallet'),
             'success_msg' => __('Payment completed successfully via wallet')

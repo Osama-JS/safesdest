@@ -343,8 +343,26 @@ class PaymentController extends Controller
     /**
      * Resolve authenticated owner from request (Sanctum or web session).
      */
+       /**
+     * Resolve authenticated owner from request (Sanctum or web session).
+     */
     private function resolveOwner(Request $request)
     {
+        // 1. Try to resolve from subject (Task or Clearance)
+        if ($request->filled('id')) {
+            $task = Task::find($request->id);
+            if ($task && $task->customer_id) {
+                return $task->customer;
+            }
+        }
+        if ($request->filled('clearance_id')) {
+            $clr = Customs_Clearance::find($request->clearance_id);
+            if ($clr && $clr->customer_id) {
+                return $clr->customer;
+            }
+        }
+
+        // 2. Fallback to authenticated user/customer
         // Sanctum customer guard
         if ($request->user('sanctum')) {
             return $request->user('sanctum');
@@ -358,6 +376,7 @@ class PaymentController extends Controller
         }
         return null;
     }
+
 
     /**
      * Resolve the subject (Task or Customs_Clearance) and purpose.

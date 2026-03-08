@@ -446,6 +446,7 @@ class PaymentController extends Controller
             $customerId = $subject->customer_id;
         }
 
+        Log::info($owner);
         if (!$customerId) {
             throw new Exception(__('Customer not found for this payment'));
         }
@@ -454,6 +455,7 @@ class PaymentController extends Controller
                         ->where('customer_id', $customerId)
                         ->first();
 
+        Log::info($wallet);
         if (!$wallet || !$wallet->status) {
             throw new Exception(__('Wallet is inactive or not found'));
         }
@@ -462,8 +464,20 @@ class PaymentController extends Controller
         if ($newBalance < -$wallet->debt_ceiling) {
             throw new Exception(__('Insufficient wallet balance'));
         }
+        Log::info($newBalance);
 
         $seq = (Wallet_Transaction::max('sequence') ?? 1000000) + 1;
+        Log::info($seq);
+        Log::info([
+          'amount'           => $amount,
+          'transaction_type' => 'debit',
+          'description'      => 'Payment: ' . ($subject ? class_basename($subject) . ' #' . $subject->id : $purpose),
+          'status'           => 1,
+          'maturity_time'    => now()->addDays(3),
+          'task_id'          => ($subject instanceof Task) ? $subject->id : null,
+          'sequence'         => $seq,
+          'user_id'          => Auth::user()->id ?? '',
+        ]);
         $wt  = Wallet_Transaction::create([
             'wallet_id'        => $wallet->id,
             'amount'           => $amount,
@@ -473,9 +487,10 @@ class PaymentController extends Controller
             'maturity_time'    => now()->addDays(3),
             'task_id'          => ($subject instanceof Task) ? $subject->id : null,
             'sequence'         => $seq,
-            'user_id'          => Auth::user()->id,
+            'user_id'          => Auth::check() ? Auth::user()->id : null,
         ]);
 
+        Log::info($wt);
         $payment = Payments::create([
             'owner_type'     => ($owner instanceof \App\Models\Customer) ? 'customer' : 'user',
             'owner_id'       => $owner->id,

@@ -2819,7 +2819,7 @@ class TasksController extends Controller
                 ]);
             }
 
-            if ($task->payment_status !== 'completed') {
+            if ($task->payment_status !== 'paid') {
                 return response()->json([
                   'status' => 2,
                   'error' => __('This transaction cannot be closed until the payment is completed.'),
@@ -2851,6 +2851,7 @@ class TasksController extends Controller
 
             $task->update($updateData);
 
+
             // Notify Team Users
             app(\App\Services\NotificationService::class)->notifyTeamUsers(
                 $task,
@@ -2859,6 +2860,8 @@ class TasksController extends Controller
                 "/tasks/{$task->id}"
             );
 
+            Log::alert("تم ارسال الإشعارات ");
+
             $task->history()->create([
               'action_type' => 'closed',
               'description' => 'Task closed by admin' . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
@@ -2866,6 +2869,7 @@ class TasksController extends Controller
               'user_id' => Auth::user()->id,
             ]);
 
+            Log::alert("تم تخزين سجل الحالة");
             $wallet = $driver->wallet;
             if (!$wallet) {
                 return response()->json([
@@ -2882,12 +2886,30 @@ class TasksController extends Controller
               'maturity_time'       => Carbon::now()->copy()->addDays(3),
               'task_id'             => $task->id,
             ];
+
+            Log::alert([
+              'amount'              => $task->total_price - $task->commission,
+              'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
+              'transaction_type'    => 'credit',
+              'wallet_id'           => $wallet->id,
+              'maturity_time'       => Carbon::now()->copy()->addDays(3),
+              'task_id'             => $task->id,
+            ]);
             if ($driver->team()->exists()) {
                 $data['team_id'] = $driver->team->id;
             }
 
             Wallet_Transaction::create($data);
+            Log::alert(
+              [
+                 'amount'              => $task->total_price - $task->commission,
+                  'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
+                  'transaction_type'    => 'credit',
 
+              ]
+              );
+
+            Log::alert('انشاء الحركة في المحفظة');
             if ($driver->team()->exists()) {
                 Team_Wallet_Transaction::create([
                   'amount'              => $task->total_price - $task->commission,
@@ -2898,6 +2920,7 @@ class TasksController extends Controller
                 ]);
             }
 
+            Log::alert('تم حفظ الحركة');
             // حساب وتوزيع العمولات على المستخدمين
             $this->calculateAndDistributeUserCommissions($task);
 

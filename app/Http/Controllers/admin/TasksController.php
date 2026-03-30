@@ -4,6 +4,8 @@ namespace App\Http\Controllers\admin;
 
 use Exception;
 use Carbon\Carbon;
+use App\Models\Payments;
+use App\Models\Transaction;
 use App\Models\Task;
 use App\Models\Team;
 use App\Models\Order;
@@ -14,12 +16,12 @@ use App\Models\Pricing;
 use App\Models\Task_Ad;
 use App\Models\Vehicle;
 use App\Models\Customer;
+use App\Models\Wallet;
 use App\Models\Settings;
 use App\Helpers\IpHelper;
 use App\Models\Form_Field;
 use App\Helpers\FileHelper;
 use App\Models\Tag_Pricing;
-use App\Models\Transaction;
 use App\Models\Task_History;
 use App\Models\Task_Points;
 use Illuminate\Http\Request;
@@ -76,6 +78,7 @@ class TasksController extends Controller
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
         $this->middleware('permission:refund_tasks', ['only' => ['refundTask']]);
         $this->middleware('permission:pay_tasks', ['only' => ['paymentInfo', 'confirmPayment', 'cancelPayment', 'paymentRequestInfo']]);
+        $this->middleware('permission:cancel_paid_tasks', ['only' => ['cancelPaidPayment']]);
 
         $this->pdfService = $pdfService;
     }
@@ -2214,11 +2217,51 @@ class TasksController extends Controller
                 ]);
             }
             if ($data->payment_status !== 'waiting') {
-                $transiction = Transaction::with('user')->where('reference_id', $data->id)->first();
+                // 1. Search in Transaction (Legacy/Manual)
+                $transaction = Transaction::with('user')->where('reference_id', $data->id)->first();
+
+                // 2. If not found, search in Payments (Unified: Wallet, HyperPay, Bank Transfer)
+                if (!$transaction) {
+                    $payment = Payments::where('task_id', $data->id)->latest()->first();
+                    if ($payment) {
+                        // Map Payments to Transaction-like object for the JS
+                        $transaction = (object)[
+                            'id'             => $payment->id,
+                            'reference_id'   => $payment->task_id,
+                            'amount'         => $payment->amount,
+                            'payment_type'   => $payment->payment_method,
+                            'status'         => $payment->status,
+                            'receipt_number' => $payment->receipt_number,
+                            'receipt_image'  => $payment->receipt_image,
+                            'note'           => $payment->description,
+                            'created_at'     => $payment->created_at->format('Y-m-d H:i:s'),
+                            'user'           => $payment->owner ? (object)['name' => $payment->owner->name] : null
+                        ];
+                    }
+                }
+
+                if ($transaction) {
+                    return response()->json([
+                      'status' => 3,
+                      'message' => __('This task has already make payment request and it is ' . $data->payment_status),
+                      'data' => $transaction
+                    ]);
+                }
+
+                // If still not found but status is not waiting, it might be a direct status change
                 return response()->json([
-                  'status' => 3,
-                  'message' => __('This task has already make payment request and it is ' . $data->payment_status),
-                  'data' => $transiction
+                    'status' => 3,
+                    'message' => __('This task payment status is ' . $data->payment_status),
+                    'data' => (object)[
+                        'id'           => 'N/A',
+                        'reference_id' => $data->id,
+                        'amount'       => $data->total_price,
+                        'payment_type' => $data->payment_method ?? 'unknown',
+                        'status'       => $data->payment_status,
+                        'note'         => __('Detailed payment record not found'),
+                        'created_at'   => $data->updated_at->format('Y-m-d H:i:s'),
+                        'user'         => null
+                    ]
                 ]);
             }
             return response()->json($data);
@@ -2327,18 +2370,29 @@ class TasksController extends Controller
 
             if ($data->payment_status === 'pending') {
                 $transaction = Transaction::where('reference_id', $data->id)->first();
-                if (!$transaction) {
-                    return response()->json([
-                      'status' => 2,
-                      'error' => __('Transaction not found')
+                if ($transaction) {
+                    $transaction->update([
+                      'status' => 'paid',
+                      'user_check' => Auth::user()->id,
+                      'user_ip' => IpHelper::getUserIpAddress(),
+                      'checkout_at' => Carbon::now(),
                     ]);
+                } else {
+                    $payment = Payments::where('task_id', $data->id)->where('status', 'pending')->latest()->first();
+                    if ($payment) {
+                        $payment->update([
+                            'status' => 'paid',
+                            'completed_at' => Carbon::now(),
+                            'processed_at' => Carbon::now(),
+                        ]);
+                    } else {
+                        return response()->json([
+                            'status' => 2,
+                            'error' => __('Payment record not found')
+                        ]);
+                    }
                 }
-                $transaction->update([
-                  'status' => 'paid',
-                  'user_check' => Auth::user()->id,
-                  'user_ip' => IpHelper::getUserIpAddress(),
-                  'checkout_at' => Carbon::now(),
-                ]);
+
                 $data->update([
                   'payment_status' => 'completed'
                 ]);
@@ -2380,22 +2434,30 @@ class TasksController extends Controller
             }
             if ($data->payment_status === 'pending') {
                 $transaction = Transaction::where('reference_id', $data->id)->first();
-                if (!$transaction) {
-                    return response()->json([
-                      'status' => 2,
-                      'error' => __('Transaction not found')
-                    ]);
+                if ($transaction) {
+                    if ($transaction->receipt_image) {
+                        FileHelper::deleteFileIfExists($transaction->receipt_image);
+                    }
+                    $transaction->delete();
+                } else {
+                    $payment = Payments::where('task_id', $data->id)->where('status', 'pending')->latest()->first();
+                    if ($payment) {
+                        if ($payment->receipt_image) {
+                            FileHelper::deleteFileIfExists($payment->receipt_image);
+                        }
+                        $payment->delete();
+                    } else {
+                        return response()->json([
+                            'status' => 2,
+                            'error' => __('Payment record not found')
+                        ]);
+                    }
                 }
-
-                Transaction::where('reference_id', $data->id)->delete();
 
                 $data->update([
                   'payment_status' => 'waiting'
                 ]);
 
-                if ($transaction->receipt_image) {
-                    unlink($transaction->receipt_image);
-                }
                 DB::commit();
                 return response()->json([
                   'status' => 1,
@@ -2412,6 +2474,77 @@ class TasksController extends Controller
             return response()->json([
               'status' => 2,
               'message' => __('Task not found')
+            ]);
+        }
+    }
+
+    public function cancelPaidPayment($id)
+    {
+        DB::beginTransaction();
+        try {
+            $data = Task::findOrFail($id);
+            $user = auth()->user();
+
+            if (!$user || !$user->can('cancel_paid_tasks')) {
+                return response()->json([
+                    'status' => 2,
+                    'type' => 'error',
+                    'message' => __('You do not have permission to cancel completed payments')
+                ]);
+            }
+
+            if ($data->closed) {
+                return response()->json([
+                    'status' => 2,
+                    'type' => 'error',
+                    'message' => __('Cannot cancel payment for a closed task')
+                ]);
+            }
+
+            $payment = Payments::where('task_id', $data->id)->latest()->first();
+            $transaction = Transaction::where('reference_id', $data->id)->first();
+
+            if (($payment && $payment->payment_method === 'wallet') || ($data->payment_method === 'wallet')) {
+                $wt = \App\Models\Wallet_Transaction::where('task_id', $data->id)
+                    ->where('transaction_type', 'debit')
+                    ->first();
+                if ($wt) {
+                    $wt->delete();
+                }
+            }
+
+            if ($payment) {
+                if ($payment->receipt_image) {
+                    FileHelper::deleteFileIfExists($payment->receipt_image);
+                }
+                $payment->delete();
+            }
+
+            if ($transaction) {
+                if ($transaction->receipt_image) {
+                    FileHelper::deleteFileIfExists($transaction->receipt_image);
+                }
+                $transaction->delete();
+            }
+
+            $data->update([
+                'payment_status' => 'waiting',
+                'payment_method' => 'cash',
+                'payment_id'     => null,
+            ]);
+
+            DB::commit();
+            return response()->json([
+                'status' => 1,
+                'message' => __('Completed payment has been successfully cancelled and reversed')
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('CancelPaidPayment Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 2,
+                'message' => __('Error cancelling payment: ') . $e->getMessage()
             ]);
         }
     }

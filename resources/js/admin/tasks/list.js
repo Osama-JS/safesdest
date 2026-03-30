@@ -424,6 +424,11 @@ $(function () {
         $('#checkPaymentModal').modal('show');
         $('#task-payment-id').val(id);
 
+        if (!data.data) {
+          showAlert('error', 'Payment details not found.');
+          return;
+        }
+
         var checkButtons = '';
         if (data.data.status === 'pending') {
           checkButtons = `
@@ -442,7 +447,7 @@ $(function () {
           <p>Payment Method: <span class="px-3 py-0 bg-info text-white rounded"> ${data.data.payment_type} </span></p>
           <p>Payment Status: <span class="px-3 py-0 bg-warning text-white rounded">${data.data.status}</span></p>
           ${
-            data.data.payment_type !== 'credit'
+            data.data.payment_type !== 'credit' && data.data.receipt_image
               ? `
              <p>Payment Receipt: <span class="px-3 py-0 bg-info text-white rounded">${data.data.receipt_number}</span></p>
           <img src="${baseUrl + data.data.receipt_image}" alt="Receipt" class="img-fluid mb-2" style="max-width: 100%; height: auto; "/>
@@ -455,8 +460,13 @@ $(function () {
           <p>Payment Created At: <span class="px-3 py-0 bg-info text-white rounded">${data.data.created_at}</span></p>
           <p>Payment Checked By: <span class="px-3 py-0 bg-info text-white rounded">${data.data.user ? data.data.user.name : 'not checked yet'}</span></p>
 
-          <div>
+          <div class="d-flex gap-2">
             ${checkButtons}
+            ${
+              data.data.status === 'paid' || data.data.status === 'completed'
+                ? `<button type="button" data-id="${data.data.reference_id}" class="btn btn-warning cancel-paid-payment"><i class="ti ti-refresh me-1"></i>Cancel Completed Payment</button>`
+                : ''
+            }
           </div>
 
         </div>
@@ -500,6 +510,54 @@ $(function () {
         showAlert('danger', 'Error to connect with server', 5000, true);
         console.error(error);
       });
+  });
+
+  $(document).on('click', '.cancel-paid-payment', function () {
+    const id = $(this).data('id');
+    const $btn = $(this);
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will revert the payment, restore the wallet balance (if applicable), and delete the payment records!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, cancel it!',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3',
+        cancelButton: 'btn btn-label-secondary'
+      },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        $btn.prop('disabled', true).html('<i class="ti ti-loader rotate"></i> Processing...');
+
+        fetch(baseUrl + 'admin/tasks/payment/cancel-paid/' + id, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json'
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 1) {
+              showAlert('success', data.message, 5000, true);
+              $('#paymentModal').modal('hide');
+              $('#checkPaymentModal').modal('hide');
+              if (dt_data) {
+                dt_data.draw();
+              }
+            } else {
+              showAlert('danger', data.message, 5000, true);
+              $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+            }
+          })
+          .catch(error => {
+            showAlert('danger', 'Error connecting to server', 5000, true);
+            $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+            console.error(error);
+          });
+      }
+    });
   });
 
   $(document).on('click', '.cancel-payment', function () {

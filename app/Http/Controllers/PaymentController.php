@@ -104,7 +104,19 @@ class PaymentController extends Controller
             $token    = Str::random(48);
             $callbackUrl = route('payment.callback', ['token' => $token]);
 
-            $checkout = $this->hyperpay->createCheckout($amount, $brand, $callbackUrl);
+            $customerEmail = $owner->email ?? 'test@safedest.com';
+            $customerGivenName = $owner->first_name ?? $owner->name ?? 'Customer';
+            $customerSurname = $owner->last_name ?? 'Safedest';
+            $merchantTransactionId = uniqid('PAY-');
+
+            $options = [
+                'merchantTransactionId' => $merchantTransactionId,
+                'customer.email'        => $customerEmail,
+                'customer.givenName'    => $customerGivenName,
+                'customer.surname'      => $customerSurname,
+            ];
+
+            $checkout = $this->hyperpay->createCheckout($amount, $brand, $callbackUrl, $options);
 
             if (!$checkout || !isset($checkout['id']) ||
                 !isset($checkout['result']['code']) || $checkout['result']['code'] !== '000.200.100') {
@@ -132,6 +144,7 @@ class PaymentController extends Controller
                 'payment_token'         => $token,
                 'transaction_reference' => $checkout['id'],
                 'gateway_name'          => 'hyperpay',
+                'gateway_response'      => json_encode(['integrity' => $checkout['integrity'] ?? null]),
                 'expires_at'            => Carbon::now()->addHours(2),
             ]);
 

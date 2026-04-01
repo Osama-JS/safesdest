@@ -47,18 +47,42 @@ class HyperpayService
      * @param string $shopperResultUrl Callback URL after payment
      * @return array|null
      */
-    public function createCheckout(float $amount, string $brand = 'VISA MASTER', string $shopperResultUrl = ''): ?array
+    public function createCheckout(float $amount, string $brand = 'VISA MASTER', string $shopperResultUrl = '', array $options = []): ?array
     {
         $entityId = $this->getEntityId($brand);
 
-        $params = http_build_query([
+        // Test server only accepts whole amounts (e.g. xx.00) — no fractions allowed
+        $isSandbox = config('hyperpay.sandboxMode', true) || str_contains($this->apiUrl, 'test');
+        $formattedAmount = $isSandbox
+            ? number_format(ceil($amount), 2, '.', '')
+            : number_format($amount, 2, '.', '');
+
+        $paymentData = [
             'entityId'          => $entityId,
-            'amount'            => number_format($amount, 2, '.', ''),
+            'amount'            => $formattedAmount,
             'currency'          => $this->currency,
             'paymentType'       => 'DB',
             'integrity'         => 'true',
-            'shopperResultUrl'  => $shopperResultUrl ?: config('app.url') . '/payment/callback',
-        ]);
+            'shopperResultUrl'  => $shopperResultUrl,
+            'merchantTransactionId' => $options['merchantTransactionId'] ?? uniqid('PAY-'),
+            'customer.email'    => $options['customer.email'] ?? 'test@example.com',
+            'customer.givenName'=> substr($options['customer.givenName'] ?? 'Customer', 0, 50),
+            'customer.surname'  => substr($options['customer.surname'] ?? 'User', 0, 50),
+            'billing.street1'   => $options['billing.street1'] ?? '123 Riyadh St',
+            'billing.city'      => $options['billing.city'] ?? 'Riyadh',
+            'billing.state'     => $options['billing.state'] ?? 'SA-01',
+            'billing.country'   => $options['billing.country'] ?? 'SA',
+            'billing.postcode'  => $options['billing.postcode'] ?? '12211',
+        ];
+
+        // Apply mandatory 3DS2 integration params and Test Mode flag for sandbox environments
+        if (config('hyperpay.sandboxMode', true) || str_contains($this->apiUrl, 'test')) {
+            $paymentData['testMode'] = 'EXTERNAL';
+            $paymentData['customParameters[3DS2_enrolled]'] = 'true';
+            $paymentData['customParameters[3DS2_flow]'] = 'challenge';
+        }
+
+        $params = http_build_query($paymentData);
 
         Log::info('HyperPay CreateCheckout Request', [
             'amount'    => $amount,

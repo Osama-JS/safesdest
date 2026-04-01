@@ -2432,7 +2432,7 @@ class TasksController extends Controller
                   'error' => __('This task cannot be Payed in its current state'),
                 ]);
             }
-            if ($data->payment_status === 'pending') {
+            if (in_array($data->payment_status, ['pending', 'failed'])) {
                 $transaction = Transaction::where('reference_id', $data->id)->first();
                 if ($transaction) {
                     if ($transaction->receipt_image) {
@@ -2440,7 +2440,7 @@ class TasksController extends Controller
                     }
                     $transaction->delete();
                 } else {
-                    $payment = Payments::where('task_id', $data->id)->where('status', 'pending')->latest()->first();
+                    $payment = Payments::where('task_id', $data->id)->whereIn('status', ['pending', 'failed'])->latest()->first();
                     if ($payment) {
                         if ($payment->receipt_image) {
                             FileHelper::deleteFileIfExists($payment->receipt_image);

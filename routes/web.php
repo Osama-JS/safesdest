@@ -67,9 +67,9 @@ Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::
 // ──────────────────────────────────────────────────────────────────────────────
 Route::prefix('payment')->name('payment.')->group(function () {
     Route::post('/initiate',            [PaymentController::class, 'initiatePayment'])->name('initiate');
-    Route::get('/{token}',              [PaymentController::class, 'showPaymentPage'])->name('page');
     Route::get('/callback',             [PaymentController::class, 'handleCallback'])->name('callback');
     Route::get('/result/{status}/{token}', [PaymentController::class, 'showResult'])->name('result');
+    Route::get('/{token}',              [PaymentController::class, 'showPaymentPage'])->name('page');
 });
 
 Route::middleware('rate.limit')->group(function () {

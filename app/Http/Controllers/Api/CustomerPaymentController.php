@@ -15,9 +15,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Exception;
+use App\Services\HyperpayService;
 
 class CustomerPaymentController extends Controller
 {
+    protected HyperpayService $hyperpay;
+
+    public function __construct(HyperpayService $hyperpay)
+    {
+        $this->hyperpay = $hyperpay;
+    }
     /**
      * Get available payment methods
      */
@@ -25,6 +32,15 @@ class CustomerPaymentController extends Controller
     {
         try {
             $paymentMethods = [
+                [
+                    'id' => 'hyperpay_mada',
+                    'name' => 'Mada',
+                    'type' => 'hyperpay',
+                    'icon' => 'mada',
+                    'enabled' => true,
+                    'fees' => 0,
+                    'description' => 'Pay with Mada card',
+                ],
                 [
                     'id' => 'hyperpay_visa',
                     'name' => 'Visa Card',
@@ -42,15 +58,6 @@ class CustomerPaymentController extends Controller
                     'enabled' => true,
                     'fees' => 0,
                     'description' => 'Pay with Mastercard credit/debit card',
-                ],
-                [
-                    'id' => 'hyperpay_mada',
-                    'name' => 'Mada',
-                    'type' => 'hyperpay',
-                    'icon' => 'mada',
-                    'enabled' => true,
-                    'fees' => 0,
-                    'description' => 'Pay with Mada card',
                 ],
                 [
                     'id' => 'wallet',
@@ -612,7 +619,21 @@ class CustomerPaymentController extends Controller
      */
     private function processHyperPayPayment($payment)
     {
-        $checkout = $this->hyperpay->createCheckout($payment->amount);
+        $customer = Customer::find($payment->customer_id);
+        $brand = match ($payment->payment_method) {
+            'hyperpay_mada' => 'MADA',
+            'hyperpay_mastercard' => 'MASTER',
+            default => 'VISA MASTER',
+        };
+
+        $options = [
+            'merchantTransactionId' => $payment->payment_reference ?? uniqid('PAY-'),
+            'customer.email'        => $customer->email ?? 'test@safedest.com',
+            'customer.givenName'    => $customer->first_name ?? $customer->name ?? 'Customer',
+            'customer.surname'      => $customer->last_name ?? 'User',
+        ];
+
+        $checkout = $this->hyperpay->createCheckout($payment->amount, $brand, '', $options);
 
         if (!$checkout || !isset($checkout['id'])) {
             throw new Exception('Failed to create HyperPay checkout');
@@ -621,7 +642,8 @@ class CustomerPaymentController extends Controller
         // Save checkout ID (transaction_reference in payments table)
         $payment->update([
             'transaction_reference' => $checkout['id'],
-            'gateway_name' => 'hyperpay'
+            'gateway_name' => 'hyperpay',
+            'gateway_response' => json_encode(['integrity' => $checkout['integrity'] ?? null])
         ]);
 
         return [

@@ -228,7 +228,7 @@
         <!-- Payment form -->
         <div class="pay-body">
             <div class="field-label">{{ __('Card Information') }}</div>
-            <form action="{{ $callbackUrl }}" class="paymentWidgets" data-brands="{{ $brandsCss }}"></form>
+            <form action="" class="paymentWidgets" data-brands="{{ $brandsCss }}"></form>
 
             <!-- Trust badges -->
             <div class="trust-row">
@@ -260,8 +260,25 @@
         &copy; {{ date('Y') }} SafeDest · {{ __('All Rights Reserved') }}
     </p>
 
+    @php
+        $integrity = null;
+        if (!empty($payment->gateway_response)) {
+            $gatewayResponse = json_decode($payment->gateway_response, true);
+            $integrity = $gatewayResponse['integrity'] ?? null;
+        }
+    @endphp
+
     <!-- HyperPay widget -->
-    <script src="{{ $scriptUrl }}"></script>
+    <script type="text/javascript">
+        var wpwlOptions = {
+            paymentTarget: "_top",
+        }
+    </script>
+    @if($integrity)
+        <script src="{{ $scriptUrl }}" integrity="{{ $integrity }}" crossorigin="anonymous"></script>
+    @else
+        <script src="{{ $scriptUrl }}"></script>
+    @endif
 
     @if($payment->expires_at)
     <script>

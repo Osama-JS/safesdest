@@ -170,6 +170,7 @@
                                             <label class="form-label" for="task-payment-method">*
                                                 {{ __('Payment Method') }}</label>
                                             <select name="payment_method" id="task-payment-method" class="form-select">
+                                                <option value="hyperpay_mada">{{ __('Mada') }}</option>
                                                 <option value="credit">{{ __('Credit Card') }}</option>
                                                 <option value="banking">{{ __('Bank transfer') }}</option>
                                                 <option value="wallet" id="wallet-option">{{ __('Use your Wallet') }}

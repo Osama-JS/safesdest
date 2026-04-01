@@ -199,6 +199,7 @@
                                 <div class="mb-3">
                                     <label class="form-label">{{ __('Payment Method') }}</label>
                                     <select id="reportPaymentMethod" class="form-select flitter-payment-type" multiple>
+                                        <option value="hyperpay_mada">{{ __('Mada') }}</option>
                                         <option value="cash">{{ __('Cash') }}</option>
                                         <option value="credit">{{ __('Credit Card') }}</option>
                                         <option value="banking">{{ __('Bank Transfer') }}</option>
@@ -300,6 +301,7 @@
                                     <label class="form-label">{{ __('Payment Method') }}</label>
                                     <select id="excelReportPaymentMethod" class="form-select excel-flitter-payment-type"
                                         multiple>
+                                        <option value="hyperpay_mada">{{ __('Mada') }}</option>
                                         <option value="cash">{{ __('Cash') }}</option>
                                         <option value="credit">{{ __('Credit Card') }}</option>
                                         <option value="banking">{{ __('Bank Transfer') }}</option>

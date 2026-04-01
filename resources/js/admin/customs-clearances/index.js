@@ -627,6 +627,10 @@ $(function () {
               <button type="button" data-id="${data.data.reference_id}"  class="btn btn-danger cancel-payment">Undo the process</button>
 
               <div class="alert alert-danger mt-2">When you cancel a payment, it will be completely deleted along with its files.</div>`;
+        } else if (data.data.status === 'failed') {
+          checkButtons = `
+              <div class="alert alert-danger mt-2">The payment attempt has failed. You can try paying again.</div>
+              <button type="button" data-id="${data.data.reference_id}"  class="btn btn-danger cancel-payment">Try Again</button>`;
         }
 
         var checkHtml = `

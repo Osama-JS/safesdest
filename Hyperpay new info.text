@@ -1,0 +1,78 @@
+Dear @info@safedest.com
+Hope this email finds you well.
+
+Kindly find the credentials for the test server below:
+
+Links used in the integration in the code: https://eu-test.oppwa.com/
+Access Token (Authorization):OGFjN2E0ZDk5ZDNkNmM1NjAxOWQzZWZkMGUxODAyNjR8alk5I05HTTROTUpGV0EhIWE3Rng=
+Entity ID (Visa, MasterCard): 8ac7a4ca9d2f374d019d3efefbfc1025
+Payment Type: DB only
+Currency: SAR only
+Payment Methods: MADA, VISA, MASTER
+Also you need to add the following required parameters in the POST request (step number.1 in the guide):
+ - testMode=EXTERNAL (only for the test server)
+ - customParameters[3DS2_enrolled]=true (only for the test server)
+ - customParameters[3DS2_flow]=challenge (only for the test server)
+ - merchantTransactionId="your unique ID in your database"
+ - customer.email = The user's email.
+ - billing.street1= street address of customer          
+ - billing.city= should be city of customer          
+ - billing.state= should be state of customer          
+ - billing.country= should be country of customer  (Alpha-2 codes with Format A2[A-Z]{2})
+ - billing.postcode
+ - customer.givenName
+ - customer.surname
+
+
+
+Please find the link below for instructions on how to add 'integrity' with COPYandPAY:
+
+http://hyperpay-2024.quickconnect.to/d/s/11rftdKeliroscDpsTt4tuVW1btTzoCL/VD-3cqInjKJ2cAhOA9HFiA8DG2UBUimS-nL0g-iuF_ws
+Note:
+Make sure to follow all the points mentioned in the link before going live.
+
+You can access your Merchant Area to check your test transactions using the following credentials:
+Link: https://gate2play.test.ctpe.info/
+User:
+Password: it will be send to the email above 
+
+* The reference for all the Open Payment Platform parameters (https://hyperpay.docs.oppwa.com/reference/parameters).
+* https://hyperpay.docs.oppwa.com/tutorials/threeDSecure/3d-secure-2.0-guide
+
+For applying the required rules as per Saudi Payments for the MADA option, please follow these steps:
+    1- Ensure that MADA is shown as the first payment option on the checkout page with the logo placed next to it.
+    2- Add the required scripts and roles from this link: http://hyperpay-2024.quickconnect.to/d/f/597670674613449940
+Please refer to the mada guidelines for your reference.
+
+Also add the following script after our paymentWidgets.js for fully 3D Secure redirection:
+<script type="text/javascript"> 
+var wpwlOptions = {
+  paymentTarget: "_top",
+}
+</script>
+
+
+
+Testing cards for credit card transactions:
+    Card: 4440000009900010
+        Cardholder Name: Any Name
+        Expiry Date: 01/39
+        CVV: 100
+        Result: Success
+
+    Card: 5123450000000008
+        Cardholder Name: Any Name
+        Expiry Date: 01/39
+        CVV: 100
+        Result: Success
+
+    MADA Card: 4464040000000007        
+        Cardholder Name: Any Name        
+        Expiry Date: 01/39     
+        CVV2: 100
+        Result: Success
+
+
+For a successful response, please send amounts without fractions (e.g., xx.00). This only applies on the test server.
+
+If you have any further questions or need assistance, please do not hesitate to contact me.

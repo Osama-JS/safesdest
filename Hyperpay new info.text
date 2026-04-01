@@ -15,9 +15,9 @@ Also you need to add the following required parameters in the POST request (step
  - customParameters[3DS2_flow]=challenge (only for the test server)
  - merchantTransactionId="your unique ID in your database"
  - customer.email = The user's email.
- - billing.street1= street address of customer          
- - billing.city= should be city of customer          
- - billing.state= should be state of customer          
+ - billing.street1= street address of customer
+ - billing.city= should be city of customer
+ - billing.state= should be state of customer
  - billing.country= should be country of customer  (Alpha-2 codes with Format A2[A-Z]{2})
  - billing.postcode
  - customer.givenName
@@ -34,7 +34,7 @@ Make sure to follow all the points mentioned in the link before going live.
 You can access your Merchant Area to check your test transactions using the following credentials:
 Link: https://gate2play.test.ctpe.info/
 User:
-Password: it will be send to the email above 
+Password: it will be send to the email above
 
 * The reference for all the Open Payment Platform parameters (https://hyperpay.docs.oppwa.com/reference/parameters).
 * https://hyperpay.docs.oppwa.com/tutorials/threeDSecure/3d-secure-2.0-guide
@@ -45,7 +45,7 @@ For applying the required rules as per Saudi Payments for the MADA option, pleas
 Please refer to the mada guidelines for your reference.
 
 Also add the following script after our paymentWidgets.js for fully 3D Secure redirection:
-<script type="text/javascript"> 
+<script type="text/javascript">
 var wpwlOptions = {
   paymentTarget: "_top",
 }
@@ -66,9 +66,9 @@ Testing cards for credit card transactions:
         CVV: 100
         Result: Success
 
-    MADA Card: 4464040000000007        
-        Cardholder Name: Any Name        
-        Expiry Date: 01/39     
+    MADA Card: 4464040000000007
+        Cardholder Name: Any Name
+        Expiry Date: 01/39
         CVV2: 100
         Result: Success
 

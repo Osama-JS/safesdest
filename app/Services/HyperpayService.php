@@ -77,7 +77,7 @@ class HyperpayService
 
         // Apply mandatory 3DS2 integration params and Test Mode flag for sandbox environments
         if (config('hyperpay.sandboxMode', true) || str_contains($this->apiUrl, 'test')) {
-            $paymentData['testMode'] = 'EXTERNAL';
+            // $paymentData['testMode'] = 'EXTERNAL'; // Removed as per HyperPay support request
             $paymentData['customParameters[3DS2_enrolled]'] = 'true';
             $paymentData['customParameters[3DS2_flow]'] = 'challenge';
         }

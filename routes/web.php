@@ -44,6 +44,7 @@ use App\Http\Controllers\admin\settings\ClearancePricingTemplateController;
 use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersController;
 use App\Http\Controllers\admin\PlatformReportsController;
 use App\Http\Controllers\admin\ProductController;
+use App\Http\Controllers\admin\CompanyManagementController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
 Route::get('/active-account', function () {
@@ -305,6 +306,70 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
                 Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('user.show');
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
+
+                // B2B Module Routes
+                Route::prefix('b2b')->name('b2b.')->group(function () {
+                    // Provinces Management
+                    Route::get('/provinces', [CompanyManagementController::class, 'provincesIndex'])->name('provinces');
+                    Route::get('/provinces/data', [CompanyManagementController::class, 'getProvincesData'])->name('provinces.data');
+                    Route::post('/provinces/store', [CompanyManagementController::class, 'storeProvince'])->name('provinces.store');
+                    Route::get('/provinces/{id}', [CompanyManagementController::class, 'getProvince'])->name('provinces.show');
+                    Route::delete('/provinces/{id}', [CompanyManagementController::class, 'deleteProvince'])->name('provinces.delete');
+
+                    // Companies Management
+                    Route::get('/companies', [CompanyManagementController::class, 'companiesIndex'])->name('companies');
+                    Route::get('/companies/data', [CompanyManagementController::class, 'getCompaniesData'])->name('companies.data');
+
+                    // Warehouses Management
+                    Route::get('/warehouses', [CompanyManagementController::class, 'warehousesIndex'])->name('warehouses');
+                    Route::get('/warehouses/data', [CompanyManagementController::class, 'getWarehousesData'])->name('warehouses.data');
+                    Route::post('/warehouses/store', [CompanyManagementController::class, 'storeWarehouse'])->name('warehouses.store');
+                    Route::get('/warehouses/{id}', [CompanyManagementController::class, 'getWarehouse'])->name('warehouses.show');
+                    Route::delete('/warehouses/{id}', [CompanyManagementController::class, 'deleteWarehouse'])->name('warehouses.delete');
+
+                    // End Clients Management
+                    Route::get('/end-clients', [CompanyManagementController::class, 'endClientsIndex'])->name('end-clients');
+                    Route::get('/end-clients/data', [CompanyManagementController::class, 'getEndClientsData'])->name('end-clients.data');
+                    Route::post('/end-clients/store', [CompanyManagementController::class, 'storeEndClient'])->name('end-clients.store');
+                    Route::post('/end-clients/import', [CompanyManagementController::class, 'importEndClients'])->name('end-clients.import');
+                    Route::get('/end-clients/{id}', [CompanyManagementController::class, 'getEndClient'])->name('end-clients.show');
+                    Route::delete('/end-clients/{id}', [CompanyManagementController::class, 'deleteEndClient'])->name('end-clients.delete');
+
+                    // Pricing Matrix Management
+                    Route::get('/pricing/{companyId}', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'index'])->name('pricing.index');
+                    Route::get('/pricing/{companyId}/routes', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'getRoutes'])->name('pricing.routes');
+                    Route::post('/pricing/routes/store', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'storeRoute'])->name('pricing.routes.store');
+                    Route::get('/pricing/routes/{id}', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'getRoute'])->name('pricing.routes.show');
+                    Route::delete('/pricing/routes/{id}', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'deleteRoute'])->name('pricing.routes.delete');
+
+                    // Company Pricing Config (Commission / VAT)
+                    Route::get('/config/{companyId}', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'configIndex'])->name('config.index');
+                    Route::post('/config/{companyId}', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'saveConfig'])->name('config.save');
+
+                    // AJAX helpers for Task Creation
+                    Route::get('/get-warehouses/{companyId}', [CompanyManagementController::class, 'getWarehouses'])->name('get-warehouses');
+                    Route::get('/get-end-clients/{companyId}', [CompanyManagementController::class, 'getEndClients'])->name('get-end-clients');
+                    Route::post('/resolve-price', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'resolvePrice'])->name('resolve-price');
+
+                    // ── B2B Task Routes ───────────────────────────────────
+                    Route::prefix('tasks')->name('tasks.')->group(function () {
+                        Route::post('/', [\App\Http\Controllers\admin\B2bTaskController::class, 'store'])->name('store');
+                        Route::put('/{task}', [\App\Http\Controllers\admin\B2bTaskController::class, 'update'])->name('update');
+                        Route::get('/{task}/data', [\App\Http\Controllers\admin\B2bTaskController::class, 'getData'])->name('data');
+                    });
+
+                    // ── B2B API Helpers for Modal ─────────────────────────
+                    Route::prefix('api')->name('api.')->group(function () {
+                        Route::get('/companies/{companyId}/warehouses', [\App\Http\Controllers\admin\B2bTaskController::class, 'getWarehouses'])->name('warehouses');
+                        Route::get('/companies/{companyId}/end-clients', [\App\Http\Controllers\admin\B2bTaskController::class, 'getEndClients'])->name('end-clients');
+                        Route::get('/vehicle-sizes', [\App\Http\Controllers\admin\B2bTaskController::class, 'getVehicleSizes'])->name('vehicle-sizes');
+                        Route::post('/calculate-price', [\App\Http\Controllers\admin\B2bTaskController::class, 'calculatePrice'])->name('calculate-price');
+                    });
+                });
+
+                // Is-Company check (used in Task creation form)
+                Route::get('/customers/{id}/is-company', [\App\Http\Controllers\admin\CompanyRoutePricingController::class, 'isCompany'])->name('customers.is-company');
+
 
                 // User Commissions Routes
                 Route::get('/commissions', [UserCommissionsController::class, 'index'])->name('admin.commissions.index');
@@ -643,6 +708,10 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/tasks/duplicate', [TasksController::class, 'duplicateTask'])->name('tasks.duplicate');
 
                 Route::get('/tasks/fix-connection/{id}', [TasksController::class, 'fixTeamConnection'])->name('tasks.fix-connection');
+
+                // B2B Company Module Routes
+                Route::get('/company/warehouses/{company}', [App\Http\Controllers\admin\CompanyManagementController::class, 'getWarehouses'])->name('company.warehouses');
+                Route::get('/company/end-clients/{company}', [App\Http\Controllers\admin\CompanyManagementController::class, 'getEndClients'])->name('company.end-clients');
 
 
 

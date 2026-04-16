@@ -376,6 +376,7 @@ $(function () {
       $('#customer-c_address').val(data.company_address);
       $('#customer-policy-file').val(data.policy_file_name);
       $('#customer-tags').val(data.tagsIds).trigger('change');
+      $('#customer-is-company').prop('checked', data.is_company == 1);
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }

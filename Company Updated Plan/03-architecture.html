@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>هندسة النظام — نظام الشركات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand:#6366f1; --brand-dark:#4f46e5; --brand-light:#818cf8;
+      --accent:#06b6d4; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+      --bg:#0a0c14; --bg-card:#111827; --bg-inner:#0d1117; --border:rgba(255,255,255,0.08);
+      --text:#f1f5f9; --muted:#64748b; --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--text); }
+    .top-nav { padding:20px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+    .top-nav a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+    .top-nav .sep { color:var(--border); }
+    .top-nav .current { color:var(--text); font-weight:700; }
+    .page-header { padding:60px 40px 40px; background:radial-gradient(ellipse 60% 50% at 30% 0%, rgba(34,197,94,0.12) 0%, transparent 60%); border-bottom:1px solid var(--border); }
+    .page-num { font-size:.8rem; color:var(--success); letter-spacing:1px; font-weight:700; margin-bottom:12px; }
+    h1 { font-size:clamp(1.8rem,3vw,3rem); font-weight:900; margin-bottom:16px; }
+    .page-subtitle { font-size:1rem; color:var(--muted); max-width:700px; line-height:1.9; }
+    .content { max-width:1200px; margin:0 auto; padding:50px 40px; }
+    h2 { font-size:1.4rem; font-weight:800; margin-bottom:8px; }
+    h3 { font-size:1.05rem; font-weight:800; margin-bottom:8px; }
+    .section-label { font-size:.78rem; color:var(--success); letter-spacing:1px; font-weight:700; margin-bottom:10px; }
+    .section-desc { color:var(--muted); font-size:.92rem; line-height:1.9; margin-bottom:30px; }
+    section { margin-bottom:70px; }
+    code { background:rgba(99,102,241,0.12); color:var(--brand-light); padding:2px 6px; border-radius:5px; font-size:.82em; font-family:'Courier New', monospace; direction:ltr; display:inline-block; }
+
+    .code-block { background:var(--bg-inner); border:1px solid var(--border); border-radius:14px; padding:28px; font-family:'Courier New', monospace; font-size:.82rem; line-height:2.2; overflow-x:auto; margin-bottom:24px; direction:ltr; }
+    .cb-comment { color:#475569; }
+    .cb-kw { color:#818cf8; }
+    .cb-fn { color:#67e8f9; }
+    .cb-str { color:#86efac; }
+    .cb-class { color:#fbbf24; }
+    .cb-var { color:#f1f5f9; }
+
+    .service-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:32px; }
+    .service-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:24px; }
+    .service-icon { font-size:1.5rem; margin-bottom:12px; }
+    .service-name { font-size:.97rem; font-weight:800; margin-bottom:6px; }
+    .service-desc { font-size:.85rem; color:var(--muted); line-height:1.8; }
+    .service-methods { margin-top:14px; display:flex; flex-direction:column; gap:4px; }
+    .sm-item { font-size:.75rem; font-family:'Courier New', monospace; color:#818cf8; padding:3px 8px; background:rgba(99,102,241,0.08); border-radius:5px; direction:ltr; }
+
+    .flow-diagram { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:32px; margin-bottom:24px; }
+    .flow-row { display:flex; align-items:center; gap:0; flex-wrap:wrap; direction:ltr; }
+    .flow-box { background:var(--bg-inner); border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:.78rem; text-align:center; min-width:130px; }
+    .flow-box .fb-label { font-size:.65rem; color:var(--muted); margin-bottom:3px; font-family:'Tajawal', sans-serif; }
+    .flow-box .fb-name { font-weight:700; font-size:.8rem; font-family:'Tajawal', sans-serif; }
+    .flow-arrow { padding:0 8px; color:var(--muted); font-size:1.2rem; flex-shrink:0; }
+    .branch-row { display:flex; flex-direction:column; gap:10px; border-right:2px solid var(--border); padding-right:16px; margin:16px 60px 16px 0; }
+    .branch-item { display:flex; align-items:flex-start; gap:10px; font-size:.85rem; }
+    .branch-cond { padding:2px 10px; border-radius:5px; font-size:.74rem; font-weight:700; flex-shrink:0; margin-top:2px; }
+    .bc-yes { background:rgba(34,197,94,0.15); color:#4ade80; }
+    .bc-no { background:rgba(239,68,68,0.15); color:#f87171; }
+
+    .callout { border-radius:14px; padding:24px; margin-bottom:24px; display:flex; gap:16px; }
+    .co-new { background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2); }
+    .co-warn { background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); }
+    .callout-icon { font-size:1.5rem; flex-shrink:0; }
+    .callout-body h4 { font-size:.92rem; font-weight:800; margin-bottom:6px; }
+    .callout-body p { font-size:.86rem; color:var(--muted); line-height:1.8; }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html">🏠 الرئيسية</a>
+  <span class="sep">/</span>
+  <span class="current">هندسة النظام</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-num">📄 الصفحة 03 من 05</div>
+  <h1>هندسة النظام<br>وتصميم التكامل</h1>
+  <p class="page-subtitle">كيف يتكامل نظام الشركات مع نظام المهام الحالي، محرك التسعير، وإدارة نقاط المهمة — مع الحفاظ على عزل تام عن سير العمل الاعتيادي.</p>
+</div>
+
+<div class="content">
+
+  <!-- مبدأ العزل -->
+  <section>
+    <div class="section-label">القسم 3.1 — مبدأ العزل</div>
+    <h2>تكامل دون أي تأثير على النظام الحالي</h2>
+    <p class="section-desc">القاعدة الذهبية لهذا التنفيذ: إنشاء المهام للعملاء العاديين يجب أن يظل دون أي تأثير مطلقاً. نقطة التفرع واضحة وشرطية.</p>
+
+    <div class="callout co-new">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <h4>نقطة كشف الشركة</h4>
+        <p>نقطة التفرع الوحيدة هي عند اختيار العميل في نموذج المهمة. إذا كان <code>customer.is_company === true</code>، يُفعَّل نظام الشركات في الواجهة والتسعير. وإلا يسير النظام الحالي بالكامل كما هو اليوم دون أي تغيير.</p>
+      </div>
+    </div>
+
+    <div class="callout co-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <h4>لا يوجد اشتراك في جداول التسعير</h4>
+        <p>تسعير الشركات لا يستخدم جداول <code>pricing_templates</code> أو <code>pricing</code> أو <code>pricing_methods</code>. يستخدم جداوله المعزولة الخاصة. هذا يمنع أي تلوث غير مقصود لمنطق التسعير.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- شجرة القرار -->
+  <section>
+    <div class="section-label">القسم 3.2 — تدفق الطلب</div>
+    <h2>شجرة قرار إنشاء المهمة</h2>
+    <p class="section-desc">التدفق خطوة بخطوة من لحظة إنشاء المهمة حتى يتم ملء النقاط تلقائياً واستخلاص السعر.</p>
+
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <div class="flow-box"><div class="fb-label">البداية</div><div class="fb-name">المدير يفتح إنشاء المهمة</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">إجراء</div><div class="fb-name">يختار عميلاً</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">فحص AJAX</div><div class="fb-name">هل is_company = true؟</div></div>
+      </div>
+
+      <div class="branch-row">
+        <div class="branch-item">
+          <span class="branch-cond bc-yes">نعم — شركة</span>
+          <span style="color:var(--muted); font-size:.86rem;">← عرض قائمة المخازن + أداة بحث العملاء النهائيين. إخفاء حقول الخريطة.</span>
+        </div>
+        <div class="branch-item">
+          <span class="branch-cond bc-no">لا — عميل عادي</span>
+          <span style="color:var(--muted); font-size:.86rem;">← النظام الحالي بدون تغيير. خريطة + تسعير بالمسافة/النقاط/اليدوي.</span>
+        </div>
+      </div>
+
+      <div class="flow-row" style="margin-top:16px;">
+        <div class="flow-box"><div class="fb-label">مسار الشركة</div><div class="fb-name">تم اختيار مخزن + عميل</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">AJAX</div><div class="fb-name">POST /resolve-price (مخزن + عميل)</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">الخدمة</div><div class="fb-name">CompanyPricingService resolvePrice()</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">يُرجع</div><div class="fb-name">أساسي / عمولة / ضريبة / إجمالي</div></div>
+      </div>
+
+      <div class="branch-row" style="margin-right:24px; margin-left:0; border-right:2px solid var(--border); border-left:none; padding-right:16px; padding-left:0;">
+        <div class="branch-item">
+          <span class="branch-cond bc-yes">وُجد سعر خاص بالعميل</span>
+          <span style="color:var(--muted); font-size:.86rem;">← يستخدم company_client_pricing.price كسعر أساسي</span>
+        </div>
+        <div class="branch-item">
+          <span class="branch-cond bc-no">لا يوجد سعر خاص</span>
+          <span style="color:var(--muted); font-size:.86rem;">← يرجع إلى company_route_pricing (مخزن + محافظة العميل)</span>
+        </div>
+        <div class="branch-item">
+          <span class="branch-cond" style="background:rgba(239,68,68,0.2);color:#f87171;">لا يوجد سعر مسار</span>
+          <span style="color:var(--muted); font-size:.86rem;">← خطأ: "لا يوجد تسعير مضبوط لهذا المسار"</span>
+        </div>
+      </div>
+
+      <div class="flow-row" style="margin-top:16px;">
+        <div class="flow-box"><div class="fb-label">عند الحفظ</div><div class="fb-name">المهمة تُحفظ مع company_warehouse_id + company_end_client_id</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box"><div class="fb-label">إنشاء تلقائي</div><div class="fb-name">tasks_points: استلام = مخزن، تسليم = عميل</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box" style="border-color:rgba(34,197,94,0.3);"><div class="fb-label">تم</div><div class="fb-name" style="color:#4ade80;">المهمة أُنشئت بنقاط تلقائية ✅</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- الخدمات -->
+  <section>
+    <div class="section-label">القسم 3.3 — الخدمات الجديدة</div>
+    <h2>فئات الخدمة الأساسية</h2>
+    <p class="section-desc">فئتا خدمة مخصصتان تُشغّلان منطق الواجهة الخلفية لنظام الشركات.</p>
+    <div class="service-grid">
+      <div class="service-card">
+        <div class="service-icon">💰</div>
+        <div class="service-name">CompanyPricingService</div>
+        <div class="service-desc">يستخلص السعر الأساسي باستخدام النموذج الثلاثي ثم يطبّق العمولة وضريبة القيمة المضافة للحصول على المبلغ النهائي القابل للفوترة.</div>
+        <div class="service-methods">
+          <div class="sm-item">resolvePrice(warehouse_id, end_client_id)</div>
+          <div class="sm-item">calculateFinalPrice(base, company_id)</div>
+          <div class="sm-item">getPriceBreakdown(warehouse_id, client_id, company_id)</div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📥</div>
+        <div class="service-name">CompanyClientImportService</div>
+        <div class="service-desc">يتعامل مع تحليل ملفات Excel، يتحقق من كل صف، يعالج التكرارات بسلاسة، ويُدرج البيانات على دفعات لتحسين الأداء.</div>
+        <div class="service-methods">
+          <div class="sm-item">import(file, company_id)</div>
+          <div class="sm-item">validateRow(row)</div>
+          <div class="sm-item">getImportSummary()</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-bottom:16px;">CompanyPricingService — المنطق الأساسي (كود توضيحي)</h3>
+    <div class="code-block">
+<span class="cb-comment">// الخطوة 1: محاولة سعر التجاوز الخاص بالعميل (الأعلى أولوية)</span>
+<span class="cb-kw">$clientPrice</span> = <span class="cb-class">Company_Client_Pricing</span>::
+  <span class="cb-fn">where</span>(<span class="cb-str">'warehouse_id'</span>, <span class="cb-var">$warehouseId</span>)
+  -><span class="cb-fn">where</span>(<span class="cb-str">'end_client_id'</span>, <span class="cb-var">$client</span>-><span class="cb-var">id</span>)
+  -><span class="cb-fn">first</span>();
+
+<span class="cb-kw">if</span> (<span class="cb-var">$clientPrice</span>) {
+  <span class="cb-kw">return</span> <span class="cb-var">$clientPrice</span>-><span class="cb-var">price</span>; <span class="cb-comment">// ← استخدام هذا السعر</span>
+}
+
+<span class="cb-comment">// الخطوة 2: محاولة سعر المسار (مخزن + محافظة)</span>
+<span class="cb-kw">$routePrice</span> = <span class="cb-class">Company_Route_Pricing</span>::
+  <span class="cb-fn">where</span>(<span class="cb-str">'warehouse_id'</span>, <span class="cb-var">$warehouseId</span>)
+  -><span class="cb-fn">where</span>(<span class="cb-str">'destination_province'</span>, <span class="cb-var">$client</span>-><span class="cb-var">province</span>)
+  -><span class="cb-fn">first</span>();
+
+<span class="cb-kw">if</span> (<span class="cb-var">$routePrice</span>) {
+  <span class="cb-kw">return</span> <span class="cb-var">$routePrice</span>-><span class="cb-var">price</span>; <span class="cb-comment">// ← استخدام هذا السعر</span>
+}
+
+<span class="cb-comment">// الخطوة 3: لا يوجد سعر → استثناء خطأ</span>
+<span class="cb-kw">throw new</span> <span class="cb-class">PricingNotFoundException</span>(<span class="cb-str">'No route pricing for this combination'</span>);
+    </div>
+  </section>
+
+  <!-- التعبئة التلقائية لنقاط المهمة -->
+  <section>
+    <div class="section-label">القسم 3.4 — التعبئة التلقائية للنقاط</div>
+    <h2>كيف تُنشأ نقاط المهمة تلقائياً</h2>
+    <p class="section-desc">عند حفظ مهمة شركة، يعترض TasksController الحفظ ويبني سجلات <code>tasks_points</code> من بيانات المخزن والعميل تلقائياً — دون أي إدخال يدوي للعنوان.</p>
+    <div class="code-block">
+<span class="cb-comment">// TasksController — داخل store() للمهام التابعة لشركة</span>
+<span class="cb-kw">$warehouse</span> = <span class="cb-class">Company_Warehouse</span>::<span class="cb-fn">findOrFail</span>(<span class="cb-var">$req</span>->company_warehouse_id);
+<span class="cb-kw">$client</span>    = <span class="cb-class">Company_End_Client</span>::<span class="cb-fn">findOrFail</span>(<span class="cb-var">$req</span>->company_end_client_id);
+
+<span class="cb-comment">// إنشاء نقطة الاستلام من المخزن</span>
+<span class="cb-class">Task_Points</span>::<span class="cb-fn">create</span>([
+  <span class="cb-str">'task_id'</span>      => <span class="cb-var">$task</span>->id,
+  <span class="cb-str">'type'</span>         => <span class="cb-str">'pickup'</span>,
+  <span class="cb-str">'contact_name'</span> => <span class="cb-var">$warehouse</span>->contact_name,
+  <span class="cb-str">'contact_phone'</span>=> <span class="cb-var">$warehouse</span>->contact_phone,
+  <span class="cb-str">'address'</span>      => <span class="cb-var">$warehouse</span>->address,
+  <span class="cb-str">'latitude'</span>     => <span class="cb-var">$warehouse</span>->latitude,
+  <span class="cb-str">'longitude'</span>    => <span class="cb-var">$warehouse</span>->longitude,
+]);
+
+<span class="cb-comment">// إنشاء نقطة التسليم من العميل النهائي</span>
+<span class="cb-class">Task_Points</span>::<span class="cb-fn">create</span>([
+  <span class="cb-str">'task_id'</span>      => <span class="cb-var">$task</span>->id,
+  <span class="cb-str">'type'</span>         => <span class="cb-str">'delivery'</span>,
+  <span class="cb-str">'contact_name'</span> => <span class="cb-var">$client</span>->name,
+  <span class="cb-str">'contact_phone'</span>=> <span class="cb-var">$client</span>->phone,
+  <span class="cb-str">'address'</span>      => <span class="cb-var">$client</span>->address ?? <span class="cb-var">$client</span>->province,
+]);
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

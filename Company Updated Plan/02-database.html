@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>مخطط قاعدة البيانات — نظام الشركات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand:#6366f1; --brand-dark:#4f46e5; --brand-light:#818cf8;
+      --accent:#06b6d4; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+      --bg:#0a0c14; --bg-card:#111827; --bg-inner:#0d1117; --border:rgba(255,255,255,0.08);
+      --text:#f1f5f9; --muted:#64748b; --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--text); }
+    .top-nav { padding:20px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+    .top-nav a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+    .top-nav .sep { color:var(--border); }
+    .top-nav .current { color:var(--text); font-weight:700; }
+    .page-header { padding:60px 40px 40px; background:radial-gradient(ellipse 60% 50% at 30% 0%,rgba(6,182,212,.15) 0%,transparent 60%); border-bottom:1px solid var(--border); }
+    .page-num { font-size:.8rem; color:var(--accent); letter-spacing:1px; font-weight:700; margin-bottom:12px; }
+    h1 { font-size:clamp(1.8rem,3vw,3rem); font-weight:900; margin-bottom:16px; }
+    .page-subtitle { font-size:1rem; color:var(--muted); max-width:700px; line-height:1.9; }
+    .content { max-width:1200px; margin:0 auto; padding:50px 40px; }
+    h2 { font-size:1.4rem; font-weight:800; margin-bottom:8px; }
+    .section-label { font-size:.78rem; color:var(--accent); letter-spacing:1px; font-weight:700; margin-bottom:10px; }
+    .section-desc { color:var(--muted); font-size:.92rem; line-height:1.9; margin-bottom:30px; }
+    section { margin-bottom:70px; }
+    code { background:rgba(99,102,241,.12); color:var(--brand-light); padding:2px 6px; border-radius:5px; font-size:.82em; font-family:'Courier New',monospace; direction:ltr; display:inline-block; }
+
+    /* ── Why Province Table callout ── */
+    .why-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:36px; }
+    .why-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:20px; }
+    .why-icon { font-size:1.6rem; margin-bottom:10px; }
+    .why-title { font-size:.92rem; font-weight:800; margin-bottom:6px; }
+    .why-body { font-size:.82rem; color:var(--muted); line-height:1.7; }
+
+    /* ── Compare bar ── */
+    .compare { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:30px; }
+    .compare-col { border-radius:14px; padding:24px; }
+    .compare-bad { background:rgba(239,68,68,.05); border:1px solid rgba(239,68,68,.2); }
+    .compare-good { background:rgba(34,197,94,.05); border:1px solid rgba(34,197,94,.2); }
+    .compare-head { font-size:.85rem; font-weight:800; margin-bottom:14px; }
+    .compare-bad .compare-head { color:#f87171; }
+    .compare-good .compare-head { color:#4ade80; }
+    .compare-item { font-size:.82rem; color:var(--muted); margin-bottom:8px; line-height:1.6; }
+    .compare-item::before { margin-left:6px; }
+    .compare-bad  .compare-item::before { content:'✗ '; color:#f87171; }
+    .compare-good .compare-item::before { content:'✓ '; color:#4ade80; }
+
+    /* ── Table block ── */
+    .table-block { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:28px; }
+    .table-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; }
+    .table-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .table-title { font-size:1rem; font-weight:800; }
+    .table-subtitle { font-size:.8rem; color:var(--muted); margin-top:2px; }
+    .badge-new { background:rgba(34,197,94,.15); color:#4ade80; padding:2px 8px; border-radius:100px; font-size:.68rem; font-weight:700; margin-right:6px; }
+    .badge-star { background:rgba(245,158,11,.15); color:#fbbf24; padding:2px 8px; border-radius:100px; font-size:.68rem; font-weight:700; margin-right:4px; }
+
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    thead th { background:var(--bg-inner); color:var(--muted); font-size:.72rem; font-weight:700; padding:10px 16px; text-align:right; }
+    tbody td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top; }
+    tbody tr:last-child td { border-bottom:none; }
+    .col-pk { color:#fbbf24; font-weight:700; direction:ltr; display:inline-block; }
+    .col-fk { color:#67e8f9; direction:ltr; display:inline-block; }
+    .col-type { color:#a78bfa; font-size:.78rem; direction:ltr; display:inline-block; }
+    .req-yes { color:#4ade80; font-size:.8rem; }
+    .req-no  { color:#475569; font-size:.8rem; }
+    .col-notes { color:var(--muted); font-size:.82rem; line-height:1.6; }
+    tbody tr.highlight-row td { background:rgba(245,158,11,.04); }
+
+    /* ── ERD ── */
+    .erd { background:var(--bg-inner); border:1px solid var(--border); border-radius:14px; padding:28px; font-family:'Courier New',monospace; font-size:.82rem; line-height:2.2; overflow-x:auto; direction:ltr; }
+    .erd-table { color:#f1f5f9; }
+    .erd-new   { color:#fbbf24; }
+    .erd-rel   { color:#64748b; font-style:italic; }
+    .erd-sep   { color:#1e293b; }
+    .erd-star  { color:#fbbf24; font-weight:700; }
+
+    /* ── Relations ── */
+    .relations-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+    .rel-card { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+    .rel-card h4 { font-size:.9rem; font-weight:800; margin-bottom:8px; }
+    .rel-card p  { font-size:.84rem; color:var(--muted); line-height:1.8; }
+    .rel-type { display:inline-block; padding:2px 8px; border-radius:100px; font-size:.7rem; font-weight:700; margin-bottom:8px; }
+    .rt-1m { background:rgba(99,102,241,.15); color:#818cf8; }
+    .rt-11 { background:rgba(34,197,94,.15); color:#4ade80; }
+
+    /* ── Summary callout ── */
+    .callout { border-radius:14px; padding:22px 26px; margin-bottom:24px; display:flex; gap:14px; }
+    .co-info { background:rgba(6,182,212,.07); border:1px solid rgba(6,182,212,.2); }
+    .co-tip  { background:rgba(34,197,94,.06); border:1px solid rgba(34,197,94,.2); }
+    .callout-icon { font-size:1.4rem; flex-shrink:0; }
+    .callout-body h4 { font-size:.92rem; font-weight:800; margin-bottom:5px; }
+    .callout-body p  { font-size:.86rem; color:var(--muted); line-height:1.8; }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html">🏠 الرئيسية</a>
+  <span class="sep">/</span>
+  <span class="current">مخطط قاعدة البيانات</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-num">📄 الصفحة 02 من 05</div>
+  <h1>مخطط قاعدة البيانات<br>والعلاقات بين الكيانات</h1>
+  <p class="page-subtitle">تعريف كامل لجميع الجداول الجديدة، يشمل جدول المحافظات المستقل وجدول ربط أحجام المركبات الذي يجعل التسعير أكثر دقة ومرونة.</p>
+</div>
+
+<div class="content">
+
+  <!-- لماذا جدول محافظات منفصل -->
+  <section>
+    <div class="section-label">القسم 2.0 — قرار معماري مهم</div>
+    <h2>لماذا نحتاج جدول <code>company_provinces</code> منفصل؟</h2>
+    <p class="section-desc">تخزين اسم المحافظة كنص حر (<code>varchar</code>) في كل جدول يبدو بسيطاً، لكنه يُخفي مشاكل عملية كثيرة تظهر حين تكبر البيانات. الجدول المستقل يحلّها جميعاً.</p>
+
+    <div class="compare">
+      <div class="compare-col compare-bad">
+        <div class="compare-head">❌ تخزين المحافظة كنص حر (varchar)</div>
+        <div class="compare-item">خطر التهجئة المختلفة: "الدمَّام" / "الدمام" / "dammam"</div>
+        <div class="compare-item">البحث يعتمد <code>LIKE '%الدمام%'</code> بدون فهرس → بطيء</div>
+        <div class="compare-item">تغيير اسم محافظة يتطلب UPDATE على 3 جداول مختلفة</div>
+        <div class="compare-item">لا يمكن ربط الجداول ببعضها إلا بمطابقة النص بالحرف</div>
+        <div class="compare-item">لا توطين — لا يمكن تخزين الاسم بالعربية والإنجليزية معاً</div>
+        <div class="compare-item">احتمال ظهور سيناريو "لا يوجد سعر" بسبب تهجئة خاطئة</div>
+      </div>
+      <div class="compare-col compare-good">
+        <div class="compare-head">✅ جدول <code>company_provinces</code> مستقل</div>
+        <div class="compare-item">مصدر حقيقة واحد — المحافظة تُعرَّف مرة واحدة فقط</div>
+        <div class="compare-item">الربط والبحث عبر <code>province_id</code> — مُفهرَس وفائق السرعة</div>
+        <div class="compare-item">تغيير الاسم في سجل واحد يسري فوراً على كل النظام</div>
+        <div class="compare-item"><code>JOIN</code> نظيف وموثوق بين المخازن والعملاء وأسعار المسارات</div>
+        <div class="compare-item">تخزين <code>name_ar</code> و <code>name_en</code> في مكان واحد</div>
+        <div class="compare-item">استحالة خطأ التهجئة من الأساس — البيانات محمية بـ FK</div>
+      </div>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">🔍</div>
+        <div class="why-title">بحث أسرع للعملاء</div>
+        <div class="why-body">الشركة تريد فلترة عملائها في "الدمام"؟ <code>WHERE province_id = 5</code> بدلاً من <code>LIKE '%الدمام%'</code> — أسرع بمراحل مع الآلاف.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">💰</div>
+        <div class="why-title">تسعير أكثر دقة</div>
+        <div class="why-body">استخلاص السعر يربط بـ <code>province_id</code> رقمياً — لا خطر من فشل المطابقة بسبب اختلاف التهجئة بين المخزن والعميل.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🌐</div>
+        <div class="why-title">توطين كامل</div>
+        <div class="why-body">عرض "Dammam" في الواجهة الإنجليزية و"الدمام" في العربية من نفس السجل — دون تكرار أو تناقض في البيانات.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">📊</div>
+        <div class="why-title">تقارير دقيقة</div>
+        <div class="why-body">تجميع المهام والإيرادات حسب المحافظة يصبح trivial query — Aggregations سليمة دون تشابك البيانات النصية.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ERD -->
+  <section>
+    <div class="section-label">القسم 2.1 — مخطط العلاقات</div>
+    <h2>مخطط العلاقات الكامل (ERD)</h2>
+    <p class="section-desc">7 جداول جديدة (بما فيها جدول المحافظات وجدول ربط المركبات) + 3 جداول موجودة مُعدَّلة. نمط الربط مطابق لـ <code>pricing_vehicle</code> الموجود في النظام.</p>
+    <div class="erd">
+<span class="erd-star">★ company_provinces (جديد — الجدول المرجعي للمحافظات)</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_warehouses</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_end_clients</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_route_pricing</span> <span class="erd-rel">(destination_province_id)</span>
+<span class="erd-sep">│</span>
+<span class="erd-star">★ vehicle_sizes (موجود — يُربط بالتسعير)</span>
+<span class="erd-rel">   └─(many-to-many via pivot)──▶ </span><span class="erd-table">company_route_pricing</span>
+<span class="erd-rel">   الـ pivot: </span><span class="erd-new">company_route_pricing_vehicles (جديد)</span> <span class="erd-rel">يحتوي على السعر المخصص للمركبة</span>
+<span class="erd-rel">   └─(many-to-many via pivot)──▶ </span><span class="erd-table">company_client_pricing</span>
+<span class="erd-rel">   الـ pivot: </span><span class="erd-new">company_client_pricing_vehicles (جديد)</span>
+<span class="erd-sep">│</span>
+<span class="erd-table">customers</span> <span class="erd-sep">────────────────────────────────</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_warehouses</span>     <span class="erd-new">(جديد)</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_end_clients</span>    <span class="erd-new">(جديد)</span>
+<span class="erd-rel">   └─(has one) ──▶ </span><span class="erd-table">company_pricing_configs</span> <span class="erd-new">(جديد)</span>
+<span class="erd-sep">│</span>
+<span class="erd-table">company_warehouses</span> <span class="erd-rel">── province_id ──▶ company_provinces.id</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_route_pricing</span>   <span class="erd-new">(جديد)</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_client_pricing</span>  <span class="erd-new">(جديد)</span>
+<span class="erd-sep">│</span>
+<span class="erd-table">company_end_clients</span> <span class="erd-rel">── province_id ──▶ company_provinces.id</span>
+<span class="erd-rel">   └─(has many)──▶ </span><span class="erd-table">company_client_pricing</span>
+<span class="erd-sep">│</span>
+<span class="erd-table">tasks</span> <span class="erd-sep">──────────────────────────────────</span>
+<span class="erd-rel">   company_warehouse_id ──▶ company_warehouses.id</span>
+<span class="erd-rel">   company_end_client_id ──▶ company_end_clients.id</span>
+<span class="erd-rel">   vehicle_size_id (موجود) ──▶ vehicle_sizes.id</span>
+    </div>
+  </section>
+
+  <!-- جداول جديدة -->
+  <section>
+    <div class="section-label">القسم 2.2 — تعريف الجداول</div>
+    <h2>تعريف الجداول الجديدة</h2>
+
+    <!-- ★ جدول المحافظات -->
+    <div class="callout co-tip">
+      <div class="callout-icon">⭐</div>
+      <div class="callout-body">
+        <h4>جدول المحافظات — نقطة البداية</h4>
+        <p>يجب إنشاء هذا الجدول أولاً ثم ملؤه ببيانات المحافظات قبل إنشاء أي جدول آخر. يصبح المصدر الوحيد للحقيقة لكل بيانات المحافظات في النظام.</p>
+      </div>
+    </div>
+
+    <div class="table-block" style="border-color:rgba(245,158,11,.35);">
+      <div class="table-header" style="background:rgba(245,158,11,.04);">
+        <div class="table-icon" style="background:rgba(245,158,11,.2);">🗺️</div>
+        <div>
+          <div class="table-title"><code>company_provinces</code> <span class="badge-new">جديد</span> <span class="badge-star">⭐ مرجعي</span></div>
+          <div class="table-subtitle">جدول مرجعي لجميع المحافظات — يُستخدم كـ FK في المخازن، العملاء، وأسعار المسارات.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td>name_ar</td><td><span class="col-type">varchar(100)</span></td><td class="req-yes">✅</td><td class="col-notes">الاسم بالعربية — مثال: "الدمام"</td></tr>
+          <tr><td>name_en</td><td><span class="col-type">varchar(100)</span></td><td class="req-yes">✅</td><td class="col-notes">الاسم بالإنجليزية — مثال: "Dammam"</td></tr>
+          <tr><td>region</td><td><span class="col-type">varchar(100)</span></td><td class="req-no">❌</td><td class="col-notes">المنطقة الإدارية — مثال: "المنطقة الشرقية"</td></tr>
+          <tr><td>is_active</td><td><span class="col-type">boolean</span></td><td class="req-yes">✅</td><td class="col-notes">الافتراضي: true — قوائم الاختيار تُخفي غير النشطة</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">طوابع زمنية Laravel التلقائية</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- جدول 2: المخازن -->
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(99,102,241,.15);">🏭</div>
+        <div>
+          <div class="table-title"><code>company_warehouses</code> <span class="badge-new">جديد</span></div>
+          <div class="table-subtitle">مخازن الشركة — تصبح نقاط الاستلام في المهام.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td><code class="col-fk">company_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← customers.id</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">province_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← <strong>company_provinces.id</strong> — بدلاً من varchar المحافظة</td></tr>
+          <tr><td>name</td><td><span class="col-type">varchar(191)</span></td><td class="req-yes">✅</td><td class="col-notes">اسم المخزن (مثال: "مخزن الرياض A")</td></tr>
+          <tr><td>city</td><td><span class="col-type">varchar(100)</span></td><td class="req-no">❌</td><td class="col-notes">تفاصيل المدينة داخل المحافظة</td></tr>
+          <tr><td>address</td><td><span class="col-type">text</span></td><td class="req-yes">✅</td><td class="col-notes">العنوان الكامل — يُستخدم في نقطة المهمة</td></tr>
+          <tr><td>latitude</td><td><span class="col-type">decimal(10,7)</span></td><td class="req-yes">✅</td><td class="col-notes">GPS خط العرض</td></tr>
+          <tr><td>longitude</td><td><span class="col-type">decimal(10,7)</span></td><td class="req-yes">✅</td><td class="col-notes">GPS خط الطول</td></tr>
+          <tr><td>contact_name</td><td><span class="col-type">varchar(191)</span></td><td class="req-yes">✅</td><td class="col-notes">اسم المسؤول عن المخزن</td></tr>
+          <tr><td>contact_phone</td><td><span class="col-type">varchar(30)</span></td><td class="req-yes">✅</td><td class="col-notes">هاتف المسؤول</td></tr>
+          <tr><td>is_active</td><td><span class="col-type">boolean</span></td><td class="req-yes">✅</td><td class="col-notes">الافتراضي: true</td></tr>
+          <tr><td>notes</td><td><span class="col-type">text</span></td><td class="req-no">❌</td><td class="col-notes">ملاحظات تشغيلية</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- جدول 3: العملاء النهائيون -->
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(6,182,212,.15);">👤</div>
+        <div>
+          <div class="table-title"><code>company_end_clients</code> <span class="badge-new">جديد</span></div>
+          <div class="table-subtitle">المستلِمون التابعون للشركة — يصبحون نقاط التسليم. يمكن استيرادهم من Excel.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td><code class="col-fk">company_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← customers.id</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">province_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← <strong>company_provinces.id</strong> — بدلاً من varchar</td></tr>
+          <tr><td>name</td><td><span class="col-type">varchar(191)</span></td><td class="req-yes">✅</td><td class="col-notes">الاسم الكامل للمستلِم</td></tr>
+          <tr><td>phone</td><td><span class="col-type">varchar(30)</span></td><td class="req-yes">✅</td><td class="col-notes">الهاتف الأساسي — فريد لكل شركة</td></tr>
+          <tr><td>phone_2</td><td><span class="col-type">varchar(30)</span></td><td class="req-no">❌</td><td class="col-notes">هاتف ثانوي اختياري</td></tr>
+          <tr><td>city</td><td><span class="col-type">varchar(100)</span></td><td class="req-no">❌</td><td class="col-notes">المدينة داخل المحافظة</td></tr>
+          <tr><td>address</td><td><span class="col-type">text</span></td><td class="req-no">❌</td><td class="col-notes">العنوان الكامل</td></tr>
+          <tr><td>notes</td><td><span class="col-type">text</span></td><td class="req-no">❌</td><td class="col-notes">ملاحظات التسليم</td></tr>
+          <tr><td>is_active</td><td><span class="col-type">boolean</span></td><td class="req-yes">✅</td><td class="col-notes">الافتراضي: true</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- جدول 4: أسعار المسارات -->
+    <div class="callout co-info" style="margin-top:10px;">
+      <div class="callout-icon">🚛</div>
+      <div class="callout-body">
+        <h4>تكامل أحجام المركبات — نفس نمط <code>pricing_vehicle</code></h4>
+        <p>بدلاً من تخزين سعر واحد في <code>company_route_pricing</code>، يُستخدم <strong>جدول pivot منفصل</strong> يربط كل سجل مسار بأحجام المركبات وأسعارها المختلفة — تماماً كما يعمل <code>pricing_vehicle</code> في النظام الحالي. إذا لم يُحدَّد سعر لمركبة معينة يُستخدم السعر الافتراضي للمسار.</p>
+      </div>
+    </div>
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(245,158,11,.15);">💰</div>
+        <div>
+          <div class="table-title"><code>company_route_pricing</code> <span class="badge-new">جديد</span></div>
+          <div class="table-subtitle">مصفوفة أسعار المسارات: (مخزن ← محافظة وجهة) — السطر الرئيسي بسعر افتراضي.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td><code class="col-fk">company_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← customers.id</td></tr>
+          <tr><td><code class="col-fk">warehouse_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← company_warehouses.id</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">destination_province_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← <strong>company_provinces.id</strong></td></tr>
+          <tr><td>default_price</td><td><span class="col-type">decimal(10,2) | nullable</span></td><td class="req-no">❌</td><td class="col-notes">السعر الاحتياطي إذا لم تُحدَّد مركبة أو لا يوجد سعر خاص بها</td></tr>
+          <tr><td>is_active</td><td><span class="col-type">boolean</span></td><td class="req-yes">✅</td><td class="col-notes">الافتراضي: true</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:14px 20px; background:rgba(245,158,11,.04); border-top:1px solid var(--border); font-size:.82rem; color:var(--muted);">
+        🔑 <strong>Unique Index:</strong> <code>(warehouse_id, destination_province_id)</code> — يمنع تكرار صف لنفس المسار.
+      </div>
+    </div>
+
+    <!-- ★ جدول pivot: أسعار المسار حسب المركبة -->
+    <div class="table-block" style="border-color:rgba(99,102,241,.35);">
+      <div class="table-header" style="background:rgba(99,102,241,.04);">
+        <div class="table-icon" style="background:rgba(99,102,241,.2);">🚛</div>
+        <div>
+          <div class="table-title"><code>company_route_pricing_vehicles</code> <span class="badge-new">جديد</span> <span class="badge-star">Pivot</span></div>
+          <div class="table-subtitle">ربط أسعار المسارات بأحجام المركبات — نفس نمط جدول <code>pricing_vehicle</code> الموجود في النظام.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">route_pricing_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← company_route_pricing.id</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">vehicle_size_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← <strong>vehicle_sizes.id</strong> (الجدول الموجود)</td></tr>
+          <tr><td>price</td><td><span class="col-type">decimal(10,2)</span></td><td class="req-yes">✅</td><td class="col-notes">السعر المخصص لهذه المركبة في هذا المسار</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:14px 20px; background:rgba(99,102,241,.04); border-top:1px solid var(--border); font-size:.82rem; color:var(--muted);">
+        🔑 <strong>Unique Index:</strong> <code>(route_pricing_id, vehicle_size_id)</code> — سعر واحد لكل زوج (مسار + مركبة).
+      </div>
+    </div>
+
+    <!-- ★ جدول pivot: أسعار العميل حسب المركبة -->
+    <div class="table-block" style="border-color:rgba(239,68,68,.3);">
+      <div class="table-header" style="background:rgba(239,68,68,.03);">
+        <div class="table-icon" style="background:rgba(239,68,68,.2);">🎯</div>
+        <div>
+          <div class="table-title"><code>company_client_pricing_vehicles</code> <span class="badge-new">جديد</span> <span class="badge-star">Pivot</span></div>
+          <div class="table-subtitle">سعر تجاوز خاص بعميل محدد مع تحديد نوع المركبة — الأعلى أولوية في سلسلة الاستخلاص.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td><code class="col-fk">company_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← customers.id</td></tr>
+          <tr><td><code class="col-fk">warehouse_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← company_warehouses.id</td></tr>
+          <tr><td><code class="col-fk">end_client_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← company_end_clients.id</td></tr>
+          <tr class="highlight-row"><td><code class="col-fk">vehicle_size_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← <strong>vehicle_sizes.id</strong> (الجدول الموجود)</td></tr>
+          <tr><td>price</td><td><span class="col-type">decimal(10,2)</span></td><td class="req-yes">✅</td><td class="col-notes">السعر الخاص بهذا العميل مع هذه المركبة</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+      <div style="padding:14px 20px; background:rgba(239,68,68,.03); border-top:1px solid var(--border); font-size:.82rem; color:var(--muted);">
+        🔑 <strong>Unique Index:</strong> <code>(warehouse_id, end_client_id, vehicle_size_id)</code> — سعر واحد لكل (مخزن + عميل + مركبة).
+      </div>
+    </div>
+
+
+
+    <!-- جدول 6: إعدادات التسعير -->
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(34,197,94,.15);">⚙️</div>
+        <div>
+          <div class="table-title"><code>company_pricing_configs</code> <span class="badge-new">جديد</span></div>
+          <div class="table-subtitle">إعدادات العمولة وضريبة القيمة المضافة لكل شركة.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><span class="col-pk">id</span></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">المفتاح الأساسي</td></tr>
+          <tr><td><code class="col-fk">company_id</code></td><td><span class="col-type">bigint UNSIGNED</span></td><td class="req-yes">✅</td><td class="col-notes">FK ← customers.id | UNIQUE</td></tr>
+          <tr><td>commission_type</td><td><span class="col-type">enum('fixed','percentage')</span></td><td class="req-yes">✅</td><td class="col-notes">طريقة احتساب عمولة المنصة</td></tr>
+          <tr><td>commission_value</td><td><span class="col-type">decimal(10,2)</span></td><td class="req-yes">✅</td><td class="col-notes">مبلغ ثابت أو نسبة مئوية (0-100)</td></tr>
+          <tr><td>vat_percentage</td><td><span class="col-type">decimal(5,2)</span></td><td class="req-yes">✅</td><td class="col-notes">الافتراضي: 15.00</td></tr>
+          <tr><td>created_at / updated_at</td><td><span class="col-type">timestamp</span></td><td class="req-yes">✅</td><td class="col-notes">Laravel timestamps</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- الجداول الموجودة المُعدَّلة -->
+  <section>
+    <div class="section-label">القسم 2.3 — الجداول الموجودة المُعدَّلة</div>
+    <h2>التعديلات على الجداول الموجودة</h2>
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(245,158,11,.15);">📝</div>
+        <div>
+          <div class="table-title"><code>tasks</code> — أعمدة جديدة</div>
+          <div class="table-subtitle">عمودا FK قابلان للـ null لتتبع المخزن والعميل في مهام الشركات.</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود الجديد</th><th>النوع</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><code class="col-fk">company_warehouse_id</code></td><td><span class="col-type">bigint UNSIGNED | nullable</span></td><td class="col-notes">FK ← company_warehouses.id. NULL للمهام غير التابعة لشركة.</td></tr>
+          <tr><td><code class="col-fk">company_end_client_id</code></td><td><span class="col-type">bigint UNSIGNED | nullable</span></td><td class="col-notes">FK ← company_end_clients.id. NULL للمهام غير التابعة لشركة.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-block">
+      <div class="table-header">
+        <div class="table-icon" style="background:rgba(99,102,241,.15);">👥</div>
+        <div>
+          <div class="table-title"><code>customers</code> — عمود جديد</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>العمود الجديد</th><th>النوع</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><code>is_company</code></td><td><span class="col-type">boolean | default:false</span></td><td class="col-notes">علامة لتفعيل نظام B2B لهذا العميل — تتحكم في تفرّع الواجهة.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ملخص الفهارس -->
+  <section>
+    <div class="section-label">القسم 2.4 — إستراتيجية الفهارس</div>
+    <h2>الفهارس الحيوية للأداء</h2>
+    <p class="section-desc">هذه الفهارس ضرورية لضمان سرعة الاستعلامات مع نمو البيانات إلى الآلاف.</p>
+    <div class="table-block">
+      <table>
+        <thead><tr><th>الجدول</th><th>الفهرس</th><th>النوع</th><th>السبب</th></tr></thead>
+        <tbody>
+          <tr><td><code>company_provinces</code></td><td><code>name_ar, name_en</code></td><td>UNIQUE</td><td class="col-notes">منع تكرار المحافظات</td></tr>
+          <tr><td><code>company_warehouses</code></td><td><code>company_id, province_id</code></td><td>INDEX</td><td class="col-notes">فلترة مخازن شركة + فلترة حسب المحافظة</td></tr>
+          <tr><td><code>company_end_clients</code></td><td><code>(company_id, phone)</code></td><td>UNIQUE</td><td class="col-notes">منع تكرار العميل في نفس الشركة</td></tr>
+          <tr><td><code>company_end_clients</code></td><td><code>company_id, province_id</code></td><td>INDEX</td><td class="col-notes">بحث/فلترة العملاء حسب المحافظة</td></tr>
+          <tr><td><code>company_route_pricing</code></td><td><code>(warehouse_id, destination_province_id)</code></td><td>UNIQUE</td><td class="col-notes">منع تكرار سعر لنفس المسار</td></tr>
+          <tr style="background:rgba(99,102,241,.04);"><td><code>company_route_pricing_vehicles</code></td><td><code>(route_pricing_id, vehicle_size_id)</code></td><td>UNIQUE</td><td class="col-notes">سعر واحد لكل (مسار + مركبة) — سرعة الاستخلاص</td></tr>
+          <tr style="background:rgba(239,68,68,.03);"><td><code>company_client_pricing_vehicles</code></td><td><code>(warehouse_id, end_client_id, vehicle_size_id)</code></td><td>UNIQUE</td><td class="col-notes">سعر واحد لكل (مخزن + عميل + مركبة)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- العلاقات -->
+  <section>
+    <div class="section-label">القسم 2.5 — العلاقات</div>
+    <h2>العلاقات الرئيسية</h2>
+    <div class="relations-grid">
+      <div class="rel-card" style="border-color:rgba(245,158,11,.25);">
+        <div class="rel-type" style="background:rgba(245,158,11,.15); color:#fbbf24;">1 ← كثير</div>
+        <h4>⭐ المحافظة ← المخازن / العملاء / المسارات</h4>
+        <p>جميع الجداول الرئيسية مرتبطة بجدول المحافظات عبر <code>province_id</code> — مصدر حقيقة واحد.</p>
+      </div>
+      <div class="rel-card" style="border-color:rgba(99,102,241,.3);">
+        <div class="rel-type" style="background:rgba(99,102,241,.15); color:#818cf8;">كثير ← كثير (Pivot)</div>
+        <h4>🚛 سعر المسار ← أحجام المركبات</h4>
+        <p>عبر <code>company_route_pricing_vehicles</code> — كل مسار له قائمة مركبات وسعر مخصص لكل منها. نفس نمط <code>pricing_vehicle</code>.</p>
+      </div>
+      <div class="rel-card" style="border-color:rgba(239,68,68,.3);">
+        <div class="rel-type" style="background:rgba(239,68,68,.15); color:#f87171;">كثير ← كثير (Pivot)</div>
+        <h4>🎯 سعر العميل ← أحجام المركبات</h4>
+        <p>عبر <code>company_client_pricing_vehicles</code> — تجاوز سعري لعميل بعينه مع مركبة بعينها. الأعلى أولوية في سلسلة الاستخلاص.</p>
+      </div>
+      <div class="rel-card">
+        <div class="rel-type rt-1m">1 ← كثير</div>
+        <h4>الشركة ← المخازن</h4>
+        <p>شركة واحدة لها مخازن متعددة في محافظات مختلفة.</p>
+      </div>
+      <div class="rel-card">
+        <div class="rel-type rt-1m">1 ← كثير</div>
+        <h4>الشركة ← العملاء النهائيون</h4>
+        <p>شركة واحدة قد يصل عملاؤها للآلاف في محافظات متعددة.</p>
+      </div>
+      <div class="rel-card">
+        <div class="rel-type rt-11">1 ← 1</div>
+        <h4>الشركة ← إعدادات التسعير</h4>
+        <p>سجل إعداد واحد لكل شركة يحدد العمولة وضريبة القيمة المضافة.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- نموذج استخلاص السعر مع المركبة -->
+  <section>
+    <div class="section-label">القسم 2.6 — خوارزمية الاستخلاص المحدَّثة</div>
+    <h2>سلسلة استخلاص السعر مع المركبة (5 طبقات)</h2>
+    <p class="section-desc">بعد إضافة ربط المركبات، أصبح استخلاص السعر يمر عبر 5 مستويات حسب الأولوية:</p>
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:14px; overflow:hidden;">
+      <table>
+        <thead><tr><th>الأولوية</th><th>المستوى</th><th>الجدول</th><th>الشرط</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(239,68,68,.06);"><td style="font-weight:800; color:#f87171;">① الأعلى</td><td>تجاوز عميل + مركبة محددة</td><td><code>company_client_pricing_vehicles</code></td><td class="col-notes">warehouse_id + end_client_id + vehicle_size_id</td></tr>
+          <tr style="background:rgba(239,68,68,.03);"><td style="font-weight:800; color:#fca5a5;">②</td><td>تجاوز عميل (بلا تحديد مركبة)</td><td><code>company_client_pricing_vehicles</code></td><td class="col-notes">warehouse_id + end_client_id (vehicle_size_id = NULL أو غير موجود)</td></tr>
+          <tr style="background:rgba(99,102,241,.06);"><td style="font-weight:800; color:#818cf8;">③</td><td>سعر مسار + مركبة محددة</td><td><code>company_route_pricing_vehicles</code></td><td class="col-notes">route_pricing_id + vehicle_size_id</td></tr>
+          <tr style="background:rgba(99,102,241,.03);"><td style="font-weight:800; color:#a5b4fc;">④</td><td>سعر مسار افتراضي</td><td><code>company_route_pricing.default_price</code></td><td class="col-notes">warehouse_id + destination_province_id</td></tr>
+          <tr style="background:rgba(239,68,68,.08);"><td style="font-weight:800; color:#ef4444;">⑤ لا شيء</td><td>لا يوجد سعر</td><td>—</td><td class="col-notes">رسالة خطأ: "يجب ضبط تسعير لهذا المسار"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

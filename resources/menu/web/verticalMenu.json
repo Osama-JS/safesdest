@@ -48,6 +48,42 @@
       "permission": "view_customers"
     },
     {
+      "name": "B2B Module",
+      "icon": "menu-icon tf-icons ti ti-building-skyscraper",
+      "slug": "b2b",
+      "permission": "view_customers",
+      "submenu": [
+        {
+          "url": "admin/b2b/companies",
+          "name": "Companies",
+          "icon": "menu-icon tf-icons ti ti-building",
+          "slug": "b2b.companies",
+          "isactive": "b2b-companies-isactive"
+        },
+        {
+          "url": "admin/b2b/provinces",
+          "name": "Provinces Management",
+          "icon": "menu-icon tf-icons ti ti-map",
+          "slug": "b2b.provinces",
+          "isactive": "b2b-provinces-isactive"
+        },
+        {
+          "url": "admin/b2b/warehouses",
+          "name": "Warehouses",
+          "icon": "menu-icon tf-icons ti ti-home-shipping",
+          "slug": "b2b.warehouses",
+          "isactive": "b2b-warehouses-isactive"
+        },
+        {
+          "url": "admin/b2b/end-clients",
+          "name": "End Clients",
+          "icon": "menu-icon tf-icons ti ti-users",
+          "slug": "b2b.end-clients",
+          "isactive": "b2b-clients-isactive"
+        }
+      ]
+    },
+    {
       "url": "admin/drivers",
       "name": "Drivers",
       "icon": "menu-icon tf-icons ti  ti-steering-wheel",

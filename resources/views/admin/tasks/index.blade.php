@@ -1,3 +1,6 @@
+@php
+    $isFooter = false;
+@endphp
 @extends('layouts/layoutMaster')
 
 @section('title', __('Tasks Map'))
@@ -155,6 +158,9 @@
         moveCustomNav(); // تنفيذ أولي
         window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
     </script>
+
+    {{-- B2B Task Modal Script --}}
+    @vite(['resources/js/admin/b2b/b2b-task-modal.js'])
 @endsection
 @section('navbar-custom-nav')
     <!-- Toggle Buttons -->
@@ -353,5 +359,6 @@
     @include('admin.partials.notification-modal')
 
     @include('admin.tasks.from-modal')
+    @include('admin.tasks.b2b-task-modal', ['companies' => $customers->where('is_company', true)])
 
 @endsection

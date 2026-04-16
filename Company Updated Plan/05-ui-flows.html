@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تدفقات الواجهة — نظام الشركات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand:#6366f1; --brand-dark:#4f46e5; --brand-light:#818cf8;
+      --accent:#06b6d4; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+      --bg:#0a0c14; --bg-card:#111827; --bg-inner:#0d1117; --border:rgba(255,255,255,0.08);
+      --text:#f1f5f9; --muted:#64748b; --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--text); }
+    .top-nav { padding:20px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+    .top-nav a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+    .top-nav .sep { color:var(--border); }
+    .top-nav .current { color:var(--text); font-weight:700; }
+    .page-header { padding:60px 40px 40px; background:radial-gradient(ellipse 60% 50% at 30% 0%, rgba(239,68,68,0.1) 0%, transparent 60%); border-bottom:1px solid var(--border); }
+    .page-num { font-size:.8rem; color:#f87171; letter-spacing:1px; font-weight:700; margin-bottom:12px; }
+    h1 { font-size:clamp(1.8rem,3vw,3rem); font-weight:900; margin-bottom:16px; }
+    .page-subtitle { font-size:1rem; color:var(--muted); max-width:700px; line-height:1.9; }
+    .content { max-width:1200px; margin:0 auto; padding:50px 40px; }
+    h2 { font-size:1.4rem; font-weight:800; margin-bottom:8px; }
+    .section-label { font-size:.78rem; color:#f87171; letter-spacing:1px; font-weight:700; margin-bottom:10px; }
+    .section-desc { color:var(--muted); font-size:.92rem; line-height:1.9; margin-bottom:30px; }
+    section { margin-bottom:70px; }
+    code { background:rgba(99,102,241,0.12); color:var(--brand-light); padding:2px 6px; border-radius:5px; font-size:.82em; font-family:'Courier New', monospace; direction:ltr; display:inline-block; }
+
+    .screen { background:var(--bg-card); border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:24px; }
+    .screen-titlebar { background:var(--bg-inner); padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; direction:ltr; }
+    .tb-dots { display:flex; gap:6px; }
+    .tb-dot { width:10px; height:10px; border-radius:50%; }
+    .screen-title { font-size:.78rem; color:var(--muted); font-weight:500; }
+    .screen-body { padding:28px; }
+
+    .mock-section-title { font-size:.68rem; color:var(--muted); font-weight:700; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+    .mock-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px; }
+    .mock-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:16px; }
+    .mock-field { background:var(--bg-inner); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+    .mock-field-label { font-size:.68rem; color:var(--muted); margin-bottom:4px; }
+    .mock-field-value { font-size:.87rem; color:var(--text); }
+    .mock-field.highlight { border-color:rgba(99,102,241,0.4); background:rgba(99,102,241,0.06); }
+    .mock-field.highlight .mock-field-label { color:var(--brand-light); }
+    .mock-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:100px; font-size:.72rem; font-weight:700; }
+    .mb-green { background:rgba(34,197,94,0.15); color:#4ade80; }
+    .mb-blue { background:rgba(99,102,241,0.15); color:#818cf8; }
+    .mb-yellow { background:rgba(245,158,11,0.15); color:#fbbf24; }
+
+    .mock-price-row { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:12px; padding:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+    .prl { font-size:.85rem; color:var(--muted); }
+    .prv { font-size:.92rem; font-weight:700; color:var(--text); }
+    .pr-total { font-size:1.15rem; font-weight:800; color:var(--brand-light); }
+
+    .matrix { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .matrix th { background:var(--bg-inner); color:var(--muted); padding:10px 14px; text-align:right; font-size:.7rem; font-weight:700; }
+    .matrix td { padding:12px 14px; border-bottom:1px solid var(--border); }
+    .matrix tr:last-child td { border-bottom:none; }
+    .matrix .edit-btn { background:rgba(99,102,241,0.15); color:#818cf8; border:none; padding:4px 12px; border-radius:5px; font-size:.75rem; font-weight:700; cursor:pointer; font-family:'Tajawal',sans-serif; }
+    .matrix .price-cell { color:#4ade80; font-weight:700; }
+    .matrix .override-cell { color:#fbbf24; font-size:.78rem; }
+    .matrix .no-price { color:#ef4444; font-size:.78rem; }
+
+    .import-steps { display:flex; gap:0; margin-bottom:28px; }
+    .import-step { flex:1; text-align:center; padding:20px 14px; border:1px solid var(--border); background:var(--bg-card); }
+    .import-step:first-child { border-radius:0 12px 12px 0; }
+    .import-step:last-child { border-radius:12px 0 0 12px; border-right:none; }
+    .import-step:not(:first-child):not(:last-child) { border-right:none; }
+    .is-num { width:28px; height:28px; border-radius:50%; background:rgba(99,102,241,0.15); color:#818cf8; font-weight:800; font-size:.88rem; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; }
+    .is-title { font-size:.85rem; font-weight:800; margin-bottom:4px; }
+    .is-desc { font-size:.78rem; color:var(--muted); line-height:1.6; }
+
+    .nav-footer { border-top:1px solid var(--border); padding:30px 40px; display:flex; justify-content:space-between; align-items:center; margin-top:40px; }
+    .nav-link { display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--muted); font-size:.9rem; transition:color .2s; }
+    .nav-link:hover { color:var(--text); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html">🏠 الرئيسية</a>
+  <span class="sep">/</span>
+  <span class="current">تدفقات الواجهة</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-num">📄 الصفحة 05 من 05</div>
+  <h1>تدفقات الواجهة<br>وتصميمات الشاشات</h1>
+  <p class="page-subtitle">تصور مرئي لكل شاشة جديدة: إدارة المخازن، مصفوفة التسعير، استيراد العملاء، ونموذج إنشاء المهمة المُعدَّل لعملاء الشركات.</p>
+</div>
+
+<div class="content">
+
+  <!-- الشاشة 1 -->
+  <section>
+    <div class="section-label">الشاشة 1</div>
+    <h2>ملف العميل — تبويب إعدادات الشركة</h2>
+    <p class="section-desc">يظهر تبويب "الشركة" جديد في صفحة تفاصيل العميل عندما يكون <code>is_company = true</code>. يحتوي على روابط لجميع أقسام الشركة الفرعية.</p>
+    <div class="screen">
+      <div class="screen-titlebar">
+        <div class="tb-dots"><div class="tb-dot" style="background:#f87171;"></div><div class="tb-dot" style="background:#fbbf24;"></div><div class="tb-dot" style="background:#4ade80;"></div></div>
+        <div class="screen-title">admin / customers / show — Tab: Company</div>
+      </div>
+      <div class="screen-body">
+        <div class="mock-section-title">إعدادات الشركة</div>
+        <div class="mock-grid">
+          <div class="mock-field highlight">
+            <div class="mock-field-label">نوع الحساب</div>
+            <div class="mock-field-value"><span class="mock-badge mb-green">✅ حساب شركة مُفعَّل</span></div>
+          </div>
+          <div class="mock-field">
+            <div class="mock-field-label">اسم الشركة</div>
+            <div class="mock-field-value">شركة الخليج للتوزيع</div>
+          </div>
+        </div>
+        <div class="mock-grid-3" style="margin-top:16px;">
+          <div class="mock-field highlight" style="text-align:center; cursor:pointer;">
+            <div class="mock-field-label">🏭 المخازن</div>
+            <div class="mock-field-value" style="font-size:1.5rem; font-weight:800; color:#818cf8;">4</div>
+          </div>
+          <div class="mock-field highlight" style="text-align:center; cursor:pointer;">
+            <div class="mock-field-label">👤 العملاء النهائيون</div>
+            <div class="mock-field-value" style="font-size:1.5rem; font-weight:800; color:#67e8f9;">1,247</div>
+          </div>
+          <div class="mock-field highlight" style="text-align:center; cursor:pointer;">
+            <div class="mock-field-label">💰 مسارات التسعير</div>
+            <div class="mock-field-value" style="font-size:1.5rem; font-weight:800; color:#4ade80;">12</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- الشاشة 2 -->
+  <section>
+    <div class="section-label">الشاشة 2</div>
+    <h2>إدارة المخازن</h2>
+    <p class="section-desc">قائمة بجميع مخازن الشركة. تُظهر كل صف الموقع والمسؤول والحالة. الإضافة/التعديل يفتح نافذة مع محدد الموقع على الخريطة.</p>
+    <div class="screen">
+      <div class="screen-titlebar">
+        <div class="tb-dots"><div class="tb-dot" style="background:#f87171;"></div><div class="tb-dot" style="background:#fbbf24;"></div><div class="tb-dot" style="background:#4ade80;"></div></div>
+        <div class="screen-title">admin / company / warehouses</div>
+      </div>
+      <div class="screen-body">
+        <table class="matrix">
+          <thead><tr><th>#</th><th>اسم المخزن</th><th>المحافظة</th><th>جهة الاتصال</th><th>الهاتف</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td style="font-weight:700;">مخزن الرياض A</td>
+              <td>الرياض</td>
+              <td>أحمد محمد</td>
+              <td style="direction:ltr;">+966 50 111 1111</td>
+              <td><span class="mock-badge mb-green">نشط</span></td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td style="font-weight:700;">مخزن الرياض B</td>
+              <td>الرياض</td>
+              <td>خالد سعد</td>
+              <td style="direction:ltr;">+966 50 222 2222</td>
+              <td><span class="mock-badge mb-green">نشط</span></td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td style="font-weight:700;">مخزن جدة الرئيسي</td>
+              <td>مكة المكرمة</td>
+              <td>فهد العتيبي</td>
+              <td style="direction:ltr;">+966 55 333 3333</td>
+              <td><span class="mock-badge mb-yellow">معطَّل</span></td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- الشاشة 3 -->
+  <section>
+    <div class="section-label">الشاشة 3</div>
+    <h2>مصفوفة التسعير — المسارات وتجاوزات العملاء</h2>
+    <p class="section-desc">يرى المدير جدولاً بجميع صفوف التسعير (مخزن ← محافظة). يمكنه النقر على عميل لإضافة سعر تجاوز محدد لزوج مخزن+عميل.</p>
+    <div class="screen">
+      <div class="screen-titlebar">
+        <div class="tb-dots"><div class="tb-dot" style="background:#f87171;"></div><div class="tb-dot" style="background:#fbbf24;"></div><div class="tb-dot" style="background:#4ade80;"></div></div>
+        <div class="screen-title">admin / company / pricing — تسعير المسارات</div>
+      </div>
+      <div class="screen-body">
+        <table class="matrix">
+          <thead><tr><th>المخزن</th><th>محافظة الوجهة</th><th>السعر الأساسي</th><th>تجاوزات العملاء</th><th>إجراءات</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:700;">مخزن الرياض A</td>
+              <td>الدمام</td>
+              <td class="price-cell">1,500 ريال</td>
+              <td class="override-cell">3 عملاء بسعر خاص</td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;">مخزن الرياض B</td>
+              <td>الدمام</td>
+              <td class="price-cell">1,600 ريال</td>
+              <td class="override-cell">عميل واحد بسعر خاص</td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;">مخزن الرياض A</td>
+              <td>جدة</td>
+              <td class="price-cell">1,200 ريال</td>
+              <td class="override-cell">لا تجاوزات</td>
+              <td><button class="edit-btn">تعديل</button></td>
+            </tr>
+            <tr>
+              <td style="font-weight:700;">مخزن الرياض A</td>
+              <td>أبها</td>
+              <td class="no-price">⚠️ لا يوجد سعر</td>
+              <td>—</td>
+              <td><button class="edit-btn" style="background:rgba(239,68,68,0.15); color:#f87171;">إضافة سعر</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding-top:20px; font-size:.85rem; color:var(--muted);">
+          💡 عمولة المنصة: 5% + ضريبة القيمة المضافة: 15% تُضاف تلقائياً على جميع الأسعار الأساسية.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- الشاشة 4 -->
+  <section>
+    <div class="section-label">الشاشة 4</div>
+    <h2>استيراد العملاء النهائيين من Excel</h2>
+    <p class="section-desc">تدفق استيراد من 3 خطوات: رفع الملف ← معاينة نتائج التحقق ← تأكيد الاستيراد.</p>
+    <div class="import-steps">
+      <div class="import-step">
+        <div class="is-num">1</div>
+        <div class="is-title">رفع ملف Excel</div>
+        <div class="is-desc">اسحب وأفلت أو تصفح لاختيار ملف .xlsx أو .csv</div>
+      </div>
+      <div class="import-step">
+        <div class="is-num">2</div>
+        <div class="is-title">معاينة النتائج</div>
+        <div class="is-desc">يعرض النظام الصفوف الصحيحة / المكررة / بالأخطاء قبل الحفظ</div>
+      </div>
+      <div class="import-step">
+        <div class="is-num">3</div>
+        <div class="is-title">تأكيد الاستيراد</div>
+        <div class="is-desc">تأكيد لإدراج الصفوف الصحيحة. تحميل تقرير الأخطاء للصفوف الفاشلة</div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="screen-titlebar">
+        <div class="tb-dots"><div class="tb-dot" style="background:#f87171;"></div><div class="tb-dot" style="background:#fbbf24;"></div><div class="tb-dot" style="background:#4ade80;"></div></div>
+        <div class="screen-title">معاينة الاستيراد — الخطوة 2 من 3</div>
+      </div>
+      <div class="screen-body">
+        <div class="mock-grid-3" style="margin-bottom:20px;">
+          <div class="mock-field" style="text-align:center;"><div class="mock-field-label">✅ صفوف صحيحة</div><div class="mock-field-value" style="font-size:1.4rem; font-weight:800; color:#4ade80;">1,243</div></div>
+          <div class="mock-field" style="text-align:center;"><div class="mock-field-label">⚠️ مكررة (ستُتخطى)</div><div class="mock-field-value" style="font-size:1.4rem; font-weight:800; color:#fbbf24;">4</div></div>
+          <div class="mock-field" style="text-align:center;"><div class="mock-field-label">❌ صفوف بأخطاء</div><div class="mock-field-value" style="font-size:1.4rem; font-weight:800; color:#f87171;">0</div></div>
+        </div>
+        <table class="matrix">
+          <thead><tr><th>الصف</th><th>الاسم</th><th>الهاتف</th><th>المحافظة</th><th>الحالة</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>محمد العمري</td><td style="direction:ltr;">0501234567</td><td>الدمام</td><td><span class="mock-badge mb-green">صحيح</span></td></tr>
+            <tr><td>2</td><td>سارة الأحمدي</td><td style="direction:ltr;">0559876543</td><td>جدة</td><td><span class="mock-badge mb-green">صحيح</span></td></tr>
+            <tr><td>5</td><td>عبدالله الشمري</td><td style="direction:ltr;">0551111111</td><td>الرياض</td><td><span class="mock-badge mb-yellow">مكرر</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- الشاشة 5 -->
+  <section>
+    <div class="section-label">الشاشة 5 — الأهم</div>
+    <h2>إنشاء المهمة — وضع الشركة</h2>
+    <p class="section-desc">عند اختيار عميل شركة، تُستبدل حقول الخريطة الاعتيادية بهذه المحددات الذكية. يُحلّ السعر ويُعرض مباشرةً.</p>
+    <div class="screen">
+      <div class="screen-titlebar">
+        <div class="tb-dots"><div class="tb-dot" style="background:#f87171;"></div><div class="tb-dot" style="background:#fbbf24;"></div><div class="tb-dot" style="background:#4ade80;"></div></div>
+        <div class="screen-title">admin / tasks / create — وضع الشركة <span class="mock-badge mb-blue" style="margin-right:8px;">الشركة: شركة الخليج للتوزيع</span></div>
+      </div>
+      <div class="screen-body">
+
+        <div class="mock-section-title">📦 نقطة الاستلام (المخزن)</div>
+        <div class="mock-grid">
+          <div class="mock-field highlight">
+            <div class="mock-field-label">اختر المخزن ⭐</div>
+            <div class="mock-field-value">مخزن الرياض A — الرياض</div>
+          </div>
+          <div class="mock-field" style="background:rgba(34,197,94,0.04); border-color:rgba(34,197,94,0.15);">
+            <div class="mock-field-label">مُعبَّأ تلقائياً: جهة الاتصال</div>
+            <div class="mock-field-value">أحمد محمد — 0501111111</div>
+          </div>
+        </div>
+        <div class="mock-field" style="margin-bottom:20px; background:rgba(34,197,94,0.04); border-color:rgba(34,197,94,0.15);">
+          <div class="mock-field-label">مُعبَّأ تلقائياً: العنوان والإحداثيات</div>
+          <div class="mock-field-value">طريق الملك فهد، حي العليا، الرياض — 📍 24.7136, 46.6753</div>
+        </div>
+
+        <div class="mock-section-title">🚚 نقطة التسليم (العميل النهائي)</div>
+        <div class="mock-grid">
+          <div class="mock-field highlight">
+            <div class="mock-field-label">ابحث واختر العميل النهائي ⭐</div>
+            <div class="mock-field-value">محمد العمري — 0501234567 (الدمام)</div>
+          </div>
+          <div class="mock-field" style="background:rgba(34,197,94,0.04); border-color:rgba(34,197,94,0.15);">
+            <div class="mock-field-label">مُعبَّأ تلقائياً: المحافظة</div>
+            <div class="mock-field-value">الدمام — المنطقة الشرقية</div>
+          </div>
+        </div>
+
+        <div class="mock-section-title" style="margin-top:16px;">💰 استخلاص السعر (محسوب تلقائياً)</div>
+        <div class="mock-price-row">
+          <div>
+            <div class="prl">السعر الأساسي (مخزن A ← الدمام)</div>
+            <div class="prv">1,500.00 ريال</div>
+          </div>
+          <div>
+            <div class="prl">عمولة المنصة (5%)</div>
+            <div class="prv">+ 75.00 ريال</div>
+          </div>
+          <div>
+            <div class="prl">ضريبة القيمة المضافة (15%)</div>
+            <div class="prv">+ 236.25 ريال</div>
+          </div>
+          <div>
+            <div class="prl">السعر الإجمالي</div>
+            <div class="pr-total">1,811.25 ريال</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav-footer">
+  <a href="04-implementation.html" class="nav-link">← خارطة التنفيذ</a>
+  <a href="index.html" class="nav-link">🏠 العودة للرئيسية</a>
+</div>
+
+</body>
+</html>

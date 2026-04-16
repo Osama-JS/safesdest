@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>خارطة التنفيذ — نظام الشركات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand:#6366f1; --brand-dark:#4f46e5; --brand-light:#818cf8;
+      --accent:#06b6d4; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+      --bg:#0a0c14; --bg-card:#111827; --bg-inner:#0d1117; --border:rgba(255,255,255,0.08);
+      --text:#f1f5f9; --muted:#64748b; --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--text); }
+    .top-nav { padding:20px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+    .top-nav a { color:var(--muted); text-decoration:none; font-size:.9rem; }
+    .top-nav .sep { color:var(--border); }
+    .top-nav .current { color:var(--text); font-weight:700; }
+    .page-header { padding:60px 40px 40px; background:radial-gradient(ellipse 60% 50% at 30% 0%, rgba(245,158,11,0.12) 0%, transparent 60%); border-bottom:1px solid var(--border); }
+    .page-num { font-size:.8rem; color:var(--warning); letter-spacing:1px; font-weight:700; margin-bottom:12px; }
+    h1 { font-size:clamp(1.8rem,3vw,3rem); font-weight:900; margin-bottom:16px; }
+    .page-subtitle { font-size:1rem; color:var(--muted); max-width:700px; line-height:1.9; }
+    .content { max-width:1200px; margin:0 auto; padding:50px 40px; }
+    h2 { font-size:1.4rem; font-weight:800; margin-bottom:8px; }
+    .section-label { font-size:.78rem; color:var(--warning); letter-spacing:1px; font-weight:700; margin-bottom:10px; }
+    .section-desc { color:var(--muted); font-size:.92rem; line-height:1.9; margin-bottom:30px; }
+    section { margin-bottom:70px; }
+    code { background:rgba(99,102,241,0.12); color:var(--brand-light); padding:2px 6px; border-radius:5px; font-size:.82em; font-family:'Courier New', monospace; direction:ltr; display:inline-block; }
+
+    .phase { border:1px solid var(--border); border-radius:20px; overflow:hidden; margin-bottom:32px; }
+    .phase-header { padding:28px 32px; display:flex; align-items:center; gap:20px; border-bottom:1px solid var(--border); }
+    .phase-badge { min-width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.2rem; flex-shrink:0; }
+    .ph1 .phase-badge { background:rgba(99,102,241,0.2); color:#818cf8; }
+    .ph2 .phase-badge { background:rgba(6,182,212,0.2); color:#67e8f9; }
+    .ph3 .phase-badge { background:rgba(34,197,94,0.2); color:#4ade80; }
+    .ph4 .phase-badge { background:rgba(245,158,11,0.2); color:#fbbf24; }
+    .ph1 { background:linear-gradient(to bottom right, rgba(99,102,241,0.03), var(--bg-card)); }
+    .ph2 { background:linear-gradient(to bottom right, rgba(6,182,212,0.03), var(--bg-card)); }
+    .ph3 { background:linear-gradient(to bottom right, rgba(34,197,94,0.03), var(--bg-card)); }
+    .ph4 { background:linear-gradient(to bottom right, rgba(245,158,11,0.03), var(--bg-card)); }
+    .phase-title { font-size:1.1rem; font-weight:800; margin-bottom:4px; }
+    .phase-subtitle { font-size:.85rem; color:var(--muted); }
+    .phase-body { padding:28px 32px; }
+    .phase-cols { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    @media(max-width:700px) { .phase-cols { grid-template-columns:1fr; } }
+
+    .task-group h4 { font-size:.8rem; color:var(--muted); font-weight:700; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+    .task-item { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
+    .task-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:7px; }
+    .td-new { background:#818cf8; }
+    .td-mod { background:#fbbf24; }
+    .task-text { font-size:.87rem; line-height:1.6; color:var(--text); }
+    .task-sub { font-size:.78rem; color:var(--muted); margin-top:2px; direction:ltr; font-family:'Courier New',monospace; }
+
+    .legend { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+    .legend-item { display:flex; align-items:center; gap:7px; font-size:.82rem; color:var(--muted); }
+    .legend-dot { width:8px; height:8px; border-radius:50%; }
+
+    .api-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    .api-table th { background:var(--bg-inner); color:var(--muted); font-size:.72rem; font-weight:700; padding:10px 14px; text-align:right; }
+    .api-table td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+    .api-table tr:last-child td { border-bottom:none; }
+    .method { padding:2px 8px; border-radius:5px; font-size:.7rem; font-weight:800; font-family:'Courier New', monospace; direction:ltr; display:inline-block; }
+    .m-get { background:rgba(34,197,94,0.15); color:#4ade80; }
+    .m-post { background:rgba(99,102,241,0.15); color:#818cf8; }
+    .m-put { background:rgba(245,158,11,0.15); color:#fbbf24; }
+    .m-delete { background:rgba(239,68,68,0.15); color:#f87171; }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html">🏠 الرئيسية</a>
+  <span class="sep">/</span>
+  <span class="current">خارطة التنفيذ</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-num">📄 الصفحة 04 من 05</div>
+  <h1>خارطة التنفيذ</h1>
+  <p class="page-subtitle">خطة تطوير من 4 مراحل بأسماء ملفات محددة، Controllers، Migrations، مكونات واجهة المستخدم، وAPI Endpoints — جاهزة للتنفيذ خطوة بخطوة.</p>
+</div>
+
+<div class="content">
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80;"></div> ملف/ميزة جديدة</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24;"></div> تعديل على موجود</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#818cf8;"></div> ملف جديد</div>
+  </div>
+
+  <!-- المرحلة 1 -->
+  <div class="phase ph1">
+    <div class="phase-header">
+      <div class="phase-badge">1</div>
+      <div>
+        <div class="phase-title">المرحلة الأولى — قاعدة البيانات و النماذج</div>
+        <div class="phase-subtitle">إنشاء جميع Migrations ونماذج Eloquent وإضافة الحقل <code>is_company</code> للعملاء.</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-cols">
+        <div class="task-group">
+          <h4>📦 Migrations المطلوب إنشاؤها</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>create_company_warehouses_table</code><div class="task-sub">5 حقول جديدة + timestamps + فهرس على company_id</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>create_company_end_clients_table</code><div class="task-sub">فهرس فريد على (company_id, phone)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>create_company_route_pricing_table</code><div class="task-sub">فهرس فريد على (warehouse_id, destination_province)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>create_company_client_pricing_table</code><div class="task-sub">فهرس فريد على (warehouse_id, end_client_id)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>create_company_pricing_configs_table</code><div class="task-sub">فهرس فريد على company_id</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>add_company_fields_to_customers</code><div class="task-sub">إضافة: is_company (boolean، افتراضياً false)</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>add_company_refs_to_tasks</code><div class="task-sub">إضافة: company_warehouse_id، company_end_client_id (FKs قابلة للـ null)</div></div></div>
+        </div>
+        <div class="task-group">
+          <h4>🧩 نماذج جديدة (app/Models/)</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Company_Warehouse.php</code><div class="task-sub">علاقات: company(), routePricing(), clientPricing()</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Company_End_Client.php</code><div class="task-sub">علاقات: company(), clientPricing(), tasks()</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Company_Route_Pricing.php</code><div class="task-sub">علاقات: warehouse(), company()</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Company_Client_Pricing.php</code><div class="task-sub">علاقات: warehouse(), endClient(), company()</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Company_Pricing_Config.php</code><div class="task-sub">علاقات: company()</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>Customer.php</code> — <span style="color:#fbbf24">تعديل</span><div class="task-sub">إضافة: نطاق isCompany()، علاقات warehouses()، endClients()، companyPricingConfig()</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>Task.php</code> — <span style="color:#fbbf24">تعديل</span><div class="task-sub">إضافة: علاقات warehouse()، endClient() + حقول fillable</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- المرحلة 2 -->
+  <div class="phase ph2">
+    <div class="phase-header">
+      <div class="phase-badge">2</div>
+      <div>
+        <div class="phase-title">المرحلة الثانية — الواجهة الخلفية وإدارة التسعير</div>
+        <div class="phase-subtitle">بناء Controllers للمدير لإدارة مخازن الشركة، قوائم العملاء، ومصفوفة التسعير.</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-cols">
+        <div class="task-group">
+          <h4>🎮 Controllers جديدة</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>admin/CompanyWarehouseController.php</code><div class="task-sub">index, store, update, destroy, toggleActive</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>admin/CompanyEndClientController.php</code><div class="task-sub">index, store, update, destroy, import (Excel)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>admin/CompanyRoutePricingController.php</code><div class="task-sub">index, store, update, destroy (CRUD مصفوفة التسعير)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>admin/CompanyClientPricingController.php</code><div class="task-sub">store, update, destroy (تجاوزات سعر العميل)</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>admin/CompanyPricingConfigController.php</code><div class="task-sub">show, update (إعداد واحد لكل شركة)</div></div></div>
+        </div>
+        <div class="task-group">
+          <h4>🔧 خدمات جديدة</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Services/CompanyPricingService.php</code><div class="task-sub">الجوهر: resolvePrice(warehouse_id, client) ← سعر أساسي. calculateFinalPrice(base, company_id) ← إجمالي.</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>Services/CompanyClientImportService.php</code><div class="task-sub">تحليل Excel، تحقق، كشف التكرار، إدراج دفعي.</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>TasksController.php</code> — <span style="color:#fbbf24">تعديل</span><div class="task-sub">كشف علامة is_company ← التفرع إلى CompanyPricingService بدلاً من TaskPricingService.</div></div></div>
+
+          <h4 style="margin-top:20px;">📦 حزم مطلوبة</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>maatwebsite/excel</code><div class="task-sub">حزمة Laravel Excel لوظائف الاستيراد والتصدير</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- المرحلة 3 -->
+  <div class="phase ph3">
+    <div class="phase-header">
+      <div class="phase-badge">3</div>
+      <div>
+        <div class="phase-title">المرحلة الثالثة — الواجهة الأمامية للمدير</div>
+        <div class="phase-subtitle">بناء جميع صفحات الإدارة: إعدادات الشركة، إدارة المخازن، محرر مصفوفة التسعير، وإدارة العملاء.</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-cols">
+        <div class="task-group">
+          <h4>📄 قوالب Blade الجديدة</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>resources/views/admin/company/</code><div class="task-sub">warehouses/index.blade.php ← قائمة + نافذة إضافة/تعديل</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>end-clients/index.blade.php</code><div class="task-sub">DataTable مع بحث، فلتر المحافظة، زر استيراد</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>pricing/index.blade.php</code><div class="task-sub">عرض مصفوفي: صفوف = مخازن، أعمدة = محافظات + تجاوزات العملاء</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>config/index.blade.php</code><div class="task-sub">نموذج بسيط: نوع العمولة/القيمة + نسبة ضريبة القيمة المضافة</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>admin/customers/show.blade.php</code><div class="task-sub">إضافة تبويب "إعدادات الشركة" عندما is_company=true</div></div></div>
+        </div>
+        <div class="task-group">
+          <h4>⚡ ملفات JavaScript الجديدة</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>resources/js/admin/company/warehouses.js</code><div class="task-sub">أداة اختيار الموقع على الخريطة للإحداثيات، AJAX لعمليات CRUD</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>resources/js/admin/company/end-clients.js</code><div class="task-sub">DataTable + استيراد Excel مع نافذة تقدم</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>resources/js/admin/company/pricing.js</code><div class="task-sub">CRUD مصفوفة التسعير، تحرير مضمّن، نافذة سعر العميل</div></div></div>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text"><code>resources/js/admin/tasks/list.js</code><div class="task-sub">كشف عميل الشركة ← عرض محدد المخزن والعميل بدلاً من مدخلات الخريطة</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- المرحلة 4 -->
+  <div class="phase ph4">
+    <div class="phase-header">
+      <div class="phase-badge">4</div>
+      <div>
+        <div class="phase-title">المرحلة الرابعة — التكامل وإنشاء المهام</div>
+        <div class="phase-subtitle">ربط نموذج إنشاء المهمة لكشف عملاء الشركة واستخلاص الأسعار تلقائياً.</div>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="phase-cols">
+        <div class="task-group">
+          <h4>🔄 تغييرات إنشاء المهمة</h4>
+          <div class="task-item"><div class="task-dot td-mod"></div><div class="task-text">عند اختيار المدير للعميل في النموذج:<div class="task-sub">← استدعاء AJAX للتحقق من: /admin/customers/{id}/is-company</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text">إذا كان is_company = true:<div class="task-sub">← إخفاء محددات الخريطة، عرض قائمة المخازن + قائمة بحث العملاء النهائيين</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text">على اختيار المخزن + العميل:<div class="task-sub">← AJAX إلى /admin/company/resolve-price ← يُرجع تفصيل: أساسي/عمولة/ضريبة/إجمالي</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text">عند حفظ المهمة:<div class="task-sub">← إنشاء تلقائي لنقطة الاستلام من بيانات المخزن ← إنشاء تلقائي لنقطة التسليم من بيانات العميل</div></div></div>
+        </div>
+        <div class="task-group">
+          <h4>🛣️ مسارات جديدة (web.php)</h4>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>GET /admin/company/{id}/warehouses</code><div class="task-sub">يُرجع JSON المخازن لقائمة نموذج المهمة</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>GET /admin/company/{id}/clients</code><div class="task-sub">يُرجع JSON العملاء النهائيين مع دعم الصفحات والبحث</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text"><code>POST /admin/company/resolve-price</code><div class="task-sub">يستخلص السعر بناءً على {warehouse_id, end_client_id, company_id}</div></div></div>
+          <div class="task-item"><div class="task-dot td-new"></div><div class="task-text">مسارات CRUD كاملة تحت <code>/admin/company/</code><div class="task-sub">للمخازن، العملاء، أسعار المسارات، أسعار العملاء، الإعدادات</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- مرجع API الكامل -->
+  <section>
+    <div class="section-label">مرجع API الكامل</div>
+    <h2>جميع نقاط API الجديدة</h2>
+    <p class="section-desc">ملخص لكل مسار جديد يُضاف للنظام في نظام الشركات.</p>
+    <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+      <table class="api-table">
+        <thead><tr><th>الطريقة</th><th>المسار</th><th>المتحكم</th><th>الغرض</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method m-get">GET</span></td><td><code>/admin/company/{id}/warehouses/data</code></td><td>CompanyWarehouseController@data</td><td>JSON DataTable لقائمة المخازن</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/warehouses</code></td><td>CompanyWarehouseController@store</td><td>إنشاء مخزن جديد</td></tr>
+          <tr><td><span class="method m-put">PUT</span></td><td><code>/admin/company/warehouses/{id}</code></td><td>CompanyWarehouseController@update</td><td>تحديث بيانات مخزن</td></tr>
+          <tr><td><span class="method m-delete">DEL</span></td><td><code>/admin/company/warehouses/{id}</code></td><td>CompanyWarehouseController@destroy</td><td>حذف مخزن</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><code>/admin/company/{id}/clients/data</code></td><td>CompanyEndClientController@data</td><td>JSON DataTable لقائمة العملاء</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/clients/import</code></td><td>CompanyEndClientController@import</td><td>استيراد Excel دفعي</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><code>/admin/company/{id}/pricing/routes</code></td><td>CompanyRoutePricingController@index</td><td>جلب مصفوفة التسعير</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/pricing/routes</code></td><td>CompanyRoutePricingController@store</td><td>إضافة سعر مسار</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/pricing/clients</code></td><td>CompanyClientPricingController@store</td><td>ضبط سعر خاص بعميل</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/resolve-price</code></td><td>CompanyPricingService</td><td>استخلاص السعر النهائي وحسابه</td></tr>
+          <tr><td><span class="method m-post">POST</span></td><td><code>/admin/company/{id}/config</code></td><td>CompanyPricingConfigController@update</td><td>حفظ إعدادات العمولة وضريبة القيمة المضافة</td></tr>
+          <tr><td><span class="method m-get">GET</span></td><td><code>/admin/customers/{id}/is-company</code></td><td>CustomersController@isCompany</td><td>التحقق إن كان العميل من نوع شركة</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

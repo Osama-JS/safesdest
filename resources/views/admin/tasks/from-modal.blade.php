@@ -35,28 +35,31 @@
                                 <!-- Step 1 -->
                                 <div class="tab-pane fade show active" id="step1" role="tabpanel">
 
-                                    <div class="mb-3">
-
-                                        <label for="task-owner" class="form-label">* {{ __('owner type') }}</label>
-                                        <select name="owner" id="task-owner" class="form-select">
-                                            <option value="admin">{{ __('Administrator') }}</option>
-                                            <option value="customer">{{ __('Customer') }}</option>
-                                        </select>
-                                        <span class="owner-error text-danger text-error"></span>
-
-                                        <!-- Customer Dropdown (Hidden initially) -->
-                                        <div id="customers-wrapper" class="mt-2" style="display: none;">
-                                            <label for="task-customer" class="form-label">*
-                                                {{ __('Select Customer') }}</label>
-                                            <select name="customer" id="task-customer" class="form-select">
-                                                <option value="">Select Customer</option>
-                                                @foreach ($customers as $val)
-                                                    <option value="{{ $val->id }}">{{ $val->name }}</option>
-                                                @endforeach
+                                        <!-- regular owner type -->
+                                        <div id="regular-owner-wrapper">
+                                            <label for="task-owner" class="form-label">* {{ __('owner type') }}</label>
+                                            <select name="owner" id="task-owner" class="form-select">
+                                                <option value="admin">{{ __('Administrator') }}</option>
+                                                <option value="customer">{{ __('Customer') }}</option>
                                             </select>
-                                            <span class="customer-error text-danger text-error"></span>
+                                            <span class="owner-error text-danger text-error"></span>
+
+                                            <!-- Customer Dropdown (Hidden initially) -->
+                                            <div id="customers-wrapper" class="mt-2" style="display: none;">
+                                                <label for="task-customer" class="form-label">*
+                                                    {{ __('Select Customer') }}</label>
+                                                <select name="customer" id="task-customer" class="form-select">
+                                                    <option value="">Select Customer</option>
+                                                    @foreach ($customers as $val)
+                                                        <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <span class="customer-error text-danger text-error"></span>
+                                            </div>
                                         </div>
-                                    </div>
+
+
+
 
 
                                     <!-- Vehicle Selection -->
@@ -836,6 +839,17 @@
                         <span>إنشاء مهمة استيراد من الميناء</span>
                     </button>
                 @endif
+
+                <!-- زر مهمة شركة B2B -->
+                <button
+                    id="btn-create-company-task"
+                    class="btn btn-outline-info d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill"
+                    data-bs-toggle="modal"
+                    data-bs-target="#b2bTaskModal"
+                    data-bs-dismiss="modal">
+                    <i class="fas fa-building"></i>
+                    <span>إنشاء مهمة شركة (B2B)</span>
+                </button>
 
 
             </div>

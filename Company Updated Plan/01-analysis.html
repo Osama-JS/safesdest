@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تحليل الأعمال — نظام الشركات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand:#6366f1; --brand-dark:#4f46e5; --brand-light:#818cf8;
+      --accent:#06b6d4; --success:#22c55e; --warning:#f59e0b; --danger:#ef4444;
+      --bg:#0a0c14; --bg-card:#111827; --bg-inner:#0d1117; --border:rgba(255,255,255,0.08);
+      --text:#f1f5f9; --muted:#64748b; --radius:16px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Tajawal', sans-serif; background:var(--bg); color:var(--text); }
+
+    .top-nav { padding:20px 40px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+    .top-nav a { color:var(--muted); text-decoration:none; font-size:0.9rem; }
+    .top-nav .sep { color:var(--border); }
+    .top-nav .current { color:var(--text); font-weight:700; }
+
+    .page-header { padding:60px 40px 40px; background:radial-gradient(ellipse 60% 50% at 30% 0%, rgba(99,102,241,0.15) 0%, transparent 60%); border-bottom:1px solid var(--border); }
+    .page-num { font-size:.8rem; color:var(--brand-light); letter-spacing:1px; font-weight:700; margin-bottom:12px; }
+    h1 { font-size:clamp(1.8rem,3vw,3rem); font-weight:900; margin-bottom:16px; }
+    .page-subtitle { font-size:1rem; color:var(--muted); max-width:700px; line-height:1.9; }
+    .content { max-width:1200px; margin:0 auto; padding:50px 40px; }
+    h2 { font-size:1.5rem; font-weight:800; margin-bottom:8px; }
+    .section-label { font-size:.78rem; color:var(--brand-light); letter-spacing:1px; font-weight:700; margin-bottom:10px; }
+    .section-desc { color:var(--muted); font-size:.92rem; line-height:1.9; margin-bottom:30px; }
+    section { margin-bottom:70px; }
+
+    .actors-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
+    .actor-card { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:24px; }
+    .actor-icon { font-size:2rem; margin-bottom:14px; }
+    .actor-name { font-size:1rem; font-weight:800; margin-bottom:8px; }
+    .actor-desc { font-size:.86rem; color:var(--muted); line-height:1.8; }
+    .actor-tag { display:inline-block; margin-top:12px; padding:3px 12px; border-radius:100px; font-size:.75rem; font-weight:700; }
+    .tag-brand { background:rgba(99,102,241,0.15); color:var(--brand-light); }
+    .tag-new { background:rgba(34,197,94,0.15); color:#4ade80; }
+    .tag-existing { background:rgba(100,116,139,0.2); color:#94a3b8; }
+
+    .pricing-layers { display:flex; flex-direction:column; }
+    .pricing-layer { display:flex; align-items:flex-start; gap:24px; padding:28px; border:1px solid var(--border); background:var(--bg-card); transition:border-color .2s; }
+    .pricing-layer:first-child { border-radius:16px 16px 0 0; }
+    .pricing-layer:last-child { border-radius:0 0 16px 16px; border-top-color:transparent; }
+    .pricing-layer:not(:first-child):not(:last-child) { border-top-color:transparent; }
+    .pricing-layer:hover { border-color:rgba(99,102,241,0.3); z-index:1; position:relative; }
+    .layer-num { min-width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:900; }
+    .l1 .layer-num { background:rgba(239,68,68,0.15); color:#f87171; }
+    .l2 .layer-num { background:rgba(245,158,11,0.15); color:#fbbf24; }
+    .l3 .layer-num { background:rgba(34,197,94,0.15); color:#4ade80; }
+    .layer-body h3 { font-size:1rem; font-weight:800; margin-bottom:6px; }
+    .layer-body p { font-size:.87rem; color:var(--muted); line-height:1.8; }
+    .priority-badge { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:100px; margin-right:8px; vertical-align:middle; }
+    .pb-high { background:rgba(239,68,68,0.2); color:#f87171; }
+    .pb-mid { background:rgba(245,158,11,0.2); color:#fbbf24; }
+    .pb-low { background:rgba(100,116,139,0.2); color:#94a3b8; }
+
+    .formula-box { background:#0d1117; border:1px solid rgba(99,102,241,0.25); border-radius:14px; padding:28px; font-family:'Courier New', monospace; }
+    .formula-line { color:#94a3b8; font-size:.88rem; line-height:2.4; }
+    .formula-line .kw { color:#818cf8; }
+    .formula-line .var { color:#67e8f9; }
+    .formula-line .num { color:#86efac; }
+    .formula-line .comment { color:#475569; font-style:italic; }
+
+    .flow { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
+    .flow-step { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px 18px; font-size:.84rem; text-align:center; min-width:130px; }
+    .flow-arrow { padding:0 8px; color:var(--muted); font-size:1.2rem; }
+    .flow-step .step-num { font-size:.7rem; color:var(--brand-light); font-weight:700; margin-bottom:4px; }
+    .flow-step .step-text { font-size:.82rem; font-weight:600; }
+
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.88rem; }
+    th { background:var(--bg-inner); color:var(--muted); font-size:.75rem; font-weight:700; padding:12px 16px; text-align:right; }
+    td { padding:14px 16px; border-bottom:1px solid var(--border); vertical-align:top; }
+    tr:last-child td { border-bottom:none; }
+    .check { color:var(--success); } .x { color:var(--danger); } .partial { color:var(--warning); }
+    code { background:rgba(99,102,241,0.12); color:var(--brand-light); padding:2px 6px; border-radius:5px; font-size:.82em; font-family:'Courier New', monospace; direction: ltr; display: inline-block; }
+
+    .alert { padding:16px 20px; border-radius:12px; display:flex; gap:12px; align-items:flex-start; margin:20px 0; }
+    .alert-info { background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2); }
+    .alert-icon { font-size:1.2rem; flex-shrink:0; }
+    .alert-body { font-size:.89rem; color:var(--muted); line-height:1.8; }
+    .alert-body strong { color:var(--text); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="index.html">🏠 الرئيسية</a>
+  <span class="sep">/</span>
+  <span class="current">تحليل الأعمال</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-num">📄 الصفحة 01 من 05</div>
+  <h1>تحليل الأعمال<br>ومتطلبات النظام</h1>
+  <p class="page-subtitle">تحليل شامل ودقيق لنظام الشركات B2B: من هم الجهات الفاعلة، ماذا يحتاجون، وكيف يحل نموذج التسعير الثلاثي الطبقات كل سيناريوهات التسعير المطروحة.</p>
+</div>
+
+<div class="content">
+
+  <!-- الجهات الفاعلة -->
+  <section>
+    <div class="section-label">القسم 1.1 — الجهات الفاعلة</div>
+    <h2>من يستخدم هذا النظام؟</h2>
+    <p class="section-desc">يُدخل النظام نوعاً جديداً من العملاء يُسمى "الشركة" لديه نظام بيئي خاص به من المخازن وجداول التسعير والعملاء النهائيين — يُدار باستقلالية كاملة داخل SafeDest.</p>
+    <div class="actors-grid">
+      <div class="actor-card">
+        <div class="actor-icon">🏢</div>
+        <div class="actor-name">العميل — الشركة</div>
+        <div class="actor-desc">حساب عميل موجود مُحدَّد بـ <strong>is_company = true</strong>. لديه مخازن وقائمة بالعملاء النهائيين. ينشئ مهام نيابةً عن عملياته في التوزيع.</div>
+        <div class="actor-tag tag-existing">دور محدَّث</div>
+      </div>
+      <div class="actor-card">
+        <div class="actor-icon">🏭</div>
+        <div class="actor-name">مخزن الشركة</div>
+        <div class="actor-desc">موقع استلام فعلي تمتلكه الشركة في محافظة معينة. يحتوي على اسم وإحداثيات GPS وشخص تواصل. يصبح <strong>نقطة الاستلام (Pickup)</strong> في كل مهمة.</div>
+        <div class="actor-tag tag-new">كيان جديد</div>
+      </div>
+      <div class="actor-card">
+        <div class="actor-icon">👤</div>
+        <div class="actor-name">العميل النهائي</div>
+        <div class="actor-desc">المستلِم في محافظة معينة تابع للشركة. لديه اسم، هاتف، محافظة، وعنوان اختياري. يصبح <strong>نقطة التسليم (Delivery)</strong>. يمكن استيراده عبر Excel.</div>
+        <div class="actor-tag tag-new">كيان جديد</div>
+      </div>
+      <div class="actor-card">
+        <div class="actor-icon">⚙️</div>
+        <div class="actor-name">مدير النظام (Admin)</div>
+        <div class="actor-desc">يدير مصفوفة أسعار المسارات، يضبط عمولات المنصة، يُفعّل/يُوقف المخازن، ويعتمد قوائم العملاء المستوردة.</div>
+        <div class="actor-tag tag-existing">دور موجود</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- المشكلة الجوهرية -->
+  <section>
+    <div class="section-label">القسم 1.2 — المشكلة الجوهرية</div>
+    <h2>ما الذي نحلّه؟</h2>
+    <p class="section-desc">نظام التسعير الحالي يعتمد على طرق المسافة / النقاط / اليدوي. لا أيٌّ منها يتوافق مع واقع تسعير شركات التوصيل القائم على "مخزن → محافظة → (اختياري) عميل محدد".</p>
+    <div class="alert alert-info">
+      <div class="alert-icon">💡</div>
+      <div class="alert-body"><strong>الفكرة الجوهرية:</strong> تسعير توصيل الشركة عبارة عن مصفوفة ثابتة: لكل زوج (مخزن، محافظة وجهة) سعر معروف. هذا مختلف جذرياً عن التسعير بالمسافة. قد تحتوي المصفوفة أيضاً على صف تجاوز (Override) لعميل بعينه.</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>السيناريو</th><th>النظام الحالي</th><th>نظام الشركات</th></tr></thead>
+        <tbody>
+          <tr><td>سعر من المخزن A إلى الدمام</td><td class="x">❌ غير ممكن</td><td class="check">✅ مصفوفة مسارات</td></tr>
+          <tr><td>سعر مختلف من المخزن B إلى الدمام</td><td class="x">❌ غير ممكن</td><td class="check">✅ صف منفصل لكل مخزن</td></tr>
+          <tr><td>سعر خاص لعميل X في الدمام</td><td class="x">❌ غير ممكن</td><td class="check">✅ تجاوز سعري لعميل محدد</td></tr>
+          <tr><td>عمولة المنصة عليه</td><td class="partial">⚠️ إعداد عام فقط</td><td class="check">✅ إعداد لكل شركة على حدة</td></tr>
+          <tr><td>استيراد آلاف العملاء</td><td class="x">❌ غير ممكن</td><td class="check">✅ استيراد من Excel</td></tr>
+          <tr><td>المخزن كنقطة استلام تلقائية</td><td class="x">❌ إدخال يدوي</td><td class="check">✅ يُملأ تلقائياً</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- نموذج التسعير الثلاثي -->
+  <section>
+    <div class="section-label">القسم 1.3 — منطق التسعير</div>
+    <h2>نموذج التسعير الثلاثي الطبقات</h2>
+    <p class="section-desc">عند إنشاء مهمة لعميل شركة، يحلّ النظام السعر عبر ثلاث طبقات حسب الأولوية. الطبقة الأولى المتطابقة تفوز.</p>
+
+    <div class="pricing-layers">
+      <div class="pricing-layer l1">
+        <div class="layer-num">1</div>
+        <div class="layer-body">
+          <h3>سعر خاص بالعميل <span class="priority-badge pb-high">الأعلى أولوية</span></h3>
+          <p>إذا كان هناك سعر محدد لهذا <strong>التوليف الدقيق</strong> من (مخزن + عميل نهائي)، يُستخدم هذا السعر. يُتيح تسعيراً مميزاً لعملاء VIP أو ذوي العقود الخاصة بغض النظر عن سعر محافظتهم.</p>
+          <p style="margin-top:8px; font-size:.82rem; color:#818cf8;">الجدول: <code>company_client_pricing</code> ← warehouse_id + end_client_id</p>
+        </div>
+      </div>
+      <div class="pricing-layer l2">
+        <div class="layer-num">2</div>
+        <div class="layer-body">
+          <h3>سعر مخزن ← محافظة <span class="priority-badge pb-mid">أولوية متوسطة</span></h3>
+          <p>إذا لم يوجد سعر خاص بالعميل، يبحث النظام عن سعر لزوج (مخزن + محافظة الوجهة). يغطي هذا كل العملاء العاديين في تلك المحافظة من ذلك المخزن.</p>
+          <p style="margin-top:8px; font-size:.82rem; color:#818cf8;">الجدول: <code>company_route_pricing</code> ← warehouse_id + province_id</p>
+        </div>
+      </div>
+      <div class="pricing-layer l3">
+        <div class="layer-num">3</div>
+        <div class="layer-body">
+          <h3>لا يوجد سعر — رسالة خطأ <span class="priority-badge pb-low">أدنى أولوية</span></h3>
+          <p>إذا لم تُعطِ أيٌّ من الطبقتين السابقتين سعراً، يُوقَف إنشاء المهمة بـ<strong>رسالة خطأ</strong> تطلب من المدير ضبط تسعير هذا المسار. هذا يمنع إنشاء مهام بسعر صفري عن طريق الخطأ.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- معادلة الحساب -->
+  <section>
+    <div class="section-label">القسم 1.4 — معادلة الحساب</div>
+    <h2>كيف يُحتسب السعر النهائي؟</h2>
+    <p class="section-desc">بعد استخلاص السعر الأساسي من النموذج الثلاثي، تُطبَّق الصيغة الآتية للوصول إلى السعر النهائي المعروض للعميل:</p>
+    <div class="formula-box">
+      <div class="formula-line"><span class="comment">// الخطوة 1: استخلاص السعر الأساسي من مصفوفة التسعير</span></div>
+      <div class="formula-line"><span class="var">السعر_الأساسي</span> = <span class="kw">حلّ</span>(سعر_العميل <span class="kw">أو</span> سعر_المسار)</div>
+      <br>
+      <div class="formula-line"><span class="comment">// الخطوة 2: إضافة عمولة المنصة</span></div>
+      <div class="formula-line"><span class="kw">إذا</span> نوع_العمولة == <span class="num">'ثابت'</span>:</div>
+      <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">قيمة_العمولة</span> = إعدادات_الشركة.قيمة_العمولة</div>
+      <div class="formula-line"><span class="kw">وإلا</span> (نسبة مئوية):</div>
+      <div class="formula-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="var">قيمة_العمولة</span> = السعر_الأساسي × (إعدادات_الشركة.قيمة_العمولة / <span class="num">100</span>)</div>
+      <br>
+      <div class="formula-line"><span class="comment">// الخطوة 3: حساب المجموع الفرعي</span></div>
+      <div class="formula-line"><span class="var">المجموع_الفرعي</span> = السعر_الأساسي + قيمة_العمولة</div>
+      <br>
+      <div class="formula-line"><span class="comment">// الخطوة 4: تطبيق ضريبة القيمة المضافة (VAT)</span></div>
+      <div class="formula-line"><span class="var">قيمة_الضريبة</span> = المجموع_الفرعي × (إعدادات_الشركة.نسبة_الضريبة / <span class="num">100</span>)</div>
+      <br>
+      <div class="formula-line"><span class="comment">// الخطوة 5: السعر النهائي</span></div>
+      <div class="formula-line"><span class="var">السعر_الإجمالي</span> = المجموع_الفرعي + قيمة_الضريبة</div>
+    </div>
+  </section>
+
+  <!-- رحلة إنشاء المهمة -->
+  <section>
+    <div class="section-label">القسم 1.5 — رحلة المستخدم</div>
+    <h2>تدفق إنشاء المهمة لعملاء الشركات</h2>
+    <p class="section-desc">عند إنشاء مهمة لعميل شركة، تحلّ واجهة B2B مخصصة محلّ اختيار الاستلام/التسليم القائم على الخريطة:</p>
+    <div class="flow" style="margin-bottom:30px; direction:ltr;">
+      <div class="flow-step"><div class="step-num">الخطوة 1</div><div class="step-text">المدير يفتح إنشاء مهمة ويختار العميل</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">الخطوة 2</div><div class="step-text">النظام يكتشف نوع الشركة ويعرض نموذج B2B</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">الخطوة 3</div><div class="step-text">اختيار المخزن (يصبح نقطة الاستلام)</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">الخطوة 4</div><div class="step-text">اختيار العميل النهائي (يصبح نقطة التسليم)</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">الخطوة 5</div><div class="step-text">النظام يحلّ السعر تلقائياً</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="step-num">الخطوة 6</div><div class="step-text">تُنشأ المهمة مع نقاط مُملأة تلقائياً</div></div>
+    </div>
+
+    <div style="background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2); border-radius:12px; padding:20px;">
+      <h3 style="color:#4ade80; margin-bottom:12px; font-size:.95rem;">✅ منطق التعبئة التلقائية</h3>
+      <p style="color:var(--muted); font-size:.89rem; line-height:1.9;">
+        عند اختيار المخزن ← تُعبَّأ حقول <strong>نقطة الاستلام</strong> تلقائياً من <code>company_warehouses</code>: العنوان، خط العرض، خط الطول، اسم التواصل، رقم الهاتف.<br>
+        عند اختيار العميل النهائي ← تُعبَّأ حقول <strong>نقطة التسليم</strong> تلقائياً من <code>company_end_clients</code>: المحافظة، العنوان (إن وُجد)، الاسم، الهاتف.
+      </p>
+    </div>
+  </section>
+
+  <!-- استيراد Excel -->
+  <section>
+    <div class="section-label">القسم 1.6 — استيراد Excel</div>
+    <h2>استيراد العملاء من Excel</h2>
+    <p class="section-desc">يمكن للشركات استيراد قوائم عملائها النهائيين مباشرة من Excel. تنسيق القالب المتوقع وقواعد التحقق موضحة أدناه:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>اسم العمود</th><th>النوع</th><th>مطلوب</th><th>ملاحظات</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>نص</td><td class="check">✅ نعم</td><td>اسم المستلم الكامل</td></tr>
+          <tr><td><code>phone</code></td><td>نص</td><td class="check">✅ نعم</td><td>رقم الهاتف الرئيسي</td></tr>
+          <tr><td><code>phone_2</code></td><td>نص</td><td class="x">❌ لا</td><td>رقم هاتف ثانوي (اختياري)</td></tr>
+          <tr><td><code>province</code></td><td>نص</td><td class="check">✅ نعم</td><td>اسم المحافظة — يُطابَق مع جدول المحافظات</td></tr>
+          <tr><td><code>city</code></td><td>نص</td><td class="x">❌ لا</td><td>المدينة داخل المحافظة</td></tr>
+          <tr><td><code>address</code></td><td>نص</td><td class="x">❌ لا</td><td>عنوان الشارع الكامل</td></tr>
+          <tr><td><code>notes</code></td><td>نص</td><td class="x">❌ لا</td><td>ملاحظات التسليم الداخلية</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-info" style="margin-top:20px;">
+      <div class="alert-icon">📋</div>
+      <div class="alert-body"><strong>إستراتيجية التكرار:</strong> عند الاستيراد، إذا كان عميل بنفس (رقم الشركة + الهاتف) موجوداً بالفعل، يُتخطى الصف مع تحذير — دون تكرار. يُعاد تقرير ملخصي يوضح عدد المستوردين / المتخطَّين / الفاشلين.</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

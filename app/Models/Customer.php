@@ -46,6 +46,7 @@ class Customer extends Authenticatable
       'signature_image',
       'task_number_start',
       'task_number_next',
+      'is_company',
     ];
 
     protected $casts = [
@@ -234,8 +235,18 @@ class Customer extends Authenticatable
     /**
      * التحقق من كون العميل مخلص جمركي
      */
-    public function isCustomsClearanceAgent()
+    public function warehouses()
     {
-        return $this->is_customs_clearance_agent;
+        return $this->hasMany(Company_Warehouse::class, 'company_id');
+    }
+
+    public function endClients()
+    {
+        return $this->hasMany(Company_End_Client::class, 'company_id');
+    }
+
+    public function pricingConfig()
+    {
+        return $this->hasOne(Company_Pricing_Config::class, 'company_id');
     }
 }

@@ -297,6 +297,16 @@
                                                          </div>
                                                      </div>
 
+                                                     <div class="col-md-12 mb-4">
+                                                         <div class="form-check form-switch card-p">
+                                                             <input class="form-check-input" type="checkbox" name="is_company" id="customer-is-company" value="1">
+                                                             <label class="form-check-label fw-bold" for="customer-is-company">
+                                                                 {{ __('Mark as B2B Company') }}
+                                                             </label>
+                                                         </div>
+                                                         <small class="text-muted">{{ __('Enables B2B specific features, warehouses and multiple end-clients.') }}</small>
+                                                     </div>
+
 
                                                      <div class="col-md-6">
                                                          <div class="mb-4">

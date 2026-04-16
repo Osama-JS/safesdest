@@ -195,7 +195,7 @@ $(function () {
               <div class="d-flex align-items-center">
                 <img src="${task.avatar}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="Avatar">
                 <div class="px-3">
-                  <h6 class="mb-1">#${task.id} ${task.customer_task_number ? `<span class="badge bg-info ms-1">C#${task.customer_task_number}</span>` : ''} - ${task.name}</h6>
+                  <h6 class="mb-1">#${task.id} ${task.customer_task_number ? `<span class="badge bg-info ms-1">C#${task.customer_task_number}</span>` : ''} ${task.is_b2b ? `<span class="badge bg-label-warning ms-1">B2B</span>` : ''} - ${task.name}</h6>
                   <p>${task.point.address || ''} (${task.point.longitude} - ${task.point.latitude})</p>
                    ${driverHtml}
                 ${teamHtml}
@@ -415,8 +415,8 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>Edit Task</a></li>
-                    ${task.data.status !== 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>Edit Task Pricing</a></li>` : ``}
+                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" data-is-b2b="${task.data.is_b2b ? '1' : ''}"><i class="ti ti-edit me-2"></i>Edit Task</a></li>
+                    ${task.data.status !== 'advertised' && !task.data.is_b2b ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>Edit Task Pricing</a></li>` : ``}
                     ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>Edit Task Ad</a></li>` : ``}
                     ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  ><i class="ti ti-map-pin me-2"></i>Tracking Task</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  ><i class="ti ti-steering-wheel me-2"></i>Assign Driver</a></li>
@@ -621,7 +621,10 @@ $(function () {
               <ul class="list-group list-group-flush">
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Owner</strong>
-                  <span>${task.data.customer.owner || '—'}</span>
+                  <span>
+                    ${task.data.customer.owner || '—'}
+                    ${task.data.is_b2b ? '<span class="badge bg-label-warning ms-1">B2B</span>' : ''}
+                  </span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
                   <strong>Name</strong>
@@ -1133,6 +1136,17 @@ $(function () {
 
   $(document).on('click', '.edit-task', function () {
     var taskId = $(this).data('id');
+    var isB2b = $(this).data('is-b2b');
+
+    if (isB2b) {
+      $('#task-details-view').stop().fadeOut(200);
+      if (typeof window.openB2bEditModal === 'function') {
+        window.openB2bEditModal(taskId);
+      } else {
+        console.error('window.openB2bEditModal is not defined. Ensure b2b-task-modal.js is loaded.');
+      }
+      return;
+    }
 
     $.get(`${baseUrl}admin/tasks/edit/${taskId}`, async function (data) {
       if (data.status === 2) {

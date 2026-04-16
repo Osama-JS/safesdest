@@ -178,6 +178,7 @@ class TasksController extends Controller
               'driver_cancel_reason' => $task->driver_cancel_reason,
               'customer_cancel' => $task->customer_cancel,
               'customer_cancel_reason' => $task->customer_cancel_reason,
+              'is_b2b' => $task->pricing_type === 'b2b',
             ];
 
             if ($driver) {
@@ -225,6 +226,7 @@ class TasksController extends Controller
             'driver_cancel_reason' => $task->driver_cancel_reason,
             'customer_cancel' => $task->customer_cancel,
             'customer_cancel_reason' => $task->customer_cancel_reason,
+            'is_b2b' => $task->pricing_type === 'b2b',
             'pickup' => $task->pickup,
             'delivery' => $task->delivery,
             'driver_id' => $task->driver_id,

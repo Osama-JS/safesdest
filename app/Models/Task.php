@@ -47,6 +47,8 @@ class Task extends Model
       'signature_request_id',
       'signature_status',
       'customer_task_number',
+      'company_warehouse_id',
+      'company_end_client_id',
     ];
 
     protected $casts = [
@@ -209,5 +211,31 @@ class Task extends Model
     public function claimRequests()
     {
         return $this->hasMany(TaskClaimRequest::class, 'task_id');
+    }
+
+    public function companyWarehouse()
+    {
+        return $this->belongsTo(Company_Warehouse::class, 'company_warehouse_id');
+    }
+
+    public function companyEndClient()
+    {
+        return $this->belongsTo(Company_End_Client::class, 'company_end_client_id');
+    }
+
+    /**
+     * B2B details linking table (identity + pricing snapshot).
+     */
+    public function b2bDetail(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TaskB2bDetail::class, 'task_id');
+    }
+
+    /**
+     * Is this task a B2B company task?
+     */
+    public function getIsB2bAttribute(): bool
+    {
+        return $this->company_warehouse_id !== null;
     }
 }

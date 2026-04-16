@@ -451,6 +451,7 @@ class CustomersController extends Controller
               'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
               'account_number' => $req->account_number,
               'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
+              'is_company' => $req->has('is_company') ? 1 : 0,
               // Task numbering
               'task_number_start' => $req->task_number_start ? (int) $req->task_number_start : null,
             ];

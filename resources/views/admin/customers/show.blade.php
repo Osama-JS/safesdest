@@ -120,6 +120,15 @@
                             data-bs-target="#navs-pills-top-profile" aria-controls="navs-pills-top-profile"
                             aria-selected="false"><i class="ti ti-details ti-sm me-1_5"></i>{{ __('Details') }}</button>
                     </li>
+                    @if ($data->is_company)
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#navs-pills-top-b2b" aria-controls="navs-pills-top-b2b"
+                                aria-selected="false">
+                                <i class="ti ti-building-skyscraper ti-sm me-1_5"></i>{{ __('B2B Settings') }}
+                            </button>
+                        </li>
+                    @endif
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="navs-pills-top-home" role="tabpanel">
@@ -237,6 +246,84 @@
                             @endif
                         </div>
                     </div>
+                    @if ($data->is_company)
+                        <div class="tab-pane fade" id="navs-pills-top-b2b" role="tabpanel">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="card h-100 shadow-none border">
+                                        <div class="card-body text-center p-6">
+                                            <div class="avatar avatar-lg mx-auto mb-4">
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="ti ti-home-shipping fs-2"></i>
+                                                </span>
+                                            </div>
+                                            <h5>{{ __('Warehouses') }}</h5>
+                                            <p class="text-muted small mb-4">
+                                                {{ __('Manage loading points and distribution centers.') }}</p>
+                                            <a href="{{ route('b2b.warehouses', ['company_id' => $data->id]) }}"
+                                                class="btn btn-primary btn-sm">
+                                                <i class="ti ti-external-link me-1"></i>{{ __('Manage') }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 shadow-none border">
+                                        <div class="card-body text-center p-6">
+                                            <div class="avatar avatar-lg mx-auto mb-4">
+                                                <span class="avatar-initial rounded bg-label-info">
+                                                    <i class="ti ti-users fs-2"></i>
+                                                </span>
+                                            </div>
+                                            <h5>{{ __('End Clients') }}</h5>
+                                            <p class="text-muted small mb-4">
+                                                {{ __('Manage final shipping destinations and recipients.') }}</p>
+                                            <a href="{{ route('b2b.end-clients', ['company_id' => $data->id]) }}"
+                                                class="btn btn-info btn-sm text-white">
+                                                <i class="ti ti-external-link me-1"></i>{{ __('Manage') }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 shadow-none border">
+                                        <div class="card-body text-center p-6">
+                                            <div class="avatar avatar-lg mx-auto mb-4">
+                                                <span class="avatar-initial rounded bg-label-success">
+                                                    <i class="ti ti-table fs-2"></i>
+                                                </span>
+                                            </div>
+                                            <h5>{{ __('Pricing Matrix') }}</h5>
+                                            <p class="text-muted small mb-4">
+                                                {{ __('Configure per-route and per-vehicle delivery rates.') }}</p>
+                                            <a href="{{ route('b2b.pricing.index', $data->id) }}"
+                                                class="btn btn-success btn-sm">
+                                                <i class="ti ti-external-link me-1"></i>{{ __('Configure') }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 shadow-none border">
+                                        <div class="card-body text-center p-6">
+                                            <div class="avatar avatar-lg mx-auto mb-4">
+                                                <span class="avatar-initial rounded bg-label-warning">
+                                                    <i class="ti ti-settings fs-2"></i>
+                                                </span>
+                                            </div>
+                                            <h5>{{ __('Commission & VAT') }}</h5>
+                                            <p class="text-muted small mb-4">
+                                                {{ __('Set platform fees and tax percentages for this company.') }}</p>
+                                            <a href="{{ route('b2b.config.index', $data->id) }}"
+                                                class="btn btn-warning btn-sm text-white">
+                                                <i class="ti ti-external-link me-1"></i>{{ __('Settings') }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -362,6 +362,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::prefix('api')->name('api.')->group(function () {
                         Route::get('/companies/{companyId}/warehouses', [\App\Http\Controllers\admin\B2bTaskController::class, 'getWarehouses'])->name('warehouses');
                         Route::get('/companies/{companyId}/end-clients', [\App\Http\Controllers\admin\B2bTaskController::class, 'getEndClients'])->name('end-clients');
+                        Route::get('/vehicles', [\App\Http\Controllers\admin\B2bTaskController::class, 'getVehicles'])->name('vehicles');
                         Route::get('/vehicle-sizes', [\App\Http\Controllers\admin\B2bTaskController::class, 'getVehicleSizes'])->name('vehicle-sizes');
                         Route::post('/calculate-price', [\App\Http\Controllers\admin\B2bTaskController::class, 'calculatePrice'])->name('calculate-price');
                     });
@@ -685,6 +686,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::delete('/tasks/connect/{id}', [TasksController::class, 'connectTeam'])->name('tasks.connect');
                 Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
                 Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
+                Route::get('tasks/order-share-data/{orderId}', [TasksController::class, 'getOrderShareData'])->name('tasks.order_share_data');
+                Route::post('tasks/bulk-share-data', [TasksController::class, 'getBulkShareData'])->name('tasks.bulk_share_data');
                 Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');
 
                 Route::get('tasks/pricing/edit/{id}', [TasksController::class, 'editPricing'])->name('tasks.pricing.edit');

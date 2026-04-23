@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company_End_Client;
 use App\Models\Company_Warehouse;
 use App\Models\Task;
+use App\Models\Vehicle;
 use App\Models\Vehicle_Size;
 use App\Services\B2bTaskService;
 use Illuminate\Http\Request;
@@ -55,6 +56,15 @@ class B2bTaskController extends Controller
             ->paginate(50);
 
         return response()->json($clients);
+    }
+
+    /**
+     * GET /admin/b2b/api/vehicles
+     * قائمة المركبات (الاسم/البراند) للـ dropdown.
+     */
+    public function getVehicles()
+    {
+        return response()->json(Vehicle::all(['id', 'name']));
     }
 
     /**
@@ -120,10 +130,13 @@ class B2bTaskController extends Controller
             'warehouse_id'    => 'required|integer|exists:company_warehouses,id',
             'end_client_id'   => 'required|integer|exists:company_end_clients,id',
             'vehicle_size_id' => 'required|integer|exists:vehicle_sizes,id',
+            'quantity'        => 'required|integer|min:1',
             'delivery_before' => 'nullable|date',
             'conditions'      => 'nullable|string|max:1000',
             'pickup_note'     => 'nullable|string|max:500',
             'delivery_note'   => 'nullable|string|max:500',
+            'template'        => 'nullable|integer|exists:form_templates,id',
+            'additional_fields' => 'nullable|array',
         ]);
 
         try {
@@ -132,7 +145,7 @@ class B2bTaskController extends Controller
             return response()->json([
                 'status'  => 1,
                 'message' => __('تم إنشاء المهمة بنجاح'),
-                'task_id' => $task->id,
+                'task_id' => is_array($task) ? $task[0]->id : $task->id,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -152,7 +165,7 @@ class B2bTaskController extends Controller
             return response()->json(['status' => 0, 'message' => 'ليست مهمة B2B'], 404);
         }
 
-        $detail = $task->b2bDetail()->with(['warehouse', 'endClient', 'vehicleSize'])->first();
+        $detail = $task->b2bDetail()->with(['warehouse', 'endClient', 'vehicleSize.type'])->first();
 
         return response()->json([
             'status' => 1,
@@ -161,8 +174,12 @@ class B2bTaskController extends Controller
                 'company_id'      => $detail->company_id,
                 'warehouse_id'    => $detail->warehouse_id,
                 'end_client_id'   => $detail->end_client_id,
+                'vehicle_id'      => $detail->vehicleSize->type?->vehicle_id,
+                'vehicle_type_id' => $detail->vehicleSize->vehicle_type_id,
                 'vehicle_size_id' => $detail->vehicle_size_id,
                 'conditions'      => $task->conditions,
+                'form_template_id' => $task->form_template_id,
+                'additional_data' => $task->additional_data,
                 'delivery_before' => $task->delivery?->scheduled_time,
                 'pricing'         => [
                     'base_price'   => $detail->base_price,
@@ -205,6 +222,8 @@ class B2bTaskController extends Controller
             'conditions'      => 'nullable|string|max:1000',
             'pickup_note'     => 'nullable|string|max:500',
             'delivery_note'   => 'nullable|string|max:500',
+            'template'        => 'nullable|integer|exists:form_templates,id',
+            'additional_fields' => 'nullable|array',
         ]);
 
         try {

@@ -653,6 +653,50 @@
         </tr>
     </table>
 
+    <!-- DRIVER DOCUMENTS -->
+    @if ($task->driver && !empty((array) $task->driver->driver_visible_additional_data))
+        @php
+            $driverDocs = array_filter((array) $task->driver->driver_visible_additional_data, function($item) {
+                $val = $item['value'] ?? '';
+                $type = $item['type'] ?? '';
+                return !empty($val) && (
+                    in_array($type, ['file', 'image', 'file_expiration_date']) ||
+                    preg_match('/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt|jpg|jpeg|png|gif|webp)$/i', $val)
+                );
+            });
+        @endphp
+        @if (!empty($driverDocs))
+            <div style="margin-top: 15px; padding: 10px; ">
+                <div style="font-weight: bold; color: #1a2733;  padding-bottom: 5px; margin-bottom: 10px; font-size: 13px;">
+                    وثائق السائق
+                </div>
+                <table style="width: 100%;">
+                    @foreach(array_chunk($driverDocs, 3, true) as $chunk)
+                        <tr>
+                            @foreach($chunk as $item)
+                                <td style="padding: 3px; font-size: 10px;">
+                                    @php
+                                        $fileUrl = ltrim($item['value'], '/');
+                                        if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
+                                            $fileUrl = 'storage/' . $fileUrl;
+                                        }
+                                    @endphp
+                                    <strong>{{ $item['label'] }}:</strong>
+                                    <a href="{{ url($fileUrl) }}" target="_blank" style="color: #004085; text-decoration: underline;">
+                                        تحميل / Download
+                                    </a>
+                                </td>
+                            @endforeach
+                            @for ($i = count($chunk); $i < 3; $i++)
+                                <td></td>
+                            @endfor
+                        </tr>
+                    @endforeach
+                </table>
+            </div>
+        @endif
+    @endif
+
     <!-- CONTACT INFO -->
      <div style="width: 100%; text-align: center; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; font-size: 11px; line-height: 1.8;">
         <div style="margin-bottom: 5px;">

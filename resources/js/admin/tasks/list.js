@@ -90,6 +90,7 @@ $(function () {
       },
       columns: [
         { data: '' }, // للـ control (responsive)
+        { data: 'id' }, // للـ checkboxes
         { data: 'id' }, // الترقيم التسلسلي
         { data: 'customer_task_number' },
         { data: 'order' }, // الاسم مع الأفاتار
@@ -97,12 +98,12 @@ $(function () {
         { data: 'driver_price' }, // الاسم مع الأفاتار
         { data: 'team' }, // البريد
         { data: 'driver' }, // الجوال
-        { data: 'address' }, // الحالة
-        { data: 'start' }, // الحالة
-        { data: 'complete' }, // الحالة
+        { data: 'owner' }, // المالك
+        { data: 'address' }, // العنوان
+        { data: 'start' }, // التاريخ
+        { data: 'complete' }, // التاريخ
         { data: 'status' }, // الحالة
-        { data: 'task' }, // الحالة
-        { data: 'created_at' }, // تاريخ الإنشاء
+        { data: 'task' }, // الدفع
         { data: null }, // closed
         { data: null } // actions
       ],
@@ -121,13 +122,26 @@ $(function () {
           targets: 1,
           searchable: false,
           orderable: false,
+          responsivePriority: 3,
+          render: function (data, type, full, meta) {
+            // لا يمكن تحديد المهام المرتبطة بسائق
+            if (full.driver !== '-') {
+              return '';
+            }
+            return `<input type="checkbox" class="form-check-input dt-checkboxes" value="${full.id}">`;
+          }
+        },
+        {
+          targets: 2,
+          searchable: false,
+          orderable: false,
           responsivePriority: 1,
           render: function (data, type, full, meta) {
             return `<span>${full.id}</span>`;
           }
         },
         {
-          targets: 2,
+          targets: 3,
           render: function (data, type, full, meta) {
             return full.customer_task_number
               ? `<span class="badge bg-info">C#${full.customer_task_number}</span>`
@@ -135,17 +149,9 @@ $(function () {
           }
         },
         {
-          targets: 3,
-          render: function (data, type, full, meta) {
-            return `<span>${full.order}</span>`;
-          }
-        },
-        {
           targets: 4,
-          responsivePriority: 2,
-          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
+            return `<span>${full.order || '-'}</span>`;
           }
         },
         {
@@ -153,17 +159,25 @@ $(function () {
           responsivePriority: 2,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-info rounded text-info px-2"><strong>${full.driver_price} SAR</strong></span>`;
+            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
           }
         },
         {
           targets: 6,
+          responsivePriority: 2,
+          className: 'text-nowrap w-auto',
+          render: function (data, type, full, meta) {
+            return `<span class="border border-info rounded text-info px-2"><strong>${full.driver_price} SAR</strong></span>`;
+          }
+        },
+        {
+          targets: 7,
           render: function (data, type, full, meta) {
             return `<span>${full.team}</span>`;
           }
         },
         {
-          targets: 7,
+          targets: 8,
           responsivePriority: 7,
           render: function (data, type, full, meta) {
             return full.driver === '-'
@@ -177,31 +191,31 @@ $(function () {
           }
         },
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             return `<span>${full.owner} <br> (${full.owner_info})</span>`;
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             return `<span>${full.address}</span>`;
           }
         },
         {
-          targets: 10,
+          targets: 11,
           render: function (data, type, full, meta) {
             return `<span>${full.start}</span>`;
           }
         },
         {
-          targets: 11,
+          targets: 12,
           render: function (data, type, full, meta) {
             return `<span>${full.complete}</span>`;
           }
         },
         {
-          targets: 12,
+          targets: 13,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -236,7 +250,7 @@ $(function () {
           }
         },
         {
-          targets: 13,
+          targets: 14,
           responsivePriority: 5,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -258,14 +272,15 @@ $(function () {
           }
         },
         {
-          targets: 14,
-          responsivePriority: 6,
+          targets: 15,
           render: function (data, type, full, meta) {
-            return `${full.closed ? `<span class="px-2 rounded bg-secondary text-white">Closed</span> <p>Delivery no: ${full.delivery} </p>` : `<span class="px-2 rounded bg-success text-white">Open</span> `}`;
+            return full.closed
+              ? '<span class="badge bg-success">Yes</span>'
+              : '<span class="badge bg-danger">No</span>';
           }
         },
         {
-          targets: 15,
+          targets: 16,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -291,6 +306,7 @@ $(function () {
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
                     ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-truck-name="${full.vehicle_info ? full.vehicle_info.truck_name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-vehicle-size="${full.vehicle_info ? full.vehicle_info.size : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>` : ''}
+                    ${full.order ? `<li><a href="javascript:;" class="dropdown-item share-order-whatsapp" data-order-id="${full.order}" data-task-id="${full.id}"><i class="ti ti-brand-whatsapp me-2"></i>Share Order on WhatsApp</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>
                     <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">Fix Connection</a></li>
 
@@ -1430,5 +1446,146 @@ $(function () {
         });
       }
     });
+  });
+
+  $(document).on('click', '.share-order-whatsapp', function () {
+    const orderId = $(this).data('order-id');
+    const taskId = $(this).data('task-id');
+
+    // إظهار لوادر
+    Swal.fire({
+      title: 'تحضير بيانات الطلب...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    fetch(`${baseUrl}admin/tasks/order-share-data/${orderId}`, {
+      headers: {
+        Accept: 'application/json'
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        Swal.close();
+        if (data.status === 1) {
+          const tasks = data.tasks;
+          const orderNumber = data.order_id;
+          const totalPrice = data.total_price;
+
+          let message = `طلب جديد 🚚\n------------------\nرقم الطلب: #${orderNumber}\n\n`;
+
+          tasks.forEach(group => {
+            message += `عدد (${group.count}) مهام - ${group.vehicle_info.truck_name} - ${group.vehicle_info.size}\n`;
+            message += `بسعر مفرد: ${group.price} - الإجمالي: ${group.group_total}\n`;
+            message += `من: ${group.pickup}\n`;
+            message += `إلى: ${group.delivery}\n`;
+            if (group.ids && group.ids.length > 0) {
+              message += `(أرقام المهام: #${group.ids.join(', #')})\n`;
+            }
+            message += `------------------\n`;
+          });
+
+          message += `\nإجمالي قيمة الطلب: ${totalPrice} ريال\n`;
+          message += `\n${baseUrl}share/task/${btoa('TASK-' + taskId)}`;
+
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+        } else {
+          showAlert('danger', data.message || 'حدث خطأ في جلب بيانات الطلب');
+        }
+      })
+      .catch(err => {
+        Swal.close();
+        console.error(err);
+        showAlert('danger', 'خطأ في الاتصال بالخادم');
+      });
+  });
+
+  // Handle select all checkbox
+  $(document).on('change', '#selectAll', function () {
+    $('.dt-checkboxes').prop('checked', $(this).prop('checked'));
+    toggleBulkShareButton();
+  });
+
+  // Handle individual checkbox change
+  $(document).on('change', '.dt-checkboxes', function () {
+    if (!$(this).prop('checked')) {
+      $('#selectAll').prop('checked', false);
+    } else {
+      if ($('.dt-checkboxes:checked').length === $('.dt-checkboxes').length && $('.dt-checkboxes').length > 0) {
+        $('#selectAll').prop('checked', true);
+      }
+    }
+    toggleBulkShareButton();
+  });
+
+  function toggleBulkShareButton() {
+    if ($('.dt-checkboxes:checked').length > 0) {
+      $('#shareSelectedWhatsapp').fadeIn();
+    } else {
+      $('#shareSelectedWhatsapp').fadeOut();
+    }
+  }
+
+  // Bulk share handler
+  $(document).on('click', '#shareSelectedWhatsapp', function () {
+    const selectedIds = [];
+    $('.dt-checkboxes:checked').each(function () {
+      selectedIds.push($(this).val());
+    });
+
+    Swal.fire({
+      title: 'تحضير البيانات المحددة...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    fetch(`${baseUrl}admin/tasks/bulk-share-data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ ids: selectedIds })
+    })
+      .then(response => response.json())
+      .then(data => {
+        Swal.close();
+        if (data.status === 1) {
+          const tasks = data.tasks;
+          const totalPrice = data.total_price;
+
+          let message = `🚚 تفاصيل المهام المحددة\n------------------\n\n`;
+
+          tasks.forEach(group => {
+            message += `عدد (${group.count}) مهام - ${group.vehicle_info.truck_name} - ${group.vehicle_info.size}\n`;
+            message += `بسعر مفرد: ${group.price} - الإجمالي: ${group.group_total}\n`;
+            message += `من: ${group.pickup}\n`;
+            message += `إلى: ${group.delivery}\n`;
+            if (group.ids && group.ids.length > 0) {
+              message += `(أرقام المهام: #${group.ids.join(', #')})\n`;
+            }
+            message += `------------------\n`;
+          });
+
+          message += `\nإجمالي القيمة: ${totalPrice} ريال\n`;
+          message += `\n${baseUrl}share/task/${btoa('TASK-' + selectedIds[0])}`;
+
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+        } else {
+          showAlert('danger', data.message || 'حدث خطأ في جلب البيانات');
+        }
+      })
+      .catch(err => {
+        Swal.close();
+        console.error(err);
+        showAlert('danger', 'خطأ في الاتصال بالخادم');
+      });
   });
 });

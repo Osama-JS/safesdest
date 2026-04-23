@@ -105,6 +105,12 @@
                 {{-- Populate via JS if needed --}}
             </select>
         </div>
+        <!-- Bulk Actions -->
+        <div>
+            <button type="button" class="btn btn-brand-whatsapp text-white share-selected-whatsapp" id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
+                <i class="ti ti-brand-whatsapp me-1"></i> {{ __('Share Selected') }}
+            </button>
+        </div>
     </div>
 
 
@@ -124,6 +130,7 @@
                 <thead class="border ">
                     <tr>
                         <th></th>
+                        <th class="px-2 select-checkbox-header"><input type="checkbox" class="form-check-input select-all" id="selectAll"></th>
                         <th>{{ __('task id') }}</th>
                         <th>{{ __('customer task no') }}</th>
                         <th>{{ __('order id') }}</th>

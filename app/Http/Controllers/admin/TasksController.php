@@ -2163,7 +2163,8 @@ class TasksController extends Controller
             $data[] = [
               'id'         => $task->id,
           'customer_task_number' => $task->customer_task_number,
-          'order'      => $task->order->id ?? "-",
+          'order'      => $task->order_id,
+          'order_id'   => $task->order_id,
               'price'      => $task->total_price,
               'team'       => $task->team->name ?? "-",
               'driver'     => $task->driver ?? '-',
@@ -3594,7 +3595,21 @@ class TasksController extends Controller
 
 
             // استرجاع المهمة الأصلية مع جميع العلاقات
-            $originalTask = Task::with(['points', 'ad'])->findOrFail($request->id);
+            $originalTask = Task::with(['points', 'ad', 'b2bDetail'])->findOrFail($request->id);
+
+            // التحقق إذا كانت المهمة B2B لإسناد المهمة لخدمة B2B المتخصصة
+            if ($originalTask->pricing_type === 'b2b' || $originalTask->b2bDetail) {
+                $b2bService = app(\App\Services\B2bTaskService::class);
+                $newTask = $b2bService->duplicateTask($originalTask);
+
+                DB::commit();
+                return response()->json([
+                    'status' => 1,
+                    'message' => __('Task duplicated successfully (B2B)'),
+                    'task_id' => $newTask->id,
+                    'original_task_id' => $originalTask->id
+                ]);
+            }
 
             // إنشاء مصفوفة البيانات الجديدة للمهمة
             $newTaskData = $originalTask->toArray();
@@ -3824,6 +3839,126 @@ class TasksController extends Controller
             }
 
             return redirect()->back()->with('error', __('Failed to generate invoice.'));
+        }
+    }
+
+    public function getOrderShareData($orderId)
+    {
+        try {
+            $tasks = Task::where('order_id', $orderId)
+                ->whereNull('driver_id') // استثناء المهام المرتبطة بسائق
+                ->with(['pickup', 'delivery', 'vehicle_size.type.vehicle'])
+                ->get();
+
+            if ($tasks->isEmpty()) {
+                return response()->json(['status' => 0, 'message' => 'لا توجد مهام غير مرتبطة بسائق في هذا الطلب']);
+            }
+
+            $consolidated = [];
+            $totalOrderPrice = 0;
+
+            foreach ($tasks as $task) {
+                $totalOrderPrice += $task->total_price;
+
+                // Create a unique key for grouping: vehicle, price, pickup, delivery
+                $key = ($task->vehicle_size_id ?? '0') . '_' . 
+                       $task->total_price . '_' . 
+                       ($task->pickup->address ?? '') . '_' . 
+                       ($task->delivery->address ?? '');
+
+                if (!isset($consolidated[$key])) {
+                    $consolidated[$key] = [
+                        'count' => 0,
+                        'price' => $task->total_price,
+                        'group_total' => 0,
+                        'pickup' => $task->pickup->address ?? '-',
+                        'delivery' => $task->delivery->address ?? '-',
+                        'ids' => [],
+                        'vehicle_info' => [
+                            'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                            'type' => $task->vehicle_size->type->name ?? '-',
+                            'size' => $task->vehicle_size->name ?? '-',
+                        ]
+                    ];
+                }
+
+                $consolidated[$key]['count']++;
+                $consolidated[$key]['group_total'] += $task->total_price;
+                $consolidated[$key]['ids'][] = $task->id;
+            }
+
+            return response()->json([
+                'status' => 1,
+                'order_id' => $orderId,
+                'total_price' => $totalOrderPrice,
+                'tasks' => array_values($consolidated)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('getOrderShareData Error: ' . $e->getMessage());
+            return response()->json(['status' => 0, 'message' => 'حدث خطأ أثناء جلب بيانات الطلب']);
+        }
+    }
+
+    public function getBulkShareData(\Illuminate\Http\Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+            if (empty($ids)) {
+                return response()->json(['status' => 0, 'message' => 'لم يتم تحديد أي مهام']);
+            }
+
+            $tasks = Task::whereIn('id', $ids)
+                ->whereNull('driver_id') // استثناء المهام المرتبطة بسائق
+                ->with(['pickup', 'delivery', 'vehicle_size.type.vehicle'])
+                ->get();
+
+            if ($tasks->isEmpty()) {
+                return response()->json(['status' => 0, 'message' => 'المهام المحددة غير موجودة أو مرتبطة بسائق مسبقاً']);
+            }
+
+            $consolidated = [];
+            $totalPrice = 0;
+
+            foreach ($tasks as $task) {
+                $totalPrice += $task->total_price;
+
+                // التجميع بناءً على (نوع المركبة، السعر، موقع الاستلام، موقع التسليم)
+                $key = ($task->vehicle_size_id ?? '0') . '_' . 
+                       $task->total_price . '_' . 
+                       ($task->pickup->address ?? '') . '_' . 
+                       ($task->delivery->address ?? '');
+
+                if (!isset($consolidated[$key])) {
+                    $consolidated[$key] = [
+                        'count' => 0,
+                        'price' => $task->total_price,
+                        'group_total' => 0,
+                        'pickup' => $task->pickup->address ?? '-',
+                        'delivery' => $task->delivery->address ?? '-',
+                        'ids' => [],
+                        'vehicle_info' => [
+                            'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                            'type' => $task->vehicle_size->type->name ?? '-',
+                            'size' => $task->vehicle_size->name ?? '-',
+                        ]
+                    ];
+                }
+
+                $consolidated[$key]['count']++;
+                $consolidated[$key]['group_total'] += $task->total_price;
+                $consolidated[$key]['ids'][] = $task->id;
+            }
+
+            return response()->json([
+                'status' => 1,
+                'total_price' => $totalPrice,
+                'tasks' => array_values($consolidated)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('getBulkShareData Error: ' . $e->getMessage());
+            return response()->json(['status' => 0, 'message' => 'حدث خطأ أثناء تجميع البيانات المحددة']);
         }
     }
 }

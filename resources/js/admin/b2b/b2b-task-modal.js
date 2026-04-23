@@ -1,7 +1,4 @@
-/**
- * B2B Task Modal JavaScript Logic
- * Handles dynamic dropdowns, price calculation, and submission.
- */
+import { generateFields } from '../../ajax';
 
 $(function () {
     const b2bModal = $('#b2bTaskModal');
@@ -9,7 +6,12 @@ $(function () {
     const companySelect = $('#b2b-company-id');
     const warehouseSelect = $('#b2b-warehouse-id');
     const clientSelect = $('#b2b-end-client-id');
-    const vehicleSelect = $('#b2b-vehicle-size-id');
+    const vehicleSelect = $('#b2b-vehicle-id');
+    const typeSelect = $('#b2b-vehicle-type-id');
+    const sizeSelect = $('#b2b-vehicle-size-id');
+    const quantityInput = $('#b2b-quantity');
+    const templateSelect = $('#b2b-select-template');
+    const additionalForm = $('#b2b-additional-form');
     const calcBtn = $('#b2b-calc-price-btn');
     const submitBtn = $('#b2b-submit-btn');
 
@@ -75,8 +77,40 @@ $(function () {
         // Enable Client Select AJAX
         clientSelect.prop('disabled', false);
 
-        // Load Vehicles
-        loadDropdown(vehicleSelect, `${baseUrl}/admin/b2b/api/vehicle-sizes`);
+        // Load Vehicles (Brands/Models)
+        loadDropdown(vehicleSelect, `${baseUrl}/admin/b2b/api/vehicles`);
+    });
+
+    // 1.1 Vehicle -> Type
+    vehicleSelect.on('change', function () {
+        const vehicleId = $(this).val();
+        resetFields(['vehicle-type', 'vehicle-size', 'pricing']);
+        if (!vehicleId) return;
+
+        loadDropdown(typeSelect, `${baseUrl}/admin/settings/vehicles/types/${vehicleId}`);
+    });
+
+    // 1.2 Type -> Size
+    typeSelect.on('change', function () {
+        const typeId = $(this).val();
+        resetFields(['vehicle-size', 'pricing']);
+        if (!typeId) return;
+
+        loadDropdown(sizeSelect, `${baseUrl}/admin/settings/vehicles/sizes/${typeId}`);
+    });
+
+    // 1.3 Handle Template Change
+    templateSelect.on('change', function () {
+        const templateId = $(this).val();
+        additionalForm.html(''); // Clear previous fields
+
+        if (templateId) {
+            $.get(`${baseUrl}/admin/settings/templates/fields`, { id: templateId }, function (res) {
+                if (res.fields) {
+                    generateFields(res.fields, {}, '#b2b-additional-form');
+                }
+            });
+        }
     });
 
     // 2. Enable/Disable Calc Button
@@ -99,7 +133,7 @@ $(function () {
     function loadDropdown(element, url) {
         element.prop('disabled', true).html('<option value="">جاري التحميل...</option>');
         
-        $.get(url, function (data) {
+        return $.get(url, function (data) {
             let options = '<option value="">اختر...</option>';
             
             // Handle different data structures (array or paginated object)
@@ -117,7 +151,7 @@ $(function () {
     }
 
     function validateInputs() {
-        const isValid = companySelect.val() && warehouseSelect.val() && clientSelect.val() && vehicleSelect.val();
+        const isValid = companySelect.val() && warehouseSelect.val() && clientSelect.val() && sizeSelect.val();
         calcBtn.prop('disabled', !isValid);
         
         // If anything changed, hide previous pricing
@@ -136,7 +170,7 @@ $(function () {
             company_id: companySelect.val(),
             warehouse_id: warehouseSelect.val(),
             end_client_id: clientSelect.val(),
-            vehicle_size_id: vehicleSelect.val()
+            vehicle_size_id: sizeSelect.val()
         };
 
         $.post(`${baseUrl}/admin/b2b/api/calculate-price`, payload, function (res) {
@@ -166,13 +200,15 @@ $(function () {
 
         submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...');
 
-        const formData = b2bForm.serializeArray();
-        if (taskId) formData.push({name: '_method', value: 'PUT'});
+        const formData = new FormData(b2bForm[0]);
+        if (taskId) formData.append('_method', 'PUT');
 
         $.ajax({
             url: url,
-            method: 'POST', // Always POST for Laravel if spoofing method
+            method: 'POST', 
             data: formData,
+            processData: false,
+            contentType: false,
             success: function (res) {
                 if (res.status === 1) {
                     Swal.fire({ icon: 'success', title: 'تم!', text: res.message, timer: 1500 });
@@ -213,7 +249,18 @@ $(function () {
     function resetFields(types) {
         if (types.includes('warehouse')) warehouseSelect.html('<option value="">اختر...</option>').prop('disabled', true);
         if (types.includes('client')) clientSelect.html('<option value="">اختر...</option>').prop('disabled', true);
-        if (types.includes('vehicle')) vehicleSelect.html('<option value="">اختر...</option>').prop('disabled', true);
+        if (types.includes('vehicle')) {
+            vehicleSelect.html('<option value="">اختر المركبة...</option>').prop('disabled', true);
+            typeSelect.html('<option value="">اختر النوع...</option>').prop('disabled', true);
+            sizeSelect.html('<option value="">اختر الحجم...</option>').prop('disabled', true);
+        }
+        if (types.includes('vehicle-type')) {
+            typeSelect.html('<option value="">اختر النوع...</option>').prop('disabled', true);
+            sizeSelect.html('<option value="">اختر الحجم...</option>').prop('disabled', true);
+        }
+        if (types.includes('vehicle-size')) {
+            sizeSelect.html('<option value="">اختر الحجم...</option>').prop('disabled', true);
+        }
         if (types.includes('pricing')) {
             $('#b2b-pricing-result, #b2b-pricing-error').addClass('d-none');
             submitBtn.prop('disabled', true);
@@ -221,31 +268,65 @@ $(function () {
     }
 
     // Export for Global Use (Edit Mode)
-    window.openB2bEditModal = function(taskId) {
+    window.openB2bEditModal = function (taskId) {
         b2bModal.modal('show');
         resetFields(['warehouse', 'client', 'vehicle', 'pricing']);
         $('#b2b-task-id').val(taskId);
         $('#b2bTaskModalTitle').text('تعديل مهمة B2B');
-        $('#b2b-submit-label').text('تحديث المهمة');
+        $('#b2b-submit-label').text('حفظ التعديلات');
 
-        $.get(`${baseUrl}/admin/b2b/tasks/${taskId}/data`, function(res) {
+        $.get(`${baseUrl}/admin/b2b/tasks/${taskId}/data`, function (res) {
             if (res.status === 1) {
                 const d = res.data;
-                companySelect.val(d.company_id).trigger('change');
-                
-                // Wait for dependent dropdowns to load (async)
-                setTimeout(() => {
+
+                // 1. الأساسيات
+                companySelect.val(d.company_id);
+                $('#b2b-conditions').val(d.conditions);
+                $('#b2b-delivery-before').val(d.delivery_before);
+
+                // 2. تحميل المستودعات والعملاء
+                const pWarehouse = loadDropdown(warehouseSelect, `${baseUrl}/admin/b2b/api/companies/${d.company_id}/warehouses`);
+                clientSelect.prop('disabled', false);
+                if (d.end_client) {
+                    const newOpt = new Option(d.end_client.name, d.end_client_id, true, true);
+                    clientSelect.append(newOpt).trigger('change');
+                }
+
+                // 3. تسلسل المركبات (Cascading Vehicles)
+                const pVehicle = loadDropdown(vehicleSelect, `${baseUrl}/admin/b2b/api/vehicles`);
+
+                $.when(pWarehouse, pVehicle).done(() => {
                     warehouseSelect.val(d.warehouse_id);
 
-                    if (d.end_client) {
-                        const newOpt = new Option(d.end_client.name, d.end_client_id, true, true);
-                        clientSelect.append(newOpt).trigger('change');
+                    if (d.vehicle_id) {
+                        vehicleSelect.val(d.vehicle_id);
+                        loadDropdown(typeSelect, `${baseUrl}/admin/settings/vehicles/types/${d.vehicle_id}`).done(() => {
+                            if (d.vehicle_type_id) {
+                                typeSelect.val(d.vehicle_type_id);
+                                loadDropdown(sizeSelect, `${baseUrl}/admin/settings/vehicles/sizes/${d.vehicle_type_id}`).done(() => {
+                                    if (d.vehicle_size_id) {
+                                        sizeSelect.val(d.vehicle_size_id);
+                                    }
+                                });
+                            }
+                        });
                     }
+                });
 
-                    vehicleSelect.val(d.vehicle_size_id);
-                    $('#b2b-conditions').val(d.conditions);
-                    
-                    // Set Pricing Snapshot
+                // 4. القوالب والبيانات الإضافية
+                if (d.form_template_id) {
+                    templateSelect.val(d.form_template_id);
+                    $.get(`${baseUrl}/admin/settings/templates/fields`, { id: d.form_template_id }, function (res) {
+                        if (res.fields) {
+                            generateFields(res.fields, d.additional_data, '#b2b-additional-form');
+                        }
+                    });
+                } else {
+                    templateSelect.val('').trigger('change');
+                }
+
+                // 5. لقطة التسعير (Snapshot)
+                if (d.pricing) {
                     const p = d.pricing;
                     $('#b2b-base-price').text(p.base_price + ' ر.س');
                     $('#b2b-vat-amount').text(p.vat_amount + ' ر.س');
@@ -253,7 +334,7 @@ $(function () {
                     $('#b2b-pricing-rule-badge').text(getPricingLabel(p.pricing_rule));
                     $('#b2b-pricing-result').removeClass('d-none');
                     submitBtn.prop('disabled', false);
-                }, 1000);
+                }
             }
         });
     }

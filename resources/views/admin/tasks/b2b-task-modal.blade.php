@@ -1,6 +1,6 @@
 {{-- B2B Task Modal - إنشاء وتعديل مهام الشركات --}}
 <div class="modal fade" id="b2bTaskModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
         <div class="modal-content">
 
             <div class="modal-header bg-primary text-white">
@@ -72,12 +72,43 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold">
                                 <i class="ti ti-truck me-1 text-info"></i>
+                                * {{ __('المركبة') }}
+                            </label>
+                            <select id="b2b-vehicle-id" class="form-select b2b-select2" disabled>
+                                <option value="">{{ __('اختر المركبة...') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="ti ti-settings me-1 text-info"></i>
                                 * {{ __('نوع المركبة') }}
                             </label>
+                            <select id="b2b-vehicle-type-id" class="form-select" disabled>
+                                <option value="">{{ __('اختر النوع...') }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="ti ti-arrows-maximize me-1 text-info"></i>
+                                * {{ __('الحجم النهائي') }}
+                            </label>
                             <select name="vehicle_size_id" id="b2b-vehicle-size-id" class="form-select" disabled>
-                                <option value="">{{ __('اختر نوع المركبة...') }}</option>
+                                <option value="">{{ __('اختر الحجم...') }}</option>
                             </select>
                             <span class="b2b-error text-danger small" data-field="vehicle_size_id"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="ti ti-numbers me-1 text-primary"></i>
+                                * {{ __('عدد المركبات') }}
+                            </label>
+                            <input type="number" name="quantity" id="b2b-quantity" class="form-control" value="1" min="1">
+                            <span class="b2b-error text-danger small" data-field="quantity"></span>
                         </div>
 
                         {{-- ─── تاريخ التسليم ───────────────────────────── --}}
@@ -103,6 +134,29 @@
                         <textarea name="conditions" id="b2b-conditions" class="form-control" rows="2"
                                   placeholder="{{ __('أي شروط أو ملاحظات خاصة بهذه المهمة...') }}"></textarea>
                     </div>
+
+                    {{-- ─── القوالب والبيانات الإضافية ────────────────────── --}}
+                    <div class="card bg-label-secondary border-0 mb-3">
+                        <div class="card-body p-3">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="b2b-select-template">
+                                    <i class="ti ti-layout-grid me-1 text-primary"></i>
+                                    {{ __('اختر القالب لبيانات إضافية') }}
+                                </label>
+                                <select name="template" id="b2b-select-template" class="form-select b2b-select2">
+                                    <option value="">{{ __('--- بدون قالب ---') }}</option>
+                                    @foreach ($templates ?? [] as $key)
+                                        <option value="{{ $key->id }}">{{ $key->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div id="b2b-additional-form" class="row">
+                                {{-- سيتم تحميل الحقول هنا ديناميكياً --}}
+                            </div>
+                        </div>
+                    </div>
+
 
                     {{-- ─── زر حساب السعر ────────────────────────────────── --}}
                     <div class="d-flex justify-content-end mb-3">

@@ -436,11 +436,11 @@ $('#select-template')
  * @param {Array} fields - مصفوفة حقول القالب
  * @param {Object} storedData - البيانات المحفوظة مسبقاً (للتعديل)
  */
-export function generateFields(fields, storedData = {}) {
+export function generateFields(fields, storedData = {}, targetSelector = '#additional-form') {
   fields.forEach(field => {
     var inputField = '';
     var inputSpan = '';
-    const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المخزنة إذا وجدت
+    const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المحزنة إذا وجدت
     console.log(storedData);
 
     // إنشاء الحقل حسب النوع
@@ -579,7 +579,7 @@ export function generateFields(fields, storedData = {}) {
     }
 
     // إضافة الحقل إلى النموذج
-    $('#additional-form').append(`
+    $(targetSelector).append(`
       <div class="mb-3 col-md-6">
         <label class="form-label">${field.required ? '*' : ''} ${field.label}</label>
         ${inputField}
@@ -588,3 +588,4 @@ export function generateFields(fields, storedData = {}) {
     `);
   });
 }
+

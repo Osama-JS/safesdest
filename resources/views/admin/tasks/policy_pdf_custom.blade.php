@@ -711,5 +711,45 @@
     </div>
 
 
+    <!-- DRIVER DOCUMENTS IMAGES PAGE -->
+    @if ($task->driver && !empty((array) $task->driver->driver_visible_additional_data))
+        @php
+            $imageDocs = array_filter((array) $task->driver->driver_visible_additional_data, function($item) {
+                $val = $item['value'] ?? '';
+                // Check if it's an image extension
+                return preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $val);
+            });
+        @endphp
+
+        @if (!empty($imageDocs))
+            <div style="page-break-before: always;"></div>
+            <div style="padding: 20px;">
+                <h2 style="text-align: center; color: #1a2733; border-bottom: 2px solid #1a2733; padding-bottom: 10px; font-size: 18px;">
+                    وثائق السائق (صور) / Driver Documents (Images)
+                </h2>
+                <div style="margin-top: 20px;">
+                    @foreach($imageDocs as $item)
+                        @php
+                            $fileUrl = ltrim($item['value'], '/');
+                            if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
+                                $fileUrl = 'storage/' . $fileUrl;
+                            }
+                        @endphp
+                        <div style="margin-bottom: 30px; text-align: center; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
+                            <h3 style="font-size: 14px; margin-bottom: 10px; color: #333;">{{ $item['label'] }}</h3>
+                            <div style="text-align: center;">
+                                @if (str_starts_with($fileUrl, 'http'))
+                                    <img src="{{ $fileUrl }}" style="max-width: 95%; max-height: 800px; display: block; margin: 0 auto;">
+                                @else
+                                    <img src="{{ public_path($fileUrl) }}" style="max-width: 95%; max-height: 800px; display: block; margin: 0 auto;">
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+    @endif
+
 </body>
 </html>

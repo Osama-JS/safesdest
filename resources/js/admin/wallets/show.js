@@ -15,15 +15,25 @@ $(function () {
       $('.btn-debit').addClass('btn-danger').removeClass('btn-outline-danger');
 
       $('#maturity-time-group').show();
+      $('#payment-method-group').show();
     } else {
       $('.btn-credit').addClass('btn-success').removeClass('btn-outline-success');
       $('.btn-debit').addClass('btn-outline-danger').removeClass('btn-danger');
 
       $('#maturity-time-group').hide();
+      $('#payment-method-group').hide();
     }
   }
 
   $('#credit, #debit').on('change', toggleMaturityTime);
+
+  $(document).on('change', '#trans_payment_method', function () {
+    if ($(this).val() === 'hyperpay') {
+      $('#manual-hyperpay-bank-details').slideDown();
+    } else {
+      $('#manual-hyperpay-bank-details').slideUp();
+    }
+  });
 
   // استدعاء أولي عند تحميل الصفحة
   toggleMaturityTime();
@@ -399,6 +409,9 @@ $(function () {
     $(this).find('form')[0].reset();
     $('.text-error').html('');
     $('#image').attr('src', baseUrl + 'assets/img/placeholder.jpg');
+    $('#trans_payment_method').val('manual');
+    $('#payment-method-group').hide();
+    $('#manual-hyperpay-bank-details').hide();
 
     $('#trans_id').val('');
     $('#modelTitle').html('Add New Transaction');

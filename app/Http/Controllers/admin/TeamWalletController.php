@@ -18,6 +18,7 @@ use App\Models\Teams;
 use App\Helpers\FileHelper;
 use App\Models\TeamWalletPaymentRequestLog;
 use App\Helpers\IpHelper;
+use App\Services\HyperPayPayoutService;
 
 class TeamWalletController extends Controller
 {
@@ -150,6 +151,7 @@ class TeamWalletController extends Controller
           'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:4096',
           'maturity' => 'nullable|date',
           'task_id' => 'nullable|exists:tasks,id',
+          'payment_method' => 'nullable|string|in:manual,hyperpay',
         ]);
 
         if ($validator->fails()) {
@@ -160,7 +162,8 @@ class TeamWalletController extends Controller
         }
 
         try {
-            $wallet = Team_Wallet::findOrFail($req->wallet);
+            $wallet = Team_Wallet::with('team')->findOrFail($req->wallet);
+            $team = $wallet->team;
             $adjustedBalance = $wallet->balance;
             $existingTransaction = null;
 
@@ -176,21 +179,56 @@ class TeamWalletController extends Controller
                 }
             }
 
+            // --- HyperPay Payout Integration for Manual Transaction ---
+            $hyperPayNotes = '';
+            if ($req->payment_method === 'hyperpay' && $req->type === 'debit' && !$existingTransaction) {
+                if (!$team->iban_number || !$team->bic_code || !$team->beneficiary_name) {
+                    return response()->json([
+                        'status' => 2,
+                        'error' => __('Team bank details are incomplete for HyperPay Payout. Please update team bank details.')
+                    ]);
+                }
 
+                $payoutService = app(HyperPayPayoutService::class);
+                $payoutResponse = $payoutService->sendPayout([
+                    'amount' => $req->amount,
+                    'currency' => 'SAR',
+                    'externalId' => 'TPW-M-' . $wallet->id . '-' . time(),
+                    'beneficiary_name' => $team->beneficiary_name,
+                    'address1' => $team->bank_address1 ?? $team->address,
+                    'address2' => $team->bank_address2 ?? '.',
+                    'city' => $team->bank_city ?? 'Riyadh',
+                    'country' => $team->bank_country ?? 'SA',
+                    'iban' => str_replace(' ', '', $team->iban_number),
+                    'bic' => $team->bic_code,
+                    'description' => "Manual Payout for Team #{$team->id} ({$team->name})"
+                ]);
+
+                if (!$payoutResponse['status']) {
+                    return response()->json([
+                        'status' => 2,
+                        'error' => __('HyperPay Error: ') . $payoutResponse['message']
+                    ]);
+                }
+
+                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+            }
+            // --- End HyperPay Logic ---
 
             DB::beginTransaction();
 
             $data = [
               'amount' => $req->amount,
-              'description' => $req->description,
+              'description' => $req->description . $hyperPayNotes,
               'transaction_type' => $req->type,
               'maturity_time' => $req->type === 'credit' ? null : $req->maturity,
             ];
 
             if ($req->hasFile('image')) {
-                $data['image'] = (new FunctionsController())->convert($req->image, 'wallets/team/transactions');
+                // $data['image'] = (new FunctionsController())->convert($req->image, 'wallets/team/transactions');
                 $data['image'] = FileHelper::uploadFile($req->file("image"), 'wallets/team/transactions');
-
             }
 
             $oldImage = null;
@@ -282,7 +320,7 @@ class TeamWalletController extends Controller
             'team_wallet_id' => 'required|exists:team_wallet,id',
             'amount' => 'required|numeric|min:0.01',
             'payment_request_number' => 'required|string|max:50',
-            'payment_method' => 'required|in:bank_transfer,other',
+            'payment_method' => 'required|in:bank_transfer,hyperpay,other',
             'bank_name' => 'nullable|string|max:255',
             'account_number' => 'nullable|string|max:50',
             'iban_number' => 'nullable|string|max:34',
@@ -369,6 +407,70 @@ class TeamWalletController extends Controller
                 }
             }
 
+            $newTransactionId = null;
+            // --- HyperPay Payout Integration ---
+            $hyperPayNotes = '';
+            if ($request->payment_method === 'hyperpay') {
+                if (!$team->iban_number || !$team->bic_code || !$team->beneficiary_name) {
+                    return response()->json([
+                        'status' => 0,
+                        'error' => __('Team bank details are incomplete for HyperPay Payout. Please update team bank details.')
+                    ]);
+                }
+
+                $payoutService = app(HyperPayPayoutService::class);
+                $payoutResponse = $payoutService->sendPayout([
+                    'amount' => $request->amount,
+                    'currency' => 'SAR',
+                    'externalId' => 'TPW-' . $teamWallet->id . '-' . time(),
+                    'beneficiary_name' => $team->beneficiary_name,
+                    'address1' => $team->bank_address1 ?? $team->address,
+                    'address2' => '.',
+                    'city' => $team->bank_city ?? 'Riyadh',
+                    'country' => $team->bank_country ?? 'SA',
+                    'iban' => str_replace(' ', '', $team->iban_number),
+                    'bic' => $team->bic_code,
+                    'description' => "Wallet Payment for Team #{$team->id} ({$team->name})"
+                ]);
+
+                if (!$payoutResponse['status']) {
+                    return response()->json([
+                        'status' => 0,
+                        'error' => __('HyperPay Error: ') . $payoutResponse['message']
+                    ]);
+                }
+
+                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+
+                // Create debit transaction automatically for HyperPay
+                DB::beginTransaction();
+                try {
+                    $transaction = Team_Wallet_Transaction::create([
+                        'team_wallet_id' => $teamWallet->id,
+                        'amount' => $request->amount,
+                        'transaction_type' => 'debit',
+                        'description' => "دفع مستحقات الفريق عبر HyperPay - طلب رقم #{$request->payment_request_number}" . $hyperPayNotes,
+                        'status' => 1,
+                        'user_id' => auth()->id(),
+                        'maturity_time' => now()
+                    ]);
+                    $newTransactionId = $transaction->id;
+                    DB::commit();
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    // We don't throw exception here because payout was already sent, but we should log this error
+                    $finalNotes .= "\n[خطأ في تسجيل المعاملة المالية: " . $e->getMessage() . "]";
+                }
+
+                if (!empty($finalNotes)) {
+                    $finalNotes .= "\n\n";
+                }
+                $finalNotes .= "HyperPay Payout processed successfully." . $hyperPayNotes;
+            }
+            // --- End HyperPay Logic ---
+
             // Create log entry
             TeamWalletPaymentRequestLog::create([
                 'team_wallet_id' => $request->team_wallet_id,
@@ -377,6 +479,8 @@ class TeamWalletController extends Controller
                 'team_leader_id' => $teamLeader->id,
                 'amount' => $request->amount,
                 'payment_request_number' => $request->payment_request_number,
+                'payment_method' => $request->payment_method,
+                'transaction_id' => $newTransactionId,
                 'notes' => $finalNotes,
                 'ip_address' => IpHelper::getUserIpAddress(),
                 'printed_at' => now(),
@@ -450,6 +554,7 @@ class TeamWalletController extends Controller
         $validator = Validator::make($request->all(), [
             'team_wallet_id' => 'required|exists:team_wallet,id',
             'amount' => 'required|numeric|min:0.01',
+            'payment_method' => 'required|string',
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -487,10 +592,12 @@ class TeamWalletController extends Controller
                 'teamLeader' => $teamLeader,
                 'teamWallet' => $teamWallet,
                 'amount' => $request->amount,
+                'paymentMethod' => $request->payment_method,
                 'notes' => $request->notes,
                 'user' => auth()->user(),
                 'date' => now()->format('Y-m-d'),
                 'time' => now()->format('H:i:s'),
+                'referenceNumber' => 'PR-' . strtoupper(uniqid()),
             ]);
 
             // Log the request automatically for PDF generation
@@ -500,6 +607,7 @@ class TeamWalletController extends Controller
                 'team_id' => $team->id,
                 'team_leader_id' => $teamLeader->id,
                 'amount' => $request->amount,
+                'payment_method' => $request->payment_method,
                 'notes' => $request->notes,
                 'ip_address' => IpHelper::getClientIp(),
                 'printed_at' => now(),
@@ -634,6 +742,16 @@ class TeamWalletController extends Controller
                     'bank_name' => $teamLeader->bank_name,
                     'account_number' => $teamLeader->account_number,
                     'iban_number' => $teamLeader->iban_number,
+                ],
+                'teamBank' => [
+                    'bank_name' => $team->bank_name,
+                    'account_number' => $team->account_number,
+                    'iban_number' => $team->iban_number,
+                    'bic_code' => $team->bic_code,
+                    'beneficiary_name' => $team->beneficiary_name,
+                    'bank_address1' => $team->bank_address1,
+                    'bank_city' => $team->bank_city,
+                    'bank_country' => $team->bank_country,
                 ],
                 'teamWallet' => [
                     'id' => $teamWallet->id,

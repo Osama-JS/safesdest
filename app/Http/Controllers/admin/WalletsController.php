@@ -19,6 +19,7 @@ use App\Helpers\FileHelper;
 use App\Helpers\IpHelper;
 use Illuminate\Support\Str;
 use App\Services\PdfService;
+use App\Services\HyperPayPayoutService;
 
 class WalletsController extends Controller
 {
@@ -289,12 +290,47 @@ class WalletsController extends Controller
           'transactions' => 'required|array|min:1',
           'transactions.*.id' => 'required|exists:wallet_transactions,id',
           'transactions.*.payment_amount' => 'required|numeric|min:0',
-          'notes' => 'nullable|string|max:500'
+          'notes' => 'nullable|string|max:500',
+          'payment_method' => 'nullable|string|in:manual,hyperpay'
         ]);
 
         DB::beginTransaction();
         try {
-            $wallet = Wallet::where('user_type', 'driver')->findOrFail($request->wallet_id);
+            $wallet = Wallet::where('user_type', 'driver')->with('driver')->findOrFail($request->wallet_id);
+            $driver = $wallet->driver;
+
+            // --- HyperPay Payout Logic ---
+            $hyperPayNotes = '';
+            if ($request->payment_method === 'hyperpay') {
+                if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
+                    throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
+                }
+
+                $payoutService = app(HyperPayPayoutService::class);
+                $payoutResponse = $payoutService->sendPayout([
+                    'amount' => $request->total_amount,
+                    'currency' => 'SAR',
+                    'externalId' => 'WP-' . $wallet->id . '-' . time(),
+                    'beneficiary_name' => $driver->beneficiary_name,
+                    'address1' => $driver->bank_address1 ?? $driver->address,
+                    'address2' => $driver->bank_address2 ?? '.',
+                    'city' => $driver->bank_city ?? 'Riyadh',
+                    'country' => $driver->bank_country ?? 'SA',
+                    'iban' => str_replace(' ', '', $driver->iban_number),
+                    'bic' => $driver->bic_code,
+                    'description' => "Wallet Payment for Driver #{$driver->id}"
+                ]);
+
+                if (!$payoutResponse['status']) {
+                    throw new \Exception(__('HyperPay Error: ') . $payoutResponse['message']);
+                }
+
+                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+            }
+            // --- End HyperPay Logic ---
+
             $transactionIds = collect($request->transactions)->pluck('id')->toArray();
 
             // Get wallet transactions for this specific driver wallet
@@ -382,7 +418,7 @@ class WalletsController extends Controller
                       'wallet_id' => $walletTransaction->wallet_id,
                       'amount' => $paymentAmount,
                       'transaction_type' => 'debit',
-                      'description' => $paymentDescription . ($request->notes ? " - ملاحظات: {$request->notes}" : ""),
+                      'description' => $paymentDescription . ($request->notes ? " - ملاحظات: {$request->notes}" : "") . $hyperPayNotes,
                       'status' => 1, // Debit transactions are immediately processed
                       'user_id' => auth()->id(),
                       'maturity_time' => now()
@@ -538,6 +574,7 @@ class WalletsController extends Controller
           'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:4096',
           'maturity' => 'nullable|date',
           'task_id' => 'nullable|exists:tasks,id',
+          'payment_method' => 'nullable|string|in:manual,hyperpay'
         ]);
 
         if ($validator->fails()) {
@@ -577,12 +614,49 @@ class WalletsController extends Controller
                   'error'  => __('The amount exceeds the debt ceiling')
                 ]);
             }
+            
+            // --- HyperPay Payout Logic for Manual Debit ---
+            $hyperPayNotes = '';
+            if ($req->type === 'debit' && $req->payment_method === 'hyperpay') {
+                if ($wallet->user_type !== 'driver' || !$wallet->driver) {
+                    return response()->json(['status' => 2, 'error' => __('HyperPay Payout is only available for driver wallets')]);
+                }
+
+                $driver = $wallet->driver;
+                if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
+                    return response()->json(['status' => 2, 'error' => __('Driver bank details are incomplete for HyperPay Payout')]);
+                }
+
+                $payoutService = app(HyperPayPayoutService::class);
+                $payoutResponse = $payoutService->sendPayout([
+                    'amount' => $req->amount,
+                    'currency' => 'SAR',
+                    'externalId' => 'MT-' . $wallet->id . '-' . time(),
+                    'beneficiary_name' => $driver->beneficiary_name,
+                    'address1' => $driver->bank_address1 ?? $driver->address,
+                    'address2' => $driver->bank_address2 ?? '.',
+                    'city' => $driver->bank_city ?? 'Riyadh',
+                    'country' => $driver->bank_country ?? 'SA',
+                    'iban' => str_replace(' ', '', $driver->iban_number),
+                    'bic' => $driver->bic_code,
+                    'description' => "Manual Payout for Driver #{$driver->id}"
+                ]);
+
+                if (!$payoutResponse['status']) {
+                    return response()->json(['status' => 2, 'error' => __('HyperPay Error: ') . $payoutResponse['message']]);
+                }
+
+                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+            }
+            // --- End HyperPay Logic ---
 
             DB::beginTransaction();
 
             $data = [
               'amount' => $req->amount,
-              'description' => $req->description,
+              'description' => $req->description . $hyperPayNotes,
               'transaction_type' => $req->type,
               'maturity_time' => $req->type === 'credit' ? null : $req->maturity,
             ];

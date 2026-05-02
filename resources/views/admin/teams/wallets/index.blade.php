@@ -369,6 +369,32 @@
                                                 id="trans_maturity">
                                             <span class="maturity-error text-danger text-error"></span>
                                         </div>
+                                        
+                                        <!-- Payment Method (Visible only if Debit is selected) -->
+                                        <div class="mb-4" id="payment-method-group" style="display: none;">
+                                            <label class="form-label" for="payment_method">{{ __('Payment Method') }}</label>
+                                            <select name="payment_method" class="form-select" id="trans_payment_method">
+                                                <option value="manual" selected>{{ __('Manual (Cash / Bank Transfer)') }}</option>
+                                                <option value="hyperpay">{{ __('HyperPay Payout') }}</option>
+                                            </select>
+                                            <span class="payment_method-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Team Bank Details (Shown only for HyperPay) -->
+                                        <div id="manual-hyperpay-bank-details" class="alert alert-info mt-3" style="display: none;">
+                                            <h6 class="alert-heading fw-bold mb-2"><i class="ti ti-building-bank me-1"></i>{{ __('Team Bank Details') }}</h6>
+                                            <div class="row small">
+                                                <div class="col-md-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong> <span id="team-info-beneficiary">{{ $data->team->beneficiary_name ?? 'N/A' }}</span></div>
+                                                <div class="col-md-6 mb-1"><strong>{{ __('Bank') }}:</strong> <span id="team-info-bank">{{ $data->team->bank_name ?? 'N/A' }}</span></div>
+                                                <div class="col-md-12 mb-1"><strong>{{ __('IBAN') }}:</strong> <span id="team-info-iban" class="font-monospace">{{ $data->team->iban_number ?? 'N/A' }}</span></div>
+                                                <div class="col-md-6"><strong>{{ __('BIC/SWIFT') }}:</strong> <span id="team-info-bic">{{ $data->team->bic_code ?? 'N/A' }}</span></div>
+                                            </div>
+                                            @if(!$data->team->iban_number || !$data->team->bic_code || !$data->team->beneficiary_name)
+                                            <div class="text-danger mt-2 fw-bold">
+                                                <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                            </div>
+                                            @endif
+                                        </div>
 
                                         <!-- Description -->
                                         <div class="mb-4">
@@ -377,7 +403,7 @@
                                                 placeholder="{{ __('Optional notes...') }}"></textarea>
                                             <span class="description-error text-danger text-error"></span>
                                         </div>
-                                        <div class="mb-6">
+                                        <div class="mb-6" id="file-upload-section">
                                             <div class="form-group mb-3">
                                                 <label for="image" class="form-label">
                                                     <i class="fas fa-file-upload me-1"></i>
@@ -501,6 +527,7 @@
                                                     required>
                                                     <option value="">{{ __('Select Payment Method') }}</option>
                                                     <option value="bank_transfer">{{ __('Bank Transfer') }}</option>
+                                                    <option value="hyperpay">{{ __('HyperPay Payout') }}</option>
                                                     <option value="other">{{ __('Other Method') }}</option>
                                                 </select>
                                                 <span class="team_payment_method-error text-error"></span>
@@ -557,6 +584,39 @@
                                                         <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
                                                     </div>
                                                     <span class="team_iban_number-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- HyperPay Details Section -->
+                                            <div id="teamHyperPayDetails" class="mt-3 p-3 border rounded bg-light" style="display: none;">
+                                                <h6 class="mb-3"><i class="ti ti-credit-card me-2"></i>{{ __('HyperPay Payout Details') }}</h6>
+                                                <div class="row">
+                                                    <div class="col-12 mb-2">
+                                                        <small class="text-muted d-block">{{ __('Beneficiary Name') }}</small>
+                                                        <span id="hp-beneficiary-name" class="fw-bold">-</span>
+                                                    </div>
+                                                    <div class="col-6 mb-2">
+                                                        <small class="text-muted d-block">{{ __('Bank Name') }}</small>
+                                                        <span id="hp-bank-name" class="fw-bold">-</span>
+                                                    </div>
+                                                    <div class="col-6 mb-2">
+                                                        <small class="text-muted d-block">{{ __('IBAN') }}</small>
+                                                        <span id="hp-iban" class="fw-bold">-</span>
+                                                    </div>
+                                                    <div class="col-6 mb-2">
+                                                        <small class="text-muted d-block">{{ __('BIC / SWIFT') }}</small>
+                                                        <span id="hp-bic" class="fw-bold">-</span>
+                                                    </div>
+                                                    <div class="col-6 mb-2">
+                                                        <small class="text-muted d-block">{{ __('City') }}</small>
+                                                        <span id="hp-city" class="fw-bold">-</span>
+                                                    </div>
+                                                </div>
+                                                <div class="alert alert-info d-flex align-items-center mt-2 mb-0" role="alert">
+                                                    <span class="alert-icon text-info me-2">
+                                                      <i class="ti ti-info-circle ti-xs"></i>
+                                                    </span>
+                                                    <small>{{ __('Payout will be processed using these team bank details.') }}</small>
                                                 </div>
                                             </div>
 

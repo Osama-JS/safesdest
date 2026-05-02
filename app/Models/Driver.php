@@ -56,6 +56,12 @@ class Driver extends Authenticatable
       'bank_name',
       'account_number',
       'iban_number',
+      'bic_code',
+      'beneficiary_name',
+      'bank_address1',
+      'bank_address2',
+      'bank_city',
+      'bank_country',
       'signature_image'
     ];
     protected $casts = [

@@ -1,0 +1,473 @@
+HyperSplits 2.0 API Documentation
+1. Environment
+The HyperSplits 2.0 API is currently available in the following environment:
+Sandbox Environment
+Base URL: https://gateway.sandbox.hyperpay.com
+All API endpoints documented in this guide use relative paths and must be
+appended to the base URL.
+Example:
+POST {Base URL}/payouts
+
+2. Authentication
+Authentication Method
+All HyperSplits API requests use Basic Authentication.
+To access the API, you will use three authentication elements:
+• Username
+• Password
+• Merchant Identifier
+To authenticate a request:
+1. Combine the username and password as username:password.
+2. Encode this value in Base64.
+3. Add the encoded value in the Authorization header using the format:
+Authorization: Basic <Base64(username:password)>
+4. Add your assigned partner identifier in the X-Merchant-Id header.
+5. Set Content-Type to application/json.
+Every API request must include these authentication elements to be accepted.
+
+3. Create Payout
+Endpoint:
+POST /payouts
+Create Payout enables you to pay out funds to beneficiary bank accounts. This
+API supports bulk payouts, allowing multiple transfers within a single request.
+Required Headers
+Name            Type            Required            Description
+Content-Type    string            Yes               Must be application/json
+Authorization   string            Yes               Basic Base64<username:password>
+X-Merchant-Id   Alphanumeric      Yes               Add your assigned partner identifier
+
+Request Body
+Field                     Type            Required          Description
+merchantReference         Alphanumeric    Yes               Identifier for the bulk payout request
+sourceId                  Alphanumeric    Yes               Unique identifier for the source account at HyperPay
+payouts                   Array           Yes               Array of payout objects.
+payouts.transferMode      Alpha           Yes               Accepted values: INSTANT,DATE
+payouts.amount            decimal         Yes               Payout amount formatted according to currency rules
+payouts.currency          Alpha           Yes               ISO 4217 three-letter currency code, for example SAR
+payouts.transferDate      Date            Conditional       Required if transferMode = DATE. value = "YYYY-MM-DD"
+payouts.description       Alphanumeric    No                Payout description
+payouts.payoutReference   Alphanumeric    Yes               Merchant unique reference for each payout
+payouts.purpose           Alphanumeric    Yes               Purpose of the transfer as per of bank transfer codes
+payouts.channel           Alpha           No                Routes the payout to a specific payment channel, overriding the default channel selection logic. When omitted, the channel is determined automatically based on the payout amount — IPS for amounts below 20,000 SAR, and SARIE for amounts of 20,000 SAR or above. Accepted values: IPS, SARIE, INTRA_BANK
+payouts.beneficiary       Object          Yes               Beneficiary details
+beneficiary.id            Alphanumeric    No                Id of an existing beneficiary
+beneficiary.name           Alphanumeric    Yes               Name of the beneficiary as per bank account details
+beneficiary.address1      Alphanumeric    Yes               Address line 1 of the beneficiary as per bank account details
+beneficiary.address2      Alphanumeric    Yes               Address line 2 of the beneficiary as per bank account details
+beneficiary.accountNumber Numeric         No                Internal bank account number. This parameter should be used when the channel is INTRA_BANK
+beneficiary.iban          Alphanumeric    No                Destination IBAN. This parameter should be used when the destination bank account is different from the source bank account beneficiary.bicCode Alpha No Destination bank BIC code. This parameter is mandatory if IBAN is provided
+beneficiary.country       Alpha           No                Country of the beneficiary. ISO 3166-1 alpha-2
+beneficiary.city          Alpha           No                City of the beneficiary
+
+
+
+Response Structure
+Field                           Description
+merchantReference               Identifier for the bulk payout request
+responseCode                    5-digits response code
+responseMessage                 message describing the response code
+payouts.payoutId                HyperPay unique payout ID
+payouts.bulkId                  HyperPay unique bulk ID
+payouts.payoutReference         Merchant unique reference for each payout
+payouts.purpose                 Purpose of the transfer as per bank transfer codes
+payouts.amount                  Payment amount formatted according to currency rules
+payouts.currency                ISO 4217 three-letter currency code, for example SAR
+payouts.transferDate            Date of the scheduled transfer as received in the request
+payouts.description             Payout description
+payouts.responseCode            5-digit response code indicating the status of each payout object
+payouts.responseMessage         message describing the response code
+
+
+
+Example Request (cURL)
+curl --location 'https://gateway.sandbox.hyperpay.com/payouts' \
+--header 'X-Merchant-Id: XXX' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Basic XX' \
+--data '{
+ "merchantReference":"merchantRef1",
+ "sourceId":" 019b9524-3576-739a-9871-c595ab729035",
+ "payouts":[
+ {
+ "payoutReference":" payoutRef1",
+ "amount":100,
+ "currency":"SAR",
+ "transferMode":"INSTANT",
+ //"transferDate": "2026-01-30",
+ "purpose":"10",
+ "description":"Transfering salary",
+ "channel":"IPS",
+ "beneficiary":{
+ "name":"Jony",
+ "address1":"Riyadh",
+ "address2":"Street 1",
+ "accountNumber":" 0108XXXXXXXXXXXX",
+ "iban":" SA066XXXXXXXXXXXXXXXXX",
+ "bicCode":" ARNBSARI",
+ "country":"SA",
+ "city":"Riyadh"
+ }
+ }
+ ]
+}'
+
+
+
+Example Response
+{
+ "responseCode": "00001",
+ "responseMessage": "Request Received Successfully",
+ "merchantReference": "merchantRef1",
+ "payouts": [
+ {
+ "payoutId": "28be1389-1c8e-4910-acb7-d0d3fa612351",
+ "payoutReference": "payoutRef1",
+ "bulkId": "b9bc585c-2ee5-4c79-973e-a54620a37dd2",
+ "beneficiary": {
+ "id": "019a087a-9c32-72f0-b0d3-a186c416116a",
+ "accountNumber": "0108XXXXXXXXXXXX",
+ "iban": null,
+ "bicCode": null,
+ "name": "Jony",
+ "address1": "Riyadh",
+ "address2": "Street 1",
+ "country": "SA",
+ "city": "Riyadh"
+ },
+ "amount": "100",
+ "currency": "SAR",
+ "transferMode": "INSTANT",
+ "purpose": "10",
+ "description": "Transfering salary",
+ "responseCode": "33000",
+ "responseMessage": "Payout Scheduled",
+ "channel": "IPS"
+ }
+ ]
+}
+
+
+Example Request (payout within pay-in)
+Pay-in Object
+$data = "entityId=[Your entity Id]".
+"&amount=[Your Amount]" .
+"&currency=[Your currency]" .
+"&paymentType=[Your payment type]".
+"&customParameters[payout]=".$payout.
+"&testMode=EXTERNAL".
+"&merchantTransactionId=".md5(time());{
+  ---------------------------------------------------------
+$payout='{
+ "merchantReference":"merchantRef1",
+ "sourceId":" 019b9524-3576-739a-9871-c595ab729035",
+ "payouts":
+ {
+ "payoutReference":" payoutRef1",
+ "amount":100,
+ "currency":"SAR",
+ "transferMode":"INSTANT",
+ //"transferDate": "2026-01-30",
+ "purpose":"10",
+ "description":"Transfering salary",
+ "channel":"IPS",
+ "beneficiary":{
+ "name":"Jony",
+ "address1":"Riyadh",
+ "address2":"Street 1",
+ "accountNumber":" 0108XXXXXXXXXXXX",
+ "iban":" SA066XXXXXXXXXXXXXXXXX",
+ "bicCode":" ARNBSARI",
+ "country":"SA",
+ "city":"Riyadh"
+ }
+ }
+ ]
+}
+
+
+4. Get Payout Status
+Endpoint:
+GET /payout
+Get Payout Status enables you to retrieve the current status of a payout using the
+payoutReference or payoutId. This API supports inquiry for a single payout per
+request.
+
+Required Headers
+Name              Type          Required      Description
+Authorization     string        Yes           Basic Base64<username:password>
+X-Merchant-Id     Alphanumeric  Yes           Add your assigned partner identifier
+
+Request Query Parameters
+Field              Type           Required      Description
+payout-reference   Alphanumeric   No            Merchant unique Identifier for the payout
+payout-id          Alphanumeric   No            HyperPay unique identifier assigned to the payout.
+
+Response Structure
+Field                       Description
+merchantReference           Identifier for the bulk payout request
+responseCode                5-digit response code
+responseMessage             message describing the response code
+payouts.payoutId            HyperPay unique payout ID
+payouts.bulkId              HyperPay unique bulk ID
+payouts.payoutReference     Merchant unique reference for each payout
+payouts.purpose             Purpose of the transfer as per bank transfer codes.
+payouts.amount              Payment amount formatted according to currency rules
+payouts.currency            ISO 4217 three-letter currency code, for example SAR
+payouts.transferDate        Date of the scheduled transfer as received in the request
+payouts.description         Payout description
+
+
+Example Request (cURL)
+curl --location 'https://gateway.sandbox.hyperpay.com/payout?payoutreference=PAYOUT-20260222-0001' \
+--header 'X-Merchant-Id: XXX' \
+--header 'Authorization: Basic XXX'
+Example Response
+{
+ "payoutId": "9fd00e9f-289b-4b64-9cb5-2a88ca1dfcfe",
+ "payoutReference": "PAYOUT-20260222-0001",
+ "bulkId": "9b5c4307-786e-4c7e-9c7e-e77f4a5f8958",
+ "bankTransactionId": "9474661",
+ "beneficiary": {
+ "id": "019c7519-12b9-71a8-a6df-1b717a191e6a",
+ "accountNumber": null,
+ "iban": "SA0660000000025348760001",
+ "bicCode": "BJAZSAJE",
+ "fullName": "John Doe",
+ "address1": "Riyadh",
+ "address2": "King Fahd Road",
+ "country": "SA",
+ "city": "Riyadh"
+ },
+ "amount": "12.00",
+ "currency": "SAR",
+ "transferMode": "INSTANT",
+ "purpose": "11",
+ "description": "Salary payout",
+ "transferredAmount": "12.00",
+ "responseCode": "33000",
+ "responseMessage": "Payout Scheduled",
+ "channel": "IPS"
+}
+
+
+5. Cancel Payout
+Endpoint:
+PUT /payouts/cancel
+Cancel Payout enables you to cancel a created payout that has not yet been
+processed using the payout-reference or payoutId.
+Required Headers
+Name                Type          Required    Description
+Content-Type        string        Yes         Must be application/json
+Authorization       string        Yes         Basic Base64<username:password>
+X-Merchant-Id       Alphanumeric  Yes         Add your assigned partner identifier
+
+Request Body
+Field               Type          Required    Description
+payoutId            Alphanumeric  No          Payout unique identifier assigned by HyperPay for the payout
+payoutReference     Alphanumeric  No          Merchant unique Identifier for the
+payout
+Response Structure
+Field              Description
+responseCode       5-digits response code
+responseMessage    message describing the response
+
+Sample Request (cURL)
+curl --location --request PUT
+'https://gateway.sandbox.hyperpay.com/payouts/cancel' \
+--header 'X-Merchant-Id: XXX' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Basic XXX' \
+--data '{
+ "payoutId": "07444621-c232-44d6-8cb0-5e525a7dbde6"
+}'
+Sample Response
+{
+ "responseCode": "77000",
+ "responseMessage": "Transaction cancelled"
+}
+
+
+6. Update Payout
+Endpoint:
+PUT /payouts/update
+Update Payout enables you to modify the details of a scheduled payout that is
+still pending. This API supports updating beneficiary details, amount, or payout
+description.
+Required Headers
+Name               Type          Required    Description
+Content-Type       string        Yes         Must be application/json
+Authorization      string        Yes         Basic Base64<username:password>
+X-Merchant-Id      Alphanumeric  Yes         Add your assigned partner identifier
+
+Request Body
+Field              Type         Required         Description
+transferMode       Alpha        Yes              Accepted values: INSTANT, DATE
+amount             decimal      Yes              Payout amount formatted according to currency rules
+currency           Alpha        Yes              ISO 4217 three-letter currency code, for example SAR
+transferDate       Date         Conditional      Required if transferMode = DATE value = "YYYY-MM-DD"
+description        Alphanumeric No               Payout description
+payoutReference    Alphanumeric Yes              Merchant unique reference for each payout
+purpose            Alphanumeric Yes              Purpose of the transfer as per of bank transfer codes
+channel            Alpha        No               Routes the payout to a specific payment channel, overriding the default channel selection logic. When omitted, the channel is determined automatically based on the payout amount — IPS for amounts below 20,000 SAR, and SARIE for amounts of 20,000 SAR or above. Accepted values: IPS, SARIE, INTRA_BANK
+beneficiary        Object       Yes              Beneficiary details
+id                 Alphanumeric No               Id of an existing beneficiary
+name               Alphanumeric Yes              Name of the beneficiary as per bank account details
+address1           Alphanumeric Yes              Address line 1 of the beneficiary as per bank account details
+address2           Alphanumeric Yes              Address line 2 of the beneficiary as per bank account details
+accountNumber      Numeric      No               Internal bank account number. This parameter should be used when the channel is INTRA_BANK
+iban               Alphanumeric No               Destination IBAN. This parameter should be used when the destination bank account is different from the source bank account
+bicCode            Alpha        No               Destination bank BIC code. This parameter is mandatory if IBAN is provided
+country            Alpha        No               Country of the beneficiary ISO 3166-1 alpha-2
+city               Alpha        No               City of the beneficiary
+
+
+7. Webhook Notification
+Once the payout is processed, the HyperSplits payout engine sends a webhook
+notification to the merchant’s configured webhook URL containing the final
+payout status.
+
+Field                   Description
+merchantReference       Identifier for the bulk payout request
+responseCode            5-digit response code
+responseMessage         message describing the response code
+payouts.payoutId        HyperPay unique payout ID
+payouts.bulkId          HyperPay unique bulk ID payouts.
+payoutReference         Merchant unique reference for each payout
+payouts.purpose         Purpose of the transfer as per of bank transfer codes
+payouts.amount          Payment amount formatted according to currency rules
+payouts.currency        ISO 4217 three-letter currency code, for example SAR
+payouts.transferDate    Date of the scheduled transfer as received in request parameter
+payouts.description     Payout description
+
+Sample Webhook Payload
+{
+ "payoutId": "9fd00e9f-289b-4b64-9cb5-2a88ca1dfcfe",
+ "payoutReference": "PAYOUT-20260222-0001",
+ "bulkId": "9b5c4307-786e-4c7e-9c7e-e77f4a5f8958",
+ "bankTransactionId": "9474661",
+ "beneficiary": {
+ "id": "019c7519-12b9-71a8-a6df-1b717a191e6a",
+ "accountNumber": null,
+ "iban": "SA0660000000025348760001",
+ "bicCode": "BJAZSAJE",
+ "fullName": "John Doe",
+ "address1": "Riyadh",
+ "address2": "King Fahd Road",
+ "country": "SA",
+ "city": "Riyadh"
+ },
+ "amount": "12.00",
+ "currency": "SAR",
+ "transferMode": "INSTANT",
+ "purpose": "11",
+ "description": "Salary payout",
+ "transferredAmount": "12.00",
+ "responseCode": "00000",
+ "responseMessage": "Processed Successfully ",
+ "channel": "IPS"
+}
+
+
+8. Response Codes
+Response Code            Response Message                                     Type
+00000                    Processed Successfully                               Success response
+00001                    Received Successfully                                Received status
+33000                    Payout Scheduled                                     Pending status
+33333                    Payout transaction is currently under processing     Processing
+13000                    Parameter Validation Error                           Standard validation [Required, data type (int, string, etc.), min and max length, etc.]
+13001                    Invalid sourceId                                     Invalid request
+13004                    Not Found                                            Invalid request
+13005                    Invalid Channel                                      Invalid request
+13006                    Payout Reference already taken                       Invalid request
+63000                    Transaction Declined                                 Declined response
+90000                    Payout transaction is not yet confirmed by the bank  Uncertain response
+88888                    Technical Error                                      Internal technical error
+77000                    Cancelled Successfully                               Cancelled payout
+
+
+9. Testing Data
+Intra Bank Transfer
+A transfer within the same bank, where the beneficiary account is held at the
+same bank as the merchant account. For this transfer type, the bank account
+number can be used.
+
+SNB Sample Accounts
+Account Number
+20817167000105
+57700000010508
+
+Domestic/Local Bank Transfer
+A transfer to a beneficiary account held at a different bank within the same country.
+This transfer type uses the beneficiary’s IBAN.
+
+Sample IBAN & BIC
+IBAN                                BIC
+SA4980000211608010444037          RJHISARI
+SA7210000078701005339501          NCBKSAJE
+SA8345000000262258825908          SABBSARI
+SA5655000000012355105243          BSFRSARI
+SA4830400108056378710073          ARNBSARI
+SA7950000000010144306009          AAALSARI
+SA3105000068208666666019          INMASARI
+SA3110000062200000005904          NCBKSAJE
+
+
+10. Bank Identifier Code List
+Bank Name                     Bank Identifier Code
+SAMASARI                      Saudi Central Bank
+INMASARI                      Al-Inma Bank
+NCBKSAJE                      SAUDI NATIONAL BANK
+ALBISARI                      BANK AL BILAD
+RIBLSARI                      RIYAD BANK
+ARNBSARI                      ARAB NATIONAL BANK
+DBAKSARI                      D360 Bank
+SABBSARI                      Saudi Awwal Bank
+BSFRSARI                      Banque Saudi Fransi
+BJAZSAJE                      BANK AL-JAZIRA
+SIBCSARI                      SAUDI INVESTMENT BANK
+NBOBSARI                      NATIONAL BANK OF BAHRAIN
+QNBASARI                      Qatar National Bank
+FABMSARI                      FIRST ABU DHABI BANK
+NBOKSAJE                      NATIONAL BANK OF KUWAIT
+BMUSSARI                      Bank Muscat
+STCJSARI                      STC Bank
+NBIQSARI                      National Bank of Iraq
+RJHISARI                      AL RAJHI BANK
+DEUTSARI                      Deutsche Bank
+NBPASARI                      National Bank of Pakistan
+TCZBSARI                      T.C.ZIRAAT BANKASI A.S.
+BNPASARI                      BNP PARIBAS
+CHASSARI                      JP Morgan Chase Bank N.A (Riyadh Branch)
+ICBKSARI                      Industrial and Commercial BANK of CHINA
+BOTKSARI                      MUFG Bank
+CRESSARY                      Credit Suisse AG
+GULFSARI                      Gulf International Bank
+SCBLSAR2                      Standard Chartered Bank KSA Br
+EBILSARI                      Emirates (NBD)
+VIIOSARI                      VISION BANK
+BSHRSARI                      Sohar International Bank
+
+11. SNB Purpose of Transfer Codes List
+Code                          Description
+BA                            Business: Payroll
+BB                            Business: Buying Goods
+BC                            Business: Operating Expenses
+BD                            Business: Incentives and Allowances
+BE                            Business: Dividends
+BF                            Business: Claims
+BG                            Business: Deposits Company under formation
+CB                            Charities: Donations
+CC                            Charities: Grant
+CD                            Charities: Financial Support
+IB                            Investment: Local Investments
+IC                            Investment: Foreign Investments
+PA                            Personal: Transfer to Family or Friends
+PC                            Personal: Travel Expenses
+PD                            Personal: Studying Expenses
+PE                            Personal: My Account in Other Bank
+PG                            Personal: Transfer to Domestic Labor
+PK                            Personal: Payment of customers credit card
+PL                            Personal: Payment of credit card to another customer
+PM                            Personal: Payment for Loans
+RA                            Remittance to Other Entities: Transfer to Money Changers
+RB                            Remittance to Other Entities: Hajj and Umrah Expenses
+RC                            Remittance to Other Entities: Government Agencies Remittance

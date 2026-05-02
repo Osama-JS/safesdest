@@ -427,6 +427,7 @@ $(document).ready(function () {
         total_amount: totalAmount,
         transactions: transactionData,
         notes: notes,
+        payment_method: $('#paymentMethod').val(),
         _token: $('meta[name="csrf-token"]').attr('content')
       },
       success: function (response) {
@@ -468,6 +469,21 @@ $(document).ready(function () {
         $('#confirmPayment').prop('disabled', false).html('<i class="ti ti-check me-1"></i>تأكيد الدفع');
       }
     });
+    });
+  });
+
+  // Toggle bank details display
+  $(document).on('change', '#paymentMethod', function () {
+    if ($(this).val() === 'hyperpay') {
+      $('#hyperpay-bank-details').slideDown();
+    } else {
+      $('#hyperpay-bank-details').slideUp();
+    }
+  });
+
+  // Reset on modal hide
+  $('#paymentModal').on('hidden.bs.modal', function () {
+    $('#hyperpay-bank-details').hide();
   });
 
   // Get wallet owner name from page

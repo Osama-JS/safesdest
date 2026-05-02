@@ -14,7 +14,16 @@ class Teams extends Model
       'team_commission_type',
       'team_commission_value',
       'location_update_interval',
-      'is_public'
+      'is_public',
+      'bank_name',
+      'account_number',
+      'iban_number',
+      'bic_code',
+      'beneficiary_name',
+      'bank_address1',
+      'bank_address2',
+      'bank_city',
+      'bank_country'
     ];
 
     public function users()

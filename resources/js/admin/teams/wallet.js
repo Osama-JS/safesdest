@@ -14,15 +14,30 @@ $(function () {
       $('.btn-debit').addClass('btn-danger').removeClass('btn-outline-danger');
 
       $('#maturity-time-group').show();
+      $('#payment-method-group').show();
+      handlePaymentMethodChange();
     } else {
       $('.btn-credit').addClass('btn-success').removeClass('btn-outline-success');
       $('.btn-debit').addClass('btn-outline-danger').removeClass('btn-danger');
 
       $('#maturity-time-group').hide();
+      $('#payment-method-group').hide();
+      $('#manual-hyperpay-bank-details').hide();
+    }
+  }
+
+  function handlePaymentMethodChange() {
+    if ($('#trans_payment_method').val() === 'hyperpay' && $('#debit').is(':checked')) {
+      $('#manual-hyperpay-bank-details').show();
+      $('#file-upload-section').hide();
+    } else {
+      $('#manual-hyperpay-bank-details').hide();
+      $('#file-upload-section').show();
     }
   }
 
   $('#credit, #debit').on('change', toggleMaturityTime);
+  $('#trans_payment_method').on('change', handlePaymentMethodChange);
 
   // استدعاء أولي عند تحميل الصفحة
   toggleMaturityTime();
@@ -472,6 +487,7 @@ window.showTeamPaymentRequestOptions = function () {
             balance: parseFloat(teamWallet.balance)
           },
           teamLeader: teamLeader,
+          teamBank: response.teamBank,
           team: team
         });
 
@@ -522,14 +538,33 @@ $(document).on('change', '#teamPaymentMethod', function () {
   const selectedValue = $(this).val();
   const bankTransferFields = $('#teamBankTransferFields');
   const otherPaymentField = $('#teamOtherPaymentField');
+  const hyperPayDetails = $('#teamHyperPayDetails');
 
   if (selectedValue === 'bank_transfer') {
     bankTransferFields.show();
     otherPaymentField.hide();
+    hyperPayDetails.hide();
     $('#teamOtherPaymentMethod').removeAttr('required').val('');
+  } else if (selectedValue === 'hyperpay') {
+    bankTransferFields.hide();
+    otherPaymentField.hide();
+    hyperPayDetails.show();
+    $('#teamOtherPaymentMethod').removeAttr('required').val('');
+
+    // Populate HyperPay details from stored data
+    const teamWalletData = $('#teamPaymentRequestModal').data('teamWalletData');
+    if (teamWalletData && teamWalletData.teamBank) {
+      const bank = teamWalletData.teamBank;
+      $('#hp-beneficiary-name').text(bank.beneficiary_name || '-');
+      $('#hp-bank-name').text(bank.bank_name || '-');
+      $('#hp-iban').text(bank.iban_number || '-');
+      $('#hp-bic').text(bank.bic_code || '-');
+      $('#hp-city').text(bank.bank_city || '-');
+    }
   } else if (selectedValue === 'other') {
     bankTransferFields.hide();
     otherPaymentField.show();
+    hyperPayDetails.hide();
     $('#teamOtherPaymentMethod').attr('required', true);
     // Clear bank fields
     $('#teamBankName').val('');
@@ -539,6 +574,7 @@ $(document).on('change', '#teamPaymentMethod', function () {
   } else {
     bankTransferFields.hide();
     otherPaymentField.hide();
+    hyperPayDetails.hide();
     $('#teamOtherPaymentMethod').removeAttr('required').val('');
   }
 });

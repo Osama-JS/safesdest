@@ -185,6 +185,16 @@ $(function () {
 
       $('#team-is-public').prop('checked', isPublic);
       console.log('Setting switch to:', isPublic);
+
+      // Populate bank details
+      $('#team-beneficiary-name').val(data.beneficiary_name);
+      $('#team-bank-name').val(data.bank_name);
+      $('#team-account-number').val(data.account_number);
+      $('#team-iban-number').val(data.iban_number);
+      $('#team-bic-code').val(data.bic_code);
+      $('#team-bank-city').val(data.bank_city);
+      $('#team-bank-country').val(data.bank_country);
+      $('#team-bank-address1').val(data.bank_address1);
     });
   });
 
@@ -200,5 +210,130 @@ $(function () {
     $('#modelTitle').html('Add New Team');
     // إعادة تعيين is_public إلى القيمة الافتراضية (true)
     $('#team-is-public').prop('checked', true);
+
+    // Reset bank details
+    $('#team-bank-name').val('');
+    $('#team-custom-bank-name').val('');
+    $('#team-custom-bank-field').hide();
+    $('#team-account-number').val('');
+    $('#team-iban-number').val('');
+    $('#team-bic-code').val('').prop('readonly', false);
+    $('#team-beneficiary-name').val('');
+    $('#team-bank-city').val('');
+    $('#team-bank-country').val('SA');
+    $('#team-bank-address1').val('');
+    $('#team-bank-address2').val('');
+  });
+
+  // Handle bank selection change for teams
+  $(document).on('change', '#team-bank-name', function () {
+    const bankName = $(this).val();
+    const customBankField = $('#team-custom-bank-field');
+    const bicField = $('#team-bic-code');
+
+    // Bank to BIC Mapping (Same as drivers)
+    const bankBicMapping = {
+      'البنك الأهلي السعودي': 'NCBKSAJE',
+      'بنك الراجحي': 'RJHISARI',
+      'بنك الرياض': 'RIBLSARI',
+      'البنك السعودي للاستثمار': 'SIBCSARI',
+      'البنك السعودي الفرنسي': 'BSFRSARI',
+      'البنك السعودي البريطاني (ساب)': 'SABBSA22',
+      'بنك العربي الوطني': 'ARNBSARI',
+      'بنك سامبا': 'SAMBSA22',
+      'البنك الأول': 'SAUBSARI',
+      'بنك الجزيرة': 'BJAZSAJE',
+      'بنك الإنماء': 'INMASARI',
+      'البنك العربي': 'ARNBUS6XXX'
+    };
+
+    if (bankName === 'other') {
+      customBankField.show();
+      $('#team-custom-bank-name').attr('required', true);
+      bicField.val('').prop('readonly', false);
+    } else {
+      customBankField.hide();
+      $('#team-custom-bank-name').attr('required', false).val('');
+
+      if (bankBicMapping[bankName]) {
+        bicField.val(bankBicMapping[bankName]).prop('readonly', true);
+      } else {
+        bicField.val('').prop('readonly', false);
+      }
+    }
+  });
+
+  // Format account number for teams
+  $(document).on('input', '#team-account-number', function () {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+
+  // Format IBAN number for teams
+  $(document).on('input', '#team-iban-number', function () {
+    let value = this.value.replace(/[^0-9SA]/g, '').toUpperCase();
+    if (value && !value.startsWith('SA')) {
+      if (value.startsWith('S')) {
+        value = 'SA' + value.substring(1);
+      } else {
+        value = 'SA' + value;
+      }
+    }
+    if (value.length > 24) {
+      value = value.substring(0, 24);
+    }
+    if (value.length > 2) {
+      value =
+        value.substring(0, 2) +
+        value
+          .substring(2)
+          .replace(/(.{4})/g, '$1 ')
+          .trim();
+    }
+    this.value = value;
+  });
+
+  // Modified edit-record for bank handling
+  const originalEditRecord = $(document).off('click', '.edit-record');
+  $(document).on('click', '.edit-record', function () {
+    var teamId = $(this).data('id');
+    var teamName = $(this).data('name');
+
+    $('#submitModal').modal('show');
+    $('#modelTitle').html(`Edit Team: <span class="bg-info text-white px-2 rounded">${teamName}</span>`);
+
+    $.get(`${baseUrl}admin/teams/edit/${teamId}`, function (data) {
+      $('#team_id').val(data.id);
+      $('#team-name').val(data.name);
+      $('#team-address').val(data.address);
+      $('#team-location_update').val(data.location_update_interval);
+      $('#team-commission-type').val(data.team_commission_type);
+      $('#team-commission').val(data.team_commission_value);
+      $('#team-note').val(data.note);
+
+      let isPublic = data.is_public == 1 || data.is_public === true;
+      $('#team-is-public').prop('checked', isPublic);
+
+      // Populate bank details
+      $('#team-beneficiary-name').val(data.beneficiary_name);
+      $('#team-account-number').val(data.account_number);
+      $('#team-iban-number').val(data.iban_number);
+      $('#team-bic-code').val(data.bic_code);
+      $('#team-bank-city').val(data.bank_city);
+      $('#team-bank-country').val(data.bank_country || 'SA');
+      $('#team-bank-address1').val(data.bank_address1);
+      $('#team-bank-address2').val(data.bank_address2);
+
+      // Handle bank name select vs custom
+      if (data.bank_name) {
+        if ($('#team-bank-name option[value="' + data.bank_name + '"]').length) {
+          $('#team-bank-name').val(data.bank_name).trigger('change');
+        } else {
+          $('#team-bank-name').val('other').trigger('change');
+          $('#team-custom-bank-name').val(data.bank_name);
+        }
+      } else {
+        $('#team-bank-name').val('').trigger('change');
+      }
+    });
   });
 });

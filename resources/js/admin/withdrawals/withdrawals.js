@@ -8,7 +8,13 @@ $(function () {
   var dt_withdrawals_table = $('.datatables-withdrawals');
 
   // Select2
-  $('.select2').select2();
+  // Select2 for filters
+  $('#filter_status, #filter_driver').select2();
+
+  // Select2 for modal with dropdownParent fix
+  $('#payment_method').select2({
+    dropdownParent: $('#processWithdrawalModal')
+  });
 
   // Handle Filter Change
   $('#filter_status, #filter_driver').on('change', function () {
@@ -47,6 +53,7 @@ $(function () {
           render: function (data) {
             var statusObj = {
               pending: { title: 'Pending', class: 'bg-label-warning' },
+              processing: { title: 'Processing', class: 'bg-label-info' },
               completed: { title: 'Approved', class: 'bg-label-success' },
               rejected: { title: 'Rejected', class: 'bg-label-danger' },
               cancelled: { title: 'Cancelled', class: 'bg-label-secondary' }
@@ -103,17 +110,46 @@ $(function () {
     } else {
       $('.approve-fields').show();
       $('#amount_paid').prop('required', true);
+      // Trigger payment method change to handle receipt visibility
+      $('#payment_method').trigger('change');
+    }
+  });
+
+  // Handle Payment Method Change
+  $('#payment_method').on('change', function () {
+    if ($(this).val() === 'hyperpay') {
+      $('#receipt_field_container').hide();
+      $('#driver_bank_info').slideDown();
+    } else {
+      $('#receipt_field_container').show();
+      $('#driver_bank_info').slideUp();
     }
   });
 
   // Open Modal
   $(document).on('click', '.process-btn', function () {
-    var id = $(this).data('id');
-    var amount = $(this).data('amount');
+    var tr = $(this).closest('tr');
+    var row = dt_withdrawals_table.DataTable().row(tr);
+    var data = row.data();
 
-    $('#withdrawal_id').val(id);
-    $('#amount_paid').val(amount);
-    $('#requested_amount_display').text(amount + ' SAR');
+    if (!data) return;
+
+    $('#withdrawal_id').val(data.id);
+    $('#amount_paid').val(data.amount_requested);
+    $('#requested_amount_display').text(data.amount_requested);
+
+    // Populate Driver Info
+    $('#driver_wallet_balance').text(data.wallet_balance);
+    $('#info_beneficiary').text(data.bank_details.beneficiary);
+    $('#info_bic').text(data.bank_details.bic);
+    $('#info_iban').text(data.bank_details.iban);
+    $('#info_address').text(data.bank_details.address1);
+    $('#info_city').text(data.bank_details.city);
+    $('#info_country').text(data.bank_details.country);
+
+    // Reset to Approve view
+    $('#withdrawal_action').val('approve').trigger('change');
+    $('#payment_method').val('bank_transfer').trigger('change');
 
     $('#processWithdrawalModal').modal('show');
   });
@@ -156,8 +192,11 @@ $(function () {
       error: function (xhr) {
         btn.prop('disabled', false).text('Process Request');
         var message = 'Something went wrong';
-        if (xhr.status === 422) {
-          message = xhr.responseJSON.message || 'Validation Error';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          message = xhr.responseJSON.message;
+        } else if (xhr.status === 422 && xhr.responseJSON.errors) {
+          // Handle Laravel validation errors specifically if needed
+          message = Object.values(xhr.responseJSON.errors).flat().join('<br>');
         }
         Swal.fire({
           icon: 'error',

@@ -377,9 +377,41 @@
                         <!-- Payment Notes -->
                         <div class="mb-3">
                             <label for="paymentNotes" class="form-label">
-                                <i class="ti ti-note me-1"></i>{{ __('Payment Notes') }}
-                                <small class="text-muted">({{ __('Optional') }})</small>
-                            </label>
+                                 <i class="ti ti-note me-1"></i>{{ __('Payment Notes') }}
+                                 <small class="text-muted">({{ __('Optional') }})</small>
+                             </label>
+
+                            <!-- Payment Method -->
+                            <div class="mb-3">
+                                <label for="paymentMethod" class="form-label">
+                                    <i class="ti ti-credit-card me-1"></i>{{ __('Payment Method') }}
+                                </label>
+                                <select class="form-select" id="paymentMethod" name="payment_method">
+                                    <option value="manual" selected>{{ __('Manual (Cash / Bank Transfer)') }}</option>
+                                    <option value="hyperpay">{{ __('HyperPay Payout') }}</option>
+                                </select>
+                                <small class="text-muted">
+                                    <i class="ti ti-info-circle me-1"></i>
+                                    {{ __('HyperPay Payout will automatically transfer the funds to the driver\'s IBAN.') }}
+                                </small>
+
+                                <!-- Bank Details (Shown only for HyperPay) -->
+                                <div id="hyperpay-bank-details" class="alert alert-info mt-3" style="display: none;">
+                                    <h6 class="alert-heading fw-bold mb-2"><i class="ti ti-building-bank me-1"></i>{{ __('Driver Bank Details') }}</h6>
+                                    <div class="row small">
+                                        <div class="col-md-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong> <span>{{ $data->driver->beneficiary_name ?? 'N/A' }}</span></div>
+                                        <div class="col-md-6 mb-1"><strong>{{ __('Bank') }}:</strong> <span>{{ $data->driver->bank_name ?? 'N/A' }}</span></div>
+                                        <div class="col-md-12 mb-1"><strong>{{ __('IBAN') }}:</strong> <span class="font-monospace">{{ $data->driver->iban_number ?? 'N/A' }}</span></div>
+                                        <div class="col-md-6"><strong>{{ __('BIC/SWIFT') }}:</strong> <span>{{ $data->driver->bic_code ?? 'N/A' }}</span></div>
+                                    </div>
+                                    @if(!$data->driver->iban_number || !$data->driver->bic_code || !$data->driver->beneficiary_name)
+                                        <div class="text-danger mt-2 fw-bold">
+                                            <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
                             <textarea class="form-control" id="paymentNotes" name="notes" rows="3"
                                 placeholder="{{ __('Add any notes about this payment (e.g., payment method, reference number, special instructions)...') }}"></textarea>
                             <small class="text-muted">

@@ -201,6 +201,48 @@
                                             <span class="maturity-error text-danger text-error"></span>
                                         </div>
 
+                                        <!-- Payment Method (Visible only if Debit is selected) -->
+                                        <div class="mb-4" id="payment-method-group" style="display: none;">
+                                            <label class="form-label" for="payment_method">{{ __('Payment Method') }}</label>
+                                            <select name="payment_method" class="form-select" id="trans_payment_method">
+                                                <option value="manual" selected>{{ __('Manual (Cash / Bank Transfer)') }}</option>
+                                                @if ($data->user_type === 'driver')
+                                                    <option value="hyperpay">{{ __('HyperPay Payout') }}</option>
+                                                @endif
+                                            </select>
+                                            <span class="payment_method-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Bank Details (Shown only for HyperPay) -->
+                                        @if ($data->user_type === 'driver')
+                                            <div id="manual-hyperpay-bank-details" class="alert alert-info mt-3"
+                                                style="display: none;">
+                                                <h6 class="alert-heading fw-bold mb-2"><i
+                                                        class="ti ti-building-bank me-1"></i>{{ __('Driver Bank Details') }}
+                                                </h6>
+                                                <div class="row small">
+                                                    <div class="col-md-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong>
+                                                        <span>{{ $data->driver->beneficiary_name ?? 'N/A' }}</span>
+                                                    </div>
+                                                    <div class="col-md-6 mb-1"><strong>{{ __('Bank') }}:</strong>
+                                                        <span>{{ $data->driver->bank_name ?? 'N/A' }}</span>
+                                                    </div>
+                                                    <div class="col-md-12 mb-1"><strong>{{ __('IBAN') }}:</strong> <span
+                                                            class="font-monospace">{{ $data->driver->iban_number ?? 'N/A' }}</span>
+                                                    </div>
+                                                    <div class="col-md-6"><strong>{{ __('BIC/SWIFT') }}:</strong>
+                                                        <span>{{ $data->driver->bic_code ?? 'N/A' }}</span>
+                                                    </div>
+                                                </div>
+                                                @if (!$data->driver->iban_number || !$data->driver->bic_code || !$data->driver->beneficiary_name)
+                                                    <div class="text-danger mt-2 fw-bold">
+                                                        <i
+                                                            class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+
                                         <!-- Description -->
                                         <div class="mb-4">
                                             <label class="form-label" for="description">* {{ __('Description') }}</label>

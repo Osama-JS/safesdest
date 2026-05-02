@@ -55,4 +55,12 @@ return [
     'database_url' => env('FIREBASE_DATABASE_URL'),
   ],
 
+  'hyperpay' => [
+    'username'    => env('HYPERPAY_PAYOUT_USERNAME'),
+    'password'    => env('HYPERPAY_PAYOUT_PASSWORD'),
+    'merchant_id' => env('HYPERPAY_PAYOUT_MERCHANT_ID'),
+    'source_id'   => env('HYPERPAY_PAYOUT_SOURCE_ID'),
+    'payout_url'  => env('HYPERPAY_PAYOUT_URL', 'https://gateway.sandbox.hyperpay.com/payouts'),
+  ],
+
 ];

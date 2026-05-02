@@ -22,6 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
       (new FileExpirationScheduler())($schedule);
   })
   ->withMiddleware(function (Middleware $middleware) {
+      $middleware->validateCsrfTokens(except: [
+        'api/hyperpay/webhook/payout',
+        'api/signit/webhook',
+      ]);
       $middleware->web(LocaleMiddleware::class);
       $middleware->alias([
         'guard.strict' => \App\Http\Middleware\EnsureUserIsAuthenticatedWithCorrectGuard::class,

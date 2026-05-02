@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\FileHelper;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Driver;
 use App\Models\User;
@@ -30,13 +31,13 @@ class WithdrawalRequestsController extends Controller
         $stats = [
             'pending_count' => WithdrawalRequest::pending()->count(),
             'pending_amount' => WithdrawalRequest::pending()->sum('amount_requested'),
+            'processing_count' => WithdrawalRequest::where('status', 'processing')->count(),
+            'processing_amount' => WithdrawalRequest::where('status', 'processing')->sum('amount_paid'),
             'approved_count' => WithdrawalRequest::completed()->count(),
-            'approved_amount' => WithdrawalRequest::completed()->sum('amount_paid'), // Use amount_paid
+            'approved_amount' => WithdrawalRequest::completed()->sum('amount_paid'),
             'rejected_count' => WithdrawalRequest::where('status', 'rejected')->count(),
         ];
 
-        // 2. Fetch Drivers for Filter (limit to those with requests if needed, but all for now)
-        // Optimization: Select only id and name
         $drivers = Driver::select('id', 'name')->orderBy('name')->get();
 
         return view('admin.wallets.withdrawals.index', compact('stats', 'drivers'));
@@ -47,7 +48,7 @@ class WithdrawalRequestsController extends Controller
      */
     public function getData(Request $request)
     {
-        $query = WithdrawalRequest::with(['driver', 'wallet', 'transaction', 'processor']);
+        $query = WithdrawalRequest::with(['driver.wallet', 'wallet', 'transaction', 'processor']);
 
         if ($request->status) {
             $query->where('status', $request->status);
@@ -73,15 +74,27 @@ class WithdrawalRequestsController extends Controller
         $data = [];
         foreach ($withdrawals as $withdrawal) {
             $processedBy = $withdrawal->processor ? $withdrawal->processor->name : 'N/A';
+            $driver = $withdrawal->driver;
 
             $data[] = [
                 'id' => $withdrawal->id,
-                'driver_name' => $withdrawal->driver->name ?? 'N/A',
-                'driver_id' => $withdrawal->driver_id, // For filter linkage if needed
+                'driver_name' => $driver->name ?? 'N/A',
+                'driver_id' => $withdrawal->driver_id,
                 'wallet_id' => $withdrawal->wallet_id,
+                'wallet_balance' => $driver->wallet ? $driver->wallet->balance : 0,
+                'bank_details' => [
+                    'iban' => $driver->iban_number ?? 'N/A',
+                    'beneficiary' => $driver->beneficiary_name ?? 'N/A',
+                    'bic' => $driver->bic_code ?? 'N/A',
+                    'bank_name' => $driver->bank_name ?? 'N/A',
+                    'address1' => $driver->bank_address1 ?? $driver->address ?? 'N/A',
+                    'address2' => $driver->bank_address2 ?? '.',
+                    'city' => $driver->bank_city ?? 'Riyadh',
+                    'country' => $driver->bank_country ?? 'SA',
+                ],
                 'amount_requested' => $withdrawal->amount_requested,
-                'amount_paid' => $withdrawal->amount_paid ?? 0, // Ensure numeric
-                'approved_amount' => $withdrawal->amount_paid ?? 0, // Alias for clarity
+                'amount_paid' => $withdrawal->amount_paid ?? 0,
+                'approved_amount' => $withdrawal->amount_paid ?? 0,
                 'status' => $withdrawal->status,
                 'payment_method' => $withdrawal->payment_method,
                 'created_at' => $withdrawal->created_at->format('Y-m-d H:i'),
@@ -96,8 +109,7 @@ class WithdrawalRequestsController extends Controller
         return response()->json([
             'draw' => intval($request->input('draw')),
             'recordsTotal' => $totalData,
-            'recordsFiltered' => $totalFiltered, // Note: If filtering is applied, we should use separate count for filtered. But existing code reused totalData. I'll keep it simple or fix it.
-            // Fix: count should be AFTER filters. My implementation of count was AFTER filters. Correct.
+            'recordsFiltered' => $totalFiltered,
             'data' => $data,
         ]);
     }
@@ -105,7 +117,7 @@ class WithdrawalRequestsController extends Controller
     /**
      * Process a withdrawal request (Accept/Reject).
      */
-    public function process(Request $request, $id)
+    public function process(Request $request, $id, \App\Services\HyperPayPayoutService $payoutService)
     {
         $withdrawal = WithdrawalRequest::findOrFail($id);
 
@@ -130,11 +142,46 @@ class WithdrawalRequestsController extends Controller
             if ($request->action === 'approve') {
                 $amountPaid = $request->amount_paid;
                 $wallet = Wallet::findOrFail($withdrawal->wallet_id);
+                $driver = Driver::findOrFail($withdrawal->driver_id);
 
                 // Check if wallet balance is still enough
                 if ($wallet->balance < $amountPaid) {
                     throw new \Exception(__('Insufficient wallet balance for this amount'));
                 }
+
+                // --- HyperPay Payout Logic ---
+                if ($request->payment_method === 'hyperpay') {
+                    // Validate Driver Bank Details
+                    if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
+                        throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
+                    }
+
+                    $payoutResponse = $payoutService->sendPayout([
+                        'amount' => $amountPaid,
+                        'currency' => 'SAR',
+                        'externalId' => 'WD-' . $withdrawal->id . '-' . time(),
+                        'beneficiary_name' => $driver->beneficiary_name,
+                        'address1' => $driver->bank_address1 ?? $driver->address,
+                        'address2' => $driver->bank_address2 ?? '.',
+                        'city' => $driver->bank_city ?? 'Riyadh',
+                        'country' => $driver->bank_country ?? 'SA',
+                        'iban' => str_replace(' ', '', $driver->iban_number),
+                        'bic' => $driver->bic_code,
+                        'description' => "Payout for Driver #{$driver->id} - Withdrawal #{$withdrawal->id}"
+                    ]);
+
+                    if (!$payoutResponse['status']) {
+                        throw new \Exception(__('HyperPay Error: ') . $payoutResponse['message']);
+                    }
+
+                    // Store HyperPay references in admin notes
+                    $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                    $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                    $refInfo = "HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+                    
+                    $request->merge(['admin_notes' => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . $refInfo]);
+                }
+                // --- End HyperPay Logic ---
 
                 $receiptPath = null;
                 if ($request->hasFile('receipt')) {
@@ -155,7 +202,7 @@ class WithdrawalRequestsController extends Controller
 
                 // 2. Update Withdrawal Request
                 $withdrawal->update([
-                    'status' => 'completed',
+                    'status' => ($request->payment_method === 'hyperpay') ? 'processing' : 'completed',
                     'amount_paid' => $amountPaid,
                     'payment_method' => $request->payment_method,
                     'admin_notes' => $request->admin_notes,
@@ -200,11 +247,17 @@ class WithdrawalRequestsController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => __('Processed successfully')]);
+            
+            $msg = ($request->payment_method === 'hyperpay' && $request->action === 'approve') 
+                ? __('Payout initiated successfully. Current status: Processing. It will be finalized automatically via HyperPay.')
+                : __('Processed successfully');
+
+            return response()->json(['success' => true, 'message' => $msg]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            Log::error('Withdrawal Processing Error:', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 }

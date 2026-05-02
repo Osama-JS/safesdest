@@ -87,6 +87,12 @@ class DriverProfileController extends Controller
                         'bank_name' => $driver->bank_name,
                         'account_number' => $driver->account_number,
                         'iban_number' => $driver->iban_number,
+                        'bic_code' => $driver->bic_code,
+                        'beneficiary_name' => $driver->beneficiary_name,
+                        'bank_address1' => $driver->bank_address1,
+                        'bank_address2' => $driver->bank_address2,
+                        'bank_city' => $driver->bank_city,
+                        'bank_country' => $driver->bank_country,
                     ]
                 ]
             ], 200);
@@ -554,6 +560,12 @@ class DriverProfileController extends Controller
                 'bank_name' => 'required|string|max:255',
                 'account_number' => 'required|string|max:255',
                 'iban_number' => 'required|string|max:255',
+                'bic_code' => 'required|string|max:20',
+                'beneficiary_name' => 'required|string|max:255',
+                'bank_address1' => 'required|string|max:255',
+                'bank_address2' => 'nullable|string|max:255',
+                'bank_city' => 'required|string|max:255',
+                'bank_country' => 'required|string|size:2', // e.g., SA
             ]);
 
             if ($validator->fails()) {
@@ -567,6 +579,12 @@ class DriverProfileController extends Controller
             $driver->bank_name = $request->bank_name;
             $driver->account_number = $request->account_number;
             $driver->iban_number = $request->iban_number;
+            $driver->bic_code = $request->bic_code;
+            $driver->beneficiary_name = $request->beneficiary_name;
+            $driver->bank_address1 = $request->bank_address1;
+            $driver->bank_address2 = $request->bank_address2;
+            $driver->bank_city = $request->bank_city;
+            $driver->bank_country = $request->bank_country;
             $driver->save();
 
             return response()->json([
@@ -577,6 +595,12 @@ class DriverProfileController extends Controller
                         'bank_name' => $driver->bank_name,
                         'account_number' => $driver->account_number,
                         'iban_number' => $driver->iban_number,
+                        'bic_code' => $driver->bic_code,
+                        'beneficiary_name' => $driver->beneficiary_name,
+                        'bank_address1' => $driver->bank_address1,
+                        'bank_address2' => $driver->bank_address2,
+                        'bank_city' => $driver->bank_city,
+                        'bank_country' => $driver->bank_country,
                     ]
                 ]
             ], 200);

@@ -21,7 +21,7 @@
 @section('content')
     <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -40,7 +40,26 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span>{{ __('Processing') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ $stats['processing_amount'] }} {{ __('SAR') }}</h4>
+                                <span class="text-info">({{ $stats['processing_count'] }})</span>
+                            </div>
+                            <small class="mb-0">{{ __('Initiated (HyperPay)') }}</small>
+                        </div>
+                        <span class="badge bg-label-info rounded p-2">
+                            <i class="ti ti-refresh ti-sm"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -59,7 +78,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
@@ -97,6 +116,7 @@
                     <select id="filter_status" class="select2 form-select" data-allow-clear="true">
                         <option value="">{{ __('All Statuses') }}</option>
                         <option value="pending">{{ __('Pending') }}</option>
+                        <option value="processing">{{ __('Processing') }}</option>
                         <option value="completed">{{ __('Approved') }}</option>
                         <option value="rejected">{{ __('Rejected') }}</option>
                     </select>
@@ -161,15 +181,35 @@
                             </div>
 
                             <div class="col-12 approve-fields">
+                                <div class="bg-label-info p-3 rounded mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0 fw-bold">{{ __('Driver Financial Info') }}</h6>
+                                        <span class="badge bg-primary">{{ __('Wallet Balance') }}: <span id="driver_wallet_balance">0</span> SAR</span>
+                                    </div>
+                                    <div id="driver_bank_info" class="small" style="display: none;">
+                                        <div class="row g-2">
+                                            <div class="col-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong> <span id="info_beneficiary"></span></div>
+                                            <div class="col-6 mb-1"><strong>{{ __('BIC/Swift') }}:</strong> <span id="info_bic"></span></div>
+                                            <div class="col-12 mb-1"><strong>{{ __('IBAN') }}:</strong> <span id="info_iban" class="text-break text-primary fw-bold"></span></div>
+                                            <hr class="my-1">
+                                            <div class="col-12 mb-1"><strong>{{ __('Address') }}:</strong> <span id="info_address"></span></div>
+                                            <div class="col-6"><strong>{{ __('City') }}:</strong> <span id="info_city"></span></div>
+                                            <div class="col-6"><strong>{{ __('Country') }}:</strong> <span id="info_country"></span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 approve-fields">
                                 <label class="form-label">{{ __('Payment Method') }}</label>
                                 <select name="payment_method" id="payment_method" class="form-select select2">
                                     <option value="bank_transfer">{{ __('Bank Transfer') }}</option>
                                     <option value="cash">{{ __('Cash Handover') }}</option>
-
+                                    <option value="hyperpay">{{ __('HyperPay HyperSplits (Auto)') }}</option>
                                 </select>
                             </div>
 
-                            <div class="col-12 approve-fields" id="receipt_field">
+                            <div class="col-12 approve-fields" id="receipt_field_container">
                                 <label class="form-label">{{ __('Receipt Image') }}</label>
                                 <input type="file" name="receipt" class="form-control" accept="image/*,application/pdf">
                             </div>

@@ -576,6 +576,16 @@ class TeamsController extends Controller
       'commission_type' => 'nullable|in:fixed,rate,subscription',
       'commission' => 'required_with:commission_type|min:0',
       'is_public' => 'nullable|boolean',
+      'bank_name' => 'nullable|string|max:255',
+      'custom_bank_name' => 'nullable|string|max:255',
+      'account_number' => 'nullable|string|max:255',
+      'iban_number' => 'nullable|string|max:255',
+      'bic_code' => 'nullable|string|max:255',
+      'beneficiary_name' => 'nullable|string|max:255',
+      'bank_address1' => 'nullable|string|max:255',
+      'bank_address2' => 'nullable|string|max:255',
+      'bank_city' => 'nullable|string|max:255',
+      'bank_country' => 'nullable|string|max:255',
 
     ]);
     if ($validator->fails()) {
@@ -595,7 +605,16 @@ class TeamsController extends Controller
           'team_commission_value' =>  $req->commission,
           'location_update_interval' => $req->location_update,
           'note' =>  $req->note,
-          'is_public' => $req->is_public ?? false
+          'is_public' => $req->is_public ?? false,
+          'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
+          'account_number' => $req->account_number,
+          'iban_number' => $req->iban_number,
+          'bic_code' => $req->bic_code,
+          'beneficiary_name' => $req->beneficiary_name,
+          'bank_address1' => $req->bank_address1,
+          'bank_address2' => $req->bank_address2,
+          'bank_city' => $req->bank_city,
+          'bank_country' => $req->bank_country,
         ]);
       } else {
 
@@ -606,7 +625,16 @@ class TeamsController extends Controller
           'team_commission_value' =>  $req->commission,
           'location_update_interval' => $req->location_update ?? 30,
           'note' =>  $req->note,
-          'is_public' => $req->is_public ?? false
+          'is_public' => $req->is_public ?? false,
+          'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
+          'account_number' => $req->account_number,
+          'iban_number' => $req->iban_number,
+          'bic_code' => $req->bic_code,
+          'beneficiary_name' => $req->beneficiary_name,
+          'bank_address1' => $req->bank_address1,
+          'bank_address2' => $req->bank_address2,
+          'bank_city' => $req->bank_city,
+          'bank_country' => $req->bank_country,
         ]);
       }
 

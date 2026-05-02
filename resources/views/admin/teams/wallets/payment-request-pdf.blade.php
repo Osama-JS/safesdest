@@ -142,6 +142,18 @@
                 <td class="label">رقم الآيبان</td>
                 <td>{{ $ibanNumber }}</td>
             </tr>
+            <tr>
+                <td class="label">طريقة السداد</td>
+                <td>
+                    @if($paymentMethod === 'hyperpay')
+                        HyperPay Payout (دفع آلي)
+                    @elseif($paymentMethod === 'bank_transfer')
+                        تحويل بنكي
+                    @else
+                        أخرى ({{ $paymentMethod }})
+                    @endif
+                </td>
+            </tr>
         </table>
 
         <!-- Team Info -->

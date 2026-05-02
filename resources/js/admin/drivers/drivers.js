@@ -34,23 +34,45 @@ $(function () {
     toggleWhatsAppFields();
   });
 
-  // Bank fields functionality
-  function toggleCustomBankField() {
-    const bankSelect = $('#driver-bank-name');
-    const customBankField = $('#driver-custom-bank-field');
 
-    if (bankSelect.val() === 'other') {
-      customBankField.show();
-      $('#driver-custom-bank-name').attr('required', true);
-    } else {
-      customBankField.hide();
-      $('#driver-custom-bank-name').attr('required', false).val('');
-    }
-  }
 
   // Handle bank selection change
   $(document).on('change', '#driver-bank-name', function () {
-    toggleCustomBankField();
+    const bankName = $(this).val();
+    const customBankField = $('#driver-custom-bank-field');
+    const bicField = $('#driver-bic-code');
+
+    // Bank to BIC Mapping
+    const bankBicMapping = {
+      'البنك الأهلي السعودي': 'NCBKSAJE',
+      'بنك الراجحي': 'RJHISARI',
+      'بنك الرياض': 'RIBLSARI',
+      'البنك السعودي للاستثمار': 'SIBCSARI',
+      'البنك السعودي الفرنسي': 'BSFRSARI',
+      'البنك السعودي البريطاني (ساب)': 'SABBSA22',
+      'بنك العربي الوطني': 'ARNBSARI',
+      'بنك سامبا': 'SAMBSA22',
+      'البنك الأول': 'SAUBSARI',
+      'بنك الجزيرة': 'BJAZSAJE',
+      'بنك الإنماء': 'INMASARI',
+      'البنك العربي': 'ARNBUS6XXX'
+    };
+
+    if (bankName === 'other') {
+      customBankField.show();
+      $('#driver-custom-bank-name').attr('required', true);
+      bicField.val('').prop('readonly', false); // Allow manual entry
+    } else {
+      customBankField.hide();
+      $('#driver-custom-bank-name').attr('required', false).val('');
+
+      // Auto-fill BIC Code and make it readonly
+      if (bankBicMapping[bankName]) {
+        bicField.val(bankBicMapping[bankName]).prop('readonly', true);
+      } else {
+        bicField.val('').prop('readonly', false);
+      }
+    }
   });
 
   // Format account number (numbers only)
@@ -452,13 +474,19 @@ $(function () {
       $('#driver-bank-name').val(data.bank_name || '');
       $('#driver-account-number').val(data.account_number || '');
       $('#driver-iban-number').val(data.iban_number || '');
+      $('#driver-bic-code').val(data.bic_code || '');
+      $('#driver-beneficiary-name').val(data.beneficiary_name || '');
+      $('#driver-bank-address1').val(data.bank_address1 || '');
+      $('#driver-bank-address2').val(data.bank_address2 || '');
+      $('#driver-bank-city').val(data.bank_city || '');
+      $('#driver-bank-country').val(data.bank_country || 'SA');
 
       // Handle custom bank name
       if (data.bank_name && !$('#driver-bank-name option[value="' + data.bank_name + '"]').length) {
         $('#driver-bank-name').val('other');
         $('#driver-custom-bank-name').val(data.bank_name);
       }
-      toggleCustomBankField();
+      $('#driver-bank-name').trigger('change');
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 
@@ -563,6 +591,19 @@ $(function () {
     $('#whatsapp-country-code').val('');
     $('#whatsapp-number').val('');
     toggleWhatsAppFields();
+
+    // Reset bank details
+    $('#driver-bank-name').val('');
+    $('#driver-custom-bank-name').val('');
+    $('#driver-custom-bank-field').hide();
+    $('#driver-account-number').val('');
+    $('#driver-iban-number').val('');
+    $('#driver-bic-code').val('');
+    $('#driver-beneficiary-name').val('');
+    $('#driver-bank-address1').val('');
+    $('#driver-bank-address2').val('');
+    $('#driver-bank-city').val('');
+    $('#driver-bank-country').val('SA');
   });
 
   $(document).on('click', '.signature-record', function () {

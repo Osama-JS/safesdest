@@ -13,6 +13,8 @@ class TeamWalletPaymentRequestLog extends Model
         'team_leader_id',
         'amount',
         'payment_request_number',
+        'payment_method',
+        'transaction_id',
         'notes',
         'ip_address',
         'printed_at'

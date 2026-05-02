@@ -130,6 +130,11 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
             ->name('api.driver.tasks.available.claim');
         Route::get('/my-claims', [DriverAvailableTasksController::class, 'myClaims'])
             ->name('api.driver.tasks.my-claims');
+        Route::put('/my-claims/{id}', [DriverAvailableTasksController::class, 'updateClaim'])
+            ->name('api.driver.tasks.available.claim.update');
+        Route::delete('/my-claims/{id}', [DriverAvailableTasksController::class, 'cancelClaim'])
+            ->name('api.driver.tasks.available.claim.cancel');
+
 
         Route::get('/{task}', [DriverTaskController::class, 'show'])
             ->name('api.driver.tasks.show');

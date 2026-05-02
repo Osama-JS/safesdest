@@ -71,12 +71,14 @@ class DriverAvailableTasksController extends Controller
                             'total_price' => round($task->total_price - ($task->commission ?? 0), 2),
                             'customer_name' => $task->customer->name ?? 'Unknown',
                             'pickup_address' => $task->pickup->address ?? 'N/A',
+                            'pickup_date' => $task->pickup->scheduled_time ?? null,
                             'delivery_address' => $task->delivery->address ?? 'N/A',
+                            'delivery_date' => $task->delivery->scheduled_time ?? null,
                             'distance' => isset($task->distance) ? round($task->distance, 2) : null,
                             'status' => $task->status,
                             'created_at' => $task->created_at,
                             'claim_status' => $myClaims[$task->id] ?? null,
-                            'vehicle_size' => $task->vehicle_size->name ?? 'N/A',
+                            'vehicle_size' => $task->vehicle_size->type->vehicle->name . ' ' . $task->vehicle_size->type->name . ' ' . $task->vehicle_size->name  ?? 'N/A',
                             'additional_data' => $task->driver_visible_additional_data,
                             'conditions' => $task->conditions,
                         ];
@@ -132,14 +134,25 @@ class DriverAvailableTasksController extends Controller
                             'name' => $task->customer->name ?? 'Unknown',
                             'phone' => $task->customer->phone ?? null,
                         ],
-                        'pickup_point' => $task->pickup,
-                        'delivery_point' => $task->delivery,
+                        'pickup_point' => [
+                            'address' => $task->pickup->address ?? 'N/A',
+                            'scheduled_time' => $task->pickup->scheduled_time ?? null,
+                            'latitude' => $task->pickup->latitude ?? null,
+                            'longitude' => $task->pickup->longitude ?? null,
+                        ],
+                        'delivery_point' => [
+                            'address' => $task->delivery->address ?? 'N/A',
+                            'scheduled_time' => $task->delivery->scheduled_time ?? null,
+                            'latitude' => $task->delivery->latitude ?? null,
+                            'longitude' => $task->delivery->longitude ?? null,
+                        ],
                         'vehicle_size' => $task->vehicle_size->name ?? 'N/A',
                         'additional_data' => $task->driver_visible_additional_data,
                         'conditions' => $task->conditions,
                         'claim_status' => $claim->status ?? null,
                         'claim_note' => $claim->driver_note ?? null,
                         'admin_note' => $claim->admin_note ?? null,
+                        'created_at' => $task->created_at,
                     ]
                 ]
             ]);
@@ -233,13 +246,17 @@ class DriverAvailableTasksController extends Controller
                         return [
                             'id' => $claim->id,
                             'task_id' => $claim->task_id,
+                            'total_price' => round($claim->task->total_price - ($claim->task->commission ?? 0), 2),
                             'customer_task_number' => $claim->task->customer_task_number ?? 'N/A',
                             'customer_name' => $claim->task->customer->name ?? 'Unknown',
                             'status' => $claim->status,
+                            'driver_note' => $claim->driver_note,
                             'admin_note' => $claim->admin_note,
                             'created_at' => $claim->created_at,
                             'pickup_address' => $claim->task->pickup->address ?? 'N/A',
+                            'pickup_date' => $claim->task->pickup->scheduled_time ?? null,
                             'delivery_address' => $claim->task->delivery->address ?? 'N/A',
+                            'delivery_date' => $claim->task->delivery->scheduled_time ?? null,
                         ];
                     }),
                     'pagination' => [
@@ -254,6 +271,70 @@ class DriverAvailableTasksController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch claims history'
+            ], 500);
+        }
+    /**
+     * Update a claim request
+     */
+    public function updateClaim(Request $request, $id)
+    {
+        try {
+            $driver = $request->user();
+            $claim = TaskClaimRequest::where('driver_id', $driver->id)
+                ->where('status', 'pending')
+                ->findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'note' => 'nullable|string|max:500'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $claim->update([
+                'driver_note' => $request->note
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Claim request updated successfully',
+                'claim' => $claim
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update claim: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel a claim request
+     */
+    public function cancelClaim(Request $request, $id)
+    {
+        try {
+            $driver = $request->user();
+            $claim = TaskClaimRequest::where('driver_id', $driver->id)
+                ->where('status', 'pending')
+                ->findOrFail($id);
+
+            $claim->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Claim request cancelled successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel claim: ' . $e->getMessage()
             ], 500);
         }
     }

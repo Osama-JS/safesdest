@@ -469,7 +469,6 @@ $(document).ready(function () {
         $('#confirmPayment').prop('disabled', false).html('<i class="ti ti-check me-1"></i>تأكيد الدفع');
       }
     });
-    });
   });
 
   // Toggle bank details display

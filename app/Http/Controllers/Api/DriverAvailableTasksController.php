@@ -273,6 +273,8 @@ class DriverAvailableTasksController extends Controller
                 'message' => 'Failed to fetch claims history'
             ], 500);
         }
+    }
+
     /**
      * Update a claim request
      */

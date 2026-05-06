@@ -188,9 +188,11 @@ class CustomerTaskController extends Controller
 
             $query = Task::where('customer_id', $customer->id);
 
-            Log::alert("status ". $request->status);
-            // Apply filters
-            if ($request->filled('status')) {
+            // Status Filters
+            if ($request->filled('statuses')) {
+                // Support multiple status selection from the app
+                $query->whereIn('status', (array) $request->statuses);
+            } elseif ($request->filled('status')) {
                 if ($request->status === 'running') {
                     $statuses = [
                         'advertised',
@@ -204,16 +206,24 @@ class CustomerTaskController extends Controller
                         'in delivery point',
                         'unloading'
                     ];
-                } else {
-                    // completed filter includes: completed, canceled, cancelled, refund
+                } elseif ($request->status === 'completed') {
                     $statuses = ['completed', 'canceled', 'cancelled', 'refund'];
+                } else {
+                    $statuses = [$request->status];
                 }
-
                 $query->whereIn('status', $statuses);
             }
 
+            // General Status (Open/Closed)
+            if ($request->filled('general_status')) {
+                if ($request->general_status === 'open') {
+                    $query->where('closed', false);
+                } elseif ($request->general_status === 'closed') {
+                    $query->where('closed', true);
+                }
+            }
 
-
+            // Date Filters
             if ($request->filled('date_from')) {
                 $query->whereDate('created_at', '>=', $request->date_from);
             }
@@ -222,13 +232,17 @@ class CustomerTaskController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
-            // Search
-            if ($request->filled('search')) {
-                $search = $request->search;
+            // Search (Existing and New Advanced Search)
+            $search = $request->get('search') ?: $request->get('search_in_task');
+            if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('id', 'like', "%{$search}%")
-                      ->orWhere('to_location', 'like', "%{$search}%")
-                      ->orWhere('id', 'like', "%{$search}%");
+                      ->orWhere('total_price', 'like', "%{$search}%")
+                      ->orWhereHas('taskPoints', function($qp) use ($search) {
+                          $qp->where('contact_name', 'like', "%{$search}%")
+                             ->orWhere('contact_phone', 'like', "%{$search}%")
+                             ->orWhere('address', 'like', "%{$search}%");
+                      });
                 });
             }
 

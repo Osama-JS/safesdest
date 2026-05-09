@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المرحلة الثانية: المصادقة ولوحة تحكم المستثمر</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#10b981;--card:#1e2847;--border:#2d3a5e;--text:#e2e8f0;--muted:#94a3b8}
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a,#111827);min-height:100vh;color:var(--text)}
+  .nav{display:flex;align-items:center;gap:16px;padding:20px 40px;border-bottom:1px solid var(--border);background:rgba(30,40,71,0.5);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px}
+  .nav a:hover{color:var(--accent)}
+  .nav-sep{color:var(--border)}
+  .page-header{text-align:center;padding:60px 20px 40px}
+  .phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px}
+  .page-header h1{font-size:clamp(28px,4vw,48px);font-weight:900;margin-bottom:16px}
+  .page-header p{font-size:16px;color:var(--muted);max-width:700px;margin:0 auto;line-height:1.8}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+  .section{padding:40px 0}
+  .section-h{font-size:22px;font-weight:800;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .section-h::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .card p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+  .code-block{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12.5px;line-height:1.7}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .info-box{background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .warn-box{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .info-box p,.warn-box p{font-size:13px;color:var(--muted);line-height:1.7}
+  .flow-diagram{display:flex;flex-direction:column;gap:0;max-width:600px;margin:20px auto}
+  .flow-step{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:14px;position:relative}
+  .flow-step.highlight{border-color:var(--accent);background:rgba(16,185,129,0.05)}
+  .flow-step.danger{border-color:#ef4444;background:rgba(239,68,68,0.05);color:#f87171}
+  .flow-arrow{text-align:center;padding:8px;color:var(--muted);font-size:20px}
+  .flow-branch{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0}
+  .checklist{list-style:none;padding:0}
+  .checklist li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:flex-start}
+  .checklist li::before{content:'✓';color:var(--accent);font-weight:800;flex-shrink:0}
+  .menu-preview{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  .menu-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;font-size:14px;margin-bottom:4px;cursor:default;transition:background 0.2s}
+  .menu-item:hover{background:rgba(255,255,255,0.05)}
+  .menu-item.active{background:rgba(16,185,129,0.1);color:var(--accent)}
+  .menu-icon{font-size:18px;width:28px;text-align:center}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:20px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html">الرئيسية</a>
+  <span class="nav-sep">›</span>
+  <a href="phase1-database.html">المرحلة الأولى</a>
+  <span class="nav-sep">›</span>
+  <span style="color:var(--accent)">المرحلة الثانية</span>
+</nav>
+
+<div class="page-header">
+  <div class="phase-badge">🔐 المرحلة الثانية</div>
+  <h1>المصادقة ولوحة تحكم المستثمر</h1>
+  <p>تخصيص تدفق تسجيل الدخول لتوجيه المستثمرين إلى لوحة التحكم الخاصة بهم، مع منع وصولهم إلى لوحة Admin.</p>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <h2 class="section-h">🔄 تدفق تسجيل الدخول الجديد</h2>
+    <div class="card">
+      <h3>المنطق الجديد في Auth Login</h3>
+      <p>سيتم تعديل LoginController الحالي (في <code>app/Http/Controllers/Auth/</code>) لإضافة منطق التوجيه بعد نجاح تسجيل الدخول.</p>
+
+      <div class="flow-diagram">
+        <div class="flow-step">👤 المستخدم يدخل بيانات الدخول في صفحة Admin Login</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">🔍 التحقق من صحة البيانات (Validation)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step">✅ نجح تسجيل الدخول — جلب بيانات المستخدم</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step highlight">❓ <strong>هل المستخدم مستثمر؟</strong> (investor === true)</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-branch">
+          <div class="flow-step highlight" style="text-align:center">✅ نعم<br>توجيه إلى<br><code>/investor/dashboard</code></div>
+          <div class="flow-step" style="text-align:center">❌ لا<br>توجيه إلى<br><code>/admin/dashboard</code></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm">// في AuthenticatedSessionController أو LoginController</span>
+<span class="cm">// بعد نجاح المصادقة:</span>
+
+<span class="kw">protected function</span> <span class="fn">authenticated</span>(Request $request, $user)
+{
+    <span class="kw">if</span> ($user-&gt;investor) {
+        <span class="kw">return</span> <span class="fn">redirect</span>()-&gt;<span class="fn">route</span>(<span class="str">'investor.dashboard'</span>);
+    }
+
+    <span class="kw">return</span> <span class="fn">redirect</span>()-&gt;<span class="fn">intended</span>(<span class="fn">route</span>(<span class="str">'dashboard'</span>));
+}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">🛡️ Middleware الحماية</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>InvestorMiddleware.php</h3>
+        <p>يتحقق من أن المستخدم الحالي هو مستثمر. يُستخدم لحماية routes لوحة تحكم المستثمر.</p>
+        <div class="code-block">
+<span class="kw">class</span> <span class="fn">InvestorMiddleware</span>
+{
+    <span class="kw">public function</span> <span class="fn">handle</span>(Request $request, Closure $next)
+    {
+        <span class="kw">if</span> (!<span class="fn">auth</span>()-&gt;<span class="fn">check</span>() || !<span class="fn">auth</span>()-&gt;<span class="fn">user</span>()-&gt;investor) {
+            <span class="kw">return</span> <span class="fn">redirect</span>()-&gt;<span class="fn">route</span>(<span class="str">'login'</span>)
+                -&gt;<span class="fn">with</span>(<span class="str">'error'</span>, <span class="str">'غير مصرح بالوصول'</span>);
+        }
+        <span class="kw">return</span> $next($request);
+    }
+}
+        </div>
+      </div>
+      <div class="card">
+        <h3>BlockInvestorMiddleware.php</h3>
+        <p>يمنع المستثمرين من الوصول إلى لوحة Admin. يُضاف إلى route group الخاص بالـ Admin.</p>
+        <div class="code-block">
+<span class="kw">class</span> <span class="fn">BlockInvestorMiddleware</span>
+{
+    <span class="kw">public function</span> <span class="fn">handle</span>(Request $request, Closure $next)
+    {
+        <span class="kw">if</span> (<span class="fn">auth</span>()-&gt;<span class="fn">check</span>() && <span class="fn">auth</span>()-&gt;<span class="fn">user</span>()-&gt;investor) {
+            <span class="kw">return</span> <span class="fn">redirect</span>()-&gt;<span class="fn">route</span>(<span class="str">'investor.dashboard'</span>)
+                -&gt;<span class="fn">with</span>(<span class="str">'error'</span>, <span class="str">'يرجى استخدام لوحة تحكم المستثمر'</span>);
+        }
+        <span class="kw">return</span> $next($request);
+    }
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>تسجيل الـ Middleware في Kernel.php</h3>
+      <div class="code-block">
+<span class="cm">// في app/Http/Kernel.php</span>
+<span class="kw">protected</span> $routeMiddleware = [
+    <span class="cm">// ... الموجود</span>
+    <span class="str">'investor'</span>       => \App\Http\Middleware\<span class="fn">InvestorMiddleware</span>::class,
+    <span class="str">'block.investor'</span> => \App\Http\Middleware\<span class="fn">BlockInvestorMiddleware</span>::class,
+];
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">🗺️ Routes لوحة تحكم المستثمر</h2>
+    <div class="card">
+      <h3>تعريف Routes في web.php</h3>
+      <div class="code-block">
+<span class="cm">// في routes/web.php</span>
+
+<span class="cm">// حماية لوحة Admin من المستثمرين</span>
+Route::<span class="fn">middleware</span>([<span class="str">'auth'</span>, <span class="str">'block.investor'</span>])-&gt;<span class="fn">prefix</span>(<span class="str">'admin'</span>)-&gt;<span class="fn">group</span>(<span class="kw">function</span>() {
+    <span class="cm">// ... routes الأدمن الموجودة</span>
+});
+
+<span class="cm">// لوحة تحكم المستثمر</span>
+Route::<span class="fn">middleware</span>([<span class="str">'auth'</span>, <span class="str">'investor'</span>])
+    -&gt;<span class="fn">prefix</span>(<span class="str">'investor'</span>)
+    -&gt;<span class="fn">name</span>(<span class="str">'investor.'</span>)
+    -&gt;<span class="fn">group</span>(<span class="kw">function</span>() {
+
+        Route::<span class="fn">get</span>(<span class="str">'dashboard'</span>, [InvestorDashboardController::class, <span class="str">'index'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'dashboard'</span>);
+
+        <span class="cm">// محفظة الاستثمار</span>
+        Route::<span class="fn">get</span>(<span class="str">'investment-wallet'</span>, [InvestorWalletController::class, <span class="str">'investmentWallet'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'investment-wallet'</span>);
+
+        <span class="cm">// المحفظة الشخصية (العمولات)</span>
+        Route::<span class="fn">get</span>(<span class="str">'personal-wallet'</span>, [InvestorWalletController::class, <span class="str">'personalWallet'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'personal-wallet'</span>);
+
+        <span class="cm">// دفع المهام (للمستثمر بالمهام فقط)</span>
+        Route::<span class="fn">get</span>(<span class="str">'task-payment'</span>, [InvestorTaskPaymentController::class, <span class="str">'index'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'task-payment'</span>);
+        Route::<span class="fn">post</span>(<span class="str">'task-payment/{task}'</span>, [InvestorTaskPaymentController::class, <span class="str">'pay'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'task-payment.pay'</span>);
+
+        <span class="cm">// المهام المدفوعة</span>
+        Route::<span class="fn">get</span>(<span class="str">'paid-tasks'</span>, [InvestorTaskPaymentController::class, <span class="str">'paidTasks'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'paid-tasks'</span>);
+
+        <span class="cm">// الملف الشخصي</span>
+        Route::<span class="fn">get</span>(<span class="str">'profile'</span>, [InvestorProfileController::class, <span class="str">'show'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'profile'</span>);
+        Route::<span class="fn">put</span>(<span class="str">'profile'</span>, [InvestorProfileController::class, <span class="str">'update'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'profile.update'</span>);
+        Route::<span class="fn">put</span>(<span class="str">'password'</span>, [InvestorProfileController::class, <span class="str">'updatePassword'</span>])
+            -&gt;<span class="fn">name</span>(<span class="str">'password.update'</span>);
+    });
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">📱 هيكل Layout لوحة تحكم المستثمر</h2>
+    <div class="card">
+      <h3>القائمة الجانبية حسب نوع الاستثمار</h3>
+      <p>تتغير عناصر القائمة الجانبية بناءً على نوع العقد النشط للمستثمر:</p>
+
+      <div class="grid-2" style="gap:16px;margin-top:16px">
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">مستثمر بالمهام (task_investment):</p>
+          <div class="menu-preview">
+            <div class="menu-item active"><span class="menu-icon">📊</span> لوحة التحكم</div>
+            <div class="menu-item"><span class="menu-icon">💼</span> محفظة الاستثمار</div>
+            <div class="menu-item"><span class="menu-icon">👛</span> محفظتي الشخصية</div>
+            <div class="menu-item"><span class="menu-icon">💳</span> دفع المهام</div>
+            <div class="menu-item"><span class="menu-icon">📋</span> المهام المدفوعة</div>
+            <div class="menu-item"><span class="menu-icon">👤</span> الملف الشخصي</div>
+            <div class="menu-item"><span class="menu-icon">🔑</span> تغيير كلمة المرور</div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">مستثمر عام (general_investment):</p>
+          <div class="menu-preview">
+            <div class="menu-item active"><span class="menu-icon">📊</span> لوحة التحكم</div>
+            <div class="menu-item"><span class="menu-icon">💼</span> محفظة الاستثمار</div>
+            <div class="menu-item"><span class="menu-icon">👛</span> محفظتي الشخصية</div>
+            <div class="menu-item"><span class="menu-icon">📋</span> المهام المدفوعة</div>
+            <div class="menu-item"><span class="menu-icon">👤</span> الملف الشخصي</div>
+            <div class="menu-item"><span class="menu-icon">🔑</span> تغيير كلمة المرور</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="icon">💡</div>
+        <p>صفحة "دفع المهام" تظهر <strong>فقط</strong> للمستثمر بالمهام (<code>task_investment</code>). المستثمر العام لا يتحكم في دفع المهام بنفسه.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">✅ قائمة مهام التنفيذ</h2>
+    <div class="card">
+      <ul class="checklist">
+        <li>إنشاء <code>InvestorMiddleware.php</code> في app/Http/Middleware</li>
+        <li>إنشاء <code>BlockInvestorMiddleware.php</code> في app/Http/Middleware</li>
+        <li>تسجيل الـ Middleware في <code>Kernel.php</code></li>
+        <li>تعديل LoginController لإضافة منطق التوجيه بعد الدخول</li>
+        <li>إضافة <code>block.investor</code> middleware إلى Route Group الأدمن</li>
+        <li>إنشاء Route Group الخاص بالمستثمر في <code>web.php</code></li>
+        <li>إنشاء <code>InvestorDashboardController.php</code></li>
+        <li>إنشاء <code>InvestorWalletController.php</code></li>
+        <li>إنشاء <code>InvestorTaskPaymentController.php</code></li>
+        <li>إنشاء <code>InvestorProfileController.php</code></li>
+        <li>إنشاء Layout الخاص بلوحة تحكم المستثمر (Blade)</li>
+        <li>إنشاء القائمة الجانبية الديناميكية حسب نوع العقد</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px;border-top:1px solid var(--border)">
+  <a href="phase1-database.html" style="display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 24px;border:1px solid var(--border);border-radius:50px">→ المرحلة الأولى</a>
+  &nbsp;&nbsp;
+  <a href="phase3-admin.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--accent);padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600">المرحلة الثالثة: إدارة Admin ←</a>
+</div>
+
+</body>
+</html>

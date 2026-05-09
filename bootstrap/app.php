@@ -35,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
         'driver.guard' => \App\Http\Middleware\DriverGuard::class,
         'api.route' => \App\Http\Middleware\ApiMiddleware::class,
         'recaptcha' => \App\Http\Middleware\RecaptchaMiddleware::class,
+        'investor'       => \App\Http\Middleware\InvestorMiddleware::class,
+        'block.investor' => \App\Http\Middleware\BlockInvestorMiddleware::class,
       ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

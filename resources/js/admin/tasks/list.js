@@ -461,6 +461,14 @@ $(function () {
         var checkHtml = `
         <div class="alert alert-light alert-dismissible">
           <h4 class="alert-heading">Check Payment</h4>
+          ${
+            data.data.is_investor_payment
+              ? `<div class="alert alert-info py-2 mb-3 shadow-sm border-start border-4 border-info">
+                  <i class="ti ti-user-check me-1"></i>
+                  This task was funded by investor: <strong>${data.data.investor_name}</strong>
+                 </div>`
+              : ''
+          }
           <p>Task ID: <span class="px-3 py-0 bg-info text-white rounded">#${data.data.reference_id}</span></p>
           <p>Transaction ID: <span class="px-3 py-0 bg-info text-white rounded">#${data.data.id}</span></p>
           <p>Amount: <span class="px-3 py-0 bg-info text-white rounded">${data.data.amount} SAR </span></p>

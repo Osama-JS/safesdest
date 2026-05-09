@@ -42,6 +42,7 @@ class User extends Authenticatable
       'form_template_id',
       'role_id',
       'is_customs_clearance_agent',
+      'investor',
       'bank_name',
       'account_number',
       'iban_number',
@@ -51,6 +52,7 @@ class User extends Authenticatable
     protected $casts = [
       'additional_data' => 'array',
       'is_customs_clearance_agent' => 'boolean',
+      'investor' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];
@@ -143,6 +145,44 @@ class User extends Authenticatable
     public function tasks()
     {
         return $this->hasMany(Task::class, 'user_id');
+    }
+
+    /**
+     * العلاقة مع محفظة الاستثمار
+     */
+    public function investorWallet()
+    {
+        return $this->hasOne(InvestorWallet::class, 'user_id');
+    }
+
+    /**
+     * العلاقة مع عقود الاستثمار
+     */
+    public function investmentContracts()
+    {
+        return $this->hasMany(InvestmentContract::class, 'user_id');
+    }
+
+    /**
+     * العقد النشط للمستثمر
+     */
+    public function activeInvestmentContract()
+    {
+        return $this->hasOne(InvestmentContract::class, 'user_id')
+            ->where('status', 'active')
+            ->where('start_date', '<=', now()->toDateString())
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>=', now()->toDateString());
+            });
+    }
+
+    /**
+     * Scope للمستثمرين فقط
+     */
+    public function scopeInvestors($query)
+    {
+        return $query->where('investor', true);
     }
 
     public function customsClearance()

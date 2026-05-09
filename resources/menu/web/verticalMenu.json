@@ -235,6 +235,13 @@
       ]
     },
     {
+      "url": "admin/investors",
+      "name": "Investors",
+      "icon": "menu-icon tf-icons ti ti-briefcase",
+      "slug": "admin.investors.index",
+      "permission": "view_investors"
+    },
+    {
       "url": "admin/users",
       "name": "Users",
       "icon": "menu-icon tf-icons ti ti-users",

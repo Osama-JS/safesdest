@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام المستثمرين - SafeDest | التقرير التحليلي الشامل</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --primary:#1a1f3c;--accent:#f59e0b;--accent2:#10b981;--accent3:#3b82f6;
+    --danger:#ef4444;--text:#e2e8f0;--text-muted:#94a3b8;--card:#1e2847;--border:#2d3a5e;
+  }
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a 0%,#111827 50%,#0f172a 100%);min-height:100vh;color:var(--text)}
+  .hero{text-align:center;padding:80px 20px 60px;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at center,rgba(245,158,11,0.05) 0%,transparent 60%);animation:pulse 4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}
+  .hero-badge{display:inline-block;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px;letter-spacing:2px}
+  .hero h1{font-size:clamp(32px,5vw,60px);font-weight:900;background:linear-gradient(135deg,#fff 0%,var(--accent) 50%,#f97316 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;margin-bottom:16px}
+  .hero p{font-size:18px;color:var(--text-muted);max-width:700px;margin:0 auto 40px;line-height:1.8}
+  .stats-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin-top:40px}
+  .stat-item{text-align:center}
+  .stat-num{font-size:36px;font-weight:900;color:var(--accent)}
+  .stat-label{font-size:13px;color:var(--text-muted);margin-top:4px}
+  .container{max-width:1200px;margin:0 auto;padding:0 20px}
+  .phases-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px;padding:40px 20px}
+  .phase-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:32px;cursor:pointer;text-decoration:none;color:var(--text);display:block;transition:all 0.3s;position:relative;overflow:hidden}
+  .phase-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--phase-color,var(--accent))}
+  .phase-card:hover{transform:translateY(-4px);border-color:var(--phase-color,var(--accent));box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+  .phase-num{font-size:12px;color:var(--text-muted);letter-spacing:2px;margin-bottom:8px}
+  .phase-icon{font-size:40px;margin-bottom:16px}
+  .phase-card h3{font-size:20px;font-weight:700;margin-bottom:12px}
+  .phase-card p{font-size:14px;color:var(--text-muted);line-height:1.7}
+  .phase-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .tag{background:rgba(255,255,255,0.05);border:1px solid var(--border);padding:4px 12px;border-radius:20px;font-size:11px;color:var(--text-muted)}
+  .section-title{text-align:center;padding:60px 20px 20px}
+  .section-title h2{font-size:32px;font-weight:800;margin-bottom:8px}
+  .section-title p{color:var(--text-muted)}
+  .arch-section{padding:40px 20px;background:rgba(255,255,255,0.02)}
+  .arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1200px;margin:0 auto}
+  .arch-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+  .arch-card h4{font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+  .arch-card ul{list-style:none;padding:0}
+  .arch-card li{font-size:13px;color:var(--text-muted);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px}
+  .arch-card li::before{content:'→';color:var(--accent);font-size:11px}
+  .timeline{max-width:800px;margin:0 auto;padding:40px 20px}
+  .timeline-item{display:flex;gap:20px;margin-bottom:32px}
+  .timeline-left{display:flex;flex-direction:column;align-items:center}
+  .timeline-dot{width:44px;height:44px;border-radius:50%;background:var(--card);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--accent);flex-shrink:0}
+  .timeline-line{flex:1;width:2px;background:var(--border);margin-top:8px}
+  .timeline-content{flex:1;padding-bottom:32px}
+  .timeline-content h4{font-size:18px;font-weight:700;margin-bottom:8px}
+  .timeline-content p{font-size:14px;color:var(--text-muted);line-height:1.7}
+  .timeline-meta{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+  .meta-badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:600}
+  .badge-time{background:rgba(245,158,11,0.1);color:var(--accent);border:1px solid rgba(245,158,11,0.3)}
+  .badge-complexity{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid rgba(239,68,68,0.3)}
+  .footer{text-align:center;padding:60px 20px;border-top:1px solid var(--border);color:var(--text-muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">🔐 SafeDest Platform — Investor Module</div>
+  <h1>نظام المستثمرين<br>التقرير التحليلي الشامل</h1>
+  <p>تحليل معماري ووظيفي متكامل لبناء منظومة استثمارية متطورة داخل منصة SafeDest، يشمل هياكل قواعد البيانات، لوحات التحكم، وآليات تسوية العمولات.</p>
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">مراحل تنفيذ</div></div>
+    <div class="stat-item"><div class="stat-num">2</div><div class="stat-label">نوع استثمار</div></div>
+    <div class="stat-item"><div class="stat-num">8+</div><div class="stat-label">جداول جديدة</div></div>
+    <div class="stat-item"><div class="stat-num">15+</div><div class="stat-label">واجهة برمجية</div></div>
+  </div>
+</div>
+
+<div class="section-title">
+  <h2>مراحل التنفيذ</h2>
+  <p>تقرير تفصيلي لكل مرحلة - اضغط على أي مرحلة للاطلاع على التفاصيل الكاملة</p>
+</div>
+
+<div class="phases-grid container">
+  <a href="phase1-database.html" class="phase-card" style="--phase-color:#f59e0b">
+    <div class="phase-num">المرحلة الأولى</div>
+    <div class="phase-icon">🗄️</div>
+    <h3>هيكل قاعدة البيانات</h3>
+    <p>إنشاء جميع الجداول الجديدة: المستثمرون، محفظة الاستثمار، عقود الاستثمار، وتعديل الجداول الموجودة مع العلاقات الكاملة.</p>
+    <div class="phase-tags">
+      <span class="tag">Migration</span><span class="tag">Models</span><span class="tag">Relationships</span><span class="tag">Indexes</span>
+    </div>
+  </a>
+
+  <a href="phase2-auth.html" class="phase-card" style="--phase-color:#10b981">
+    <div class="phase-num">المرحلة الثانية</div>
+    <div class="phase-icon">🔐</div>
+    <h3>المصادقة ولوحة تحكم المستثمر</h3>
+    <p>تخصيص تدفق تسجيل الدخول لتوجيه المستثمرين إلى لوحة تحكمهم الخاصة ومنعهم من الوصول إلى لوحة Admin.</p>
+    <div class="phase-tags">
+      <span class="tag">Middleware</span><span class="tag">Auth</span><span class="tag">Dashboard</span><span class="tag">Routes</span>
+    </div>
+  </a>
+
+  <a href="phase3-admin.html" class="phase-card" style="--phase-color:#3b82f6">
+    <div class="phase-num">المرحلة الثالثة</div>
+    <div class="phase-icon">⚙️</div>
+    <h3>إدارة المستثمرين في Admin</h3>
+    <p>صفحة إدارة المستثمرين الكاملة في لوحة Admin: إضافة، تعديل، إدارة العقود، تحميل المحافظ وعرض التقارير.</p>
+    <div class="phase-tags">
+      <span class="tag">CRUD</span><span class="tag">Contracts</span><span class="tag">Wallets</span><span class="tag">Reports</span>
+    </div>
+  </a>
+
+  <a href="phase4-investment.html" class="phase-card" style="--phase-color:#8b5cf6">
+    <div class="phase-num">المرحلة الرابعة</div>
+    <div class="phase-icon">💰</div>
+    <h3>منطق الاستثمار والعمولات</h3>
+    <p>آلية الاستثمار بالمهام والاستثمار العام، حساب العمولات التلقائي، ربط المهام بالمستثمرين وتسوية المحافظ.</p>
+    <div class="phase-tags">
+      <span class="tag">Business Logic</span><span class="tag">Auto-Commission</span><span class="tag">Task-Linking</span>
+    </div>
+  </a>
+
+  <a href="phase5-investor-panel.html" class="phase-card" style="--phase-color:#ec4899">
+    <div class="phase-num">المرحلة الخامسة</div>
+    <div class="phase-icon">📊</div>
+    <h3>لوحة تحكم المستثمر</h3>
+    <p>تصميم وبناء لوحة تحكم المستثمر الكاملة: محفظة الاستثمار، المحفظة الشخصية، دفع المهام، سجل العمليات وإدارة الملف الشخصي.</p>
+    <div class="phase-tags">
+      <span class="tag">UI/UX</span><span class="tag">Investor Panel</span><span class="tag">Task Payment</span>
+    </div>
+  </a>
+</div>
+
+<div class="section-title">
+  <h2>الهيكل المعماري للنظام</h2>
+  <p>مكونات النظام الجديد وعلاقتها بالبنية الحالية</p>
+</div>
+
+<div class="arch-section">
+  <div class="arch-grid">
+    <div class="arch-card">
+      <h4>🗄️ جداول قاعدة البيانات الجديدة</h4>
+      <ul>
+        <li>investor_wallets (محفظة الاستثمار)</li>
+        <li>investor_wallet_transactions (حركة المحفظة)</li>
+        <li>investment_contracts (عقود الاستثمار)</li>
+        <li>investor_task_filters (تخصيص المهام)</li>
+        <li>investor_task_payments (مدفوعات المهام)</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <h4>✏️ تعديلات الجداول الموجودة</h4>
+      <ul>
+        <li>users ← إضافة investor (boolean)</li>
+        <li>tasks ← إضافة investor_id (FK nullable)</li>
+        <li>tasks ← إضافة investor_payment_status</li>
+        <li>user_commissions ← توسيع ليشمل المستثمرين</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <h4>🔗 نماذج Laravel الجديدة</h4>
+      <ul>
+        <li>InvestorWallet.php</li>
+        <li>InvestorWalletTransaction.php</li>
+        <li>InvestmentContract.php</li>
+        <li>InvestorTaskFilter.php</li>
+        <li>InvestorTaskPayment.php</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <h4>🛡️ Middleware وصلاحيات جديدة</h4>
+      <ul>
+        <li>InvestorMiddleware (التحقق من نوع المستخدم)</li>
+        <li>BlockInvestorFromAdmin (منع الوصول)</li>
+        <li>investor.panel (route group)</li>
+        <li>صلاحية: manage_investors</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <h4>🎮 Controllers جديدة</h4>
+      <ul>
+        <li>InvestorController (Admin CRUD)</li>
+        <li>InvestorWalletController</li>
+        <li>InvestmentContractController</li>
+        <li>InvestorDashboardController</li>
+        <li>InvestorTaskPaymentController</li>
+      </ul>
+    </div>
+    <div class="arch-card">
+      <h4>📐 نوعا الاستثمار</h4>
+      <ul>
+        <li>task_investment: استثمار بالمهام (Manual)</li>
+        <li>general_investment: استثمار عام (Admin-Controlled)</li>
+        <li>فلترة المهام المخصصة للمستثمر</li>
+        <li>حساب عمولة تلقائي بعد الدفع</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">
+  <h2>الجدول الزمني للتنفيذ</h2>
+</div>
+
+<div class="timeline container">
+  <div class="timeline-item">
+    <div class="timeline-left">
+      <div class="timeline-dot">1</div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <h4>المرحلة الأولى: قاعدة البيانات والنماذج</h4>
+      <p>إنشاء كل الـ migrations الجديدة، تعديل الجداول الموجودة، بناء الـ Models مع العلاقات، وإضافة الـ Factories والـ Seeders.</p>
+      <div class="timeline-meta">
+        <span class="meta-badge badge-time">⏱ 3-4 أيام</span>
+        <span class="meta-badge badge-complexity">تعقيد: عالٍ</span>
+      </div>
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-left">
+      <div class="timeline-dot">2</div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <h4>المرحلة الثانية: المصادقة والتوجيه</h4>
+      <p>تعديل صفحة الـ Login، بناء الـ Middleware، تهيئة Routes المستثمر، وإنشاء الـ Layout الخاص بلوحة تحكم المستثمر.</p>
+      <div class="timeline-meta">
+        <span class="meta-badge badge-time">⏱ 2-3 أيام</span>
+        <span class="meta-badge badge-complexity">تعقيد: متوسط</span>
+      </div>
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-left">
+      <div class="timeline-dot">3</div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <h4>المرحلة الثالثة: إدارة المستثمرين في Admin</h4>
+      <p>بناء صفحات CRUD الكاملة للمستثمرين في Admin: إضافة مستثمر جديد، إدارة العقود، تحميل المحافظ، عرض التقارير.</p>
+      <div class="timeline-meta">
+        <span class="meta-badge badge-time">⏱ 4-5 أيام</span>
+        <span class="meta-badge badge-complexity">تعقيد: عالٍ جداً</span>
+      </div>
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-left">
+      <div class="timeline-dot">4</div>
+      <div class="timeline-line"></div>
+    </div>
+    <div class="timeline-content">
+      <h4>المرحلة الرابعة: منطق الاستثمار والعمولات</h4>
+      <p>تطوير الـ Business Logic الكامل: آلية الدفع، حساب العمولة التلقائي، ربط المهام بالمستثمرين، تحديث حالات الدفع في Tasks.</p>
+      <div class="timeline-meta">
+        <span class="meta-badge badge-time">⏱ 5-6 أيام</span>
+        <span class="meta-badge badge-complexity">تعقيد: عالٍ جداً</span>
+      </div>
+    </div>
+  </div>
+  <div class="timeline-item">
+    <div class="timeline-left">
+      <div class="timeline-dot">5</div>
+    </div>
+    <div class="timeline-content">
+      <h4>المرحلة الخامسة: لوحة تحكم المستثمر</h4>
+      <p>بناء كل صفحات لوحة تحكم المستثمر، واجهة دفع المهام (للمستثمر بالمهمة)، عرض المحافظ، سجل العمولات، الملف الشخصي.</p>
+      <div class="timeline-meta">
+        <span class="meta-badge badge-time">⏱ 4-5 أيام</span>
+        <span class="meta-badge badge-complexity">تعقيد: متوسط-عالٍ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>SafeDest Platform — Investor Module Analysis Report</p>
+  <p style="margin-top:8px">تم إنشاء هذا التقرير بناءً على تحليل معماري شامل للكود الحالي</p>
+</div>
+
+</body>
+</html>

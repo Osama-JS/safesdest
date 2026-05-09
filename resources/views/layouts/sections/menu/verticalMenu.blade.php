@@ -68,6 +68,16 @@
                 @endphp
 
                 {{-- main menu --}}
+                @php
+                    if (auth()->guard('web')->check() && auth()->user()->investor) {
+                        if (isset($menu->slug) && $menu->slug === 'investor.task-payment') {
+                            $contract = auth()->user()->activeInvestmentContract;
+                            if (!$contract || $contract->contract_type !== 'task_investment') {
+                                continue;
+                            }
+                        }
+                    }
+                @endphp
                 @can($menu->permission ?? null)
                     <li class="menu-item {{ $activeClass }} @yield($menu->isactive ?? '')">
                         <a href="{{ isset($menu->url) ? url($menu->url) : 'javascript:void(0);' }}"

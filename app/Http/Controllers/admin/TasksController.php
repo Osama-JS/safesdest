@@ -2212,7 +2212,7 @@ class TasksController extends Controller
     public function paymentInfo($id)
     {
         try {
-            $data = Task::findOrFail($id);
+            $data = Task::with('investor')->findOrFail($id);
             if (in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
                   'status' => 2,
@@ -2238,12 +2238,20 @@ class TasksController extends Controller
                             'receipt_image'  => $payment->receipt_image,
                             'note'           => $payment->description,
                             'created_at'     => $payment->created_at->format('Y-m-d H:i:s'),
-                            'user'           => $payment->owner ? (object)['name' => $payment->owner->name] : null
+                            'user'           => $payment->owner ? (object)['name' => $payment->owner->name] : null,
+                            'is_investor_payment' => $data->investor_id ? true : false,
+                            'investor_name'       => $data->investor->name ?? null
                         ];
                     }
                 }
 
                 if ($transaction) {
+                    // Ensure investor info is added even for legacy transactions if task has it
+                    if (!isset($transaction->is_investor_payment)) {
+                        $transaction->is_investor_payment = $data->investor_id ? true : false;
+                        $transaction->investor_name = $data->investor->name ?? null;
+                    }
+
                     return response()->json([
                       'status' => 3,
                       'message' => __('This task has already make payment request and it is ' . $data->payment_status),
@@ -2261,9 +2269,11 @@ class TasksController extends Controller
                         'amount'       => $data->total_price,
                         'payment_type' => $data->payment_method ?? 'unknown',
                         'status'       => $data->payment_status,
-                        'note'         => __('Detailed payment record not found'),
+                        'note'         => $data->payment_note ?? __('Detailed payment record not found'),
                         'created_at'   => $data->updated_at->format('Y-m-d H:i:s'),
-                        'user'         => null
+                        'user'         => null,
+                        'is_investor_payment' => $data->investor_id ? true : false,
+                        'investor_name'       => $data->investor->name ?? null
                     ]
                 ]);
             }

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المرحلة الأولى: هيكل قاعدة البيانات | نظام المستثمرين</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--primary:#0f172a;--accent:#f59e0b;--accent2:#10b981;--card:#1e2847;--border:#2d3a5e;--text:#e2e8f0;--muted:#94a3b8}
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a,#111827);min-height:100vh;color:var(--text)}
+  .nav{display:flex;align-items:center;gap:16px;padding:20px 40px;border-bottom:1px solid var(--border);background:rgba(30,40,71,0.5);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px;transition:color 0.2s}
+  .nav a:hover{color:var(--accent)}
+  .nav-sep{color:var(--border)}
+  .page-header{text-align:center;padding:60px 20px 40px}
+  .phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px}
+  .page-header h1{font-size:clamp(28px,4vw,48px);font-weight:900;margin-bottom:16px}
+  .page-header p{font-size:16px;color:var(--muted);max-width:700px;margin:0 auto;line-height:1.8}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px}
+  .section{padding:40px 0}
+  .section-h{font-size:22px;font-weight:800;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .section-h::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .card p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+  .code-block{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto;font-family:'Fira Code',monospace;font-size:13px;line-height:1.7}
+  .code-block .kw{color:#ff7b72}
+  .code-block .fn{color:#d2a8ff}
+  .code-block .str{color:#a5d6ff}
+  .code-block .cm{color:#8b949e;font-style:italic}
+  .code-block .num{color:#79c0ff}
+  .table-schema{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+  .table-schema th{background:rgba(245,158,11,0.1);color:var(--accent);padding:12px 16px;text-align:right;border-bottom:2px solid rgba(245,158,11,0.3)}
+  .table-schema td{padding:10px 16px;border-bottom:1px solid var(--border);color:var(--muted)}
+  .table-schema tr:hover td{background:rgba(255,255,255,0.02)}
+  .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+  .badge-pk{background:rgba(245,158,11,0.15);color:var(--accent);border:1px solid rgba(245,158,11,0.3)}
+  .badge-fk{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3)}
+  .badge-new{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3)}
+  .badge-mod{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)}
+  .badge-null{background:rgba(148,163,184,0.1);color:var(--muted);border:1px solid var(--border)}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:20px}
+  .info-box{background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .info-box .icon{font-size:20px;flex-shrink:0;margin-top:2px}
+  .info-box p{font-size:13px;color:var(--muted);line-height:1.7}
+  .warn-box{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .rel-diagram{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:20px 0}
+  .rel-table{background:var(--card);border:1px solid var(--accent);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--accent)}
+  .rel-arrow{color:var(--muted);font-size:20px}
+  .checklist{list-style:none;padding:0}
+  .checklist li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:flex-start}
+  .checklist li::before{content:'✓';color:var(--accent2);font-weight:800;flex-shrink:0;margin-top:2px}
+  .back-btn{display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:13px;margin-bottom:20px;transition:color 0.2s}
+  .back-btn:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html">الرئيسية</a>
+  <span class="nav-sep">›</span>
+  <span style="color:var(--accent)">المرحلة الأولى: قاعدة البيانات</span>
+</nav>
+
+<div class="page-header">
+  <div class="phase-badge">🗄️ المرحلة الأولى</div>
+  <h1>هيكل قاعدة البيانات والنماذج</h1>
+  <p>إنشاء وتعديل جميع الجداول اللازمة لدعم منظومة المستثمرين، مع الحفاظ على التوافق الكامل مع البنية الموجودة في SafeDest.</p>
+</div>
+
+<div class="container">
+
+  <!-- التعديلات على الجداول الموجودة -->
+  <div class="section">
+    <h2 class="section-h">✏️ تعديل الجداول الموجودة</h2>
+
+    <div class="card">
+      <h3>1. جدول users — إضافة حقل investor</h3>
+      <p>نضيف حقلاً بوليانياً واحداً يحدد ما إذا كان المستخدم مستثمراً. هذا يحافظ على بساطة النظام ويتوافق مع حقل <code>is_customs_clearance_agent</code> الموجود.</p>
+      <div class="code-block">
+<span class="cm">// Migration: add_investor_to_users_table.php</span>
+<span class="kw">Schema</span>::<span class="fn">table</span>(<span class="str">'users'</span>, <span class="kw">function</span> (Blueprint $table) {
+    $table-&gt;<span class="fn">boolean</span>(<span class="str">'investor'</span>)-&gt;<span class="fn">default</span>(<span class="num">false</span>)-&gt;<span class="fn">after</span>(<span class="str">'is_customs_clearance_agent'</span>);
+    $table-&gt;<span class="fn">index</span>(<span class="str">'investor'</span>); <span class="cm">// للاستعلامات السريعة</span>
+});
+      </div>
+      <table class="table-schema">
+        <tr><th>الحقل</th><th>النوع</th><th>الافتراضي</th><th>الوصف</th></tr>
+        <tr><td><code>investor</code> <span class="badge badge-new">جديد</span></td><td>BOOLEAN</td><td>false</td><td>true = مستثمر، false = مستخدم عادي</td></tr>
+      </table>
+      <div class="info-box">
+        <div class="icon">ℹ️</div>
+        <p>لا نحتاج جدولاً منفصلاً للمستثمرين لأنهم يسجلون الدخول عبر نفس نظام المصادقة. الحقل البولياني كافٍ للتمييز مع الحفاظ على بساطة الـ Auth Flow.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>2. جدول tasks — إضافة حقول الاستثمار</h3>
+      <p>إضافة حقلين للمهام: مرجع للمستثمر الذي دفع قيمة المهمة، وحالة الدفع من محفظة الاستثمار.</p>
+      <div class="code-block">
+<span class="cm">// Migration: add_investor_fields_to_tasks_table.php</span>
+<span class="kw">Schema</span>::<span class="fn">table</span>(<span class="str">'tasks'</span>, <span class="kw">function</span> (Blueprint $table) {
+    $table-&gt;<span class="fn">unsignedBigInteger</span>(<span class="str">'investor_id'</span>)-&gt;<span class="fn">nullable</span>()-&gt;<span class="fn">after</span>(<span class="str">'user_id'</span>);
+    $table-&gt;<span class="fn">enum</span>(<span class="str">'investor_payment_status'</span>, [
+        <span class="str">'none'</span>,       <span class="cm">// لم يدفع مستثمر</span>
+        <span class="str">'paid'</span>,       <span class="cm">// تم الدفع من محفظة الاستثمار</span>
+        <span class="str">'pending'</span>     <span class="cm">// بانتظار الدفع (General Investor)</span>
+    ])-&gt;<span class="fn">default</span>(<span class="str">'none'</span>)-&gt;<span class="fn">after</span>(<span class="str">'investor_id'</span>);
+    $table-&gt;<span class="fn">foreign</span>(<span class="str">'investor_id'</span>)-&gt;<span class="fn">references</span>(<span class="str">'id'</span>)-&gt;<span class="fn">on</span>(<span class="str">'users'</span>)-&gt;<span class="fn">onDelete</span>(<span class="str">'set null'</span>);
+    $table-&gt;<span class="fn">index</span>([<span class="str">'investor_id'</span>, <span class="str">'investor_payment_status'</span>]);
+});
+      </div>
+    </div>
+  </div>
+
+  <!-- الجداول الجديدة -->
+  <div class="section">
+    <h2 class="section-h">🆕 الجداول الجديدة</h2>
+
+    <div class="card">
+      <h3>3. investor_wallets — محفظة الاستثمار</h3>
+      <p>مشابهة تماماً لـ <code>user_wallets</code> الموجودة لكن مخصصة لاستقبال مبالغ الاستثمار. كل مستثمر لديه محفظة استثمار واحدة.</p>
+      <table class="table-schema">
+        <tr><th>الحقل</th><th>النوع</th><th>القيود</th><th>الوصف</th></tr>
+        <tr><td>id <span class="badge badge-pk">PK</span></td><td>BIGINT</td><td>AUTO_INCREMENT</td><td>المعرف الفريد</td></tr>
+        <tr><td>user_id <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>UNIQUE, NOT NULL</td><td>مرجع للمستثمر في جدول users</td></tr>
+        <tr><td>status</td><td>BOOLEAN</td><td>DEFAULT 1</td><td>حالة المحفظة (نشطة/معطلة)</td></tr>
+        <tr><td>notes</td><td>TEXT</td><td>NULLABLE</td><td>ملاحظات إدارية على المحفظة</td></tr>
+        <tr><td>deleted_at</td><td>TIMESTAMP</td><td>NULLABLE</td><td>Soft Delete</td></tr>
+        <tr><td>created_at / updated_at</td><td>TIMESTAMPS</td><td>—</td><td>تواريخ الإنشاء والتحديث</td></tr>
+      </table>
+      <div class="info-box">
+        <div class="icon">💡</div>
+        <p><strong>لماذا جدول منفصل؟</strong> محفظة الاستثمار تُستخدم لقبول مبالغ الاستثمار ودفع المهام، بينما <code>user_wallets</code> تُستخدم لاستقبال العمولات. الفصل يضمن وضوح تدفق الأموال ويسهل الاستعلامات والتقارير.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>4. investor_wallet_transactions — حركة محفظة الاستثمار</h3>
+      <p>سجل كل العمليات على محفظة الاستثمار (إيداع من Admin، خصم عند دفع مهمة).</p>
+      <table class="table-schema">
+        <tr><th>الحقل</th><th>النوع</th><th>القيود</th><th>الوصف</th></tr>
+        <tr><td>id <span class="badge badge-pk">PK</span></td><td>BIGINT</td><td>AUTO_INCREMENT</td><td>—</td></tr>
+        <tr><td>investor_wallet_id <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>NOT NULL</td><td>مرجع لمحفظة الاستثمار</td></tr>
+        <tr><td>task_id <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>NULLABLE</td><td>المهمة المرتبطة (عند الخصم)</td></tr>
+        <tr><td>transaction_type</td><td>ENUM</td><td>credit/debit</td><td>نوع الحركة</td></tr>
+        <tr><td>amount</td><td>DECIMAL(10,2)</td><td>NOT NULL</td><td>المبلغ</td></tr>
+        <tr><td>description</td><td>TEXT</td><td>NULLABLE</td><td>وصف العملية</td></tr>
+        <tr><td>performed_by <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>NULLABLE</td><td>المستخدم الذي أجرى العملية (Admin/Investor)</td></tr>
+        <tr><td>balance_after</td><td>DECIMAL(10,2)</td><td>NOT NULL</td><td>الرصيد بعد العملية (للتدقيق)</td></tr>
+        <tr><td>created_at / updated_at</td><td>TIMESTAMPS</td><td>—</td><td>—</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>5. investment_contracts — عقود الاستثمار</h3>
+      <p>يحدد نوع الاستثمار، شروط العمولة، تاريخ البدء والانتهاء، وإعدادات التخصيص لكل مستثمر.</p>
+      <table class="table-schema">
+        <tr><th>الحقل</th><th>النوع</th><th>القيود</th><th>الوصف</th></tr>
+        <tr><td>id <span class="badge badge-pk">PK</span></td><td>BIGINT</td><td>AUTO_INCREMENT</td><td>—</td></tr>
+        <tr><td>user_id <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>NOT NULL</td><td>المستثمر صاحب العقد</td></tr>
+        <tr><td>contract_type</td><td>ENUM</td><td>NOT NULL</td><td>'task_investment' أو 'general_investment'</td></tr>
+        <tr><td>commission_type</td><td>ENUM</td><td>NOT NULL</td><td>'percentage' أو 'fixed'</td></tr>
+        <tr><td>commission_value</td><td>DECIMAL(10,2)</td><td>NOT NULL</td><td>نسبة أو مبلغ العمولة</td></tr>
+        <tr><td>start_date</td><td>DATE</td><td>NOT NULL</td><td>تاريخ بدء العقد</td></tr>
+        <tr><td>end_date</td><td>DATE</td><td>NULLABLE</td><td>تاريخ انتهاء العقد (null = غير محدد)</td></tr>
+        <tr><td>status</td><td>ENUM</td><td>DEFAULT active</td><td>active / inactive / expired</td></tr>
+        <tr><td>min_commission_threshold</td><td>DECIMAL(10,2)</td><td>NULLABLE</td><td>الحد الأدنى للعمولة على المهمة (task_investment)</td></tr>
+        <tr><td>filter_customer_ids</td><td>JSON</td><td>NULLABLE</td><td>قائمة IDs العملاء المخصصين (task_investment)</td></tr>
+        <tr><td>notes</td><td>TEXT</td><td>NULLABLE</td><td>ملاحظات إدارية</td></tr>
+        <tr><td>created_by <span class="badge badge-fk">FK</span></td><td>BIGINT UNSIGNED</td><td>NOT NULL</td><td>Admin الذي أنشأ العقد</td></tr>
+        <tr><td>created_at / updated_at</td><td>TIMESTAMPS</td><td>—</td><td>—</td></tr>
+      </table>
+      <div class="warn-box">
+        <div class="icon">⚠️</div>
+        <p><strong>ملاحظة مهمة:</strong> يجب أن يكون هناك عقد واحد نشط (active) لكل مستثمر في أي وقت. سيتم تطبيق هذا الشرط عبر Business Logic في الـ Controller وليس على مستوى قاعدة البيانات لمرونة أكبر.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- علاقات النماذج -->
+  <div class="section">
+    <h2 class="section-h">🔗 علاقات النماذج (Eloquent Relationships)</h2>
+
+    <div class="card">
+      <h3>User Model — إضافات جديدة</h3>
+      <div class="code-block">
+<span class="cm">// في User.php — إضافة الـ fillable والعلاقات</span>
+
+<span class="cm">// في $fillable:</span>
+<span class="str">'investor'</span>,
+
+<span class="cm">// في $casts:</span>
+<span class="str">'investor'</span> =&gt; <span class="str">'boolean'</span>,
+
+<span class="cm">// علاقة محفظة الاستثمار (واحد لواحد)</span>
+<span class="kw">public function</span> <span class="fn">investorWallet</span>()
+{
+    <span class="kw">return</span> $this-&gt;<span class="fn">hasOne</span>(InvestorWallet::class, <span class="str">'user_id'</span>);
+}
+
+<span class="cm">// علاقة عقود الاستثمار (واحد لكثير)</span>
+<span class="kw">public function</span> <span class="fn">investmentContracts</span>()
+{
+    <span class="kw">return</span> $this-&gt;<span class="fn">hasMany</span>(InvestmentContract::class, <span class="str">'user_id'</span>);
+}
+
+<span class="cm">// الحصول على العقد النشط</span>
+<span class="kw">public function</span> <span class="fn">activeInvestmentContract</span>()
+{
+    <span class="kw">return</span> $this-&gt;<span class="fn">hasOne</span>(InvestmentContract::class, <span class="str">'user_id'</span>)
+        -&gt;<span class="fn">where</span>(<span class="str">'status'</span>, <span class="str">'active'</span>)
+        -&gt;<span class="fn">where</span>(<span class="str">'start_date'</span>, <span class="str">'&lt;='</span>, <span class="fn">now</span>())
+        -&gt;<span class="fn">where</span>(<span class="kw">function</span>($q) {
+            $q-&gt;<span class="fn">whereNull</span>(<span class="str">'end_date'</span>)
+              -&gt;<span class="fn">orWhere</span>(<span class="str">'end_date'</span>, <span class="str">'&gt;='</span>, <span class="fn">now</span>());
+        });
+}
+
+<span class="cm">// Scope للمستثمرين فقط</span>
+<span class="kw">public function</span> <span class="fn">scopeInvestors</span>($query)
+{
+    <span class="kw">return</span> $query-&gt;<span class="fn">where</span>(<span class="str">'investor'</span>, <span class="num">true</span>);
+}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Task Model — إضافات جديدة</h3>
+      <div class="code-block">
+<span class="cm">// في Task.php</span>
+
+<span class="cm">// في $fillable إضافة:</span>
+<span class="str">'investor_id'</span>,
+<span class="str">'investor_payment_status'</span>,
+
+<span class="cm">// العلاقة مع المستثمر</span>
+<span class="kw">public function</span> <span class="fn">investor</span>()
+{
+    <span class="kw">return</span> $this-&gt;<span class="fn">belongsTo</span>(User::class, <span class="str">'investor_id'</span>);
+}
+
+<span class="cm">// Scope للمهام غير المدفوعة من مستثمر</span>
+<span class="kw">public function</span> <span class="fn">scopeAvailableForInvestorPayment</span>($query)
+{
+    <span class="kw">return</span> $query
+        -&gt;<span class="fn">where</span>(<span class="str">'investor_payment_status'</span>, <span class="str">'none'</span>)
+        -&gt;<span class="fn">where</span>(<span class="str">'closed'</span>, <span class="num">false</span>)
+        -&gt;<span class="fn">whereIn</span>(<span class="str">'payment_status'</span>, [<span class="str">'unpaid'</span>, <span class="str">'partial'</span>]);
+}
+      </div>
+    </div>
+
+    <div class="rel-diagram">
+      <div class="rel-table">users</div>
+      <div class="rel-arrow">1 ──── 1</div>
+      <div class="rel-table">investor_wallets</div>
+      <div class="rel-arrow">1 ──── ∞</div>
+      <div class="rel-table">investor_wallet_transactions</div>
+    </div>
+    <div class="rel-diagram">
+      <div class="rel-table">users (investor)</div>
+      <div class="rel-arrow">1 ──── ∞</div>
+      <div class="rel-table">investment_contracts</div>
+    </div>
+    <div class="rel-diagram">
+      <div class="rel-table">tasks</div>
+      <div class="rel-arrow">∞ ──── 1</div>
+      <div class="rel-table">users (investor_id)</div>
+    </div>
+  </div>
+
+  <!-- قائمة التنفيذ -->
+  <div class="section">
+    <h2 class="section-h">✅ قائمة مهام التنفيذ</h2>
+    <div class="card">
+      <ul class="checklist">
+        <li>إنشاء migration: <code>add_investor_to_users_table</code></li>
+        <li>إنشاء migration: <code>add_investor_fields_to_tasks_table</code></li>
+        <li>إنشاء migration: <code>create_investor_wallets_table</code></li>
+        <li>إنشاء migration: <code>create_investor_wallet_transactions_table</code></li>
+        <li>إنشاء migration: <code>create_investment_contracts_table</code></li>
+        <li>تعديل <code>User.php</code>: إضافة investor إلى fillable و casts والعلاقات</li>
+        <li>تعديل <code>Task.php</code>: إضافة investor_id و investor_payment_status</li>
+        <li>إنشاء Model: <code>InvestorWallet.php</code></li>
+        <li>إنشاء Model: <code>InvestorWalletTransaction.php</code></li>
+        <li>إنشاء Model: <code>InvestmentContract.php</code></li>
+        <li>تشغيل <code>php artisan migrate</code></li>
+        <li>إضافة Seeder لبيانات الاختبار</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px;border-top:1px solid var(--border)">
+  <a href="index.html" class="back-btn">← العودة إلى الرئيسية</a>
+  &nbsp;&nbsp;&nbsp;
+  <a href="phase2-auth.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--accent);padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600">المرحلة الثانية: المصادقة ←</a>
+</div>
+
+</body>
+</html>

@@ -29,6 +29,10 @@ class MenuServiceProvider extends ServiceProvider
       foreach (['driver', 'customer', 'web'] as $g) {
         if (auth($g)->check()) {
           $currentGuard = $g;
+          // تخصيص قائمة المستثمر
+          if ($g === 'web' && auth($g)->user()->investor) {
+            $currentGuard = 'investor';
+          }
           break;
         }
       }

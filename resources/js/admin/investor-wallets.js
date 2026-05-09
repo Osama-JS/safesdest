@@ -1,0 +1,294 @@
+/**
+ * Investor Wallet Management
+ */
+
+'use strict';
+
+$(function () {
+  var dt_transaction_table = $('#investorTransactionsTable'),
+    transactionForm = $('#transactionForm');
+
+  // Transactions datatable
+  if (dt_transaction_table.length) {
+    var dt_transaction = dt_transaction_table.DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: transactionsDataUrl
+      },
+      columns: [
+        { data: 'id' },
+        { data: 'amount' },
+        { data: 'transaction_type' },
+        { data: 'description' },
+        { data: 'task_id' },
+        { data: 'created_at' },
+        { data: 'id' }
+      ],
+      columnDefs: [
+        {
+          // For Responsive
+          targets: 0,
+          render: function (data, type, full, meta) {
+            return meta.row + meta.settings._iDisplayStart + 1;
+          }
+        },
+        {
+          // Amount
+          targets: 1,
+          render: function (data, type, full, meta) {
+            var $amount = data;
+            var $type = full['transaction_type'];
+            var $color = $type === 'credit' ? 'text-success' : 'text-danger';
+            var $prefix = $type === 'credit' ? '+' : '-';
+            return '<span class="fw-bold ' + $color + '">' + $prefix + $amount + ' ر.س</span>';
+          }
+        },
+        {
+          // Type
+          targets: 2,
+          render: function (data, type, full, meta) {
+            var $type = data;
+            var $badge = $type === 'credit' ? 'bg-label-success' : 'bg-label-danger';
+            var $title = $type === 'credit' ? 'إيداع' : 'خصم';
+            return '<span class="badge ' + $badge + '">' + $title + '</span>';
+          }
+        },
+        {
+          // Description
+          targets: 3,
+          render: function (data, type, full, meta) {
+            var attachmentLink = '';
+            if (full['attachment']) {
+                var attachmentUrl = baseUrl + 'storage/' + full['attachment'];
+                attachmentLink = '<div class="mt-1"><a href="javascript:;" class="text-primary fw-bold show-attachment" data-file="' + attachmentUrl + '"><i class="ti ti-link ti-xs me-1"></i>عرض المرفق</a></div>';
+            }
+            return '<div class="text-wrap" style="min-width: 200px;">' + 
+                     '<div>' + data + '</div>' + 
+                     attachmentLink + 
+                   '</div>';
+          }
+        },
+        {
+          // Task ID
+          targets: 4,
+          render: function (data, type, full, meta) {
+            if (data && data !== '-') {
+                return '<a href="' + baseUrl + 'admin/tasks/show/' + data + '" class="badge bg-label-info">#' + data + '</a>';
+            }
+            return '<span class="text-muted">-</span>';
+          }
+        },
+        {
+          // Actions
+          targets: -1,
+          title: 'الإجراءات',
+          searchable: false,
+          orderable: false,
+          render: function (data, type, full, meta) {
+            var actions = '<div class="d-flex align-items-center">';
+            
+            // Print Button
+            actions += '<a href="javascript:;" class="text-body print-record me-2" data-id="' + data + '" title="طباعة"><i class="ti ti-printer ti-sm"></i></a>';
+
+            // Only allow edit/delete if not related to a task AND not a debit transaction
+            if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
+                actions += '<a href="javascript:;" class="text-body edit-record me-2" data-id="' + data + '" title="تعديل"><i class="ti ti-edit ti-sm"></i></a>';
+                actions += '<a href="javascript:;" class="text-body delete-record" data-id="' + data + '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
+            } else {
+                var lockTitle = full['transaction_type'] === 'debit' ? 'عملية تمويل - لا يمكن التعديل أو الحذف' : 'مرتبطة بمهمة - لا يمكن التعديل أو الحذف';
+                actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+            }
+            
+            actions += '</div>';
+            return actions;
+          }
+        }
+      ],
+      order: [[0, 'desc']],
+      dom:
+        '<"row me-2"' +
+        '<"col-md-2"<"me-3"l>>' +
+        '<"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0"fB>>' +
+        '>t' +
+        '<"row mx-2"' +
+        '<"col-sm-12 col-md-6"i>' +
+        '<"col-sm-12 col-md-6"p>' +
+        '>',
+      language: {
+        sLengthMenu: '_MENU_',
+        search: '',
+        searchPlaceholder: 'بحث في العمليات...',
+        paginate: {
+          next: '<i class="ti ti-chevron-left ti-sm"></i>',
+          previous: '<i class="ti ti-chevron-right ti-sm"></i>'
+        }
+      },
+      buttons: []
+    });
+  }
+
+  // Handle Form Submit
+  transactionForm.on('submit', function (e) {
+    e.preventDefault();
+    var formData = new FormData(this);
+    var submitBtn = $(this).find('.btn-submit');
+    
+    submitBtn.prop('disabled', true).find('.spinner-border').removeClass('d-none');
+    
+    $.ajax({
+      url: addTransactionUrl,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (data) {
+        submitBtn.prop('disabled', false).find('.spinner-border').addClass('d-none');
+        if (data.status == 1) {
+          $('#transactionModal').modal('hide');
+          transactionForm[0].reset();
+          dt_transaction.draw();
+          Swal.fire({
+            icon: 'success',
+            title: 'تم بنجاح!',
+            text: data.success,
+            customClass: {
+              confirmButton: 'btn btn-success'
+            }
+          }).then(() => {
+              location.reload(); // Refresh to update statistics
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: data.error,
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            }
+          });
+        }
+      },
+      error: function() {
+        submitBtn.prop('disabled', false).find('.spinner-border').addClass('d-none');
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ أثناء معالجة الطلب.',
+          customClass: {
+            confirmButton: 'btn btn-danger'
+          }
+        });
+      }
+    });
+  });
+
+  // Edit Record
+  $('.datatables-transactions tbody').on('click', '.edit-record', function () {
+    var id = $(this).data('id');
+    var row = dt_transaction.row($(this).parents('tr')).data();
+    
+    // Clear form and set values
+    transactionForm[0].reset();
+    $('#transaction_id').val(id);
+    transactionForm.find('input[name="amount"]').val(row.amount.replace(/,/g, ''));
+    transactionForm.find('textarea[name="description"]').val(row.description);
+    
+    // Change modal title
+    $('#modalTitle').text('تعديل معاملة مالية');
+    $('#transactionModal').modal('show');
+  });
+
+  // Reset modal on hide
+  $('#transactionModal').on('hidden.bs.modal', function () {
+      transactionForm[0].reset();
+      $('#transaction_id').val('');
+      $('#modalTitle').text('إضافة حركة مالية جديدة');
+  });
+
+  // زر الطباعة - تحميل إيصال PDF احترافي
+  $('.datatables-transactions tbody').on('click', '.print-record', function () {
+    var id = $(this).data('id');
+    // فتح الرابط في نافذة جديدة لتحميل الـ PDF
+    window.open(baseUrl + 'admin/investors/invest-wallet/transaction/receipt/' + id, '_blank');
+  });
+
+  // Show Attachment in Modal
+  $(document).on('click', '.show-attachment', function () {
+    const fileUrl = $(this).data('file');
+    const fileName = fileUrl.split('/').pop();
+    const extension = fileName.split('.').pop().toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+    $('#modalFileContent').html('<div class="spinner-border text-primary" role="status"></div>');
+    $('#fileModal').modal('show');
+
+    if (imageExtensions.includes(extension)) {
+      $('#modalFileContent').html('<img src="' + fileUrl + '" class="img-fluid rounded shadow-sm" alt="' + fileName + '" style="max-height: 70vh; width: auto; object-fit: contain;">');
+    } else if (extension === 'pdf') {
+      // Use native browser PDF viewer
+      $('#modalFileContent').html('<iframe src="' + fileUrl + '" width="100%" height="600px" style="border:none;"></iframe>');
+    } else {
+      $('#modalFileContent').html('<div class="p-4 text-center">' +
+        '<i class="ti ti-file-description ti-lg mb-3 d-block text-secondary"></i>' +
+        '<p class="mb-3"><strong>الملف:</strong> ' + fileName + '</p>' +
+        '<a href="' + fileUrl + '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> تحميل / فتح الملف</a>' +
+      '</div>');
+    }
+  });
+
+  // Delete Record
+  $('.datatables-transactions tbody').on('click', '.delete-record', function () {
+    var id = $(this).data('id');
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "سيتم حذف هذه العملية وتحديث الرصيد!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، احذف!',
+      cancelButtonText: 'إلغاء',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3',
+        cancelButton: 'btn btn-label-secondary'
+      },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        $.ajax({
+          type: 'DELETE',
+          url: baseUrl + 'admin/investors/invest-wallet/transaction/delete/' + id,
+          headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (data) {
+            dt_transaction.draw();
+            if (data.status == 1) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'تم الحذف!',
+                  text: 'تم حذف العملية بنجاح.',
+                  customClass: {
+                    confirmButton: 'btn btn-success'
+                  }
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'خطأ!',
+                  text: data.error,
+                  customClass: {
+                    confirmButton: 'btn btn-danger'
+                  }
+                });
+            }
+          }
+        });
+      }
+    });
+  });
+});

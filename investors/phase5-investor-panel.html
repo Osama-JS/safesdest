@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المرحلة الخامسة: لوحة تحكم المستثمر</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#ec4899;--card:#1e2847;--border:#2d3a5e;--text:#e2e8f0;--muted:#94a3b8;--green:#10b981;--yellow:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6}
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a,#111827);min-height:100vh;color:var(--text)}
+  .nav{display:flex;align-items:center;gap:16px;padding:20px 40px;border-bottom:1px solid var(--border);background:rgba(30,40,71,0.5);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px}.nav a:hover{color:var(--accent)}.nav-sep{color:var(--border)}
+  .page-header{text-align:center;padding:60px 20px 40px}
+  .phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px}
+  .page-header h1{font-size:clamp(28px,4vw,48px);font-weight:900;margin-bottom:16px}
+  .page-header p{font-size:16px;color:var(--muted);max-width:700px;margin:0 auto;line-height:1.8}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+  .section{padding:40px 0}
+  .section-h{font-size:22px;font-weight:800;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .section-h::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .card p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+  .code-block{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12.5px;line-height:1.7}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .info-box{background:rgba(236,72,153,0.05);border:1px solid rgba(236,72,153,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .info-box p{font-size:13px;color:var(--muted);line-height:1.7}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:20px}
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .checklist{list-style:none;padding:0}
+  .checklist li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted);display:flex;gap:10px}
+  .checklist li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0}
+  /* Dashboard Mockup */
+  .dashboard-layout{display:grid;grid-template-columns:220px 1fr;gap:0;background:#080d1a;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:20px 0;min-height:420px}
+  .sidebar{background:#0d1117;border-left:1px solid var(--border);padding:20px 0}
+  .sidebar-logo{padding:0 16px 20px;border-bottom:1px solid var(--border);margin-bottom:12px;font-weight:800;font-size:15px;color:var(--accent)}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--muted);cursor:default;transition:all 0.2s;border-right:3px solid transparent}
+  .sidebar-item:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+  .sidebar-item.active{background:rgba(236,72,153,0.08);color:var(--accent);border-right-color:var(--accent)}
+  .main-content{padding:24px}
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .stat-box{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .stat-box .label{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .stat-box .value{font-size:20px;font-weight:800}
+  .page-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px}
+  .page-card h5{font-size:14px;font-weight:700;margin-bottom:6px}
+  .page-card p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+  .page-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;margin-top:6px;font-weight:600}
+  .tag-both{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+  .tag-task-only{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html">الرئيسية</a>
+  <span class="nav-sep">›</span>
+  <a href="phase4-investment.html">المرحلة الرابعة</a>
+  <span class="nav-sep">›</span>
+  <span style="color:var(--accent)">المرحلة الخامسة</span>
+</nav>
+
+<div class="page-header">
+  <div class="phase-badge">📊 المرحلة الخامسة</div>
+  <h1>لوحة تحكم المستثمر</h1>
+  <p>تصميم وبناء كل صفحات لوحة تحكم المستثمر — واجهة احترافية تعطي المستثمر رؤية كاملة على استثماراته وعمولاته.</p>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <h2 class="section-h">🖥️ معاينة تصميم لوحة التحكم</h2>
+    <div class="dashboard-layout">
+      <div class="sidebar">
+        <div class="sidebar-logo">💼 SafeDest Investor</div>
+        <div class="sidebar-item active">📊 لوحة التحكم</div>
+        <div class="sidebar-item">💼 محفظة الاستثمار</div>
+        <div class="sidebar-item">👛 محفظتي الشخصية</div>
+        <div class="sidebar-item" style="color:#3b82f6">💳 دفع المهام</div>
+        <div class="sidebar-item">📋 المهام المدفوعة</div>
+        <div class="sidebar-item" style="margin-top:20px;border-top:1px solid var(--border);padding-top:20px">👤 الملف الشخصي</div>
+        <div class="sidebar-item">🔑 كلمة المرور</div>
+      </div>
+      <div class="main-content">
+        <div style="font-size:16px;font-weight:800;margin-bottom:16px">مرحباً بك، أحمد 👋</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="label">رصيد محفظة الاستثمار</div>
+            <div class="value" style="color:var(--yellow)">48,500 ر.س</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">محفظتي الشخصية</div>
+            <div class="value" style="color:var(--green)">3,240 ر.س</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">المهام المدفوعة</div>
+            <div class="value" style="color:var(--blue)">47 مهمة</div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--muted)">آخر العمليات</div>
+        <div style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:6px;display:flex;justify-content:space-between">
+          <span>دفع مهمة #1245</span><span style="color:var(--green)">-1,500 ر.س</span>
+        </div>
+        <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:6px;display:flex;justify-content:space-between">
+          <span>عمولة مهمة #1245</span><span style="color:var(--yellow)">+150 ر.س</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">📄 صفحات لوحة تحكم المستثمر</h2>
+    <div class="grid-3">
+      <div class="page-card">
+        <h5>📊 لوحة التحكم الرئيسية</h5>
+        <p>إحصائيات سريعة: رصيد المحافظ، عدد المهام المدفوعة، إجمالي العمولات. آخر 5 عمليات. رسم بياني للنشاط الشهري.</p>
+        <span class="page-tag tag-both">الكل</span>
+      </div>
+      <div class="page-card">
+        <h5>💼 محفظة الاستثمار</h5>
+        <p>الرصيد الحالي، إجمالي الإيداعات والمسحوبات. جدول بكل الحركات مع فلتر التاريخ والنوع.</p>
+        <span class="page-tag tag-both">الكل</span>
+      </div>
+      <div class="page-card">
+        <h5>👛 المحفظة الشخصية (العمولات)</h5>
+        <p>رصيد العمولات المتراكمة. سجل جميع العمولات المستلمة مرتبطة بالمهام. خيار طلب السحب.</p>
+        <span class="page-tag tag-both">الكل</span>
+      </div>
+      <div class="page-card">
+        <h5>💳 دفع المهام</h5>
+        <p>قائمة المهام المتاحة للدفع (المخصصة حسب العقد). بطاقة تفاصيل لكل مهمة. زر الدفع مع تأكيد. عرض الرصيد المتاح.</p>
+        <span class="page-tag tag-task-only">مستثمر بالمهام فقط</span>
+      </div>
+      <div class="page-card">
+        <h5>📋 المهام المدفوعة</h5>
+        <p>جدول بجميع المهام التي دفع قيمتها مع: التاريخ، القيمة، العمولة المحتسبة، حالة المهمة.</p>
+        <span class="page-tag tag-both">الكل</span>
+      </div>
+      <div class="page-card">
+        <h5>👤 الملف الشخصي وكلمة المرور</h5>
+        <p>تعديل البيانات الشخصية: الاسم، الجوال، البريد. تغيير كلمة المرور بالتحقق من القديمة.</p>
+        <span class="page-tag tag-both">الكل</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">🎮 InvestorDashboardController</h2>
+    <div class="card">
+      <h3>بيانات الصفحة الرئيسية</h3>
+      <div class="code-block">
+<span class="kw">class</span> <span class="fn">InvestorDashboardController</span> <span class="kw">extends</span> Controller
+{
+    <span class="kw">public function</span> <span class="fn">index</span>()
+    {
+        $investor = <span class="fn">auth</span>()->user()->load([
+            <span class="str">'investorWallet.transactions'</span>,
+            <span class="str">'userWallet.transactions'</span>,
+            <span class="str">'activeInvestmentContract'</span>,
+        ]);
+
+        $investorWallet  = $investor->investorWallet;
+        $personalWallet  = $investor->userWallet;
+        $contract        = $investor->activeInvestmentContract;
+
+        <span class="cm">// إحصائيات سريعة</span>
+        $stats = [
+            <span class="str">'investment_balance'</span> => $investorWallet?->balance ?? <span class="num">0</span>,
+            <span class="str">'personal_balance'</span>   => $personalWallet?->balance ?? <span class="num">0</span>,
+            <span class="str">'paid_tasks_count'</span>   => Task::<span class="fn">where</span>(<span class="str">'investor_id'</span>, $investor->id)->count(),
+            <span class="str">'total_commissions'</span>  => $personalWallet?->transactions()
+                -><span class="fn">where</span>(<span class="str">'transaction_type'</span>, <span class="str">'credit'</span>)
+                -><span class="fn">sum</span>(<span class="str">'amount'</span>) ?? <span class="num">0</span>,
+        ];
+
+        <span class="cm">// آخر 5 عمليات مجمعة</span>
+        $recentActivity = InvestorWalletTransaction::<span class="fn">where</span>(
+            <span class="str">'investor_wallet_id'</span>, $investorWallet?->id
+        )-><span class="fn">latest</span>()-><span class="fn">take</span>(<span class="num">5</span>)-><span class="fn">get</span>();
+
+        <span class="kw">return</span> <span class="fn">view</span>(<span class="str">'investor.dashboard'</span>, <span class="fn">compact</span>(
+            <span class="str">'investor'</span>, <span class="str">'stats'</span>, <span class="str">'recentActivity'</span>, <span class="str">'contract'</span>
+        ));
+    }
+}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">🗂️ هيكل ملفات Blade Views</h2>
+    <div class="card">
+      <div class="code-block">
+resources/views/investor/
+├── layouts/
+│   └── <span class="fn">investor.blade.php</span>       <span class="cm">// Layout رئيسي مع القائمة الجانبية</span>
+├── <span class="fn">dashboard.blade.php</span>           <span class="cm">// الصفحة الرئيسية</span>
+├── investment-wallet/
+│   └── <span class="fn">index.blade.php</span>           <span class="cm">// محفظة الاستثمار</span>
+├── personal-wallet/
+│   └── <span class="fn">index.blade.php</span>           <span class="cm">// المحفظة الشخصية</span>
+├── task-payment/
+│   └── <span class="fn">index.blade.php</span>           <span class="cm">// دفع المهام (task_investment فقط)</span>
+├── paid-tasks/
+│   └── <span class="fn">index.blade.php</span>           <span class="cm">// المهام المدفوعة</span>
+└── profile/
+    ├── <span class="fn">show.blade.php</span>            <span class="cm">// الملف الشخصي</span>
+    └── <span class="fn">password.blade.php</span>        <span class="cm">// تغيير كلمة المرور</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">✅ قائمة مهام التنفيذ الكاملة</h2>
+    <div class="card">
+      <ul class="checklist">
+        <li>إنشاء <code>investor.blade.php</code> كـ Layout رئيسي بقائمة جانبية ديناميكية</li>
+        <li>بناء <code>InvestorDashboardController@index</code> مع كل الإحصائيات</li>
+        <li>بناء صفحة محفظة الاستثمار مع فلترة الحركات</li>
+        <li>بناء صفحة المحفظة الشخصية مع فلترة العمولات</li>
+        <li>بناء صفحة دفع المهام (task_investment) مع فلاتر البحث</li>
+        <li>إنشاء modal تأكيد الدفع مع عرض تفاصيل المهمة والرصيد</li>
+        <li>بناء صفحة المهام المدفوعة مع إمكانية التصدير</li>
+        <li>بناء صفحة الملف الشخصي وتغيير كلمة المرور</li>
+        <li>إضافة AJAX للدفع لتجنب إعادة تحميل الصفحة</li>
+        <li>إضافة رسائل نجاح/خطأ واضحة بعد كل عملية</li>
+        <li>دعم RTL كامل في كل الصفحات</li>
+        <li>اختبار تجربة المستخدم على الأجهزة المحمولة</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px;border-top:1px solid var(--border)">
+  <a href="phase4-investment.html" style="display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 24px;border:1px solid var(--border);border-radius:50px">→ المرحلة الرابعة</a>
+  &nbsp;&nbsp;
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.3);color:var(--accent);padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600">العودة للرئيسية ←</a>
+</div>
+
+</body>
+</html>

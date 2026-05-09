@@ -1,0 +1,49 @@
+{
+  "menu": [
+    {
+      "url": "investor/dashboard",
+      "name": "الرئيسية",
+      "icon": "menu-icon tf-icons ti ti-smart-home",
+      "slug": "investor.dashboard"
+    },
+    {
+      "menuHeader": "المحافظ المالية"
+    },
+    {
+      "url": "investor/investment-wallet",
+      "name": "محفظة الاستثمار",
+      "icon": "menu-icon tf-icons ti ti-wallet",
+      "slug": "investor.investment-wallet"
+    },
+    {
+      "url": "investor/personal-wallet",
+      "name": "محفظة العمولات",
+      "icon": "menu-icon tf-icons ti ti-coins",
+      "slug": "investor.personal-wallet"
+    },
+    {
+      "menuHeader": "العمليات والمهام"
+    },
+    {
+      "url": "investor/task-payment",
+      "name": "مهام متاحة للتمويل",
+      "icon": "menu-icon tf-icons ti ti-briefcase",
+      "slug": "investor.task-payment"
+    },
+    {
+      "url": "investor/paid-tasks",
+      "name": "المهام المدفوعة",
+      "icon": "menu-icon tf-icons ti ti-checkup-list",
+      "slug": "investor.paid-tasks"
+    },
+    {
+      "menuHeader": "الحساب"
+    },
+    {
+      "url": "investor/profile",
+      "name": "الملف الشخصي",
+      "icon": "menu-icon tf-icons ti ti-user",
+      "slug": "investor.profile"
+    }
+  ]
+}

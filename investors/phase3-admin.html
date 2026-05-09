@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المرحلة الثالثة: إدارة المستثمرين في Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#3b82f6;--card:#1e2847;--border:#2d3a5e;--text:#e2e8f0;--muted:#94a3b8;--green:#10b981;--yellow:#f59e0b}
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a,#111827);min-height:100vh;color:var(--text)}
+  .nav{display:flex;align-items:center;gap:16px;padding:20px 40px;border-bottom:1px solid var(--border);background:rgba(30,40,71,0.5);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px}.nav a:hover{color:var(--accent)}.nav-sep{color:var(--border)}
+  .page-header{text-align:center;padding:60px 20px 40px}
+  .phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px}
+  .page-header h1{font-size:clamp(28px,4vw,48px);font-weight:900;margin-bottom:16px}
+  .page-header p{font-size:16px;color:var(--muted);max-width:700px;margin:0 auto;line-height:1.8}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+  .section{padding:40px 0}
+  .section-h{font-size:22px;font-weight:800;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .section-h::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .card p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+  .code-block{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12.5px;line-height:1.7}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .info-box{background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .warn-box{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .info-box p,.warn-box p{font-size:13px;color:var(--muted);line-height:1.7}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:20px}
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .checklist{list-style:none;padding:0}
+  .checklist li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:flex-start}
+  .checklist li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0}
+  .table-schema{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+  .table-schema th{background:rgba(59,130,246,0.1);color:var(--accent);padding:12px 16px;text-align:right;border-bottom:2px solid rgba(59,130,246,0.3)}
+  .table-schema td{padding:10px 16px;border-bottom:1px solid var(--border);color:var(--muted)}
+  .table-schema tr:hover td{background:rgba(255,255,255,0.02)}
+  .feature-card{background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.15);border-radius:12px;padding:20px}
+  .feature-card h4{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--accent)}
+  .feature-card p{font-size:13px;color:var(--muted);line-height:1.7}
+  .page-mockup{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  .mockup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .mockup-title{font-size:16px;font-weight:700}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:default}
+  .btn-primary{background:rgba(59,130,246,0.2);color:var(--accent);border:1px solid rgba(59,130,246,0.4)}
+  .btn-success{background:rgba(16,185,129,0.2);color:var(--green);border:1px solid rgba(16,185,129,0.4)}
+  .btn-warn{background:rgba(245,158,11,0.2);color:var(--yellow);border:1px solid rgba(245,158,11,0.4)}
+  .investor-row{display:grid;grid-template-columns:40px 1fr 120px 100px 120px 160px;gap:12px;padding:12px;border-radius:8px;align-items:center;font-size:13px;border-bottom:1px solid var(--border)}
+  .investor-row.header{color:var(--muted);font-weight:600;font-size:12px}
+  .investor-row:hover{background:rgba(255,255,255,0.02)}
+  .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+  .badge-active{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+  .badge-task{background:rgba(59,130,246,0.15);color:var(--accent);border:1px solid rgba(59,130,246,0.3)}
+  .badge-general{background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html">الرئيسية</a>
+  <span class="nav-sep">›</span>
+  <a href="phase2-auth.html">المرحلة الثانية</a>
+  <span class="nav-sep">›</span>
+  <span style="color:var(--accent)">المرحلة الثالثة</span>
+</nav>
+
+<div class="page-header">
+  <div class="phase-badge">⚙️ المرحلة الثالثة</div>
+  <h1>إدارة المستثمرين في لوحة Admin</h1>
+  <p>بناء صفحة إدارة المستثمرين الكاملة في لوحة التحكم: إضافة وإدارة المستثمرين، عقود الاستثمار، تحميل المحافظ، وعرض التقارير.</p>
+</div>
+
+<div class="container">
+
+  <div class="section">
+    <h2 class="section-h">📋 الصفحة الرئيسية — قائمة المستثمرين</h2>
+    <div class="card">
+      <h3>تصميم صفحة عرض المستثمرين</h3>
+      <p>تُضاف رابط "المستثمرون" في القائمة الجانبية لـ Admin بجانب إدارة المستخدمين. تعرض قائمة بكل المستثمرين مع إحصائياتهم السريعة.</p>
+      <div class="page-mockup">
+        <div class="mockup-header">
+          <span class="mockup-title">💼 إدارة المستثمرين</span>
+          <span class="btn btn-primary">+ إضافة مستثمر جديد</span>
+        </div>
+        <div class="investor-row header">
+          <span>#</span><span>المستثمر</span><span>نوع العقد</span><span>الحالة</span><span>رصيد الاستثمار</span><span>الإجراءات</span>
+        </div>
+        <div class="investor-row">
+          <span style="color:var(--muted)">1</span>
+          <div><div style="font-weight:600">أحمد محمد</div><div style="font-size:11px;color:var(--muted)">ahmed@example.com</div></div>
+          <span class="badge badge-task">بالمهام</span>
+          <span class="badge badge-active">نشط</span>
+          <span style="color:var(--green);font-weight:600">50,000 ر.س</span>
+          <div style="display:flex;gap:6px">
+            <span class="btn btn-primary" style="padding:4px 10px;font-size:11px">عرض</span>
+            <span class="btn btn-warn" style="padding:4px 10px;font-size:11px">تحميل محفظة</span>
+          </div>
+        </div>
+        <div class="investor-row">
+          <span style="color:var(--muted)">2</span>
+          <div><div style="font-weight:600">فاطمة عبدالله</div><div style="font-size:11px;color:var(--muted)">fatima@example.com</div></div>
+          <span class="badge badge-general">عام</span>
+          <span class="badge badge-active">نشط</span>
+          <span style="color:var(--green);font-weight:600">120,000 ر.س</span>
+          <div style="display:flex;gap:6px">
+            <span class="btn btn-primary" style="padding:4px 10px;font-size:11px">عرض</span>
+            <span class="btn btn-warn" style="padding:4px 10px;font-size:11px">تحميل محفظة</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">➕ إضافة مستثمر جديد</h2>
+    <div class="card">
+      <h3>منطق إنشاء حساب المستثمر</h3>
+      <p>يتم إنشاء مستثمر جديد عبر خطوتين: إنشاء حساب المستخدم ثم تفعيل وضع المستثمر وإنشاء محفظة الاستثمار والعقد.</p>
+      <div class="code-block">
+<span class="cm">// InvestorController@store</span>
+<span class="kw">public function</span> <span class="fn">store</span>(StoreInvestorRequest $request)
+{
+    DB::<span class="fn">transaction</span>(<span class="kw">function</span>() <span class="kw">use</span> ($request) {
+
+        <span class="cm">// 1. إنشاء حساب المستخدم</span>
+        $user = User::<span class="fn">create</span>([
+            <span class="str">'name'</span>     => $request->name,
+            <span class="str">'email'</span>    => $request->email,
+            <span class="str">'phone'</span>    => $request->phone,
+            <span class="str">'password'</span> => <span class="fn">bcrypt</span>($request->password),
+            <span class="str">'investor'</span> => <span class="num">true</span>,
+            <span class="str">'status'</span>   => <span class="str">'active'</span>,
+        ]);
+
+        <span class="cm">// 2. إنشاء محفظة الاستثمار</span>
+        InvestorWallet::<span class="fn">create</span>([
+            <span class="str">'user_id'</span> => $user->id,
+            <span class="str">'status'</span>  => <span class="num">true</span>,
+        ]);
+
+        <span class="cm">// 3. إنشاء محفظة العمولات الشخصية (user_wallets)</span>
+        UserWallet::<span class="fn">create</span>([
+            <span class="str">'user_id'</span>   => $user->id,
+            <span class="str">'user_type'</span> => <span class="str">'user'</span>,
+            <span class="str">'status'</span>    => <span class="num">true</span>,
+        ]);
+
+        <span class="cm">// 4. إنشاء عقد الاستثمار</span>
+        InvestmentContract::<span class="fn">create</span>([
+            <span class="str">'user_id'</span>          => $user->id,
+            <span class="str">'contract_type'</span>    => $request->contract_type,
+            <span class="str">'commission_type'</span>  => $request->commission_type,
+            <span class="str">'commission_value'</span> => $request->commission_value,
+            <span class="str">'start_date'</span>       => $request->start_date,
+            <span class="str">'end_date'</span>         => $request->end_date,
+            <span class="str">'filter_customer_ids'</span> => $request->filter_customer_ids,
+            <span class="str">'min_commission_threshold'</span> => $request->min_commission_threshold,
+            <span class="str">'status'</span>           => <span class="str">'active'</span>,
+            <span class="str">'created_by'</span>       => <span class="fn">auth</span>()->id(),
+        ]);
+    });
+
+    <span class="kw">return</span> <span class="fn">redirect</span>()->route(<span class="str">'admin.investors.index'</span>)
+        -><span class="fn">with</span>(<span class="str">'success'</span>, <span class="str">'تم إنشاء حساب المستثمر بنجاح'</span>);
+}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>حقول نموذج إضافة مستثمر — القسم الأول: بيانات الحساب</h3>
+        <table class="table-schema">
+          <tr><th>الحقل</th><th>النوع</th><th>ملاحظة</th></tr>
+          <tr><td>الاسم الكامل</td><td>text</td><td>مطلوب</td></tr>
+          <tr><td>البريد الإلكتروني</td><td>email</td><td>مطلوب، فريد</td></tr>
+          <tr><td>رقم الجوال</td><td>tel</td><td>مطلوب</td></tr>
+          <tr><td>كلمة المرور</td><td>password</td><td>مطلوب، min:8</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>حقول نموذج إضافة مستثمر — القسم الثاني: بيانات العقد</h3>
+        <table class="table-schema">
+          <tr><th>الحقل</th><th>القيم</th><th>ملاحظة</th></tr>
+          <tr><td>نوع الاستثمار</td><td>task / general</td><td>مطلوب</td></tr>
+          <tr><td>نوع العمولة</td><td>percentage / fixed</td><td>مطلوب</td></tr>
+          <tr><td>قيمة العمولة</td><td>decimal</td><td>مطلوب</td></tr>
+          <tr><td>تاريخ البدء</td><td>date</td><td>مطلوب</td></tr>
+          <tr><td>تاريخ الانتهاء</td><td>date</td><td>اختياري</td></tr>
+          <tr><td>العملاء المخصصون</td><td>multi-select</td><td>task فقط</td></tr>
+          <tr><td>حد أدنى للعمولة</td><td>decimal</td><td>task فقط</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">💰 تحميل محفظة الاستثمار (Admin)</h2>
+    <div class="card">
+      <h3>آلية إيداع الأموال في محفظة الاستثمار</h3>
+      <p>يقوم Admin بإيداع مبالغ الاستثمار في محفظة المستثمر. يُسجَّل كل إيداع في <code>investor_wallet_transactions</code> كعملية <code>credit</code>.</p>
+      <div class="code-block">
+<span class="cm">// InvestorWalletController@deposit</span>
+<span class="kw">public function</span> <span class="fn">deposit</span>(Request $request, User $investor)
+{
+    $request-><span class="fn">validate</span>([
+        <span class="str">'amount'</span>      => <span class="str">'required|numeric|min:1'</span>,
+        <span class="str">'description'</span> => <span class="str">'nullable|string|max:500'</span>,
+    ]);
+
+    DB::<span class="fn">transaction</span>(<span class="kw">function</span>() <span class="kw">use</span> ($request, $investor) {
+        $wallet = $investor->investorWallet;
+        $balanceBefore = $wallet->balance;
+        $newBalance = $balanceBefore + $request->amount;
+
+        InvestorWalletTransaction::<span class="fn">create</span>([
+            <span class="str">'investor_wallet_id'</span> => $wallet->id,
+            <span class="str">'transaction_type'</span>  => <span class="str">'credit'</span>,
+            <span class="str">'amount'</span>            => $request->amount,
+            <span class="str">'description'</span>       => $request->description ?? <span class="str">'إيداع من الإدارة'</span>,
+            <span class="str">'performed_by'</span>      => <span class="fn">auth</span>()->id(),
+            <span class="str">'balance_after'</span>     => $newBalance,
+        ]);
+    });
+
+    <span class="kw">return</span> <span class="fn">back</span>()-><span class="fn">with</span>(<span class="str">'success'</span>, <span class="str">'تم الإيداع بنجاح'</span>);
+}
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">📄 صفحة تفاصيل المستثمر</h2>
+    <div class="grid-3">
+      <div class="feature-card">
+        <h4>📊 ملخص إحصائي</h4>
+        <p>رصيد محفظة الاستثمار الحالي، إجمالي المدفوع للمهام، إجمالي العمولات المكتسبة في المحفظة الشخصية.</p>
+      </div>
+      <div class="feature-card">
+        <h4>📋 تفاصيل العقد النشط</h4>
+        <p>نوع الاستثمار، نسبة/مبلغ العمولة، تاريخ البدء والانتهاء، العملاء المخصصون، حالة العقد.</p>
+      </div>
+      <div class="feature-card">
+        <h4>📜 سجل حركة المحافظ</h4>
+        <p>تاريخ جميع عمليات الإيداع والخصم في محفظة الاستثمار، وجميع العمولات في المحفظة الشخصية.</p>
+      </div>
+      <div class="feature-card">
+        <h4>🔗 المهام المدفوعة</h4>
+        <p>قائمة بكل المهام التي دفع قيمتها هذا المستثمر مع تفاصيل كل مهمة والعمولة المحتسبة.</p>
+      </div>
+      <div class="feature-card">
+        <h4>⚙️ إدارة العقود</h4>
+        <p>سجل كل العقود السابقة والحالية مع إمكانية إنشاء عقد جديد أو تعديل العقد الحالي أو إيقافه.</p>
+      </div>
+      <div class="feature-card">
+        <h4>💳 دفع المهام (للعام)</h4>
+        <p>يتيح لـ Admin ربط مهمة معينة بهذا المستثمر العام وخصم قيمتها من محفظة استثماره.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">✅ قائمة مهام التنفيذ</h2>
+    <div class="card">
+      <ul class="checklist">
+        <li>إنشاء <code>InvestorController</code> مع كامل عمليات CRUD</li>
+        <li>إنشاء <code>StoreInvestorRequest</code> للتحقق من صحة البيانات</li>
+        <li>إضافة رابط "المستثمرون" في القائمة الجانبية للـ Admin</li>
+        <li>إنشاء Blade View: <code>admin/investors/index.blade.php</code></li>
+        <li>إنشاء Blade View: <code>admin/investors/create.blade.php</code></li>
+        <li>إنشاء Blade View: <code>admin/investors/show.blade.php</code></li>
+        <li>إنشاء Blade View: <code>admin/investors/edit.blade.php</code></li>
+        <li>إنشاء Blade View: <code>admin/investors/deposit.blade.php</code></li>
+        <li>دعم تصفية المستثمرين (بالنوع، الحالة، الرصيد)</li>
+        <li>إضافة صلاحية <code>manage_investors</code> لنظام Spatie Permissions</li>
+        <li>إنشاء <code>InvestorWalletController</code> لعمليات الإيداع والسحب</li>
+        <li>بناء صفحة دفع المهمة من Admin للمستثمر العام</li>
+        <li>إضافة routes جديدة في admin route group</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px;border-top:1px solid var(--border)">
+  <a href="phase2-auth.html" style="display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 24px;border:1px solid var(--border);border-radius:50px">→ المرحلة الثانية</a>
+  &nbsp;&nbsp;
+  <a href="phase4-investment.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:var(--accent);padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600">المرحلة الرابعة: منطق الاستثمار ←</a>
+</div>
+
+</body>
+</html>

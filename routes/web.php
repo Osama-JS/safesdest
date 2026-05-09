@@ -115,6 +115,9 @@ Route::middleware('rate.limit')->group(function () {
             } elseif (Auth::guard('customer')->check()) {
                 return redirect()->route('customer.dashboard');
             } elseif (Auth::guard('web')->check()) {
+                if (Auth::guard('web')->user()->investor) {
+                    return redirect()->route('investor.dashboard');
+                }
                 return redirect()->route('user.dashboard');
             } else {
                 return redirect()->route('login');
@@ -127,6 +130,9 @@ Route::middleware('rate.limit')->group(function () {
             } elseif (Auth::guard('customer')->check()) {
                 return redirect()->route('customer.profile');
             } elseif (Auth::guard('web')->check()) {
+                if (Auth::guard('web')->user()->investor) {
+                    return redirect()->route('investor.profile');
+                }
                 return redirect()->route('user.profile');
             } else {
                 return redirect()->route('login');
@@ -241,7 +247,7 @@ Route::middleware('rate.limit')->group(function () {
             })->name('notifications.subscribe');
 
             Route::get('/send-notification', [PushNotificationsController::class, 'index'])->name('notifications.send');
-            Route::prefix('admin')->group(function () {
+            Route::prefix('admin')->middleware('block.investor')->group(function () {
 
                 Route::get('/', [DashboardController::class, 'index'])->name('user.dashboard');
 
@@ -306,6 +312,23 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
                 Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('user.show');
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
+
+                // Investor Management Routes
+                Route::prefix('investors')->name('admin.investors.')->group(function () {
+                    Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
+                    Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
+                    Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');
+                    Route::post('/reset-password', [\App\Http\Controllers\admin\InvestorController::class, 'resetPass'])->name('reset-password');
+                    Route::get('/show/{id}', [\App\Http\Controllers\admin\InvestorController::class, 'show'])->name('show');
+                    Route::delete('/delete/{id}', [\App\Http\Controllers\admin\InvestorController::class, 'destroy'])->name('delete');
+
+                    // Wallet management
+                    Route::get('/{userId}/invest-wallet', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'show'])->name('invest-wallet');
+                    Route::get('/{userId}/invest-wallet/transactions', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getTransactions'])->name('invest-wallet.getTransactions');
+                    Route::post('/invest-wallet/transaction', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'addTransaction'])->name('invest-wallet.addTransaction');
+                    Route::delete('/invest-wallet/transaction/delete/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroyTransaction'])->name('invest-wallet.destroyTransaction');
+                    Route::get('/invest-wallet/transaction/receipt/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'downloadReceipt'])->name('invest-wallet.downloadReceipt');
+                });
 
                 // B2B Module Routes
                 Route::prefix('b2b')->name('b2b.')->group(function () {
@@ -814,6 +837,51 @@ Route::middleware('rate.limit')->group(function () {
     });
 });
 
+
+// ══════════════════════════════════════════════════════════════
+// لوحة تحكم المستثمر
+// ══════════════════════════════════════════════════════════════
+Route::middleware(['auth:web', 'investor'])
+    ->prefix('investor')
+    ->name('investor.')
+    ->group(function () {
+
+        // الصفحة الرئيسية
+        Route::get('dashboard', [App\Http\Controllers\investor\InvestorDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // محفظة الاستثمار
+        Route::get('investment-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'investmentWallet'])
+            ->name('investment-wallet');
+
+        // المحفظة الشخصية (العمولات)
+        Route::get('personal-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'personalWallet'])
+            ->name('personal-wallet');
+
+        // احتساب عمولات المستثمر العام (زر الاحتساب)
+        Route::post('personal-wallet/calculate-commissions', [App\Http\Controllers\investor\InvestorWalletController::class, 'calculateGeneralCommissions'])
+            ->name('personal-wallet.calculate');
+
+        // دفع المهام (مستثمر بالمهام فقط)
+        Route::get('task-payment', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'index'])
+            ->name('task-payment');
+        Route::post('task-payment/{task}/pay', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'pay'])
+            ->name('task-payment.pay');
+
+        // المهام المدفوعة
+        Route::get('paid-tasks', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'paidTasks'])
+            ->name('paid-tasks');
+        Route::get('paid-tasks/{task}/report', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'downloadReport'])
+            ->name('paid-tasks.report');
+
+        // الملف الشخصي
+        Route::get('profile', [App\Http\Controllers\investor\InvestorProfileController::class, 'show'])
+            ->name('profile');
+        Route::put('profile', [App\Http\Controllers\investor\InvestorProfileController::class, 'update'])
+            ->name('profile.update');
+        Route::put('password', [App\Http\Controllers\investor\InvestorProfileController::class, 'updatePassword'])
+            ->name('password.update');
+    });
 
 // Firebase Testing Routes
 Route::prefix('test-firebase')->group(function () {

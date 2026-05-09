@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>المرحلة الرابعة: منطق الاستثمار والعمولات</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--accent:#8b5cf6;--card:#1e2847;--border:#2d3a5e;--text:#e2e8f0;--muted:#94a3b8;--green:#10b981;--yellow:#f59e0b;--blue:#3b82f6}
+  body{font-family:'Cairo',sans-serif;background:linear-gradient(135deg,#0a0e1a,#111827);min-height:100vh;color:var(--text)}
+  .nav{display:flex;align-items:center;gap:16px;padding:20px 40px;border-bottom:1px solid var(--border);background:rgba(30,40,71,0.5);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+  .nav a{color:var(--muted);text-decoration:none;font-size:13px}.nav a:hover{color:var(--accent)}.nav-sep{color:var(--border)}
+  .page-header{text-align:center;padding:60px 20px 40px}
+  .phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);color:var(--accent);padding:8px 20px;border-radius:50px;font-size:13px;margin-bottom:24px}
+  .page-header h1{font-size:clamp(28px,4vw,48px);font-weight:900;margin-bottom:16px}
+  .page-header p{font-size:16px;color:var(--muted);max-width:700px;margin:0 auto;line-height:1.8}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+  .section{padding:40px 0}
+  .section-h{font-size:22px;font-weight:800;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+  .section-h::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--accent)}
+  .card p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:12px}
+  .code-block{background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto;font-family:'Fira Code',monospace;font-size:12.5px;line-height:1.7}
+  .kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .info-box{background:rgba(139,92,246,0.05);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .warn-box{background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .success-box{background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:16px;margin:16px 0;display:flex;gap:12px}
+  .info-box p,.warn-box p,.success-box p{font-size:13px;color:var(--muted);line-height:1.7}
+  .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(450px,1fr));gap:20px}
+  .checklist{list-style:none;padding:0}
+  .checklist li{padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:14px;color:var(--muted);display:flex;gap:10px}
+  .checklist li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0}
+  .flow-box{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  .flow-step{padding:12px 16px;border-radius:8px;margin-bottom:8px;font-size:14px;border-right:3px solid transparent}
+  .step-trigger{border-color:var(--blue);background:rgba(59,130,246,0.05)}
+  .step-check{border-color:var(--yellow);background:rgba(245,158,11,0.05)}
+  .step-action{border-color:var(--green);background:rgba(16,185,129,0.05)}
+  .step-commission{border-color:var(--accent);background:rgba(139,92,246,0.05)}
+  .step-label{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px}
+  .label-trigger{background:rgba(59,130,246,0.2);color:var(--blue)}
+  .label-check{background:rgba(245,158,11,0.2);color:var(--yellow)}
+  .label-action{background:rgba(16,185,129,0.2);color:var(--green)}
+  .label-commission{background:rgba(139,92,246,0.2);color:var(--accent)}
+  .compare-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+  .compare-card h4{font-size:16px;font-weight:700;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .compare-card ul{list-style:none;padding:0}
+  .compare-card li{padding:8px 0;font-size:13px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:flex-start;gap:8px}
+  .compare-card li::before{content:'•';flex-shrink:0;margin-top:2px}
+  .highlight-num{color:var(--yellow);font-weight:700;font-size:18px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html">الرئيسية</a>
+  <span class="nav-sep">›</span>
+  <a href="phase3-admin.html">المرحلة الثالثة</a>
+  <span class="nav-sep">›</span>
+  <span style="color:var(--accent)">المرحلة الرابعة</span>
+</nav>
+
+<div class="page-header">
+  <div class="phase-badge">💰 المرحلة الرابعة</div>
+  <h1>منطق الاستثمار والعمولات</h1>
+  <p>القلب النابض للنظام — آليات الدفع، حساب العمولات التلقائي، وتسوية المحافظ بشكل دقيق ومتكامل.</p>
+</div>
+
+<div class="container">
+
+  <!-- مقارنة نوعي الاستثمار -->
+  <div class="section">
+    <h2 class="section-h">⚖️ مقارنة نوعي الاستثمار</h2>
+    <div class="grid-2">
+      <div class="compare-card">
+        <h4 style="color:var(--blue)">🎯 الاستثمار بالمهام (task_investment)</h4>
+        <ul>
+          <li>المستثمر يرى المهام المخصصة له ويختار ما يدفعه</li>
+          <li>الدفع يدوي بالكامل من لوحة تحكم المستثمر</li>
+          <li>يمكن تخصيص: عملاء محددين أو حد أدنى للعمولة</li>
+          <li>المهمة يجب أن تكون: غير مقفلة، غير مدفوعة من مستثمر</li>
+          <li>العمولة تُحسب وتُسجَّل في المحفظة الشخصية فور الدفع</li>
+          <li>العمولة من عمولة المنصة الكلية (وليس من قيمة المهمة)</li>
+        </ul>
+      </div>
+      <div class="compare-card">
+        <h4 style="color:#a78bfa">🌐 الاستثمار العام (general_investment)</h4>
+        <ul>
+          <li>Admin يتحكم في ربط المهام بهذا المستثمر</li>
+          <li>لا تخصيص لعملاء محددين أو حد للعمولة</li>
+          <li>العمولة تُحتسب على جميع المهام التي يدفعها</li>
+          <li>Admin يختار أي مستثمر عام يدفع أي مهمة</li>
+          <li>الدفع يُسجَّل في محفظة الاستثمار كخصم</li>
+          <li>العمولة تُسجَّل في المحفظة الشخصية للمستثمر تلقائياً</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- الاستثمار بالمهام -->
+  <div class="section">
+    <h2 class="section-h">🎯 آلية الاستثمار بالمهام — التدفق الكامل</h2>
+    <div class="card">
+      <h3>منطق فلترة المهام المعروضة للمستثمر</h3>
+      <p>عند فتح صفحة "دفع المهام"، يجلب النظام المهام المؤهلة فقط بناءً على إعدادات عقد المستثمر.</p>
+      <div class="code-block">
+<span class="cm">// InvestorTaskPaymentController@index</span>
+<span class="kw">public function</span> <span class="fn">index</span>()
+{
+    $investor = <span class="fn">auth</span>()->user();
+    $contract = $investor->activeInvestmentContract;
+
+    <span class="kw">if</span> (!$contract || $contract->contract_type !== <span class="str">'task_investment'</span>) {
+        <span class="kw">return</span> <span class="fn">abort</span>(<span class="num">403</span>);
+    }
+
+    $query = Task::<span class="fn">availableForInvestorPayment</span>()
+        -><span class="fn">with</span>([<span class="str">'customer'</span>, <span class="str">'pickup'</span>, <span class="str">'delivery'</span>, <span class="str">'ad'</span>]);
+
+    <span class="cm">// فلتر العملاء المخصصين</span>
+    <span class="kw">if</span> (!<span class="fn">empty</span>($contract->filter_customer_ids)) {
+        $query-><span class="fn">whereIn</span>(<span class="str">'customer_id'</span>, $contract->filter_customer_ids);
+    }
+
+    <span class="cm">// فلتر الحد الأدنى للعمولة</span>
+    <span class="kw">if</span> ($contract->min_commission_threshold > <span class="num">0</span>) {
+        $query-><span class="fn">whereHas</span>(<span class="str">'ad'</span>, <span class="kw">function</span>($q) <span class="kw">use</span> ($contract) {
+            $q-><span class="fn">where</span>(<span class="str">'commission'</span>, <span class="str">'>='</span>, $contract->min_commission_threshold);
+        });
+    }
+
+    $tasks = $query-><span class="fn">latest</span>()-><span class="fn">paginate</span>(<span class="num">20</span>);
+    $walletBalance = $investor->investorWallet->balance;
+
+    <span class="kw">return</span> <span class="fn">view</span>(<span class="str">'investor.task-payment'</span>, <span class="fn">compact</span>(<span class="str">'tasks'</span>, <span class="str">'contract'</span>, <span class="str">'walletBalance'</span>));
+}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>عملية الدفع على مهمة — التدفق الكامل</h3>
+      <div class="flow-box">
+        <div class="flow-step step-trigger">
+          <span class="step-label label-trigger">TRIGGER</span>
+          المستثمر يضغط "دفع" على مهمة محددة
+        </div>
+        <div class="flow-step step-check">
+          <span class="step-label label-check">CHECK</span>
+          التحقق: هل رصيد محفظة الاستثمار ≥ قيمة المهمة؟
+        </div>
+        <div class="flow-step step-check">
+          <span class="step-label label-check">CHECK</span>
+          التحقق: هل المهمة لا تزال مؤهلة؟ (غير مقفلة، لم يدفعها مستثمر آخر)
+        </div>
+        <div class="flow-step step-action">
+          <span class="step-label label-action">ACTION</span>
+          خصم قيمة المهمة من investor_wallet — تسجيل transaction بنوع debit
+        </div>
+        <div class="flow-step step-action">
+          <span class="step-label label-action">ACTION</span>
+          تحديث tasks: investor_id = المستثمر، investor_payment_status = 'paid'
+        </div>
+        <div class="flow-step step-commission">
+          <span class="step-label label-commission">COMMISSION</span>
+          حساب عمولة المستثمر من عمولة المنصة (commission في tasks_ads)
+        </div>
+        <div class="flow-step step-commission">
+          <span class="step-label label-commission">COMMISSION</span>
+          إيداع العمولة في user_wallets (المحفظة الشخصية) — تسجيل UserWalletTransaction
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm">// InvestorTaskPaymentController@pay</span>
+<span class="kw">public function</span> <span class="fn">pay</span>(Request $request, Task $task)
+{
+    $investor = <span class="fn">auth</span>()->user();
+    $contract  = $investor->activeInvestmentContract;
+
+    DB::<span class="fn">transaction</span>(<span class="kw">function</span>() <span class="kw">use</span> ($investor, $task, $contract) {
+
+        $investorWallet = $investor->investorWallet;
+        $taskPrice      = $task->total_price;
+
+        <span class="cm">// 1. التحقق من الرصيد الكافي</span>
+        <span class="kw">if</span> ($investorWallet->balance < $taskPrice) {
+            <span class="kw">throw new</span> \Exception(<span class="str">'رصيد غير كافٍ في محفظة الاستثمار'</span>);
+        }
+
+        <span class="cm">// 2. التحقق من أهلية المهمة</span>
+        <span class="kw">if</span> ($task->investor_payment_status !== <span class="str">'none'</span> || $task->closed) {
+            <span class="kw">throw new</span> \Exception(<span class="str">'هذه المهمة غير متاحة للدفع'</span>);
+        }
+
+        <span class="cm">// 3. خصم من محفظة الاستثمار</span>
+        $newBalance = $investorWallet->balance - $taskPrice;
+        InvestorWalletTransaction::<span class="fn">create</span>([
+            <span class="str">'investor_wallet_id'</span> => $investorWallet->id,
+            <span class="str">'task_id'</span>           => $task->id,
+            <span class="str">'transaction_type'</span>  => <span class="str">'debit'</span>,
+            <span class="str">'amount'</span>            => $taskPrice,
+            <span class="str">'description'</span>       => "دفع قيمة المهمة #{$task->id}",
+            <span class="str">'performed_by'</span>      => $investor->id,
+            <span class="str">'balance_after'</span>     => $newBalance,
+        ]);
+
+        <span class="cm">// 4. تحديث حالة المهمة</span>
+        $task-><span class="fn">update</span>([
+            <span class="str">'investor_id'</span>             => $investor->id,
+            <span class="str">'investor_payment_status'</span> => <span class="str">'paid'</span>,
+        ]);
+
+        <span class="cm">// 5. حساب وتسجيل العمولة في المحفظة الشخصية</span>
+        <span class="kw">if</span> ($task->ad) {
+            $platformCommission = $task->ad->commission;
+            $investorCommission = $contract->commission_type === <span class="str">'percentage'</span>
+                ? ($platformCommission * $contract->commission_value / <span class="num">100</span>)
+                : $contract->commission_value;
+
+            $personalWallet = $investor->userWallet;
+            $personalBalance = $personalWallet->balance + $investorCommission;
+
+            UserWalletTransaction::<span class="fn">create</span>([
+                <span class="str">'user_wallet_id'</span>   => $personalWallet->id,
+                <span class="str">'task_id'</span>          => $task->id,
+                <span class="str">'transaction_type'</span> => <span class="str">'credit'</span>,
+                <span class="str">'amount'</span>           => $investorCommission,
+                <span class="str">'description'</span>      => "عمولة المهمة #{$task->id}",
+                <span class="str">'balance_after'</span>    => $personalBalance,
+            ]);
+        }
+    });
+
+    <span class="kw">return</span> <span class="fn">back</span>()-><span class="fn">with</span>(<span class="str">'success'</span>, <span class="str">'تم دفع قيمة المهمة وتسجيل عمولتك بنجاح'</span>);
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- الاستثمار العام -->
+  <div class="section">
+    <h2 class="section-h">🌐 آلية الاستثمار العام — دفع Admin</h2>
+    <div class="card">
+      <h3>تدفق دفع المهمة من Admin للمستثمر العام</h3>
+      <p>في لوحة Admin عند إدارة المدفوعات، يظهر خيار "الدفع من محفظة مستثمر عام". عند اختياره يتم الربط بالمستثمر المناسب.</p>
+      <div class="code-block">
+<span class="cm">// في PaymentController أو TaskController@payFromInvestor</span>
+<span class="kw">public function</span> <span class="fn">payFromGeneralInvestor</span>(Request $request, Task $task)
+{
+    $request-><span class="fn">validate</span>([
+        <span class="str">'investor_id'</span> => <span class="str">'required|exists:users,id'</span>,
+    ]);
+
+    $investor = User::<span class="fn">where</span>(<span class="str">'id'</span>, $request->investor_id)
+        -><span class="fn">where</span>(<span class="str">'investor'</span>, <span class="num">true</span>)
+        -><span class="fn">firstOrFail</span>();
+
+    $contract = $investor->activeInvestmentContract;
+
+    <span class="kw">if</span> (!$contract || $contract->contract_type !== <span class="str">'general_investment'</span>) {
+        <span class="kw">return</span> <span class="fn">back</span>()-><span class="fn">with</span>(<span class="str">'error'</span>, <span class="str">'هذا المستثمر ليس من نوع استثمار عام'</span>);
+    }
+
+    <span class="cm">// نفس منطق الخصم وتسجيل العمولة</span>
+    $this-><span class="fn">processInvestorPayment</span>($investor, $task, $contract);
+
+    <span class="kw">return</span> <span class="fn">back</span>()-><span class="fn">with</span>(<span class="str">'success'</span>, <span class="str">'تم ربط المهمة بالمستثمر وتسجيل العمولة'</span>);
+}
+      </div>
+      <div class="info-box">
+        <div class="icon">💡</div>
+        <p>يتم استخراج قائمة المستثمرين العامين في نافذة دفع المهمة لتسهيل اختيار Admin للمستثمر المناسب، مع عرض رصيد كل مستثمر في الـ dropdown.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- نقاط حرجة -->
+  <div class="section">
+    <h2 class="section-h">⚠️ نقاط حرجة يجب مراعاتها</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>🔒 الحماية من التعارض (Race Conditions)</h3>
+        <p>يجب استخدام <code>DB::transaction</code> مع <code>lockForUpdate</code> لمنع دفع نفس المهمة من مستثمرين في نفس الوقت:</p>
+        <div class="code-block">
+$task = Task::<span class="fn">lockForUpdate</span>()-><span class="fn">findOrFail</span>($taskId);
+
+<span class="kw">if</span> ($task->investor_payment_status !== <span class="str">'none'</span>) {
+    <span class="kw">throw new</span> \Exception(<span class="str">'المهمة محجوزة'</span>);
+}
+        </div>
+      </div>
+      <div class="card">
+        <h3>💡 حساب رصيد المحفظة</h3>
+        <p>الرصيد يُحسب دائماً من مجموع الـ transactions (credit - debit). لا يوجد حقل <code>balance</code> مباشر لضمان الدقة والتدقيق. نحتفظ بـ <code>balance_after</code> لكل transaction كـ snapshot للأداء.</p>
+        <div class="code-block">
+<span class="cm">// في InvestorWallet Model</span>
+<span class="kw">public function</span> <span class="fn">getBalanceAttribute</span>()
+{
+    <span class="kw">return</span> $this->transactions()
+        -><span class="fn">selectRaw</span>(<span class="str">'
+            SUM(CASE WHEN transaction_type="credit" 
+                THEN amount ELSE -amount END) as balance
+        '</span>)-><span class="fn">value</span>(<span class="str">'balance'</span>) ?? <span class="num">0</span>;
+}
+        </div>
+      </div>
+    </div>
+    <div class="warn-box">
+      <div>⚠️</div>
+      <p><strong>تنبيه مهم بخصوص العمولة:</strong> العمولة تُؤخذ من عمولة المنصة (<code>tasks_ads.commission</code>) وليس من قيمة المهمة (<code>tasks.total_price</code>). يجب التأكد من وجود <code>task_ad</code> مرتبطة بالمهمة قبل حساب العمولة. إذا لم تكن المهمة معلنة (no ad)، يُمكن الاتفاق على قيمة عمولة ثابتة أو تأجيل الحساب.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-h">✅ قائمة مهام التنفيذ</h2>
+    <div class="card">
+      <ul class="checklist">
+        <li>إضافة <code>Scope: availableForInvestorPayment</code> في Task Model</li>
+        <li>بناء <code>InvestorTaskPaymentController@index</code> مع منطق الفلترة الكامل</li>
+        <li>بناء <code>InvestorTaskPaymentController@pay</code> داخل DB Transaction</li>
+        <li>إضافة <code>lockForUpdate</code> لمنع Race Conditions</li>
+        <li>بناء دالة مشتركة <code>processInvestorPayment</code> تستخدمها كلا المسارين</li>
+        <li>إضافة خيار "دفع من مستثمر عام" في صفحة دفع المهمة بـ Admin</li>
+        <li>بناء <code>getBalanceAttribute</code> في InvestorWallet Model</li>
+        <li>تسجيل UserWalletTransaction عند كل عمولة تُحتسب</li>
+        <li>التعامل مع حالة عدم وجود task_ad عند حساب العمولة</li>
+        <li>إضافة التحقق من تاريخ انتهاء العقد قبل السماح بالدفع</li>
+        <li>كتابة Unit Tests لمنطق حساب العمولة</li>
+        <li>إضافة Notification للمستثمر عند نجاح الدفع وتسجيل العمولة</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;padding:40px;border-top:1px solid var(--border)">
+  <a href="phase3-admin.html" style="display:inline-flex;align-items:center;gap:8px;color:var(--muted);text-decoration:none;font-size:14px;padding:10px 24px;border:1px solid var(--border);border-radius:50px">→ المرحلة الثالثة</a>
+  &nbsp;&nbsp;
+  <a href="phase5-investor-panel.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);color:var(--accent);padding:10px 24px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600">المرحلة الخامسة: لوحة المستثمر ←</a>
+</div>
+
+</body>
+</html>

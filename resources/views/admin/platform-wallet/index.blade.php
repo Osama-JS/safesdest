@@ -131,16 +131,46 @@
                         <i class="ti ti-filter me-2"></i>{{ __('Filters') }}
                     </h5>
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <label class="form-label ">{{ __('Date From') }}</label>
                             <input type="date" class="form-control" id="dateFrom" name="date_from">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <label class="form-label ">{{ __('Date To') }}</label>
                             <input type="date" class="form-control" id="dateTo" name="date_to">
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label ">{{ __('Task Status') }}</label>
+                            <select class="form-select" id="taskStatus" name="task_status">
+                                <option value="">{{ __('All Statuses (Excl. Canceled/Refund)') }}</option>
+                                <option value="pending_payment">{{ __('Pending Payment') }}</option>
+                                <option value="advertised">{{ __('Advertised') }}</option>
+                                <option value="in_progress">{{ __('In Progress') }}</option>
+                                <option value="assign">{{ __('Assign') }}</option>
+                                <option value="accepted">{{ __('Accepted') }}</option>
+                                <option value="started">{{ __('Started') }}</option>
+                                <option value="in pickup point">{{ __('In Pickup Point') }}</option>
+                                <option value="loading">{{ __('Loading') }}</option>
+                                <option value="in the way">{{ __('In the Way') }}</option>
+                                <option value="in delivery point">{{ __('In Delivery Point') }}</option>
+                                <option value="unloading">{{ __('Unloading') }}</option>
+                                <option value="completed">{{ __('Completed') }}</option>
+                                <option value="canceled">{{ __('Canceled') }}</option>
+                                <option value="refund">{{ __('Refund') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label ">{{ __('Closed Status') }}</label>
+                            <select class="form-select" id="isClosed" name="is_closed">
+                                <option value="">{{ __('All') }}</option>
+                                <option value="1">{{ __('Closed Only') }}</option>
+                                <option value="0">{{ __('Open Only') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 mb-3">
                             <label class="form-label ">{{ __('Commission Type') }}</label>
                             <select class="form-select" id="commissionType" name="commission_type">
                                 <option value="">{{ __('All Types') }}</option>
@@ -148,12 +178,22 @@
                                 <option value="manual">{{ __('Manual') }}</option>
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <br>
-                            <button type="button" class="btn btn-light me-2" id="applyFilters">
+
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label ">{{ __('Payment Status') }}</label>
+                            <select class="form-select" id="paymentStatus" name="payment_status">
+                                <option value="">{{ __('All Statuses') }}</option>
+                                <option value="pending">{{ __('Pending') }}</option>
+                                <option value="just_commission">{{ __('Commission Only') }}</option>
+                                <option value="all">{{ __('Fully Paid') }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-primary" id="applyFilters">
                                 <i class="ti ti-search me-1"></i>{{ __('Apply Filters') }}
                             </button>
-                            <button type="button" class="btn btn-outline-light" id="clearFilters">
+                            <button type="button" class="btn btn-outline-secondary" id="clearFilters">
                                 <i class="ti ti-refresh me-1"></i>{{ __('Clear Filters') }}
                             </button>
                         </div>
@@ -174,7 +214,10 @@
                     <h5 class="card-title mb-0">
                         <i class="ti ti-list me-2"></i>{{ __('Commission Records') }}
                     </h5>
-                    <div class="card-actions">
+                    <div class="card-actions d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-success" id="exportExcel">
+                            <i class="ti ti-file-spreadsheet me-1"></i>{{ __('Export Excel') }}
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="refreshTable">
                             <i class="ti ti-refresh me-1"></i>{{ __('Refresh') }}
                         </button>
@@ -194,6 +237,7 @@
                                     <th>{{ __('Commission') }}</th>
                                     <th>{{ __('Type') }}</th>
                                     <th>{{ __('Payment Status') }}</th>
+                                    <th>{{ __('Task Status') }}</th>
                                     <th>{{ __('Completed At') }}</th>
                                     <th>{{ __('Actions') }}</th>
                                 </tr>

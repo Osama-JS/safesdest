@@ -46,7 +46,13 @@ class User extends Authenticatable
       'bank_name',
       'account_number',
       'iban_number',
-      'signature_image'
+      'signature_image',
+      'bic_code',
+      'beneficiary_name',
+      'bank_address1',
+      'bank_address2',
+      'bank_city',
+      'bank_country',
     ];
 
     protected $casts = [

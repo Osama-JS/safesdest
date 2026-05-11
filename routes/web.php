@@ -320,6 +320,8 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');
                     Route::post('/reset-password', [\App\Http\Controllers\admin\InvestorController::class, 'resetPass'])->name('reset-password');
                     Route::get('/show/{id}', [\App\Http\Controllers\admin\InvestorController::class, 'show'])->name('show');
+                    Route::get('/{id}/available-tasks', [\App\Http\Controllers\admin\InvestorController::class, 'getAvailableHistoricalTasks'])->name('available-tasks');
+                    Route::post('/link-tasks', [\App\Http\Controllers\admin\InvestorController::class, 'linkHistoricalTasks'])->name('link-tasks');
                     Route::delete('/delete/{id}', [\App\Http\Controllers\admin\InvestorController::class, 'destroy'])->name('delete');
 
                     // Wallet management
@@ -526,6 +528,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('platform-wallet/data', [PlatformWalletController::class, 'data'])->name('admin.platform-wallet.data');
                 Route::get('platform-wallet/statistics', [PlatformWalletController::class, 'statistics'])->name('admin.platform-wallet.statistics');
                 Route::get('platform-wallet/export', [PlatformWalletController::class, 'export'])->name('admin.platform-wallet.export');
+                Route::get('platform-wallet/export-excel', [PlatformWalletController::class, 'exportExcel'])->name('admin.platform-wallet.export-excel');
 
 
                 Route::get('/products', [ProductController::class, 'index'])->name('products.products');

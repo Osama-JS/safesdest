@@ -100,7 +100,7 @@ class TasksController extends Controller
 
     public function getData(Request $request)
     {
-        $query = Task::with('points', 'customer', 'user', 'driver', 'driver.team');
+        $query = Task::with('points', 'customer', 'user', 'driver', 'driver.team', 'vehicle_size.type.vehicle');
 
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -176,9 +176,13 @@ class TasksController extends Controller
               'signature_request_id' => $task->signature_request_id,
               'driver_cancel' => $task->driver_cancel,
               'driver_cancel_reason' => $task->driver_cancel_reason,
-              'customer_cancel' => $task->customer_cancel,
               'customer_cancel_reason' => $task->customer_cancel_reason,
               'is_b2b' => $task->pricing_type === 'b2b',
+              'vehicle_info' => $task->vehicle_size ? [
+                  'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                  'type' => $task->vehicle_size->type->name ?? '-',
+                  'size' => $task->vehicle_size->name ?? '-',
+              ] : null,
             ];
 
             if ($driver) {

@@ -29,7 +29,7 @@ class DashboardController extends Controller
             abort(403);
         }
 
-        $query = Task::with('points', 'customer', 'user', 'driver', 'delivery');
+        $query = Task::with('points', 'customer', 'user', 'driver', 'delivery', 'vehicle_size.type.vehicle');
 
         // ⛔️ فلترة بناءً على الصلاحيات
         if (!$user->can('manage_tasks')) {
@@ -119,6 +119,11 @@ class DashboardController extends Controller
               'driver_cancel_reason' => $task->driver_cancel_reason,
               'customer_cancel' => $task->customer_cancel,
               'customer_cancel_reason' => $task->customer_cancel_reason,
+              'vehicle_info' => $task->vehicle_size ? [
+                  'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                  'type' => $task->vehicle_size->type->name ?? '-',
+                  'size' => $task->vehicle_size->name ?? '-',
+              ] : null,
             ];
 
             if ($driver) {

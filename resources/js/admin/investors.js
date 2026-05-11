@@ -3,6 +3,7 @@
  */
 
 'use strict';
+import { generateFields } from '../ajax';
 
 $(function () {
   let borderColor, bodyBg, headingColor;
@@ -29,6 +30,87 @@ $(function () {
       dropdownParent: $this.parent()
     });
   }
+
+  // Bank fields functionality for investors
+  function toggleCustomBankField() {
+    const bankSelect = $('#user-bank-name');
+    const customBankField = $('#user-custom-bank-field');
+    const bicInput = $('#user-bic-code');
+    const countrySelect = $('#user-bank-country');
+
+    const bicMapping = {
+      'البنك الأهلي السعودي': 'NCBKSA22',
+      'مصرف الراجحي': 'RJHISARI',
+      'بنك الرياض': 'RYADSA22',
+      'البنك السعودي الأول': 'SABBSARI',
+      'بنك البلاد': 'ALBISARI',
+      'مصرف الإنماء': 'INMASARI',
+      'البنك السعودي للاستثمار': 'SISISARI',
+      'البنك العربي الوطني': 'ARABSARI',
+      'بنك الجزيرة': 'BJAZSARI',
+      'البنك السعودي الفرنسي': 'BSFRSARI'
+    };
+
+    const selectedBank = bankSelect.val();
+
+    if (selectedBank === 'other') {
+      customBankField.show();
+      $('#user-custom-bank-name').attr('required', true);
+      bicInput.val('').prop('readonly', false);
+      countrySelect.val('أخرى');
+    } else if (selectedBank && bicMapping[selectedBank]) {
+      customBankField.hide();
+      $('#user-custom-bank-name').attr('required', false).val('');
+      bicInput.val(bicMapping[selectedBank]).prop('readonly', true);
+      countrySelect.val('السعودية');
+    } else {
+      customBankField.hide();
+      $('#user-custom-bank-name').attr('required', false).val('');
+      bicInput.val('').prop('readonly', false);
+      if (!selectedBank) countrySelect.val('السعودية');
+    }
+  }
+
+  // Handle bank selection change
+  $(document).on('change', '#user-bank-name', function () {
+    toggleCustomBankField();
+  });
+
+  // Format account number (numbers only)
+  $(document).on('input', '#user-account-number', function () {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+
+  // Format IBAN number
+  $(document).on('input', '#user-iban-number', function () {
+    let value = this.value.replace(/[^0-9SA]/g, '').toUpperCase();
+
+    // Ensure it starts with SA
+    if (value && !value.startsWith('SA')) {
+      if (value.startsWith('S')) {
+        value = 'SA' + value.substring(1);
+      } else {
+        value = 'SA' + value;
+      }
+    }
+
+    // Limit to SA + 22 digits
+    if (value.length > 24) {
+      value = value.substring(0, 24);
+    }
+
+    // Format with spaces for readability
+    if (value.length > 2) {
+      value =
+        value.substring(0, 2) +
+        value
+          .substring(2)
+          .replace(/(.{4})/g, '$1 ')
+          .trim();
+    }
+
+    this.value = value;
+  });
 
   // Users datatable
   if (dt_user_table.length) {
@@ -127,6 +209,7 @@ $(function () {
               '<a href="javascript:;" class="text-body view-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#viewInvestorModal" title="عرض التفاصيل"><i class="ti ti-eye ti-sm me-2"></i></a>' +
               '<a href="' + baseUrl + 'admin/investors/' + full['id'] + '/invest-wallet" class="text-body" title="محفظة الاستثمار"><i class="ti ti-wallet ti-sm me-2 text-primary"></i></a>' +
               '<a href="' + baseUrl + 'admin/users/' + full['id'] + '/wallet" class="text-body" title="محفظة العمولات"><i class="ti ti-coins ti-sm me-2 text-success"></i></a>' +
+              '<a href="javascript:;" class="text-body link-tasks" data-id="' + full['id'] + '" data-name="' + full['name'] + '" data-bs-toggle="modal" data-bs-target="#linkTasksModal" title="ربط مهام تاريخية"><i class="ti ti-link ti-sm me-2 text-warning"></i></a>' +
               '<a href="javascript:;" class="text-body edit-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#investorModal" title="تعديل"><i class="ti ti-edit ti-sm me-2"></i></a>' +
               '<a href="javascript:;" class="text-body delete-record" data-id="' + full['id'] + '" title="حذف"><i class="ti ti-trash ti-sm mx-2"></i></a>' +
               '</div>'
@@ -219,6 +302,8 @@ $(function () {
     var id = $(this).data('id');
     $('#modalTitle').text('تعديل بيانات المستثمر');
     $('#pass-hint').show();
+    $('#contract_type').prop('disabled', true);
+    $('#additional-form').html('');
     
     $.get(baseUrl + 'admin/investors/show/' + id, function (data) {
       $('#investor_id').val(data.id);
@@ -228,6 +313,29 @@ $(function () {
       $('select[name="phone_code"]').val(data.phone_code);
       $('select[name="status"]').val(data.status);
       
+      $('#select-template').val(data.form_template_id || '');
+      if (data.form_template_id) {
+        generateFields(data.fields, data.additional_data);
+      }
+
+      // Load bank details
+      $('#user-bank-name').val(data.bank_name || '');
+      $('#user-account-number').val(data.account_number || '');
+      $('#user-iban-number').val(data.iban_number || '');
+      $('#user-bic-code').val(data.bic_code || '');
+      $('#user-beneficiary-name').val(data.beneficiary_name || '');
+      $('#user-bank-address1').val(data.bank_address1 || '');
+      $('#user-bank-address2').val(data.bank_address2 || '');
+      $('#user-bank-city').val(data.bank_city || '');
+      $('#user-bank-country').val(data.bank_country || '');
+
+      // Handle custom bank name
+      if (data.bank_name && !$('#user-bank-name option[value="' + data.bank_name + '"]').length) {
+        $('#user-bank-name').val('other');
+        $('#user-custom-bank-name').val(data.bank_name);
+      }
+      toggleCustomBankField();
+
       if (data.active_investment_contract) {
         let c = data.active_investment_contract;
         $('select[name="contract_type"]').val(c.contract_type);
@@ -249,56 +357,30 @@ $(function () {
   $('#btn-add-investor').on('click', function () {
     $('#modalTitle').text('إضافة مستثمر جديد');
     $('#pass-hint').hide();
+    $('#contract_type').prop('disabled', false);
+    $('#additional-form').html('');
+    $('#select-template').val('');
+    $('#user-bank-name').val('');
+    $('#user-custom-bank-name').val('');
+    $('#user-bic-code').val('');
+    $('#user-beneficiary-name').val('');
+    $('#user-bank-address1').val('');
+    $('#user-bank-address2').val('');
+    $('#user-bank-city').val('');
+    $('#user-bank-country').val('');
+    toggleCustomBankField();
     userForm[0].reset();
     $('#investor_id').val('');
     $('#customer_ids').val([]).trigger('change');
   });
 
-  // Handle Form Submit
-  userForm.on('submit', function (e) {
-    e.preventDefault();
-    var formData = $(this).serialize();
-    
-    $.ajax({
-      url: baseUrl + 'admin/investors/store',
-      type: 'POST',
-      data: formData,
-      headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-      },
-      success: function (data) {
-        if (data.status == 1) {
-          $('#investorModal').modal('hide');
-          dt_user.draw();
-          Swal.fire({
-            icon: 'success',
-            title: 'تم بنجاح!',
-            text: data.success,
-            customClass: {
-              confirmButton: 'btn btn-success'
-            }
-          });
-        } else {
-          // Validation errors handling
-          let msg = '';
-          if (typeof data.error === 'object') {
-            $.each(data.error, function (key, value) {
-              msg += value + '<br>';
-            });
-          } else {
-            msg = data.error;
-          }
-          Swal.fire({
-            icon: 'error',
-            title: 'خطأ!',
-            html: msg,
-            customClass: {
-              confirmButton: 'btn btn-danger'
-            }
-          });
-        }
-      }
-    });
+  // Handle Form Submit Success
+  document.addEventListener('formSubmitted', function (event) {
+    if (event.detail.status == 1) {
+      $('#investorModal').modal('hide');
+      dt_user.draw();
+      // Reset form is handled by ajax.js for .form_submit
+    }
   });
 
   // Reset Password Toggle
@@ -346,6 +428,103 @@ $(function () {
       } else {
         $('#view-contract-type').text('لا يوجد عقد نشط');
         $('#view-contract-commission, #view-contract-start, #view-contract-end, #view-contract-min').text('-');
+      }
+    });
+  });
+
+  // Historical Tasks Linking
+  let selectedInvestorId = null;
+
+  $('.datatables-investors tbody').on('click', '.link-tasks', function () {
+    var id = $(this).data('id');
+    var name = $(this).data('name');
+    selectedInvestorId = id;
+    $('#investor-name-modal').text(name);
+    $('#historicalTasksBody').html('<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري تحميل المهام...</td></tr>');
+    $('#selectAllTasks').prop('checked', false);
+
+    $.get(baseUrl + 'admin/investors/' + id + '/available-tasks', function (data) {
+      if (data.status == 1) {
+        let html = '';
+        if (data.tasks.length === 0) {
+          html = '<tr><td colspan="8" class="text-center">لا توجد مهام متاحة للربط لهذا المستثمر (يجب أن تكون المهام تم إنشاؤها بعد تاريخ بداية الاستثمار)</td></tr>';
+        } else {
+          data.tasks.forEach(task => {
+            let driverName = task.driver ? task.driver.name : '<span class="text-muted">لم يحدد</span>';
+            let vehicleName = '-';
+            if (task.vehicle_size && task.vehicle_size.type && task.vehicle_size.type.vehicle) {
+              vehicleName = task.vehicle_size.type.vehicle.name + ' - ' + task.vehicle_size.type.name + ' - ' + task.vehicle_size.name;
+            }
+            let fromAddr = task.pickup ? task.pickup.address : '-';
+            let toAddr = task.delivery ? task.delivery.address : '-';
+
+            html += `
+              <tr>
+                <td><input type="checkbox" class="form-check-input task-checkbox" value="${task.id}"></td>
+                <td>#${task.id}</td>
+                <td>${task.customer ? task.customer.name : 'عميل عام'}</td>
+                <td>${driverName}</td>
+                <td><small>${vehicleName}</small></td>
+                <td><small>من: ${fromAddr}<br>إلى: ${toAddr}</small></td>
+                <td>${task.total_price} ر.س</td>
+                <td>${new Date(task.created_at).toLocaleDateString('ar-SA')}</td>
+              </tr>
+            `;
+          });
+        }
+        $('#historicalTasksBody').html(html);
+      } else {
+        $('#historicalTasksBody').html('<tr><td colspan="5" class="text-center text-danger">' + data.error + '</td></tr>');
+      }
+    });
+  });
+
+  // Select/Deselect All
+  $('#selectAllTasks').on('change', function() {
+    $('.task-checkbox').prop('checked', $(this).prop('checked'));
+  });
+
+  // Submit Linking
+  $('#btnLinkTasks').on('click', function() {
+    let taskIds = [];
+    $('.task-checkbox:checked').each(function() {
+      taskIds.push($(this).val());
+    });
+
+    if (taskIds.length === 0) {
+      Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى اختيار مهمة واحدة على الأقل' });
+      return;
+    }
+
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: `سيتم ربط ${taskIds.length} مهمة بالمستثمر المختار وتسجيل العمليات المالية.`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، قم بالربط',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        $.ajax({
+          url: baseUrl + 'admin/investors/link-tasks',
+          type: 'POST',
+          data: {
+            investor_id: selectedInvestorId,
+            task_ids: taskIds
+          },
+          headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+          success: function (data) {
+            if (data.status == 1) {
+              $('#linkTasksModal').modal('hide');
+              dt_user.draw();
+              Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.success });
+            } else {
+              Swal.fire({ icon: 'error', title: 'خطأ!', text: data.error });
+            }
+          }
+        });
       }
     });
   });

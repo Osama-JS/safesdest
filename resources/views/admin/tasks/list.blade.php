@@ -138,6 +138,7 @@
                         <th>{{ __('Driver price') }}</th>
                         <th>{{ __('team') }}</th>
                         <th>{{ __('driver') }}</th>
+                        <th>{{ __('vehicle') }}</th>
                         <th>{{ __('owner') }}</th>
                         <th>{{ __('address') }}</th>
                         <th>{{ __('start before') }}</th>

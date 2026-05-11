@@ -98,6 +98,7 @@ $(function () {
         { data: 'driver_price' }, // الاسم مع الأفاتار
         { data: 'team' }, // البريد
         { data: 'driver' }, // الجوال
+        { data: 'vehicle_info' }, // المركبة
         { data: 'owner' }, // المالك
         { data: 'address' }, // العنوان
         { data: 'start' }, // التاريخ
@@ -193,29 +194,41 @@ $(function () {
         {
           targets: 9,
           render: function (data, type, full, meta) {
-            return `<span>${full.owner} <br> (${full.owner_info})</span>`;
+            if (!full.vehicle_info) return '<span>-</span>';
+            return `
+              <div class="d-flex flex-column">
+                <span class="text-nowrap fw-medium text-heading">${full.vehicle_info.truck_name}</span>
+                <small class="text-truncate text-muted">${full.vehicle_info.type} (${full.vehicle_info.size})</small>
+              </div>
+            `;
           }
         },
         {
           targets: 10,
           render: function (data, type, full, meta) {
-            return `<span>${full.address}</span>`;
+            return `<span>${full.owner} <br> (${full.owner_info})</span>`;
           }
         },
         {
           targets: 11,
           render: function (data, type, full, meta) {
-            return `<span>${full.start}</span>`;
+            return `<span>${full.address}</span>`;
           }
         },
         {
           targets: 12,
           render: function (data, type, full, meta) {
-            return `<span>${full.complete}</span>`;
+            return `<span>${full.start}</span>`;
           }
         },
         {
           targets: 13,
+          render: function (data, type, full, meta) {
+            return `<span>${full.complete}</span>`;
+          }
+        },
+        {
+          targets: 14,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -250,7 +263,7 @@ $(function () {
           }
         },
         {
-          targets: 14,
+          targets: 15,
           responsivePriority: 5,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -272,7 +285,7 @@ $(function () {
           }
         },
         {
-          targets: 15,
+          targets: 16,
           render: function (data, type, full, meta) {
             return full.closed
               ? '<span class="badge bg-success">Yes</span>'
@@ -280,7 +293,7 @@ $(function () {
           }
         },
         {
-          targets: 16,
+          targets: 17,
           title: 'Actions',
           searchable: false,
           orderable: false,

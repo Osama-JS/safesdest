@@ -7,6 +7,8 @@ use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PlatformWalletExport;
 
 class PlatformWalletController extends Controller
 {
@@ -24,9 +26,18 @@ class PlatformWalletController extends Controller
   public function data(Request $request)
   {
     $query = Task::with(['customer', 'driver', 'team', 'pickup', 'delivery'])
-      ->where('status', 'completed')
-      ->where('closed', 1)
       ->where('commission', '>', 0);
+
+    // Default exclusion if no status filter is active
+    if (!$request->filled('task_status')) {
+      $query->whereNotIn('status', ['canceled', 'refund']);
+    } else {
+      $query->where('status', $request->task_status);
+    }
+
+    if ($request->filled('is_closed')) {
+      $query->where('closed', $request->is_closed);
+    }
 
     // Apply filters
     if ($request->filled('date_from')) {
@@ -60,6 +71,8 @@ class PlatformWalletController extends Controller
         'commission_type' => ucfirst($task->commission_type),
         'payment_status' => $task->payment_paid,
         'payment_method' => ucfirst($task->payment_method),
+        'task_status' => $task->status,
+        'is_closed' => $task->closed,
         'completed_at' => $task->completed_at ? $task->completed_at : 'N/A',
         'closed_at' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : 'N/A',
       ];
@@ -75,10 +88,19 @@ class PlatformWalletController extends Controller
    */
   public function statistics(Request $request)
   {
-    // Base query ensures only completed and closed tasks with commission
-    $baseQuery = Task::where('status', 'completed')
-      ->where('closed', 1)
-      ->where('commission', '>', 0);
+    // Base query ensures tasks have commission
+    $baseQuery = Task::where('commission', '>', 0);
+
+    // Apply Filters (Same as data method)
+    if ($request->filled('task_status')) {
+      $baseQuery->where('status', $request->task_status);
+    } else {
+      $baseQuery->whereNotIn('status', ['canceled', 'refund']);
+    }
+
+    if ($request->filled('is_closed')) {
+      $baseQuery->where('closed', $request->is_closed);
+    }
 
     // Apply date filters if provided
     if ($request->filled('date_from')) {
@@ -167,11 +189,20 @@ class PlatformWalletController extends Controller
   public function export(Request $request)
   {
     $query = Task::with(['customer', 'driver', 'team', 'pickup', 'delivery'])
-      ->where('status', 'completed')
-      ->where('closed', 1)
       ->where('commission', '>', 0);
 
-    // Apply filters
+    // Apply Filters (Same as data method)
+    if ($request->filled('task_status')) {
+      $query->where('status', $request->task_status);
+    } else {
+      $query->whereNotIn('status', ['canceled', 'refund']);
+    }
+
+    if ($request->filled('is_closed')) {
+      $query->where('closed', $request->is_closed);
+    }
+
+    // Apply other filters
     if ($request->filled('date_from')) {
       $query->whereDate('completed_at', '>=', $request->date_from);
     }
@@ -182,6 +213,10 @@ class PlatformWalletController extends Controller
 
     if ($request->filled('payment_status')) {
       $query->where('payment_paid', $request->payment_status);
+    }
+
+    if ($request->filled('commission_type')) {
+      $query->where('commission_type', $request->commission_type);
     }
 
     $tasks = $query->orderBy('completed_at', 'desc')->get();
@@ -236,5 +271,77 @@ class PlatformWalletController extends Controller
     };
 
     return response()->stream($callback, 200, $headers);
+  }
+
+  /**
+   * Export platform wallet data to Excel (Professional format)
+   */
+  public function exportExcel(Request $request)
+  {
+    // 1. Get Tasks Data (Same logic as data() method)
+    $query = Task::with(['customer', 'driver', 'team', 'pickup', 'delivery'])
+      ->where('commission', '>', 0);
+
+    if ($request->filled('task_status')) {
+      $query->where('status', $request->task_status);
+    } else {
+      $query->whereNotIn('status', ['canceled', 'refund']);
+    }
+
+    if ($request->filled('is_closed')) {
+      $query->where('closed', $request->is_closed);
+    }
+
+    if ($request->filled('date_from')) {
+      $query->whereDate('completed_at', '>=', $request->date_from);
+    }
+
+    if ($request->filled('date_to')) {
+      $query->whereDate('completed_at', '<=', $request->date_to);
+    }
+
+    if ($request->filled('payment_status')) {
+      $query->where('payment_paid', $request->payment_status);
+    }
+
+    if ($request->filled('commission_type')) {
+      $query->where('commission_type', $request->commission_type);
+    }
+
+    $tasks = $query->orderBy('id', 'desc')->get();
+
+    $mappedData = $tasks->map(function ($task) {
+      return [
+        'id' => $task->id,
+        'customer' => $task->customer ? $task->customer->name : 'Admin',
+        'driver' => $task->driver ? $task->driver->name : 'N/A',
+        'team' => $task->team ? $task->team->name : 'N/A',
+        'pickup_address' => $task->pickup ? $task->pickup->address : 'N/A',
+        'delivery_address' => $task->delivery ? $task->delivery->address : 'N/A',
+        'total_price' => $task->total_price,
+        'commission' => $task->commission,
+        'commission_type' => ucfirst($task->commission_type),
+        'payment_status' => $task->payment_paid,
+        'task_status' => $task->status,
+        'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : 'N/A',
+      ];
+    })->toArray();
+
+    // 2. Get Statistics (Same logic as statistics() method)
+    $statsResponse = $this->statistics($request);
+    $statistics = $statsResponse->getData()->data;
+
+    // 3. Filters for header
+    $filters = [
+      'date_from' => $request->date_from,
+      'date_to' => $request->date_to
+    ];
+
+    $filename = 'platform_wallet_report_' . date('Y-m-d_H-i') . '.xlsx';
+
+    return Excel::download(
+      new PlatformWalletExport($mappedData, (array)$statistics, $filters),
+      $filename
+    );
   }
 }

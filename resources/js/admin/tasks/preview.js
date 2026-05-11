@@ -156,10 +156,17 @@ $(function () {
         <i class="bi bi-truck"></i> Team: ${task.driver.team}
      </div>`
           : '';
+
       const conditionsHtml = task.conditions
         ? `<div class="mt-2  small bg-warning  text-white p-1 rounded ">
         <i class="bi bi-truck"></i> Conditions: ${task.conditions}
      </div>`
+        : '';
+
+      const vehicleHtml = task.vehicle_info
+        ? `<div class="mt-2 small bg-label-info text-info p-1 rounded border border-info">
+            <i class="ti ti-truck me-1"></i> Vehicle: ${task.vehicle_info.truck_name} (${task.vehicle_info.type} - ${task.vehicle_info.size})
+         </div>`
         : '';
 
       const completeAt = task.complete_at
@@ -200,6 +207,7 @@ $(function () {
                    ${driverHtml}
                 ${teamHtml}
                 ${conditionsHtml}
+                ${vehicleHtml}
                 ${completeAt}
                 ${signatureHtml}
                 ${cancelRequestHtml}
@@ -495,6 +503,14 @@ $(function () {
                     ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-warning">
                   <strong>Conditions</strong>
                   <span>${task.data.conditions || '—'}</span>
+                </li>`
+                    : ''
+                }
+                ${
+                  task.data.vehicle_info
+                    ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-label-info">
+                  <strong>Vehicle</strong>
+                  <span>${task.data.vehicle_info.truck_name} (${task.data.vehicle_info.type})</span>
                 </li>`
                     : ''
                 }

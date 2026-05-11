@@ -50,6 +50,8 @@ $(function () {
           d.date_to = $('#dateTo').val();
           d.payment_status = $('#paymentStatus').val();
           d.commission_type = $('#commissionType').val();
+          d.task_status = $('#taskStatus').val();
+          d.is_closed = $('#isClosed').val();
         }
       },
       columns: [
@@ -62,6 +64,7 @@ $(function () {
         { data: 'commission' }, // العمولة
         { data: 'commission_type' }, // نوع العمولة
         { data: 'payment_status' }, // حالة الدفع
+        { data: 'task_status' }, // حالة المهمة
         { data: 'completed_at' }, // تاريخ الإكمال
         { data: null } // الإجراءات (مخصص)
       ],
@@ -154,6 +157,40 @@ $(function () {
         {
           targets: 9,
           render: function (data, type, full, meta) {
+            let statusClasses = {
+              pending_payment: 'bg-label-warning',
+              payment_failed: 'bg-label-danger',
+              advertised: 'bg-label-secondary',
+              in_progress: 'bg-label-info',
+              assign: 'bg-label-primary',
+              accepted: 'bg-label-primary',
+              started: 'bg-label-dark',
+              'in pickup point': 'bg-label-dark',
+              loading: 'bg-label-dark',
+              'in the way': 'bg-label-dark',
+              'in delivery point': 'bg-label-dark',
+              unloading: 'bg-label-dark',
+              completed: 'bg-label-success',
+              canceled: 'bg-label-danger',
+              refund: 'bg-label-danger'
+            };
+
+            let badgeClass = statusClasses[data] || 'bg-label-light';
+            let closedBadge = full.is_closed
+              ? '<span class="badge badge-dot bg-success ms-1" title="Closed"></span>'
+              : '<span class="badge badge-dot bg-warning ms-1" title="Open"></span>';
+
+            return `
+              <div class="d-flex align-items-center">
+                <span class="badge ${badgeClass} text-capitalize">${data.replace('_', ' ')}</span>
+                ${closedBadge}
+              </div>
+            `;
+          }
+        },
+        {
+          targets: 10,
+          render: function (data, type, full, meta) {
             return `<span class="text-muted small">${data}</span>`;
           }
         },
@@ -234,7 +271,11 @@ $(function () {
       method: 'GET',
       data: {
         date_from: $('#dateFrom').val(),
-        date_to: $('#dateTo').val()
+        date_to: $('#dateTo').val(),
+        task_status: $('#taskStatus').val(),
+        is_closed: $('#isClosed').val(),
+        payment_status: $('#paymentStatus').val(),
+        commission_type: $('#commissionType').val()
       },
       success: function (response) {
         console.log('Statistics response:', response); // Debug log
@@ -322,7 +363,7 @@ $(function () {
 
   // Clear filters
   $('#clearFilters').on('click', function () {
-    $('#dateFrom, #dateTo, #paymentStatus, #commissionType').val('');
+    $('#dateFrom, #dateTo, #paymentStatus, #commissionType, #taskStatus, #isClosed').val('');
     dt_platform.ajax.reload();
     loadStatistics();
   });
@@ -333,16 +374,32 @@ $(function () {
     loadStatistics();
   });
 
-  // Export data
+  // Export data CSV
   $('#exportBtn').on('click', function () {
     const params = new URLSearchParams({
       date_from: $('#dateFrom').val() || '',
       date_to: $('#dateTo').val() || '',
       payment_status: $('#paymentStatus').val() || '',
-      commission_type: $('#commissionType').val() || ''
+      commission_type: $('#commissionType').val() || '',
+      task_status: $('#taskStatus').val() || '',
+      is_closed: $('#isClosed').val() || ''
     });
 
     window.open(walletView + 'export?' + params.toString(), '_blank');
+  });
+
+  // Export data Excel
+  $('#exportExcel').on('click', function () {
+    const params = new URLSearchParams({
+      date_from: $('#dateFrom').val() || '',
+      date_to: $('#dateTo').val() || '',
+      payment_status: $('#paymentStatus').val() || '',
+      commission_type: $('#commissionType').val() || '',
+      task_status: $('#taskStatus').val() || '',
+      is_closed: $('#isClosed').val() || ''
+    });
+
+    window.open(walletView + 'export-excel?' + params.toString(), '_blank');
   });
 
   // View details

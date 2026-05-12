@@ -21,12 +21,19 @@ class InvestorDashboardController extends Controller
         $personalWallet = $investor->userWallet;
         $contract       = $investor->activeInvestmentContract;
 
+        $totalInvested = $investorWallet?->transactions()
+            ->where('transaction_type', 'debit')->sum('amount') ?? 0;
+        
+        $totalCommissions = $personalWallet?->transactions()
+            ->where('transaction_type', 'credit')->sum('amount') ?? 0;
+
         $stats = [
             'investment_balance' => $investorWallet?->balance ?? 0,
             'personal_balance'   => $personalWallet?->balance ?? 0,
             'paid_tasks_count'   => Task::where('investor_id', $investor->id)->count(),
-            'total_commissions'  => $personalWallet?->transactions()
-                ->where('transaction_type', 'credit')->sum('amount') ?? 0,
+            'total_commissions'  => $totalCommissions,
+            'total_invested'     => $totalInvested,
+            'roi_percentage'     => $totalInvested > 0 ? round(($totalCommissions / $totalInvested) * 100, 2) : 0,
         ];
 
         // البيانات للرسم البياني (أرباح آخر 6 أشهر)

@@ -41,7 +41,41 @@ $(function () {
 
   // Handle bank selection change
   $(document).on('change', '#user-bank-name', function () {
-    toggleCustomBankFieldUser();
+    const bankName = $(this).val();
+    const customBankField = $('#user-custom-bank-field');
+    const bicField = $('#user-bic-code');
+
+    // Bank to BIC Mapping
+    const bankBicMapping = {
+      'البنك الأهلي السعودي': 'NCBKSAJE',
+      'بنك الراجحي': 'RJHISARI',
+      'بنك الرياض': 'RIBLSARI',
+      'البنك السعودي للاستثمار': 'SIBCSARI',
+      'البنك السعودي الفرنسي': 'BSFRSARI',
+      'البنك السعودي البريطاني (ساب)': 'SABBSA22',
+      'بنك العربي الوطني': 'ARNBSARI',
+      'بنك سامبا': 'SAMBSA22',
+      'البنك الأول': 'SAUBSARI',
+      'بنك الجزيرة': 'BJAZSAJE',
+      'بنك الإنماء': 'INMASARI',
+      'البنك العربي': 'ARNBUS6XXX'
+    };
+
+    if (bankName === 'other') {
+      customBankField.show();
+      $('#user-custom-bank-name').attr('required', true);
+      bicField.val('').prop('readonly', false);
+    } else {
+      customBankField.hide();
+      $('#user-custom-bank-name').attr('required', false).val('');
+
+      // Auto-fill BIC Code and make it readonly
+      if (bankBicMapping[bankName]) {
+        bicField.val(bankBicMapping[bankName]).prop('readonly', true);
+      } else {
+        bicField.val('').prop('readonly', false);
+      }
+    }
   });
 
   // Format account number (numbers only)
@@ -426,13 +460,19 @@ $(function () {
       $('#user-bank-name').val(data.bank_name || '');
       $('#user-account-number').val(data.account_number || '');
       $('#user-iban-number').val(data.iban_number || '');
+      $('#user-bic-code').val(data.bic_code || '');
+      $('#user-beneficiary-name').val(data.beneficiary_name || '');
+      $('#user-bank-address1').val(data.bank_address1 || '');
+      $('#user-bank-address2').val(data.bank_address2 || '');
+      $('#user-bank-city').val(data.bank_city || '');
+      $('#user-bank-country').val(data.bank_country || 'SA');
 
       // Handle custom bank name
       if (data.bank_name && !$('#user-bank-name option[value="' + data.bank_name + '"]').length) {
         $('#user-bank-name').val('other');
         $('#user-custom-bank-name').val(data.bank_name);
       }
-      toggleCustomBankFieldUser();
+      $('#user-bank-name').trigger('change');
 
       $('#modelTitle').html(`${__('Edit User')}: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });

@@ -17,6 +17,7 @@
         const addTransactionUrl = '{{ route('admin.investors.invest-wallet.addTransaction') }}';
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
+    @vite(['resources/js/admin/investor-wallets.js'])
 @endsection
 
 @section('content')
@@ -134,7 +135,6 @@
                     <div class="modal-body">
                         <input type="hidden" name="id" id="transaction_id">
                         <input type="hidden" name="user" value="{{ $user->id }}">
-                        <input type="hidden" name="type" value="credit">
                         
                         <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
                             <span class="alert-icon text-primary me-2">
@@ -149,7 +149,7 @@
                             <input type="number" name="amount" class="form-control" placeholder="{{ __('Enter the amount') }}" step="0.01" min="0.01" required>
                         </div>
 
-                        <!-- Transaction Type (Visual only) -->
+                        <!-- Transaction Type -->
                         <div class="mb-4">
                             <label class="form-label d-block">* {{ __('Transaction Type') }}</label>
                             <div class="row">
@@ -157,6 +157,7 @@
                                     <div class="btn btn-success w-100 py-2">
                                         <i class="ti ti-circle-plus me-1"></i> {{ __('Credit / Charging') }}
                                     </div>
+                                    <input type="hidden" name="type" value="credit">
                                 </div>
                             </div>
                         </div>

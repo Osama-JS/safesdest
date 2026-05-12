@@ -184,6 +184,7 @@ class UserWalletsController extends Controller
             'user' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0.01',
             // 'transaction_type' => 'required|in:credit,debit',
+            'payment_method' => 'nullable|string|in:manual,hyperpay',
             'description' => 'required|string|max:255',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:4096',
             'task_id' => 'nullable|exists:tasks,id',
@@ -239,11 +240,56 @@ class UserWalletsController extends Controller
                 ]);
             }
 
+            // --- HyperPay Payout Logic for Debit ---
+            $hyperPayNotes = '';
+            if ($request->transaction_type === 'debit' && $request->payment_method === 'hyperpay') {
+                if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
+                    return response()->json(['status' => 2, 'error' => 'البيانات البنكية غير مكتملة لاستخدام تحويل HyperPay. يرجى تحديث الملف (رقم الآيبان، رمز السويفت، اسم المستفيد).']);
+                }
+
+                $countryMapping = [
+                    'السعودية' => 'SA',
+                    'الإمارات' => 'AE',
+                    'الكويت' => 'KW',
+                    'عمان' => 'OM',
+                    'البحرين' => 'BH',
+                    'قطر' => 'QA',
+                    'مصر' => 'EG',
+                    'الأردن' => 'JO',
+                ];
+                $countryCode = $countryMapping[$user->bank_country] ?? ($user->bank_country ?: 'SA');
+
+                $payoutService = app(\App\Services\HyperPayPayoutService::class);
+                $payoutResponse = $payoutService->sendPayout([
+                    'amount' => $request->amount,
+                    'currency' => 'SAR',
+                    'externalId' => 'UWP-' . $wallet->id . '-' . time(),
+                    'beneficiary_name' => $user->beneficiary_name,
+                    'address1' => $user->bank_address1 ?? $user->address ?? '.',
+                    'address2' => $user->bank_address2 ?? '.',
+                    'city' => $user->bank_city ?? 'Riyadh',
+                    'country' => $countryCode,
+                    'iban' => str_replace(' ', '', $user->iban_number),
+                    'bic' => $user->bic_code,
+                    'description' => "Payout for User #{$user->id}"
+                ]);
+
+                if (!$payoutResponse['status']) {
+                    return response()->json(['status' => 2, 'error' => 'خطأ من HyperPay: ' . $payoutResponse['message']]);
+                }
+
+                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
+                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
+                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+            }
+            // --- End HyperPay Logic ---
+
             // تجهيز البيانات المشتركة
             $data = [
                 'user_wallet_id' => $wallet->id,
                 'amount' => $request->amount,
-                'description' => $request->description,
+                'description' => $request->description . $hyperPayNotes,
+
                 'transaction_type' => $request->transaction_type,
                 'task_id' => $request->task_id,
                 'user_id' => Auth::user()->id,

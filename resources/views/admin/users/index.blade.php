@@ -382,6 +382,82 @@
                                                         <span class="iban_number-error text-danger text-error"></span>
                                                     </div>
                                                 </div>
+
+                                                <div class="col-md-4">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bic-code">{{ __('BIC Code (Bank Identifier)') }}</label>
+                                                        <input type="text" name="bic_code" id="user-bic-code"
+                                                            class="form-control" placeholder="NCBKSAJE"
+                                                            maxlength="20">
+                                                        <div class="form-text">
+                                                            <small
+                                                                class="text-muted">{{ __('e.g., NCBKSAJE for SNB') }}</small>
+                                                        </div>
+                                                        <span class="bic_code-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-8">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-beneficiary-name">{{ __('Beneficiary Name (Official)') }}</label>
+                                                        <input type="text" name="beneficiary_name"
+                                                            id="user-beneficiary-name" class="form-control"
+                                                            placeholder="{{ __('Full name as per bank records') }}">
+                                                        <span
+                                                            class="beneficiary_name-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-address1">{{ __('Bank Address 1') }}</label>
+                                                        <input type="text" name="bank_address1"
+                                                            id="user-bank-address1" class="form-control"
+                                                            placeholder="{{ __('Street address') }}">
+                                                        <span
+                                                            class="bank_address1-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-address2">{{ __('Bank Address 2') }}</label>
+                                                        <input type="text" name="bank_address2"
+                                                            id="user-bank-address2" class="form-control"
+                                                            placeholder="{{ __('Additional details') }}">
+                                                        <span
+                                                            class="bank_address2-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-city">{{ __('Bank City') }}</label>
+                                                        <input type="text" name="bank_city" id="user-bank-city"
+                                                            class="form-control" placeholder="{{ __('City') }}">
+                                                        <span class="bank_city-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-country">{{ __('Bank Country') }}</label>
+                                                        <select name="bank_country" id="user-bank-country"
+                                                            class="form-select">
+                                                            <option value="SA" selected>Saudi Arabia (SA)</option>
+                                                            <option value="AE">United Arab Emirates (AE)</option>
+                                                            <option value="EG">Egypt (EG)</option>
+                                                        </select>
+                                                        <span
+                                                            class="bank_country-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
                                             </div>
 
 

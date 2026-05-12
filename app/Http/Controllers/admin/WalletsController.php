@@ -627,6 +627,18 @@ class WalletsController extends Controller
                     return response()->json(['status' => 2, 'error' => __('Driver bank details are incomplete for HyperPay Payout')]);
                 }
 
+                $countryMapping = [
+                    'السعودية' => 'SA',
+                    'الإمارات' => 'AE',
+                    'الكويت' => 'KW',
+                    'عمان' => 'OM',
+                    'البحرين' => 'BH',
+                    'قطر' => 'QA',
+                    'مصر' => 'EG',
+                    'الأردن' => 'JO',
+                ];
+                $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
+
                 $payoutService = app(HyperPayPayoutService::class);
                 $payoutResponse = $payoutService->sendPayout([
                     'amount' => $req->amount,
@@ -636,7 +648,7 @@ class WalletsController extends Controller
                     'address1' => $driver->bank_address1 ?? $driver->address,
                     'address2' => $driver->bank_address2 ?? '.',
                     'city' => $driver->bank_city ?? 'Riyadh',
-                    'country' => $driver->bank_country ?? 'SA',
+                    'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
                     'description' => "Manual Payout for Driver #{$driver->id}"

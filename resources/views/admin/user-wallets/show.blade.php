@@ -203,6 +203,33 @@
                                             <span class="type-error text-danger text-error"></span>
                                         </div>
 
+                                        <!-- Payment Method -->
+                                        <div class="mb-4" id="paymentMethodSection">
+                                            <label class="form-label" for="payment_method">* {{ __('Payment Method') }}</label>
+                                            <select name="payment_method" id="payment_method" class="form-select">
+                                                <option value="manual">يدوي (تسوية خارج النظام)</option>
+                                                <option value="hyperpay">تحويل بنكي آلي (HyperPay Payout)</option>
+                                            </select>
+                                            <div class="form-text mt-2 text-warning d-none" id="hyperPayWarning">
+                                                <i class="ti ti-alert-triangle me-1"></i> سيتم تحويل المبلغ بشكل فوري إلى الحساب البنكي الخاص بهذا المستخدم باستخدام بوابة HyperPay.
+                                                <div class="mt-3 p-3 bg-light border rounded text-dark">
+                                                    <strong>البيانات البنكية المسجلة للمستثمر:</strong>
+                                                    <ul class="list-unstyled mt-2 mb-0">
+                                                        <li><strong>اسم البنك:</strong> {{ $user->bank_name ?? 'غير محدد' }}</li>
+                                                        <li><strong>رقم الآيبان:</strong> <span dir="ltr">{{ $user->iban_number ?? 'غير محدد' }}</span></li>
+                                                        <li><strong>رمز السويفت:</strong> {{ $user->bic_code ?? 'غير محدد' }}</li>
+                                                        <li><strong>اسم المستفيد:</strong> {{ $user->beneficiary_name ?? 'غير محدد' }}</li>
+                                                    </ul>
+                                                    @if(!$user->iban_number || !$user->bic_code || !$user->beneficiary_name)
+                                                        <div class="alert alert-danger mt-2 mb-0 py-2">
+                                                            <i class="ti ti-ban me-1"></i> لا يمكن إتمام التحويل الآلي لعدم اكتمال البيانات البنكية الأساسية (الآيبان، رمز السويفت، أو اسم المستفيد).
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+
+
 
 
                                         <!-- Maturity Time (Hidden by default) -->
@@ -280,5 +307,20 @@
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethod = document.getElementById('payment_method');
+            const hyperPayWarning = document.getElementById('hyperPayWarning');
+
+            if (paymentMethod) {
+                paymentMethod.addEventListener('change', function() {
+                    if (this.value === 'hyperpay') {
+                        hyperPayWarning.classList.remove('d-none');
+                    } else {
+                        hyperPayWarning.classList.add('d-none');
+                    }
+                });
+            }
+        });
     </script>
 @endsection

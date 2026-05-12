@@ -63,30 +63,48 @@
             profitChart.render();
         }
 
-        // Investment Radial Chart
+        // ROI Donut Chart
         const investmentChartEl = document.querySelector('#investmentRadialChart'),
             investmentChartConfig = {
                 chart: {
-                    height: 250,
-                    type: 'radialBar'
+                    height: 300,
+                    type: 'donut'
                 },
-                colors: [config.colors.primary, config.colors.info],
-                series: [75], // Example percentage
+                labels: ['إجمالي المستثمر', 'إجمالي الأرباح'],
+                series: [{{ (float)$stats['total_invested'] }}, {{ (float)$stats['total_commissions'] }}],
+                colors: [config.colors.primary, config.colors.success],
+                stroke: { width: 0 },
+                dataLabels: { enabled: false },
+                legend: { show: false },
                 plotOptions: {
-                    radialBar: {
-                        hollow: { size: '65%' },
-                        dataLabels: {
-                            name: { show: false },
-                            value: {
-                                fontWeight: '600',
-                                color: headingColor,
-                                fontSize: '22px',
-                                offsetY: 10
+                    pie: {
+                        donut: {
+                            size: '75%',
+                            labels: {
+                                show: true,
+                                value: {
+                                    fontSize: '1.5rem',
+                                    fontFamily: 'Public Sans',
+                                    color: headingColor,
+                                    offsetY: -15,
+                                    formatter: function (val) {
+                                        return parseInt(val) + ' ر.س';
+                                    }
+                                },
+                                name: { offsetY: 20, fontFamily: 'Public Sans' },
+                                total: {
+                                    show: true,
+                                    fontSize: '0.8125rem',
+                                    color: labelColor,
+                                    label: 'عائد الربح',
+                                    formatter: function (w) {
+                                        return '{{ $stats['roi_percentage'] }}%';
+                                    }
+                                }
                             }
                         }
                     }
-                },
-                labels: ['الاستثمار']
+                }
             };
             if (typeof investmentChartEl !== undefined && investmentChartEl !== null) {
                 const investmentChart = new ApexCharts(investmentChartEl, investmentChartConfig);
@@ -137,12 +155,23 @@
         </div>
         <div class="col-lg-4 col-12 mt-4 mt-lg-0">
             <div class="card h-100">
-                <div class="card-body text-center">
-                    <div class="avatar avatar-md mx-auto mb-3">
-                        <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-coins ti-md"></i></span>
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <div class="row">
+                        <div class="col-6 border-end">
+                            <p class="mb-1 text-muted small">إجمالي المستثمر</p>
+                            <h4 class="mb-0 fw-bold">{{ number_format($stats['total_invested'], 2) }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1 text-muted small">صافي الأرباح</p>
+                            <h4 class="mb-0 fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }}</h4>
+                        </div>
                     </div>
-                    <p class="mb-1 text-muted">إجمالي العمولات المكتسبة</p>
-                    <h3 class="mb-0 fw-bold">{{ number_format($stats['total_commissions'], 2) }} <small class="fs-6">ر.س</small></h3>
+                    <div class="mt-3">
+                        <div class="badge bg-label-success rounded-pill px-3 py-2">
+                            <i class="ti ti-trending-up me-1"></i>
+                            معدل العائد: {{ $stats['roi_percentage'] }}%
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -235,18 +264,24 @@
         <div class="col-lg-4 col-12 mt-4 mt-lg-0">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title m-0 me-2 text-muted">نظرة عامة على المحفظة</h5>
+                    <h5 class="card-title m-0 me-2 text-muted">نسبه الربح الى الإستثمار</h5>
                 </div>
                 <div class="card-body">
                     <div id="investmentRadialChart"></div>
-                    <div class="d-flex justify-content-around align-items-center mt-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge badge-dot bg-primary"></span>
-                            <small>المستثمر</small>
+                    <div class="d-flex flex-column gap-3 mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-dot bg-primary"></span>
+                                <small class="fw-bold">إجمالي المستثمر</small>
+                            </div>
+                            <small class="fw-bold">{{ number_format($stats['total_invested'], 2) }} ر.س</small>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge badge-dot bg-info"></span>
-                            <small>المتاح</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-dot bg-success"></span>
+                                <small class="fw-bold">إجمالي الأرباح</small>
+                            </div>
+                            <small class="fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }} ر.س</small>
                         </div>
                     </div>
                 </div>

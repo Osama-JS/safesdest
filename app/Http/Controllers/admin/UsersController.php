@@ -227,6 +227,12 @@ class UsersController extends Controller
           'custom_bank_name'        => 'nullable|string|max:255',
           'account_number'          => 'nullable|string|min:8|max:20|regex:/^[0-9]+$/',
           'iban_number'             => 'nullable|string|size:24|regex:/^SA[0-9]{22}$/',
+          'bic_code'                => 'nullable|string|max:20',
+          'beneficiary_name'        => 'nullable|string|max:255',
+          'bank_address1'           => 'nullable|string|max:255',
+          'bank_address2'           => 'nullable|string|max:255',
+          'bank_city'               => 'nullable|string|max:255',
+          'bank_country'            => 'nullable|string|max:10',
         ];
 
         $messages = [
@@ -405,6 +411,12 @@ class UsersController extends Controller
               'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
               'account_number' => $req->account_number,
               'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
+              'bic_code' => $req->bic_code,
+              'beneficiary_name' => $req->beneficiary_name,
+              'bank_address1' => $req->bank_address1,
+              'bank_address2' => $req->bank_address2,
+              'bank_city' => $req->bank_city,
+              'bank_country' => $req->bank_country,
             ];
 
             if ($req->filled('password')) {

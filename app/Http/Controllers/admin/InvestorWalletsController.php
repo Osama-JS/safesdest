@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use App\Services\PdfService;
+use App\Services\HyperPayPayoutService;
 
 class InvestorWalletsController extends Controller
 {
@@ -157,7 +158,7 @@ class InvestorWalletsController extends Controller
             'id' => 'nullable|exists:investor_wallet_transactions,id',
             'user' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0.01',
-            'type' => 'required|in:credit,debit',
+            'type' => 'required|in:credit',
             'description' => 'required|string|max:255',
             'attachment' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
         ]);
@@ -227,6 +228,7 @@ class InvestorWalletsController extends Controller
                 'performed_by'       => Auth::id(),
                 'balance_after'      => $tempBalance,
             ];
+
 
             if ($request->hasFile('attachment')) {
                 if ($transaction && $transaction->attachment) {

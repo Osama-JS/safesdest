@@ -16,18 +16,31 @@
                 </ol>
             </nav>
         </div>
-        @if($investorWallet && $investorWallet->balance < 500)
-            <div class="alert alert-label-warning d-flex align-items-center mb-0" role="alert">
-                <span class="alert-icon me-2"><i class="ti ti-alert-triangle ti-xs"></i></span>
-                رصيدك منخفض، يرجى التنسيق مع الإدارة للإيداع.
-            </div>
-        @endif
+        <div class="d-flex align-items-center gap-3">
+            @if($investorWallet && $investorWallet->balance < 500)
+                <div class="alert alert-label-warning d-flex align-items-center mb-0 py-2" role="alert">
+                    <span class="alert-icon me-2"><i class="ti ti-alert-triangle ti-xs"></i></span>
+                    رصيدك منخفض
+                </div>
+            @endif
+            <button type="button" class="btn btn-primary d-flex align-items-center shadow-sm py-2 px-4" data-bs-toggle="modal" data-bs-target="#depositModal" style="background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); border: none;">
+                <i class="ti ti-credit-card me-2 ti-sm"></i>
+                <span class="fw-bold">شحن محفظة الإستثمار</span>
+            </button>
+        </div>
     </div>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible mb-4" role="alert">
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible mb-4" role="alert">
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            {{ session('error') }}
         </div>
     @endif
 
@@ -180,6 +193,67 @@
             {{ $transactions->appends(request()->input())->links() }}
         </div>
         @endif
+    </div>
+
+    {{-- Modal Deposit --}}
+    <div class="modal fade" id="depositModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">شحن رصيد المحفظة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('investor.investment-wallet.deposit.initiate') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-4 text-center">
+                            <p class="text-muted">أدخل المبلغ الذي تود إضافته لمحفظة الاستثمار عبر بوابة الدفع الإلكتروني</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">المبلغ (ر.س)</label>
+                            <div class="input-group input-group-lg border-2 rounded-3">
+                                <input type="number" name="amount" class="form-control" placeholder="0.00" min="10" step="0.01" required>
+                                <span class="input-group-text">ر.س</span>
+                            </div>
+                            <div class="form-text text-warning"><i class="ti ti-info-circle me-1"></i>الحد الأدنى للشحن هو 10 ر.س</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label d-block fw-semibold mb-3">اختر وسيلة الدفع</label>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="form-check custom-option custom-option-icon border-2">
+                                        <label class="form-check-label custom-option-content" for="brandVisa">
+                                            <span class="custom-option-body">
+                                                <i class="ti ti-brand-visa ti-lg mb-2 text-primary"></i>
+                                                <span class="custom-option-title fw-bold">Visa / Master</span>
+                                            </span>
+                                            <input name="brand" class="form-check-input" type="radio" value="VISA" id="brandVisa" />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check custom-option custom-option-icon border-2">
+                                        <label class="form-check-label custom-option-content" for="brandMada">
+                                            <span class="custom-option-body">
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Mada_Logo.svg/1280px-Mada_Logo.svg.png" alt="Mada" width="45" class="mb-2">
+                                                <span class="custom-option-title fw-bold">مدى (Mada)</span>
+                                            </span>
+                                            <input name="brand" class="form-check-input" type="radio" value="MADA" id="brandMada" checked />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pb-4">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary px-5 shadow">الانتقال للدفع الآمن</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
 </div>

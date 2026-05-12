@@ -856,6 +856,10 @@ Route::middleware(['auth:web', 'investor'])
         // محفظة الاستثمار
         Route::get('investment-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'investmentWallet'])
             ->name('investment-wallet');
+        Route::post('investment-wallet/deposit', [App\Http\Controllers\investor\InvestorWalletController::class, 'initiateDeposit'])
+            ->name('investment-wallet.deposit.initiate');
+        Route::get('investment-wallet/deposit/callback', [App\Http\Controllers\investor\InvestorWalletController::class, 'handleDepositCallback'])
+            ->name('investment-wallet.deposit.callback');
 
         // المحفظة الشخصية (العمولات)
         Route::get('personal-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'personalWallet'])

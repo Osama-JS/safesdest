@@ -128,7 +128,7 @@ class UserWalletsController extends Controller
                 $nestedData['transaction_type'] = $transaction->transaction_type;
                 $nestedData['description'] = $transaction->description;
                 $nestedData['task_id'] = $transaction->task_id ?? '';
-                $nestedData['user'] = $transaction->task_id ? $transaction->task->user->name : '';
+                $nestedData['user'] = $transaction->task_id ? ($transaction->task?->user?->name ?? 'Task User Not Found') : ($transaction->user?->name ?? 'System');
                 $nestedData['image'] = $transaction->image ? (Str::startsWith($transaction->image, 'storage/') ? $transaction->image : 'storage/' . $transaction->image) : '';
                 $nestedData['created_at'] = $transaction->created_at->format('Y-m-d H:i');
                 $data[] = $nestedData;

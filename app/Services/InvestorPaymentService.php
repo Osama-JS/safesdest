@@ -152,21 +152,33 @@ class InvestorPaymentService
             throw new \Exception('لا توجد محفظة شخصية للمستثمر.');
         }
 
-        // جلب المهام ضمن نطاق تاريخ العقد
+        // جلب المهام المغلقة ضمن نطاق تاريخ العقد
         $tasksQuery = Task::with('ad')
-            ->where(function($q) use ($contract) {
+            ->where('closed', true) // فقط المهام المغلقة والمكتملة
+            ->where(function($q) use ($investor) {
+                // يسمح بالمهام التي لا يوجد لها مستثمر (مهام المنصة) 
+                // أو المهام التي مولها نفس المستثمر الحالي
+                $q->whereNull('investor_id')
+                  ->orWhere('investor_id', $investor->id);
+            })
+            ->where(function($q) {
                 // المهمة يجب أن تكون لها عمولة (إما في جدول المهام أو الإعلان)
                 $q->where('commission', '>', 0)
                   ->orWhereHas('ad', fn($sub) => $sub->where('service_commission', '>', 0));
             })
+            // الاعتماد على تاريخ الإنشاء للمطابقة مع العقد
             ->where('created_at', '>=', $contract->start_date->startOfDay())
             ->where(function ($q) use ($contract) {
                 if ($contract->end_date) {
                     $q->where('created_at', '<=', $contract->end_date->endOfDay());
                 }
             })
+            // تطبيق فلتر العملاء إذا وجد في العقد
+            ->when(!empty($contract->filter_customer_ids), function($q) use ($contract) {
+                $q->whereIn('customer_id', $contract->filter_customer_ids);
+            })
             // استثناء المهام التي تم احتساب عمولتها لهذا المستثمر مسبقاً
-            ->whereNotExists(function ($sub) use ($personalWallet, $investor) {
+            ->whereNotExists(function ($sub) use ($personalWallet) {
                 $sub->from('user_wallet_transactions')
                     ->where('user_wallet_id', $personalWallet->id)
                     ->whereColumn('task_id', 'tasks.id')
@@ -184,15 +196,31 @@ class InvestorPaymentService
 
         DB::transaction(function () use ($tasks, $contract, $personalWallet, $investor, &$totalCommission, &$count) {
             foreach ($tasks as $task) {
-                // جلب عمولة المنصة من الإعلان أو المهمة
-                $platformCommission = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
-                if ($platformCommission <= 0) continue;
+                // 1. حساب مبلغ عمولة المنصة الفعلي (Platform Cut)
+                $platformCut = 0;
+                if ($task->ad) {
+                    // إذا كان هناك إعلان، نتحقق من النوع (0 = نسبة مئوية، 1 = مبلغ ثابت)
+                    if ($task->ad->service_commission_type == 1) { 
+                        $platformCut = (float) $task->ad->service_commission;
+                    } else {
+                        // احتساب النسبة من سعر المهمة
+                        $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                    }
+                } else {
+                    // العمولة اليدوية في جدول المهام تُعامل كمبلغ ثابت
+                    $platformCut = (float) $task->commission;
+                }
 
-                // حساب العمولة مع ضمان عدم تجاوز عمولة المنصة
-                $investorCommission = $contract->calculateCommission($platformCommission);
+                if ($platformCut <= 0) continue;
+
+                // 2. التحقق من الحد الأدنى للعمولة في العقد
+                if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
+                    continue;
+                }
+
+                // 3. حساب نصيب المستثمر بناءً على المبلغ الفعلي لعمولة المنصة
+                $investorCommission = $contract->calculateCommission($platformCut);
                 if ($investorCommission <= 0) continue;
-
-                $currentBalance = $personalWallet->balance + $totalCommission; // تراكمي
 
                 UserWalletTransaction::create([
                     'user_wallet_id'   => $personalWallet->id,
@@ -220,15 +248,28 @@ class InvestorPaymentService
         $personalWallet = $investor->userWallet;
         if (!$personalWallet) return;
 
-        // جلب عمولة المنصة (من الإعلان أو المهمة مباشرة)
-        $platformCommission = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
-        if ($platformCommission <= 0) return;
+        // 1. حساب مبلغ عمولة المنصة الفعلي (Platform Cut)
+        $platformCut = 0;
+        if ($task->ad) {
+            if ($task->ad->service_commission_type == 1) { 
+                $platformCut = (float) $task->ad->service_commission;
+            } else {
+                $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+            }
+        } else {
+            $platformCut = (float) $task->commission;
+        }
 
-        // حساب العمولة مع ضمان عدم تجاوزها عمولة المنصة
-        $investorCommission = $contract->calculateCommission($platformCommission);
+        if ($platformCut <= 0) return;
+
+        // 2. التحقق من الحد الأدنى (اختياري هنا لأن المهمة مدفوعة مسبقاً، ولكن نلتزم بالعقد)
+        if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
+            return;
+        }
+
+        // 3. حساب نصيب المستثمر من المبلغ الفعلي
+        $investorCommission = $contract->calculateCommission($platformCut);
         if ($investorCommission <= 0) return;
-
-        $newPersonalBalance = $personalWallet->balance + $investorCommission;
 
         UserWalletTransaction::create([
             'user_wallet_id'   => $personalWallet->id,

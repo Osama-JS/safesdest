@@ -354,4 +354,62 @@ $(function () {
     $('#trans_id').val('');
     $('#modelTitle').html('Add New Transaction');
   });
+  $(document).on('click', '#clearWalletBtn', function () {
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: 'سيتم حذف جميع الحركات المالية في هذه المحفظة نهائياً!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، قم بالتصفية!',
+      cancelButtonText: 'إلغاء',
+      customClass: {
+        confirmButton: 'btn btn-danger me-3',
+        cancelButton: 'btn btn-label-secondary'
+      },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        $.ajax({
+          url: clearWalletUrl,
+          type: 'POST',
+          data: {
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            if (response.status === 1) {
+              Swal.fire({
+                icon: 'success',
+                title: 'تمت التصفية!',
+                text: response.success,
+                customClass: {
+                  confirmButton: 'btn btn-success'
+                }
+              }).then(() => {
+                location.reload();
+              });
+            } else {
+              Swal.fire({
+                title: 'خطأ!',
+                text: response.error,
+                icon: 'error',
+                customClass: {
+                  confirmButton: 'btn btn-primary'
+                }
+              });
+            }
+          },
+          error: function () {
+            Swal.fire({
+              title: 'خطأ!',
+              text: 'حدث خطأ أثناء محاولة تصفية المحفظة.',
+              icon: 'error',
+              customClass: {
+                confirmButton: 'btn btn-primary'
+              }
+            });
+          }
+        });
+      }
+    });
+  });
 });

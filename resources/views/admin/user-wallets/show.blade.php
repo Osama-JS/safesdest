@@ -130,10 +130,14 @@
                 <i class="tf-icons ti ti-list me-2 fs-3 text-white bg-primary rounded p-1"></i>
                 {{ __('Wallet Transactions') }}
             </h5>
-            <button class="add-transaction btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
+            <button class="add-transaction btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
                 data-bs-target="#transactionModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Add Transaction') }}</span>
+            </button>
+            <button class="clear-wallet btn btn-danger waves-effect waves-light mt-5 mx-2" id="clearWalletBtn">
+                <i class="ti ti-trash me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> {{ __('Clear Wallet') }}</span>
             </button>
         </div>
         <div class="card-datatable table-responsive">
@@ -304,6 +308,7 @@
         const transactionsDataUrl = '{{ route('admin.user-wallets.getTransactions', $user->id) }}';
         const addTransactionUrl = '{{ route('admin.user-wallets.addTransaction') }}';
         const withdrawalUrl = '{{ route('admin.user-wallets.withdrawal') }}';
+        const clearWalletUrl = '{{ route('admin.user-wallets.clear', $user->id) }}';
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};

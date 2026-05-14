@@ -534,4 +534,22 @@ class UserWalletsController extends Controller
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
         }
     }
+    public function clearWallet(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            $wallet = $user->userWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 2, 'error' => 'المحفظة غير موجودة.']);
+            }
+
+            // حذف جميع الحركات المرتبطة بالمحفظة
+            UserWalletTransaction::where('user_wallet_id', $wallet->id)->delete();
+
+            return response()->json(['status' => 1, 'success' => 'تمت تصفية المحفظة بنجاح (حذف جميع الحركات).']);
+        } catch (Exception $e) {
+            return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+        }
+    }
 }

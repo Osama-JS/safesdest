@@ -412,4 +412,111 @@ $(function () {
       }
     });
   });
+
+  // Manual Commission Logic
+  $(document).on('click', '#btnSearchTask', function () {
+    const taskId = $('#search_task_id').val();
+    if (!taskId) return;
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+    $.ajax({
+      url: searchTaskUrl,
+      type: 'GET',
+      data: { task_id: taskId },
+      success: function (response) {
+        btn.prop('disabled', false).html('<i class="ti ti-search"></i>');
+        if (response.status === 1) {
+          $('#taskSearchResult').removeClass('d-none');
+          $('#resCustomerName').text(response.task.customer_name);
+          $('#resTotalPrice').text(response.task.total_price);
+          $('#resPlatformCut').text(response.task.platform_cut);
+          
+          let statusText = response.task.status;
+          let badgeClass = 'bg-secondary';
+          if (statusText === 'completed') badgeClass = 'bg-success';
+          if (statusText === 'canceled') badgeClass = 'bg-danger';
+          
+          $('#taskStatusBadge').text(statusText).attr('class', 'badge ' + badgeClass);
+
+          let eligibilityMsg = '';
+          let alertClass = 'alert-info';
+          let allowCalc = true;
+
+          if (response.already_calculated) {
+            eligibilityMsg = '<i class="ti ti-alert-triangle me-1"></i> تنبيه: تم احتساب عمولة هذه المهمة مسبقاً لهذا المستثمر.';
+            alertClass = 'alert-warning';
+            allowCalc = false;
+          } else if (response.funded_by_other) {
+            eligibilityMsg = '<i class="ti ti-circle-x me-1"></i> خطأ: هذه المهمة ممولة من قبل مستثمر آخر.';
+            alertClass = 'alert-danger';
+            allowCalc = false;
+          } else {
+            eligibilityMsg = '<i class="ti ti-check me-1"></i> المهمة جاهزة للاحتساب اليدوي.';
+            alertClass = 'alert-success';
+            if (response.is_cancelled) {
+              eligibilityMsg += ' (ملاحظة: المهمة ملغاة)';
+            }
+          }
+
+          $('#taskEligibilityMsg').html(eligibilityMsg).attr('class', 'alert ' + alertClass + ' mb-0');
+          if (allowCalc) {
+            $('#btnConfirmManualCalc').removeClass('d-none');
+          } else {
+            $('#btnConfirmManualCalc').addClass('d-none');
+          }
+        } else {
+          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+          $('#taskSearchResult').addClass('d-none');
+          $('#btnConfirmManualCalc').addClass('d-none');
+        }
+      },
+      error: function () {
+        btn.prop('disabled', false).html('<i class="ti ti-search"></i>');
+        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء البحث عن المهمة.', icon: 'error' });
+      }
+    });
+  });
+
+  $(document).on('click', '#btnConfirmManualCalc', function () {
+    const taskId = $('#search_task_id').val();
+    const btn = $(this);
+
+    Swal.fire({
+      title: 'هل أنت متأكد؟',
+      text: "سيتم احتساب عمولة المهمة رقم #" + taskId + " يدوياً.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، احتسبها',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+        $.ajax({
+          url: calculateManualUrl,
+          type: 'POST',
+          data: {
+            task_id: taskId,
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            btn.prop('disabled', false).text('Calculate Commission');
+            if (response.status === 1) {
+              Swal.fire({ icon: 'success', title: 'نجاح!', text: response.success, customClass: { confirmButton: 'btn btn-success' } })
+                .then(() => location.reload());
+            } else {
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+            }
+          },
+          error: function () {
+            btn.prop('disabled', false).text('Calculate Commission');
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+          }
+        });
+      }
+    });
+  });
 });

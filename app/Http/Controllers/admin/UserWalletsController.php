@@ -14,6 +14,9 @@ use App\Models\UserWalletTransaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Models\Task;
+use App\Models\InvestmentContract;
+
 
 class UserWalletsController extends Controller
 {
@@ -550,6 +553,128 @@ class UserWalletsController extends Controller
             return response()->json(['status' => 1, 'success' => 'تمت تصفية المحفظة بنجاح (حذف جميع الحركات).']);
         } catch (Exception $e) {
             return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+        }
+    }
+    public function searchTaskForCommission(Request $request, $userId)
+    {
+        try {
+            $taskId = $request->task_id;
+            $task = Task::with(['ad', 'customer'])->find($taskId);
+
+            if (!$task) {
+                return response()->json(['status' => 0, 'error' => 'المهمة غير موجودة.']);
+            }
+
+            $user = User::findOrFail($userId);
+            $wallet = $user->userWallet;
+
+            // التحقق من وجود مستثمر آخر
+            $fundedByOther = $task->investor_id && $task->investor_id != $userId;
+
+            // التحقق هل تم الاحتساب مسبقاً لهذا المستخدم
+            $alreadyCalculated = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+                ->where('task_id', $taskId)
+                ->where('transaction_type', 'credit')
+                ->exists();
+
+            // حساب عمولة المنصة المتوقعة
+            $platformCut = 0;
+            if ($task->ad) {
+                if ($task->ad->service_commission_type == 1) { 
+                    $platformCut = (float) $task->ad->service_commission;
+                } else {
+                    $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                }
+            } else {
+                $platformCut = (float) $task->commission;
+            }
+
+            return response()->json([
+                'status' => 1,
+                'task' => [
+                    'id' => $task->id,
+                    'status' => $task->status,
+                    'customer_name' => $task->customer->name ?? 'غير معروف',
+                    'total_price' => $task->total_price,
+                    'platform_cut' => $platformCut,
+                    'is_closed' => $task->closed,
+                    'investor_id' => $task->investor_id,
+                ],
+                'funded_by_other' => $fundedByOther,
+                'already_calculated' => $alreadyCalculated,
+                'is_cancelled' => $task->status === 'canceled',
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function calculateManualCommission(Request $request, $userId)
+    {
+        DB::beginTransaction();
+        try {
+            $taskId = $request->task_id;
+            $task = Task::with('ad')->findOrFail($taskId);
+            $investor = User::findOrFail($userId);
+            $personalWallet = $investor->userWallet;
+            $contract = $investor->activeInvestmentContract;
+
+            if (!$contract) {
+                return response()->json(['status' => 0, 'error' => 'لا يوجد عقد نشط لهذا المستثمر.']);
+            }
+
+            // شرط عدم التداخل مع مستثمر آخر
+            if ($task->investor_id && $task->investor_id != $userId) {
+                return response()->json(['status' => 0, 'error' => 'هذه المهمة ممولة من مستثمر آخر.']);
+            }
+
+            // منع التكرار
+            $exists = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
+                ->where('task_id', $taskId)
+                ->where('transaction_type', 'credit')
+                ->exists();
+
+            if ($exists) {
+                return response()->json(['status' => 0, 'error' => 'تم احتساب عمولة هذه المهمة مسبقاً.']);
+            }
+
+            // حساب مبلغ عمولة المنصة الفعلي
+            $platformCut = 0;
+            if ($task->ad) {
+                if ($task->ad->service_commission_type == 1) { 
+                    $platformCut = (float) $task->ad->service_commission;
+                } else {
+                    $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                }
+            } else {
+                $platformCut = (float) $task->commission;
+            }
+
+            if ($platformCut <= 0) {
+                return response()->json(['status' => 0, 'error' => 'لا توجد عمولة للمنصة في هذه المهمة.']);
+            }
+
+            // حساب نصيب المستثمر
+            $investorCommission = $contract->calculateCommission($platformCut);
+
+            if ($investorCommission <= 0) {
+                return response()->json(['status' => 0, 'error' => 'عمولة المستثمر تساوي صفراً بناءً على العقد.']);
+            }
+
+            UserWalletTransaction::create([
+                'user_wallet_id'   => $personalWallet->id,
+                'task_id'          => $task->id,
+                'amount'           => $investorCommission,
+                'transaction_type' => 'credit',
+                'description'      => "عمولة المستثمر من المهمة رقم #{$task->id}",
+                'created_by'       => Auth::id(),
+            ]);
+
+            DB::commit();
+            return response()->json(['status' => 1, 'success' => 'تم احتساب العمولة اليدوية بنجاح.']);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
 }

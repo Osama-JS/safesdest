@@ -417,6 +417,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/user-wallets/withdrawal', [UserWalletsController::class, 'processWithdrawal'])->name('admin.user-wallets.withdrawal');
                 Route::get('/user-wallets/{userId}/stats', [UserWalletsController::class, 'getWalletStats'])->name('admin.user-wallets.stats');
                 Route::post('/users/{userId}/wallet/clear', [UserWalletsController::class, 'clearWallet'])->name('admin.user-wallets.clear');
+                Route::get('/users/{userId}/wallet/search-task', [UserWalletsController::class, 'searchTaskForCommission'])->name('admin.user-wallets.search-task');
+                Route::post('/users/{userId}/wallet/calculate-manual', [UserWalletsController::class, 'calculateManualCommission'])->name('admin.user-wallets.calculate-manual');
 
 
 

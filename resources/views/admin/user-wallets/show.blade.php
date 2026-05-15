@@ -139,6 +139,11 @@
                 <i class="ti ti-trash me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Clear Wallet') }}</span>
             </button>
+            <button class="btn btn-info waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                data-bs-target="#manualCommissionModal">
+                <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> {{ __('Manual Calculation') }}</span>
+            </button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-transactions table">
@@ -309,6 +314,8 @@
         const addTransactionUrl = '{{ route('admin.user-wallets.addTransaction') }}';
         const withdrawalUrl = '{{ route('admin.user-wallets.withdrawal') }}';
         const clearWalletUrl = '{{ route('admin.user-wallets.clear', $user->id) }}';
+        const searchTaskUrl = '{{ route('admin.user-wallets.search-task', $user->id) }}';
+        const calculateManualUrl = '{{ route('admin.user-wallets.calculate-manual', $user->id) }}';
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};
@@ -328,4 +335,5 @@
             }
         });
     </script>
+    @include('admin.user-wallets.manual-commission-modal')
 @endsection

@@ -419,6 +419,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/clear', [UserWalletsController::class, 'clearWallet'])->name('admin.user-wallets.clear');
                 Route::get('/users/{userId}/wallet/search-task', [UserWalletsController::class, 'searchTaskForCommission'])->name('admin.user-wallets.search-task');
                 Route::post('/users/{userId}/wallet/calculate-manual', [UserWalletsController::class, 'calculateManualCommission'])->name('admin.user-wallets.calculate-manual');
+                Route::post('/users/{userId}/wallet/calculate-general', [UserWalletsController::class, 'calculateGeneralCommissions'])->name('admin.user-wallets.calculate-general');
 
 
 
@@ -573,6 +574,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/data', [WalletsController::class, 'getData'])->name('wallets.data');
                 Route::get('/wallets/statistics', [WalletsController::class, 'getStatistics'])->name('wallets.statistics');
                 Route::post('/wallets/update', [WalletsController::class, 'update'])->name('wallets.update');
+                Route::get('/wallets/{wallet}/fetch-unsettled-tasks', [WalletsController::class, 'fetchUnsettledTasks'])->name('wallets.fetch-unsettled-tasks');
                 Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
                 Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');
                 Route::get('/wallets/transaction/show/{id}/{name}', [WalletsController::class, 'show'])->name('wallets.transaction');

@@ -1069,4 +1069,146 @@ $(function () {
   if ($('#payment-logs-section').length) {
     loadPaymentRequestLogs();
   }
+  
+  // --- Investment Settlement Settings Logic ---
+  let unsettledTasks = [];
+
+  $('#toggleSettlementPanelBtn').on('click', function() {
+    const panel = $('#settlement-panel');
+    if (panel.is(':visible')) {
+      panel.slideUp();
+    } else {
+      panel.slideDown();
+      fetchUnsettledTasks();
+    }
+  });
+
+  function fetchUnsettledTasks() {
+    $('#settlement-tasks-tbody').html('<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...</td></tr>');
+    
+    $.get(baseUrl + 'admin/wallets/' + walletId + '/fetch-unsettled-tasks', function(response) {
+      if (response.status === 1) {
+        unsettledTasks = response.data;
+        renderSettlementTasks();
+        autoSelectSettlementTasks();
+      } else {
+        $('#settlement-tasks-tbody').html('<tr><td colspan="4" class="text-center text-danger">حدث خطأ أثناء جلب المهام</td></tr>');
+      }
+    });
+  }
+
+  function renderSettlementTasks() {
+    const tbody = $('#settlement-tasks-tbody');
+    tbody.empty();
+    
+    if (unsettledTasks.length === 0) {
+      tbody.html('<tr><td colspan="4" class="text-center text-muted">لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
+      return;
+    }
+    
+    unsettledTasks.forEach(function(task, index) {
+      const tr = `
+        <tr>
+          <td>
+            <input type="checkbox" class="form-check-input settlement-task-checkbox" data-id="${task.transaction_id}" data-amount="${task.unpaid_amount}" value="${task.transaction_id}">
+          </td>
+          <td>${task.task_id}</td>
+          <td>${task.unpaid_amount}</td>
+          <td>${task.investor_name}</td>
+        </tr>
+      `;
+      tbody.append(tr);
+    });
+  }
+
+  function autoSelectSettlementTasks() {
+    const creditAmount = parseFloat($('#trans_amount').val()) || 0;
+    $('#settlement-credit-amount').text(creditAmount.toFixed(2));
+    
+    let currentTotal = 0;
+    $('.settlement-task-checkbox').prop('checked', false);
+    
+    $('.settlement-task-checkbox').each(function() {
+      const taskAmount = parseFloat($(this).data('amount'));
+      // If adding this task doesn't exceed the credit amount (or we just allow partial up to the task amount, but since it's full/partial settlement we can just check if we have enough credit)
+      // The backend will handle partial payment if needed. We just select tasks that *could* be covered.
+      if (currentTotal < creditAmount) {
+        $(this).prop('checked', true);
+        currentTotal += taskAmount;
+      }
+    });
+    
+    updateSettlementTotal();
+  }
+
+  $('#trans_amount').on('input', function() {
+    if ($('#settlement-panel').is(':visible')) {
+      autoSelectSettlementTasks();
+    }
+  });
+
+  $(document).on('change', '.settlement-task-checkbox', function() {
+    updateSettlementTotal();
+  });
+
+  $('#selectAllSettlementTasks').on('change', function() {
+    $('.settlement-task-checkbox').prop('checked', $(this).prop('checked'));
+    updateSettlementTotal();
+  });
+
+  function updateSettlementTotal() {
+    let total = 0;
+    $('.settlement-task-checkbox:checked').each(function() {
+      total += parseFloat($(this).data('amount'));
+    });
+    $('#settlement-selected-total').text(total.toFixed(2));
+    
+    const creditAmount = parseFloat($('#trans_amount').val()) || 0;
+    const remaining = creditAmount - total;
+    $('#settlement-remaining-amount').text(remaining.toFixed(2));
+    
+    if (remaining < 0) {
+      $('#settlement-remaining-amount').removeClass('text-success text-warning').addClass('text-danger');
+    } else {
+      $('#settlement-remaining-amount').removeClass('text-danger text-warning').addClass('text-success');
+    }
+  }
+
+  // Before form submit, append selected tasks as hidden inputs
+  $('.add-new-transaction').on('submit', function(e) {
+    // Remove old hidden inputs
+    $('.hidden-settlement-tasks').remove();
+    
+    // Add selected ones
+    if ($('#credit').is(':checked')) {
+      let totalSelected = 0;
+      $('.settlement-task-checkbox:checked').each(function() {
+        totalSelected += parseFloat($(this).data('amount')) || 0;
+      });
+
+      const creditAmount = parseFloat($('#trans_amount').val()) || 0;
+
+      if ($('#settlement-panel').is(':visible') && totalSelected > creditAmount) {
+        e.preventDefault();
+        e.stopPropagation();
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ في التسوية',
+          text: 'المبلغ المدخل أقل من إجمالي المبالغ للمهام المحددة. يرجى تعديل الاختيارات أو زيادة مبلغ الإيداع.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        return false;
+      }
+
+      $('.settlement-task-checkbox:checked').each(function() {
+        $('<input>').attr({
+          type: 'hidden',
+          name: 'settlement_tasks[]',
+          class: 'hidden-settlement-tasks',
+          value: $(this).val()
+        }).appendTo('.add-new-transaction');
+      });
+    }
+  });
+
 });

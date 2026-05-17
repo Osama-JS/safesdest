@@ -191,6 +191,42 @@
                                             <span class="type-error text-danger text-error"></span>
                                         </div>
 
+                                        <!-- Investment Settlement Settings (Only visible for Credit and Customer Wallets) -->
+                                        @if ($data->user_type === 'customer')
+                                            <div id="investment-settlement-container" class="mb-4">
+                                                <button type="button" class="btn btn-outline-info w-100 mb-2" id="toggleSettlementPanelBtn">
+                                                    <i class="ti ti-settings me-1"></i> {{ __('Investment Settlement Settings') }}
+                                                </button>
+                                                
+                                                <div id="settlement-panel" class="border rounded p-3 bg-light" style="display: none;">
+                                                    <h6 class="mb-2 text-primary"><i class="ti ti-list-check me-1"></i>{{ __('Unsettled Investor Tasks') }}</h6>
+                                                    <p class="small text-muted mb-2">{{ __('Select tasks to settle with this credit amount.') }}</p>
+                                                    
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span class="fw-bold">{{ __('Credit Amount') }}: <span id="settlement-credit-amount" class="text-success">0</span> ريال</span>
+                                                        <span class="fw-bold">{{ __('Selected Total') }}: <span id="settlement-selected-total" class="text-primary">0</span> ريال</span>
+                                                        <span class="fw-bold">{{ __('Remaining Amount') }}: <span id="settlement-remaining-amount" class="text-warning">0</span> ريال</span>
+                                                    </div>
+
+                                                    <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                                        <table class="table table-sm table-bordered">
+                                                            <thead class="table-dark sticky-top">
+                                                                <tr>
+                                                                    <th style="width: 40px;"><input type="checkbox" id="selectAllSettlementTasks" class="form-check-input"></th>
+                                                                    <th>{{ __('Task #') }}</th>
+                                                                    <th>{{ __('Unpaid Debt') }}</th>
+                                                                    <th>{{ __('Investor') }}</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="settlement-tasks-tbody">
+                                                                <!-- AJAX will load tasks here -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+
 
 
                                         <!-- Maturity Time (Hidden by default) -->

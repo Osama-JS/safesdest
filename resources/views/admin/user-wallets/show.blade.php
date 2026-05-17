@@ -144,6 +144,10 @@
                 <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Manual Calculation') }}</span>
             </button>
+            <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateGeneralBtn">
+                <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> {{ __('Calculate General Commissions') }}</span>
+            </button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-transactions table">
@@ -316,6 +320,7 @@
         const clearWalletUrl = '{{ route('admin.user-wallets.clear', $user->id) }}';
         const searchTaskUrl = '{{ route('admin.user-wallets.search-task', $user->id) }}';
         const calculateManualUrl = '{{ route('admin.user-wallets.calculate-manual', $user->id) }}';
+        const calculateGeneralUrl = '{{ route('admin.user-wallets.calculate-general', $user->id) }}';
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};

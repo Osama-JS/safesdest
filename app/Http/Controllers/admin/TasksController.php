@@ -3119,7 +3119,7 @@ class TasksController extends Controller
         DB::beginTransaction();
         try {
             $task = Task::findOrFail($req->id);
-            if (!$task->closed || $task->status === 'canceled' || $task->payment_status !== 'completed') {
+            if ($task->status === 'canceled' || !in_array($task->payment_status, ['completed', 'paid'])) {
                 return response()->json(['status' => 2, 'error' => __('This Task cannot be refunded in its current state')]);
             }
 
@@ -3130,7 +3130,130 @@ class TasksController extends Controller
                 $task->ad()->delete();
             }
 
-            $wallet_transaction = Wallet_Transaction::where('task_id', $task->id)->delete();
+            // ── 1. محفظة العميل: تسجيل حركة إيداع عكسية (Credit) ───────────────────
+            if ($task->customer_id) {
+                $customerWallet = \App\Models\Wallet::where('customer_id', $task->customer_id)
+                    ->where('user_type', 'customer')
+                    ->first();
+
+                if ($customerWallet) {
+                    \App\Models\Wallet_Transaction::create([
+                        'wallet_id'        => $customerWallet->id,
+                        'task_id'          => $task->id,
+                        'transaction_type' => 'credit',
+                        'amount'           => $task->total_price,
+                        'description'      => "إيداع عكسي: استرداد قيمة المهمة المستردة رقم #{$task->id}",
+                        'user_id'          => Auth::id(),
+                        'status'           => 1,
+                        'maturity_time'    => now()
+                    ]);
+                }
+            }
+
+            // ── 2. محفظة السائق: تسجيل حركة خصم عكسية (Debit) ─────────────────────
+            if ($task->driver_id) {
+                $driverWallet = $task->driver->wallet;
+                if ($driverWallet) {
+                    \App\Models\Wallet_Transaction::create([
+                        'wallet_id'        => $driverWallet->id,
+                        'task_id'          => $task->id,
+                        'transaction_type' => 'debit',
+                        'amount'           => $task->total_price - $task->commission,
+                        'description'      => "خصم عكسي: إلغاء مستحقات التوصيل للمهمة المستردة رقم #{$task->id}",
+                        'user_id'          => Auth::id(),
+                        'status'           => 1,
+                        'maturity_time'    => now()
+                    ]);
+                }
+            }
+
+            // ── 3. محفظة الفريق: تسجيل حركة خصم عكسية (Debit) ─────────────────────
+            if ($task->driver && $task->driver->team_id) {
+                $teamWallet = $task->driver->team->teamWallet;
+                if ($teamWallet) {
+                    \App\Models\Team_Wallet_Transaction::create([
+                        'team_wallet_id'   => $teamWallet->id,
+                        'task_id'          => $task->id,
+                        'transaction_type' => 'debit',
+                        'amount'           => $task->total_price - $task->commission,
+                        'description'      => "خصم عكسي: إلغاء مستحقات المهمة المستردة رقم #{$task->id} - السائق: {$task->driver->name}",
+                        'status'           => 1
+                    ]);
+                }
+            }
+
+            // ── 4. عمولات المستخدمين: تسجيل خصم عكسي لكل مستخدم (Debit) ─────────────
+            $distributedCommissions = \App\Models\UserWalletTransaction::where('task_id', $task->id)
+                ->where('transaction_type', 'credit')
+                ->get();
+
+            foreach ($distributedCommissions as $originalComm) {
+                \App\Models\UserWalletTransaction::create([
+                    'user_wallet_id'   => $originalComm->user_wallet_id,
+                    'task_id'          => $task->id,
+                    'transaction_type' => 'debit',
+                    'amount'           => $originalComm->amount,
+                    'description'      => "خصم عكسي: إلغاء عمولة المهمة المستردة رقم #{$task->id}",
+                    'user_id'          => Auth::id(),
+                    'status'           => true,
+                    'maturity_time'    => now()
+                ]);
+            }
+
+            // ── 5. المستثمر: تسجيل عمليات خصم/إيداع عكسية للمحفظتين ──────────────
+            if ($task->investor_id) {
+                $investorWallet = \App\Models\InvestorWallet::where('user_id', $task->investor_id)->first();
+                if ($investorWallet) {
+                    // فحص هل تم إرجاع رأس المال للمستثمر مسبقاً (عند سداد العميل للمهمة)
+                    $hasCapitalReturned = \App\Models\InvestorWalletTransaction::where('task_id', $task->id)
+                        ->where('investor_wallet_id', $investorWallet->id)
+                        ->where('transaction_type', 'credit')
+                        ->exists();
+
+                    if (!$hasCapitalReturned) {
+                        // الحالة الأولى: العميل لم يسدد بعد والمهمة استردت
+                        // يجب إرجاع رأس المال للمستثمر الآن من خلال إضافة حركة إيداع (Credit)
+                        $newBalance = $investorWallet->balance + $task->total_price;
+                        \App\Models\InvestorWalletTransaction::create([
+                            'investor_wallet_id' => $investorWallet->id,
+                            'task_id'            => $task->id,
+                            'transaction_type'   => 'credit',
+                            'amount'             => $task->total_price,
+                            'description'        => "إيداع عكسي: استرداد رأس مال المهمة المستردة رقم #{$task->id}",
+                            'performed_by'       => Auth::id(),
+                            'balance_after'      => $newBalance
+                        ]);
+                    } else {
+                        // الحالة الثانية: العميل كان قد سدد بالفعل ورأس المال رجع للمستثمر مسبقاً
+                        // لا يتم عمل أي إجراء على محفظة الاستثمار (الرأس مال يظل مع المستثمر بأمان لأن التسوية تمت)
+                        // ولا داعي لخصمه لأن استرداد العميل يتم تمويله محاسبياً من خصم السائق والمنصة.
+                    }
+                }
+
+                // ب. خصم عمولة الأرباح من المحفظة الشخصية للمستثمر في كلتا الحالتين
+                // لأن المستثمر لا يستحق أرباحاً (عمولة) عن مهمة تم استردادها وإلغاؤها.
+                $investorPersonalWallet = \App\Models\UserWallet::where('user_id', $task->investor_id)->first();
+                if ($investorPersonalWallet) {
+                    $originalInvComms = \App\Models\UserWalletTransaction::where('task_id', $task->id)
+                        ->where('user_wallet_id', $investorPersonalWallet->id)
+                        ->where('transaction_type', 'credit')
+                        ->get();
+
+                    foreach ($originalInvComms as $origInvComm) {
+                        \App\Models\UserWalletTransaction::create([
+                            'user_wallet_id'   => $investorPersonalWallet->id,
+                            'task_id'          => $task->id,
+                            'transaction_type' => 'debit',
+                            'amount'           => $origInvComm->amount,
+                            'description'      => "خصم عكسي: إلغاء عمولة أرباح المهمة المستردة رقم #{$task->id}",
+                            'user_id'          => Auth::id(),
+                            'status'           => true,
+                            'maturity_time'    => now()
+                        ]);
+                    }
+                }
+            }
+
             $transaction = Transaction::where('reference_id', $task->id)->first();
             $transaction_receipt_image = null;
             if ($transaction) {

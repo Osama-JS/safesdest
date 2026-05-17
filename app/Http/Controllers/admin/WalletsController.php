@@ -586,6 +586,25 @@ class WalletsController extends Controller
 
         try {
             $wallet = Wallet::findOrFail($req->wallet);
+
+            // التحقق من صحة مبالغ التسوية
+            if ($req->type === 'credit' && $req->has('settlement_tasks') && is_array($req->settlement_tasks)) {
+                $totalSettlementNeeded = 0;
+                foreach ($req->settlement_tasks as $debitTxId) {
+                    $debitTx = Wallet_Transaction::find($debitTxId);
+                    if ($debitTx && !$debitTx->is_settled && $debitTx->transaction_type === 'debit') {
+                        $totalSettlementNeeded += ($debitTx->amount - $debitTx->settled_amount);
+                    }
+                }
+                
+                if ($req->amount < $totalSettlementNeeded) {
+                    return response()->json([
+                        'status' => 2,
+                        'error'  => 'المبلغ المدخل أقل من إجمالي المبالغ للمهام المحددة للتسوية.'
+                    ]);
+                }
+            }
+
             $adjustedBalance = $wallet->balance;
             $existingTransaction = null;
 
@@ -702,6 +721,51 @@ class WalletsController extends Controller
                 $data['user_id'] = auth()->id();
                 $data['task_id'] = $req->task_id;
                 Wallet_Transaction::create($data);
+                
+                // --- Investment Settlement Engine ---
+                if ($req->type === 'credit' && $req->has('settlement_tasks') && is_array($req->settlement_tasks)) {
+                    $creditAmount = clone $req;
+                    $remainingCredit = $creditAmount->amount;
+                    
+                    foreach ($req->settlement_tasks as $debitTxId) {
+                        if ($remainingCredit <= 0) break;
+                        
+                        $debitTx = Wallet_Transaction::with('task')->find($debitTxId);
+                        if (!$debitTx || $debitTx->is_settled || $debitTx->transaction_type !== 'debit') continue;
+                        
+                        $unpaid = $debitTx->amount - $debitTx->settled_amount;
+                        $payment = min($unpaid, $remainingCredit);
+                        
+                        $debitTx->settled_amount += $payment;
+                        if ($debitTx->settled_amount >= $debitTx->amount) {
+                            $debitTx->is_settled = true;
+                        }
+                        $debitTx->save();
+                        
+                        $remainingCredit -= $payment;
+                        
+                        // Refund Investor
+                        if ($debitTx->task && $debitTx->task->investor_id) {
+                            $investorWallet = \App\Models\InvestorWallet::firstOrCreate(
+                                ['user_id' => $debitTx->task->investor_id],
+                                ['status' => 1]
+                            );
+                            
+                            $newBalance = $investorWallet->balance + $payment;
+                            
+                            \App\Models\InvestorWalletTransaction::create([
+                                'investor_wallet_id' => $investorWallet->id,
+                                'task_id' => $debitTx->task->id,
+                                'amount' => $payment,
+                                'transaction_type' => 'credit',
+                                'description' => "استرداد رأس مال للمهمة رقم #{$debitTx->task->id} بعد سداد العميل",
+                                'performed_by' => auth()->id(),
+                                'balance_after' => $newBalance
+                            ]);
+                        }
+                    }
+                }
+                // --- End Investment Settlement Engine ---
             }
 
             if ($oldImage && file_exists($oldImage)) {
@@ -1163,4 +1227,30 @@ return response()->json([
         return $result;
     }
 
+    public function fetchUnsettledTasks($walletId)
+    {
+        try {
+            $unsettledDebits = Wallet_Transaction::with(['task', 'task.investor'])
+                ->where('wallet_id', $walletId)
+                ->where('transaction_type', 'debit')
+                ->where('is_settled', false)
+                ->whereHas('task', function ($q) {
+                    $q->whereNotNull('investor_id');
+                })
+                ->orderBy('created_at', 'asc') // FIFO
+                ->get()
+                ->map(function ($transaction) {
+                    return [
+                        'transaction_id' => $transaction->id,
+                        'task_id' => $transaction->task_id,
+                        'unpaid_amount' => $transaction->amount - $transaction->settled_amount,
+                        'investor_name' => $transaction->task->investor->name ?? 'غير معروف',
+                    ];
+                });
+
+            return response()->json(['status' => 1, 'data' => $unsettledDebits]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 }

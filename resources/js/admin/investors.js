@@ -24,10 +24,12 @@ $(function () {
     userForm = $('#investorForm');
 
   if (select2.length) {
-    var $this = select2;
-    $this.wrap('<div class="position-relative"></div>').select2({
-      placeholder: 'اختر العملاء',
-      dropdownParent: $this.parent()
+    select2.each(function () {
+      var $this = $(this);
+      $this.wrap('<div class="position-relative"></div>').select2({
+        placeholder: $this.attr('id') === 'broker_id' ? 'اختر الوسيط' : 'اختر العملاء',
+        dropdownParent: $this.parent()
+      });
     });
   }
 
@@ -350,6 +352,16 @@ $(function () {
         } else {
             $('#customer_ids').val([]).trigger('change');
         }
+
+        $('#broker_id').val(c.broker_id || '').trigger('change');
+        $('select[name="broker_commission_source"]').val(c.broker_commission_source || 'investor_commission');
+        $('select[name="broker_commission_type"]').val(c.broker_commission_type || 'percentage');
+        $('input[name="broker_commission_value"]').val(c.broker_commission_value || '0.00');
+      } else {
+        $('#broker_id').val('').trigger('change');
+        $('select[name="broker_commission_source"]').val('investor_commission');
+        $('select[name="broker_commission_type"]').val('percentage');
+        $('input[name="broker_commission_value"]').val('0.00');
       }
     });
   });
@@ -372,6 +384,10 @@ $(function () {
     userForm[0].reset();
     $('#investor_id').val('');
     $('#customer_ids').val([]).trigger('change');
+    $('#broker_id').val('').trigger('change');
+    $('select[name="broker_commission_source"]').val('investor_commission');
+    $('select[name="broker_commission_type"]').val('percentage');
+    $('input[name="broker_commission_value"]').val('0.00');
   });
 
   // Handle Form Submit Success

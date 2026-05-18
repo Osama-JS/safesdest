@@ -24,6 +24,10 @@ class InvestmentContract extends Model
         'filter_customer_ids',
         'notes',
         'created_by',
+        'broker_id',
+        'broker_commission_source',
+        'broker_commission_type',
+        'broker_commission_value',
     ];
 
     protected $casts = [
@@ -32,6 +36,7 @@ class InvestmentContract extends Model
         'filter_customer_ids'      => 'array',
         'start_date'               => 'date',
         'end_date'                 => 'date',
+        'broker_commission_value'  => 'decimal:2',
     ];
 
     protected $dates = ['deleted_at'];
@@ -42,6 +47,14 @@ class InvestmentContract extends Model
     public function investor()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * العلاقة مع الوسيط (Broker)
+     */
+    public function broker()
+    {
+        return $this->belongsTo(User::class, 'broker_id');
     }
 
     /**

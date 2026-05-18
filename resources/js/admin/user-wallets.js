@@ -356,11 +356,16 @@ $(function () {
   });
   $(document).on('click', '#clearWalletBtn', function () {
     Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: 'سيتم حذف جميع الحركات المالية في هذه المحفظة نهائياً!',
-      icon: 'warning',
+      title: 'طلب كلمة المرور السرية',
+      text: 'الرجاء إدخال الكلمة السرية لتأكيد عملية تصفية المحفظة بالكامل:',
+      input: 'password',
+      inputPlaceholder: 'أدخل الكلمة السرية...',
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      },
       showCancelButton: true,
-      confirmButtonText: 'نعم، قم بالتصفية!',
+      confirmButtonText: 'تحقق وتصفية المحفظة',
       cancelButtonText: 'إلغاء',
       customClass: {
         confirmButton: 'btn btn-danger me-3',
@@ -368,43 +373,72 @@ $(function () {
       },
       buttonsStyling: false
     }).then(function (result) {
-      if (result.value) {
-        $.ajax({
-          url: clearWalletUrl,
-          type: 'POST',
-          data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-          },
-          success: function (response) {
-            if (response.status === 1) {
-              Swal.fire({
-                icon: 'success',
-                title: 'تمت التصفية!',
-                text: response.success,
-                customClass: {
-                  confirmButton: 'btn btn-success'
-                }
-              }).then(() => {
-                location.reload();
-              });
-            } else {
-              Swal.fire({
-                title: 'خطأ!',
-                text: response.error,
-                icon: 'error',
-                customClass: {
-                  confirmButton: 'btn btn-primary'
-                }
-              });
+      if (result.isConfirmed) {
+        if (result.value !== 'OsamaAlsamomy@1998') {
+          Swal.fire({
+            title: 'خطأ في التحقق!',
+            text: 'الكلمة السرية المدخلة غير صحيحة، لا يمكن إتمام عملية التصفية.',
+            icon: 'error',
+            customClass: {
+              confirmButton: 'btn btn-primary'
             }
+          });
+          return;
+        }
+
+        // كلمة المرور صحيحة، نقوم بطلب التأكيد النهائي أو البدء الفوري
+        Swal.fire({
+          title: 'هل أنت متأكد نهائياً؟',
+          text: 'سيتم مسح كافة الحركات المالية من المحفظة نهائياً وتصفير الرصيد!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'نعم، مسح وتصفية!',
+          cancelButtonText: 'تراجع',
+          customClass: {
+            confirmButton: 'btn btn-danger me-3',
+            cancelButton: 'btn btn-label-secondary'
           },
-          error: function () {
-            Swal.fire({
-              title: 'خطأ!',
-              text: 'حدث خطأ أثناء محاولة تصفية المحفظة.',
-              icon: 'error',
-              customClass: {
-                confirmButton: 'btn btn-primary'
+          buttonsStyling: false
+        }).then(function (confirmResult) {
+          if (confirmResult.value) {
+            $.ajax({
+              url: clearWalletUrl,
+              type: 'POST',
+              data: {
+                _token: $('meta[name="csrf-token"]').attr('content')
+              },
+              success: function (response) {
+                if (response.status === 1) {
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'تمت التصفية!',
+                    text: response.success,
+                    customClass: {
+                      confirmButton: 'btn btn-success'
+                    }
+                  }).then(() => {
+                    location.reload();
+                  });
+                } else {
+                  Swal.fire({
+                    title: 'خطأ!',
+                    text: response.error,
+                    icon: 'error',
+                    customClass: {
+                      confirmButton: 'btn btn-primary'
+                    }
+                  });
+                }
+              },
+              error: function () {
+                Swal.fire({
+                  title: 'خطأ!',
+                  text: 'حدث خطأ أثناء محاولة تصفية المحفظة.',
+                  icon: 'error',
+                  customClass: {
+                    confirmButton: 'btn btn-primary'
+                  }
+                });
               }
             });
           }
@@ -518,7 +552,6 @@ $(function () {
         });
       }
     });
-    });
   });
 
   $(document).on('click', '#calculateGeneralBtn', function () {
@@ -552,6 +585,44 @@ $(function () {
           },
           error: function () {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+          }
+        });
+      }
+    });
+  });
+
+  $(document).on('click', '#calculateBrokerBtn', function () {
+    const btn = $(this);
+    Swal.fire({
+      title: 'تأكيد احتساب عمولات الوسيط',
+      text: 'هل تريد فحص واحتساب كافة عمولات الوساطة المستحقة لهذا المستخدم عن المهام التي مولها المستثمرون المرتبطون به؟',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، ابدأ الاحتساب',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-warning me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الاحتساب...');
+        $.ajax({
+          url: calculateBrokerUrl,
+          type: 'POST',
+          data: {
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط</span>');
+            if (response.status === 1) {
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+                .then(() => location.reload());
+            } else {
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+            }
+          },
+          error: function () {
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط</span>');
             Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
           }
         });

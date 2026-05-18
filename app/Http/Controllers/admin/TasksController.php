@@ -3230,28 +3230,8 @@ class TasksController extends Controller
                     }
                 }
 
-                // ب. خصم عمولة الأرباح من المحفظة الشخصية للمستثمر في كلتا الحالتين
-                // لأن المستثمر لا يستحق أرباحاً (عمولة) عن مهمة تم استردادها وإلغاؤها.
-                $investorPersonalWallet = \App\Models\UserWallet::where('user_id', $task->investor_id)->first();
-                if ($investorPersonalWallet) {
-                    $originalInvComms = \App\Models\UserWalletTransaction::where('task_id', $task->id)
-                        ->where('user_wallet_id', $investorPersonalWallet->id)
-                        ->where('transaction_type', 'credit')
-                        ->get();
-
-                    foreach ($originalInvComms as $origInvComm) {
-                        \App\Models\UserWalletTransaction::create([
-                            'user_wallet_id'   => $investorPersonalWallet->id,
-                            'task_id'          => $task->id,
-                            'transaction_type' => 'debit',
-                            'amount'           => $origInvComm->amount,
-                            'description'      => "خصم عكسي: إلغاء عمولة أرباح المهمة المستردة رقم #{$task->id}",
-                            'user_id'          => Auth::id(),
-                            'status'           => true,
-                            'maturity_time'    => now()
-                        ]);
-                    }
-                }
+                // فك ارتباط المهمة بالمستثمر
+                $task->investor_id = null;
             }
 
             $transaction = Transaction::where('reference_id', $task->id)->first();

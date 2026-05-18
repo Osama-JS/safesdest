@@ -34,7 +34,11 @@ class UsersController extends Controller
 
     public function index()
     {
-        $users = User::where('status', '!=', 'deleted')->get();
+        $users = User::where('status', '!=', 'deleted')
+            ->where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })
+            ->get();
         $userCount = $users->count();
         $activeCount = $users->where('status', 'active')->count();
         $inactiveCount =  $users->where('status', 'inactive')->count();
@@ -64,7 +68,11 @@ class UsersController extends Controller
     {
         // If requesting all users for select dropdown
         if ($request->has('all')) {
-            $users = User::select('id', 'name')->get();
+            $users = User::select('id', 'name')
+                ->where(function($q) {
+                    $q->where('investor', '!=', 1)->orWhereNull('investor');
+                })
+                ->get();
             return response()->json(['data' => $users]);
         }
 
@@ -80,7 +88,9 @@ class UsersController extends Controller
 
         $search = [];
 
-        $totalData = User::count();
+        $totalData = User::where(function($q) {
+            $q->where('investor', '!=', 1)->orWhereNull('investor');
+        })->count();
 
         $totalFiltered = $totalData;
 
@@ -90,26 +100,37 @@ class UsersController extends Controller
         $dir = $request->input('order.0.dir');
 
         if (empty($request->input('search.value'))) {
-            $users = User::offset($start)
+            $users = User::where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })
+              ->offset($start)
               ->limit($limit)
               ->orderBy($order, $dir)
               ->get();
         } else {
             $search = $request->input('search.value');
 
-            $users = User::where('id', 'LIKE', "%{$search}%")
-              ->orWhere('name', 'LIKE', "%{$search}%")
-              ->orWhere('email', 'LIKE', "%{$search}%")
-              ->orWhere('phone', 'LIKE', "%{$search}%")
+            $baseQuery = User::where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            });
+
+            $users = (clone $baseQuery)->where(function($q) use ($search) {
+                $q->where('id', 'LIKE', "%{$search}%")
+                  ->orWhere('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('phone', 'LIKE', "%{$search}%");
+            })
               ->offset($start)
               ->limit($limit)
               ->orderBy($order, $dir)
               ->get();
 
-            $totalFiltered = User::where('id', 'LIKE', "%{$search}%")
-              ->orWhere('name', 'LIKE', "%{$search}%")
-              ->orWhere('email', 'LIKE', "%{$search}%")
-              ->orWhere('phone', 'LIKE', "%{$search}%")
+            $totalFiltered = (clone $baseQuery)->where(function($q) use ($search) {
+                $q->where('id', 'LIKE', "%{$search}%")
+                  ->orWhere('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('phone', 'LIKE', "%{$search}%");
+            })
               ->count();
         }
 
@@ -125,7 +146,7 @@ class UsersController extends Controller
                 $nestedData['name'] = $user->name;
                 $nestedData['email'] = $user->email;
                 $nestedData['phone'] = $user->phone_code . $user->phone;
-                $nestedData['role'] = $user->role->name;
+                $nestedData['role'] = $user->role->name ?? '';
                 $nestedData['status'] = $user->status;
                 $nestedData['balance'] = $user->userWallet->balance ?? 0;
                 $nestedData['reset_password'] = $user->reset_password;
@@ -142,10 +163,18 @@ class UsersController extends Controller
           'code' => 200,
           'data' => $data,
           'summary' => [
-            'total' => User::count(),
-            'total_active' => User::where('status', 'active')->count(),
-            'total_inactive' => User::where('status', 'inactive')->count(),
-            'total_pending' => User::where('status', 'pending')->count(),
+            'total' => User::where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })->count(),
+            'total_active' => User::where('status', 'active')->where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })->count(),
+            'total_inactive' => User::where('status', 'inactive')->where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })->count(),
+            'total_pending' => User::where('status', 'pending')->where(function($q) {
+                $q->where('investor', '!=', 1)->orWhereNull('investor');
+            })->count(),
             'edit_permission' => auth()->user()->can('save_admins'),
             'delete_permission' => auth()->user()->can('delete_admins'),
           ]

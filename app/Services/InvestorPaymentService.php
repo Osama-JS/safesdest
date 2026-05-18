@@ -7,6 +7,7 @@ use App\Models\InvestorWallet;
 use App\Models\InvestorWalletTransaction;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\UserWallet;
 use App\Models\UserWalletTransaction;
 use App\Models\Wallet;
 use App\Models\Wallet_Transaction;
@@ -222,14 +223,7 @@ class InvestorPaymentService
                 $investorCommission = $contract->calculateCommission($platformCut);
                 if ($investorCommission <= 0) continue;
 
-                UserWalletTransaction::create([
-                    'user_wallet_id'   => $personalWallet->id,
-                    'task_id'          => $task->id,
-                    'transaction_type' => 'credit',
-                    'amount'           => $investorCommission,
-                    'description'      => "عمولة المهمة #{$task->id} (مستثمر عام)",
-                    'status'           => true,
-                ]);
+                $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "مستثمر عام");
 
                 $totalCommission += $investorCommission;
                 $count++;
@@ -271,12 +265,70 @@ class InvestorPaymentService
         $investorCommission = $contract->calculateCommission($platformCut);
         if ($investorCommission <= 0) return;
 
+        $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet);
+    }
+
+    /**
+     * معالجة واحتساب وتوزيع عمولة الوسيط وعمولة المستثمر النهائية.
+     */
+    private function processBrokerAndInvestorCommission(
+        User $investor, 
+        Task $task, 
+        InvestmentContract $contract, 
+        float $platformCut, 
+        float $investorCommission, 
+        UserWallet $personalWallet, 
+        string $descSuffix = ""
+    ): void {
+        $brokerShare = 0;
+        $finalInvestorCommission = $investorCommission;
+
+        if ($contract->broker_id && $contract->broker_commission_value > 0) {
+            // أ. حساب عمولة الوسيط
+            if ($contract->broker_commission_type === 'percentage') {
+                if ($contract->broker_commission_source === 'investor_commission') {
+                    $brokerShare = ($investorCommission * $contract->broker_commission_value) / 100;
+                } else { // task_commission
+                    $brokerShare = ($platformCut * $contract->broker_commission_value) / 100;
+                }
+            } else { // fixed
+                $brokerShare = (float) $contract->broker_commission_value;
+            }
+
+            // ب. تطبيق الخصم بناءً على المصدر
+            if ($contract->broker_commission_source === 'investor_commission') {
+                $finalInvestorCommission = max(0, $investorCommission - $brokerShare);
+            }
+
+            // ج. حماية المنصة ماليًا للتأكد من عدم تجاوز العمولات لإجمالي عمولة المهمة
+            if (($finalInvestorCommission + $brokerShare) > $platformCut) {
+                $brokerShare = max(0, $platformCut - $finalInvestorCommission);
+            }
+
+            // د. إيداع حصة الوسيط
+            if ($brokerShare > 0) {
+                $broker = $contract->broker;
+                if ($broker) {
+                    $brokerWallet = $broker->userWallet ?: (new \App\Http\Controllers\admin\UserWalletsController())->createWallet($broker->id, true);
+                    UserWalletTransaction::create([
+                        'user_wallet_id'   => $brokerWallet->id,
+                        'task_id'          => $task->id,
+                        'transaction_type' => 'credit',
+                        'amount'           => $brokerShare,
+                        'description'      => "عمولة وسيط: تسويق المستثمر {$investor->name} للمهمة #{$task->id}",
+                        'status'           => true,
+                    ]);
+                }
+            }
+        }
+
+        // هـ. إيداع حصة المستثمر النهائية
         UserWalletTransaction::create([
             'user_wallet_id'   => $personalWallet->id,
             'task_id'          => $task->id,
             'transaction_type' => 'credit',
-            'amount'           => $investorCommission,
-            'description'      => "عمولة المهمة #{$task->id}",
+            'amount'           => $finalInvestorCommission,
+            'description'      => "عمولة المهمة #{$task->id}" . ($descSuffix ? " ({$descSuffix})" : "") . ($brokerShare > 0 && $contract->broker_commission_source === 'investor_commission' ? " (بعد خصم عمولة الوسيط)" : ""),
             'status'           => true,
         ]);
     }

@@ -263,6 +263,39 @@
                                                 <small class="text-muted">لا يُسمح بالاستثمار إذا كانت عمولة المنصة أقل من هذا الرقم</small>
                                                 <span class="min_commission_threshold-error text-danger text-error"></span>
                                             </div>
+
+                                            <div class="col-12 mt-4"><h5 class="border-bottom pb-2">إعدادات عمولة الوسيط (اختياري)</h5></div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">الوسيط (Broker)</label>
+                                                <select name="broker_id" class="form-select select2" id="broker_id">
+                                                    <option value="">-- بدون وسيط --</option>
+                                                    @foreach($users as $user)
+                                                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                    @endforeach
+                                                </select>
+                                                <span class="broker_id-error text-danger text-error"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">مصدر خصم عمولة الوسيط</label>
+                                                <select name="broker_commission_source" class="form-select">
+                                                    <option value="investor_commission">من عمولة أرباح المستثمر نفسها</option>
+                                                    <option value="task_commission">من إجمالي عمولة المهمة (المنصة تتحملها)</option>
+                                                </select>
+                                                <span class="broker_commission_source-error text-danger text-error"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">طريقة احتساب عمولة الوسيط</label>
+                                                <select name="broker_commission_type" class="form-select">
+                                                    <option value="percentage">نسبة مئوية (%)</option>
+                                                    <option value="fixed">مبلغ ثابت (ر.س)</option>
+                                                </select>
+                                                <span class="broker_commission_type-error text-danger text-error"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">قيمة عمولة الوسيط</label>
+                                                <input type="number" step="0.01" name="broker_commission_value" class="form-control" placeholder="0.00">
+                                                <span class="broker_commission_value-error text-danger text-error"></span>
+                                            </div>
                                         </div>
                                     </div>
 

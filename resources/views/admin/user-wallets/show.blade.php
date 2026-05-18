@@ -139,15 +139,23 @@
                 <i class="ti ti-trash me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Clear Wallet') }}</span>
             </button>
-            <button class="btn btn-info waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
-                data-bs-target="#manualCommissionModal">
-                <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
-                <span class="d-none d-sm-inline-block"> {{ __('Manual Calculation') }}</span>
-            </button>
-            <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateGeneralBtn">
-                <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
-                <span class="d-none d-sm-inline-block"> {{ __('Calculate General Commissions') }}</span>
-            </button>
+            @if($isInvestor)
+                <button class="btn btn-info waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                    data-bs-target="#manualCommissionModal">
+                    <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> {{ __('Manual Calculation') }}</span>
+                </button>
+                <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateGeneralBtn">
+                    <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> {{ __('Calculate General Commissions') }}</span>
+                </button>
+            @endif
+            @if($isBroker)
+                <button class="btn btn-warning waves-effect waves-light mt-5 mx-2" id="calculateBrokerBtn">
+                    <i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط </span>
+                </button>
+            @endif
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-transactions table">
@@ -321,6 +329,7 @@
         const searchTaskUrl = '{{ route('admin.user-wallets.search-task', $user->id) }}';
         const calculateManualUrl = '{{ route('admin.user-wallets.calculate-manual', $user->id) }}';
         const calculateGeneralUrl = '{{ route('admin.user-wallets.calculate-general', $user->id) }}';
+        const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};

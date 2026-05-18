@@ -36,7 +36,13 @@ class InvestorController extends Controller
     $customers = Customer::where('status', 'active')->get();
     $templates = Form_Template::all();
     $investor_template = Settings::where('key', 'investor_template')->first();
-    return view('admin.investors.index', compact('customers', 'templates', 'investor_template'));
+    $users = User::where('status', 'active')
+      ->where(function($q) {
+        $q->where('investor', '!=', 1)->orWhereNull('investor');
+      })
+      ->orderBy('name')
+      ->get();
+    return view('admin.investors.index', compact('customers', 'templates', 'investor_template', 'users'));
   }
 
   public function getData(Request $request)
@@ -127,6 +133,10 @@ class InvestorController extends Controller
       'customer_ids' => 'nullable|array',
       'min_commission_threshold' => 'nullable|numeric|min:0',
       'template' => 'nullable|exists:form_templates,id',
+      'broker_id' => 'nullable|exists:users,id',
+      'broker_commission_source' => 'nullable|in:investor_commission,task_commission',
+      'broker_commission_type' => 'nullable|in:percentage,fixed',
+      'broker_commission_value' => 'nullable|numeric|min:0',
       'bank_name' => 'nullable|string|max:255',
       'custom_bank_name' => 'nullable|string|max:255',
       'account_number' => 'nullable|string|max:50',
@@ -311,6 +321,10 @@ class InvestorController extends Controller
         'filter_customer_ids' => $request->customer_ids,
         'min_commission_threshold' => $request->min_commission_threshold,
         'created_by' => auth()->id(),
+        'broker_id' => $request->broker_id ?: null,
+        'broker_commission_source' => $request->broker_commission_source ?? 'investor_commission',
+        'broker_commission_type' => $request->broker_commission_type ?? 'percentage',
+        'broker_commission_value' => $request->broker_commission_value ?? 0.00,
       ];
 
       // نوع الاستثمار لا يتغير عند التعديل

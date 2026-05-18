@@ -40,6 +40,11 @@ class UserWalletsController extends Controller
                 $wallet = $this->createWallet($userId);
             }
 
+            // التحقق مما إذا كان المستخدم وسيطاً نشطاً لعقد استثماري
+            $isBroker = InvestmentContract::where('broker_id', $userId)
+                ->where('status', 'active')
+                ->exists();
+
             return view('admin.user-wallets.show', [
                 'user' => $user,
                 'wallet' => $wallet,
@@ -47,6 +52,8 @@ class UserWalletsController extends Controller
                 'credit' => $wallet->credit,
                 'debit' => $wallet->debit,
                 'lastTransaction' => $wallet->last_transaction,
+                'isBroker' => $isBroker,
+                'isInvestor' => $user->investor == 1,
             ]);
 
         } catch (Exception $e) {
@@ -698,6 +705,148 @@ class UserWalletsController extends Controller
                 'success' => "تم احتساب عمولات {$result['count']} مهمة بإجمالي " . number_format($result['total_commission'], 2) . " ر.س"
             ]);
         } catch (Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function calculateBrokerCommissions(Request $request, $userId)
+    {
+        DB::beginTransaction();
+        try {
+            $broker = User::findOrFail($userId);
+            $brokerWallet = $broker->userWallet;
+
+            if (!$brokerWallet) {
+                $brokerWallet = $this->createWallet($userId);
+            }
+
+            // جلب عقود الاستثمار النشطة المرتبطة بالوسيط
+            $contracts = InvestmentContract::where('broker_id', $userId)
+                ->where('status', 'active')
+                ->get();
+
+            if ($contracts->isEmpty()) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'هذا المستخدم ليس وسيطاً نشطاً لأي عقد استثماري حالي.'
+                ]);
+            }
+
+            $processedTasksCount = 0;
+            $totalCommissionCredited = 0;
+
+            foreach ($contracts as $contract) {
+                $investorId = $contract->user_id;
+
+                // جلب المهام الممولة من هذا المستثمر والتي تندرج تحت فترة هذا العقد
+                $query = Task::where('investor_id', $investorId)
+                    ->whereIn('payment_status', ['paid', 'completed'])
+                    ->where('created_at', '>=', $contract->start_date->startOfDay());
+
+                if ($contract->end_date) {
+                    $query->where('created_at', '<=', $contract->end_date->endOfDay());
+                }
+
+                $tasks = $query->get();
+
+                foreach ($tasks as $task) {
+                    // فحص إذا كان العقد يتطلب تصفية عملاء محددين
+                    if ($contract->filter_customer_ids && count($contract->filter_customer_ids) > 0) {
+                        if (!in_array($task->customer_id, $contract->filter_customer_ids)) {
+                            continue;
+                        }
+                    }
+
+                    // فحص إذا كان هناك حد أدنى لعمولة المنصة
+                    $platformCut = 0;
+                    if ($task->ad) {
+                        if ($task->ad->service_commission_type == 1) {
+                            $platformCut = (float) $task->ad->service_commission;
+                        } else {
+                            $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                        }
+                    } else {
+                        $platformCut = (float) $task->commission;
+                    }
+
+                    if ($contract->min_commission_threshold && $platformCut < $contract->min_commission_threshold) {
+                        continue;
+                    }
+
+                    // تحقق من أن عمولة الوسيط لم تُحتسب مسبقاً لهذه المهمة في محفظته
+                    $exists = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
+                        ->where('task_id', $task->id)
+                        ->where('transaction_type', 'credit')
+                        ->where('description', 'LIKE', '%عمولة وسيط%')
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
+                    // احتساب عمولة الوسيط الرياضية بناءً على خيارات العقد
+                    $brokerShare = 0;
+
+                    if ($contract->broker_commission_source === 'investor_commission') {
+                        // من حصة المستثمر
+                        $investorCommission = $contract->calculateCommission($platformCut);
+                        if ($contract->broker_commission_type === 'percentage') {
+                            $brokerShare = ($investorCommission * $contract->broker_commission_value) / 100;
+                        } else {
+                            $brokerShare = (float) $contract->broker_commission_value;
+                        }
+                        // حماية ألا تزيد حصة الوسيط عن عمولة المستثمر نفسها
+                        $brokerShare = min($brokerShare, $investorCommission);
+                    } else {
+                        // من عمولة المهمة (المنصة)
+                        if ($contract->broker_commission_type === 'percentage') {
+                            $brokerShare = ($platformCut * $contract->broker_commission_value) / 100;
+                        } else {
+                            $brokerShare = (float) $contract->broker_commission_value;
+                        }
+                        // حماية المنصة: يجب ألا يتجاوز مجموع حصة المستثمر وحصة الوسيط عمولة المنصة
+                        $investorCommission = $contract->calculateCommission($platformCut);
+                        if ($investorCommission + $brokerShare > $platformCut) {
+                            $brokerShare = max(0.00, $platformCut - $investorCommission);
+                        }
+                    }
+
+                    if ($brokerShare <= 0) {
+                        continue;
+                    }
+
+                    // تسجيل الحركة الائتمانية في محفظة الوسيط
+                    UserWalletTransaction::create([
+                        'user_wallet_id'   => $brokerWallet->id,
+                        'task_id'          => $task->id,
+                        'amount'           => $brokerShare,
+                        'transaction_type' => 'credit',
+                        'description'      => "عمولة وسيط: تسويق المستثمر {$contract->investor->name} للمهمة رقم #{$task->id}",
+                        'created_by'       => Auth::id(),
+                        'status'           => true,
+                    ]);
+
+                    $processedTasksCount++;
+                    $totalCommissionCredited += $brokerShare;
+                }
+            }
+
+            if ($processedTasksCount === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 1,
+                    'info' => 'لا توجد مهام جديدة غير محتسبة تندرج تحت شروط عقود استثمار هذا الوسيط.'
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 1,
+                'success' => "تم احتساب العمولات بنجاح لـ {$processedTasksCount} مهمة بإجمالي " . number_format($totalCommissionCredited, 2) . " ر.س وتمت إضافتها لمحفظة الوسيط."
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }

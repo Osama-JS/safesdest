@@ -234,7 +234,7 @@
                                             <div class="form-text mt-2 text-warning d-none" id="hyperPayWarning">
                                                 <i class="ti ti-alert-triangle me-1"></i> سيتم تحويل المبلغ بشكل فوري إلى الحساب البنكي الخاص بهذا المستخدم باستخدام بوابة HyperPay.
                                                 <div class="mt-3 p-3 bg-light border rounded text-dark">
-                                                    <strong>البيانات البنكية المسجلة للمستثمر:</strong>
+                                                    <strong>البيانات البنكية المسجلة للمضارب:</strong>
                                                     <ul class="list-unstyled mt-2 mb-0">
                                                         <li><strong>اسم البنك:</strong> {{ $user->bank_name ?? 'غير محدد' }}</li>
                                                         <li><strong>رقم الآيبان:</strong> <span dir="ltr">{{ $user->iban_number ?? 'غير محدد' }}</span></li>

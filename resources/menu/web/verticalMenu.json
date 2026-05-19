@@ -236,7 +236,7 @@
     },
     {
       "url": "admin/investors",
-      "name": "Investors",
+      "name": "المضاربين",
       "icon": "menu-icon tf-icons ti ti-briefcase",
       "slug": "admin.investors.index",
       "permission": "view_investors"

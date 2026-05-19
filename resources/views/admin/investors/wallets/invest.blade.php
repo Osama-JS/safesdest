@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'محفظة الاستثمار - ' . $user->name)
+@section('title', 'محفظة المضاربة - ' . $user->name)
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
@@ -34,11 +34,11 @@
                     <div>
                         <h4 id="investorName" class="mb-1 text-white fw-bold">{{ $user->name }}</h4>
                         <p class="mb-0 opacity-75">{{ $user->email }}</p>
-                        <span class="badge bg-white text-primary mt-2">رقم المستثمر: #{{ $user->id }}</span>
+                        <span class="badge bg-white text-primary mt-2">رقم المضارب: #{{ $user->id }}</span>
                     </div>
                     <div class="ms-auto d-none d-md-block">
                         <a href="{{ route('admin.investors.index') }}" class="btn btn-outline-white btn-sm">
-                            <i class="ti ti-arrow-right me-1"></i> العودة لقائمة المستثمرين
+                            <i class="ti ti-arrow-right me-1"></i> العودة لقائمة المضاربين
                         </a>
                     </div>
                 </div>
@@ -101,7 +101,7 @@
     <!-- Wallet Transactions -->
     <div class="card border-0 shadow-sm">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3">
-            <h5 class="card-title mb-0 fw-bold">سجل العمليات المالية (محفظة الاستثمار)</h5>
+            <h5 class="card-title mb-0 fw-bold">سجل العمليات المالية (محفظة المضاربة)</h5>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
                 <i class="ti ti-plus me-1"></i> إضافة عملية جديدة
             </button>

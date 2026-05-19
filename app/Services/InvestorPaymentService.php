@@ -16,18 +16,18 @@ use Illuminate\Support\Facades\DB;
 class InvestorPaymentService
 {
     /**
-     * دفع قيمة مهمة من محفظة مستثمر.
-     * يُستخدم لكلا نوعي الاستثمار (بالمهام والعام).
+     * دفع قيمة مهمة من محفظة مضارب.
+     * يُستخدم لكلا نوعي المضاربة (بالمهام والعام).
      *
      * الخطوات:
      * 1. التحقق من أهلية المهمة (غير مقفلة، غير مدفوعة)
      * 2. التحقق من سقف مديونية العميل قبل الدفع
-     * 3. التحقق من رصيد محفظة الاستثمار
-     * 4. خصم من محفظة الاستثمار + تغيير حالة المهمة إلى 'paid'
+     * 3. التحقق من رصيد محفظة المضاربة
+     * 4. خصم من محفظة المضاربة + تغيير حالة المهمة إلى 'paid'
      * 5. تسجيل دين على العميل في محفظته (Wallet debit)
      * 6. حساب العمولة (لا تتجاوز عمولة المنصة) + إيداع في المحفظة الشخصية
      *
-     * @param  User                $investor  المستثمر
+     * @param  User                $investor  المضارب
      * @param  Task                $task      المهمة المراد دفعها
      * @param  InvestmentContract  $contract  العقد النشط
      * @throws \Exception
@@ -42,7 +42,7 @@ class InvestorPaymentService
 
             // ── 2. التحقق من أهلية المهمة ────────────────────────────────────
             if ($task->investor_payment_status !== 'none') {
-                throw new \Exception('هذه المهمة تم دفعها مسبقاً من قبل مستثمر آخر.');
+                throw new \Exception('هذه المهمة تم دفعها مسبقاً من قبل مضارب آخر.');
             }
             if ($task->closed) {
                 throw new \Exception('لا يمكن الدفع على مهمة مقفلة.');
@@ -70,17 +70,17 @@ class InvestorPaymentService
                 }
             }
 
-            // ── 4. التحقق من رصيد محفظة الاستثمار ───────────────────────────
+            // ── 4. التحقق من رصيد محفظة المضاربة ───────────────────────────
             $investorBalance = $investorWallet->balance;
             if ($investorBalance < $taskPrice) {
                 throw new \Exception(
-                    "رصيد محفظة الاستثمار غير كافٍ. الرصيد المتاح: {$investorBalance} ر.س."
+                    "رصيد محفظة المضاربة غير كافٍ. الرصيد المتاح: {$investorBalance} ر.س."
                 );
             }
 
             $balanceAfterDebit = $investorBalance - $taskPrice;
 
-            // ── 5. خصم من محفظة الاستثمار ────────────────────────────────────
+            // ── 5. خصم من محفظة المضاربة ────────────────────────────────────
             InvestorWalletTransaction::create([
                 'investor_wallet_id' => $investorWallet->id,
                 'task_id'            => $task->id,
@@ -119,19 +119,19 @@ class InvestorPaymentService
                 }
             }
 
-            // ── 8. احتساب عمولة المستثمر وإيداعها في المحفظة الشخصية ────────
+            // ── 8. احتساب عمولة المضارب وإيداعها في المحفظة الشخصية ────────
             $this->creditInvestorCommission($investor, $task, $contract);
         });
     }
 
     /**
-     * احتساب عمولة مستثمر عام على جميع مهام المنصة ضمن نطاق العقد.
-     * تُستدعى عند الضغط على زر "احتساب العمولات" من لوحة تحكم المستثمر.
+     * احتساب عمولة مضارب عام على جميع مهام المنصة ضمن نطاق العقد.
+     * تُستدعى عند الضغط على زر "احتساب العمولات" من لوحة تحكم المضارب.
      *
      * القواعد:
      * - تُحتسب فقط المهام التي created_at بين start_date و end_date
-     * - لا تُحتسب عمولة على مهمة سبق احتساب عمولتها لهذا المستثمر
-     * - عمولة المستثمر لا تتجاوز عمولة المنصة لكل مهمة
+     * - لا تُحتسب عمولة على مهمة سبق احتساب عمولتها لهذا المضارب
+     * - عمولة المضارب لا تتجاوز عمولة المنصة لكل مهمة
      *
      * @param  User               $investor
      * @param  InvestmentContract $contract
@@ -141,7 +141,7 @@ class InvestorPaymentService
     public function calculateGeneralCommissions(User $investor, InvestmentContract $contract): array
     {
         if ($contract->contract_type !== 'general_investment') {
-            throw new \Exception('هذه الدالة مخصصة للمستثمر العام فقط.');
+            throw new \Exception('هذه الدالة مخصصة للمضارب العام فقط.');
         }
 
         if (!$contract->isActive()) {
@@ -150,15 +150,15 @@ class InvestorPaymentService
 
         $personalWallet = $investor->userWallet;
         if (!$personalWallet) {
-            throw new \Exception('لا توجد محفظة شخصية للمستثمر.');
+            throw new \Exception('لا توجد محفظة شخصية للمضارب.');
         }
 
         // جلب المهام المغلقة ضمن نطاق تاريخ العقد
         $tasksQuery = Task::with('ad')
             ->where('closed', true) // فقط المهام المغلقة والمكتملة
             ->where(function($q) use ($investor) {
-                // يسمح بالمهام التي لا يوجد لها مستثمر (مهام المنصة) 
-                // أو المهام التي مولها نفس المستثمر الحالي
+                // يسمح بالمهام التي لا يوجد لها مضارب (مهام المنصة) 
+                // أو المهام التي مولها نفس المضارب الحالي
                 $q->whereNull('investor_id')
                   ->orWhere('investor_id', $investor->id);
             })
@@ -178,7 +178,7 @@ class InvestorPaymentService
             ->when(!empty($contract->filter_customer_ids), function($q) use ($contract) {
                 $q->whereIn('customer_id', $contract->filter_customer_ids);
             })
-            // استثناء المهام التي تم احتساب عمولتها لهذا المستثمر مسبقاً
+            // استثناء المهام التي تم احتساب عمولتها لهذا المضارب مسبقاً
             ->whereNotExists(function ($sub) use ($personalWallet) {
                 $sub->from('user_wallet_transactions')
                     ->where('user_wallet_id', $personalWallet->id)
@@ -219,11 +219,11 @@ class InvestorPaymentService
                     continue;
                 }
 
-                // 3. حساب نصيب المستثمر بناءً على المبلغ الفعلي لعمولة المنصة
+                // 3. حساب نصيب المضارب بناءً على المبلغ الفعلي لعمولة المنصة
                 $investorCommission = $contract->calculateCommission($platformCut);
                 if ($investorCommission <= 0) continue;
 
-                $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "مستثمر عام");
+                $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "مضارب عام");
 
                 $totalCommission += $investorCommission;
                 $count++;
@@ -234,7 +234,7 @@ class InvestorPaymentService
     }
 
     /**
-     * إيداع عمولة المستثمر في محفظته الشخصية بعد الدفع على مهمة.
+     * إيداع عمولة المضارب في محفظته الشخصية بعد الدفع على مهمة.
      * مشتركة بين نوعي الاستثمار.
      */
     private function creditInvestorCommission(User $investor, Task $task, InvestmentContract $contract): void
@@ -261,7 +261,7 @@ class InvestorPaymentService
             return;
         }
 
-        // 3. حساب نصيب المستثمر من المبلغ الفعلي
+        // 3. حساب نصيب المضارب من المبلغ الفعلي
         $investorCommission = $contract->calculateCommission($platformCut);
         if ($investorCommission <= 0) return;
 
@@ -269,7 +269,7 @@ class InvestorPaymentService
     }
 
     /**
-     * معالجة واحتساب وتوزيع عمولة الوسيط وعمولة المستثمر النهائية.
+     * معالجة واحتساب وتوزيع عمولة الوسيط وعمولة المضارب النهائية.
      */
     private function processBrokerAndInvestorCommission(
         User $investor, 
@@ -315,14 +315,14 @@ class InvestorPaymentService
                         'task_id'          => $task->id,
                         'transaction_type' => 'credit',
                         'amount'           => $brokerShare,
-                        'description'      => "عمولة وسيط: تسويق المستثمر {$investor->name} للمهمة #{$task->id}",
+                        'description'      => "عمولة وسيط: تسويق المضارب {$investor->name} للمهمة #{$task->id}",
                         'status'           => true,
                     ]);
                 }
             }
         }
 
-        // هـ. إيداع حصة المستثمر النهائية
+        // هـ. إيداع حصة المضارب النهائية
         UserWalletTransaction::create([
             'user_wallet_id'   => $personalWallet->id,
             'task_id'          => $task->id,
@@ -334,7 +334,7 @@ class InvestorPaymentService
     }
 
     /**
-     * إيداع مبلغ في محفظة الاستثمار (يستخدمه Admin).
+     * إيداع مبلغ في محفظة المضاربة (يستخدمه Admin).
      *
      * @param  User   $investor
      * @param  float  $amount
@@ -346,7 +346,7 @@ class InvestorPaymentService
             $wallet = $investor->investorWallet;
 
             if (!$wallet) {
-                throw new \Exception('لا توجد محفظة استثمار لهذا المستثمر.');
+                throw new \Exception('لا توجد محفظة مضاربة لهذا المضارب.');
             }
 
             $newBalance = $wallet->balance + $amount;

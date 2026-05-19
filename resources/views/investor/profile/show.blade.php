@@ -20,7 +20,7 @@
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-3 mt-sm-0">
-                        <span class="badge bg-label-success px-3 py-2"><i class="ti ti-shield-check me-1"></i>مستثمر معتمد</span>
+                        <span class="badge bg-label-success px-3 py-2"><i class="ti ti-shield-check me-1"></i>مضارب معتمد</span>
                     </div>
                 </div>
             </div>
@@ -50,7 +50,7 @@
                             <div class="badge bg-label-primary rounded p-2 me-2"><i class="ti ti-certificate ti-sm"></i></div>
                             <div>
                                 <small class="text-muted d-block small">نوع العقد</small>
-                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? 'استثمار بالمهام' : 'استثمار عام' }}</span>
+                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? 'مضاربة بالمهام' : 'مضاربة عامة' }}</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
@@ -76,7 +76,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <h6 class="mb-3">هل تحتاج للمساعدة؟</h6>
-                    <p class="text-muted small">إذا كان لديك أي استفسار حول حسابك أو استثماراتك، يمكنك التواصل مع الدعم الفني.</p>
+                    <p class="text-muted small">إذا كان لديك أي استفسار حول حسابك أو مضارباتك، يمكنك التواصل مع الدعم الفني.</p>
                     <button class="btn btn-label-secondary w-100"><i class="ti ti-headset me-1"></i>تواصل معنا</button>
                 </div>
             </div>

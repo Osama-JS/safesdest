@@ -8,8 +8,8 @@ use Illuminate\Http\Request;
 class InvestorMiddleware
 {
     /**
-     * يتحقق من أن المستخدم الحالي مستثمر.
-     * يحمي routes لوحة تحكم المستثمر.
+     * يتحقق من أن المستخدم الحالي مضارب.
+     * يحمي routes لوحة تحكم المضارب.
      */
     public function handle(Request $request, Closure $next)
     {
@@ -17,7 +17,7 @@ class InvestorMiddleware
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'غير مصرح بالوصول'], 403);
             }
-            return redirect()->route('login')->with('error', 'هذه الصفحة مخصصة للمستثمرين فقط.');
+            return redirect()->route('login')->with('error', 'هذه الصفحة مخصصة للمضاربين فقط.');
         }
 
         return $next($request);

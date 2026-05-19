@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ __('Investor Receipt') }} #{{ $transaction->id }}</title>
+    <title>{{ __('Speculator Receipt') }} #{{ $transaction->id }}</title>
     <style>
         body {
             font-family: 'tajawal', 'Arial', sans-serif;
@@ -195,7 +195,7 @@
 
     {{-- Receipt Title --}}
     <div class="receipt-title">
-        إيصال استلام محفظة الاستثمار / Investor Wallet Receipt
+        إيصال استلام محفظة المضاربة / Speculator Wallet Receipt
     </div>
 
     {{-- Receipt Info --}}
@@ -213,12 +213,12 @@
 
     {{-- Formal Arabic Text --}}
     <div class="formal-text">
-        استلمت من المستثمر المحترم/ـة 
+        استلمت من المضارب المحترم/ـة 
         <span class="highlight">{{ $user->name }}</span>
         مبلغ وقدره 
         <span class="highlight">{{ number_format($transaction->amount, 2) }} ريال سعودي</span>
         <span>({{ $amountInWords }})</span>
-        موردة إلى محفظة الاستثمار الخاصة به رقم 
+        موردة إلى محفظة المضاربة الخاصة به رقم 
         <span class="highlight">#{{ $wallet->id }}</span>
         مقيدة في العملية رقم 
         <span class="highlight">#{{ $transaction->id }}</span>
@@ -286,7 +286,7 @@
                 ___________________
             </div>
             <div style="display: table-cell; width: 50%; text-align: left;">
-                <strong>توقيع المستثمر</strong><br><br>
+                <strong>توقيع المضارب</strong><br><br>
                 ___________________
             </div>
         </div>

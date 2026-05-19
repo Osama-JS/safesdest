@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>شحن محفظة الاستثمار — SafeDest</title>
+    <title>شحن محفظة المضاربة — SafeDest</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet"/>
     <style>
@@ -136,7 +136,7 @@
             </div>
 
             <a href="{{ route('investor.investment-wallet') }}" class="back-link">
-                &larr; العودة لمحفظة الاستثمار
+                &larr; العودة لمحفظة المضاربة
             </a>
         </div>
     </div>

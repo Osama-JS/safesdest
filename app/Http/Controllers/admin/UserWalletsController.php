@@ -575,7 +575,7 @@ class UserWalletsController extends Controller
             $user = User::findOrFail($userId);
             $wallet = $user->userWallet;
 
-            // التحقق من وجود مستثمر آخر
+            // التحقق من وجود مضارب آخر
             $fundedByOther = $task->investor_id && $task->investor_id != $userId;
 
             // التحقق هل تم الاحتساب مسبقاً لهذا المستخدم
@@ -627,12 +627,12 @@ class UserWalletsController extends Controller
             $contract = $investor->activeInvestmentContract;
 
             if (!$contract) {
-                return response()->json(['status' => 0, 'error' => 'لا يوجد عقد نشط لهذا المستثمر.']);
+                return response()->json(['status' => 0, 'error' => 'لا يوجد عقد نشط لهذا المضارب.']);
             }
 
             // شرط عدم التداخل مع مستثمر آخر
             if ($task->investor_id && $task->investor_id != $userId) {
-                return response()->json(['status' => 0, 'error' => 'هذه المهمة ممولة من مستثمر آخر.']);
+                return response()->json(['status' => 0, 'error' => 'هذه المهمة ممولة من مضارب آخر.']);
             }
 
             // منع التكرار
@@ -661,11 +661,11 @@ class UserWalletsController extends Controller
                 return response()->json(['status' => 0, 'error' => 'لا توجد عمولة للمنصة في هذه المهمة.']);
             }
 
-            // حساب نصيب المستثمر
+            // حساب نصيب المضارب
             $investorCommission = $contract->calculateCommission($platformCut);
 
             if ($investorCommission <= 0) {
-                return response()->json(['status' => 0, 'error' => 'عمولة المستثمر تساوي صفراً بناءً على العقد.']);
+                return response()->json(['status' => 0, 'error' => 'عمولة المضارب تساوي صفراً بناءً على العقد.']);
             }
 
             UserWalletTransaction::create([
@@ -673,7 +673,7 @@ class UserWalletsController extends Controller
                 'task_id'          => $task->id,
                 'amount'           => $investorCommission,
                 'transaction_type' => 'credit',
-                'description'      => "عمولة المستثمر من المهمة رقم #{$task->id}",
+                'description'      => "عمولة المضارب من المهمة رقم #{$task->id}",
                 'created_by'       => Auth::id(),
             ]);
 
@@ -691,7 +691,7 @@ class UserWalletsController extends Controller
             $contract = $investor->activeInvestmentContract;
 
             if (!$contract || $contract->contract_type !== 'general_investment') {
-                return response()->json(['status' => 0, 'error' => 'هذه الميزة متاحة للمستثمر العام فقط.']);
+                return response()->json(['status' => 0, 'error' => 'هذه الميزة متاحة للمضارب العام فقط.']);
             }
 
             $result = $paymentService->calculateGeneralCommissions($investor, $contract);
@@ -720,7 +720,7 @@ class UserWalletsController extends Controller
                 $brokerWallet = $this->createWallet($userId);
             }
 
-            // جلب عقود الاستثمار النشطة المرتبطة بالوسيط
+            // جلب عقود المضاربة النشطة المرتبطة بالوسيط
             $contracts = InvestmentContract::where('broker_id', $userId)
                 ->where('status', 'active')
                 ->get();
@@ -728,7 +728,7 @@ class UserWalletsController extends Controller
             if ($contracts->isEmpty()) {
                 return response()->json([
                     'status' => 0,
-                    'error' => 'هذا المستخدم ليس وسيطاً نشطاً لأي عقد استثماري حالي.'
+                    'error' => 'هذا المستخدم ليس وسيطاً نشطاً لأي عقد مضاربة حالي.'
                 ]);
             }
 
@@ -738,7 +738,7 @@ class UserWalletsController extends Controller
             foreach ($contracts as $contract) {
                 $investorId = $contract->user_id;
 
-                // جلب المهام الممولة من هذا المستثمر والتي تندرج تحت فترة هذا العقد
+                // جلب المهام الممولة من هذا المضارب والتي تندرج تحت فترة هذا العقد
                 $query = Task::where('investor_id', $investorId)
                     ->whereIn('payment_status', ['paid', 'completed'])
                     ->where('created_at', '>=', $contract->start_date->startOfDay());
@@ -788,14 +788,14 @@ class UserWalletsController extends Controller
                     $brokerShare = 0;
 
                     if ($contract->broker_commission_source === 'investor_commission') {
-                        // من حصة المستثمر
+                        // من حصة المضارب
                         $investorCommission = $contract->calculateCommission($platformCut);
                         if ($contract->broker_commission_type === 'percentage') {
                             $brokerShare = ($investorCommission * $contract->broker_commission_value) / 100;
                         } else {
                             $brokerShare = (float) $contract->broker_commission_value;
                         }
-                        // حماية ألا تزيد حصة الوسيط عن عمولة المستثمر نفسها
+                        // حماية ألا تزيد حصة الوسيط عن عمولة المضارب نفسها
                         $brokerShare = min($brokerShare, $investorCommission);
                     } else {
                         // من عمولة المهمة (المنصة)
@@ -804,7 +804,7 @@ class UserWalletsController extends Controller
                         } else {
                             $brokerShare = (float) $contract->broker_commission_value;
                         }
-                        // حماية المنصة: يجب ألا يتجاوز مجموع حصة المستثمر وحصة الوسيط عمولة المنصة
+                        // حماية المنصة: يجب ألا يتجاوز مجموع حصة المضارب وحصة الوسيط عمولة المنصة
                         $investorCommission = $contract->calculateCommission($platformCut);
                         if ($investorCommission + $brokerShare > $platformCut) {
                             $brokerShare = max(0.00, $platformCut - $investorCommission);
@@ -821,7 +821,7 @@ class UserWalletsController extends Controller
                         'task_id'          => $task->id,
                         'amount'           => $brokerShare,
                         'transaction_type' => 'credit',
-                        'description'      => "عمولة وسيط: تسويق المستثمر {$contract->investor->name} للمهمة رقم #{$task->id}",
+                        'description'      => "عمولة وسيط: تسويق المضارب {$contract->investor->name} للمهمة رقم #{$task->id}",
                         'created_by'       => Auth::id(),
                         'status'           => true,
                     ]);
@@ -835,7 +835,7 @@ class UserWalletsController extends Controller
                 DB::rollBack();
                 return response()->json([
                     'status' => 1,
-                    'info' => 'لا توجد مهام جديدة غير محتسبة تندرج تحت شروط عقود استثمار هذا الوسيط.'
+                    'info' => 'لا توجد مهام جديدة غير محتسبة تندرج تحت شروط عقود مضاربة هذا الوسيط.'
                 ]);
             }
 

@@ -338,7 +338,7 @@ class InvestorController extends Controller
       );
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'تم حفظ بيانات المستثمر والعقد بنجاح']);
+      return response()->json(['status' => 1, 'success' => 'تم حفظ بيانات المضارب والعقد بنجاح']);
     } catch (Exception $e) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
@@ -381,7 +381,7 @@ class InvestorController extends Controller
       $investor = User::findOrFail($request->id);
       // Mark as deleted instead of actual delete to preserve financial records
       $investor->update(['status' => 'deleted']);
-      return response()->json(['status' => 1, 'success' => 'تم حذف المستثمر بنجاح']);
+      return response()->json(['status' => 1, 'success' => 'تم حذف المضارب بنجاح']);
     } catch (Exception $e) {
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
     }
@@ -394,10 +394,10 @@ class InvestorController extends Controller
       $contract = $investor->activeInvestmentContract;
 
       if (!$contract) {
-        return response()->json(['status' => 0, 'error' => 'لا يوجد عقد استثمار نشط لهذا المستثمر']);
+        return response()->json(['status' => 0, 'error' => 'لا يوجد عقد مضاربة نشط لهذا المضارب']);
       }
 
-      // جلب المهام التي لم يتم ربطها بمستثمر وتم إنشاؤها منذ تاريخ بداية الاستثمار
+      // جلب المهام التي لم يتم ربطها بمضارب وتم إنشاؤها منذ تاريخ بداية المضاربة
       $tasks = Task::whereNull('investor_id')
         ->where('created_at', '>=', $contract->start_date->startOfDay())
         ->where('payment_status', 'paid') // نفترض أنها مدفوعة مسبقاً كما ذكر المستخدم
@@ -430,7 +430,7 @@ class InvestorController extends Controller
       $contract = $investor->activeInvestmentContract;
 
       if (!$wallet || !$contract) {
-        throw new Exception('المستثمر لا يملك محفظة أو عقد نشط');
+        throw new Exception('المضارب لا يملك محفظة أو عقد نشط');
       }
 
       $tasks = Task::whereIn('id', $request->task_ids)->get();
@@ -448,7 +448,7 @@ class InvestorController extends Controller
           'investor_payment_status' => 'paid',
         ]);
 
-        // 2. تسجيل عملية الاستثمار في محفظة الاستثمار (خصم)
+        // 2. تسجيل عملية المضاربة في محفظة المضاربة (خصم)
         $currentBalance = $wallet->balance - $totalInvested;
         InvestorWalletTransaction::create([
           'investor_wallet_id' => $wallet->id,
@@ -462,7 +462,7 @@ class InvestorController extends Controller
 
         $totalInvested += $taskPrice;
 
-        // 3. إذا كان مستثمر مهام، نحتسب عمولته فوراً
+        // 3. إذا كان مضارب مهام، نحتسب عمولته فوراً
         if ($contract->contract_type === 'task_investment') {
           $platformCommission = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
           if ($platformCommission > 0) {

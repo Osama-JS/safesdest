@@ -23,7 +23,7 @@
               <span class="avatar-initial rounded bg-label-warning"><i class="ti ti-wallet"></i></span>
             </div>
             <div>
-              <small class="d-block text-muted">رصيد الاستثمار المتاح</small>
+              <small class="d-block text-muted">رصيد المضاربة المتاح</small>
               <h5 class="mb-0 fw-bold text-warning">{{ number_format($walletBalance, 2) }} <small>ر.س</small></h5>
             </div>
           </div>
@@ -161,7 +161,7 @@
                 </button>
               @else
                 <button class="btn btn-label-danger w-100" disabled>
-                  <i class="ti ti-alert-triangle me-1"></i> رصيد الاستثمار لا يكفي
+                  <i class="ti ti-alert-triangle me-1"></i> رصيد المضاربة لا يكفي
                 </button>
               @endif
             </div>
@@ -174,7 +174,7 @@
               <img src="{{ asset('assets/img/illustrations/page-misc-under-maintenance.png') }}" alt="No tasks" width="150"
                 class="mb-4">
               <h5 class="text-muted">لا توجد مهام متاحة للتمويل حالياً</h5>
-              <p class="text-muted px-md-5">بناءً على إعدادات عقدك، ستظهر هنا المهام التي تتوافق مع شروط الاستثمار الخاصة بك
+              <p class="text-muted px-md-5">بناءً على إعدادات عقدك، ستظهر هنا المهام التي تتوافق مع شروط المضاربة الخاصة بك
                 فور توفرها.</p>
             </div>
           </div>

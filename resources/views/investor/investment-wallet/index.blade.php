@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'محفظة الاستثمار')
+@section('title', 'محفظة المضاربة')
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -8,11 +8,11 @@
     {{-- رأس الصفحة --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1"><i class="ti ti-wallet me-2 text-warning"></i>محفظة الاستثمار</h4>
+            <h4 class="fw-bold mb-1"><i class="ti ti-wallet me-2 text-warning"></i>محفظة المضاربة</h4>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('investor.dashboard') }}">الرئيسية</a></li>
-                    <li class="breadcrumb-item active">محفظة الاستثمار</li>
+                    <li class="breadcrumb-item active">محفظة المضاربة</li>
                 </ol>
             </nav>
         </div>
@@ -25,7 +25,7 @@
             @endif
             <button type="button" class="btn btn-primary d-flex align-items-center shadow-sm py-2 px-4" data-bs-toggle="modal" data-bs-target="#depositModal" style="background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); border: none;">
                 <i class="ti ti-credit-card me-2 ti-sm"></i>
-                <span class="fw-bold">شحن محفظة الإستثمار</span>
+                <span class="fw-bold">شحن محفظة المضاربة</span>
             </button>
         </div>
     </div>
@@ -57,7 +57,7 @@
                     </div>
                     <p class="mb-1 fw-medium">الرصيد المتاح حالياً</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-warning me-1">ر.س</span> جاهز للاستثمار
+                        <span class="text-warning me-1">ر.س</span> جاهز للمضاربة
                     </p>
                 </div>
             </div>
@@ -207,7 +207,7 @@
                     @csrf
                     <div class="modal-body">
                         <div class="mb-4 text-center">
-                            <p class="text-muted">أدخل المبلغ الذي تود إضافته لمحفظة الاستثمار عبر بوابة الدفع الإلكتروني</p>
+                            <p class="text-muted">أدخل المبلغ الذي تود إضافته لمحفظة المضاربة عبر بوابة الدفع الإلكتروني</p>
                         </div>
 
                         <div class="mb-4">

@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'لوحة تحكم المستثمر')
+@section('title', 'لوحة تحكم المضارب')
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss'])
@@ -70,7 +70,7 @@
                     height: 300,
                     type: 'donut'
                 },
-                labels: ['إجمالي المستثمر', 'إجمالي الأرباح'],
+                labels: ['إجمالي المضارب', 'إجمالي الأرباح'],
                 series: [{{ (float)$stats['total_invested'] }}, {{ (float)$stats['total_commissions'] }}],
                 colors: [config.colors.primary, config.colors.success],
                 stroke: { width: 0 },
@@ -133,7 +133,7 @@
                 <div class="card-body d-flex justify-content-between flex-wrap gap-3">
                     <div class="d-flex flex-column justify-content-center">
                         <h4 class="text-white mb-1">مرحباً، {{ auth()->user()->name }} 👋</h4>
-                        <p class="mb-3">نحن سعداء برؤية استثماراتك تنمو اليوم.</p>
+                        <p class="mb-3">نحن سعداء برؤية مضارباتك تنمو اليوم.</p>
                         <div class="d-flex gap-2 flex-wrap">
                             @if($contract)
                                 <span class="badge bg-white text-primary px-3">
@@ -158,7 +158,7 @@
                 <div class="card-body text-center d-flex flex-column justify-content-center">
                     <div class="row">
                         <div class="col-6 border-end">
-                            <p class="mb-1 text-muted small">إجمالي المستثمر</p>
+                            <p class="mb-1 text-muted small">إجمالي المضارب</p>
                             <h4 class="mb-0 fw-bold">{{ number_format($stats['total_invested'], 2) }}</h4>
                         </div>
                         <div class="col-6">
@@ -188,7 +188,7 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($stats['investment_balance'], 2) }}</h4>
                     </div>
-                    <p class="mb-1">رصيد الاستثمار المتاح</p>
+                    <p class="mb-1">رصيد المضاربة المتاح</p>
                     <p class="mb-0 small text-muted">
                         <span class="text-success me-1">جاهز للتمويل</span>
                     </p>
@@ -236,7 +236,7 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ $contract ? $contract->start_date->format('Y-m-d') : '—' }}</h4>
                     </div>
-                    <p class="mb-1">تاريخ بداية الاستثمار</p>
+                    <p class="mb-1">تاريخ بداية المضاربة</p>
                     <p class="mb-0 small text-muted">
                         <span class="text-muted">العقد الحالي</span>
                     </p>
@@ -264,7 +264,7 @@
         <div class="col-lg-4 col-12 mt-4 mt-lg-0">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title m-0 me-2 text-muted">نسبه الربح الى الإستثمار</h5>
+                    <h5 class="card-title m-0 me-2 text-muted">نسبة الربح إلى المضاربة</h5>
                 </div>
                 <div class="card-body">
                     <div id="investmentRadialChart"></div>
@@ -272,7 +272,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge badge-dot bg-primary"></span>
-                                <small class="fw-bold">إجمالي المستثمر</small>
+                                <small class="fw-bold">إجمالي المضارب</small>
                             </div>
                             <small class="fw-bold">{{ number_format($stats['total_invested'], 2) }} ر.س</small>
                         </div>
@@ -294,7 +294,7 @@
         <div class="col-md-8 col-12">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">آخر العمليات على محفظة الاستثمار</h5>
+                    <h5 class="card-title mb-0">آخر العمليات على محفظة المضاربة</h5>
                     <a href="{{ route('investor.investment-wallet') }}" class="btn btn-sm btn-label-primary">عرض الكل</a>
                 </div>
                 <div class="table-responsive">
@@ -345,7 +345,7 @@
                             <i class="ti ti-list-check me-3 text-success"></i> سجل المهام الممولة
                         </a>
                         <a href="{{ route('investor.investment-wallet') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
-                            <i class="ti ti-wallet me-3 text-warning"></i> كشف حساب الاستثمار
+                            <i class="ti ti-wallet me-3 text-warning"></i> كشف حساب المضاربة
                         </a>
                         <a href="{{ route('investor.profile') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
                             <i class="ti ti-settings me-3 text-info"></i> إعدادات الحساب

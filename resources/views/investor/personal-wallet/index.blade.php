@@ -16,7 +16,7 @@
                 </ol>
             </nav>
         </div>
-        {{-- زر احتساب العمولات للمستثمر العام فقط --}}
+        {{-- زر احتساب العمولات للمضارب العام فقط --}}
         @if($contract && $contract->contract_type === 'general_investment' && $contract->isActive())
         <div class="col-auto">
             <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#calculateCommissionsModal">
@@ -35,7 +35,7 @@
         @endif
     @endforeach
 
-    {{-- معلومات العقد للمستثمر العام --}}
+    {{-- معلومات العقد للمضارب العام --}}
     @if($contract && $contract->contract_type === 'general_investment')
     <div class="card bg-label-info mb-4 border-0">
         <div class="card-body py-3">

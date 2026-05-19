@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'إدارة المستثمرين')
+@section('title', 'إدارة المضاربين')
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
@@ -24,7 +24,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span>إجمالي المستثمرين</span>
+                            <span>إجمالي المضاربين</span>
                             <div class="d-flex align-items-center my-2">
                                 <h4 class="mb-0 me-2" id="total-investors">0</h4>
                             </div>
@@ -43,7 +43,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span>المستثمرون النشطون</span>
+                            <span>المضاربون النشطون</span>
                             <div class="d-flex align-items-center my-2">
                                 <h4 class="mb-0 me-2" id="active-investors">0</h4>
                             </div>
@@ -62,7 +62,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span>استثمار بالمهام</span>
+                            <span>مضاربة بالمهام</span>
                             <div class="d-flex align-items-center my-2">
                                 <h4 class="mb-0 me-2" id="task-based-investors">0</h4>
                             </div>
@@ -81,7 +81,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span>استثمار عام</span>
+                            <span>مضاربة عامة</span>
                             <div class="d-flex align-items-center my-2">
                                 <h4 class="mb-0 me-2" id="general-based-investors">0</h4>
                             </div>
@@ -99,10 +99,10 @@
 
     <div class="card">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">قائمة المستثمرين</h5>
+            <h5 class="card-title mb-0">قائمة المضاربين</h5>
             @can('save_investors')
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#investorModal" id="btn-add-investor">
-                    <i class="ti ti-plus me-1"></i> إضافة مستثمر جديد
+                    <i class="ti ti-plus me-1"></i> إضافة مضارب جديد
                 </button>
             @endcan
         </div>
@@ -111,7 +111,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>المستثمر</th>
+                        <th>المضارب</th>
                         <th>البريد الإلكتروني</th>
                         <th>رصيد المحفظة</th>
                         <th>نوع العقد</th>
@@ -125,7 +125,7 @@
         </div>
     </div>
 
-    {{-- Modal لإضافة/تعديل مستثمر --}}
+    {{-- Modal لإضافة/تعديل مضارب --}}
     @can('save_investors')
         <div class="modal fade" id="investorModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -135,8 +135,8 @@
                     </div>
                     <div class="modal-body px-sm-5 pb-5">
                         <div class="text-center mb-4">
-                            <h3 class="mb-2" id="modalTitle">إضافة مستثمر جديد</h3>
-                            <p class="text-muted">إدارة بيانات المستثمر وإعدادات العقد النشط</p>
+                            <h3 class="mb-2" id="modalTitle">إضافة مضارب جديد</h3>
+                            <p class="text-muted">إدارة بيانات المضارب وإعدادات العقد النشط</p>
                         </div>
                         <form id="investorForm" class="row g-3 form_submit" onsubmit="return false" method="POST" action="{{ route('admin.investors.store') }}" enctype="multipart/form-data">
                             <input type="hidden" name="id" id="investor_id">
@@ -215,12 +215,12 @@
                                                 <span class="status-error text-danger text-error"></span>
                                             </div>
 
-                                            <div class="col-12 mt-4"><h5 class="border-bottom pb-2">إعدادات العقد الاستثماري</h5></div>
+                                            <div class="col-12 mt-4"><h5 class="border-bottom pb-2">إعدادات عقد المضاربة</h5></div>
                                             <div class="col-md-6">
-                                                <label class="form-label">نوع الاستثمار</label>
+                                                <label class="form-label">نوع المضاربة</label>
                                                 <select name="contract_type" class="form-select" id="contract_type">
-                                                    <option value="task_investment">استثمار بالمهام (دفع يدوي لكل مهمة)</option>
-                                                    <option value="general_investment">استثمار عام (عمولات تراكمية دورية)</option>
+                                                    <option value="task_investment">مضاربة بالمهام (دفع يدوي لكل مهمة)</option>
+                                                    <option value="general_investment">مضاربة عامة (عمولات تراكمية دورية)</option>
                                                 </select>
                                                 <span class="contract_type-error text-danger text-error"></span>
                                             </div>
@@ -260,7 +260,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">الحد الأدنى لعمولة المنصة (اختياري)</label>
                                                 <input type="number" step="0.01" name="min_commission_threshold" class="form-control" placeholder="0.00">
-                                                <small class="text-muted">لا يُسمح بالاستثمار إذا كانت عمولة المنصة أقل من هذا الرقم</small>
+                                                <small class="text-muted">لا تُسمح المضاربة إذا كانت عمولة المنصة أقل من هذا الرقم</small>
                                                 <span class="min_commission_threshold-error text-danger text-error"></span>
                                             </div>
 
@@ -278,7 +278,7 @@
                                             <div class="col-md-6">
                                                 <label class="form-label">مصدر خصم عمولة الوسيط</label>
                                                 <select name="broker_commission_source" class="form-select">
-                                                    <option value="investor_commission">من عمولة أرباح المستثمر نفسها</option>
+                                                    <option value="investor_commission">من عمولة أرباح المضارب نفسها</option>
                                                     <option value="task_commission">من إجمالي عمولة المهمة (المنصة تتحملها)</option>
                                                 </select>
                                                 <span class="broker_commission_source-error text-danger text-error"></span>
@@ -417,7 +417,7 @@
         </div>
     @endcan
 
-    {{-- Modal لعرض تفاصيل المستثمر --}}
+    {{-- Modal لعرض تفاصيل المضارب --}}
     <div class="modal fade" id="viewInvestorModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
@@ -426,7 +426,7 @@
                 </div>
                 <div class="modal-body px-sm-5 pb-5">
                     <div class="text-center mb-4">
-                        <h3 class="mb-2">تفاصيل المستثمر</h3>
+                        <h3 class="mb-2">تفاصيل المضارب</h3>
                         <p class="text-muted">البيانات الشخصية والمالية الكاملة</p>
                     </div>
                     
@@ -453,7 +453,7 @@
                                         <span class="avatar-initial rounded bg-label-primary"><i class="ti ti-wallet"></i></span>
                                     </div>
                                     <div>
-                                        <small class="d-block text-muted">محفظة الاستثمار (الرصيد المتاح)</small>
+                                        <small class="d-block text-muted">محفظة المضاربة (الرصيد المتاح)</small>
                                         <h5 class="mb-0 text-primary" id="view-invest-balance">0.00 ر.س</h5>
                                     </div>
                                 </div>
@@ -511,7 +511,7 @@
                 <div class="modal-body px-sm-5 pb-5">
                     <div class="text-center mb-4">
                         <h3 class="mb-2">ربط المهام التاريخية</h3>
-                        <p class="text-muted">اختر المهام التي قام المستثمر بتمويلها سابقاً لربطها بنظام الاستثمار</p>
+                        <p class="text-muted">اختر المهام التي قام المضارب بتمويلها سابقاً لربطها بنظام المضاربة</p>
                         <h5 id="investor-name-modal" class="text-primary mt-2"></h5>
                     </div>
                     
@@ -519,7 +519,7 @@
                         <div class="d-flex">
                             <i class="ti ti-alert-triangle me-2"></i>
                             <div>
-                                <strong>ملاحظة:</strong> سيتم خصم قيمة المهام المحددة من محفظة الاستثمار وتسجيل عمولة المستثمر (إذا كان العقد بالمهام).
+                                <strong>ملاحظة:</strong> سيتم خصم قيمة المهام المحددة من محفظة المضاربة وتسجيل عمولة المضارب (إذا كان العقد بالمهام).
                             </div>
                         </div>
                     </div>

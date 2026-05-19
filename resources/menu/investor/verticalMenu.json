@@ -11,7 +11,7 @@
     },
     {
       "url": "investor/investment-wallet",
-      "name": "محفظة الاستثمار",
+      "name": "محفظة المضاربة",
       "icon": "menu-icon tf-icons ti ti-wallet",
       "slug": "investor.investment-wallet"
     },

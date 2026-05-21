@@ -122,8 +122,17 @@ class HyperpayService
     /**
      * Query payment status using HyperPay resourcePath from callback redirect.
      */
+
     public function getPaymentStatusByResourcePath(string $resourcePath, string $brand = 'VISA MASTER'): ?array
     {
+        // Ensure resourcePath is only the path, not a full URL or with extra params
+        if (strpos($resourcePath, 'http') === 0) {
+            $parsed = parse_url($resourcePath);
+            $resourcePath = $parsed['path'] ?? $resourcePath;
+        }
+        // Remove any query string
+        $resourcePath = explode('?', $resourcePath)[0];
+
         $entityId = $this->getEntityId($brand);
         $url      = "{$this->apiUrl}/v1/payments?entityId={$entityId}&resourcePath={$resourcePath}";
 

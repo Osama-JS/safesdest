@@ -50,11 +50,25 @@ class InvestorWallet extends Model
     }
 
     /**
-     * إجمالي الإيداعات
+     * إجمالي الإيداعات (رأس المال)
      */
     public function getCreditAttribute(): float
     {
-        return (float) $this->transactions()->where('transaction_type', 'credit')->sum('amount');
+        return (float) $this->transactions()
+            ->where('transaction_type', 'credit')
+            ->where('source_type', 'capital')
+            ->sum('amount');
+    }
+
+    /**
+     * إجمالي استعادة الاستثمار (المبالغ المستردة)
+     */
+    public function getReturnedCapitalAttribute(): float
+    {
+        return (float) $this->transactions()
+            ->where('transaction_type', 'credit')
+            ->where('source_type', 'refund')
+            ->sum('amount');
     }
 
     /**

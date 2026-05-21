@@ -48,7 +48,7 @@
 
     <!-- Wallet Statistics -->
     <div class="row g-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm overflow-hidden">
                 <div class="card-body position-relative">
                     <div class="d-flex align-items-center mb-2">
@@ -64,14 +64,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm overflow-hidden">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">
                         <div class="avatar bg-label-info rounded me-3">
                             <i class="ti ti-trending-up ti-md"></i>
                         </div>
-                        <span class="text-muted fw-medium">إجمالي الإيداعات</span>
+                        <span class="text-muted fw-medium">إجمالي رأس المال</span>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="mb-0 fw-bold text-info">{{ number_format($credit, 2) }}</h3>
@@ -80,7 +80,23 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar bg-label-warning rounded me-3">
+                            <i class="ti ti-arrow-back-up ti-md"></i>
+                        </div>
+                        <span class="text-muted fw-medium">إجمالي استعادة الاستثمار</span>
+                    </div>
+                    <div class="d-flex align-items-baseline">
+                        <h3 class="mb-0 fw-bold text-warning">{{ number_format($returned_capital, 2) }}</h3>
+                        <span class="ms-2 text-muted">ر.س</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm overflow-hidden">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">

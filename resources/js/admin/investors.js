@@ -182,18 +182,24 @@ $(function () {
         {
           // Reset Password
           targets: 7,
+          searchable: false,
+          orderable: false,
           render: function (data, type, full, meta) {
             var $status = full['reset_password'];
             return (
-              '<label class="switch">' +
+              '<label class="switch switch-success">' +
               '<input type="checkbox" class="switch-input reset-password" data-id="' +
               full['id'] +
               '" ' +
               ($status == 1 ? 'checked' : '') +
               '>' +
               '<span class="switch-toggle-slider">' +
-              '<span class="switch-on"></span>' +
-              '<span class="switch-off"></span>' +
+              '<span class="switch-on">' +
+              '<i class="ti ti-check"></i>' +
+              '</span>' +
+              '<span class="switch-off">' +
+              '<i class="ti ti-x"></i>' +
+              '</span>' +
               '</span>' +
               '</label>'
             );

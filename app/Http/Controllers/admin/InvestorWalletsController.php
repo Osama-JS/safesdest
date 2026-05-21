@@ -49,6 +49,7 @@ class InvestorWalletsController extends Controller
                 'wallet' => $wallet,
                 'balance' => $wallet->balance,
                 'credit' => $wallet->credit,
+                'returned_capital' => $wallet->returned_capital,
                 'debit' => $wallet->debit,
             ]);
 
@@ -130,6 +131,7 @@ class InvestorWalletsController extends Controller
                 $nestedData['id'] = $transaction->id;
                 $nestedData['amount'] = number_format($transaction->amount, 2);
                 $nestedData['transaction_type'] = $transaction->transaction_type;
+                $nestedData['source_type'] = $transaction->source_type;
                 $nestedData['description'] = $transaction->description;
                 $nestedData['attachment'] = $transaction->attachment;
                 $nestedData['task_id'] = $transaction->task_id ?? '-';
@@ -224,6 +226,7 @@ class InvestorWalletsController extends Controller
                 'investor_wallet_id' => $wallet->id,
                 'amount'             => $amount,
                 'transaction_type'   => $request->type,
+                'source_type'        => 'capital',
                 'description'        => $request->description,
                 'performed_by'       => Auth::id(),
                 'balance_after'      => $tempBalance,

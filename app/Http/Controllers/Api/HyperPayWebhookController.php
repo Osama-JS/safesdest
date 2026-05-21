@@ -135,7 +135,8 @@ class HyperPayWebhookController extends Controller
                 'amount' => $amount > 0 ? $amount : 0,
                 'transaction_type' => 'credit',
                 'description' => "استرداد مبالغ - فشل تحويل HyperPay (السبب: {$failureReason})",
-                'performed_by' => 1 // System
+                'performed_by' => 1, // System
+                'source_type' => 'capital'
             ]);
             Log::error("Investor Payout for Wallet #{$walletId} failed via Webhook and was refunded. Reason: " . $failureReason);
         }

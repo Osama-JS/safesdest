@@ -3218,6 +3218,7 @@ class TasksController extends Controller
                             'investor_wallet_id' => $investorWallet->id,
                             'task_id'            => $task->id,
                             'transaction_type'   => 'credit',
+                            'source_type'        => 'refund',
                             'amount'             => $task->total_price,
                             'description'        => "إيداع عكسي: استرداد رأس مال المهمة المستردة رقم #{$task->id}",
                             'performed_by'       => Auth::id(),

@@ -81,7 +81,7 @@
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 
     <script>
-        const templateId = {{ $task_template->value ?? 0 }}
+        const templateId = {{ $task_template?->value ?? 0 }}
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
@@ -209,7 +209,8 @@
 
         <!-- Search Input -->
         <div>
-            <input type="text" id="task-search-input" class="form-control" placeholder="{{ __('Search by ID, Customer or Admin...') }}">
+            <input type="text" id="task-search-input" class="form-control"
+                placeholder="{{ __('Search by ID, Customer or Admin...') }}">
         </div>
     </div>
 @endsection

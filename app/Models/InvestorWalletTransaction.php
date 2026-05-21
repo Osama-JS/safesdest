@@ -17,6 +17,7 @@ class InvestorWalletTransaction extends Model
         'performed_by',
         'balance_after',
         'attachment',
+        'source_type',
     ];
 
     protected $casts = [

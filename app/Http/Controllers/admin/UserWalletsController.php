@@ -405,22 +405,21 @@ class UserWalletsController extends Controller
                 ]);
             }
 
-            $currentBalance = $wallet->balance;
+            // للمستثمر بالمهام: يُستخدم الرصيد القابل للسحب الفعلي (المهام المسواة فقط)
+            // للمستثمر العام: يساوي الرصيد الدفتري الكامل
+            $currentBalance = $wallet->withdrawable_balance;
             $debtCeiling = $wallet->debt_ceiling;
             $requestedAmount = $request->amount;
 
             // حساب الرصيد بعد السحب
             $balanceAfterWithdrawal = $currentBalance - $requestedAmount;
 
-            // التحقق من عدم تجاوز سقف الدين
-            if ($balanceAfterWithdrawal < -$debtCeiling) {
-                $maxWithdrawalAmount = $currentBalance + $debtCeiling;
+            // التحقق من عدم تجاوز الرصيد المتاح للسحب
+            if ($balanceAfterWithdrawal < 0) {
                 return response()->json([
                     'status' => 2,
-                    'error' => __('Withdrawal amount exceeds debt ceiling. Maximum withdrawal allowed: ') .
-                              number_format($maxWithdrawalAmount, 2) . ' SAR' .
-                              ' (Current Balance: ' . number_format($currentBalance, 2) . ' SAR, ' .
-                              'Debt Ceiling: ' . number_format($debtCeiling, 2) . ' SAR)'
+                    'error'  => __('Withdrawal amount exceeds the available withdrawable balance. Maximum withdrawal allowed: ') .
+                                number_format($currentBalance, 2) . ' SAR'
                 ]);
             }
 

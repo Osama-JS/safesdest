@@ -286,10 +286,19 @@ $(function () {
         },
         {
           targets: 16,
+          responsivePriority: 7,
           render: function (data, type, full, meta) {
-            return full.closed
-              ? '<span class="badge bg-success">Yes</span>'
-              : '<span class="badge bg-danger">No</span>';
+            if (full.closed) {
+              var deliveryHtml = '';
+              if (full.delivery) {
+                deliveryHtml =
+                  '<br><span class="text-muted small fw-medium mt-1 d-block" style="font-size: 0.75rem;">Delivery Number: ' +
+                  full.delivery +
+                  '</span>';
+              }
+              return '<span class="badge bg-success">Closed</span>' + deliveryHtml;
+            }
+            return '<span class="badge bg-danger">No</span>';
           }
         },
         {
@@ -1570,7 +1579,7 @@ $(function () {
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-        'Accept': 'application/json'
+        Accept: 'application/json'
       },
       body: JSON.stringify({ ids: selectedIds })
     })

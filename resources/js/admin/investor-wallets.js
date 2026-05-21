@@ -49,9 +49,16 @@ $(function () {
           targets: 2,
           render: function (data, type, full, meta) {
             var $type = data;
-            var $badge = $type === 'credit' ? 'bg-label-success' : 'bg-label-danger';
-            var $title = $type === 'credit' ? 'إيداع' : 'خصم';
-            return '<span class="badge ' + $badge + '">' + $title + '</span>';
+            var $sourceType = full['source_type'];
+            if ($type === 'credit') {
+              if ($sourceType === 'refund') {
+                return '<span class="badge bg-label-info">استعادة استثمار</span>';
+              } else {
+                return '<span class="badge bg-label-success">إيداع رأس مال</span>';
+              }
+            } else {
+              return '<span class="badge bg-label-danger">تمويل مهمة</span>';
+            }
           }
         },
         {

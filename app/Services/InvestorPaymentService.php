@@ -85,6 +85,7 @@ class InvestorPaymentService
                 'investor_wallet_id' => $investorWallet->id,
                 'task_id'            => $task->id,
                 'transaction_type'   => 'debit',
+                'source_type'        => 'capital',
                 'amount'             => $taskPrice,
                 'description'        => "دفع قيمة المهمة رقم #{$task->id}",
                 'performed_by'       => auth()->id() ?? $investor->id,
@@ -354,6 +355,7 @@ class InvestorPaymentService
             InvestorWalletTransaction::create([
                 'investor_wallet_id' => $wallet->id,
                 'transaction_type'   => 'credit',
+                'source_type'        => 'capital',
                 'amount'             => $amount,
                 'description'        => $description,
                 'performed_by'       => auth()->id(),

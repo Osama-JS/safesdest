@@ -46,8 +46,48 @@
                 <div>
                     <p class="mb-0 small fw-medium text-info">نطاق الاستحقاق الفعلي</p>
                     <p class="mb-0 small">
-                        أنت تحصل على <strong>{{ $contract->commission_value }}{{ $contract->commission_type === 'percentage' ? '%' : ' ر.س ثابت' }}</strong> 
+                        أنت تحصل على <strong>{{ $contract->commission_value }}{{ $contract->commission_type === 'percentage' ? '%' : ' ر.س ثابت' }}</strong>
                         من صافي عمولة المنصة لكل مهمة تنطبق عليها شروط عقدك.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- تنبيه خاص بالمستثمر بالمهام --}}
+    @if($contract && $contract->contract_type === 'task_investment')
+    <div class="card mb-4 border-0" style="background: linear-gradient(135deg, #f0f7ff 0%, #e8f4e8 100%); border-right: 4px solid #696cff !important; border-right-width: 4px !important;">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-start gap-3">
+                <div class="avatar avatar-sm flex-shrink-0 mt-1">
+                    <span class="avatar-initial rounded-circle" style="background: linear-gradient(135deg, #696cff, #7367f0); color:#fff;">
+                        <i class="ti ti-shield-check"></i>
+                    </span>
+                </div>
+                <div class="flex-grow-1">
+                    <p class="mb-1 fw-bold" style="color:#696cff; font-size: 0.9rem;">
+                        <i class="ti ti-calculator me-1"></i>كيف يُحتسب الرصيد القابل للسحب؟
+                    </p>
+                    <p class="mb-2 small text-muted">
+                        بما أنك مستثمر بالمهام، يتم احتساب رصيدك القابل للسحب بدقة محاسبية وفق المعادلة التالية:
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                        <span class="badge" style="background:#e8f4e8; color:#28a745; font-size:0.8rem; padding: 6px 10px;">
+                            <i class="ti ti-check me-1"></i>عمولات المهام المسواة
+                        </span>
+                        <span class="text-muted fw-bold">+</span>
+                        <span class="badge" style="background:#fff3cd; color:#856404; font-size:0.8rem; padding: 6px 10px;">
+                            <i class="ti ti-gift me-1"></i>الإيداعات اليدوية (مكافآت)
+                        </span>
+                        <span class="text-muted fw-bold">−</span>
+                        <span class="badge" style="background:#fde8e8; color:#dc3545; font-size:0.8rem; padding: 6px 10px;">
+                            <i class="ti ti-arrow-up me-1"></i>إجمالي السحوبات السابقة
+                        </span>
+                    </div>
+                    <p class="mb-0 small" style="color:#555;">
+                        <i class="ti ti-info-circle me-1 text-primary"></i>
+                        عمولة المهمة تصبح <strong>قابلة للسحب</strong> فقط بعد تسوية مبلغها وإرجاع رأس المال إلى محفظة استثمارك.
                     </p>
                 </div>
             </div>
@@ -57,22 +97,32 @@
 
     {{-- بطاقات الإحصائيات --}}
     <div class="row g-4 mb-4">
+        {{-- الرصيد القابل للسحب --}}
         <div class="col-sm-6 col-xl-4">
-            <div class="card card-border-shadow-success h-100">
+            <div class="card h-100" style="border-top: 3px solid #28a745; box-shadow: 0 4px 18px rgba(40,167,69,0.10);">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
                         <div class="avatar me-2">
-                            <span class="avatar-initial rounded bg-label-success"><i class="ti ti-cash ti-md"></i></span>
+                            <span class="avatar-initial rounded" style="background: linear-gradient(135deg,#28a745,#20c997); color:#fff;">
+                                <i class="ti ti-wallet ti-md"></i>
+                            </span>
                         </div>
-                        <h4 class="ms-1 mb-0">{{ number_format($personalWallet?->balance ?? 0, 2) }}</h4>
+                        <h4 class="ms-1 mb-0 text-success">{{ number_format($personalWallet?->withdrawable_balance ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">الرصيد المتاح للسحب</p>
+                    <p class="mb-1 fw-bold">الرصيد المتاح للسحب</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-success me-1">ر.س</span> رصيد أرباحك الصافي
+                        <span class="text-success me-1">ر.س</span>
+                        @if($contract && $contract->contract_type === 'task_investment')
+                            عمولات المهام المسواة + الإيداعات اليدوية − السحوبات
+                        @else
+                            رصيد أرباحك الصافي المتاح
+                        @endif
                     </p>
                 </div>
             </div>
         </div>
+
+        {{-- إجمالي العمولات المكتسبة --}}
         <div class="col-sm-6 col-xl-4">
             <div class="card card-border-shadow-primary h-100">
                 <div class="card-body">
@@ -84,11 +134,20 @@
                     </div>
                     <p class="mb-1 fw-medium">إجمالي العمولات المكتسبة</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-primary me-1">ر.س</span> إجمالي ما دخل المحفظة
+                        <span class="text-primary me-1">ر.س</span>
+                        @if($contract && $contract->contract_type === 'task_investment')
+                            <span class="badge bg-label-warning" style="font-size:0.72rem;">
+                                <i class="ti ti-clock-hour-4 me-1"></i>قد تتضمن عمولات غير مسواة
+                            </span>
+                        @else
+                            إجمالي ما دخل المحفظة
+                        @endif
                     </p>
                 </div>
             </div>
         </div>
+
+        {{-- عدد العمليات --}}
         <div class="col-sm-6 col-xl-4">
             <div class="card card-border-shadow-info h-100">
                 <div class="card-body">

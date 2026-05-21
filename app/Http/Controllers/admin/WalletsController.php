@@ -758,6 +758,7 @@ class WalletsController extends Controller
                                 'task_id' => $debitTx->task->id,
                                 'amount' => $payment,
                                 'transaction_type' => 'credit',
+                                'source_type' => 'refund',
                                 'description' => "استرداد رأس مال للمهمة رقم #{$debitTx->task->id} بعد سداد العميل",
                                 'performed_by' => auth()->id(),
                                 'balance_after' => $newBalance

@@ -458,6 +458,7 @@ class InvestorController extends Controller
           'description' => "دفع قيمة المهمة رقم #{$task->id}",
           'performed_by' => auth()->id(),
           'balance_after' => $currentBalance - $taskPrice,
+          'source_type' => 'capital',
         ]);
 
         $totalInvested += $taskPrice;

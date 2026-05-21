@@ -894,6 +894,13 @@ Route::middleware(['auth:web', 'investor'])
             ->name('profile.update');
         Route::put('password', [App\Http\Controllers\investor\InvestorProfileController::class, 'updatePassword'])
             ->name('password.update');
+
+        // إدارة التوقيع الإلكتروني
+        Route::prefix('signature')->name('signature.')->group(function () {
+            Route::post('upload', [App\Http\Controllers\investor\InvestorSignatureController::class, 'upload'])->name('upload');
+            Route::get('get', [App\Http\Controllers\investor\InvestorSignatureController::class, 'get'])->name('get');
+            Route::post('delete', [App\Http\Controllers\investor\InvestorSignatureController::class, 'delete'])->name('delete');
+        });
     });
 
 // Firebase Testing Routes

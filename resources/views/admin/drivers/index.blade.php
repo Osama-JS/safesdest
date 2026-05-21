@@ -16,7 +16,7 @@
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 
     <script>
-        const templateId = {{ $driver_template->value ?? 0 }}
+        const templateId = {{ $driver_template?->value ?? 0 }}
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
@@ -613,8 +613,7 @@
                                                                 <option value="AE">United Arab Emirates (AE)</option>
                                                                 <option value="EG">Egypt (EG)</option>
                                                             </select>
-                                                            <span
-                                                                class="bank_country-error text-danger text-error"></span>
+                                                            <span class="bank_country-error text-danger text-error"></span>
                                                         </div>
                                                     </div>
 
@@ -644,7 +643,7 @@
                                                 <option value="">{{ __('-- Select Template') }}</option>
                                                 @foreach ($templates as $key)
                                                     <option value="{{ $key->id }}"
-                                                        {{ $driver_template->value == $key->id ? 'selected' : '' }}>
+                                                        {{ $driver_template?->value == $key->id ? 'selected' : '' }}>
                                                         {{ $key->name }}</option>
                                                 @endforeach
                                             </select>

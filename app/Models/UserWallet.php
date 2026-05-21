@@ -75,6 +75,59 @@ class UserWallet extends Model
   }
 
   /**
+   * حساب الرصيد المتاح الفعلي للسحب
+   *
+   * للمستثمر العام: الرصيد الدفتري الكامل (credit - debit)
+   * للمستثمر بالمهام: عمولات المهام المسواة + الإيداعات اليدوية - السحوبات
+   * شرط التسوية: وجود حركة credit في investor_wallet_transactions بنفس task_id
+   */
+  public function getWithdrawableBalanceAttribute()
+  {
+    $user = $this->user;
+    if (!$user) {
+      return 0.00;
+    }
+
+    $contract = $user->activeInvestmentContract;
+
+    // إذا كان مستثمراً بالمهام نطبق المعادلة المحسوبة
+    if ($contract && $contract->contract_type === 'task_investment') {
+      $investorWallet   = $user->investorWallet;
+      $investorWalletId = $investorWallet ? $investorWallet->id : 0;
+
+      // إجمالي الإيداعات القابلة للسحب:
+      //   أ) إيداعات بدون task_id (مكافآت يدوية وتسويات إدارية) → قابلة فوراً
+      //   ب) إيداعات مرتبطة بمهام → مشروطة بوجود حركة credit في محفظة الاستثمار
+      //      بنفس task_id (أي أن رأس المال أُعيد لمحفظة الاستثمار)
+      $settledCredits = $this->transactions()
+        ->where('transaction_type', 'credit')
+        ->where(function ($q) use ($investorWalletId) {
+          // الإيداعات اليدوية (بدون مهمة)
+          $q->whereNull('task_id')
+            // أو عمولات مهام تم استرداد رأس مالها
+            ->orWhere(function ($q2) use ($investorWalletId) {
+              $q2->whereNotNull('task_id')
+                ->whereExists(function ($sub) use ($investorWalletId) {
+                  $sub->from('investor_wallet_transactions')
+                    ->where('investor_wallet_id', $investorWalletId)
+                    ->whereColumn('task_id', 'user_wallet_transactions.task_id')
+                    ->where('transaction_type', 'credit'); // رد رأس المال
+                });
+            });
+        })
+        ->sum('amount');
+
+      // إجمالي المبالغ المسحوبة (debit)
+      $totalWithdrawn = $this->debit;
+
+      return (float) max(0.00, $settledCredits - $totalWithdrawn);
+    }
+
+    // المستثمر العام أو غير المضارب: الرصيد الدفتري الكامل
+    return (float) max(0.00, $this->balance);
+  }
+
+  /**
    * الحصول على آخر معاملة
    */
   public function getLastTransactionAttribute()

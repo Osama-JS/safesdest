@@ -34,6 +34,7 @@ class InvestorTaskPaymentController extends Controller
         $walletBalance  = $investorWallet?->balance ?? 0;
 
         $query = Task::availableForInvestorPayment()
+            ->whereNotNull('customer_id')
             ->with(['customer', 'pickup', 'delivery', 'ad'])
             ->latest();
 

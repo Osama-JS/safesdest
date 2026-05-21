@@ -29,7 +29,7 @@ class InvestorDashboardController extends Controller
 
         $stats = [
             'investment_balance' => $investorWallet?->balance ?? 0,
-            'personal_balance'   => $personalWallet?->balance ?? 0,
+            'personal_balance'   => $personalWallet?->withdrawable_balance ?? 0,
             'paid_tasks_count'   => Task::where('investor_id', $investor->id)->count(),
             'total_commissions'  => $totalCommissions,
             'total_invested'     => $totalInvested,

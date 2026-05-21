@@ -2,6 +2,14 @@
 
 @section('title', 'الملف الشخصي')
 
+@section('vendor-style')
+    @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+@endsection
+
+@section('vendor-script')
+    @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+@endsection
+
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
 
@@ -95,6 +103,11 @@
                     <li class="nav-item">
                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-security" aria-controls="navs-pills-top-security" aria-selected="false">
                             <i class="ti ti-lock me-1"></i> الأمان وكلمة المرور
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-signature" aria-controls="navs-pills-top-signature" aria-selected="false">
+                            <i class="ti ti-signature me-1"></i> التوقيع الإلكتروني
                         </button>
                     </li>
                 </ul>
@@ -194,9 +207,45 @@
                             </div>
                         </div>
                     </div>
+                    {{-- التوقيع الإلكتروني --}}
+                    <div class="tab-pane fade" id="navs-pills-top-signature" role="tabpanel">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h5 class="card-title mb-3">إدارة التوقيع الإلكتروني</h5>
+                                <p class="card-text text-muted mb-4">
+                                    يستخدم التوقيع الإلكتروني في توقيع العقود والاتفاقيات الخاصة بالمضاربات تلقائياً.
+                                </p>
+                                
+                                @if($investor->signature_image)
+                                    <div class="mb-4">
+                                        <label class="form-label d-block text-muted mb-2">التوقيع الحالي:</label>
+                                        <div class="border rounded p-3 d-inline-block bg-light">
+                                            <img src="{{ asset($investor->signature_image) }}" alt="التوقيع الحالي" style="max-height: 120px; max-width: 100%;">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="window.signatureModalManager.open()">
+                                        <i class="ti ti-pencil me-1"></i> تعديل التوقيع
+                                    </button>
+                                @else
+                                    <div class="mb-4">
+                                        <div class="border border-dashed rounded p-4 text-muted bg-light">
+                                            <i class="ti ti-signature ti-xl mb-2"></i>
+                                            <p class="mb-0">لا يوجد توقيع مسجل حالياً</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="window.signatureModalManager.open()">
+                                        <i class="ti ti-plus me-1"></i> إضافة التوقيع
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@include('investor.partials.signature-modal')
+
 @endsection

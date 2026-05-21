@@ -46,7 +46,7 @@
 
     {{-- بطاقات الإحصائيات --}}
     <div class="row g-4 mb-4">
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-warning h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
@@ -62,7 +62,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-success h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
@@ -71,14 +71,30 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->credit ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">إجمالي الإيداعات</p>
+                    <p class="mb-1 fw-medium">إجمالي رأس المال</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-success me-1">ر.س</span> تم شحنها في المحفظة
+                        <span class="text-success me-1">ر.س</span> تم شحنها كـ رأس مال
                     </p>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-border-shadow-info h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2 pb-1">
+                        <div class="avatar me-2">
+                            <span class="avatar-initial rounded bg-label-info"><i class="ti ti-arrow-back-up ti-md"></i></span>
+                        </div>
+                        <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->returned_capital ?? 0, 2) }}</h4>
+                    </div>
+                    <p class="mb-1 fw-medium">إجمالي استعادة الاستثمار</p>
+                    <p class="mb-0 small text-muted">
+                        <span class="text-info me-1">ر.س</span> مستردة بعد تسوية المهام
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-danger h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
@@ -151,10 +167,17 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 @if($tx->transaction_type === 'credit')
-                                    <div class="avatar avatar-xs me-2">
-                                        <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-arrow-down-left"></i></span>
-                                    </div>
-                                    <span class="fw-medium text-success">إيداع</span>
+                                    @if($tx->source_type === 'refund')
+                                        <div class="avatar avatar-xs me-2">
+                                            <span class="avatar-initial rounded-circle bg-label-info"><i class="ti ti-arrow-back-up"></i></span>
+                                        </div>
+                                        <span class="fw-medium text-info">استعادة استثمار</span>
+                                    @else
+                                        <div class="avatar avatar-xs me-2">
+                                            <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-arrow-down-left"></i></span>
+                                        </div>
+                                        <span class="fw-medium text-success">إيداع رأس مال</span>
+                                    @endif
                                 @else
                                     <div class="avatar avatar-xs me-2">
                                         <span class="avatar-initial rounded-circle bg-label-danger"><i class="ti ti-arrow-up-right"></i></span>

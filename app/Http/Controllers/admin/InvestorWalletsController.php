@@ -262,6 +262,53 @@ class InvestorWalletsController extends Controller
     }
 
     /**
+     * تحويل عملية إيداع رأس مال إلى استعادة استثمار
+     */
+    public function convertTransactionToRefund(Request $request, $transactionId)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ], [
+            'password.required' => 'كلمة المرور مطلوبة لتأكيد العملية.',
+        ]);
+
+        if ($request->password !== 'osama@1998') {
+            return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة.']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = InvestorWalletTransaction::with('wallet')->findOrFail($transactionId);
+            $wallet = $transaction->wallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 2, 'error' => 'المحفظة المرتبطة بهذه العملية غير موجودة.']);
+            }
+
+            if ($transaction->transaction_type !== 'credit' || $transaction->source_type === 'refund') {
+                return response()->json(['status' => 2, 'error' => 'هذه العملية ليست إيداع رأس مال صالح للتحويل.']);
+            }
+
+            if ($transaction->task_id) {
+                return response()->json(['status' => 2, 'error' => 'لا يمكن تحويل عملية مرتبطة بمهمة.']);
+            }
+
+            $transaction->update([
+                'source_type' => 'refund',
+                'description' => $transaction->description . ' | تم تحويل الإيداع إلى استعادة استثمار',
+            ]);
+
+            DB::commit();
+
+            return response()->json(['status' => 1, 'success' => 'تم تحويل الإيداع إلى استعادة استثمار بنجاح.']);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * حذف معاملة (فقط إذا لم تكن مرتبطة بمهمة)
      */
     public function destroyTransaction(Request $req)

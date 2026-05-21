@@ -328,6 +328,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::get('/{userId}/invest-wallet', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'show'])->name('invest-wallet');
                     Route::get('/{userId}/invest-wallet/transactions', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getTransactions'])->name('invest-wallet.getTransactions');
                     Route::post('/invest-wallet/transaction', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'addTransaction'])->name('invest-wallet.addTransaction');
+                    Route::post('/invest-wallet/transaction/convert/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'convertTransactionToRefund'])->name('invest-wallet.convertTransaction');
                     Route::delete('/invest-wallet/transaction/delete/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroyTransaction'])->name('invest-wallet.destroyTransaction');
                     Route::get('/invest-wallet/transaction/receipt/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'downloadReceipt'])->name('invest-wallet.downloadReceipt');
                 });

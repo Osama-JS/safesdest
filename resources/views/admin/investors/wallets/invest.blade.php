@@ -15,6 +15,7 @@
         const investorId = {{ $user->id }};
         const transactionsDataUrl = '{{ route('admin.investors.invest-wallet.getTransactions', $user->id) }}';
         const addTransactionUrl = '{{ route('admin.investors.invest-wallet.addTransaction') }}';
+        const convertTransactionUrl = '{{ url("admin/investors/invest-wallet/transaction/convert") }}';
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
     @vite(['resources/js/admin/investor-wallets.js'])
@@ -201,6 +202,40 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Convert Deposit To Refund Modal -->
+    <div class="modal fade" id="convertTransactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">تحويل إيداع رأس مال إلى استعادة استثمار</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">هل أنت متأكد من تحويل هذه العملية من <strong>إيداع رأس مال</strong> إلى <strong>استعادة استثمار</strong>؟</p>
+                    <p class="text-muted">سيتم تحديث نوع العملية فقط، وسيظهر المبلغ الآن ضمن الاستعادة الاستثمارية دون تغيير في الرصيد المتاح.</p>
+                    <input type="hidden" id="convert_transaction_id">
+                    <div class="mb-3">
+                        <label class="form-label">رقم العملية</label>
+                        <div id="convertTransactionReference" class="fw-bold">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المبلغ</label>
+                        <div id="convertTransactionAmount" class="fw-bold text-success">-</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="convertTransactionPassword">كلمة المرور للتأكيد</label>
+                        <input type="password" id="convertTransactionPassword" class="form-control" placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
+                        <div class="form-text text-muted">يُطلب إدخال كلمة المرور لتأكيد عملية التحويل.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" id="confirmConvertTransaction" class="btn btn-warning">نعم، تحويل الآن</button>
+                </div>
             </div>
         </div>
     </div>

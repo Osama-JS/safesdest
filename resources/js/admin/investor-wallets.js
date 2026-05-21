@@ -101,10 +101,15 @@ $(function () {
             // Only allow edit/delete if not related to a task AND not a debit transaction
             if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
                 actions += '<a href="javascript:;" class="text-body edit-record me-2" data-id="' + data + '" title="تعديل"><i class="ti ti-edit ti-sm"></i></a>';
-                actions += '<a href="javascript:;" class="text-body delete-record" data-id="' + data + '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
+                actions += '<a href="javascript:;" class="text-body delete-record me-2" data-id="' + data + '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
             } else {
                 var lockTitle = full['transaction_type'] === 'debit' ? 'عملية تمويل - لا يمكن التعديل أو الحذف' : 'مرتبطة بمهمة - لا يمكن التعديل أو الحذف';
                 actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+            }
+
+            // Convert capital deposit to investment recovery
+            if (full['transaction_type'] === 'credit' && full['source_type'] !== 'refund' && (!full['task_id'] || full['task_id'] === '-')) {
+                actions += '<a href="javascript:;" class="text-body convert-investment me-2" data-id="' + data + '" data-amount="' + full['amount'] + '" title="تحويل إلى استعادة استثمار"><i class="ti ti-arrow-forward ti-sm"></i></a>';
             }
             
             actions += '</div>';
@@ -216,6 +221,13 @@ $(function () {
       $('#modalTitle').text('إضافة حركة مالية جديدة');
   });
 
+  $('#convertTransactionModal').on('hidden.bs.modal', function () {
+      $('#convert_transaction_id').val('');
+      $('#convertTransactionReference').text('-');
+      $('#convertTransactionAmount').text('-');
+      $('#convertTransactionPassword').val('');
+  });
+
   // زر الطباعة - تحميل إيصال PDF احترافي
   $('.datatables-transactions tbody').on('click', '.print-record', function () {
     var id = $(this).data('id');
@@ -245,6 +257,89 @@ $(function () {
         '<a href="' + fileUrl + '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> تحميل / فتح الملف</a>' +
       '</div>');
     }
+  });
+
+  // Convert capital deposit to refund transaction
+  $('.datatables-transactions tbody').on('click', '.convert-investment', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    var id = $(this).data('id');
+    var amount = $(this).data('amount');
+
+    $('#convert_transaction_id').val(id);
+    $('#convertTransactionReference').text('#' + id);
+    $('#convertTransactionAmount').text(amount + ' ر.س');
+    $('#convertTransactionModal').modal('show');
+  });
+
+  $('#confirmConvertTransaction').on('click', function () {
+    var id = $('#convert_transaction_id').val();
+    var password = $('#convertTransactionPassword').val().trim();
+    var button = $(this);
+
+    if (!password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'مطلوب كلمة المرور',
+        text: 'يرجى إدخال كلمة المرور للتأكيد قبل المتابعة.',
+        customClass: {
+          confirmButton: 'btn btn-warning'
+        }
+      });
+      return;
+    }
+
+    button.prop('disabled', true);
+
+    $.ajax({
+      type: 'POST',
+      url: convertTransactionUrl + '/' + id,
+      data: {
+        password: password
+      },
+      headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (data) {
+        button.prop('disabled', false);
+        $('#convertTransactionModal').modal('hide');
+        if (data.status == 1) {
+          dt_transaction.draw();
+          Swal.fire({
+            icon: 'success',
+            title: 'تم بنجاح!',
+            text: data.success,
+            customClass: {
+              confirmButton: 'btn btn-success'
+            }
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: data.error,
+            customClass: {
+              confirmButton: 'btn btn-danger'
+            }
+          });
+        }
+      },
+      error: function () {
+        button.prop('disabled', false);
+        $('#convertTransactionModal').modal('hide');
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ أثناء معالجة التحويل.',
+          customClass: {
+            confirmButton: 'btn btn-danger'
+          }
+        });
+      }
+    });
   });
 
   // Delete Record

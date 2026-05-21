@@ -115,7 +115,7 @@ class InvestorWalletController extends Controller
 
         try {
             $callbackUrl = route('investor.investment-wallet.deposit.callback');
-            
+
             // Create Checkout Session
             $checkout = $this->hyperpay->createCheckout($amount, $brand, $callbackUrl, [
                 'merchantTransactionId' => 'INV-' . time() . '-' . $user->id,
@@ -162,16 +162,30 @@ class InvestorWalletController extends Controller
      */
     public function handleDepositCallback(Request $request)
     {
-        $checkoutId = $request->id;
-        $payment    = Payments::where('transaction_reference', $checkoutId)->first();
+        Log::info('Investor Deposit Callback Query', $request->query());
+
+        $checkoutId   = $request->query('id');
+        $resourcePath = $request->query('resourcePath');
+        $payment      = $checkoutId ? Payments::where('transaction_reference', $checkoutId)->first() : null;
 
         if (!$payment) {
             return redirect()->route('investor.investment-wallet')->with('error', 'بيانات العملية غير موجودة.');
         }
 
         try {
-            $brand    = strtoupper($payment->payment_method);
-            $result   = $this->hyperpay->getPaymentStatus($checkoutId, $brand);
+            $brand  = strtoupper($payment->payment_method);
+            $result = $checkoutId
+                ? $this->hyperpay->getPaymentStatus($checkoutId, $brand)
+                : null;
+
+            // إذا فشل الاستعلام الأول، حاول الاستعلام عبر resourcePath
+            if ((empty($result) || (isset($result['result']['code']) && $result['result']['code'] === '200.300.404')) && $resourcePath) {
+                $result = $this->hyperpay->getPaymentStatusByResourcePath($resourcePath, $brand);
+            }
+
+            if (empty($result)) {
+                throw new \Exception('فشل في الحصول على حالة الدفع من بوابة HyperPay.');
+            }
 
             $code    = $result['result']['code'] ?? '';
             $status  = HyperpayService::codeToStatus($code);
@@ -191,17 +205,20 @@ class InvestorWalletController extends Controller
                 $this->paymentService->depositToInvestorWallet($investor, (float)$payment->amount, "شحن إلكتروني للمحفظة (#{$payment->id})");
 
                 return redirect()->route('investor.investment-wallet')->with('success', 'تم شحن المحفظة بنجاح بمبلغ ' . number_format($payment->amount, 2) . ' ر.س');
-            } else {
-                // Failed
-                $payment->update([
-                    'status'           => 'failed',
-                    'gateway_code'     => $code,
-                    'gateway_msg'      => $message,
-                    'gateway_response' => json_encode($result)
-                ]);
-
-                return redirect()->route('investor.investment-wallet')->with('error', 'فشلت عملية الدفع: ' . $message);
             }
+
+            $payment->update([
+                'status'           => $status,
+                'gateway_code'     => $code,
+                'gateway_msg'      => $message,
+                'gateway_response' => json_encode($result)
+            ]);
+
+            if (in_array($status, ['pending', 'review'])) {
+                return redirect()->route('investor.investment-wallet')->with('info', 'تمت عملية الدفع بنجاح جزئياً، جاري انتظار تأكيد البنك.');
+            }
+
+            return redirect()->route('investor.investment-wallet')->with('error', 'فشلت عملية الدفع: ' . $message);
 
         } catch (\Exception $e) {
             Log::error('Investor Deposit Callback Error', ['error' => $e->getMessage()]);

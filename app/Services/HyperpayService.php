@@ -120,6 +120,24 @@ class HyperpayService
     }
 
     /**
+     * Query payment status using HyperPay resourcePath from callback redirect.
+     */
+    public function getPaymentStatusByResourcePath(string $resourcePath, string $brand = 'VISA MASTER'): ?array
+    {
+        $entityId = $this->getEntityId($brand);
+        $url      = "{$this->apiUrl}/v1/payments?entityId={$entityId}&resourcePath={$resourcePath}";
+
+        $response = $this->curlGet($url);
+
+        Log::info('HyperPay ResourcePath Status Query', [
+            'resourcePath' => $resourcePath,
+            'response'     => $response,
+        ]);
+
+        return $response;
+    }
+
+    /**
      * Determine if a HyperPay result code means success.
      * Codes: 000.000.* or 000.100.1xx → immediate success
      */

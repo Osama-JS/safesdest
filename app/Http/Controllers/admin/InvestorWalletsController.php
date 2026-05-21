@@ -14,7 +14,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-
 use App\Services\PdfService;
 use App\Services\HyperPayPayoutService;
 
@@ -191,21 +190,21 @@ class InvestorWalletsController extends Controller
                 if ($transaction->task_id) {
                     return response()->json(['status' => 2, 'error' => 'لا يمكن تعديل معاملة مرتبطة بمهمة.']);
                 }
-                
+
                 if ($transaction->transaction_type === 'debit') {
                     return response()->json(['status' => 2, 'error' => 'لا يمكن تعديل عمليات التمويل/السحب.']);
                 }
 
                 $oldAmount = $transaction->amount;
                 $oldType = $transaction->transaction_type;
-                
+
                 // Reverse old transaction impact on balance
                 // balance is dynamic, no need to update
             }
 
             // Check if new balance is valid for debit
             $tempBalance = $wallet->balance; // Uses the accessor to get current actual balance
-            
+
             // Adjust temp balance for modification of an existing transaction
             if ($transaction && $oldType === 'credit') {
                 $tempBalance -= $oldAmount;
@@ -316,7 +315,7 @@ class InvestorWalletsController extends Controller
         try {
             DB::beginTransaction();
             $transaction = InvestorWalletTransaction::findOrFail($req->id);
-            
+
             if ($transaction->task_id) {
                 return response()->json(['status' => 2, 'error' => 'لا يمكن حذف معاملة مرتبطة بمهمة مدفوعة.']);
             }
@@ -344,9 +343,10 @@ class InvestorWalletsController extends Controller
     public function downloadReceipt($transactionId)
     {
         try {
-            $transaction = InvestorWalletTransaction::with(['wallet.investor'])->findOrFail($transactionId);
+            $transaction = InvestorWalletTransaction::with(['wallet.investor', 'performer'])->findOrFail($transactionId);
             $wallet = $transaction->wallet;
             $user = $wallet->investor;
+            $performer = $transaction->performer;
 
             // تحويل المبلغ إلى كلمات بالعربية
             $amountInWords = $this->convertNumberToArabicWords($transaction->amount);
@@ -357,6 +357,7 @@ class InvestorWalletsController extends Controller
                 'transaction' => $transaction,
                 'wallet' => $wallet,
                 'user' => $user,
+                'performer' => $performer,
                 'amountInWords' => $amountInWords
             ], "{$fileName}.pdf", true);
 

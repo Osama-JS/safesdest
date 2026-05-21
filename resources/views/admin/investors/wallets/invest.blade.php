@@ -15,7 +15,7 @@
         const investorId = {{ $user->id }};
         const transactionsDataUrl = '{{ route('admin.investors.invest-wallet.getTransactions', $user->id) }}';
         const addTransactionUrl = '{{ route('admin.investors.invest-wallet.addTransaction') }}';
-        const convertTransactionUrl = '{{ url("admin/investors/invest-wallet/transaction/convert") }}';
+        const convertTransactionUrl = '{{ url('admin/investors/invest-wallet/transaction/convert') }}';
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
     @vite(['resources/js/admin/investor-wallets.js'])
@@ -152,7 +152,7 @@
                     <div class="modal-body">
                         <input type="hidden" name="id" id="transaction_id">
                         <input type="hidden" name="user" value="{{ $user->id }}">
-                        
+
                         <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
                             <span class="alert-icon text-primary me-2">
                                 <i class="ti ti-info-circle ti-xs"></i>
@@ -163,7 +163,8 @@
                         <!-- Amount -->
                         <div class="mb-4">
                             <label class="form-label" for="amount">* {{ __('Amount') }}</label>
-                            <input type="number" name="amount" class="form-control" placeholder="{{ __('Enter the amount') }}" step="0.01" min="0.01" required>
+                            <input type="number" name="amount" class="form-control"
+                                placeholder="{{ __('Enter the amount') }}" step="0.01" min="0.01" required>
                         </div>
 
                         <!-- Transaction Type -->
@@ -182,13 +183,15 @@
                         <!-- Description -->
                         <div class="mb-4">
                             <label class="form-label" for="description">* {{ __('Description / Notes') }}</label>
-                            <textarea name="description" class="form-control" rows="3" placeholder="{{ __('Enter transaction details...') }}" required></textarea>
+                            <textarea name="description" class="form-control" rows="3"
+                                placeholder="{{ __('Enter transaction details...') }}" required></textarea>
                         </div>
 
                         <!-- Attachment -->
                         <div class="mb-0">
                             <label class="form-label" for="attachment">{{ __('Upload Receipt / Attachment') }}</label>
-                            <input type="file" name="attachment" id="attachment" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                            <input type="file" name="attachment" id="attachment" class="form-control"
+                                accept=".jpg,.jpeg,.png,.pdf">
                             <div class="form-text text-muted mt-1">
                                 <small>{{ __('Supported formats: JPEG, PNG, PDF. Max size: 2MB') }}</small>
                             </div>
@@ -197,7 +200,8 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغاء</button>
                         <button type="submit" class="btn btn-primary btn-submit">
-                            <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"
+                                aria-hidden="true"></span>
                             {{ __('Submit Transaction') }}
                         </button>
                     </div>
@@ -215,8 +219,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-3">هل أنت متأكد من تحويل هذه العملية من <strong>إيداع رأس مال</strong> إلى <strong>استعادة استثمار</strong>؟</p>
-                    <p class="text-muted">سيتم تحديث نوع العملية فقط، وسيظهر المبلغ الآن ضمن الاستعادة الاستثمارية دون تغيير في الرصيد المتاح.</p>
+                    <p class="mb-3">هل أنت متأكد من تحويل هذه العملية من <strong>إيداع رأس مال</strong> إلى
+                        <strong>استعادة استثمار</strong>؟</p>
+                    <p class="text-muted">سيتم تحديث نوع العملية فقط، وسيظهر المبلغ الآن ضمن الاستعادة الاستثمارية دون
+                        تغيير في الرصيد المتاح.</p>
                     <input type="hidden" id="convert_transaction_id">
                     <div class="mb-3">
                         <label class="form-label">رقم العملية</label>
@@ -228,13 +234,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="convertTransactionPassword">كلمة المرور للتأكيد</label>
-                        <input type="password" id="convertTransactionPassword" class="form-control" placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
+                        <input type="password" id="convertTransactionPassword" class="form-control"
+                            placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
                         <div class="form-text text-muted">يُطلب إدخال كلمة المرور لتأكيد عملية التحويل.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="button" id="confirmConvertTransaction" class="btn btn-warning">نعم، تحويل الآن</button>
+                    <button type="button" id="confirmConvertTransaction" class="btn btn-warning">نعم، تحويل
+                        الآن</button>
                 </div>
             </div>
         </div>

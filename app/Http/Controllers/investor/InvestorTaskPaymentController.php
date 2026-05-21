@@ -75,7 +75,7 @@ class InvestorTaskPaymentController extends Controller
         ]);
 
         $investor = auth()->user();
-        
+
         // التحقق من صحة كلمة المرور
         if (!Hash::check($request->password, $investor->password)) {
             return back()->with('error', 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
@@ -105,10 +105,10 @@ class InvestorTaskPaymentController extends Controller
 
         $tasks = Task::where('investor_id', $investor->id)
             ->with([
-                'customer', 
-                'pickup', 
-                'delivery', 
-                'ad', 
+                'customer',
+                'pickup',
+                'delivery',
+                'ad',
                 'vehicle_size',
                 'userWalletTransactions' => function($q) use ($wallet) {
                     $q->where('user_wallet_id', $wallet->id)->where('transaction_type', 'credit');
@@ -144,7 +144,7 @@ class InvestorTaskPaymentController extends Controller
         $task->load(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user', 'driver']);
 
         $customerName = optional($task->customer)->name ?? optional($task->user)->name ?? 'user';
-        
+
         $file_name = sprintf(
             '%s_%s',
             $task->id,

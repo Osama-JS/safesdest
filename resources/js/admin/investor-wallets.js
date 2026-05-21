@@ -67,13 +67,20 @@ $(function () {
           render: function (data, type, full, meta) {
             var attachmentLink = '';
             if (full['attachment']) {
-                var attachmentUrl = baseUrl + 'storage/' + full['attachment'];
-                attachmentLink = '<div class="mt-1"><a href="javascript:;" class="text-primary fw-bold show-attachment" data-file="' + attachmentUrl + '"><i class="ti ti-link ti-xs me-1"></i>عرض المرفق</a></div>';
+              var attachmentUrl = baseUrl + 'storage/' + full['attachment'];
+              attachmentLink =
+                '<div class="mt-1"><a href="javascript:;" class="text-primary fw-bold show-attachment" data-file="' +
+                attachmentUrl +
+                '"><i class="ti ti-link ti-xs me-1"></i>عرض المرفق</a></div>';
             }
-            return '<div class="text-wrap" style="min-width: 200px;">' + 
-                     '<div>' + data + '</div>' + 
-                     attachmentLink + 
-                   '</div>';
+            return (
+              '<div class="text-wrap" style="min-width: 200px;">' +
+              '<div>' +
+              data +
+              '</div>' +
+              attachmentLink +
+              '</div>'
+            );
           }
         },
         {
@@ -81,7 +88,9 @@ $(function () {
           targets: 4,
           render: function (data, type, full, meta) {
             if (data && data !== '-') {
-                return '<a href="' + baseUrl + 'admin/tasks/show/' + data + '" class="badge bg-label-info">#' + data + '</a>';
+              return (
+                '<a href="' + baseUrl + 'admin/tasks/show/' + data + '" class="badge bg-label-info">#' + data + '</a>'
+              );
             }
             return '<span class="text-muted">-</span>';
           }
@@ -94,24 +103,45 @@ $(function () {
           orderable: false,
           render: function (data, type, full, meta) {
             var actions = '<div class="d-flex align-items-center">';
-            
+
             // Print Button
-            actions += '<a href="javascript:;" class="text-body print-record me-2" data-id="' + data + '" title="طباعة"><i class="ti ti-printer ti-sm"></i></a>';
+            actions +=
+              '<a href="javascript:;" class="text-body print-record me-2" data-id="' +
+              data +
+              '" title="طباعة"><i class="ti ti-printer ti-sm"></i></a>';
 
             // Only allow edit/delete if not related to a task AND not a debit transaction
             if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
-                actions += '<a href="javascript:;" class="text-body edit-record me-2" data-id="' + data + '" title="تعديل"><i class="ti ti-edit ti-sm"></i></a>';
-                actions += '<a href="javascript:;" class="text-body delete-record me-2" data-id="' + data + '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
+              actions +=
+                '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
+                data +
+                '" title="تعديل"><i class="ti ti-edit ti-sm"></i></a>';
+              actions +=
+                '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
+                data +
+                '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
             } else {
-                var lockTitle = full['transaction_type'] === 'debit' ? 'عملية تمويل - لا يمكن التعديل أو الحذف' : 'مرتبطة بمهمة - لا يمكن التعديل أو الحذف';
-                actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+              var lockTitle =
+                full['transaction_type'] === 'debit'
+                  ? 'عملية تمويل - لا يمكن التعديل أو الحذف'
+                  : 'مرتبطة بمهمة - لا يمكن التعديل أو الحذف';
+              actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
             }
 
             // Convert capital deposit to investment recovery
-            if (full['transaction_type'] === 'credit' && full['source_type'] !== 'refund' && (!full['task_id'] || full['task_id'] === '-')) {
-                actions += '<a href="javascript:;" class="text-body convert-investment me-2" data-id="' + data + '" data-amount="' + full['amount'] + '" title="تحويل إلى استعادة استثمار"><i class="ti ti-arrow-forward ti-sm"></i></a>';
+            if (
+              full['transaction_type'] === 'credit' &&
+              full['source_type'] !== 'refund' &&
+              (!full['task_id'] || full['task_id'] === '-')
+            ) {
+              actions +=
+                '<a href="javascript:;" class="text-body convert-investment me-2" data-id="' +
+                data +
+                '" data-amount="' +
+                full['amount'] +
+                '" title="تحويل إلى استعادة استثمار"><i class="ti ti-arrow-forward ti-sm"></i></a>';
             }
-            
+
             actions += '</div>';
             return actions;
           }
@@ -145,9 +175,9 @@ $(function () {
     e.preventDefault();
     var formData = new FormData(this);
     var submitBtn = $(this).find('.btn-submit');
-    
+
     submitBtn.prop('disabled', true).find('.spinner-border').removeClass('d-none');
-    
+
     $.ajax({
       url: addTransactionUrl,
       type: 'POST',
@@ -171,7 +201,7 @@ $(function () {
               confirmButton: 'btn btn-success'
             }
           }).then(() => {
-              location.reload(); // Refresh to update statistics
+            location.reload(); // Refresh to update statistics
           });
         } else {
           Swal.fire({
@@ -184,7 +214,7 @@ $(function () {
           });
         }
       },
-      error: function() {
+      error: function () {
         submitBtn.prop('disabled', false).find('.spinner-border').addClass('d-none');
         Swal.fire({
           icon: 'error',
@@ -202,13 +232,13 @@ $(function () {
   $('.datatables-transactions tbody').on('click', '.edit-record', function () {
     var id = $(this).data('id');
     var row = dt_transaction.row($(this).parents('tr')).data();
-    
+
     // Clear form and set values
     transactionForm[0].reset();
     $('#transaction_id').val(id);
     transactionForm.find('input[name="amount"]').val(row.amount.replace(/,/g, ''));
     transactionForm.find('textarea[name="description"]').val(row.description);
-    
+
     // Change modal title
     $('#modalTitle').text('تعديل معاملة مالية');
     $('#transactionModal').modal('show');
@@ -216,16 +246,16 @@ $(function () {
 
   // Reset modal on hide
   $('#transactionModal').on('hidden.bs.modal', function () {
-      transactionForm[0].reset();
-      $('#transaction_id').val('');
-      $('#modalTitle').text('إضافة حركة مالية جديدة');
+    transactionForm[0].reset();
+    $('#transaction_id').val('');
+    $('#modalTitle').text('إضافة حركة مالية جديدة');
   });
 
   $('#convertTransactionModal').on('hidden.bs.modal', function () {
-      $('#convert_transaction_id').val('');
-      $('#convertTransactionReference').text('-');
-      $('#convertTransactionAmount').text('-');
-      $('#convertTransactionPassword').val('');
+    $('#convert_transaction_id').val('');
+    $('#convertTransactionReference').text('-');
+    $('#convertTransactionAmount').text('-');
+    $('#convertTransactionPassword').val('');
   });
 
   // زر الطباعة - تحميل إيصال PDF احترافي
@@ -246,16 +276,30 @@ $(function () {
     $('#fileModal').modal('show');
 
     if (imageExtensions.includes(extension)) {
-      $('#modalFileContent').html('<img src="' + fileUrl + '" class="img-fluid rounded shadow-sm" alt="' + fileName + '" style="max-height: 70vh; width: auto; object-fit: contain;">');
+      $('#modalFileContent').html(
+        '<img src="' +
+          fileUrl +
+          '" class="img-fluid rounded shadow-sm" alt="' +
+          fileName +
+          '" style="max-height: 70vh; width: auto; object-fit: contain;">'
+      );
     } else if (extension === 'pdf') {
       // Use native browser PDF viewer
-      $('#modalFileContent').html('<iframe src="' + fileUrl + '" width="100%" height="600px" style="border:none;"></iframe>');
+      $('#modalFileContent').html(
+        '<iframe src="' + fileUrl + '" width="100%" height="600px" style="border:none;"></iframe>'
+      );
     } else {
-      $('#modalFileContent').html('<div class="p-4 text-center">' +
-        '<i class="ti ti-file-description ti-lg mb-3 d-block text-secondary"></i>' +
-        '<p class="mb-3"><strong>الملف:</strong> ' + fileName + '</p>' +
-        '<a href="' + fileUrl + '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> تحميل / فتح الملف</a>' +
-      '</div>');
+      $('#modalFileContent').html(
+        '<div class="p-4 text-center">' +
+          '<i class="ti ti-file-description ti-lg mb-3 d-block text-secondary"></i>' +
+          '<p class="mb-3"><strong>الملف:</strong> ' +
+          fileName +
+          '</p>' +
+          '<a href="' +
+          fileUrl +
+          '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> تحميل / فتح الملف</a>' +
+          '</div>'
+      );
     }
   });
 
@@ -347,7 +391,7 @@ $(function () {
     var id = $(this).data('id');
     Swal.fire({
       title: 'هل أنت متأكد؟',
-      text: "سيتم حذف هذه العملية وتحديث الرصيد!",
+      text: 'سيتم حذف هذه العملية وتحديث الرصيد!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'نعم، احذف!',
@@ -368,25 +412,25 @@ $(function () {
           success: function (data) {
             dt_transaction.draw();
             if (data.status == 1) {
-                Swal.fire({
-                  icon: 'success',
-                  title: 'تم الحذف!',
-                  text: 'تم حذف العملية بنجاح.',
-                  customClass: {
-                    confirmButton: 'btn btn-success'
-                  }
-                }).then(() => {
-                    location.reload();
-                });
+              Swal.fire({
+                icon: 'success',
+                title: 'تم الحذف!',
+                text: 'تم حذف العملية بنجاح.',
+                customClass: {
+                  confirmButton: 'btn btn-success'
+                }
+              }).then(() => {
+                location.reload();
+              });
             } else {
-                Swal.fire({
-                  icon: 'error',
-                  title: 'خطأ!',
-                  text: data.error,
-                  customClass: {
-                    confirmButton: 'btn btn-danger'
-                  }
-                });
+              Swal.fire({
+                icon: 'error',
+                title: 'خطأ!',
+                text: data.error,
+                customClass: {
+                  confirmButton: 'btn btn-danger'
+                }
+              });
             }
           }
         });

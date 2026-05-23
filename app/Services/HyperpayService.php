@@ -110,13 +110,15 @@ class HyperpayService
      */
     public function getPaymentStatus(string $checkoutId, string $brand = 'VISA MASTER'): ?array
     {
-        $entityId = $this->getEntityId($brand);
+        $entityId = urlencode($this->getEntityId($brand));
         $url      = "{$this->apiUrl}/v1/checkouts/{$checkoutId}/payment?entityId={$entityId}";
+        $url      = $this->sanitizeUrl($url);
 
         $response = $this->curlGet($url);
 
         Log::info('HyperPay Status Query', [
             'checkoutId' => $checkoutId,
+            'url'        => $url,
             'response'   => $response,
         ]);
 
@@ -128,14 +130,16 @@ class HyperpayService
      */
     public function getPaymentStatusByResourcePath(string $resourcePath, string $brand = 'VISA MASTER'): ?array
     {
-        $entityId = $this->getEntityId($brand);
+        $entityId = urlencode($this->getEntityId($brand));
         // urlencode the resourcePath and entityId to avoid malformed queries
-        $url      = "{$this->apiUrl}/v1/payments?entityId=" . urlencode($entityId) . "&resourcePath=" . urlencode($resourcePath);
+        $url      = "{$this->apiUrl}/v1/payments?entityId={$entityId}&resourcePath=" . urlencode($resourcePath);
+        $url      = $this->sanitizeUrl($url);
 
         $response = $this->curlGet($url);
 
         Log::info('HyperPay ResourcePath Status Query', [
             'resourcePath' => $resourcePath,
+            'url'          => $url,
             'response'     => $response,
         ]);
 
@@ -184,6 +188,14 @@ class HyperpayService
 
     private function curlPost(string $url, string $postFields): ?array
     {
+        $url = $this->sanitizeUrl($url);
+
+        Log::info('HyperPay Request', [
+            'method' => 'POST',
+            'url'    => $url,
+            'body'   => $postFields,
+        ]);
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $url,
@@ -198,7 +210,7 @@ class HyperpayService
         $resp  = curl_exec($ch);
         $errno = curl_errno($ch);
         if ($errno) {
-            Log::error('HyperPay cURL POST Error', ['errno' => $errno, 'error' => curl_error($ch)]);
+            Log::error('HyperPay cURL POST Error', ['errno' => $errno, 'error' => curl_error($ch), 'url' => $url]);
             curl_close($ch);
             return null;
         }
@@ -209,6 +221,13 @@ class HyperpayService
 
     private function curlGet(string $url): ?array
     {
+        $url = $this->sanitizeUrl($url);
+
+        Log::info('HyperPay Request', [
+            'method' => 'GET',
+            'url'    => $url,
+        ]);
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL            => $url,
@@ -221,12 +240,44 @@ class HyperpayService
         $resp  = curl_exec($ch);
         $errno = curl_errno($ch);
         if ($errno) {
-            Log::error('HyperPay cURL GET Error', ['errno' => $errno, 'error' => curl_error($ch)]);
+            Log::error('HyperPay cURL GET Error', ['errno' => $errno, 'error' => curl_error($ch), 'url' => $url]);
             curl_close($ch);
             return null;
         }
         curl_close($ch);
 
         return json_decode($resp, true);
+    }
+
+    private function sanitizeUrl(string $url): string
+    {
+        $parsed = parse_url($url);
+
+        if (!isset($parsed['query'])) {
+            return $url;
+        }
+
+        parse_str($parsed['query'], $query);
+        if (isset($query['shopperResultUrl'])) {
+            unset($query['shopperResultUrl']);
+            $parsed['query'] = http_build_query($query);
+
+            $scheme   = $parsed['scheme'] ?? 'https';
+            $host     = $parsed['host'] ?? '';
+            $port     = isset($parsed['port']) ? ":{$parsed['port']}" : '';
+            $path     = $parsed['path'] ?? '';
+            $queryStr = $parsed['query'] ? "?{$parsed['query']}" : '';
+            $fragment = isset($parsed['fragment']) ? "#{$parsed['fragment']}" : '';
+
+            $sanitized = "{$scheme}://{$host}{$port}{$path}{$queryStr}{$fragment}";
+            Log::warning('HyperPay URL sanitized to remove shopperResultUrl', [
+                'original_url'  => $url,
+                'sanitized_url' => $sanitized,
+            ]);
+
+            return $sanitized;
+        }
+
+        return $url;
     }
 }

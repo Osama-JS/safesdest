@@ -1,8 +1,14 @@
-لدي مشكلة في تكامل HyperPay.
+أحتاج تحليلًا عميقًا لمشكلة HyperPay في Laravel.
 
-رسالة الخطأ الحالية:
+هذه هي خدمة HyperPay الحالية (HyperpayService.php)، ويبدو أن دالة Status Query لا ترسل shopperResultUrl إطلاقًا:
 
-```json
+```php
+// ضع هنا الكود الكامل الذي أرسلته
+```
+
+لكن HyperPay يرجع الخطأ التالي أثناء payment status query:
+
+```json id="ulx2tm"
 {
   "result": {
     "code": "200.300.404",
@@ -10,7 +16,6 @@
     "parameterErrors": [
       {
         "name": "shopperResultUrl",
-        "value": "https://tester.safedest.com/investor/investment-wallet/deposit/callback",
         "message": "was already set and cannot be overwritten"
       }
     ]
@@ -18,40 +23,39 @@
 }
 ```
 
-المطلوب:
+المطلوب منك:
 
-* تحليل سبب المشكلة.
-* إصلاح كود HyperPay بحيث:
+1. تحليل الكود الحالي بالكامل.
+2. تحديد كيف يمكن أن يتم إرسال shopperResultUrl رغم أن getPaymentStatus لا يرسله.
+3. البحث عن:
 
-  * يتم إرسال `shopperResultUrl` فقط أثناء إنشاء الـ checkout.
-  * لا يتم إرسال `shopperResultUrl` أثناء:
+   * Middleware
+   * Base HTTP Client
+   * Traits
+   * Macros
+   * Helpers
+   * Global request mergers
+   * cURL wrappers
+   * أي مكان يضيف parameters تلقائيًا.
+4. التحقق هل هناك:
 
-    * payment status query
-    * check payment
-    * retrieve transaction
-* مراجعة جميع requests الخاصة بـ HyperPay داخل المشروع.
-* تعديل الكود بطريقة صحيحة وآمنة دون كسر التدفق الحالي.
+   * POST بدل GET
+   * إعادة استخدام payload سابق
+   * mutation للـ URL
+   * request interceptor
+   * config merge
+5. اقتراح Logging إضافي لمعرفة الـ final URL النهائي المرسل فعليًا إلى HyperPay.
+6. تعديل الكود بحيث:
 
-معلومات إضافية:
+   * يتم إرسال shopperResultUrl فقط في createCheckout().
+   * لا يظهر أبدًا في:
 
-* لغة المشروع: PHP/Laravel
-* الخطأ يحدث أثناء تنفيذ Status Query.
-* الـ checkoutId يتم إنشاؤه بنجاح.
-* المطلوب إرجاع الكود النهائي بعد الإصلاح مع شرح مختصر لما تم تعديله.
+     * getPaymentStatus()
+     * getPaymentStatusByResourcePath()
+7. أضف حماية defensive programming تمنع تمرير shopperResultUrl في أي status query مستقبلًا حتى لو تم تمريره بالخطأ.
 
-تحقق أيضًا من:
+أريد:
 
-* أي middleware أو helper يضيف `shopperResultUrl` تلقائيًا لكل الطلبات.
-* أي class مشتركة تبني payload لجميع عمليات HyperPay.
-* أي config أو service يقوم بدمج بيانات request بشكل عام.
-
-الهدف النهائي:
-جعل Status Query يرسل فقط الحقول المطلوبة مثل:
-
-```php
-[
-    'entityId' => $entityId
-]
-```
-
-بدون `shopperResultUrl`.
+* شرح السبب الحقيقي المتوقع.
+* الكود النهائي بعد الإصلاح.
+* أفضل طريقة لتسجيل الـ outgoing request كاملة في Laravel.

@@ -236,6 +236,7 @@ class HyperpayService
             CURLOPT_SSL_VERIFYPEER => !config('hyperpay.sandboxMode', true),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPGET        => true, // Force standard GET method explicitly
         ]);
 
         $resp  = curl_exec($ch);
@@ -252,33 +253,57 @@ class HyperpayService
 
     private function sanitizeUrl(string $url): string
     {
-        $parsed = parse_url($url);
+        // Double-decode to handle double URL encoded query strings
+        $decodedUrl = urldecode(urldecode($url));
 
-        if (!isset($parsed['query'])) {
+        if (stripos($decodedUrl, 'shopperResultUrl') === false) {
             return $url;
         }
 
-        parse_str($parsed['query'], $query);
-        if (isset($query['shopperResultUrl'])) {
-            unset($query['shopperResultUrl']);
-            $parsed['query'] = http_build_query($query);
+        $parsed = parse_url($url);
 
-            $scheme   = $parsed['scheme'] ?? 'https';
-            $host     = $parsed['host'] ?? '';
-            $port     = isset($parsed['port']) ? ":{$parsed['port']}" : '';
-            $path     = $parsed['path'] ?? '';
-            $queryStr = $parsed['query'] ? "?{$parsed['query']}" : '';
-            $fragment = isset($parsed['fragment']) ? "#{$parsed['fragment']}" : '';
-
-            $sanitized = "{$scheme}://{$host}{$port}{$path}{$queryStr}{$fragment}";
-            Log::warning('HyperPay URL sanitized to remove shopperResultUrl', [
-                'original_url'  => $url,
-                'sanitized_url' => $sanitized,
-            ]);
-
-            return $sanitized;
+        if (!isset($parsed['query'])) {
+            // If shopperResultUrl somehow leaked into the path, clean it using regex
+            $cleanUrl = preg_replace('/([?&;])shopperResultUrl=[^&;]*/i', '$1', $url);
+            $cleanUrl = str_replace('?&', '?', $cleanUrl);
+            $cleanUrl = str_replace(';&', ';', $cleanUrl);
+            $cleanUrl = rtrim($cleanUrl, '?&;');
+            return $cleanUrl;
         }
 
-        return $url;
+        parse_str($parsed['query'], $query);
+
+        // Remove case-insensitive matching keys for shopperResultUrl
+        foreach ($query as $key => $value) {
+            if (strcasecmp($key, 'shopperResultUrl') === 0) {
+                unset($query[$key]);
+            }
+        }
+
+        $parsed['query'] = http_build_query($query);
+
+        $scheme   = $parsed['scheme'] ?? 'https';
+        $host     = $parsed['host'] ?? '';
+        $port     = isset($parsed['port']) ? ":{$parsed['port']}" : '';
+        $path     = $parsed['path'] ?? '';
+        $queryStr = !empty($parsed['query']) ? "?{$parsed['query']}" : '';
+        $fragment = isset($parsed['fragment']) ? "#{$parsed['fragment']}" : '';
+
+        $sanitized = "{$scheme}://{$host}{$port}{$path}{$queryStr}{$fragment}";
+
+        // Second pass regex sanity check to be absolutely bulletproof
+        if (stripos($sanitized, 'shopperResultUrl') !== false) {
+            $sanitized = preg_replace('/([?&;])shopperResultUrl=[^&;]*/i', '$1', $sanitized);
+            $sanitized = str_replace('?&', '?', $sanitized);
+            $sanitized = str_replace(';&', ';', $sanitized);
+            $sanitized = rtrim($sanitized, '?&;');
+        }
+
+        Log::warning('HyperPay URL sanitized comprehensively to remove shopperResultUrl', [
+            'original_url'  => $url,
+            'sanitized_url' => $sanitized,
+        ]);
+
+        return $sanitized;
     }
 }

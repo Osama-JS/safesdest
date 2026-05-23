@@ -127,7 +127,7 @@
         <div class="payment-body">
             <h4>أدخل بيانات البطاقة لإتمام العملية</h4>
             
-            <form action="{{ $callback }}" class="paymentWidgets" data-brands="{{ $brand === 'MADA' ? 'MADA' : 'VISA MASTER' }}"></form>
+            <form action="" class="paymentWidgets" data-brands="{{ $brand === 'MADA' ? 'MADA' : 'VISA MASTER' }}"></form>
 
             <div class="trust-badges">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Mada_Logo.svg/1280px-Mada_Logo.svg.png" alt="Mada">

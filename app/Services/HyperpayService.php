@@ -63,7 +63,6 @@ class HyperpayService
             'currency'          => $this->currency,
             'paymentType'       => 'DB',
             'integrity'         => 'true',
-            'shopperResultUrl'  => $shopperResultUrl,
             'merchantTransactionId' => $options['merchantTransactionId'] ?? uniqid('PAY-'),
             'customer.email'    => $options['customer.email'] ?? 'test@example.com',
             'customer.givenName'=> substr($options['customer.givenName'] ?? 'Customer', 0, 50),
@@ -74,6 +73,11 @@ class HyperpayService
             'billing.country'   => $options['billing.country'] ?? 'SA',
             'billing.postcode'  => $options['billing.postcode'] ?? '12211',
         ];
+
+        // Only include shopperResultUrl when explicitly provided (creation only)
+        if (!empty($shopperResultUrl)) {
+            $paymentData['shopperResultUrl'] = $shopperResultUrl;
+        }
 
         // Apply mandatory 3DS2 integration params and Test Mode flag for sandbox environments
         if (config('hyperpay.sandboxMode', true) || str_contains($this->apiUrl, 'test')) {
@@ -122,19 +126,11 @@ class HyperpayService
     /**
      * Query payment status using HyperPay resourcePath from callback redirect.
      */
-
     public function getPaymentStatusByResourcePath(string $resourcePath, string $brand = 'VISA MASTER'): ?array
     {
-        // Ensure resourcePath is only the path, not a full URL or with extra params
-        if (strpos($resourcePath, 'http') === 0) {
-            $parsed = parse_url($resourcePath);
-            $resourcePath = $parsed['path'] ?? $resourcePath;
-        }
-        // Remove any query string
-        $resourcePath = explode('?', $resourcePath)[0];
-
         $entityId = $this->getEntityId($brand);
-        $url      = "{$this->apiUrl}/v1/payments?entityId={$entityId}&resourcePath={$resourcePath}";
+        // urlencode the resourcePath and entityId to avoid malformed queries
+        $url      = "{$this->apiUrl}/v1/payments?entityId=" . urlencode($entityId) . "&resourcePath=" . urlencode($resourcePath);
 
         $response = $this->curlGet($url);
 

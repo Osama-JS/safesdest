@@ -1,0 +1,57 @@
+لدي مشكلة في تكامل HyperPay.
+
+رسالة الخطأ الحالية:
+
+```json
+{
+  "result": {
+    "code": "200.300.404",
+    "description": "invalid or missing parameter",
+    "parameterErrors": [
+      {
+        "name": "shopperResultUrl",
+        "value": "https://tester.safedest.com/investor/investment-wallet/deposit/callback",
+        "message": "was already set and cannot be overwritten"
+      }
+    ]
+  }
+}
+```
+
+المطلوب:
+
+* تحليل سبب المشكلة.
+* إصلاح كود HyperPay بحيث:
+
+  * يتم إرسال `shopperResultUrl` فقط أثناء إنشاء الـ checkout.
+  * لا يتم إرسال `shopperResultUrl` أثناء:
+
+    * payment status query
+    * check payment
+    * retrieve transaction
+* مراجعة جميع requests الخاصة بـ HyperPay داخل المشروع.
+* تعديل الكود بطريقة صحيحة وآمنة دون كسر التدفق الحالي.
+
+معلومات إضافية:
+
+* لغة المشروع: PHP/Laravel
+* الخطأ يحدث أثناء تنفيذ Status Query.
+* الـ checkoutId يتم إنشاؤه بنجاح.
+* المطلوب إرجاع الكود النهائي بعد الإصلاح مع شرح مختصر لما تم تعديله.
+
+تحقق أيضًا من:
+
+* أي middleware أو helper يضيف `shopperResultUrl` تلقائيًا لكل الطلبات.
+* أي class مشتركة تبني payload لجميع عمليات HyperPay.
+* أي config أو service يقوم بدمج بيانات request بشكل عام.
+
+الهدف النهائي:
+جعل Status Query يرسل فقط الحقول المطلوبة مثل:
+
+```php
+[
+    'entityId' => $entityId
+]
+```
+
+بدون `shopperResultUrl`.

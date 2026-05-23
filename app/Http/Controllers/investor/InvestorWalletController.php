@@ -173,14 +173,16 @@ class InvestorWalletController extends Controller
         }
 
         try {
-            $brand  = strtoupper($payment->payment_method);
-            $result = $checkoutId
-                ? $this->hyperpay->getPaymentStatus($checkoutId, $brand)
-                : null;
+            $brand = strtoupper($payment->payment_method);
+            $result = null;
 
-            // إذا فشل الاستعلام الأول، حاول الاستعلام عبر resourcePath
-            if ((empty($result) || (isset($result['result']['code']) && $result['result']['code'] === '200.300.404')) && $resourcePath) {
+            if ($resourcePath) {
+                // Prefer the callback-provided resourcePath when available
                 $result = $this->hyperpay->getPaymentStatusByResourcePath($resourcePath, $brand);
+            }
+
+            if (empty($result) && $checkoutId) {
+                $result = $this->hyperpay->getPaymentStatus($checkoutId, $brand);
             }
 
             if (empty($result)) {

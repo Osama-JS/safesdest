@@ -131,9 +131,10 @@ class HyperpayService
     public function getPaymentStatusByResourcePath(string $resourcePath, string $brand = 'VISA MASTER'): ?array
     {
         $entityId = urlencode($this->getEntityId($brand));
-        // urlencode the resourcePath and entityId to avoid malformed queries
-        $url      = "{$this->apiUrl}/v1/payments?entityId={$entityId}&resourcePath=" . urlencode($resourcePath);
-        $url      = $this->sanitizeUrl($url);
+
+        $resourcePath = ltrim($resourcePath, '/');
+        $url = rtrim($this->apiUrl, '/') . '/' . $resourcePath . '?entityId=' . $entityId;
+        $url = $this->sanitizeUrl($url);
 
         $response = $this->curlGet($url);
 

@@ -123,6 +123,94 @@
         </div>
     </div>
 
+    @if($isInvestor)
+    <!-- Investor-specific wallet stats -->
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium">الرصيد القابل للسحب</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-success" id="withdrawableBalanceDisplay">{{ number_format($withdrawableBalance ?? 0, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted">
+                                @if($activeContract && $activeContract->contract_type === 'task_investment')
+                                    عمولات المهام المسواة + الإيداعات اليدوية − السحوبات وإعادة الاستثمار
+                                @elseif($activeContract && $activeContract->contract_type === 'general_investment')
+                                    إجمالي الأرباح المتاحة للسحب أو إعادة الاستثمار
+                                @else
+                                    الأرباح المتاحة للسحب أو إعادة الاستثمار
+                                @endif
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-cash ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium">رصيد محفظة المضاربة</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-warning" id="investmentWalletBalanceDisplay">{{ number_format($investmentWalletBalance, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted">
+                                @if($hasInvestmentWallet)
+                                    <a href="{{ route('admin.investors.invest-wallet', $user->id) }}" class="text-primary">عرض محفظة المضاربة</a>
+                                @else
+                                    <span class="text-danger">لم تُنشأ محفظة مضاربة بعد</span>
+                                @endif
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-wallet ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if($activeContract)
+        <div class="col-sm-6 col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium">نوع عقد المضاربة</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h5 class="mb-0 me-2">
+                                    {{ $activeContract->contract_type === 'task_investment' ? 'مضاربة بالمهام' : 'مضاربة عامة' }}
+                                </h5>
+                            </div>
+                            <small class="text-muted">
+                                عمولة: {{ $activeContract->commission_value }}{{ $activeContract->commission_type === 'percentage' ? '%' : ' ر.س' }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-file-invoice ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
+
     <!-- Wallet Transactions -->
     <div class="card">
         <div class="card-header border-bottom">
@@ -149,6 +237,13 @@
                     <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
                     <span class="d-none d-sm-inline-block"> {{ __('Calculate General Commissions') }}</span>
                 </button>
+                @if(($withdrawableBalance ?? 0) > 0)
+                <button class="btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                    data-bs-target="#reinvestProfitsModal">
+                    <i class="ti ti-refresh me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> استثمار الأرباح</span>
+                </button>
+                @endif
             @endif
             @if($isBroker)
                 <button class="btn btn-warning waves-effect waves-light mt-5 mx-2" id="calculateBrokerBtn">
@@ -303,6 +398,58 @@
         </div>
     </div>
 
+    @if($isInvestor && ($withdrawableBalance ?? 0) > 0)
+    <div class="modal fade" id="reinvestProfitsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-refresh text-primary me-2"></i>
+                        استثمار أرباح المضارب
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="reinvestProfitsForm">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="alert alert-info small">
+                            <i class="ti ti-info-circle me-1"></i>
+                            سيتم خصم المبلغ من <strong>الرصيد القابل للسحب</strong> في محفظة العمولات
+                            وإضافته إلى <strong>محفظة المضاربة</strong> كرأس مال جديد.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="reinvest_amount">المبلغ (ر.س)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="reinvest_amount" name="amount"
+                                    step="0.01" min="0.01"
+                                    max="{{ number_format($withdrawableBalance, 2, '.', '') }}"
+                                    value="{{ number_format($withdrawableBalance, 2, '.', '') }}" required>
+                                <button type="button" class="btn btn-label-secondary" id="reinvestMaxBtn">الحد الأقصى</button>
+                            </div>
+                            <small class="text-muted">الرصيد القابل للسحب: {{ number_format($withdrawableBalance, 2) }} ر.س</small>
+                            <div class="text-danger small mt-1 d-none" id="reinvest_amount_error"></div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-medium" for="reinvest_notes">ملاحظات (اختياري)</label>
+                            <textarea class="form-control" id="reinvest_notes" name="notes" rows="2"
+                                maxlength="255" placeholder="سبب أو مرجع العملية..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary" id="reinvestSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            تأكيد إعادة الاستثمار
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -330,6 +477,9 @@
         const calculateManualUrl = '{{ route('admin.user-wallets.calculate-manual', $user->id) }}';
         const calculateGeneralUrl = '{{ route('admin.user-wallets.calculate-general', $user->id) }}';
         const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
+        const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
+        const isInvestor = {{ $isInvestor ? 'true' : 'false' }};
+        const withdrawableBalance = {{ $isInvestor ? ($withdrawableBalance ?? 0) : 0 }};
         const currentBalance = {{ $wallet->balance }};
         const debtCeiling = {{ $wallet->debt_ceiling }};
         const maxWithdrawal = {{ $wallet->balance + $wallet->debt_ceiling }};

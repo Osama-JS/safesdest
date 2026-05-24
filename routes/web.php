@@ -422,6 +422,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/calculate-manual', [UserWalletsController::class, 'calculateManualCommission'])->name('admin.user-wallets.calculate-manual');
                 Route::post('/users/{userId}/wallet/calculate-general', [UserWalletsController::class, 'calculateGeneralCommissions'])->name('admin.user-wallets.calculate-general');
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
+                Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
 
 
 
@@ -875,6 +876,10 @@ Route::middleware(['auth:web', 'investor'])
         // احتساب عمولات المستثمر العام (زر الاحتساب)
         Route::post('personal-wallet/calculate-commissions', [App\Http\Controllers\investor\InvestorWalletController::class, 'calculateGeneralCommissions'])
             ->name('personal-wallet.calculate');
+
+        // إعادة استثمار الأرباح من محفظة العمولات إلى محفظة المضاربة
+        Route::post('personal-wallet/reinvest-profits', [App\Http\Controllers\investor\InvestorWalletController::class, 'reinvestProfits'])
+            ->name('personal-wallet.reinvest');
 
         // دفع المهام (مستثمر بالمهام فقط)
         Route::get('task-payment', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'index'])

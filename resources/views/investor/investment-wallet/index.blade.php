@@ -172,6 +172,11 @@
                                             <span class="avatar-initial rounded-circle bg-label-info"><i class="ti ti-arrow-back-up"></i></span>
                                         </div>
                                         <span class="fw-medium text-info">استعادة استثمار</span>
+                                    @elseif(str_contains($tx->description ?? '', 'إعادة استثمار الأرباح'))
+                                        <div class="avatar avatar-xs me-2">
+                                            <span class="avatar-initial rounded-circle bg-label-primary"><i class="ti ti-refresh"></i></span>
+                                        </div>
+                                        <span class="fw-medium text-primary">استثمار الأرباح</span>
                                     @else
                                         <div class="avatar avatar-xs me-2">
                                             <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-arrow-down-left"></i></span>

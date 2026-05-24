@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Models\Task;
 use App\Models\InvestmentContract;
+use App\Models\InvestorWallet;
+use App\Services\InvestorPaymentService;
 
 
 class UserWalletsController extends Controller
@@ -23,7 +25,13 @@ class UserWalletsController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_beneficiaries_wallet', ['only' => ['show', 'getTransactions']]);
-        $this->middleware('permission:transaction_beneficiaries_wallet', ['only' => ['addTransaction', 'editTransaction' ,'destroyTransaction','processWithdrawal']]);
+        $this->middleware('permission:transaction_beneficiaries_wallet', ['only' => [
+            'addTransaction',
+            'editTransaction',
+            'destroyTransaction',
+            'processWithdrawal',
+            'reinvestProfits',
+        ]]);
     }
 
     /**
@@ -32,7 +40,7 @@ class UserWalletsController extends Controller
     public function show($userId)
     {
         try {
-            $user = User::findOrFail($userId);
+            $user = User::with(['userWallet', 'investorWallet', 'activeInvestmentContract'])->findOrFail($userId);
             $wallet = $user->userWallet;
 
             // إنشاء محفظة تلقائية إذا لم تكن موجودة
@@ -45,6 +53,12 @@ class UserWalletsController extends Controller
                 ->where('status', 'active')
                 ->exists();
 
+            $isInvestor = (bool) $user->investor;
+            $withdrawableBalance = $isInvestor ? $wallet->withdrawable_balance : null;
+            $investmentWallet = $isInvestor ? $user->investorWallet : null;
+            $investmentWalletBalance = $investmentWallet?->balance ?? 0;
+            $activeContract = $isInvestor ? $user->activeInvestmentContract : null;
+
             return view('admin.user-wallets.show', [
                 'user' => $user,
                 'wallet' => $wallet,
@@ -53,7 +67,11 @@ class UserWalletsController extends Controller
                 'debit' => $wallet->debit,
                 'lastTransaction' => $wallet->last_transaction,
                 'isBroker' => $isBroker,
-                'isInvestor' => $user->investor == 1,
+                'isInvestor' => $isInvestor,
+                'withdrawableBalance' => $withdrawableBalance,
+                'investmentWalletBalance' => $investmentWalletBalance,
+                'hasInvestmentWallet' => (bool) $investmentWallet,
+                'activeContract' => $activeContract,
             ]);
 
         } catch (Exception $e) {
@@ -683,7 +701,58 @@ class UserWalletsController extends Controller
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
-    public function calculateGeneralCommissions(Request $request, $userId, \App\Services\InvestorPaymentService $paymentService)
+    /**
+     * إعادة استثمار أرباح المضارب من محفظة العمولات إلى محفظة المضاربة (بواسطة الإدارة)
+     */
+    public function reinvestProfits(Request $request, $userId, InvestorPaymentService $paymentService)
+    {
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:0.01',
+            'notes'  => 'nullable|string|max:255',
+        ], [
+            'amount.required' => 'المبلغ مطلوب.',
+            'amount.min'      => 'الحد الأدنى للمبلغ هو 0.01 ر.س.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'errors' => $validator->errors()]);
+        }
+
+        try {
+            $user = User::findOrFail($userId);
+
+            if (!$user->investor) {
+                return response()->json(['status' => 0, 'error' => 'هذا المستخدم ليس مضارباً.']);
+            }
+
+            if (!$user->investorWallet) {
+                InvestorWallet::create(['user_id' => $user->id, 'status' => true]);
+                $user->load('investorWallet');
+            }
+
+            $paymentService->reinvestProfits(
+                $user,
+                (float) $request->amount,
+                true,
+                $request->notes
+            );
+
+            $user->load(['userWallet', 'investorWallet']);
+
+            return response()->json([
+                'status'  => 1,
+                'success' => 'تم إعادة استثمار ' . number_format((float) $request->amount, 2) .
+                    ' ر.س بنجاح. الرصيد القابل للسحب الآن: ' .
+                    number_format($user->userWallet->withdrawable_balance, 2) . ' ر.س.',
+                'withdrawable_balance'   => $user->userWallet->withdrawable_balance,
+                'investment_wallet_balance' => $user->investorWallet->balance,
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function calculateGeneralCommissions(Request $request, $userId, InvestorPaymentService $paymentService)
     {
         try {
             $investor = User::findOrFail($userId);

@@ -629,4 +629,86 @@ $(function () {
       }
     });
   });
+
+  // إعادة استثمار الأرباح (للمضاربين)
+  $(document).on('submit', '#reinvestProfitsForm', function (e) {
+    e.preventDefault();
+
+    const form = $(this);
+    const submitBtn = $('#reinvestSubmitBtn');
+    const amountInput = $('#reinvest_amount');
+    const amount = parseFloat(amountInput.val());
+    const maxAmount = parseFloat(amountInput.attr('max')) || withdrawableBalance;
+    const amountError = $('#reinvest_amount_error');
+
+    amountError.addClass('d-none').text('');
+
+    if (isNaN(amount) || amount <= 0) {
+      amountError.removeClass('d-none').text('يرجى إدخال مبلغ صحيح.');
+      return;
+    }
+
+    if (amount > maxAmount) {
+      amountError.removeClass('d-none').text('المبلغ يتجاوز الرصيد القابل للسحب.');
+      return;
+    }
+
+    Swal.fire({
+      title: 'تأكيد إعادة الاستثمار',
+      html: `هل تريد تحويل <strong>${amount.toFixed(2)} ر.س</strong> من محفظة العمولات إلى محفظة المضاربة؟`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، تأكيد',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (!result.value) return;
+
+      submitBtn.prop('disabled', true);
+      submitBtn.find('.spinner-border').removeClass('d-none');
+
+      $.ajax({
+        url: typeof reinvestProfitsUrl !== 'undefined' ? reinvestProfitsUrl : '',
+        type: 'POST',
+        data: {
+          amount: amount,
+          notes: $('#reinvest_notes').val(),
+          _token: $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (response) {
+          submitBtn.prop('disabled', false);
+          submitBtn.find('.spinner-border').addClass('d-none');
+
+          if (response.status === 1) {
+            Swal.fire({
+              icon: 'success',
+              title: 'تم بنجاح!',
+              text: response.success,
+              customClass: { confirmButton: 'btn btn-success' }
+            }).then(function () {
+              location.reload();
+            });
+          } else if (response.errors) {
+            const firstError = Object.values(response.errors)[0][0];
+            Swal.fire({ title: 'خطأ!', text: firstError, icon: 'error' });
+          } else {
+            Swal.fire({ title: 'خطأ!', text: response.error || 'حدث خطأ غير متوقع.', icon: 'error' });
+          }
+        },
+        error: function () {
+          submitBtn.prop('disabled', false);
+          submitBtn.find('.spinner-border').addClass('d-none');
+          Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية إعادة الاستثمار.', icon: 'error' });
+        }
+      });
+    });
+  });
+
+  $(document).on('click', '#reinvestMaxBtn', function () {
+    const amountInput = $('#reinvest_amount');
+    if (amountInput.length) {
+      amountInput.val(amountInput.attr('max'));
+    }
+  });
 });

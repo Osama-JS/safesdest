@@ -17,13 +17,18 @@
             </nav>
         </div>
         {{-- زر احتساب العمولات للمضارب العام فقط --}}
+        <div class="d-flex align-items-center gap-2">
+        @if(($personalWallet?->withdrawable_balance ?? 0) > 0)
+        <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#reinvestProfitsModal">
+            <i class="ti ti-refresh me-1"></i> استثمار الأرباح
+        </button>
+        @endif
         @if($contract && $contract->contract_type === 'general_investment' && $contract->isActive())
-        <div class="col-auto">
             <button type="button" class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#calculateCommissionsModal">
                 <i class="ti ti-calculator me-1"></i> احتساب العمولات الآن
             </button>
-        </div>
         @endif
+        </div>
     </div>
 
     @foreach(['success','error','info'] as $msg)
@@ -170,15 +175,23 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label">نوع العملية</label>
+                    <select name="type" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="credit" {{ request('type') === 'credit' ? 'selected' : '' }}>عمولة / إيداع</option>
+                        <option value="debit"  {{ request('type') === 'debit'  ? 'selected' : '' }}>سحب / إعادة استثمار</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">من تاريخ</label>
                     <input type="date" name="from" class="form-control" value="{{ request('from') }}">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">إلى تاريخ</label>
                     <input type="date" name="to" class="form-control" value="{{ request('to') }}">
                 </div>
-                <div class="col-md-4 d-flex align-items-end gap-2">
+                <div class="col-md-3 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i>فلترة</button>
                     <a href="{{ route('investor.personal-wallet') }}" class="btn btn-label-secondary w-100">تصفير</a>
                 </div>
@@ -189,47 +202,55 @@
     {{-- جدول العمولات --}}
     <div class="card">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">سجل استحقاق العمولات</h5>
-            <span class="badge bg-label-secondary">إجمالي العمولات: {{ $transactions->total() }}</span>
+            <h5 class="card-title mb-0">سجل حركات محفظة العمولات</h5>
+            <span class="badge bg-label-secondary">إجمالي العمليات: {{ $transactions->total() }}</span>
         </div>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
+                        <th class="text-muted small">نوع العملية</th>
                         <th class="text-muted small">المهمة</th>
-                        <th class="text-muted small">مبلغ العمولة</th>
-                        <th class="text-muted small">الرصيد بعد</th>
+                        <th class="text-muted small">المبلغ</th>
                         <th class="text-muted small">البيان</th>
                         <th class="text-muted small">التاريخ والوقت</th>
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
                     @forelse($transactions as $tx)
+                    @php
+                        $isReinvest = $tx->transaction_type === 'debit' && str_contains($tx->description ?? '', 'إعادة استثمار الأرباح');
+                    @endphp
                     <tr>
                         <td>
+                            @if($tx->transaction_type === 'credit')
+                                <span class="badge bg-label-success"><i class="ti ti-plus ti-xs me-1"></i>عمولة</span>
+                            @elseif($isReinvest)
+                                <span class="badge bg-label-primary"><i class="ti ti-refresh ti-xs me-1"></i>إعادة استثمار</span>
+                            @else
+                                <span class="badge bg-label-danger"><i class="ti ti-minus ti-xs me-1"></i>سحب</span>
+                            @endif
+                        </td>
+                        <td>
                             @if($tx->task_id)
-                                <a href="javascript:void(0)" class="badge bg-label-primary">#{{ $tx->task_id }}</a>
+                                <span class="badge bg-label-primary">#{{ $tx->task_id }}</span>
                             @else
                                 <span class="text-muted small">—</span>
                             @endif
                         </td>
                         <td>
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-xs me-2">
-                                    <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-plus ti-xs"></i></span>
-                                </div>
-                                <span class="fw-bold text-success">{{ number_format($tx->amount, 2) }} ر.س</span>
-                            </div>
+                            <span class="fw-bold {{ $tx->transaction_type === 'credit' ? 'text-success' : 'text-danger' }}">
+                                {{ $tx->transaction_type === 'credit' ? '+' : '−' }}{{ number_format($tx->amount, 2) }} ر.س
+                            </span>
                         </td>
-                        <td>{{ number_format($tx->balance_after, 2) }} ر.س</td>
-                        <td class="text-truncate" style="max-width: 250px;">{{ $tx->description ?? '—' }}</td>
+                        <td class="text-truncate" style="max-width: 280px;">{{ $tx->description ?? '—' }}</td>
                         <td class="small">{{ $tx->created_at->format('Y-m-d') }} <br> <span class="text-muted">{{ $tx->created_at->format('H:i') }}</span></td>
                     </tr>
                     @empty
                     <tr>
                         <td colspan="5" class="text-center py-5">
                             <img src="{{ asset('assets/img/illustrations/empty-state.png') }}" alt="Empty state" width="120" class="mb-3 opacity-50">
-                            <p class="text-muted">لا توجد عمولات مكتسبة مسجلة حتى الآن.</p>
+                            <p class="text-muted">لا توجد حركات مسجلة حتى الآن.</p>
                         </td>
                     </tr>
                     @endforelse
@@ -299,6 +320,68 @@
     </div>
     @endif
 
+    {{-- Modal إعادة استثمار الأرباح --}}
+    @if(($personalWallet?->withdrawable_balance ?? 0) > 0)
+    <div class="modal fade" id="reinvestProfitsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title d-flex align-items-center">
+                        <i class="ti ti-refresh text-primary me-2 ti-md"></i>
+                        استثمار الأرباح
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ route('investor.personal-wallet.reinvest') }}" id="reinvestProfitsForm">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="alert alert-primary d-flex align-items-start mb-4">
+                            <i class="ti ti-info-circle me-2 mt-1"></i>
+                            <div class="small">
+                                <strong>كيف تعمل العملية؟</strong>
+                                <ul class="mb-0 ps-3 mt-1">
+                                    <li>يُخصم المبلغ من <strong>الرصيد القابل للسحب</strong> في محفظة العمولات.</li>
+                                    <li>يُضاف المبلغ إلى <strong>محفظة المضاربة</strong> كرأس مال جديد.</li>
+                                    <li>يمكنك استخدامه فوراً لتمويل مهام جديدة (للمضارب بالمهام).</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">المبلغ (ر.س)</label>
+                            <div class="input-group">
+                                <input type="number" name="amount" id="reinvest_amount" class="form-control"
+                                    step="0.01" min="0.01"
+                                    max="{{ number_format($personalWallet->withdrawable_balance, 2, '.', '') }}"
+                                    value="{{ number_format($personalWallet->withdrawable_balance, 2, '.', '') }}"
+                                    required>
+                                <button type="button" class="btn btn-label-secondary" id="reinvestMaxBtn">الحد الأقصى</button>
+                            </div>
+                            <small class="text-muted">الرصيد القابل للسحب: {{ number_format($personalWallet->withdrawable_balance, 2) }} ر.س</small>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-bold" for="reinvest_password">كلمة المرور للتأكيد</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="ti ti-lock"></i></span>
+                                <input type="password" name="password" id="reinvest_password" class="form-control"
+                                    placeholder="············" required autocomplete="current-password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary btn-reinvest-submit">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            تأكيد إعادة الاستثمار
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endif
+
 @endsection
 
 @section('page-script')
@@ -308,6 +391,27 @@
         if (calcForm) {
             calcForm.addEventListener('submit', function() {
                 const submitBtn = this.querySelector('.btn-submit');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    const spinner = submitBtn.querySelector('.spinner-border');
+                    if (spinner) spinner.classList.remove('d-none');
+                }
+            });
+        }
+
+        const reinvestForm = document.getElementById('reinvestProfitsForm');
+        const reinvestMaxBtn = document.getElementById('reinvestMaxBtn');
+        const reinvestAmount = document.getElementById('reinvest_amount');
+
+        if (reinvestMaxBtn && reinvestAmount) {
+            reinvestMaxBtn.addEventListener('click', function () {
+                reinvestAmount.value = reinvestAmount.getAttribute('max');
+            });
+        }
+
+        if (reinvestForm) {
+            reinvestForm.addEventListener('submit', function () {
+                const submitBtn = this.querySelector('.btn-reinvest-submit');
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     const spinner = submitBtn.querySelector('.spinner-border');

@@ -335,6 +335,80 @@ class InvestorPaymentService
     }
 
     /**
+     * إعادة استثمار الأرباح: خصم من محفظة العمولات وإيداع في محفظة المضاربة كرأس مال.
+     *
+     * @throws \Exception
+     */
+    public function reinvestProfits(User $investor, float $amount, bool $viaAdmin = false, ?string $notes = null): void
+    {
+        if ($amount <= 0) {
+            throw new \Exception('المبلغ يجب أن يكون أكبر من صفر.');
+        }
+
+        $debitDescription = 'إعادة استثمار الأرباح — تحويل إلى محفظة المضاربة';
+        $creditDescription = 'إعادة استثمار الأرباح من محفظة العمولات';
+
+        if ($viaAdmin) {
+            $debitDescription .= ' (بواسطة الإدارة)';
+            $creditDescription .= ' (بواسطة الإدارة)';
+        }
+
+        if ($notes) {
+            $debitDescription .= ' — ' . $notes;
+            $creditDescription .= ' — ' . $notes;
+        }
+
+        DB::transaction(function () use ($investor, $amount, $debitDescription, $creditDescription) {
+            $personalWallet = UserWallet::lockForUpdate()
+                ->where('user_id', $investor->id)
+                ->first();
+
+            if (!$personalWallet) {
+                throw new \Exception('لا توجد محفظة عمولات لهذا المضارب.');
+            }
+
+            $investorWallet = InvestorWallet::lockForUpdate()
+                ->where('user_id', $investor->id)
+                ->first();
+
+            if (!$investorWallet) {
+                throw new \Exception('لا توجد محفظة مضاربة لهذا المضارب.');
+            }
+
+            $withdrawable = $personalWallet->withdrawable_balance;
+
+            if ($amount > $withdrawable) {
+                throw new \Exception(
+                    'المبلغ يتجاوز الرصيد القابل للسحب. الرصيد المتاح: ' .
+                    number_format($withdrawable, 2) . ' ر.س.'
+                );
+            }
+
+            UserWalletTransaction::create([
+                'user_wallet_id'   => $personalWallet->id,
+                'user_id'          => $investor->id,
+                'amount'           => $amount,
+                'transaction_type' => 'debit',
+                'description'      => $debitDescription,
+                'status'           => true,
+                'maturity_time'    => now(),
+            ]);
+
+            $newBalance = $investorWallet->balance + $amount;
+
+            InvestorWalletTransaction::create([
+                'investor_wallet_id' => $investorWallet->id,
+                'transaction_type'   => 'credit',
+                'source_type'        => 'capital',
+                'amount'             => $amount,
+                'description'        => $creditDescription,
+                'performed_by'       => auth()->id() ?? $investor->id,
+                'balance_after'      => $newBalance,
+            ]);
+        });
+    }
+
+    /**
      * إيداع مبلغ في محفظة المضاربة (يستخدمه Admin).
      *
      * @param  User   $investor

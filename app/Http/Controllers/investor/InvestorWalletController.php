@@ -50,6 +50,7 @@ class InvestorWalletController extends Controller
         $transactions = $personalWallet
             ? UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
                 ->with('task')
+                ->when($request->type, fn($q, $t) => $q->where('transaction_type', $t))
                 ->when($request->from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
                 ->when($request->to,   fn($q, $d) => $q->whereDate('created_at', '<=', $d))
                 ->latest()->paginate(20)
@@ -93,6 +94,37 @@ class InvestorWalletController extends Controller
                 "تم احتساب عمولات {$result['count']} مهمة بإجمالي " .
                 number_format($result['total_commission'], 2) . " ر.س"
             );
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * إعادة استثمار الأرباح — تحويل من محفظة العمولات إلى محفظة المضاربة
+     */
+    public function reinvestProfits(Request $request)
+    {
+        $request->validate([
+            'amount'   => 'required|numeric|min:0.01',
+            'password' => 'required|string',
+        ], [
+            'amount.required' => 'المبلغ مطلوب.',
+            'amount.min'      => 'الحد الأدنى للمبلغ هو 0.01 ر.س.',
+            'password.required' => 'كلمة المرور مطلوبة لتأكيد العملية.',
+        ]);
+
+        $investor = auth()->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $investor->password)) {
+            return back()->with('error', 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+        }
+
+        try {
+            $this->paymentService->reinvestProfits($investor, (float) $request->amount);
+
+            return redirect()
+                ->route('investor.investment-wallet')
+                ->with('success', 'تم إعادة استثمار ' . number_format((float) $request->amount, 2) . ' ر.س بنجاح وأضيفت إلى رأس المال في محفظة المضاربة.');
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

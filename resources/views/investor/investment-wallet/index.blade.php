@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'محفظة المضاربة')
+@section('title', __('Investment Wallet'))
 
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
@@ -8,11 +8,11 @@
     {{-- رأس الصفحة --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1"><i class="ti ti-wallet me-2 text-warning"></i>محفظة المضاربة</h4>
+            <h4 class="fw-bold mb-1"><i class="ti ti-wallet me-2 text-warning"></i>{{ __('Investment Wallet') }}</h4>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('investor.dashboard') }}">الرئيسية</a></li>
-                    <li class="breadcrumb-item active">محفظة المضاربة</li>
+                    <li class="breadcrumb-item"><a href="{{ route('investor.dashboard') }}">{{ __('Home') }}</a></li>
+                    <li class="breadcrumb-item active">{{ __('Investment Wallet') }}</li>
                 </ol>
             </nav>
         </div>
@@ -20,12 +20,16 @@
             @if($investorWallet && $investorWallet->balance < 500)
                 <div class="alert alert-label-warning d-flex align-items-center mb-0 py-2" role="alert">
                     <span class="alert-icon me-2"><i class="ti ti-alert-triangle ti-xs"></i></span>
-                    رصيدك منخفض
+                    {{ __('Your balance is low') }}
                 </div>
             @endif
+            <a href="{{ route('investor.investment-wallet.export', request()->query()) }}" class="btn btn-success d-flex align-items-center shadow-sm py-2 px-4">
+                <i class="ti ti-file-spreadsheet me-2 ti-sm"></i>
+                <span class="fw-bold">{{ __('Export Excel') }}</span>
+            </a>
             <button type="button" class="btn btn-primary d-flex align-items-center shadow-sm py-2 px-4" data-bs-toggle="modal" data-bs-target="#depositModal" style="background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); border: none;">
                 <i class="ti ti-credit-card me-2 ti-sm"></i>
-                <span class="fw-bold">شحن محفظة المضاربة</span>
+                <span class="fw-bold">{{ __('Top Up Investment Wallet') }}</span>
             </button>
         </div>
     </div>
@@ -55,9 +59,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->balance ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">الرصيد المتاح حالياً</p>
+                    <p class="mb-1 fw-medium">{{ __('Current Available Balance') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-warning me-1">ر.س</span> جاهز للمضاربة
+                        <span class="text-warning me-1">{{ __('SAR') }}</span> {{ __('Ready for investment') }}
                     </p>
                 </div>
             </div>
@@ -71,9 +75,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->credit ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">إجمالي رأس المال</p>
+                    <p class="mb-1 fw-medium">{{ __('Total Capital') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-success me-1">ر.س</span> تم شحنها كـ رأس مال
+                        <span class="text-success me-1">{{ __('SAR') }}</span> {{ __('Deposited as capital') }}
                     </p>
                 </div>
             </div>
@@ -87,9 +91,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->returned_capital ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">إجمالي استعادة الاستثمار</p>
+                    <p class="mb-1 fw-medium">{{ __('Total Capital Returned') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-info me-1">ر.س</span> مستردة بعد تسوية المهام
+                        <span class="text-info me-1">{{ __('SAR') }}</span> {{ __('Returned after task settlement') }}
                     </p>
                 </div>
             </div>
@@ -103,9 +107,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($investorWallet?->debit ?? 0, 2) }}</h4>
                     </div>
-                    <p class="mb-1 fw-medium">إجمالي التمويلات</p>
+                    <p class="mb-1 fw-medium">{{ __('Total Fundings') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-danger me-1">ر.س</span> مصروفة على المهام
+                        <span class="text-danger me-1">{{ __('SAR') }}</span> {{ __('Spent on tasks') }}
                     </p>
                 </div>
             </div>
@@ -115,29 +119,33 @@
     {{-- فلاتر البحث --}}
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-muted small">تصفية النتائج</h5>
+            <h5 class="mb-0 text-muted small">{{ __('Filter Results') }}</h5>
         </div>
         <div class="card-body">
-            <form method="GET" class="row g-3">
+            <form method="GET" class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label">نوع العملية</label>
+                    <label class="form-label">{{ __('Task #') }}</label>
+                    <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="{{ __('Search') }}...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ __('Operation type') }}</label>
                     <select name="type" class="form-select">
-                        <option value="">الكل</option>
-                        <option value="credit" {{ request('type') === 'credit' ? 'selected' : '' }}>إيداع (Credit)</option>
-                        <option value="debit"  {{ request('type') === 'debit'  ? 'selected' : '' }}>خصم (Debit)</option>
+                        <option value="">{{ __('All') }}</option>
+                        <option value="credit" {{ request('type') === 'credit' ? 'selected' : '' }}>{{ __('Credit (Deposit)') }}</option>
+                        <option value="debit"  {{ request('type') === 'debit'  ? 'selected' : '' }}>{{ __('Debit (Funding)') }}</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">من تاريخ</label>
+                <div class="col-md-2">
+                    <label class="form-label">{{ __('From date') }}</label>
                     <input type="date" name="from" class="form-control" value="{{ request('from') }}">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">إلى تاريخ</label>
+                <div class="col-md-2">
+                    <label class="form-label">{{ __('To date') }}</label>
                     <input type="date" name="to" class="form-control" value="{{ request('to') }}">
                 </div>
-                <div class="col-md-3 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i>فلترة</button>
-                    <a href="{{ route('investor.investment-wallet') }}" class="btn btn-label-secondary w-100">تصفير</a>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i>{{ __('Filter') }}</button>
+                    <a href="{{ route('investor.investment-wallet') }}" class="btn btn-label-secondary w-100">{{ __('Reset') }}</a>
                 </div>
             </form>
         </div>
@@ -146,19 +154,19 @@
     {{-- جدول الحركات --}}
     <div class="card">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">سجل حركات المحفظة</h5>
-            <span class="badge bg-label-secondary">إجمالي العمليات: {{ $transactions->total() }}</span>
+            <h5 class="card-title mb-0">{{ __('Wallet Transactions Log') }}</h5>
+            <span class="badge bg-label-secondary">{{ __('Total operations') }}: {{ $transactions->total() }}</span>
         </div>
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th class="text-muted small">نوع العملية</th>
-                        <th class="text-muted small">المبلغ</th>
-                        <th class="text-muted small">الرصيد بعد</th>
-                        <th class="text-muted small">رقم المهمة</th>
-                        <th class="text-muted small">البيان</th>
-                        <th class="text-muted small">التاريخ والوقت</th>
+                        <th class="text-muted small">{{ __('Operation type') }}</th>
+                        <th class="text-muted small">{{ __('Amount') }}</th>
+                        <th class="text-muted small">{{ __('Balance After') }}</th>
+                        <th class="text-muted small">{{ __('Task ID') }}</th>
+                        <th class="text-muted small">{{ __('Description') }}</th>
+                        <th class="text-muted small">{{ __('Date and Time') }}</th>
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
@@ -171,30 +179,30 @@
                                         <div class="avatar avatar-xs me-2">
                                             <span class="avatar-initial rounded-circle bg-label-info"><i class="ti ti-arrow-back-up"></i></span>
                                         </div>
-                                        <span class="fw-medium text-info">استعادة استثمار</span>
-                                    @elseif(str_contains($tx->description ?? '', 'إعادة استثمار الأرباح'))
+                                        <span class="fw-medium text-info">{{ __('Capital Return') }}</span>
+                                    @elseif(str_contains($tx->description ?? '', __('Profit reinvestment to investment wallet')))
                                         <div class="avatar avatar-xs me-2">
                                             <span class="avatar-initial rounded-circle bg-label-primary"><i class="ti ti-refresh"></i></span>
                                         </div>
-                                        <span class="fw-medium text-primary">استثمار الأرباح</span>
+                                        <span class="fw-medium text-primary">{{ __('Profit Reinvestment') }}</span>
                                     @else
                                         <div class="avatar avatar-xs me-2">
                                             <span class="avatar-initial rounded-circle bg-label-success"><i class="ti ti-arrow-down-left"></i></span>
                                         </div>
-                                        <span class="fw-medium text-success">إيداع رأس مال</span>
+                                        <span class="fw-medium text-success">{{ __('Capital Deposit') }}</span>
                                     @endif
                                 @else
                                     <div class="avatar avatar-xs me-2">
                                         <span class="avatar-initial rounded-circle bg-label-danger"><i class="ti ti-arrow-up-right"></i></span>
                                     </div>
-                                    <span class="fw-medium text-danger">تمويل مهمة</span>
+                                    <span class="fw-medium text-danger">{{ __('Task Funding') }}</span>
                                 @endif
                             </div>
                         </td>
                         <td class="fw-bold">
-                            {{ $tx->transaction_type === 'credit' ? '+' : '-' }}{{ number_format($tx->amount, 2) }} ر.س
+                            {{ $tx->transaction_type === 'credit' ? '+' : '-' }}{{ number_format($tx->amount, 2) }} {{ __('SAR') }}
                         </td>
-                        <td>{{ number_format($tx->balance_after, 2) }} ر.س</td>
+                        <td>{{ number_format($tx->balance_after, 2) }} {{ __('SAR') }}</td>
                         <td>
                             @if($tx->task_id)
                                 <a href="javascript:void(0)" class="badge bg-label-primary">#{{ $tx->task_id }}</a>
@@ -209,7 +217,7 @@
                     <tr>
                         <td colspan="6" class="text-center py-5">
                             <img src="{{ asset('assets/img/illustrations/empty-state.png') }}" alt="Empty state" width="120" class="mb-3 opacity-50">
-                            <p class="text-muted">لا توجد عمليات مسجلة في هذه المحفظة حتى الآن.</p>
+                            <p class="text-muted">{{ __('No transactions yet.') }}</p>
                         </td>
                     </tr>
                     @endforelse
@@ -217,8 +225,8 @@
             </table>
         </div>
         @if($transactions->hasPages())
-        <div class="card-footer d-flex justify-content-center border-top">
-            {{ $transactions->appends(request()->input())->links() }}
+        <div class="card-footer px-4">
+            {{ $transactions->appends(request()->input())->links('investor.partials.pagination') }}
         </div>
         @endif
     </div>
@@ -228,27 +236,27 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title fw-bold">شحن رصيد المحفظة</h5>
+                    <h5 class="modal-title fw-bold">{{ __('Top up wallet title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="{{ route('investor.investment-wallet.deposit.initiate') }}" method="POST">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-4 text-center">
-                            <p class="text-muted">أدخل المبلغ الذي تود إضافته لمحفظة المضاربة عبر بوابة الدفع الإلكتروني</p>
+                            <p class="text-muted">{{ __('Enter amount to add via payment gateway') }}</p>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">المبلغ (ر.س)</label>
+                            <label class="form-label fw-semibold">{{ __('Top up amount (SAR)') }}</label>
                             <div class="input-group input-group-lg border-2 rounded-3">
                                 <input type="number" name="amount" class="form-control" placeholder="0.00" min="10" step="0.01" required>
-                                <span class="input-group-text">ر.س</span>
+                                <span class="input-group-text">{{ __('SAR') }}</span>
                             </div>
-                            <div class="form-text text-warning"><i class="ti ti-info-circle me-1"></i>الحد الأدنى للشحن هو 10 ر.س</div>
+                            <div class="form-text text-warning"><i class="ti ti-info-circle me-1"></i>{{ __('Minimum amount is 10 SAR') }}</div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label d-block fw-semibold mb-3">اختر وسيلة الدفع</label>
+                            <label class="form-label d-block fw-semibold mb-3">{{ __('Choose payment method') }}</label>
                             <div class="row g-3">
                                 <div class="col-6">
                                     <div class="form-check custom-option custom-option-icon border-2">
@@ -266,7 +274,7 @@
                                         <label class="form-check-label custom-option-content" for="brandMada">
                                             <span class="custom-option-body">
                                                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Mada_Logo.svg/1280px-Mada_Logo.svg.png" alt="Mada" width="45" class="mb-2">
-                                                <span class="custom-option-title fw-bold">مدى (Mada)</span>
+                                                <span class="custom-option-title fw-bold">{{ __('Mada card') }}</span>
                                             </span>
                                             <input name="brand" class="form-check-input" type="radio" value="MADA" id="brandMada" checked />
                                         </label>
@@ -276,8 +284,8 @@
                         </div>
                     </div>
                     <div class="modal-footer border-top-0 pb-4">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button type="submit" class="btn btn-primary px-5 shadow">الانتقال للدفع الآمن</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary px-5 shadow">{{ __('Proceed to secure payment') }}</button>
                     </div>
                 </form>
             </div>

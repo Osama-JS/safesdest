@@ -42,10 +42,10 @@ class InvestorPaymentService
 
             // ── 2. التحقق من أهلية المهمة ────────────────────────────────────
             if ($task->investor_payment_status !== 'none') {
-                throw new \Exception('هذه المهمة تم دفعها مسبقاً من قبل مضارب آخر.');
+                throw new \Exception(__('Task already paid by another investor'));
             }
             if ($task->closed) {
-                throw new \Exception('لا يمكن الدفع على مهمة مقفلة.');
+                throw new \Exception(__('Cannot pay on a closed task'));
             }
 
             $taskPrice = (float) $task->total_price;
@@ -63,9 +63,10 @@ class InvestorPaymentService
                     $newDebt      = $currentDebt + $taskPrice;
 
                     if ($newDebt > $debtCeiling) {
-                        throw new \Exception(
-                            "لا يمكن الدفع: سيتجاوز دين العميل الحد المسموح به ({$debtCeiling} ر.س). الدين الحالي: {$currentDebt} ر.س."
-                        );
+                        throw new \Exception(__('Customer debt would exceed limit', [
+                            'ceiling' => $debtCeiling,
+                            'current' => $currentDebt,
+                        ]));
                     }
                 }
             }
@@ -73,9 +74,9 @@ class InvestorPaymentService
             // ── 4. التحقق من رصيد محفظة المضاربة ───────────────────────────
             $investorBalance = $investorWallet->balance;
             if ($investorBalance < $taskPrice) {
-                throw new \Exception(
-                    "رصيد محفظة المضاربة غير كافٍ. الرصيد المتاح: {$investorBalance} ر.س."
-                );
+                throw new \Exception(__('Investment wallet balance insufficient', [
+                    'balance' => $investorBalance,
+                ]));
             }
 
             $balanceAfterDebit = $investorBalance - $taskPrice;
@@ -87,7 +88,7 @@ class InvestorPaymentService
                 'transaction_type'   => 'debit',
                 'source_type'        => 'capital',
                 'amount'             => $taskPrice,
-                'description'        => "دفع قيمة المهمة رقم #{$task->id}",
+                'description'        => __('Pay Task Value') . " #{$task->id}",
                 'performed_by'       => auth()->id() ?? $investor->id,
                 'balance_after'      => $balanceAfterDebit,
             ]);
@@ -142,16 +143,16 @@ class InvestorPaymentService
     public function calculateGeneralCommissions(User $investor, InvestmentContract $contract): array
     {
         if ($contract->contract_type !== 'general_investment') {
-            throw new \Exception('هذه الدالة مخصصة للمضارب العام فقط.');
+            throw new \Exception(__('General commissions feature only'));
         }
 
         if (!$contract->isActive()) {
-            throw new \Exception('العقد غير نشط أو منتهي الصلاحية.');
+            throw new \Exception(__('Contract not active or expired'));
         }
 
         $personalWallet = $investor->userWallet;
         if (!$personalWallet) {
-            throw new \Exception('لا توجد محفظة شخصية للمضارب.');
+            throw new \Exception(__('No personal wallet for investor'));
         }
 
         // جلب المهام المغلقة ضمن نطاق تاريخ العقد
@@ -342,15 +343,15 @@ class InvestorPaymentService
     public function reinvestProfits(User $investor, float $amount, bool $viaAdmin = false, ?string $notes = null): void
     {
         if ($amount <= 0) {
-            throw new \Exception('المبلغ يجب أن يكون أكبر من صفر.');
+            throw new \Exception(__('Amount must be greater than zero'));
         }
 
-        $debitDescription = 'إعادة استثمار الأرباح — تحويل إلى محفظة المضاربة';
-        $creditDescription = 'إعادة استثمار الأرباح من محفظة العمولات';
+        $debitDescription = __('Profit reinvestment from commission wallet');
+        $creditDescription = __('Profit reinvestment to investment wallet');
 
         if ($viaAdmin) {
-            $debitDescription .= ' (بواسطة الإدارة)';
-            $creditDescription .= ' (بواسطة الإدارة)';
+            $debitDescription .= ' (' . __('via administration') . ')';
+            $creditDescription .= ' (' . __('via administration') . ')';
         }
 
         if ($notes) {
@@ -364,7 +365,7 @@ class InvestorPaymentService
                 ->first();
 
             if (!$personalWallet) {
-                throw new \Exception('لا توجد محفظة عمولات لهذا المضارب.');
+                throw new \Exception(__('No commission wallet for this investor'));
             }
 
             $investorWallet = InvestorWallet::lockForUpdate()
@@ -372,16 +373,14 @@ class InvestorPaymentService
                 ->first();
 
             if (!$investorWallet) {
-                throw new \Exception('لا توجد محفظة مضاربة لهذا المضارب.');
+                throw new \Exception(__('No investment wallet for this investor'));
             }
 
             $withdrawable = $personalWallet->withdrawable_balance;
 
             if ($amount > $withdrawable) {
-                throw new \Exception(
-                    'المبلغ يتجاوز الرصيد القابل للسحب. الرصيد المتاح: ' .
-                    number_format($withdrawable, 2) . ' ر.س.'
-                );
+                throw new \Exception(__('Amount exceeds withdrawable balance') . ' ' .
+                    number_format($withdrawable, 2));
             }
 
             UserWalletTransaction::create([
@@ -415,13 +414,15 @@ class InvestorPaymentService
      * @param  float  $amount
      * @param  string $description
      */
-    public function depositToInvestorWallet(User $investor, float $amount, string $description = 'إيداع من الإدارة'): void
+    public function depositToInvestorWallet(User $investor, float $amount, ?string $description = null): void
     {
+        $description ??= __('Deposit from administration');
+
         DB::transaction(function () use ($investor, $amount, $description) {
             $wallet = $investor->investorWallet;
 
             if (!$wallet) {
-                throw new \Exception('لا توجد محفظة مضاربة لهذا المضارب.');
+                throw new \Exception(__('No investment wallet for this investor'));
             }
 
             $newBalance = $wallet->balance + $amount;

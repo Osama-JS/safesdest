@@ -644,22 +644,22 @@ $(function () {
     amountError.addClass('d-none').text('');
 
     if (isNaN(amount) || amount <= 0) {
-      amountError.removeClass('d-none').text('يرجى إدخال مبلغ صحيح.');
+      amountError.removeClass('d-none').text(__('Enter valid amount'));
       return;
     }
 
     if (amount > maxAmount) {
-      amountError.removeClass('d-none').text('المبلغ يتجاوز الرصيد القابل للسحب.');
+      amountError.removeClass('d-none').text(__('Amount exceeds withdrawable'));
       return;
     }
 
     Swal.fire({
-      title: 'تأكيد إعادة الاستثمار',
-      html: `هل تريد تحويل <strong>${amount.toFixed(2)} ر.س</strong> من محفظة العمولات إلى محفظة المضاربة؟`,
+      title: __('Confirm reinvestment title'),
+      html: __('Confirm reinvestment html', { amount: amount.toFixed(2) }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، تأكيد',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: __('Yes confirm'),
+      cancelButtonText: __('Cancel'),
       customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -683,7 +683,7 @@ $(function () {
           if (response.status === 1) {
             Swal.fire({
               icon: 'success',
-              title: 'تم بنجاح!',
+              title: __('Success'),
               text: response.success,
               customClass: { confirmButton: 'btn btn-success' }
             }).then(function () {
@@ -691,15 +691,15 @@ $(function () {
             });
           } else if (response.errors) {
             const firstError = Object.values(response.errors)[0][0];
-            Swal.fire({ title: 'خطأ!', text: firstError, icon: 'error' });
+            Swal.fire({ title: __('Error'), text: firstError, icon: 'error' });
           } else {
-            Swal.fire({ title: 'خطأ!', text: response.error || 'حدث خطأ غير متوقع.', icon: 'error' });
+            Swal.fire({ title: __('Error'), text: response.error || __('unexpectedErrorOccurred'), icon: 'error' });
           }
         },
         error: function () {
           submitBtn.prop('disabled', false);
           submitBtn.find('.spinner-border').addClass('d-none');
-          Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية إعادة الاستثمار.', icon: 'error' });
+          Swal.fire({ title: __('Error'), text: __('Reinvestment error'), icon: 'error' });
         }
       });
     });

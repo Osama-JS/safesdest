@@ -9,6 +9,8 @@ use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\InvestorFundedTasksExport;
 
 class InvestorTaskPaymentController extends Controller
 {
@@ -27,7 +29,7 @@ class InvestorTaskPaymentController extends Controller
 
         if (!$contract || $contract->contract_type !== 'task_investment') {
             return redirect()->route('investor.dashboard')
-                ->with('error', 'صفحة دفع المهام متاحة للمستثمر بالمهام فقط.');
+                ->with('error', __('Task payment page only for task investors'));
         }
 
         $investorWallet = $investor->investorWallet;
@@ -78,18 +80,18 @@ class InvestorTaskPaymentController extends Controller
 
         // التحقق من صحة كلمة المرور
         if (!Hash::check($request->password, $investor->password)) {
-            return back()->with('error', 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+            return back()->with('error', __('Password incorrect'));
         }
 
         $contract = $investor->activeInvestmentContract;
 
         if (!$contract || $contract->contract_type !== 'task_investment') {
-            return back()->with('error', 'غير مصرح بهذه العملية.');
+            return back()->with('error', __('Not authorized'));
         }
 
         try {
             $this->paymentService->payTask($investor, $task, $contract);
-            return back()->with('success', "تم دفع قيمة المهمة #{$task->id} بنجاح وتم تسجيل عمولتك.");
+            return back()->with('success', __('Task paid successfully', ['id' => $task->id]));
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -130,6 +132,45 @@ class InvestorTaskPaymentController extends Controller
     }
 
     /**
+     * تصدير تقرير إكسل لسجل المهام الممولة
+     */
+    public function exportPaidTasks(Request $request)
+    {
+        $investor = auth()->user();
+        $wallet   = $investor->userWallet;
+        $contract = $investor->activeInvestmentContract;
+
+        $tasks = Task::where('investor_id', $investor->id)
+            ->with([
+                'customer',
+                'pickup',
+                'delivery',
+                'ad',
+                'vehicle_size.type',
+                'userWalletTransactions' => function ($q) use ($wallet) {
+                    if ($wallet) {
+                        $q->where('user_wallet_id', $wallet->id)->where('transaction_type', 'credit');
+                    }
+                }
+            ])
+            ->when($request->from,   fn($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->to,     fn($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->search, function ($q, $s) {
+                $q->where(function ($query) use ($s) {
+                    $query->where('id', 'like', "%{$s}%")
+                          ->orWhereHas('customer', fn($sub) => $sub->where('name', 'like', "%{$s}%"));
+                });
+            })
+            ->latest()
+            ->get();
+
+        return Excel::download(
+            new InvestorFundedTasksExport($tasks, $investor, $contract, $wallet?->id),
+            'funded_tasks_' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+    /**
      * تحميل تقرير المهمة للمستثمر
      */
     public function downloadReport(Task $task)
@@ -138,7 +179,7 @@ class InvestorTaskPaymentController extends Controller
 
         // التأكد أن المستثمر هو من مول هذه المهمة
         if ($task->investor_id !== $investor->id) {
-            return back()->with('error', 'غير مصرح لك بالوصول لهذا التقرير.');
+            return back()->with('error', __('Report access denied'));
         }
 
         $task->load(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user', 'driver']);

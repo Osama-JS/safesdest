@@ -41,7 +41,7 @@ $(function () {
             var $type = full['transaction_type'];
             var $color = $type === 'credit' ? 'text-success' : 'text-danger';
             var $prefix = $type === 'credit' ? '+' : '-';
-            return '<span class="fw-bold ' + $color + '">' + $prefix + $amount + ' ر.س</span>';
+            return '<span class="fw-bold ' + $color + '">' + $prefix + $amount + ' ' + __('SAR') + '</span>';
           }
         },
         {
@@ -52,12 +52,12 @@ $(function () {
             var $sourceType = full['source_type'];
             if ($type === 'credit') {
               if ($sourceType === 'refund') {
-                return '<span class="badge bg-label-info">استعادة استثمار</span>';
+                return '<span class="badge bg-label-info">' + __('Capital return') + '</span>';
               } else {
-                return '<span class="badge bg-label-success">إيداع رأس مال</span>';
+                return '<span class="badge bg-label-success">' + __('Capital deposit') + '</span>';
               }
             } else {
-              return '<span class="badge bg-label-danger">تمويل مهمة</span>';
+              return '<span class="badge bg-label-danger">' + __('Task funding') + '</span>';
             }
           }
         },
@@ -71,7 +71,7 @@ $(function () {
               attachmentLink =
                 '<div class="mt-1"><a href="javascript:;" class="text-primary fw-bold show-attachment" data-file="' +
                 attachmentUrl +
-                '"><i class="ti ti-link ti-xs me-1"></i>عرض المرفق</a></div>';
+                '"><i class="ti ti-link ti-xs me-1"></i>' + __('View attachment') + '</a></div>';
             }
             return (
               '<div class="text-wrap" style="min-width: 200px;">' +
@@ -98,7 +98,7 @@ $(function () {
         {
           // Actions
           targets: -1,
-          title: 'الإجراءات',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
@@ -108,23 +108,23 @@ $(function () {
             actions +=
               '<a href="javascript:;" class="text-body print-record me-2" data-id="' +
               data +
-              '" title="طباعة"><i class="ti ti-printer ti-sm"></i></a>';
+              '" title="' + __('Print') + '"><i class="ti ti-printer ti-sm"></i></a>';
 
             // Only allow edit/delete if not related to a task AND not a debit transaction
             if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
               actions +=
                 '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
                 data +
-                '" title="تعديل"><i class="ti ti-edit ti-sm"></i></a>';
+                '" title="' + __('Edit') + '"><i class="ti ti-edit ti-sm"></i></a>';
               actions +=
                 '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
                 data +
-                '" title="حذف"><i class="ti ti-trash ti-sm"></i></a>';
+                '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm"></i></a>';
             } else {
               var lockTitle =
                 full['transaction_type'] === 'debit'
-                  ? 'عملية تمويل - لا يمكن التعديل أو الحذف'
-                  : 'مرتبطة بمهمة - لا يمكن التعديل أو الحذف';
+                  ? __('Funding transaction locked')
+                  : __('Task linked transaction locked');
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
             }
 
@@ -139,7 +139,7 @@ $(function () {
                 data +
                 '" data-amount="' +
                 full['amount'] +
-                '" title="تحويل إلى استعادة استثمار"><i class="ti ti-arrow-forward ti-sm"></i></a>';
+                '" title="' + __('Convert to Capital Return') + '"><i class="ti ti-arrow-forward ti-sm"></i></a>';
             }
 
             actions += '</div>';
@@ -160,7 +160,7 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'بحث في العمليات...',
+        searchPlaceholder: __('Search in operations...'),
         paginate: {
           next: '<i class="ti ti-chevron-left ti-sm"></i>',
           previous: '<i class="ti ti-chevron-right ti-sm"></i>'
@@ -195,7 +195,7 @@ $(function () {
           dt_transaction.draw();
           Swal.fire({
             icon: 'success',
-            title: 'تم بنجاح!',
+            title: __('Done!'),
             text: data.success,
             customClass: {
               confirmButton: 'btn btn-success'
@@ -206,7 +206,7 @@ $(function () {
         } else {
           Swal.fire({
             icon: 'error',
-            title: 'خطأ!',
+            title: __('Error!'),
             text: data.error,
             customClass: {
               confirmButton: 'btn btn-danger'
@@ -218,8 +218,8 @@ $(function () {
         submitBtn.prop('disabled', false).find('.spinner-border').addClass('d-none');
         Swal.fire({
           icon: 'error',
-          title: 'خطأ!',
-          text: 'حدث خطأ أثناء معالجة الطلب.',
+          title: __('Error!'),
+          text: __('Failed to process request'),
           customClass: {
             confirmButton: 'btn btn-danger'
           }
@@ -240,7 +240,7 @@ $(function () {
     transactionForm.find('textarea[name="description"]').val(row.description);
 
     // Change modal title
-    $('#modalTitle').text('تعديل معاملة مالية');
+    $('#modalTitle').text(__('Edit financial transaction'));
     $('#transactionModal').modal('show');
   });
 
@@ -248,7 +248,7 @@ $(function () {
   $('#transactionModal').on('hidden.bs.modal', function () {
     transactionForm[0].reset();
     $('#transaction_id').val('');
-    $('#modalTitle').text('إضافة حركة مالية جديدة');
+    $('#modalTitle').text(__('Add new financial transaction'));
   });
 
   $('#convertTransactionModal').on('hidden.bs.modal', function () {
@@ -292,12 +292,12 @@ $(function () {
       $('#modalFileContent').html(
         '<div class="p-4 text-center">' +
           '<i class="ti ti-file-description ti-lg mb-3 d-block text-secondary"></i>' +
-          '<p class="mb-3"><strong>الملف:</strong> ' +
+          '<p class="mb-3"><strong>' + __('File') + ':</strong> ' +
           fileName +
           '</p>' +
           '<a href="' +
           fileUrl +
-          '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> تحميل / فتح الملف</a>' +
+          '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> ' + __('Download or open file') + '</a>' +
           '</div>'
       );
     }
@@ -313,7 +313,7 @@ $(function () {
 
     $('#convert_transaction_id').val(id);
     $('#convertTransactionReference').text('#' + id);
-    $('#convertTransactionAmount').text(amount + ' ر.س');
+    $('#convertTransactionAmount').text(amount + ' ' + __('SAR'));
     $('#convertTransactionModal').modal('show');
   });
 
@@ -325,8 +325,8 @@ $(function () {
     if (!password) {
       Swal.fire({
         icon: 'warning',
-        title: 'مطلوب كلمة المرور',
-        text: 'يرجى إدخال كلمة المرور للتأكيد قبل المتابعة.',
+        title: __('Password required'),
+        text: __('Please verify password before confirm'),
         customClass: {
           confirmButton: 'btn btn-warning'
         }
@@ -352,7 +352,7 @@ $(function () {
           dt_transaction.draw();
           Swal.fire({
             icon: 'success',
-            title: 'تم بنجاح!',
+            title: __('Done!'),
             text: data.success,
             customClass: {
               confirmButton: 'btn btn-success'
@@ -363,7 +363,7 @@ $(function () {
         } else {
           Swal.fire({
             icon: 'error',
-            title: 'خطأ!',
+            title: __('Error!'),
             text: data.error,
             customClass: {
               confirmButton: 'btn btn-danger'
@@ -376,8 +376,8 @@ $(function () {
         $('#convertTransactionModal').modal('hide');
         Swal.fire({
           icon: 'error',
-          title: 'خطأ!',
-          text: 'حدث خطأ أثناء معالجة التحويل.',
+          title: __('Error!'),
+          text: __('Conversion processing error'),
           customClass: {
             confirmButton: 'btn btn-danger'
           }
@@ -390,12 +390,12 @@ $(function () {
   $('.datatables-transactions tbody').on('click', '.delete-record', function () {
     var id = $(this).data('id');
     Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: 'سيتم حذف هذه العملية وتحديث الرصيد!',
+      title: __('Are you sure?'),
+      text: __('Delete transaction warning'),
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'نعم، احذف!',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: __('Yes, delete it!'),
+      cancelButtonText: __('Cancel'),
       customClass: {
         confirmButton: 'btn btn-primary me-3',
         cancelButton: 'btn btn-label-secondary'
@@ -414,8 +414,8 @@ $(function () {
             if (data.status == 1) {
               Swal.fire({
                 icon: 'success',
-                title: 'تم الحذف!',
-                text: 'تم حذف العملية بنجاح.',
+                title: __('Deleted!'),
+                text: __('Transaction deleted success'),
                 customClass: {
                   confirmButton: 'btn btn-success'
                 }

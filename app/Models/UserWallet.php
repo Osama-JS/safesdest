@@ -88,12 +88,11 @@ class UserWallet extends Model
       return 0.00;
     }
 
-    $contract = $user->activeInvestmentContract;
+    $investorWallet = $user->investorWallet;
 
-    // إذا كان مستثمراً بالمهام نطبق المعادلة المحسوبة
-    if ($contract && $contract->contract_type === 'task_investment') {
-      $investorWallet   = $user->investorWallet;
-      $investorWalletId = $investorWallet ? $investorWallet->id : 0;
+    // تطبيق المعادلة المحسوبة لجميع المستثمرين (عام أو بالمهام)
+    if ($investorWallet) {
+      $investorWalletId = $investorWallet->id;
 
       // إجمالي الإيداعات القابلة للسحب:
       //   أ) إيداعات بدون task_id (مكافآت يدوية وتسويات إدارية) → قابلة فوراً
@@ -123,7 +122,7 @@ class UserWallet extends Model
       return (float) max(0.00, $settledCredits - $totalWithdrawn);
     }
 
-    // المستثمر العام أو غير المضارب: الرصيد الدفتري الكامل
+    // المستخدمين غير المستثمرين (سائق، عميل): الرصيد الدفتري الكامل
     return (float) max(0.00, $this->balance);
   }
 

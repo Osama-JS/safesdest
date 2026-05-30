@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'الملف الشخصي')
+@section('title', __('Profile'))
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
@@ -24,11 +24,11 @@
                         </div>
                         <div>
                             <h4 class="mb-1 fw-bold text-primary">{{ $investor->name }}</h4>
-                            <p class="mb-0 small text-muted">إدارة الملف الشخصي والإعدادات الأمنية</p>
+                            <p class="mb-0 small text-muted">{{ __('Manage profile and security settings') }}</p>
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-3 mt-sm-0">
-                        <span class="badge bg-label-success px-3 py-2"><i class="ti ti-shield-check me-1"></i>مضارب معتمد</span>
+                        <span class="badge bg-label-success px-3 py-2"><i class="ti ti-shield-check me-1"></i>{{ __('Verified Investor') }}</span>
                     </div>
                 </div>
             </div>
@@ -51,27 +51,27 @@
             @if($investor->activeInvestmentContract)
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-body">
-                    <small class="card-text text-uppercase text-muted small">تفاصيل العقد الحالي</small>
+                    <small class="card-text text-uppercase text-muted small">{{ __('Current contract details') }}</small>
                     @php $c = $investor->activeInvestmentContract; @endphp
                     <div class="mt-3">
                         <div class="d-flex align-items-center mb-3">
                             <div class="badge bg-label-primary rounded p-2 me-2"><i class="ti ti-certificate ti-sm"></i></div>
                             <div>
-                                <small class="text-muted d-block small">نوع العقد</small>
-                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? 'مضاربة بالمهام' : 'مضاربة عامة' }}</span>
+                                <small class="text-muted d-block small">{{ __('Contract Type') }}</small>
+                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? '{{ __('Task-based investment') }}' : '{{ __('General investment') }}' }}</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
                             <div class="badge bg-label-success rounded p-2 me-2"><i class="ti ti-currency-dollar ti-sm"></i></div>
                             <div>
-                                <small class="text-muted d-block small">العمولة المتفق عليها</small>
-                                <span class="fw-medium text-dark">{{ $c->commission_value }}{{ $c->commission_type === 'percentage' ? '%' : ' ر.س' }}</span>
+                                <small class="text-muted d-block small">{{ __('Agreed commission') }}</small>
+                                <span class="fw-medium text-dark">{{ $c->commission_value }}{{ $c->commission_type === 'percentage' ? '%' : ' ' . __('SAR') }}</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center mb-3">
                             <div class="badge bg-label-info rounded p-2 me-2"><i class="ti ti-calendar ti-sm"></i></div>
                             <div>
-                                <small class="text-muted d-block small">تاريخ البدء</small>
+                                <small class="text-muted d-block small">{{ __('Start Date') }}</small>
                                 <span class="fw-medium text-dark">{{ $c->start_date->format('Y-m-d') }}</span>
                             </div>
                         </div>
@@ -83,9 +83,9 @@
             {{-- بطاقة تواصل --}}
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <h6 class="mb-3">هل تحتاج للمساعدة؟</h6>
-                    <p class="text-muted small">إذا كان لديك أي استفسار حول حسابك أو مضارباتك، يمكنك التواصل مع الدعم الفني.</p>
-                    <button class="btn btn-label-secondary w-100"><i class="ti ti-headset me-1"></i>تواصل معنا</button>
+                    <h6 class="mb-3">{{ __('Need help?') }}</h6>
+                    <p class="text-muted small">{{ __('Contact support message') }}</p>
+                    <button class="btn btn-label-secondary w-100"><i class="ti ti-headset me-1"></i>{{ __('Contact us') }}</button>
                 </div>
             </div>
         </div>
@@ -97,17 +97,17 @@
                 <ul class="nav nav-pills mb-3" role="tablist">
                     <li class="nav-item">
                         <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-profile" aria-controls="navs-pills-top-profile" aria-selected="true">
-                            <i class="ti ti-user-edit me-1"></i> المعلومات الشخصية
+                            <i class="ti ti-user-edit me-1"></i> {{ __('Personal information') }}
                         </button>
                     </li>
                     <li class="nav-item">
                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-security" aria-controls="navs-pills-top-security" aria-selected="false">
-                            <i class="ti ti-lock me-1"></i> الأمان وكلمة المرور
+                            <i class="ti ti-lock me-1"></i> {{ __('Security and password') }}
                         </button>
                     </li>
                     <li class="nav-item">
                         <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-pills-top-signature" aria-controls="navs-pills-top-signature" aria-selected="false">
-                            <i class="ti ti-signature me-1"></i> التوقيع الإلكتروني
+                            <i class="ti ti-signature me-1"></i> {{ __('Electronic signature') }}
                         </button>
                     </li>
                 </ul>
@@ -120,7 +120,7 @@
                                     @csrf @method('PUT')
                                     <div class="row">
                                         <div class="mb-3 col-md-6">
-                                            <label class="form-label">الاسم الكامل</label>
+                                            <label class="form-label">{{ __('Full Name') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-user"></i></span>
                                                 <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $investor->name) }}" required>
@@ -128,7 +128,7 @@
                                             @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="mb-3 col-md-6">
-                                            <label class="form-label">البريد الإلكتروني</label>
+                                            <label class="form-label">{{ __('Email') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-mail"></i></span>
                                                 <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" value="{{ old('email', $investor->email) }}" required>
@@ -136,7 +136,7 @@
                                             @error('email')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="mb-3 col-md-3">
-                                            <label class="form-label">رمز الدولة</label>
+                                            <label class="form-label">{{ __('Country') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-world"></i></span>
                                                 <select name="phone_code" class="form-select @error('phone_code') is-invalid @enderror">
@@ -153,7 +153,7 @@
                                             @error('phone_code')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="mb-3 col-md-6">
-                                            <label class="form-label">رقم الجوال</label>
+                                            <label class="form-label">{{ __('Phone Number') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-phone"></i></span>
                                                 <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $investor->phone) }}">
@@ -162,8 +162,8 @@
                                         </div>
                                     </div>
                                     <div class="mt-2">
-                                        <button type="submit" class="btn btn-primary me-2">حفظ التغييرات</button>
-                                        <button type="reset" class="btn btn-label-secondary">إلغاء</button>
+                                        <button type="submit" class="btn btn-primary me-2">{{ __('Save changes') }}</button>
+                                        <button type="reset" class="btn btn-label-secondary">{{ __('Cancel') }}</button>
                                     </div>
                                 </form>
                             </div>
@@ -177,7 +177,7 @@
                                     @csrf @method('PUT')
                                     <div class="row">
                                         <div class="mb-3 col-md-12">
-                                            <label class="form-label">كلمة المرور الحالية</label>
+                                            <label class="form-label">{{ __('Password') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-key"></i></span>
                                                 <input type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror" required>
@@ -185,7 +185,7 @@
                                             @error('current_password')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="mb-3 col-md-6">
-                                            <label class="form-label">كلمة المرور الجديدة</label>
+                                            <label class="form-label">{{ __('Password') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-lock"></i></span>
                                                 <input type="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
@@ -193,7 +193,7 @@
                                             @error('password')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                                         </div>
                                         <div class="mb-3 col-md-6">
-                                            <label class="form-label">تأكيد كلمة المرور</label>
+                                            <label class="form-label">{{ __('Confirm Password') }}</label>
                                             <div class="input-group input-group-merge">
                                                 <span class="input-group-text"><i class="ti ti-lock-check"></i></span>
                                                 <input type="password" name="password_confirmation" class="form-control" required>
@@ -201,40 +201,40 @@
                                         </div>
                                     </div>
                                     <div class="mt-2">
-                                        <button type="submit" class="btn btn-warning">تحديث كلمة المرور</button>
+                                        <button type="submit" class="btn btn-warning">{{ __('Update password') }}</button>
                                     </div>
                                 </form>
                             </div>
                         </div>
                     </div>
-                    {{-- التوقيع الإلكتروني --}}
+                    {{-- {{ __('Electronic signature') }} --}}
                     <div class="tab-pane fade" id="navs-pills-top-signature" role="tabpanel">
                         <div class="card">
                             <div class="card-body text-center">
-                                <h5 class="card-title mb-3">إدارة التوقيع الإلكتروني</h5>
+                                <h5 class="card-title mb-3">{{ __('Manage electronic signature') }}</h5>
                                 <p class="card-text text-muted mb-4">
-                                    يستخدم التوقيع الإلكتروني في توقيع العقود والاتفاقيات الخاصة بالمضاربات تلقائياً.
+                                    {{ __('Signature used for contracts') }}
                                 </p>
                                 
                                 @if($investor->signature_image)
                                     <div class="mb-4">
-                                        <label class="form-label d-block text-muted mb-2">التوقيع الحالي:</label>
+                                        <label class="form-label d-block text-muted mb-2">{{ __('Current signature') }}:</label>
                                         <div class="border rounded p-3 d-inline-block bg-light">
-                                            <img src="{{ asset($investor->signature_image) }}" alt="التوقيع الحالي" style="max-height: 120px; max-width: 100%;">
+                                            <img src="{{ asset($investor->signature_image) }}" alt="{{ __('Current signature') }}" style="max-height: 120px; max-width: 100%;">
                                         </div>
                                     </div>
                                     <button type="button" class="btn btn-primary" onclick="window.signatureModalManager.open()">
-                                        <i class="ti ti-pencil me-1"></i> تعديل التوقيع
+                                        <i class="ti ti-pencil me-1"></i> {{ __('Edit signature') }}
                                     </button>
                                 @else
                                     <div class="mb-4">
                                         <div class="border border-dashed rounded p-4 text-muted bg-light">
                                             <i class="ti ti-signature ti-xl mb-2"></i>
-                                            <p class="mb-0">لا يوجد توقيع مسجل حالياً</p>
+                                            <p class="mb-0">{{ __('No signature on file') }}</p>
                                         </div>
                                     </div>
                                     <button type="button" class="btn btn-primary" onclick="window.signatureModalManager.open()">
-                                        <i class="ti ti-plus me-1"></i> إضافة التوقيع
+                                        <i class="ti ti-plus me-1"></i> {{ __('Add signature') }}
                                     </button>
                                 @endif
                             </div>

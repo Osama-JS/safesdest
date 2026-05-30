@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>شحن محفظة المضاربة — SafeDest</title>
+    <title>{{ __('Top Up Investment Wallet') }} — {{ __('Safe Dest') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet"/>
     <style>
@@ -68,7 +68,6 @@
             text-align: center;
         }
 
-        /* HyperPay widget custom styling */
         .wpwl-form {
             max-width: 100% !important;
             margin: 0 auto !important;
@@ -119,14 +118,14 @@
 
     <div class="payment-container">
         <div class="payment-header">
-            <div class="amount-label">مبلغ الشحن</div>
-            <div class="amount-display">{{ number_format($amount, 2) }} <small style="font-size: 1rem">ر.س</small></div>
-            <div style="font-size: 0.85rem; opacity: 0.8">بوابة دفع آمنة مشفرة 256-bit</div>
+            <div class="amount-label">{{ __('Top up amount (SAR)') }}</div>
+            <div class="amount-display">{{ number_format($amount, 2) }} <small style="font-size: 1rem">{{ __('SAR') }}</small></div>
+            <div style="font-size: 0.85rem; opacity: 0.8">{{ __('Secure payment gateway 256-bit') }}</div>
         </div>
 
         <div class="payment-body">
-            <h4>أدخل بيانات البطاقة لإتمام العملية</h4>
-            
+            <h4>{{ __('Enter card details to complete') }}</h4>
+
             <form action="" class="paymentWidgets" data-brands="{{ $brand === 'MADA' ? 'MADA' : 'VISA MASTER' }}"></form>
 
             <div class="trust-badges">
@@ -136,14 +135,14 @@
             </div>
 
             <a href="{{ route('investor.investment-wallet') }}" class="back-link">
-                &larr; العودة لمحفظة المضاربة
+                &larr; {{ __('Back to investment wallet') }}
             </a>
         </div>
     </div>
 
     <script>
         var wpwlOptions = {
-            locale: "ar",
+            locale: "{{ app()->getLocale() === 'ar' ? 'ar' : 'en' }}",
             style: "plain",
             paymentTarget: "_top",
         }

@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'محفظة المضاربة - ' . $user->name)
+@section('title', __('Investment Wallet - :name', ['name' => $user->name]))
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
@@ -18,7 +18,98 @@
         const convertTransactionUrl = '{{ url('admin/investors/invest-wallet/transaction/convert') }}';
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
-    @vite(['resources/js/admin/investor-wallets.js'])
+    <script>
+        function checkFunding() {
+            $('#fundingCheckModal').modal('show');
+            $('#fundingCheckLoading').removeClass('d-none');
+            $('#fundingCheckResults').addClass('d-none').html('');
+
+            $.ajax({
+                url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/check-funding',
+                type: 'GET',
+                success: function(response) {
+                    $('#fundingCheckLoading').addClass('d-none');
+                    $('#fundingCheckResults').removeClass('d-none');
+
+                    if (response.status === 1) {
+                        let html = '';
+                        if (response.anomalies.length === 0) {
+                            html = '<div class="alert alert-success"><i class="ti ti-circle-check me-2"></i>لا توجد أي تعارضات. تمويل المهام متطابق مع المحفظة الاستثمارية بالكامل.</div>';
+                        } else {
+                            html = '<div class="alert alert-danger"><i class="ti ti-alert-triangle me-2"></i>تم العثور على ' + response.anomalies.length + ' تعارض(ات). يرجى مراجعتها وإصلاحها:</div>';
+                            html += '<div class="list-group">';
+
+                            response.anomalies.forEach(function(anomaly, index) {
+                                html += '<div class="list-group-item border-start border-4 border-danger mb-2 rounded">';
+                                html += '<div class="d-flex w-100 justify-content-between mb-2">';
+                                html += '<h6 class="mb-0 text-danger fw-bold"><i class="ti ti-alert-triangle me-1"></i> تعارض #' + (index + 1) + '</h6>';
+                                if (anomaly.type === 'task_without_transaction') {
+                                    html += '<span class="badge bg-label-warning">مهمة #' + anomaly.task_id + '</span>';
+                                } else {
+                                    html += '<span class="badge bg-label-info">عملية #' + anomaly.transaction_id + '</span>';
+                                }
+                                html += '</div>';
+                                html += '<p class="mb-3 text-body">' + anomaly.message + '</p>';
+                                html += '<div class="d-flex gap-2">';
+                                if (anomaly.type === 'task_without_transaction') {
+                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\', \'unlink_task\', ' + anomaly.task_id + ', null)"><i class="ti ti-unlink me-1"></i>فصل المهمة من المضارب</button>';
+                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\', \'create_funding\', ' + anomaly.task_id + ', null)"><i class="ti ti-plus me-1"></i>إنشاء عملية تمويل</button>';
+                                } else if (anomaly.type === 'transaction_without_task') {
+                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\', \'delete_transaction\', ' + anomaly.task_id + ', ' + anomaly.transaction_id + ')"><i class="ti ti-trash me-1"></i>حذف عملية التمويل</button>';
+                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\', \'link_task\', ' + anomaly.task_id + ', ' + anomaly.transaction_id + ')"><i class="ti ti-link me-1"></i>ربط المهمة بالمضارب</button>';
+                                }
+                                html += '</div>';
+                                html += '</div>';
+                            });
+
+                            html += '</div>';
+                        }
+                        $('#fundingCheckResults').html(html);
+                    } else {
+                        $('#fundingCheckResults').html('<div class="alert alert-danger">حدث خطأ أثناء الفحص: ' + response.error + '</div>');
+                    }
+                },
+                error: function() {
+                    $('#fundingCheckLoading').addClass('d-none');
+                    $('#fundingCheckResults').removeClass('d-none').html('<div class="alert alert-danger">حدث خطأ غير متوقع بالاتصال.</div>');
+                }
+            });
+        }
+
+        function fixAnomaly(anomalyType, fixAction, taskId, transactionId) {
+            if (!confirm('هل أنت متأكد من تنفيذ هذا الإجراء؟ لا يمكن التراجع عنه.')) return;
+
+            $('#fundingCheckLoading').removeClass('d-none');
+            $('#fundingCheckResults').addClass('d-none');
+
+            $.ajax({
+                url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/fix-funding',
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    anomaly_type: anomalyType,
+                    fix_action: fixAction,
+                    task_id: taskId,
+                    transaction_id: transactionId
+                },
+                success: function(response) {
+                    if (response.status === 1) {
+                        alert(response.success);
+                        checkFunding();
+                    } else {
+                        alert('خطأ: ' + response.error);
+                        $('#fundingCheckLoading').addClass('d-none');
+                        $('#fundingCheckResults').removeClass('d-none');
+                    }
+                },
+                error: function() {
+                    alert('حدث خطأ بالاتصال بالخادم.');
+                    $('#fundingCheckLoading').addClass('d-none');
+                    $('#fundingCheckResults').removeClass('d-none');
+                }
+            });
+        }
+    </script>
 @endsection
 
 @section('content')
@@ -35,11 +126,11 @@
                     <div>
                         <h4 id="investorName" class="mb-1 text-white fw-bold">{{ $user->name }}</h4>
                         <p class="mb-0 opacity-75">{{ $user->email }}</p>
-                        <span class="badge bg-white text-primary mt-2">رقم المضارب: #{{ $user->id }}</span>
+                        <span class="badge bg-white text-primary mt-2">{{ __('Investor #:id', ['id' => $user->id]) }}</span>
                     </div>
                     <div class="ms-auto d-none d-md-block">
                         <a href="{{ route('admin.investors.index') }}" class="btn btn-outline-white btn-sm">
-                            <i class="ti ti-arrow-right me-1"></i> العودة لقائمة المضاربين
+                            <i class="ti ti-arrow-right me-1"></i> {{ __('Back to Investors List') }}
                         </a>
                     </div>
                 </div>
@@ -56,11 +147,11 @@
                         <div class="avatar bg-label-success rounded me-3">
                             <i class="ti ti-wallet ti-md"></i>
                         </div>
-                        <span class="text-muted fw-medium">الرصيد الحالي المتاح</span>
+                        <span class="text-muted fw-medium">{{ __('Current Available Balance Label') }}</span>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="mb-0 fw-bold text-success">{{ number_format($balance, 2) }}</h3>
-                        <span class="ms-2 text-muted">ر.س</span>
+                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
                     </div>
                 </div>
             </div>
@@ -72,11 +163,11 @@
                         <div class="avatar bg-label-info rounded me-3">
                             <i class="ti ti-trending-up ti-md"></i>
                         </div>
-                        <span class="text-muted fw-medium">إجمالي رأس المال</span>
+                        <span class="text-muted fw-medium">{{ __('Total Capital Label') }}</span>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="mb-0 fw-bold text-info">{{ number_format($credit, 2) }}</h3>
-                        <span class="ms-2 text-muted">ر.س</span>
+                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
                     </div>
                 </div>
             </div>
@@ -88,11 +179,11 @@
                         <div class="avatar bg-label-warning rounded me-3">
                             <i class="ti ti-arrow-back-up ti-md"></i>
                         </div>
-                        <span class="text-muted fw-medium">إجمالي استعادة الاستثمار</span>
+                        <span class="text-muted fw-medium">{{ __('Total Investment Returns') }}</span>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="mb-0 fw-bold text-warning">{{ number_format($returned_capital, 2) }}</h3>
-                        <span class="ms-2 text-muted">ر.س</span>
+                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
                     </div>
                 </div>
             </div>
@@ -104,11 +195,11 @@
                         <div class="avatar bg-label-danger rounded me-3">
                             <i class="ti ti-trending-down ti-md"></i>
                         </div>
-                        <span class="text-muted fw-medium">إجمالي السحوبات / التمويل</span>
+                        <span class="text-muted fw-medium">{{ __('Total withdrawals funding') }}</span>
                     </div>
                     <div class="d-flex align-items-baseline">
                         <h3 class="mb-0 fw-bold text-danger">{{ number_format($debit, 2) }}</h3>
-                        <span class="ms-2 text-muted">ر.س</span>
+                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
                     </div>
                 </div>
             </div>
@@ -118,22 +209,32 @@
     <!-- Wallet Transactions -->
     <div class="card border-0 shadow-sm">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3">
-            <h5 class="card-title mb-0 fw-bold">سجل العمليات المالية (محفظة المضاربة)</h5>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
-                <i class="ti ti-plus me-1"></i> إضافة عملية جديدة
-            </button>
+            <h5 class="card-title mb-0 fw-bold">{{ __('Wallet transactions log investor') }}</h5>
+            <div>
+                @if($user->activeInvestmentContract)
+                <a href="{{ route('admin.user-wallets.tasks-funding', $user->id) }}" class="btn btn-secondary me-2">
+                    <i class="ti ti-cash me-1"></i> تمويل المهام
+                </a>
+                @endif
+                <button class="btn btn-warning me-2" onclick="checkFunding()">
+                    <i class="ti ti-search me-1"></i> فحص التمويل
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
+                    <i class="ti ti-plus me-1"></i> {{ __('Add new operation') }}
+                </button>
+            </div>
         </div>
         <div class="card-datatable table-responsive">
             <table id="investorTransactionsTable" class="datatables-transactions table">
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>المبلغ</th>
-                        <th>النوع</th>
-                        <th>البيان / الوصف</th>
-                        <th>رقم المهمة</th>
-                        <th>التاريخ</th>
-                        <th>الإجراءات</th>
+                        <th>{{ __('Amount') }}</th>
+                        <th>{{ __('Type') }}</th>
+                        <th>{{ __('Statement description') }}</th>
+                        <th>{{ __('Task ID') }}</th>
+                        <th>{{ __('Date') }}</th>
+                        <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
             </table>
@@ -198,7 +299,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغاء</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                         <button type="submit" class="btn btn-primary btn-submit">
                             <span class="spinner-border spinner-border-sm d-none me-1" role="status"
                                 aria-hidden="true"></span>
@@ -215,34 +316,31 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">تحويل إيداع رأس مال إلى استعادة استثمار</h5>
+                    <h5 class="modal-title fw-bold">{{ __('Convert deposit modal title') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-3">هل أنت متأكد من تحويل هذه العملية من <strong>إيداع رأس مال</strong> إلى
-                        <strong>استعادة استثمار</strong>؟</p>
-                    <p class="text-muted">سيتم تحديث نوع العملية فقط، وسيظهر المبلغ الآن ضمن الاستعادة الاستثمارية دون
-                        تغيير في الرصيد المتاح.</p>
+                    <p class="mb-3">{!! __('Convert deposit confirm') !!}</p>
+                    <p class="text-muted">{{ __('Convert deposit note') }}</p>
                     <input type="hidden" id="convert_transaction_id">
                     <div class="mb-3">
-                        <label class="form-label">رقم العملية</label>
+                        <label class="form-label">{{ __('Transaction reference') }}</label>
                         <div id="convertTransactionReference" class="fw-bold">-</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">المبلغ</label>
+                        <label class="form-label">{{ __('Amount') }}</label>
                         <div id="convertTransactionAmount" class="fw-bold text-success">-</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="convertTransactionPassword">كلمة المرور للتأكيد</label>
+                        <label class="form-label" for="convertTransactionPassword">{{ __('Password required for conversion') }}</label>
                         <input type="password" id="convertTransactionPassword" class="form-control"
-                            placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
-                        <div class="form-text text-muted">يُطلب إدخال كلمة المرور لتأكيد عملية التحويل.</div>
+                            placeholder="{{ __('Enter password') }}" autocomplete="current-password" required>
+                        <div class="form-text text-muted">{{ __('Password required for conversion') }}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="button" id="confirmConvertTransaction" class="btn btn-warning">نعم، تحويل
-                        الآن</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" id="confirmConvertTransaction" class="btn btn-warning">{{ __('Yes convert now') }}</button>
                 </div>
             </div>
         </div>
@@ -258,6 +356,31 @@
                 </div>
                 <div class="modal-body text-center" id="modalFileContent">
                     <!-- Dynamic content will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Funding Check Modal -->
+    <div class="modal fade" id="fundingCheckModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white">نتائج فحص التمويل</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="fundingCheckLoading" class="text-center py-4">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">جاري الفحص...</span>
+                        </div>
+                        <p class="mt-2">جاري فحص تعارضات التمويل...</p>
+                    </div>
+                    <div id="fundingCheckResults" class="d-none">
+                        <!-- Dynamic Results -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                 </div>
             </div>
         </div>

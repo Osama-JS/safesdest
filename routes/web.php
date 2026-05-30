@@ -331,6 +331,9 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/invest-wallet/transaction/convert/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'convertTransactionToRefund'])->name('invest-wallet.convertTransaction');
                     Route::delete('/invest-wallet/transaction/delete/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroyTransaction'])->name('invest-wallet.destroyTransaction');
                     Route::get('/invest-wallet/transaction/receipt/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'downloadReceipt'])->name('invest-wallet.downloadReceipt');
+                    
+                    Route::get('/{userId}/invest-wallet/check-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'checkFunding'])->name('invest-wallet.checkFunding');
+                    Route::post('/{userId}/invest-wallet/fix-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'fixFunding'])->name('invest-wallet.fixFunding');
                 });
 
                 // B2B Module Routes
@@ -423,6 +426,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/calculate-general', [UserWalletsController::class, 'calculateGeneralCommissions'])->name('admin.user-wallets.calculate-general');
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
+                Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');
+                Route::post('/users/{userId}/wallet/pay-task/{task}', [UserWalletsController::class, 'fundTask'])->name('admin.user-wallets.pay-task');
 
 
 
@@ -864,6 +869,8 @@ Route::middleware(['auth:web', 'investor'])
         // محفظة الاستثمار
         Route::get('investment-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'investmentWallet'])
             ->name('investment-wallet');
+        Route::get('investment-wallet/export', [App\Http\Controllers\investor\InvestorWalletController::class, 'exportInvestmentWallet'])
+            ->name('investment-wallet.export');
         Route::post('investment-wallet/deposit', [App\Http\Controllers\investor\InvestorWalletController::class, 'initiateDeposit'])
             ->name('investment-wallet.deposit.initiate');
         Route::get('investment-wallet/deposit/callback', [App\Http\Controllers\investor\InvestorWalletController::class, 'handleDepositCallback'])
@@ -872,6 +879,8 @@ Route::middleware(['auth:web', 'investor'])
         // المحفظة الشخصية (العمولات)
         Route::get('personal-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'personalWallet'])
             ->name('personal-wallet');
+        Route::get('personal-wallet/export', [App\Http\Controllers\investor\InvestorWalletController::class, 'exportPersonalWallet'])
+            ->name('personal-wallet.export');
 
         // احتساب عمولات المستثمر العام (زر الاحتساب)
         Route::post('personal-wallet/calculate-commissions', [App\Http\Controllers\investor\InvestorWalletController::class, 'calculateGeneralCommissions'])
@@ -890,6 +899,8 @@ Route::middleware(['auth:web', 'investor'])
         // المهام المدفوعة
         Route::get('paid-tasks', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'paidTasks'])
             ->name('paid-tasks');
+        Route::get('paid-tasks/export', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'exportPaidTasks'])
+            ->name('paid-tasks.export');
         Route::get('paid-tasks/{task}/report', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'downloadReport'])
             ->name('paid-tasks.report');
 

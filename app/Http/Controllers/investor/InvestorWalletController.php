@@ -10,6 +10,9 @@ use App\Services\InvestorPaymentService;
 use App\Services\HyperpayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\InvestorWalletExport;
+use App\Exports\InvestorPersonalWalletExport;
 
 class InvestorWalletController extends Controller
 {
@@ -32,6 +35,7 @@ class InvestorWalletController extends Controller
                 ->when($request->type, fn($q, $t) => $q->where('transaction_type', $t))
                 ->when($request->from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
                 ->when($request->to,   fn($q, $d) => $q->whereDate('created_at', '<=', $d))
+                ->when($request->search, fn($q, $s) => $q->where('task_id', 'like', "%{$s}%"))
                 ->latest()->paginate(20)
             : InvestorWalletTransaction::where('id', 0)->paginate(20);
 
@@ -53,12 +57,61 @@ class InvestorWalletController extends Controller
                 ->when($request->type, fn($q, $t) => $q->where('transaction_type', $t))
                 ->when($request->from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
                 ->when($request->to,   fn($q, $d) => $q->whereDate('created_at', '<=', $d))
+                ->when($request->search, fn($q, $s) => $q->where('task_id', 'like', "%{$s}%"))
                 ->latest()->paginate(20)
             : UserWalletTransaction::where('id', 0)->paginate(20);
 
         return view('investor.personal-wallet.index', compact(
             'investor', 'personalWallet', 'transactions', 'contract'
         ));
+    }
+
+    /**
+     * استخراج تقرير الإكسل لمحفظة الاستثمار
+     */
+    public function exportInvestmentWallet(Request $request)
+    {
+        $investor = auth()->user();
+        $investorWallet = $investor->investorWallet;
+
+        if (!$investorWallet) {
+            return back()->with('error', __('Wallet not found'));
+        }
+
+        $transactions = InvestorWalletTransaction::where('investor_wallet_id', $investorWallet->id)
+            ->with('task')
+            ->when($request->type, fn($q, $t) => $q->where('transaction_type', $t))
+            ->when($request->from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->to,   fn($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->search, fn($q, $s) => $q->where('task_id', 'like', "%{$s}%"))
+            ->latest()
+            ->get();
+
+        return Excel::download(new InvestorWalletExport($investorWallet, $transactions), 'investment_wallet_transactions.xlsx');
+    }
+
+    /**
+     * استخراج تقرير الإكسل للمحفظة الشخصية (العمولات)
+     */
+    public function exportPersonalWallet(Request $request)
+    {
+        $investor = auth()->user();
+        $personalWallet = $investor->userWallet;
+
+        if (!$personalWallet) {
+            return back()->with('error', __('Wallet not found'));
+        }
+
+        $transactions = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
+            ->with('task')
+            ->when($request->type, fn($q, $t) => $q->where('transaction_type', $t))
+            ->when($request->from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->to,   fn($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->search, fn($q, $s) => $q->where('task_id', 'like', "%{$s}%"))
+            ->latest()
+            ->get();
+
+        return Excel::download(new InvestorPersonalWalletExport($personalWallet, $transactions), 'commission_wallet_transactions.xlsx');
     }
 
     /**
@@ -74,26 +127,26 @@ class InvestorWalletController extends Controller
 
         // التحقق من كلمة المرور
         if (!\Illuminate\Support\Facades\Hash::check($request->password, $investor->password)) {
-            return back()->with('error', 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+            return back()->with('error', __('Password incorrect'));
         }
 
         $contract = $investor->activeInvestmentContract;
 
         if (!$contract || $contract->contract_type !== 'general_investment') {
-            return back()->with('error', 'هذه الميزة متاحة للمستثمر العام فقط.');
+            return back()->with('error', __('General commissions feature only'));
         }
 
         try {
             $result = $this->paymentService->calculateGeneralCommissions($investor, $contract);
 
             if ($result['count'] === 0) {
-                return back()->with('info', 'لا توجد مهام جديدة لاحتساب عمولاتها.');
+                return back()->with('info', __('No new tasks for commission'));
             }
 
-            return back()->with('success',
-                "تم احتساب عمولات {$result['count']} مهمة بإجمالي " .
-                number_format($result['total_commission'], 2) . " ر.س"
-            );
+            return back()->with('success', __('Commissions calculated success', [
+                'count' => $result['count'],
+                'amount' => number_format($result['total_commission'], 2),
+            ]));
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -108,15 +161,15 @@ class InvestorWalletController extends Controller
             'amount'   => 'required|numeric|min:0.01',
             'password' => 'required|string',
         ], [
-            'amount.required' => 'المبلغ مطلوب.',
-            'amount.min'      => 'الحد الأدنى للمبلغ هو 0.01 ر.س.',
-            'password.required' => 'كلمة المرور مطلوبة لتأكيد العملية.',
+            'amount.required' => __('Amount required'),
+            'amount.min'      => __('Minimum amount 0.01 SAR'),
+            'password.required' => __('Password required for confirmation'),
         ]);
 
         $investor = auth()->user();
 
         if (!\Illuminate\Support\Facades\Hash::check($request->password, $investor->password)) {
-            return back()->with('error', 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.');
+            return back()->with('error', __('Password incorrect'));
         }
 
         try {
@@ -124,7 +177,9 @@ class InvestorWalletController extends Controller
 
             return redirect()
                 ->route('investor.investment-wallet')
-                ->with('success', 'تم إعادة استثمار ' . number_format((float) $request->amount, 2) . ' ر.س بنجاح وأضيفت إلى رأس المال في محفظة المضاربة.');
+                ->with('success', __('Reinvested success redirect', [
+                    'amount' => number_format((float) $request->amount, 2),
+                ]));
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -157,7 +212,9 @@ class InvestorWalletController extends Controller
             ]);
 
             if (!isset($checkout['id'])) {
-                throw new \Exception('فشل الاتصال بـ HyperPay: ' . ($checkout['result']['description'] ?? 'خطأ غير معروف'));
+                throw new \Exception(__('HyperPay connection failed', [
+                    'message' => $checkout['result']['description'] ?? __('Unknown error'),
+                ]));
             }
 
             // Create Payment Record
@@ -185,7 +242,7 @@ class InvestorWalletController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Investor Deposit Initiation Failed', ['error' => $e->getMessage()]);
-            return back()->with('error', 'حدث خطأ أثناء بدء عملية الدفع: ' . $e->getMessage());
+            return back()->with('error', __('Payment initiation error', ['message' => $e->getMessage()]));
         }
     }
 
@@ -201,7 +258,7 @@ class InvestorWalletController extends Controller
         $payment      = $checkoutId ? Payments::where('transaction_reference', $checkoutId)->first() : null;
 
         if (!$payment) {
-            return redirect()->route('investor.investment-wallet')->with('error', 'بيانات العملية غير موجودة.');
+            return redirect()->route('investor.investment-wallet')->with('error', __('Transaction data not found'));
         }
 
         try {
@@ -218,7 +275,7 @@ class InvestorWalletController extends Controller
             }
 
             if (empty($result)) {
-                throw new \Exception('فشل في الحصول على حالة الدفع من بوابة HyperPay.');
+                throw new \Exception(__('Failed to get payment status from HyperPay'));
             }
 
             $code    = $result['result']['code'] ?? '';
@@ -236,9 +293,15 @@ class InvestorWalletController extends Controller
                 ]);
 
                 $investor = \App\Models\User::find($payment->owner_id);
-                $this->paymentService->depositToInvestorWallet($investor, (float)$payment->amount, "شحن إلكتروني للمحفظة (#{$payment->id})");
+                $this->paymentService->depositToInvestorWallet(
+                    $investor,
+                    (float) $payment->amount,
+                    __('Electronic wallet top-up #:id', ['id' => $payment->id])
+                );
 
-                return redirect()->route('investor.investment-wallet')->with('success', 'تم شحن المحفظة بنجاح بمبلغ ' . number_format($payment->amount, 2) . ' ر.س');
+                return redirect()->route('investor.investment-wallet')->with('success', __('Wallet topped up success', [
+                    'amount' => number_format($payment->amount, 2),
+                ]));
             }
 
             $payment->update([
@@ -249,14 +312,14 @@ class InvestorWalletController extends Controller
             ]);
 
             if (in_array($status, ['pending', 'review'])) {
-                return redirect()->route('investor.investment-wallet')->with('info', 'تمت عملية الدفع بنجاح جزئياً، جاري انتظار تأكيد البنك.');
+                return redirect()->route('investor.investment-wallet')->with('info', __('Partial payment awaiting bank confirmation'));
             }
 
-            return redirect()->route('investor.investment-wallet')->with('error', 'فشلت عملية الدفع: ' . $message);
+            return redirect()->route('investor.investment-wallet')->with('error', __('Payment failed', ['message' => $message]));
 
         } catch (\Exception $e) {
             Log::error('Investor Deposit Callback Error', ['error' => $e->getMessage()]);
-            return redirect()->route('investor.investment-wallet')->with('error', 'حدث خطأ أثناء معالجة نتيجة الدفع.');
+            return redirect()->route('investor.investment-wallet')->with('error', __('Payment processing error'));
         }
     }
 }

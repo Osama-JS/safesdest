@@ -431,4 +431,161 @@ class InvestorWalletsController extends Controller
 
         return $result;
     }
+
+    /**
+     * فحص توافق تمويل المهام مع محفظة الاستثمار
+     */
+    public function checkFunding(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            $wallet = $user->investorWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 0, 'error' => __('المحفظة غير موجودة')]);
+            }
+
+            $anomalies = [];
+
+            // 1. مهام مرتبطة بالمستثمر وليس لها عملية تمويل في المحفظة
+            $tasksWithoutFunding = \App\Models\Task::where('investor_id', $userId)->get();
+
+            foreach ($tasksWithoutFunding as $task) {
+                $hasFunding = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                    ->where('task_id', $task->id)
+                    ->where('transaction_type', 'debit')
+                    ->exists();
+
+                if (!$hasFunding) {
+                    $anomalies[] = [
+                        'type' => 'task_without_transaction',
+                        'task_id' => $task->id,
+                        'amount_needed' => $task->ad ? $task->ad->service_cost : 0, // أو القيمة الاستثمارية المناسبة للمهمة
+                        'message' => "المهمة #{$task->id} مرتبطة بالمضارب ولكن لا يوجد لها عملية تمويل في محفظته."
+                    ];
+                }
+            }
+
+            // 2. عمليات تمويل في المحفظة لمهام غير مرتبطة بالمستثمر
+            $fundingTransactions = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                ->where('transaction_type', 'debit')
+                ->whereNotNull('task_id')
+                ->get();
+
+            foreach ($fundingTransactions as $transaction) {
+                $task = \App\Models\Task::find($transaction->task_id);
+
+                if (!$task || $task->investor_id != $userId) {
+                    $anomalies[] = [
+                        'type' => 'transaction_without_task',
+                        'transaction_id' => $transaction->id,
+                        'task_id' => $transaction->task_id,
+                        'amount' => $transaction->amount,
+                        'message' => "عملية التمويل #{$transaction->id} (للمهمة #{$transaction->task_id}) موجودة، ولكن المهمة غير مرتبطة بهذا المضارب."
+                    ];
+                }
+            }
+
+            return response()->json([
+                'status' => 1,
+                'anomalies' => $anomalies
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * معالجة مشكلة من مشاكل التمويل
+     */
+    public function fixFunding(Request $request, $userId)
+    {
+        $request->validate([
+            'anomaly_type' => 'required|string',
+            'fix_action' => 'required|string',
+            'task_id' => 'required|integer',
+            'transaction_id' => 'nullable|integer',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($userId);
+            $wallet = $user->investorWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 0, 'error' => __('المحفظة غير موجودة')]);
+            }
+
+            $anomalyType = $request->anomaly_type;
+            $fixAction = $request->fix_action;
+            $taskId = $request->task_id;
+            $transactionId = $request->transaction_id;
+
+            if ($anomalyType === 'task_without_transaction') {
+                $task = \App\Models\Task::findOrFail($taskId);
+
+                if ($fixAction === 'unlink_task') {
+                    $task->investor_id = null;
+                    $task->save();
+                    $message = "تم فصل المهمة #{$taskId} من هذا المضارب بنجاح.";
+                } elseif ($fixAction === 'create_funding') {
+                    // نحتاج لمعرفة كم التكلفة المفترض خصمها من محفظة الاستثمار
+                    // يعتمد على إجمالي تكلفة المهمة
+                    $cost = $task->ad ? $task->ad->service_cost : 0;
+                    
+                    if ($cost <= 0) {
+                        return response()->json(['status' => 0, 'error' => 'تكلفة المهمة غير معروفة أو تساوي صفر. يرجى فصل المهمة يدوياً.']);
+                    }
+
+                    if ($wallet->balance < $cost) {
+                        return response()->json(['status' => 0, 'error' => 'الرصيد غير كافٍ لإنشاء عملية تمويل تلقائية بقيمة ' . $cost]);
+                    }
+
+                    InvestorWalletTransaction::create([
+                        'investor_wallet_id' => $wallet->id,
+                        'task_id' => $task->id,
+                        'transaction_type' => 'debit',
+                        'amount' => $cost,
+                        'description' => "دفع رسوم استثمار المهمة رقم #{$task->id} (تسوية آلية)",
+                        'performed_by' => Auth::id(),
+                    ]);
+                    $message = "تم إنشاء عملية تمويل بمبلغ {$cost} للمهمة #{$taskId} بنجاح.";
+                } else {
+                    return response()->json(['status' => 0, 'error' => 'إجراء غير معروف.']);
+                }
+
+            } elseif ($anomalyType === 'transaction_without_task') {
+                $transaction = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                    ->where('id', $transactionId)
+                    ->firstOrFail();
+
+                if ($fixAction === 'delete_transaction') {
+                    $transaction->delete();
+                    $message = "تم حذف عملية التمويل #{$transactionId} بنجاح.";
+                } elseif ($fixAction === 'link_task') {
+                    $task = \App\Models\Task::findOrFail($taskId);
+                    $task->investor_id = $userId;
+                    $task->save();
+                    $message = "تم ربط المهمة #{$taskId} بهذا المضارب بنجاح.";
+                } else {
+                    return response()->json(['status' => 0, 'error' => 'إجراء غير معروف.']);
+                }
+            } else {
+                return response()->json(['status' => 0, 'error' => 'نوع المشكلة غير معروف.']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 1,
+                'success' => $message
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 }

@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'لوحة تحكم المضارب')
+@section('title', __('Investor Dashboard'))
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/apex-charts/apex-charts.scss'])
@@ -26,7 +26,7 @@
         const profitChartEl = document.querySelector('#profitChart'),
             profitChartConfig = {
                 series: [{
-                    name: 'الأرباح (ر.س)',
+                    name: '{{ __('Profits (SAR)') }}',
                     data: @json($chartData['data'])
                 }],
                 chart: {
@@ -70,7 +70,7 @@
                     height: 300,
                     type: 'donut'
                 },
-                labels: ['إجمالي المضارب', 'إجمالي الأرباح'],
+                labels: [@json(__('Total Invested')), @json(__('Total Earned Commissions'))],
                 series: [{{ (float)$stats['total_invested'] }}, {{ (float)$stats['total_commissions'] }}],
                 colors: [config.colors.primary, config.colors.success],
                 stroke: { width: 0 },
@@ -88,7 +88,7 @@
                                     color: headingColor,
                                     offsetY: -15,
                                     formatter: function (val) {
-                                        return parseInt(val) + ' ر.س';
+                                        return parseInt(val) + ' {{ __('SAR') }}';
                                     }
                                 },
                                 name: { offsetY: 20, fontFamily: 'Public Sans' },
@@ -96,7 +96,7 @@
                                     show: true,
                                     fontSize: '0.8125rem',
                                     color: labelColor,
-                                    label: 'عائد الربح',
+                                    label: '{{ __('ROI') }}',
                                     formatter: function (w) {
                                         return '{{ $stats['roi_percentage'] }}%';
                                     }
@@ -132,17 +132,17 @@
             <div class="card bg-primary text-white h-100">
                 <div class="card-body d-flex justify-content-between flex-wrap gap-3">
                     <div class="d-flex flex-column justify-content-center">
-                        <h4 class="text-white mb-1">مرحباً، {{ auth()->user()->name }} 👋</h4>
-                        <p class="mb-3">نحن سعداء برؤية مضارباتك تنمو اليوم.</p>
+                        <h4 class="text-white mb-1">{{ __('Welcome') }}, {{ auth()->user()->name }} 👋</h4>
+                        <p class="mb-3">{{ __('We are glad to see your investments grow today.') }}</p>
                         <div class="d-flex gap-2 flex-wrap">
                             @if($contract)
                                 <span class="badge bg-white text-primary px-3">
                                     <i class="ti ti-certificate me-1"></i>
-                                    عقد {{ $contract->contract_type === 'task_investment' ? 'بالمهام' : 'عام' }}
+                                    {{ __('Contract') }} {{ $contract->contract_type === 'task_investment' ? __('Task-based investment') : __('General investment') }}
                                 </span>
                                 <span class="badge bg-white text-primary px-3">
                                     <i class="ti ti-percentage me-1"></i>
-                                    عمولة {{ $contract->commission_value }}{{ $contract->commission_type === 'percentage' ? '%' : ' ر.س' }}
+                                    {{ __('Commission') }} {{ $contract->commission_value }}{{ $contract->commission_type === 'percentage' ? '%' : ' ' . __('SAR') }}
                                 </span>
                             @endif
                         </div>
@@ -158,18 +158,18 @@
                 <div class="card-body text-center d-flex flex-column justify-content-center">
                     <div class="row">
                         <div class="col-6 border-end">
-                            <p class="mb-1 text-muted small">إجمالي المضارب</p>
+                            <p class="mb-1 text-muted small">{{ __('Total Invested') }}</p>
                             <h4 class="mb-0 fw-bold">{{ number_format($stats['total_invested'], 2) }}</h4>
                         </div>
                         <div class="col-6">
-                            <p class="mb-1 text-muted small">صافي الأرباح</p>
+                            <p class="mb-1 text-muted small">{{ __('Net Profits') }}</p>
                             <h4 class="mb-0 fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }}</h4>
                         </div>
                     </div>
                     <div class="mt-3">
                         <div class="badge bg-label-success rounded-pill px-3 py-2">
                             <i class="ti ti-trending-up me-1"></i>
-                            معدل العائد: {{ $stats['roi_percentage'] }}%
+                            {{ __('ROI Rate') }}: {{ $stats['roi_percentage'] }}%
                         </div>
                     </div>
                 </div>
@@ -188,9 +188,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($stats['investment_balance'], 2) }}</h4>
                     </div>
-                    <p class="mb-1">رصيد المضاربة المتاح</p>
+                    <p class="mb-1">{{ __('Available Investment Balance') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-success me-1">جاهز للتمويل</span>
+                        <span class="text-success me-1">{{ __('Ready to fund') }}</span>
                     </p>
                 </div>
             </div>
@@ -204,9 +204,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($stats['personal_balance'], 2) }}</h4>
                     </div>
-                    <p class="mb-1">رصيد محفظتي الشخصية</p>
+                    <p class="mb-1">{{ __('Personal Wallet Balance') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-info me-1">قابل للسحب</span>
+                        <span class="text-info me-1">{{ __('Withdrawable') }}</span>
                     </p>
                 </div>
             </div>
@@ -220,9 +220,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ number_format($stats['paid_tasks_count']) }}</h4>
                     </div>
-                    <p class="mb-1">إجمالي المهام الممولة</p>
+                    <p class="mb-1">{{ __('Total Funded Tasks') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-primary me-1">عمليات ناجحة</span>
+                        <span class="text-primary me-1">{{ __('Successful operations') }}</span>
                     </p>
                 </div>
             </div>
@@ -236,9 +236,9 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ $contract ? $contract->start_date->format('Y-m-d') : '—' }}</h4>
                     </div>
-                    <p class="mb-1">تاريخ بداية المضاربة</p>
+                    <p class="mb-1">{{ __('Investment Start Date') }}</p>
                     <p class="mb-0 small text-muted">
-                        <span class="text-muted">العقد الحالي</span>
+                        <span class="text-muted">{{ __('Current contract') }}</span>
                     </p>
                 </div>
             </div>
@@ -252,7 +252,7 @@
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <div class="card-title mb-0">
-                        <h5 class="m-0 me-2 text-muted">نمو الأرباح (آخر 6 أشهر)</h5>
+                        <h5 class="m-0 me-2 text-muted">{{ __('Profit Growth (last 6 months)') }}</h5>
                     </div>
                 </div>
                 <div class="card-body">
@@ -264,7 +264,7 @@
         <div class="col-lg-4 col-12 mt-4 mt-lg-0">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title m-0 me-2 text-muted">نسبة الربح إلى المضاربة</h5>
+                    <h5 class="card-title m-0 me-2 text-muted">{{ __('Profit to Investment Ratio') }}</h5>
                 </div>
                 <div class="card-body">
                     <div id="investmentRadialChart"></div>
@@ -272,16 +272,16 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge badge-dot bg-primary"></span>
-                                <small class="fw-bold">إجمالي المضارب</small>
+                                <small class="fw-bold">{{ __('Total Invested') }}</small>
                             </div>
-                            <small class="fw-bold">{{ number_format($stats['total_invested'], 2) }} ر.س</small>
+                            <small class="fw-bold">{{ number_format($stats['total_invested'], 2) }} {{ __('SAR') }}</small>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge badge-dot bg-success"></span>
-                                <small class="fw-bold">إجمالي الأرباح</small>
+                                <small class="fw-bold">{{ __('Total Earned Commissions') }}</small>
                             </div>
-                            <small class="fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }} ر.س</small>
+                            <small class="fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }} {{ __('SAR') }}</small>
                         </div>
                     </div>
                 </div>
@@ -294,17 +294,17 @@
         <div class="col-md-8 col-12">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center justify-content-between">
-                    <h5 class="card-title mb-0">آخر العمليات على محفظة المضاربة</h5>
-                    <a href="{{ route('investor.investment-wallet') }}" class="btn btn-sm btn-label-primary">عرض الكل</a>
+                    <h5 class="card-title mb-0">{{ __('Recent Investment Wallet Activity') }}</h5>
+                    <a href="{{ route('investor.investment-wallet') }}" class="btn btn-sm btn-label-primary">{{ __('View All') }}</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>نوع العملية</th>
-                                <th>المبلغ</th>
-                                <th>المهمة</th>
-                                <th>التاريخ</th>
+                                <th>{{ __('Operation Type') }}</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Task') }}</th>
+                                <th>{{ __('Date') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -312,7 +312,7 @@
                             <tr>
                                 <td>
                                     <span class="badge bg-label-{{ $tx->transaction_type === 'credit' ? 'success' : 'danger' }} rounded-pill">
-                                        {{ $tx->transaction_type === 'credit' ? 'إيداع' : 'تمويل مهمة' }}
+                                        {{ $tx->transaction_type === 'credit' ? __('Deposit') : __('Task Funding') }}
                                     </span>
                                 </td>
                                 <td class="fw-bold {{ $tx->transaction_type === 'credit' ? 'text-success' : 'text-danger' }}">
@@ -321,12 +321,12 @@
                                 <td>
                                     @if($tx->task_id)
                                         <span class="text-primary">#{{ $tx->task_id }}</span>
-                                    @else <small class="text-muted">نظام</small> @endif
+                                    @else <small class="text-muted">{{ __('System') }}</small> @endif
                                 </td>
                                 <td class="small">{{ $tx->created_at->format('M d, H:i') }}</td>
                             </tr>
                             @empty
-                            <tr><td colspan="4" class="text-center py-4">لا توجد حركات مؤخراً</td></tr>
+                            <tr><td colspan="4" class="text-center py-4">{{ __('No recent activity') }}</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -335,20 +335,20 @@
         </div>
         <div class="col-md-4 col-12 mt-4 mt-md-0">
             <div class="card h-100">
-                <div class="card-header"><h5 class="card-title mb-0">روابط الوصول السريع</h5></div>
+                <div class="card-header"><h5 class="card-title mb-0">{{ __('Quick Links') }}</h5></div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
                         <a href="{{ route('investor.task-payment') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
-                            <i class="ti ti-credit-card me-3 text-primary"></i> تمويل مهام جديدة
+                            <i class="ti ti-credit-card me-3 text-primary"></i> {{ __('Fund New Tasks') }}
                         </a>
                         <a href="{{ route('investor.paid-tasks') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
-                            <i class="ti ti-list-check me-3 text-success"></i> سجل المهام الممولة
+                            <i class="ti ti-list-check me-3 text-success"></i> {{ __('Funded Tasks History') }}
                         </a>
                         <a href="{{ route('investor.investment-wallet') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
-                            <i class="ti ti-wallet me-3 text-warning"></i> كشف حساب المضاربة
+                            <i class="ti ti-wallet me-3 text-warning"></i> {{ __('Investment Wallet Statement') }}
                         </a>
                         <a href="{{ route('investor.profile') }}" class="list-group-item list-group-item-action d-flex align-items-center px-0">
-                            <i class="ti ti-settings me-3 text-info"></i> إعدادات الحساب
+                            <i class="ti ti-settings me-3 text-info"></i> {{ __('Account Settings') }}
                         </a>
                     </div>
                 </div>

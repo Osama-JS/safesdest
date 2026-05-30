@@ -710,8 +710,8 @@ class UserWalletsController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'notes'  => 'nullable|string|max:255',
         ], [
-            'amount.required' => 'المبلغ مطلوب.',
-            'amount.min'      => 'الحد الأدنى للمبلغ هو 0.01 ر.س.',
+            'amount.required' => __('Amount required'),
+            'amount.min'      => __('Minimum amount 0.01 SAR'),
         ]);
 
         if ($validator->fails()) {
@@ -722,7 +722,7 @@ class UserWalletsController extends Controller
             $user = User::findOrFail($userId);
 
             if (!$user->investor) {
-                return response()->json(['status' => 0, 'error' => 'هذا المستخدم ليس مضارباً.']);
+                return response()->json(['status' => 0, 'error' => __('This user is not an investor.')]);
             }
 
             if (!$user->investorWallet) {
@@ -741,9 +741,10 @@ class UserWalletsController extends Controller
 
             return response()->json([
                 'status'  => 1,
-                'success' => 'تم إعادة استثمار ' . number_format((float) $request->amount, 2) .
-                    ' ر.س بنجاح. الرصيد القابل للسحب الآن: ' .
-                    number_format($user->userWallet->withdrawable_balance, 2) . ' ر.س.',
+                'success' => __('Reinvestment successful message', [
+                    'amount' => number_format((float) $request->amount, 2),
+                    'balance' => number_format($user->userWallet->withdrawable_balance, 2),
+                ]),
                 'withdrawable_balance'   => $user->userWallet->withdrawable_balance,
                 'investment_wallet_balance' => $user->investorWallet->balance,
             ]);
@@ -916,6 +917,74 @@ class UserWalletsController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+    /**
+     * عرض المهام المتاحة للدفع لمستثمر معين من لوحة الإدارة
+     */
+    public function tasksForFunding(Request $request, $userId)
+    {
+        $investor = User::with(['investorWallet', 'activeInvestmentContract'])->findOrFail($userId);
+        $contract = $investor->activeInvestmentContract;
+
+        if (!$contract) {
+            return redirect()->back()
+                ->with('error', __('Task payment page only for task investors'));
+        }
+
+        $investorWallet = $investor->investorWallet;
+        $walletBalance  = $investorWallet?->balance ?? 0;
+
+        $query = Task::availableForInvestorPayment()
+            ->whereNotNull('customer_id')
+            ->with(['customer', 'pickup', 'delivery', 'ad'])
+            ->latest();
+
+        // فلتر العملاء المخصصين
+        if (!empty($contract->filter_customer_ids)) {
+            $query->whereIn('customer_id', $contract->filter_customer_ids);
+        }
+
+        // فلتر الحد الأدنى لعمولة المنصة
+        if ($contract->min_commission_threshold > 0) {
+            $query->where(function ($q) use ($contract) {
+                $q->where('commission', '>=', $contract->min_commission_threshold)
+                  ->orWhereHas('ad', function ($sub) use ($contract) {
+                      $sub->where('service_commission', '>=', $contract->min_commission_threshold);
+                  });
+            });
+        }
+
+        // فلتر البحث
+        if ($request->search) {
+            $query->where('id', 'like', "%{$request->search}%");
+        }
+
+        $tasks = $query->paginate(15)->withQueryString();
+
+        return view('admin.user-wallets.tasks-funding', compact(
+            'investor', 'contract', 'tasks', 'walletBalance'
+        ));
+    }
+
+    /**
+     * تمويل مهمة محددة لمستثمر من لوحة الإدارة
+     */
+    public function fundTask(Request $request, $userId, Task $task, InvestorPaymentService $paymentService)
+    {
+        $investor = User::findOrFail($userId);
+        $contract = $investor->activeInvestmentContract;
+
+        if (!$contract) {
+            return back()->with('error', __('Not authorized'));
+        }
+
+        try {
+            // يتم التمويل باستخدام خدمة التمويل دون طلب كلمة المرور في لوحة الإدارة
+            $paymentService->payTask($investor, $task, $contract);
+            return back()->with('success', __('Task paid successfully', ['id' => $task->id]));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
     }
 }

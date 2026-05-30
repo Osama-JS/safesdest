@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Task Funding'))
+@section('title', __('Task Funding') . ' - ' . $investor->name)
 
 @section('content')
   <div class="container-xxl flex-grow-1 container-p-y">
@@ -11,7 +11,7 @@
         <h4 class="fw-bold mb-1"><i class="ti ti-credit-card me-2 text-primary"></i>{{ __('Tasks Available for Funding') }}</h4>
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb breadcrumb-style1 mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('investor.dashboard') }}">{{ __('Home') }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('admin.user-wallets.show', $investor->id) }}">{{ __('Investor Wallet') }}</a></li>
             <li class="breadcrumb-item active">{{ __('Task Funding') }}</li>
           </ol>
         </nav>
@@ -40,16 +40,16 @@
       @endif
     @endforeach
 
-    {{-- معلومات العقد والفلترة --}}
+    {{-- معلومات المستثمر والعقد والفلترة --}}
     <div class="row g-4 mb-4">
       <div class="col-lg-8">
         <div class="card bg-label-primary border-0 h-100">
           <div class="card-body py-3 d-flex align-items-center">
             <div class="avatar avatar-md me-3">
-              <span class="avatar-initial rounded-circle bg-primary"><i class="ti ti-file-invoice"></i></span>
+              <span class="avatar-initial rounded-circle bg-primary"><i class="ti ti-user"></i></span>
             </div>
             <div>
-              <h6 class="mb-1 text-primary">{{ __('Your current contract settings') }}</h6>
+              <h6 class="mb-1 text-primary">{{ __('Investor') }}: <strong>{{ $investor->name }}</strong> (ID: {{ $investor->id }})</h6>
               <p class="mb-0 small">
                 {{ __('Your commission') }}:
                 <strong>{{ $contract->commission_value }}{{ $contract->commission_type === 'percentage' ? '%' : ' ' . __('SAR') }}</strong>
@@ -156,7 +156,7 @@
                   data-bs-target="#fundTaskModal"
                   data-task-id="{{ $task->id }}"
                   data-total-price="{{ number_format($task->total_price, 2) }}"
-                  data-url="{{ route('investor.task-payment.pay', $task) }}">
+                  data-url="{{ route('admin.user-wallets.pay-task', ['userId' => $investor->id, 'task' => $task->id]) }}">
                   <i class="ti ti-credit-card me-1"></i> {{ __('Pay Task Value') }}
                 </button>
               @else
@@ -199,7 +199,7 @@
         <div class="modal-header border-bottom">
           <h5 class="modal-title d-flex align-items-center">
             <i class="ti ti-shield-check text-primary me-2 ti-md"></i>
-            {{ __('Confirm Payment') }} <span id="displayTaskId" class="ms-1 fw-bold"></span>
+            تأكيد تمويل المهمة <span id="displayTaskId" class="ms-1 fw-bold"></span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -207,29 +207,16 @@
           @csrf
           <div class="modal-body">
             <!-- شروط التمويل -->
-            <div class="alert alert-warning d-flex align-items-start mb-4">
+            <div class="alert alert-warning d-flex align-items-start mb-0">
               <i class="ti ti-alert-circle me-2 mt-1"></i>
               <div>
                 <h6 class="alert-heading mb-1 fw-bold">{{ __('Funding terms and conditions') }}</h6>
                 <ul class="mb-0 ps-3 small">
-                  <li>{{ __('The amount') }} <strong id="displayTotalPrice"></strong> {{ __('SAR will be deducted from your current balance upon approval.') }}</li>
+                  <li>سيتم خصم مبلغ <strong id="displayTotalPrice"></strong> {{ __('SAR') }} من محفظة المستثمر <strong>{{ $investor->name }}</strong> الاستثمارية.</li>
                   <li>{{ __('Funding cannot be reversed') }}</li>
                   <li>{{ __('Expected profits recorded on task completion') }}</li>
                 </ul>
               </div>
-            </div>
-
-            <!-- طلب كلمة المرور -->
-            <div class="mb-0">
-              <label class="form-label fw-bold mb-1" for="password">{{ __('Enter password to confirm:') }}</label>
-              <div class="input-group input-group-merge">
-                <span class="input-group-text"><i class="ti ti-lock"></i></span>
-                <input type="password" name="password" id="password" class="form-control" 
-                  placeholder="············" required autocomplete="current-password">
-              </div>
-              <small class="text-danger mt-1 d-block">
-                * {{ __('Please verify password before confirm') }}
-              </small>
             </div>
           </div>
           <div class="modal-footer border-top">
@@ -264,12 +251,10 @@
         const displayTaskId = fundTaskModal.querySelector('#displayTaskId');
         const displayTotalPrice = fundTaskModal.querySelector('#displayTotalPrice');
         const form = fundTaskModal.querySelector('#fundTaskForm');
-        const passwordInput = fundTaskModal.querySelector('#password');
 
         if (displayTaskId) displayTaskId.textContent = '#' + taskId;
         if (displayTotalPrice) displayTotalPrice.textContent = totalPrice;
         if (form) form.setAttribute('action', actionUrl);
-        if (passwordInput) passwordInput.value = '';
       });
     }
 

@@ -131,18 +131,18 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text-heading fw-medium">الرصيد القابل للسحب</span>
+                            <span class="text-heading fw-medium">{{ __('Withdrawable Balance') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2 text-success" id="withdrawableBalanceDisplay">{{ number_format($withdrawableBalance ?? 0, 2) }}</h4>
                                 <small class="text-muted">{{ __('SAR') }}</small>
                             </div>
                             <small class="text-muted">
                                 @if($activeContract && $activeContract->contract_type === 'task_investment')
-                                    عمولات المهام المسواة + الإيداعات اليدوية − السحوبات وإعادة الاستثمار
+                                    {{ __('Settled task commissions + manual deposits − withdrawals and reinvestment') }}
                                 @elseif($activeContract && $activeContract->contract_type === 'general_investment')
-                                    إجمالي الأرباح المتاحة للسحب أو إعادة الاستثمار
+                                    {{ __('Total profits available for withdrawal or reinvestment') }}
                                 @else
-                                    الأرباح المتاحة للسحب أو إعادة الاستثمار
+                                    {{ __('Profits available for withdrawal or reinvestment') }}
                                 @endif
                             </small>
                         </div>
@@ -160,16 +160,16 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text-heading fw-medium">رصيد محفظة المضاربة</span>
+                            <span class="text-heading fw-medium">{{ __('Investment Wallet Balance') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2 text-warning" id="investmentWalletBalanceDisplay">{{ number_format($investmentWalletBalance, 2) }}</h4>
                                 <small class="text-muted">{{ __('SAR') }}</small>
                             </div>
                             <small class="text-muted">
                                 @if($hasInvestmentWallet)
-                                    <a href="{{ route('admin.investors.invest-wallet', $user->id) }}" class="text-primary">عرض محفظة المضاربة</a>
+                                    <a href="{{ route('admin.investors.invest-wallet', $user->id) }}" class="text-primary">{{ __('View Investment Wallet') }}</a>
                                 @else
-                                    <span class="text-danger">لم تُنشأ محفظة مضاربة بعد</span>
+                                    <span class="text-danger">{{ __('Investment wallet not created yet') }}</span>
                                 @endif
                             </small>
                         </div>
@@ -188,14 +188,14 @@
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
-                            <span class="text-heading fw-medium">نوع عقد المضاربة</span>
+                            <span class="text-heading fw-medium">{{ __('Investment Contract Type') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h5 class="mb-0 me-2">
-                                    {{ $activeContract->contract_type === 'task_investment' ? 'مضاربة بالمهام' : 'مضاربة عامة' }}
+                                    {{ $activeContract->contract_type === 'task_investment' ? __('Task-based investment') : __('General investment') }}
                                 </h5>
                             </div>
                             <small class="text-muted">
-                                عمولة: {{ $activeContract->commission_value }}{{ $activeContract->commission_type === 'percentage' ? '%' : ' ر.س' }}
+                                {{ __('Commission') }}: {{ $activeContract->commission_value }}{{ $activeContract->commission_type === 'percentage' ? '%' : ' ' . __('SAR') }}
                             </small>
                         </div>
                         <div class="avatar">
@@ -241,8 +241,14 @@
                 <button class="btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
                     data-bs-target="#reinvestProfitsModal">
                     <i class="ti ti-refresh me-0 me-sm-1 ti-xs"></i>
-                    <span class="d-none d-sm-inline-block"> استثمار الأرباح</span>
+                    <span class="d-none d-sm-inline-block"> {{ __('Reinvest Investor Profits') }}</span>
                 </button>
+                @endif
+                @if($activeContract)
+                <a href="{{ route('admin.user-wallets.tasks-funding', $user->id) }}" class="btn btn-secondary waves-effect waves-light mt-5 mx-2">
+                    <i class="ti ti-cash me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> تمويل المهام (للمستثمر)</span>
+                </a>
                 @endif
             @endif
             @if($isBroker)
@@ -405,7 +411,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-refresh text-primary me-2"></i>
-                        استثمار أرباح المضارب
+                        {{ __('Reinvest Investor Profits') }}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -414,34 +420,33 @@
                     <div class="modal-body">
                         <div class="alert alert-info small">
                             <i class="ti ti-info-circle me-1"></i>
-                            سيتم خصم المبلغ من <strong>الرصيد القابل للسحب</strong> في محفظة العمولات
-                            وإضافته إلى <strong>محفظة المضاربة</strong> كرأس مال جديد.
+                            {{ __('Amount will be deducted from withdrawable balance in commission wallet and added to investment wallet as new capital.') }}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-medium" for="reinvest_amount">المبلغ (ر.س)</label>
+                            <label class="form-label fw-medium" for="reinvest_amount">{{ __('Top up amount (SAR)') }}</label>
                             <div class="input-group">
                                 <input type="number" class="form-control" id="reinvest_amount" name="amount"
                                     step="0.01" min="0.01"
                                     max="{{ number_format($withdrawableBalance, 2, '.', '') }}"
                                     value="{{ number_format($withdrawableBalance, 2, '.', '') }}" required>
-                                <button type="button" class="btn btn-label-secondary" id="reinvestMaxBtn">الحد الأقصى</button>
+                                <button type="button" class="btn btn-label-secondary" id="reinvestMaxBtn">{{ __('Maximum') }}</button>
                             </div>
-                            <small class="text-muted">الرصيد القابل للسحب: {{ number_format($withdrawableBalance, 2) }} ر.س</small>
+                            <small class="text-muted">{{ __('Withdrawable balance') }}: {{ number_format($withdrawableBalance, 2) }} {{ __('SAR') }}</small>
                             <div class="text-danger small mt-1 d-none" id="reinvest_amount_error"></div>
                         </div>
 
                         <div class="mb-0">
-                            <label class="form-label fw-medium" for="reinvest_notes">ملاحظات (اختياري)</label>
+                            <label class="form-label fw-medium" for="reinvest_notes">{{ __('Notes (optional)') }}</label>
                             <textarea class="form-control" id="reinvest_notes" name="notes" rows="2"
-                                maxlength="255" placeholder="سبب أو مرجع العملية..."></textarea>
+                                maxlength="255" placeholder="{{ __('Reason or reference for this operation...') }}"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                         <button type="submit" class="btn btn-primary" id="reinvestSubmitBtn">
                             <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
-                            تأكيد إعادة الاستثمار
+                            {{ __('Confirm Reinvestment Admin') }}
                         </button>
                     </div>
                 </form>

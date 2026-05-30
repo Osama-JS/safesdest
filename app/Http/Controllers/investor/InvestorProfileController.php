@@ -28,7 +28,7 @@ class InvestorProfileController extends Controller
 
         $investor->update($data);
 
-        return back()->with('success', 'تم تحديث بيانات الملف الشخصي بنجاح.');
+        return back()->with('success', __('Profile updated successfully'));
     }
 
     public function updatePassword(Request $request)
@@ -41,11 +41,11 @@ class InvestorProfileController extends Controller
         $investor = auth()->user();
 
         if (!Hash::check($request->current_password, $investor->password)) {
-            return back()->withErrors(['current_password' => 'كلمة المرور الحالية غير صحيحة.']);
+            return back()->withErrors(['current_password' => __('Current password incorrect')]);
         }
 
         $investor->update(['password' => Hash::make($request->password)]);
 
-        return back()->with('success', 'تم تغيير كلمة المرور بنجاح.');
+        return back()->with('success', __('Password changed successfully'));
     }
 }

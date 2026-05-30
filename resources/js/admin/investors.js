@@ -27,7 +27,7 @@ $(function () {
     select2.each(function () {
       var $this = $(this);
       $this.wrap('<div class="position-relative"></div>').select2({
-        placeholder: $this.attr('id') === 'broker_id' ? 'اختر الوسيط' : 'اختر العملاء',
+        placeholder: $this.attr('id') === 'broker_id' ? __('Select broker') : __('Select customers'),
         dropdownParent: $this.parent()
       });
     });
@@ -158,7 +158,7 @@ $(function () {
           // Wallet Balance
           targets: 3,
           render: function (data, type, full, meta) {
-            return '<span class="fw-bold text-success">' + data + ' ر.س</span>';
+            return '<span class="fw-bold text-success">' + data + ' ' + __('SAR') + '</span>';
           }
         },
         {
@@ -167,9 +167,9 @@ $(function () {
           render: function (data, type, full, meta) {
             var $status_number = data;
             var $status = {
-              active: { title: 'نشط', class: 'bg-label-success' },
-              inactive: { title: 'غير نشط', class: 'bg-label-danger' },
-              pending: { title: 'قيد المراجعة', class: 'bg-label-warning' }
+              active: { title: __('Active'), class: 'bg-label-success' },
+              inactive: { title: __('Inactive'), class: 'bg-label-danger' },
+              pending: { title: __('Pending Review'), class: 'bg-label-warning' }
             };
             if (typeof $status[$status_number] === 'undefined') {
               return data;
@@ -208,18 +208,24 @@ $(function () {
         {
           // Actions
           targets: -1,
-          title: 'الإجراءات',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            let fundTaskBtn = '';
+            if (full['raw_contract_type']) {
+                fundTaskBtn = '<a href="' + baseUrl + 'admin/users/' + full['id'] + '/wallet/tasks-funding" class="text-body" title="تمويل المهام"><i class="ti ti-cash ti-sm me-2 text-info"></i></a>';
+            }
+
             return (
               '<div class="d-flex align-items-center">' +
-              '<a href="javascript:;" class="text-body view-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#viewInvestorModal" title="عرض التفاصيل"><i class="ti ti-eye ti-sm me-2"></i></a>' +
-              '<a href="' + baseUrl + 'admin/investors/' + full['id'] + '/invest-wallet" class="text-body" title="محفظة الاستثمار"><i class="ti ti-wallet ti-sm me-2 text-primary"></i></a>' +
-              '<a href="' + baseUrl + 'admin/users/' + full['id'] + '/wallet" class="text-body" title="محفظة العمولات"><i class="ti ti-coins ti-sm me-2 text-success"></i></a>' +
-              '<a href="javascript:;" class="text-body link-tasks" data-id="' + full['id'] + '" data-name="' + full['name'] + '" data-bs-toggle="modal" data-bs-target="#linkTasksModal" title="ربط مهام تاريخية"><i class="ti ti-link ti-sm me-2 text-warning"></i></a>' +
-              '<a href="javascript:;" class="text-body edit-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#investorModal" title="تعديل"><i class="ti ti-edit ti-sm me-2"></i></a>' +
-              '<a href="javascript:;" class="text-body delete-record" data-id="' + full['id'] + '" title="حذف"><i class="ti ti-trash ti-sm mx-2"></i></a>' +
+              '<a href="javascript:;" class="text-body view-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#viewInvestorModal" title="' + __('View details') + '"><i class="ti ti-eye ti-sm me-2"></i></a>' +
+              '<a href="' + baseUrl + 'admin/investors/' + full['id'] + '/invest-wallet" class="text-body" title="' + __('Investment wallet') + '"><i class="ti ti-wallet ti-sm me-2 text-primary"></i></a>' +
+              '<a href="' + baseUrl + 'admin/users/' + full['id'] + '/wallet" class="text-body" title="' + __('Commission wallet') + '"><i class="ti ti-coins ti-sm me-2 text-success"></i></a>' +
+              fundTaskBtn +
+              '<a href="javascript:;" class="text-body link-tasks" data-id="' + full['id'] + '" data-name="' + full['name'] + '" data-bs-toggle="modal" data-bs-target="#linkTasksModal" title="' + __('Link historical tasks') + '"><i class="ti ti-link ti-sm me-2 text-warning"></i></a>' +
+              '<a href="javascript:;" class="text-body edit-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#investorModal" title="' + __('Edit') + '"><i class="ti ti-edit ti-sm me-2"></i></a>' +
+              '<a href="javascript:;" class="text-body delete-record" data-id="' + full['id'] + '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm mx-2"></i></a>' +
               '</div>'
             );
           }
@@ -238,7 +244,7 @@ $(function () {
       language: {
         sLengthMenu: '_MENU_',
         search: '',
-        searchPlaceholder: 'بحث...',
+        searchPlaceholder: __('Search...'),
         paginate: {
           next: '<i class="ti ti-chevron-left ti-sm"></i>',
           previous: '<i class="ti ti-chevron-right ti-sm"></i>'
@@ -261,12 +267,12 @@ $(function () {
   $('.datatables-investors tbody').on('click', '.delete-record', function () {
     var id = $(this).data('id');
     Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: "لن تتمكن من التراجع عن هذا!",
+      title: __('Are you sure?'),
+      text: __('You will not be able to revert this!'),
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'نعم، احذف!',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: __('Yes, delete it!'),
+      cancelButtonText: __('Cancel'),
       customClass: {
         confirmButton: 'btn btn-primary me-3',
         cancelButton: 'btn btn-label-secondary'
@@ -290,8 +296,8 @@ $(function () {
             }
             Swal.fire({
               icon: 'success',
-              title: 'تم الحذف!',
-              text: 'تم حذف المستثمر بنجاح.',
+              title: __('Deleted!'),
+              text: __('Investor deleted successfully'),
               customClass: {
                 confirmButton: 'btn btn-success'
               }
@@ -308,7 +314,7 @@ $(function () {
   // Edit Record
   $('.datatables-investors tbody').on('click', '.edit-record', function () {
     var id = $(this).data('id');
-    $('#modalTitle').text('تعديل بيانات المستثمر');
+    $('#modalTitle').text(__('Edit Investor'));
     $('#pass-hint').show();
     $('#contract_type').prop('disabled', true);
     $('#additional-form').html('');
@@ -373,7 +379,7 @@ $(function () {
   });
 
   $('#btn-add-investor').on('click', function () {
-    $('#modalTitle').text('إضافة مستثمر جديد');
+    $('#modalTitle').text(__('Add New Investor'));
     $('#pass-hint').hide();
     $('#contract_type').prop('disabled', false);
     $('#additional-form').html('');
@@ -417,9 +423,9 @@ $(function () {
       },
       success: function (data) {
         if (data.status == 1) {
-          toastr.success('تم تغيير حالة إعادة تعيين كلمة المرور بنجاح');
+          toastr.success(__('Reset password status changed'));
         } else {
-          toastr.error('حدث خطأ أثناء تغيير الحالة');
+          toastr.error(__('Error changing status'));
         }
       }
     });
@@ -436,19 +442,19 @@ $(function () {
       $('#view-status').html('<span class="badge bg-label-success">' + data.status + '</span>');
       
       // Balances
-      $('#view-invest-balance').text((data.investor_wallet ? data.investor_wallet.balance : '0.00') + ' ر.س');
-      $('#view-commission-balance').text((data.user_wallet ? data.user_wallet.balance : '0.00') + ' ر.س');
+      $('#view-invest-balance').text((data.investor_wallet ? data.investor_wallet.balance : '0.00') + ' ' + __('SAR'));
+      $('#view-commission-balance').text((data.user_wallet ? data.user_wallet.balance : '0.00') + ' ' + __('SAR'));
       
       // Contract
       if (data.active_investment_contract) {
         let c = data.active_investment_contract;
-        $('#view-contract-type').text(c.contract_type == 'task_investment' ? 'بالمهام' : 'عام');
-        $('#view-contract-commission').text(c.commission_value + (c.commission_type == 'percentage' ? '%' : ' ر.س'));
+        $('#view-contract-type').text(c.contract_type == 'task_investment' ? __('Task-based investment') : __('General investment'));
+        $('#view-contract-commission').text(c.commission_value + (c.commission_type == 'percentage' ? '%' : ' ' + __('SAR')));
         $('#view-contract-start').text(c.start_date.split('T')[0]);
-        $('#view-contract-end').text(c.end_date ? c.end_date.split('T')[0] : 'مفتوح');
-        $('#view-contract-min').text(c.min_commission_threshold + ' ر.س');
+        $('#view-contract-end').text(c.end_date ? c.end_date.split('T')[0] : __('Open'));
+        $('#view-contract-min').text(c.min_commission_threshold + ' ' + __('SAR'));
       } else {
-        $('#view-contract-type').text('لا يوجد عقد نشط');
+        $('#view-contract-type').text(__('No active contract for investor'));
         $('#view-contract-commission, #view-contract-start, #view-contract-end, #view-contract-min').text('-');
       }
     });
@@ -462,17 +468,17 @@ $(function () {
     var name = $(this).data('name');
     selectedInvestorId = id;
     $('#investor-name-modal').text(name);
-    $('#historicalTasksBody').html('<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري تحميل المهام...</td></tr>');
+    $('#historicalTasksBody').html('<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"></div> ' + __('Loading tasks...') + '</td></tr>');
     $('#selectAllTasks').prop('checked', false);
 
     $.get(baseUrl + 'admin/investors/' + id + '/available-tasks', function (data) {
       if (data.status == 1) {
         let html = '';
         if (data.tasks.length === 0) {
-          html = '<tr><td colspan="8" class="text-center">لا توجد مهام متاحة للربط لهذا المستثمر (يجب أن تكون المهام تم إنشاؤها بعد تاريخ بداية الاستثمار)</td></tr>';
+          html = '<tr><td colspan="8" class="text-center">' + __('No tasks available for linking') + '</td></tr>';
         } else {
           data.tasks.forEach(task => {
-            let driverName = task.driver ? task.driver.name : '<span class="text-muted">لم يحدد</span>';
+            let driverName = task.driver ? task.driver.name : '<span class="text-muted">' + __('Not specified') + '</span>';
             let vehicleName = '-';
             if (task.vehicle_size && task.vehicle_size.type && task.vehicle_size.type.vehicle) {
               vehicleName = task.vehicle_size.type.vehicle.name + ' - ' + task.vehicle_size.type.name + ' - ' + task.vehicle_size.name;
@@ -484,11 +490,11 @@ $(function () {
               <tr>
                 <td><input type="checkbox" class="form-check-input task-checkbox" value="${task.id}"></td>
                 <td>#${task.id}</td>
-                <td>${task.customer ? task.customer.name : 'عميل عام'}</td>
+                <td>${task.customer ? task.customer.name : __('General customer')}</td>
                 <td>${driverName}</td>
                 <td><small>${vehicleName}</small></td>
-                <td><small>من: ${fromAddr}<br>إلى: ${toAddr}</small></td>
-                <td>${task.total_price} ر.س</td>
+                <td><small>${__('From')}: ${fromAddr}<br>${__('To')}: ${toAddr}</small></td>
+                <td>${task.total_price} ${__('SAR')}</td>
                 <td>${new Date(task.created_at).toLocaleDateString('ar-SA')}</td>
               </tr>
             `;
@@ -514,17 +520,17 @@ $(function () {
     });
 
     if (taskIds.length === 0) {
-      Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى اختيار مهمة واحدة على الأقل' });
+      Swal.fire({ icon: 'warning', title: __('Alert'), text: __('Please select at least one task') });
       return;
     }
 
     Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: `سيتم ربط ${taskIds.length} مهمة بالمستثمر المختار وتسجيل العمليات المالية.`,
+      title: __('Are you sure?'),
+      text: __('Tasks will be linked confirm', { count: taskIds.length }),
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، قم بالربط',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: __('Yes, link now'),
+      cancelButtonText: __('Cancel'),
       customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -541,9 +547,9 @@ $(function () {
             if (data.status == 1) {
               $('#linkTasksModal').modal('hide');
               dt_user.draw();
-              Swal.fire({ icon: 'success', title: 'تم بنجاح!', text: data.success });
+              Swal.fire({ icon: 'success', title: __('Done!'), text: data.success });
             } else {
-              Swal.fire({ icon: 'error', title: 'خطأ!', text: data.error });
+              Swal.fire({ icon: 'error', title: __('Error'), text: data.error });
             }
           }
         });

@@ -2,46 +2,46 @@
   "menu": [
     {
       "url": "investor/dashboard",
-      "name": "الرئيسية",
+      "name": "Home",
       "icon": "menu-icon tf-icons ti ti-smart-home",
       "slug": "investor.dashboard"
     },
     {
-      "menuHeader": "المحافظ المالية"
+      "menuHeader": "Financial Wallets"
     },
     {
       "url": "investor/investment-wallet",
-      "name": "محفظة المضاربة",
+      "name": "Investment Wallet",
       "icon": "menu-icon tf-icons ti ti-wallet",
       "slug": "investor.investment-wallet"
     },
     {
       "url": "investor/personal-wallet",
-      "name": "محفظة العمولات",
+      "name": "Commission Wallet",
       "icon": "menu-icon tf-icons ti ti-coins",
       "slug": "investor.personal-wallet"
     },
     {
-      "menuHeader": "العمليات والمهام"
+      "menuHeader": "Operations and Tasks"
     },
     {
       "url": "investor/task-payment",
-      "name": "مهام متاحة للتمويل",
+      "name": "Tasks Available for Funding",
       "icon": "menu-icon tf-icons ti ti-briefcase",
       "slug": "investor.task-payment"
     },
     {
       "url": "investor/paid-tasks",
-      "name": "المهام المدفوعة",
+      "name": "Paid Tasks",
       "icon": "menu-icon tf-icons ti ti-checkup-list",
       "slug": "investor.paid-tasks"
     },
     {
-      "menuHeader": "الحساب"
+      "menuHeader": "Account"
     },
     {
       "url": "investor/profile",
-      "name": "الملف الشخصي",
+      "name": "Profile",
       "icon": "menu-icon tf-icons ti ti-user",
       "slug": "investor.profile"
     }

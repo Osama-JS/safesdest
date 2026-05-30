@@ -95,8 +95,13 @@ class InvestorController extends Controller
       $nestedData['status'] = $investor->status;
       $nestedData['reset_password'] = $investor->reset_password;
       $nestedData['wallet_balance'] = $investor->investorWallet->balance ?? 0;
-      $nestedData['contract_type'] = $contract ? ($contract->contract_type == 'task_investment' ? 'بالمهام' : 'عام') : 'لا يوجد';
-      $nestedData['commission'] = $contract ? $contract->commission_value . ($contract->commission_type == 'percentage' ? '%' : ' ثابت') : '-';
+      $nestedData['contract_type'] = $contract
+        ? ($contract->contract_type == 'task_investment' ? __('Task-based') : __('General'))
+        : __('No contract');
+      $nestedData['raw_contract_type'] = $contract ? $contract->contract_type : null;
+      $nestedData['commission'] = $contract
+        ? $contract->commission_value . ($contract->commission_type == 'percentage' ? '%' : ' ' . __('Fixed'))
+        : '-';
 
       $data[] = $nestedData;
     }
@@ -338,7 +343,7 @@ class InvestorController extends Controller
       );
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'تم حفظ بيانات المضارب والعقد بنجاح']);
+      return response()->json(['status' => 1, 'success' => __('Investor saved successfully')]);
     } catch (Exception $e) {
       DB::rollBack();
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
@@ -381,7 +386,7 @@ class InvestorController extends Controller
       $investor = User::findOrFail($request->id);
       // Mark as deleted instead of actual delete to preserve financial records
       $investor->update(['status' => 'deleted']);
-      return response()->json(['status' => 1, 'success' => 'تم حذف المضارب بنجاح']);
+      return response()->json(['status' => 1, 'success' => __('Investor deleted successfully')]);
     } catch (Exception $e) {
       return response()->json(['status' => 2, 'error' => $e->getMessage()]);
     }
@@ -394,7 +399,7 @@ class InvestorController extends Controller
       $contract = $investor->activeInvestmentContract;
 
       if (!$contract) {
-        return response()->json(['status' => 0, 'error' => 'لا يوجد عقد مضاربة نشط لهذا المضارب']);
+        return response()->json(['status' => 0, 'error' => __('No active contract for investor')]);
       }
 
       // جلب المهام التي لم يتم ربطها بمضارب وتم إنشاؤها منذ تاريخ بداية المضاربة
@@ -420,7 +425,7 @@ class InvestorController extends Controller
     ]);
 
     if ($validator->fails()) {
-      return response()->json(['status' => 0, 'error' => 'بيانات غير صالحة']);
+      return response()->json(['status' => 0, 'error' => __('Invalid data')]);
     }
 
     DB::beginTransaction();
@@ -430,7 +435,7 @@ class InvestorController extends Controller
       $contract = $investor->activeInvestmentContract;
 
       if (!$wallet || !$contract) {
-        throw new Exception('المضارب لا يملك محفظة أو عقد نشط');
+        throw new Exception(__('Investor has no wallet or active contract'));
       }
 
       $tasks = Task::whereIn('id', $request->task_ids)->get();
@@ -455,7 +460,7 @@ class InvestorController extends Controller
           'task_id' => $task->id,
           'transaction_type' => 'debit',
           'amount' => $taskPrice,
-          'description' => "دفع قيمة المهمة رقم #{$task->id}",
+          'description' => __('Pay Task Value') . " #{$task->id}",
           'performed_by' => auth()->id(),
           'balance_after' => $currentBalance - $taskPrice,
           'source_type' => 'capital',
@@ -476,7 +481,7 @@ class InvestorController extends Controller
                   'task_id' => $task->id,
                   'transaction_type' => 'credit',
                   'amount' => $investorCommission,
-                  'description' => "عمولة المهمة #{$task->id}",
+                  'description' => __('Task commission #:id', ['id' => $task->id]),
                   'status' => true,
                 ]);
               }
@@ -486,7 +491,7 @@ class InvestorController extends Controller
       }
 
       DB::commit();
-      return response()->json(['status' => 1, 'success' => 'تم ربط المهام وتسجيل العمليات المالية بنجاح']);
+      return response()->json(['status' => 1, 'success' => __('Tasks linked successfully')]);
     } catch (Exception $e) {
       DB::rollBack();
       return response()->json(['status' => 0, 'error' => $e->getMessage()]);

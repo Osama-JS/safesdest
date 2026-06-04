@@ -146,6 +146,13 @@ class DriverRegistrationController extends Controller
       // Log::alert($request);
       // dd('stop');
       // قواعد أساسية (قريبة من دالة الموقع)
+      $teamId = $request->input('team_id');
+
+      $request->merge([
+        'team_id' => ($teamId === '' || $teamId === '0' || $teamId === 0)
+          ? null
+          : $teamId,
+      ]);
       $baseRules = [
         'name' => 'required|string|max:255',
         'username' => 'required|string|max:255|unique:drivers,username',
@@ -411,35 +418,79 @@ class DriverRegistrationController extends Controller
 
     foreach ($template->fields as $field) {
       $fieldName = $field->name;
-      $fieldValue = $additionalFieldsData[$fieldName] ?? null;
 
-      // Check required fields
-      if ($field->required && (is_null($fieldValue) || $fieldValue === '')) {
-        $errors["additional_fields.{$fieldName}"] = ["The {$field->label} field is required."];
-        continue;
-      }
-
-      // Skip validation if field is empty and not required
-      if (is_null($fieldValue) || $fieldValue === '') {
-        continue;
-      }
-
-      // Type-specific validation
       switch ($field->type) {
-        case 'number':
-          if (!is_numeric($fieldValue)) {
+        case 'file_expiration_date':
+          $fileKey = "additional_fields.{$fieldName}_file";
+          $expKey = "{$fieldName}_expiration";
+
+          $hasFile = $request->hasFile($fileKey);
+          $expiration = $additionalFieldsData[$expKey] ?? null;
+
+          if ($field->required) {
+            if (!$hasFile) {
+              $errors[$fileKey] = ["The {$field->label} file is required."];
+            }
+            if (empty($expiration)) {
+              $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} is required."];
+            }
+          } else {
+            if ($hasFile && empty($expiration)) {
+              $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} is required."];
+            }
+          }
+
+          if (!empty($expiration) && !strtotime($expiration)) {
+            $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} must be a valid date."];
+          }
+          break;
+
+        case 'file_with_text':
+          $fileKey = "additional_fields.{$fieldName}_file";
+          $textKey = "{$fieldName}_text";
+
+          $hasFile = $request->hasFile($fileKey);
+          $text = $additionalFieldsData[$textKey] ?? null;
+
+          if ($field->required) {
+            if (!$hasFile) {
+              $errors[$fileKey] = ["The {$field->label} file is required."];
+            }
+            if (empty($text)) {
+              $errors["additional_fields.{$textKey}"] = ["The text field for {$field->label} is required."];
+            }
+          } else {
+            if ($hasFile && empty($text)) {
+              $errors["additional_fields.{$textKey}"] = ["The text field for {$field->label} is required."];
+            }
+          }
+          break;
+
+        case 'file':
+        case 'image':
+          $fileKey = "additional_fields.{$fieldName}";
+          if ($field->required && !$request->hasFile($fileKey)) {
+            $errors[$fileKey] = ["The {$field->label} file is required."];
+          }
+          break;
+
+        default:
+          $fieldValue = $additionalFieldsData[$fieldName] ?? null;
+
+          if ($field->required && (is_null($fieldValue) || $fieldValue === '')) {
+            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} field is required."];
+            continue 2;
+          }
+
+          if (is_null($fieldValue) || $fieldValue === '') {
+            continue 2;
+          }
+
+          if ($field->type === 'number' && !is_numeric($fieldValue)) {
             $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a number."];
-          }
-          break;
-
-        case 'url':
-          if (!filter_var($fieldValue, FILTER_VALIDATE_URL)) {
+          } elseif ($field->type === 'url' && !filter_var($fieldValue, FILTER_VALIDATE_URL)) {
             $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid URL."];
-          }
-          break;
-
-        case 'date':
-          if (!strtotime($fieldValue)) {
+          } elseif ($field->type === 'date' && !strtotime($fieldValue)) {
             $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid date."];
           }
           break;

@@ -311,22 +311,28 @@ class DriverRegistrationController extends Controller
 
       switch ($type) {
         case 'file_expiration_date': {
-          $fileKey = "additional_fields.{$name}_file";
+          $fileKey1 = "additional_fields.{$name}_file";
+          $fileKey2 = "{$name}_file";
           $expKey = "{$name}_expiration";
+          
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+          
+          $expiration = $additionalFieldsData[$expKey] ?? $req->input($expKey);
 
-          if ($req->hasFile($fileKey)) {
-            $path = FileHelper::uploadFile($req->file($fileKey), 'drivers/files');
+          if ($hasFile) {
+            $path = FileHelper::uploadFile($req->file($fileKeyToUse), 'drivers/files');
             $structured[$name] = [
               'label' => $field->label,
               'value' => $path,
-              'expiration' => $additionalFieldsData[$expKey] ?? null,
+              'expiration' => $expiration,
               'type' => $type,
             ];
-          } elseif (isset($additionalFieldsData[$expKey])) {
+          } elseif (!empty($expiration)) {
             $structured[$name] = [
               'label' => $field->label,
               'value' => null,
-              'expiration' => $additionalFieldsData[$expKey],
+              'expiration' => $expiration,
               'type' => $type,
             ];
           }
@@ -334,19 +340,25 @@ class DriverRegistrationController extends Controller
         }
 
         case 'file_with_text': {
-          $fileKey = "additional_fields.{$name}_file";
+          $fileKey1 = "additional_fields.{$name}_file";
+          $fileKey2 = "{$name}_file";
           $textKey = "{$name}_text";
 
           $valuePath = null;
-          if ($req->hasFile($fileKey)) {
-            $valuePath = FileHelper::uploadFile($req->file($fileKey), 'drivers/files');
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+          
+          $text = $additionalFieldsData[$textKey] ?? $req->input($textKey);
+
+          if ($hasFile) {
+            $valuePath = FileHelper::uploadFile($req->file($fileKeyToUse), 'drivers/files');
           }
 
-          if ($req->hasFile($fileKey) || isset($additionalFieldsData[$textKey])) {
+          if ($hasFile || !empty($text)) {
             $structured[$name] = [
               'label' => $field->label,
               'value' => $valuePath,
-              'text' => $additionalFieldsData[$textKey] ?? null,
+              'text' => $text,
               'type' => $type,
             ];
           }
@@ -355,9 +367,14 @@ class DriverRegistrationController extends Controller
 
         case 'file':
         case 'image': {
-          $fileKey = "additional_fields.{$name}";
-          if ($req->hasFile($fileKey)) {
-            $path = FileHelper::uploadFile($req->file($fileKey), 'drivers/files');
+          $fileKey1 = "additional_fields.{$name}";
+          $fileKey2 = $name;
+          
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+
+          if ($hasFile) {
+            $path = FileHelper::uploadFile($req->file($fileKeyToUse), 'drivers/files');
             $structured[$name] = [
               'label' => $field->label,
               'value' => $path,
@@ -368,10 +385,11 @@ class DriverRegistrationController extends Controller
         }
 
         default: {
-          if (isset($additionalFieldsData[$name])) {
+          $fieldValue = $additionalFieldsData[$name] ?? $req->input($name);
+          if ($fieldValue !== null && $fieldValue !== '') {
             $structured[$name] = [
               'label' => $field->label,
-              'value' => $additionalFieldsData[$name],
+              'value' => $fieldValue,
               'type' => $type,
             ];
           }
@@ -421,15 +439,16 @@ class DriverRegistrationController extends Controller
 
       switch ($field->type) {
         case 'file_expiration_date':
-          $fileKey = "additional_fields.{$fieldName}_file";
+          $fileKey1 = "additional_fields.{$fieldName}_file";
+          $fileKey2 = "{$fieldName}_file";
           $expKey = "{$fieldName}_expiration";
 
-          $hasFile = $request->hasFile($fileKey);
-          $expiration = $additionalFieldsData[$expKey] ?? null;
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2);
+          $expiration = $additionalFieldsData[$expKey] ?? $request->input($expKey);
 
           if ($field->required) {
             if (!$hasFile) {
-              $errors[$fileKey] = ["The {$field->label} file is required."];
+              $errors["additional_fields.{$fieldName}_file"] = ["The {$field->label} file is required."];
             }
             if (empty($expiration)) {
               $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} is required."];
@@ -446,15 +465,16 @@ class DriverRegistrationController extends Controller
           break;
 
         case 'file_with_text':
-          $fileKey = "additional_fields.{$fieldName}_file";
+          $fileKey1 = "additional_fields.{$fieldName}_file";
+          $fileKey2 = "{$fieldName}_file";
           $textKey = "{$fieldName}_text";
 
-          $hasFile = $request->hasFile($fileKey);
-          $text = $additionalFieldsData[$textKey] ?? null;
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2);
+          $text = $additionalFieldsData[$textKey] ?? $request->input($textKey);
 
           if ($field->required) {
             if (!$hasFile) {
-              $errors[$fileKey] = ["The {$field->label} file is required."];
+              $errors["additional_fields.{$fieldName}_file"] = ["The {$field->label} file is required."];
             }
             if (empty($text)) {
               $errors["additional_fields.{$textKey}"] = ["The text field for {$field->label} is required."];
@@ -468,14 +488,16 @@ class DriverRegistrationController extends Controller
 
         case 'file':
         case 'image':
-          $fileKey = "additional_fields.{$fieldName}";
-          if ($field->required && !$request->hasFile($fileKey)) {
-            $errors[$fileKey] = ["The {$field->label} file is required."];
+          $fileKey1 = "additional_fields.{$fieldName}";
+          $fileKey2 = $fieldName;
+          
+          if ($field->required && !$request->hasFile($fileKey1) && !$request->hasFile($fileKey2)) {
+            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} file is required."];
           }
           break;
 
         default:
-          $fieldValue = $additionalFieldsData[$fieldName] ?? null;
+          $fieldValue = $additionalFieldsData[$fieldName] ?? $request->input($fieldName);
 
           if ($field->required && (is_null($fieldValue) || $fieldValue === '')) {
             $errors["additional_fields.{$fieldName}"] = ["The {$field->label} field is required."];

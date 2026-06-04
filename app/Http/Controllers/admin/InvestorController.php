@@ -332,10 +332,7 @@ class InvestorController extends Controller
         'broker_commission_value' => $request->broker_commission_value ?? 0.00,
       ];
 
-      // نوع الاستثمار لا يتغير عند التعديل
-      if (!$request->id) {
-        $contractData['contract_type'] = $request->contract_type;
-      }
+      $contractData['contract_type'] = $request->contract_type;
 
       InvestmentContract::updateOrCreate(
         ['user_id' => $investor->id, 'status' => 'active'],

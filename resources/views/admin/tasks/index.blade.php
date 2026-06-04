@@ -81,7 +81,9 @@
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 
     <script>
-        const templateId = {{ $task_template?->value ?? 0 }}
+        const templateId = {{ $task_template?->value ?? 0 }};
+        const canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
+        const canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">

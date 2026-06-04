@@ -67,7 +67,22 @@ $(function () {
       $('#customers-wrapper').show();
     } else {
       $('#customers-wrapper').hide();
-      $('#task-customer').val('');
+      $('#task-customer').val('').trigger('change');
+    }
+  });
+
+  /**
+   * تعبئة الملاحظات التلقائية عند اختيار العميل
+   */
+  $('#task-customer').on('change', function () {
+    const selectedOption = $(this).find('option:selected');
+    const notes = selectedOption.data('notes');
+    
+    if (notes) {
+      $('#conditions').val(notes);
+    } else {
+      // إفراغ الحقول إذا تم إلغاء تحديد العميل أو لم يكن لديه ملاحظات ولم يتم إدخال شيء فيها مسبقا
+      // إذا كان من الأفضل عدم المسح تلقائيا، يمكننا إزالة مسح الحقول
     }
   });
 
@@ -712,11 +727,11 @@ function renderPricingDetails(data) {
     html += `<div class="mb-2"><strong>Price per kilo:</strong> ${parseFloat(data.distance_price_kilo).toFixed(2)} ريال</div>`;
   }
 
-  if (data.distance_price) {
+  if (data.distance_price && (typeof canViewTotalPrice !== 'undefined' && canViewTotalPrice)) {
     html += `<div class="mb-2"><strong>Distance Total price:</strong> ${parseFloat(data.distance_price).toFixed(2)} ريال</div>`;
   }
 
-  if (data.service_tax_commission) {
+  if (data.service_tax_commission && (typeof canViewCommissions !== 'undefined' && canViewCommissions)) {
     html += `<div class="mb-2"><strong>Service commission:</strong> ${parseFloat(data.service_tax_commission).toFixed(2)} ${data.service_commission_type === 'percentage' ? '%' : 'SAR'}</div>`;
   }
 
@@ -724,7 +739,7 @@ function renderPricingDetails(data) {
     html += `<div class="mb-2"><strong>Discount Percentage:</strong> ${parseFloat(data.discount_percentage).toFixed(2)} %</div>`;
   }
 
-  if (data.vat_commission) {
+  if (data.vat_commission && (typeof canViewCommissions !== 'undefined' && canViewCommissions)) {
     html += `<div class="mb-2"><strong>VAT commission:</strong> ${parseFloat(data.vat_commission).toFixed(2)} %</div>`;
   }
 
@@ -772,11 +787,12 @@ function renderPricingDetails(data) {
         <p class="small text-muted">
               If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.
         </p>
-         <p class="small text-muted">
-          This means the following will be added on top of the price you enter:
-          ${data.service_tax_commission ? parseFloat(data.service_tax_commission).toFixed(2) + (data.service_commission_type === 'percentage' ? '% service commission' : ' SAR service commission') : ''}
-          ${data.vat_commission ? parseFloat(data.vat_commission).toFixed(2) + '% VAT (Value Added Tax)' : ''}
-        </p>
+          ${(typeof canViewCommissions !== 'undefined' && canViewCommissions) ? `
+          <p class="small text-muted">
+            This means the following will be added on top of the price you enter:
+            ${data.service_tax_commission ? parseFloat(data.service_tax_commission).toFixed(2) + (data.service_commission_type === 'percentage' ? '% service commission' : ' SAR service commission') : ''}
+            ${data.vat_commission ? parseFloat(data.vat_commission).toFixed(2) + '% VAT (Value Added Tax)' : ''}
+          </p>` : ''}
 
 
         <span class="included-error text-danger mt-2"></span>
@@ -818,11 +834,13 @@ function renderPricingDetails(data) {
   html += `<hr>`;
 
   if (data.total_price) {
-    html += `
-      <div class="text-center">
-        <h3>الإجمالي النهائي: ${parseFloat(data.total_price).toFixed(2)} ريال</h3>
-      </div>
-    `;
+    if (typeof canViewTotalPrice !== 'undefined' && canViewTotalPrice) {
+      html += `
+        <div class="text-center">
+          <h3>الإجمالي النهائي: ${parseFloat(data.total_price).toFixed(2)} ريال</h3>
+        </div>
+      `;
+    }
     $('#assign-section').show();
     $('#total-price').attr('placeholder', parseFloat(data.total_price).toFixed(2));
   }

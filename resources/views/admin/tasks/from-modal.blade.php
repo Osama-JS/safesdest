@@ -51,7 +51,8 @@
                                             <select name="customer" id="task-customer" class="form-select">
                                                 <option value="">Select Customer</option>
                                                 @foreach ($customers as $val)
-                                                    <option value="{{ $val->id }}">{{ $val->name }}</option>
+                                                    <option value="{{ $val->id }}" data-notes="{{ $val->general_task_notes ?? '' }}">
+                                                        {{ $val->name }}</option>
                                                 @endforeach
                                             </select>
                                             <span class="customer-error text-danger text-error"></span>
@@ -715,9 +716,11 @@
                             If you do not select this option, both the VAT and the service commission will be calculated
                             on top of the amount you display.
                         </p>
+                        @can('view_task_commissions')
                         <p class="small text-muted" id="ad-commission-info">
 
                         </p>
+                        @endcan
                         <span class="included-error text-danger mt-2"></span>
                     </div>
                     <div class="mb-3 row">
@@ -762,6 +765,7 @@
                     <input type="hidden" name="id" id="pricing-id">
                     <div class="row mb-3">
 
+                        @can('view_task_total_price')
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="">{{ __('Set the total price Manual') }}</label>
@@ -770,6 +774,8 @@
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
+                        @endcan
+                        @can('view_task_commissions')
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="">{{ __('Set the The commission Manual') }}</label>
@@ -778,6 +784,7 @@
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
+                        @endcan
                     </div>
 
 

@@ -374,6 +374,7 @@ $(function () {
       $('#customer-role').val(data.role_id);
       $('#customer-c_name').val(data.company_name);
       $('#customer-c_address').val(data.company_address);
+      $('#customer-general-task-notes').val(data.general_task_notes);
       $('#customer-policy-file').val(data.policy_file_name);
       $('#customer-tags').val(data.tagsIds).trigger('change');
       $('#customer-is-company').prop('checked', data.is_company == 1);
@@ -490,6 +491,7 @@ $(function () {
     // Reset task numbering fields
     $('#customer-task-number-start').val('');
     $('#customer-task-number-next').val('');
+    $('#customer-general-task-notes').val('');
   });
 
   // Handle send notification button click for customers

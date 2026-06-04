@@ -58,7 +58,7 @@
                             <div class="badge bg-label-primary rounded p-2 me-2"><i class="ti ti-certificate ti-sm"></i></div>
                             <div>
                                 <small class="text-muted d-block small">{{ __('Contract Type') }}</small>
-                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? '{{ __('Task-based investment') }}' : '{{ __('General investment') }}' }}</span>
+                                <span class="fw-medium text-dark">{{ $c->contract_type === 'task_investment' ? __('Task-based investment') : __('General investment') }}</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center mb-3">

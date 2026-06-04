@@ -233,6 +233,7 @@
 
                         <!-- إحصائيات المهمة -->
                         <div class="row g-3 mb-4">
+                            @can('view_task_total_price')
                             <div class="col-md-3 col-sm-6">
                                 <div class="card stats-card text-white h-100">
                                     <div class="card-body text-center">
@@ -244,7 +245,9 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
 
+                            @can('view_task_commissions')
                             <div class="col-md-3 col-sm-6">
                                 <div class="card bg-warning text-white h-100">
                                     <div class="card-body text-center">
@@ -256,6 +259,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
 
                             <div class="col-md-3 col-sm-6">
                                 <div class="card bg-info text-white h-100">

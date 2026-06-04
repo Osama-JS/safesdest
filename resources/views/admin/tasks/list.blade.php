@@ -33,6 +33,10 @@
     @vite(['resources/js/admin/tasks/list.js'])
     @vite(['resources/js/spical.js'])
     <script>
+        const canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
+        const canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+    </script>
+    <script>
         const navContent = document.querySelector('#navbar-custom-nav-container');
         const mobileContainer = document.querySelector('#mobile-custom-nav');
         const originalContent = navContent?.innerHTML;

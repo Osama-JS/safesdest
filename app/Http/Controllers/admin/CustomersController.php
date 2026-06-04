@@ -266,6 +266,7 @@ class CustomersController extends Controller
           'policy_file_name'        => 'nullable|string|max:255',
           // Task numbering
           'task_number_start'       => 'nullable|integer|min:1',
+          'general_task_notes'      => 'nullable|string',
         ];
 
         if ($req->filled('template')) {
@@ -454,6 +455,7 @@ class CustomersController extends Controller
               'is_company' => $req->has('is_company') ? 1 : 0,
               // Task numbering
               'task_number_start' => $req->task_number_start ? (int) $req->task_number_start : null,
+              'general_task_notes' => $req->general_task_notes,
             ];
 
             if ($req->filled('password')) {

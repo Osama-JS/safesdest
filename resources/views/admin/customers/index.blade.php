@@ -483,6 +483,15 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="col-md-12">
+                                                        <div class="mb-4">
+                                                            <label class="form-label"
+                                                                for="customer-general-task-notes">{{ __('General Task Notes') }}</label>
+                                                            <textarea name="general_task_notes" id="customer-general-task-notes" class="form-control" rows="3" placeholder="{{ __('These notes will be automatically filled into new tasks created for this customer') }}"></textarea>
+                                                            <span class="general_task_notes-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+
 
                                                  </div>
                                              </div>
@@ -500,7 +509,7 @@
                                                  <option value="">{{ __('-- Select Template') }}</option>
                                                  @foreach ($templates as $key)
                                                      <option value="{{ $key->id }}"
-                                                         {{ $customer_template->value == $key->id ? 'selected' : '' }}>
+                                                         {{ optional($customer_template)->value == $key->id ? 'selected' : '' }}>
                                                          {{ $key->name }}</option>
                                                  @endforeach
                                              </select>

@@ -47,6 +47,7 @@ class Customer extends Authenticatable
       'task_number_start',
       'task_number_next',
       'is_company',
+      'general_task_notes',
     ];
 
     protected $casts = [

@@ -316,7 +316,6 @@ $(function () {
     var id = $(this).data('id');
     $('#modalTitle').text(__('Edit Investor'));
     $('#pass-hint').show();
-    $('#contract_type').prop('disabled', true);
     $('#additional-form').html('');
     
     $.get(baseUrl + 'admin/investors/show/' + id, function (data) {

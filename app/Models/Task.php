@@ -243,7 +243,7 @@ class Task extends Model
       ->where('investor_payment_status', 'none')
       ->whereNull('investor_id')
       ->where('closed', false)
-      ->whereNotIn('status', ['pending', 'in_progress', 'advertised', 'canceld', 'canceled', 'cancelled', 'refound', 'refunded'])
+      ->whereNotIn('status', ['pending', 'in_progress', 'advertised', 'canceld', 'canceled', 'cancelled', 'refund', 'refound', 'refunded'])
       ->where('payment_status', 'waiting');
   }
 

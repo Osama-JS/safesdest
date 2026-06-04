@@ -94,7 +94,7 @@ $(function () {
         { data: 'id' }, // الترقيم التسلسلي
         { data: 'customer_task_number' },
         { data: 'order' }, // الاسم مع الأفاتار
-        { data: 'price' }, // الاسم مع الأفاتار
+        { data: 'price', visible: (typeof canViewTotalPrice !== 'undefined' && canViewTotalPrice) }, // السعر الإجمالي (يظهر فقط لمن لديه الصلاحية)
         { data: 'driver_price' }, // الاسم مع الأفاتار
         { data: 'team' }, // البريد
         { data: 'driver' }, // الجوال

@@ -313,10 +313,11 @@ class DriverRegistrationController extends Controller
         case 'file_expiration_date': {
           $fileKey1 = "additional_fields.{$name}_file";
           $fileKey2 = "{$name}_file";
+          $fileKey3 = "additional_fields_{$name}_file";
           $expKey = "{$name}_expiration";
           
-          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
-          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2) || $req->hasFile($fileKey3);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : ($req->hasFile($fileKey2) ? $fileKey2 : $fileKey3);
           
           $expiration = $additionalFieldsData[$expKey] ?? $req->input($expKey);
 
@@ -342,11 +343,12 @@ class DriverRegistrationController extends Controller
         case 'file_with_text': {
           $fileKey1 = "additional_fields.{$name}_file";
           $fileKey2 = "{$name}_file";
+          $fileKey3 = "additional_fields_{$name}_file";
           $textKey = "{$name}_text";
 
           $valuePath = null;
-          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
-          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2) || $req->hasFile($fileKey3);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : ($req->hasFile($fileKey2) ? $fileKey2 : $fileKey3);
           
           $text = $additionalFieldsData[$textKey] ?? $req->input($textKey);
 
@@ -369,9 +371,10 @@ class DriverRegistrationController extends Controller
         case 'image': {
           $fileKey1 = "additional_fields.{$name}";
           $fileKey2 = $name;
+          $fileKey3 = "additional_fields_{$name}";
           
-          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2);
-          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : $fileKey2;
+          $hasFile = $req->hasFile($fileKey1) || $req->hasFile($fileKey2) || $req->hasFile($fileKey3);
+          $fileKeyToUse = $req->hasFile($fileKey1) ? $fileKey1 : ($req->hasFile($fileKey2) ? $fileKey2 : $fileKey3);
 
           if ($hasFile) {
             $path = FileHelper::uploadFile($req->file($fileKeyToUse), 'drivers/files');
@@ -441,9 +444,10 @@ class DriverRegistrationController extends Controller
         case 'file_expiration_date':
           $fileKey1 = "additional_fields.{$fieldName}_file";
           $fileKey2 = "{$fieldName}_file";
+          $fileKey3 = "additional_fields_{$fieldName}_file";
           $expKey = "{$fieldName}_expiration";
 
-          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2);
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3);
           $expiration = $additionalFieldsData[$expKey] ?? $request->input($expKey);
 
           if ($field->required) {
@@ -467,9 +471,10 @@ class DriverRegistrationController extends Controller
         case 'file_with_text':
           $fileKey1 = "additional_fields.{$fieldName}_file";
           $fileKey2 = "{$fieldName}_file";
+          $fileKey3 = "additional_fields_{$fieldName}_file";
           $textKey = "{$fieldName}_text";
 
-          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2);
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3);
           $text = $additionalFieldsData[$textKey] ?? $request->input($textKey);
 
           if ($field->required) {
@@ -490,8 +495,9 @@ class DriverRegistrationController extends Controller
         case 'image':
           $fileKey1 = "additional_fields.{$fieldName}";
           $fileKey2 = $fieldName;
+          $fileKey3 = "additional_fields_{$fieldName}";
           
-          if ($field->required && !$request->hasFile($fileKey1) && !$request->hasFile($fileKey2)) {
+          if ($field->required && !$request->hasFile($fileKey1) && !$request->hasFile($fileKey2) && !$request->hasFile($fileKey3)) {
             $errors["additional_fields.{$fieldName}"] = ["The {$field->label} file is required."];
           }
           break;

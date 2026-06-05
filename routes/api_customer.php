@@ -297,8 +297,8 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     // Route::post('/payments/initiate', [CustomerPaymentController::class, 'initiatePayment'])
     //     ->name('api.customer.payments.initiate');
 
-    // Route::get('/payments/{id}/status', [CustomerPaymentController::class, 'getPaymentStatus'])
-    //     ->name('api.customer.payments.status');
+    Route::get('/payments/{id}/status', [PaymentController::class, 'getStatus'])
+        ->name('api.customer.payments.status');
 
     // Route::post('/payments/{id}/confirm', [CustomerPaymentController::class, 'confirmPayment'])
     //     ->name('api.customer.payments.confirm');

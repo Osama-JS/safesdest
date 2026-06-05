@@ -3328,7 +3328,7 @@ class TasksController extends Controller
     public function editPricing($id)
     {
         try {
-            $data = Task::select(['id', 'closed', 'payment_status', 'total_price', 'commission', 'pricing_details'])->findOrFail($id);
+            $data = Task::select(['id', 'closed', 'payment_status', 'total_price', 'commission', 'pricing_details', 'status'])->findOrFail($id);
             $user = auth()->user();
             if (!$user || !$user->checkTask($data->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);

@@ -1087,6 +1087,15 @@ $(function () {
         return;
       }
       $('#pricing-id').val(data.data.id);
+      
+      if (data.data.status !== 'in_progress') {
+        $('#pricing-total-price').closest('.col-md-6').hide();
+        $('#pricing-commission').closest('.col-md-6').hide();
+      } else {
+        $('#pricing-total-price').closest('.col-md-6').show();
+        $('#pricing-commission').closest('.col-md-6').show();
+      }
+
       $('#pricing-total-price').val(data.data.total_price);
 
       $('#pricing-commission').val(data.data.commission);

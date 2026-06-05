@@ -155,6 +155,12 @@ class CustomerTaskController extends Controller
                     'lng' => $lng,
                     'pickup_address' => $task->pickup->address,
                     'delivery_address' => $task->delivery->address,
+                    'pickup_lat' => $task->pickup->latitude,
+                    'pickup_lng' => $task->pickup->longitude,
+                    'delivery_lat' => $task->delivery->latitude,
+                    'delivery_lng' => $task->delivery->longitude,
+                    'driver_lat' => $task->driver ? $task->driver->altitude : null, // Altitude is used for latitude in this system
+                    'driver_lng' => $task->driver ? $task->driver->longitude : null,
                     'driver_name' => $task->driver ? $task->driver->name : null,
                     'driver_phone' => $task->driver ? $task->driver->phone : null,
                     'driver_image' => $task->driver ? $task->driver->image ? url($task->driver->image) : null : null,

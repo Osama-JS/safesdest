@@ -72,11 +72,14 @@ trait HandlesPaymentFulfillment
     private function fulfillWalletDeposit(Payments $payment)
     {
         $wallet = Wallet::where('user_type', 'customer')
-            ->where('user_id', $payment->customer_id)
+            ->where('customer_id', $payment->customer_id)
             ->first();
 
         if ($wallet) {
-            $wallet->increment('balance', $payment->amount);
+            // Note: We DO NOT do $wallet->increment('balance', $payment->amount)
+            // because 'balance' is not a database column; it's dynamically computed
+            // from the sum of Wallet_Transactions. Creating the transaction below
+            // automatically increases the balance.
 
             Wallet_Transaction::create([
                 'wallet_id'        => $wallet->id,

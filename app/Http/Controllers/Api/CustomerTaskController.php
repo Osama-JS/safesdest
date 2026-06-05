@@ -1558,74 +1558,78 @@ class CustomerTaskController extends Controller
               'transaction' => null,
           ];
 
-          // Fetch transaction details based on payment method
-          if (in_array($task->payment_method, ['banking', 'credit', 'cash'])) {
-              // Query transactions table
-              $transaction = Transaction::find($task->payment_id);
+        // Fetch transaction details based on payment method
+        if (in_array($task->payment_method, ['banking', 'credit', 'cash', 'hyperpay_visa', 'hyperpay_mada', 'hyperpay_stc'])) {
+            // Query payments table
+            $transaction = \App\Models\Payments::find($task->payment_id);
 
-              if ($transaction) {
-                  $paymentData['transaction'] = [
-                      'id' => $transaction->id,
-                      'amount' => $transaction->amount,
-                      'status' => $transaction->status,
-                      'payment_type' => $transaction->payment_type,
-                      'created_at' => $transaction->created_at,
-                  ];
+            if ($transaction) {
+                $paymentData['transaction'] = [
+                    'id' => $transaction->id,
+                    'amount' => $transaction->amount,
+                    'status' => $transaction->status,
+                    'payment_type' => $transaction->payment_method,
+                    'created_at' => $transaction->created_at,
+                ];
 
-                  // Banking-specific fields
-                  if ($task->payment_method === 'banking') {
-                      $paymentData['transaction']['receipt_number'] = $transaction->receipt_number;
+                // Banking-specific fields
+                if ($task->payment_method === 'banking') {
+                    $paymentData['transaction']['receipt_number'] = $transaction->receipt_number;
 
-                      // Handle receipt image URL properly
-                      if ($transaction->receipt_image) {
-                          $imagePath = $transaction->receipt_image;
-                          Log::info('Receipt Image Path', ['original' => $imagePath]);
+                    // Handle receipt image URL properly
+                    if ($transaction->receipt_image) {
+                        $imagePath = $transaction->receipt_image;
+                        Log::info('Receipt Image Path', ['original' => $imagePath]);
 
-                          // Check if path already starts with 'storage/' or 'public/'
-                          if (strpos($imagePath, 'storage/') === 0) {
-                              $paymentData['transaction']['receipt_image'] = url($imagePath);
-                          } elseif (strpos($imagePath, 'public/') === 0) {
-                              $paymentData['transaction']['receipt_image'] = url(str_replace('public/', 'storage/', $imagePath));
-                          } else {
-                              $paymentData['transaction']['receipt_image'] = url('storage/' . $imagePath);
-                          }
+                        // Check if path already starts with 'storage/' or 'public/'
+                        if (strpos($imagePath, 'storage/') === 0) {
+                            $paymentData['transaction']['receipt_image'] = url($imagePath);
+                        } elseif (strpos($imagePath, 'public/') === 0) {
+                            $paymentData['transaction']['receipt_image'] = url(str_replace('public/', 'storage/', $imagePath));
+                        } else {
+                            $paymentData['transaction']['receipt_image'] = url('storage/' . $imagePath);
+                        }
 
-                          Log::info('Receipt Image URL', ['final' => $paymentData['transaction']['receipt_image']]);
-                      } else {
-                          $paymentData['transaction']['receipt_image'] = null;
-                      }
+                        Log::info('Receipt Image URL', ['final' => $paymentData['transaction']['receipt_image']]);
+                    } else {
+                        $paymentData['transaction']['receipt_image'] = null;
+                    }
 
-                      $paymentData['transaction']['note'] = $transaction->note;
-                  }
+                    $paymentData['transaction']['note'] = $transaction->description;
+                }
 
-                  // Credit card specific fields
-                  if (in_array($task->payment_method, ['credit', 'cash'])) {
-                      $paymentData['transaction']['checkout_id'] = $transaction->checkout_id;
-                      $paymentData['transaction']['gateway_code'] = $transaction->gateway_code ?? null;
-                      $paymentData['transaction']['gateway_msg'] = $transaction->gateway_msg ?? null;
-                      $paymentData['transaction']['processed_at'] = $transaction->processed_at ?? null;
-                  }
-              }
-          } elseif ($task->payment_method === 'wallet') {
-              // Query wallet_transactions table
-              // The receipt_number in transactions table stores the wallet transaction sequence
-              $walletTransaction = Wallet_Transaction::where('task_id', $task->id)
-                  ->where('wallet_id', $task->customer->wallet->id)
-                  ->first();
+                // Credit card specific fields
+                if (in_array($task->payment_method, ['credit', 'cash', 'hyperpay_visa', 'hyperpay_mada', 'hyperpay_stc'])) {
+                    $paymentData['transaction']['checkout_id'] = $transaction->transaction_reference;
+                    $paymentData['transaction']['gateway_code'] = $transaction->gateway_code ?? null;
+                    $paymentData['transaction']['gateway_msg'] = $transaction->gateway_msg ?? null;
+                    $paymentData['transaction']['processed_at'] = $transaction->processed_at ?? null;
+                }
+            }
+        } elseif ($task->payment_method === 'wallet') {
+            // Query wallet_transactions table
+            // The receipt_number in transactions table stores the wallet transaction sequence
+            $walletId = optional(optional($task->customer)->wallet)->id;
+            
+            if ($walletId) {
+                $walletTransaction = \App\Models\Wallet_Transaction::where('task_id', $task->id)
+                    ->where('wallet_id', $walletId)
+                    ->first();
 
-              if ($walletTransaction) {
-                  $paymentData['transaction'] = [
-                      'id' => $walletTransaction->id,
-                      'amount' => $walletTransaction->amount,
-                      'sequence' => $walletTransaction->sequence,
-                      'transaction_type' => $walletTransaction->transaction_type,
-                      'description' => $walletTransaction->description,
-                      'maturity_time' => $walletTransaction->maturity_time,
-                      'status' => $walletTransaction->status ?? 'completed',
-                      'created_at' => $walletTransaction->created_at,
-                  ];
-              }
-          }
+                if ($walletTransaction) {
+                    $paymentData['transaction'] = [
+                        'id' => $walletTransaction->id,
+                        'amount' => $walletTransaction->amount,
+                        'sequence' => $walletTransaction->sequence,
+                        'transaction_type' => $walletTransaction->transaction_type,
+                        'description' => $walletTransaction->description,
+                        'maturity_time' => $walletTransaction->maturity_time,
+                        'status' => $walletTransaction->status ?? 'completed',
+                        'created_at' => $walletTransaction->created_at,
+                    ];
+                }
+            }
+        }
 
           return response()->json([
               'status' => 200,

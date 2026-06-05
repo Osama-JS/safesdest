@@ -481,6 +481,8 @@ class PaymentController extends Controller
 
         $seq = (Wallet_Transaction::max('sequence') ?? 1000000) + 1;
         Log::info($seq);
+        $userId = (Auth::check() && Auth::user() instanceof \App\Models\User) ? Auth::user()->id : null;
+
         Log::info([
           'amount'           => $amount,
           'transaction_type' => 'debit',
@@ -489,7 +491,7 @@ class PaymentController extends Controller
           'maturity_time'    => now()->addDays(3),
           'task_id'          => ($subject instanceof Task) ? $subject->id : null,
           'sequence'         => $seq,
-          'user_id'          => Auth::user()->id ?? '',
+          'user_id'          => $userId,
         ]);
         $wt  = Wallet_Transaction::create([
             'wallet_id'        => $wallet->id,
@@ -500,7 +502,7 @@ class PaymentController extends Controller
             'maturity_time'    => now()->addDays(3),
             'task_id'          => ($subject instanceof Task) ? $subject->id : null,
             'sequence'         => $seq,
-            'user_id'          => Auth::check() ? Auth::user()->id : null,
+            'user_id'          => $userId,
         ]);
 
         Log::info($wt);

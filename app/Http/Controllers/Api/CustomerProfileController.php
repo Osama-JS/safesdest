@@ -48,6 +48,7 @@ class CustomerProfileController extends Controller
                         'phone' => $customer->phone,
                         'phone_code' => $customer->phone_code,
                         'image' => $customer->image ? url($customer->image) : null,
+                        'signature_image' => $customer->signature_image ? url($customer->signature_image) : null,
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
@@ -189,6 +190,48 @@ class CustomerProfileController extends Controller
             return response()->json([
                 'status' => 500,
                 'message' => 'Failed to upload avatar',
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Upload customer signature
+     */
+    public function updateSignature(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'signature_image' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ]);
+            }
+
+            $customer = $request->user();
+
+            // Upload new signature
+            $file = $request->file('signature_image');
+            $path = (new FunctionsController())->convert($file, 'customers/signatures');
+
+            // Update customer
+            $customer->update(['signature_image' => $path]);
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Signature uploaded successfully',
+                'signature_url' => url($path)
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'message' => 'Failed to upload signature',
                 'error' => $e->getMessage()
             ]);
         }

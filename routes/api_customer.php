@@ -111,6 +111,9 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/profile/avatar', [CustomerProfileController::class, 'uploadAvatar'])
         ->name('api.customer.profile.avatar');
 
+    Route::post('/profile/signature', [CustomerProfileController::class, 'updateSignature'])
+        ->name('api.customer.profile.signature');
+
     Route::get('/profile/stats', [CustomerProfileController::class, 'getStats'])
         ->name('api.customer.profile.stats');
 

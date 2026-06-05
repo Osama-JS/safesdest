@@ -97,6 +97,8 @@ class FortifyServiceProvider extends ServiceProvider
 
       switch ($guard) {
         case 'driver':
+          Log::info('Driver login');
+
           $user = Driver::where(function ($q) use ($email) {
             $q->where('email', $email)
               ->orWhere('phone', $email)
@@ -104,18 +106,23 @@ class FortifyServiceProvider extends ServiceProvider
           })->first();
           break;
         case 'customer':
+          Log::info('Customer login');
           $user = Customer::where(function ($q) use ($email) {
             $q->where('email', $email)
               ->orWhere('phone', $email);
           })->where('is_customs_clearance_agent', 0)->first();
           break;
         case 'broker':
+          Log::info('broker login');
+
           $user = Customer::where(function ($q) use ($email) {
             $q->where('email', $email)
               ->orWhere('phone', $email);
           })->where('is_customs_clearance_agent', 1)->first();
           break;
         default:
+          Log::info('User login');
+
           $user = User::where(function ($q) use ($email) {
             $q->where('email', $email)
               ->orWhere('phone', $email);

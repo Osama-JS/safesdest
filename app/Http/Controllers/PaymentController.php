@@ -190,7 +190,7 @@ class PaymentController extends Controller
     /**
      * Render standalone HyperPay widget page.
      */
-    public function showPaymentPage(string $token)
+    public function showPaymentPage(Request $request, string $token)
     {
         $payment = Payments::where('payment_token', $token)->first();
 
@@ -210,7 +210,8 @@ class PaymentController extends Controller
         $brand       = $this->methodToBrand($payment->payment_method);
         $scriptUrl   = $this->hyperpay->getScriptUrl() . '?checkoutId=' . $payment->transaction_reference;
         $brandsCss   = $this->brandsToBrandCss($brand);
-        $callbackUrl = route('payment.callback', ['token' => $token]);
+        $isApp       = $request->query('is_app') ? 1 : 0;
+        $callbackUrl = route('payment.callback', ['token' => $token, 'is_app' => $isApp]);
 
         return view('payment.form', compact('payment', 'scriptUrl', 'brandsCss', 'callbackUrl', 'token'));
     }
@@ -231,8 +232,10 @@ class PaymentController extends Controller
         $payment = Payments::where('payment_token', $token)->first()
                 ?? Payments::where('transaction_reference', $checkoutId)->first();
 
+        $isApp      = $request->query('is_app') ? 1 : 0;
+
         if (!$payment) {
-            return redirect()->route('payment.result', ['status' => 'failed', 'token' => $token ?? 'unknown'])
+            return redirect()->route('payment.result', ['status' => 'failed', 'token' => $token ?? 'unknown', 'is_app' => $isApp])
                 ->with('error', __('Payment record not found'));
         }
 
@@ -270,6 +273,7 @@ class PaymentController extends Controller
         return redirect()->route('payment.result', [
             'status' => $resultStatus,
             'token'  => $payment->payment_token,
+            'is_app' => $isApp
         ]);
     }
 
@@ -280,11 +284,13 @@ class PaymentController extends Controller
     /**
      * Show payment result page.
      */
-    public function showResult(string $status, string $token)
+    public function showResult(Request $request, string $status, string $token)
     {
         $payment = Payments::where('payment_token', $token)->first();
 
-        return view('payment.result', compact('status', 'payment', 'token'));
+        $isApp = $request->query('is_app') ? true : false;
+
+        return view('payment.result', compact('status', 'payment', 'token', 'isApp'));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

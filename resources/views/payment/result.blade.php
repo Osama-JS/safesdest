@@ -242,13 +242,19 @@
 
     <div class="actions">
         @if($status === 'success')
-            <a href="/" class="btn btn-primary">{{ __('Back to Home') }}</a>
+            @if(!isset($isApp) || !$isApp)
+                <a href="/" class="btn btn-primary">{{ __('Back to Home') }}</a>
+            @endif
         @elseif($status === 'pending')
             <button class="btn btn-primary" onclick="location.reload()">{{ __('Refresh Status') }}</button>
-            <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @if(!isset($isApp) || !$isApp)
+                <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @endif
         @elseif($status === 'expired' || $status === 'failed')
             <a href="javascript:history.back()" class="btn btn-primary">{{ __('Try Again') }}</a>
-            <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @if(!isset($isApp) || !$isApp)
+                <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @endif
         @endif
     </div>
 

@@ -245,6 +245,13 @@
                     {{ __('3D Secure') }}
                 </div>
             </div>
+            
+            <!-- App Cancel Button -->
+            @if(isset($isApp) && $isApp)
+            <div style="text-align: center; margin-top: 20px;">
+                <button type="button" onclick="window.close();" style="background:none; border:none; color:var(--text-muted); font-size:0.85rem; text-decoration:underline; cursor:pointer;">{{ __('Cancel Payment') }}</button>
+            </div>
+            @endif
         </div>
     </div>
 

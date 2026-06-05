@@ -244,16 +244,22 @@
         @if($status === 'success')
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-primary">{{ __('Back to Home') }}</a>
+            @else
+                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
             @endif
         @elseif($status === 'pending')
             <button class="btn btn-primary" onclick="location.reload()">{{ __('Refresh Status') }}</button>
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @else
+                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
             @endif
         @elseif($status === 'expired' || $status === 'failed')
             <a href="javascript:history.back()" class="btn btn-primary">{{ __('Try Again') }}</a>
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
+            @else
+                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
             @endif
         @endif
     </div>

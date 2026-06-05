@@ -581,31 +581,68 @@ $(function () {
       if (result.value) {
         $btn.prop('disabled', true).html('<i class="ti ti-loader rotate"></i> Processing...');
 
-        fetch(baseUrl + 'admin/tasks/payment/cancel-paid/' + id, {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json'
+        const doCancelRequest = (password = '') => {
+          let url = baseUrl + 'admin/tasks/payment/cancel-paid/' + id;
+          if (password) {
+            url += '?password=' + encodeURIComponent(password);
           }
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.status === 1) {
-              showAlert('success', data.message, 5000, true);
-              $('#paymentModal').modal('hide');
-              $('#checkPaymentModal').modal('hide');
-              if (dt_data) {
-                dt_data.draw();
-              }
-            } else {
-              showAlert('danger', data.message, 5000, true);
-              $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+          
+          fetch(url, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json'
             }
           })
-          .catch(error => {
-            showAlert('danger', 'Error connecting to server', 5000, true);
-            $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
-            console.error(error);
-          });
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === 1) {
+                showAlert('success', data.message, 5000, true);
+                $('#paymentModal').modal('hide');
+                $('#checkPaymentModal').modal('hide');
+                if (dt_data) {
+                  dt_data.draw();
+                }
+              } else if (data.status === 3) {
+                // Requires password
+                Swal.fire({
+                  title: 'Admin Password Required',
+                  text: data.message,
+                  input: 'password',
+                  inputPlaceholder: 'Enter admin password',
+                  showCancelButton: true,
+                  confirmButtonText: 'Submit',
+                  customClass: {
+                    confirmButton: 'btn btn-primary me-3',
+                    cancelButton: 'btn btn-label-secondary'
+                  },
+                  buttonsStyling: false,
+                  preConfirm: (pwd) => {
+                    if (!pwd) {
+                      Swal.showValidationMessage('Password cannot be empty');
+                    }
+                    return pwd;
+                  }
+                }).then((pwdResult) => {
+                  if (pwdResult.isConfirmed) {
+                    $btn.prop('disabled', true).html('<i class="ti ti-loader rotate"></i> Processing...');
+                    doCancelRequest(pwdResult.value);
+                  } else {
+                    $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+                  }
+                });
+              } else {
+                showAlert('danger', data.message, 5000, true);
+                $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+              }
+            })
+            .catch(error => {
+              showAlert('danger', 'Error connecting to server', 5000, true);
+              $btn.prop('disabled', false).html('<i class="ti ti-refresh me-1"></i>Cancel Completed Payment');
+              console.error(error);
+            });
+        };
+
+        doCancelRequest();
       }
     });
   });

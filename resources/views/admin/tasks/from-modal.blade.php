@@ -765,7 +765,6 @@
                     <input type="hidden" name="id" id="pricing-id">
                     <div class="row mb-3">
 
-                        @can('view_task_total_price')
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="">{{ __('Set the total price Manual') }}</label>
@@ -774,8 +773,6 @@
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
-                        @endcan
-                        @can('view_task_commissions')
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="">{{ __('Set the The commission Manual') }}</label>
@@ -784,7 +781,6 @@
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
-                        @endcan
                     </div>
 
 

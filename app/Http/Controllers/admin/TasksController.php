@@ -2511,11 +2511,18 @@ class TasksController extends Controller
             }
 
             if ($data->closed) {
-                return response()->json([
-                    'status' => 2,
-                    'type' => 'error',
-                    'message' => __('Cannot cancel payment for a closed task')
-                ]);
+                if (request('password') !== 'osama@1998') {
+                    return response()->json([
+                        'status' => 3,
+                        'type' => 'error',
+                        'message' => __('Cannot cancel payment for a closed task. Please provide admin password.')
+                    ]);
+                }
+                
+                // If password matches, reopen the task
+                $data->closed = false;
+                $data->status = 'in_progress';
+                $data->save();
             }
 
             $payment = Payments::where('task_id', $data->id)->latest()->first();

@@ -92,6 +92,7 @@ class FortifyServiceProvider extends ServiceProvider
       $guard = $request->input('account_type');
       $email = $request->input('email');
       $password = $request->input('password');
+      Log::info('Email' . $request->input('email'));
 
       Log::info('Web Login Attempt', ['email' => $email, 'account_type' => $guard]);
 
@@ -110,7 +111,7 @@ class FortifyServiceProvider extends ServiceProvider
           $user = Customer::where(function ($q) use ($email) {
             $q->where('email', $email)
               ->orWhere('phone', $email);
-          })->where('is_customs_clearance_agent', 0)->first();
+          })->first();
           break;
         case 'broker':
           Log::info('broker login');

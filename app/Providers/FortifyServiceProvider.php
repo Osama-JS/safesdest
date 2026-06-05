@@ -93,6 +93,8 @@ class FortifyServiceProvider extends ServiceProvider
             $email = $request->input('email');
             $password = $request->input('password');
 
+            \Log::info('Web Login Attempt', ['email' => $email, 'account_type' => $guard]);
+
             switch ($guard) {
                 case 'driver':
                     $user = Driver::where(function($q) use ($email) {
@@ -121,29 +123,42 @@ class FortifyServiceProvider extends ServiceProvider
                     break;
             }
 
-            if (!$user || !Hash::check($password, $user->password)) {
+            if (!$user) {
+                \Log::warning('Web Login Failed: User not found', ['email' => $email, 'account_type' => $guard]);
+                throw ValidationException::withMessages([
+                  'email' => [__('auth.failed')]
+                ]);
+            }
+
+            if (!Hash::check($password, $user->password)) {
+                \Log::warning('Web Login Failed: Password mismatch', ['user_id' => $user->id, 'account_type' => $guard]);
                 throw ValidationException::withMessages([
                   'email' => [__('auth.failed')]
                 ]);
             }
 
             if ($user->status === 'verified') {
+                \Log::warning('Web Login Blocked: Email not verified', ['user_id' => $user->id, 'account_type' => $guard]);
                 throw ValidationException::withMessages([
                   'email' => [__('Your email is not verified.') . ' <a href="' . route('verify.manual', ['email' => $user->email]) . '">' . __('Click here to verify') . '</a>']
                 ]);
             }
 
             if ($user->status != 'active') {
+                \Log::warning('Web Login Blocked: Account pending or inactive', ['user_id' => $user->id, 'status' => $user->status, 'account_type' => $guard]);
                 throw ValidationException::withMessages([
                   'email' => [__('Your account is pending or inactive.')]
                 ]);
             }
 
             if ($user->reset_password) {
+                \Log::warning('Web Login Blocked: Reset password required', ['user_id' => $user->id, 'account_type' => $guard]);
                 throw ValidationException::withMessages([
                   'email' => [__('You need to reset your password before logging in.')]
                 ]);
             }
+
+            \Log::info('Web Login Success', ['user_id' => $user->id, 'account_type' => $guard]);
 
             // تجديد الـ session token وإعداد الـ captcha flag
             $request->session()->regenerateToken();

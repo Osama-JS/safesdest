@@ -3340,12 +3340,15 @@ class TasksController extends Controller
             if (!$user || !$user->checkTask($data->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
             }
-            if ($data->closed && Auth::user()->role_id !== 1) {
+            if ($data->closed) {
                 return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
             }
-            if ($data->payment_status !== 'waiting'  && Auth::user()->role_id !== 1) {
-                return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as it has already been paid for')]);
+            
+            $blockedStatuses = ['completed', 'canceled', 'refund'];
+            if (in_array($data->status, $blockedStatuses)) {
+                return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as its status is') . ' ' . $data->status]);
             }
+            
             return response()->json(['status' => 1, 'data' => $data]);
         } catch (Exception $ex) {
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
@@ -3373,9 +3376,15 @@ class TasksController extends Controller
             if (!$user || !$user->checkTask($find->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
             }
-            if ($find->closed && Auth::user()->role_id !== 1) {
+            if ($find->closed) {
                 return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
             }
+
+            $blockedStatuses = ['completed', 'canceled', 'refund'];
+            if (in_array($find->status, $blockedStatuses)) {
+                return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as its status is') . ' ' . $find->status]);
+            }
+
             $details = $req->pricing_details ?? [];
             $sumDetails = collect($req->input('pricing_details', []))
               ->sum(function ($item) {

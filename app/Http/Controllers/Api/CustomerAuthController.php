@@ -728,18 +728,34 @@ class CustomerAuthController extends Controller
 
             // Find customer by email or phone
             $email = $request->email;
+            Log::info('API Login Attempt: ', ['email_input' => $email]);
+            
             $customer = Customer::where('email', $email)->orWhere('phone', $email)->first();
 
-            // Check if customer exists and password is correct
-            if (!$customer || !Hash::check($request->password, $customer->password)) {
+            if (!$customer) {
+                Log::warning('API Login Failed: Customer not found.', ['email_input' => $email]);
                 return response()->json([
                     'status' => 401,
                     'message' => 'Invalid credentials'
                 ]);
             }
 
+            Log::info('API Login: Customer found.', ['customer_id' => $customer->id, 'email' => $customer->email, 'phone' => $customer->phone]);
+
+            // Check if password is correct
+            if (!Hash::check($request->password, $customer->password)) {
+                Log::warning('API Login Failed: Password mismatch.', ['customer_id' => $customer->id]);
+                return response()->json([
+                    'status' => 401,
+                    'message' => 'Invalid credentials'
+                ]);
+            }
+
+            Log::info('API Login: Password matched.', ['customer_id' => $customer->id]);
+
             // Check if customer is active
             if ($customer->status !== 'active') {
+                Log::warning('API Login Failed: Customer not active.', ['customer_id' => $customer->id, 'status' => $customer->status]);
                 return response()->json([
                     'status' => 403,
                     'message' => 'Customer account is not active'
@@ -747,13 +763,15 @@ class CustomerAuthController extends Controller
             }
 
             // Check if email is verified
-            if ($customer->email_verified_at) {
+            if (!$customer->email_verified_at && $customer->status !== 'active') { // Assuming verified customers might have active status
+                Log::warning('API Login Failed: Email not verified.', ['customer_id' => $customer->id, 'email_verified_at' => $customer->email_verified_at]);
                 return response()->json([
                     'status' => 403,
                     'message' => 'Email not verified',
 
                 ]);
             }
+            Log::info('API Login: Validation passed, generating token.', ['customer_id' => $customer->id]);
 
             // Revoke existing tokens for this device (optional - for single device login)
             if ($request->device_name) {

@@ -95,40 +95,53 @@ class FortifyServiceProvider extends ServiceProvider
 
             switch ($guard) {
                 case 'driver':
-                    $user = Driver::where('email', $email)->first();
+                    $user = Driver::where(function($q) use ($email) {
+                        $q->where('email', $email)
+                          ->orWhere('phone', $email)
+                          ->orWhere('username', $email);
+                    })->first();
                     break;
                 case 'customer':
-                    $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 0)->first();
+                    $user = Customer::where(function($q) use ($email) {
+                        $q->where('email', $email)
+                          ->orWhere('phone', $email);
+                    })->where('is_customs_clearance_agent', 0)->first();
                     break;
                 case 'broker':
-                    $user = Customer::where('email', $email)->where('is_customs_clearance_agent', 1)->first();
+                    $user = Customer::where(function($q) use ($email) {
+                        $q->where('email', $email)
+                          ->orWhere('phone', $email);
+                    })->where('is_customs_clearance_agent', 1)->first();
                     break;
                 default:
-                    $user = User::where('email', $email)->first();
+                    $user = User::where(function($q) use ($email) {
+                        $q->where('email', $email)
+                          ->orWhere('phone', $email);
+                    })->first();
                     break;
             }
 
             if (!$user || !Hash::check($password, $user->password)) {
                 throw ValidationException::withMessages([
-                  'email' => ['These credentials do not match our records.']
+                  'email' => [__('auth.failed')]
                 ]);
             }
 
             if ($user->status === 'verified') {
                 throw ValidationException::withMessages([
-                  'email' => ['Your email is not verified. <a href="' . route('verify.manual', ['email' => $user->email]) . '">Click here to verify</a>']
+                  'email' => [__('Your email is not verified.') . ' <a href="' . route('verify.manual', ['email' => $user->email]) . '">' . __('Click here to verify') . '</a>']
                 ]);
             }
 
             if ($user->status != 'active') {
                 throw ValidationException::withMessages([
-                  'email' => ['Your account is pending or inactive.']
+                  'email' => [__('Your account is pending or inactive.')]
                 ]);
             }
 
             if ($user->reset_password) {
                 throw ValidationException::withMessages([
-                  'email' => ['You need to reset your password before logging in.']
+                  'email' => [__('You need to reset your password before logging in.')]
                 ]);
             }
 

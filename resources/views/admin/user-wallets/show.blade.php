@@ -498,19 +498,17 @@
                             <tbody>
                                 @foreach($duplicateCommissions as $taskId => $transactionsGroup)
                                     @foreach($transactionsGroup as $index => $transaction)
-                                        <tr>
-                                            @if($index === 0)
-                                                <td rowspan="{{ $transactionsGroup->count() }}" class="align-middle text-center fw-bold text-primary">
-                                                    #{{ $taskId }}
-                                                </td>
-                                            @endif
+                                        <tr class="duplicate-row" data-task-id="{{ $taskId }}">
+                                            <td class="align-middle text-center fw-bold text-primary">
+                                                #{{ $taskId }}
+                                            </td>
                                             <td>{{ number_format($transaction->amount, 2) }} {{ __('SAR') }}</td>
                                             <td>{{ $transaction->created_at->format('Y-m-d H:i') }}</td>
                                             <td>
-                                                <form action="{{ route('admin.user-wallets.destroyDuplicateCommission', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this duplicate commission?') }}');">
+                                                <form action="{{ route('admin.user-wallets.destroyDuplicateCommission', $transaction->id) }}" method="POST" class="d-inline delete-duplicate-form" data-task-id="{{ $taskId }}">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                    <button type="button" class="btn btn-sm btn-danger delete-duplicate-btn">
                                                         <i class="ti ti-trash"></i> {{ __('Delete') }}
                                                     </button>
                                                 </form>
@@ -577,6 +575,91 @@
                     }
                 });
             }
+
+            // AJAX Delete for Duplicate Commissions
+            const deleteDuplicateBtns = document.querySelectorAll('.delete-duplicate-btn');
+            deleteDuplicateBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const formElement = this.closest('form');
+                    const actionUrl = formElement.getAttribute('action');
+                    const taskId = formElement.getAttribute('data-task-id');
+                    const tr = formElement.closest('tr');
+
+                    Swal.fire({
+                        title: '{{ __("Are you sure?") }}',
+                        text: '{{ __("You will not be able to revert this!") }}',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: '{{ __("Yes, delete it!") }}',
+                        cancelButtonText: '{{ __("Cancel") }}',
+                        customClass: {
+                            confirmButton: 'btn btn-primary me-1',
+                            cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: actionUrl,
+                                type: 'DELETE',
+                                data: {
+                                    _token: '{{ csrf_token() }}'
+                                },
+                                success: function(response) {
+                                    if (response.status === 1) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: '{{ __("Deleted!") }}',
+                                            text: response.success,
+                                            customClass: {
+                                                confirmButton: 'btn btn-success'
+                                            }
+                                        }).then(() => {
+                                            // Remove the row from the table
+                                            tr.remove();
+
+                                            // Check remaining rows for this task
+                                            const remainingRows = document.querySelectorAll('.duplicate-row[data-task-id="' + taskId + '"]');
+                                            if (remainingRows.length === 1) {
+                                                // If only 1 remains, it is no longer a duplicate
+                                                remainingRows[0].remove();
+                                            }
+
+                                            // If no duplicates left in the table, close modal and reload to refresh UI
+                                            if (document.querySelectorAll('.duplicate-row').length === 0) {
+                                                $('#checkErrorsModal').modal('hide');
+                                                location.reload();
+                                            }
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: '{{ __("Error!") }}',
+                                            text: response.error,
+                                            icon: 'error',
+                                            customClass: {
+                                                confirmButton: 'btn btn-primary'
+                                            }
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire({
+                                        title: '{{ __("Error!") }}',
+                                        text: '{{ __("An error occurred while deleting the duplicate commission.") }}',
+                                        icon: 'error',
+                                        customClass: {
+                                            confirmButton: 'btn btn-primary'
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            });
         });
     </script>
     @include('admin.user-wallets.manual-commission-modal')

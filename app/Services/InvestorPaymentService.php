@@ -186,12 +186,14 @@ class InvestorPaymentService
             ->when(!empty($contract->filter_customer_ids), function($q) use ($contract) {
                 $q->whereIn('customer_id', $contract->filter_customer_ids);
             })
-            // استثناء المهام التي تم احتساب عمولتها لهذا المضارب مسبقاً
-            ->whereNotExists(function ($sub) use ($personalWallet) {
-                $sub->from('user_wallet_transactions')
-                    ->where('user_wallet_id', $personalWallet->id)
-                    ->whereColumn('task_id', 'tasks.id')
-                    ->where('transaction_type', 'credit');
+            // استثناء المهام التي تم احتساب عمولتها لهذا المضارب مسبقاً ولم يتم عمل Refund لها (صافي العمولة > 0)
+            ->whereNotIn('id', function ($query) use ($personalWallet) {
+                $query->select('task_id')
+                      ->from('user_wallet_transactions')
+                      ->where('user_wallet_id', $personalWallet->id)
+                      ->whereNotNull('task_id')
+                      ->groupBy('task_id')
+                      ->havingRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0");
             });
 
         $tasks = $tasksQuery->get();

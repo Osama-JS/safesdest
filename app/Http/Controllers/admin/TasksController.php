@@ -3290,7 +3290,9 @@ class TasksController extends Controller
                           'payment_status' => 'waiting',
                           'driver_id' => null,
                           'deleviry_note' => null,
-                          'delivery_number' => null
+                          'delivery_number' => null,
+                          'investor_id' => null,
+                          'investor_payment_status' => 'none',
                         ]);
 
             $task->history()->create([

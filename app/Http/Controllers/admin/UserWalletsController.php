@@ -699,13 +699,13 @@ class UserWalletsController extends Controller
                 return response()->json(['status' => 0, 'error' => 'هذه المهمة ممولة من مضارب آخر.']);
             }
 
-            // منع التكرار
-            $exists = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
+            // منع التكرار (السماح باحتساب العمولة إذا تم عمل Refund لها سابقاً وصافي العمولة = 0)
+            $netCommission = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
                 ->where('task_id', $taskId)
-                ->where('transaction_type', 'credit')
-                ->exists();
+                ->selectRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as net_amount")
+                ->value('net_amount') ?? 0;
 
-            if ($exists) {
+            if ($netCommission > 0) {
                 return response()->json(['status' => 0, 'error' => 'تم احتساب عمولة هذه المهمة مسبقاً.']);
             }
 

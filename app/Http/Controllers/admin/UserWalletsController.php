@@ -60,7 +60,10 @@ class UserWalletsController extends Controller
             $activeContract = $isInvestor ? $user->activeInvestmentContract : null;
 
             $duplicateCommissions = collect();
+            $negativeCommissions = collect();
+            
             if ($wallet && $isInvestor) {
+                // 1. Duplicate commissions (multiple credits for same task)
                 $duplicateTaskIds = UserWalletTransaction::where('user_wallet_id', $wallet->id)
                     ->where('transaction_type', 'credit')
                     ->whereNotNull('task_id')
@@ -73,6 +76,23 @@ class UserWalletsController extends Controller
                     $duplicateCommissions = UserWalletTransaction::where('user_wallet_id', $wallet->id)
                         ->where('transaction_type', 'credit')
                         ->whereIn('task_id', $duplicateTaskIds)
+                        ->with('task')
+                        ->get()
+                        ->groupBy('task_id');
+                }
+
+                // 2. Negative/Mismatch commissions (Debit > Credit)
+                $negativeTaskIds = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+                    ->whereNotNull('task_id')
+                    ->select('task_id')
+                    ->groupBy('task_id')
+                    ->havingRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) < 0")
+                    ->pluck('task_id');
+
+                if ($negativeTaskIds->isNotEmpty()) {
+                    $negativeCommissions = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+                        ->whereIn('task_id', $negativeTaskIds)
+                        ->orderBy('created_at', 'desc')
                         ->with('task')
                         ->get()
                         ->groupBy('task_id');
@@ -93,6 +113,7 @@ class UserWalletsController extends Controller
                 'hasInvestmentWallet' => (bool) $investmentWallet,
                 'activeContract' => $activeContract,
                 'duplicateCommissions' => $duplicateCommissions,
+                'negativeCommissions' => $negativeCommissions,
             ]);
 
         } catch (Exception $e) {

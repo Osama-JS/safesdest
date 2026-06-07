@@ -250,13 +250,13 @@
                     <span class="d-none d-sm-inline-block"> تمويل المهام (للمستثمر)</span>
                 </a>
                 @endif
-                @if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty())
+                @if((isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty()) || (isset($negativeCommissions) && $negativeCommissions->isNotEmpty()))
                     <button class="btn btn-danger waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal" data-bs-target="#checkErrorsModal">
                         <i class="ti ti-alert-triangle me-0 me-sm-1 ti-xs"></i>
                         <span class="d-none d-sm-inline-block"> {{ __('Check for Errors') }}</span>
                     </button>
                 @else
-                    <button class="btn btn-outline-danger waves-effect waves-light mt-5 mx-2" onclick="Swal.fire('{{ __('No Errors') }}', '{{ __('No duplicate commissions found.') }}', 'success')">
+                    <button class="btn btn-outline-danger waves-effect waves-light mt-5 mx-2" onclick="Swal.fire('{{ __('No Errors') }}', 'لا توجد عمولات مكررة أو أخطاء في الخصم العكسي.', 'success')">
                         <i class="ti ti-shield-check me-0 me-sm-1 ti-xs"></i>
                         <span class="d-none d-sm-inline-block"> {{ __('Check for Errors') }}</span>
                     </button>
@@ -468,24 +468,27 @@
     @endif
 
     {{-- Check for errors modal --}}
-    @if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty())
+    @if((isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty()) || (isset($negativeCommissions) && $negativeCommissions->isNotEmpty()))
     <div class="modal fade" id="checkErrorsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-bottom">
                     <h5 class="modal-title d-flex align-items-center text-danger">
                         <i class="ti ti-alert-triangle me-2 ti-md"></i>
-                        {{ __('Duplicate Commissions Found') }}
+                        {{ __('Commission Errors Found') }}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    
+                    @if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty())
+                    <h6 class="text-danger fw-bold mb-2">العمولات المكررة (Duplicate Commissions)</h6>
                     <div class="alert alert-warning mb-4">
                         <i class="ti ti-info-circle me-2"></i>
                         {{ __('The following tasks have multiple commissions recorded in your wallet. Please review and delete the duplicates. You can only keep one commission per task.') }}
                     </div>
 
-                    <div class="table-responsive">
+                    <div class="table-responsive mb-4">
                         <table class="table table-bordered table-hover">
                             <thead class="table-light">
                                 <tr>
@@ -501,6 +504,13 @@
                                         <tr class="duplicate-row" data-task-id="{{ $taskId }}">
                                             <td class="align-middle text-center fw-bold text-primary">
                                                 #{{ $taskId }}
+                                                @if($transaction->task)
+                                                    @if($transaction->task->investor_id == $user->id)
+                                                        <br><span class="badge bg-label-info mt-1" style="font-size: 0.7rem;">ممولة منه</span>
+                                                    @else
+                                                        <br><span class="badge bg-label-secondary mt-1" style="font-size: 0.7rem;">مستثمر عام</span>
+                                                    @endif
+                                                @endif
                                             </td>
                                             <td>{{ number_format($transaction->amount, 2) }} {{ __('SAR') }}</td>
                                             <td>{{ $transaction->created_at->format('Y-m-d H:i') }}</td>
@@ -519,9 +529,71 @@
                             </tbody>
                         </table>
                     </div>
+                    @endif
+
+                    @if(isset($negativeCommissions) && $negativeCommissions->isNotEmpty())
+                    <h6 class="text-danger fw-bold mb-2 mt-4">أخطاء الخصم العكسي (Negative / Mismatched Commissions)</h6>
+                    <div class="alert alert-danger mb-4">
+                        <i class="ti ti-info-circle me-2"></i>
+                        يوجد خلل في المهام التالية حيث أن إجمالي الخصم (Debit) يفوق الإيداع (Credit) مما سبب خللاً في الرصيد. يرجى مراجعتها وحذف الخصم الزائد لتصحيح الرصيد.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ __('Task #') }}</th>
+                                    <th>{{ __('Amount') }}</th>
+                                    <th>النوع</th>
+                                    <th>{{ __('Date') }}</th>
+                                    <th>{{ __('Action') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($negativeCommissions as $taskId => $transactionsGroup)
+                                    @foreach($transactionsGroup as $index => $transaction)
+                                        <tr class="duplicate-row" data-task-id="{{ $taskId }}">
+                                            <td class="align-middle text-center fw-bold text-primary">
+                                                #{{ $taskId }}
+                                                @if($transaction->task)
+                                                    @if($transaction->task->investor_id == $user->id)
+                                                        <br><span class="badge bg-label-info mt-1" style="font-size: 0.7rem;">ممولة منه</span>
+                                                    @else
+                                                        <br><span class="badge bg-label-secondary mt-1" style="font-size: 0.7rem;">مستثمر عام</span>
+                                                    @endif
+                                                @endif
+                                            </td>
+                                            <td class="{{ $transaction->transaction_type == 'credit' ? 'text-success' : 'text-danger' }} fw-bold">
+                                                {{ $transaction->transaction_type == 'credit' ? '+' : '-' }}{{ number_format($transaction->amount, 2) }} {{ __('SAR') }}
+                                            </td>
+                                            <td>
+                                                <span class="badge {{ $transaction->transaction_type == 'credit' ? 'bg-label-success' : 'bg-label-danger' }}">
+                                                    {{ $transaction->transaction_type == 'credit' ? 'إيداع' : 'خصم' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $transaction->created_at->format('Y-m-d H:i') }}</td>
+                                            <td>
+                                                @if($transaction->transaction_type == 'debit')
+                                                <form action="{{ route('admin.user-wallets.destroyDuplicateCommission', $transaction->id) }}" method="POST" class="d-inline delete-duplicate-form" data-task-id="{{ $taskId }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="button" class="btn btn-sm btn-danger delete-duplicate-btn">
+                                                        <i class="ti ti-trash"></i> {{ __('Delete') }}
+                                                    </button>
+                                                </form>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+
                 </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

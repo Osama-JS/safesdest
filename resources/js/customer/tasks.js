@@ -157,6 +157,15 @@ $(function () {
                                   <a href="${baseUrl + 'customer/tasks/details/' + task.id}" class="dropdown-item">
                                     <i class="ti ti-eye me-2"></i>View Details
                                   </a>
+                                  ${
+                                    (!task.payment_status || task.payment_status === 'pending' || task.payment_status === 'unpaid') && task.total_price > 0
+                                      ? `
+                                    <a href="javascript:;" class="dropdown-item text-info fw-bold" onclick="openPaymentModal(${task.id}, ${task.total_price})">
+                                      <i class="ti ti-credit-card me-2"></i>Pay Now
+                                    </a>
+                                  `
+                                      : ''
+                                  }
                               </div>
                              </div>
                           </div>

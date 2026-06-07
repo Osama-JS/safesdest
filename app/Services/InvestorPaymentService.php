@@ -50,26 +50,7 @@ class InvestorPaymentService
 
             $taskPrice = (float) $task->total_price;
 
-            // ── 3. التحقق من سقف مديونية العميل ─────────────────────────────
-            if ($task->customer_id) {
-                $customerWallet = Wallet::lockForUpdate()
-                    ->where('customer_id', $task->customer_id)
-                    ->where('user_type', 'customer')
-                    ->first();
-
-                if ($customerWallet) {
-                    $currentDebt  = $customerWallet->debit - $customerWallet->credit; // الدين = مجموع الخصم - مجموع الإيداع
-                    $debtCeiling  = (float) $customerWallet->debt_ceiling;
-                    $newDebt      = $currentDebt + $taskPrice;
-
-                    if ($newDebt > $debtCeiling) {
-                        throw new \Exception(__('Customer debt would exceed limit', [
-                            'ceiling' => $debtCeiling,
-                            'current' => $currentDebt,
-                        ]));
-                    }
-                }
-            }
+            // ── 3. (تم إلغاء التحقق من سقف مديونية العميل) ─────────────────────────────
 
             // ── 4. التحقق من رصيد محفظة المضاربة ───────────────────────────
             $investorBalance = $investorWallet->balance;
@@ -93,36 +74,61 @@ class InvestorPaymentService
                 'balance_after'      => $balanceAfterDebit,
             ]);
 
-            // ── 6. تحديث حالة الدفع في المهمة ───────────────────────────────
+            // ── 6. تحديث حالة التمويل في المهمة (بدون تغيير حالة الدفع الأساسية) ───────────────────────────────
             $task->update([
                 'investor_id'             => $investor->id,
                 'investor_payment_status' => 'paid',
-                'payment_status'          => 'paid',
-                'payment_method'          => 'Wallet',
-                'payment_note'            => 'سدد من محفظة العميل',
             ]);
 
-            // ── 7. تسجيل دين على العميل في محفظته ───────────────────────────
-            if ($task->customer_id) {
-                $customerWallet = Wallet::where('customer_id', $task->customer_id)
-                    ->where('user_type', 'customer')
-                    ->first();
-
-                if ($customerWallet) {
-                    Wallet_Transaction::create([
-                        'wallet_id'        => $customerWallet->id,
-                        'task_id'          => $task->id,
-                        'transaction_type' => 'debit',
-                        'amount'           => $taskPrice,
-                        'description'      => "Payment: Task #{$task->id}",
-                        'user_id'          => auth()->id() ?? $investor->id,
-                        'status'           => 1,
-                    ]);
-                }
-            }
+            // ── 7. (تم إلغاء تسجيل دين على العميل في محفظته) ───────────────────────────
 
             // ── 8. احتساب عمولة المضارب وإيداعها في المحفظة الشخصية ────────
             $this->creditInvestorCommission($investor, $task, $contract);
+        });
+    }
+
+    /**
+     * تسوية مبالغ الاستثمار (إعادة رأس المال للمستثمر)
+     * تُستدعى عندما يقوم العميل بتسديد قيمة المهمة فعلياً
+     * 
+     * @param Task $task
+     */
+    public function settleTaskInvestment(Task $task): void
+    {
+        if (!$task->investor_id || $task->investor_payment_status !== 'paid') {
+            return;
+        }
+
+        DB::transaction(function () use ($task) {
+            $investorWallet = InvestorWallet::lockForUpdate()->where('user_id', $task->investor_id)->first();
+            if (!$investorWallet) {
+                return;
+            }
+
+            // منع التسوية المزدوجة
+            $alreadySettled = InvestorWalletTransaction::where('investor_wallet_id', $investorWallet->id)
+                ->where('task_id', $task->id)
+                ->where('transaction_type', 'credit')
+                ->where('source_type', 'capital_return')
+                ->exists();
+
+            if ($alreadySettled) {
+                return;
+            }
+
+            $taskPrice = (float) $task->total_price;
+            $balanceAfterCredit = $investorWallet->balance + $taskPrice;
+
+            InvestorWalletTransaction::create([
+                'investor_wallet_id' => $investorWallet->id,
+                'task_id'            => $task->id,
+                'transaction_type'   => 'credit',
+                'source_type'        => 'capital_return',
+                'amount'             => $taskPrice,
+                'description'        => __('Return of invested capital for Task') . " #{$task->id}",
+                'performed_by'       => auth()->id() ?? clone $task->investor_id,
+                'balance_after'      => $balanceAfterCredit,
+            ]);
         });
     }
 

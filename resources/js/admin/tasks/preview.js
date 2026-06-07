@@ -1088,7 +1088,8 @@ $(function () {
       }
       $('#pricing-id').val(data.data.id);
       
-      if (data.data.status !== 'in_progress') {
+      const blockedStatuses = ['completed', 'canceled', 'refund'];
+      if (blockedStatuses.includes(data.data.status) || data.data.closed) {
         $('#pricing-total-price').closest('.col-md-6').hide();
         $('#pricing-commission').closest('.col-md-6').hide();
       } else {

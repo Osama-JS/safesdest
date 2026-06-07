@@ -28,9 +28,9 @@ class DashboardController extends Controller
         $task_from_template = Settings::where('key', 'task_from_port_template')->first();
         $task_to_template = Settings::where('key', 'task_to_port_template')->first();
 
-        $template_fields = Form_Field::where('form_template_id', $task_template->value)->get();
-        $template_from_fields = Form_Field::where('form_template_id', $task_from_template->value)->get();
-        $template_to_fields = Form_Field::where('form_template_id', $task_to_template->value)->get();
+        $template_fields = $task_template ? Form_Field::where('form_template_id', $task_template->value)->get() : collect();
+        $template_from_fields = $task_from_template ? Form_Field::where('form_template_id', $task_from_template->value)->get() : collect();
+        $template_to_fields = $task_to_template ? Form_Field::where('form_template_id', $task_to_template->value)->get() : collect();
 
         $clearance = 0;
         if (auth()->user()->is_customs_clearance_agent) {

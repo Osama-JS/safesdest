@@ -584,6 +584,32 @@
 @endsection
 
 @section('vendor-script')
+    <!-- Custom Tabs CSS -->
+    <style>
+        .custom-tabs {
+            border-bottom: none;
+            gap: 10px;
+        }
+        .custom-tabs .nav-link {
+            border: none;
+            border-radius: 12px;
+            background: #f8f9fa;
+            color: #6c757d;
+            font-weight: 600;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+        }
+        .custom-tabs .nav-link:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        .custom-tabs .nav-link.active {
+            background: #696cff;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(105, 108, 255, 0.2);
+        }
+    </style>
+
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
 
@@ -648,39 +674,16 @@
 
     <script>
         $(document).ready(function() {
-            // Toggle functionality for sections
-            $('.toggle-button').on('click', function(e) {
-                e.preventDefault();
-                const targetId = $(this).data('target');
-                const targetSection = $('#' + targetId);
-                const button = $(this);
 
-                console.log('Toggle button clicked, target:', targetId);
-                console.log('Target section found:', targetSection.length > 0);
-                console.log('Section has hidden class:', targetSection.hasClass('hidden'));
-
-                if (targetSection.length === 0) {
-                    console.error('Target section not found:', targetId);
-                    return;
-                }
-
-                if (targetSection.hasClass('hidden')) {
-                    // Show section
-                    targetSection.removeClass('hidden').hide().slideDown(300, function() {
-                        console.log('Section shown');
-                    });
-                    button.addClass('active');
-                    console.log('Button active class added');
-                } else {
-                    // Hide section
-                    targetSection.slideUp(300, function() {
-                        targetSection.addClass('hidden');
-                        console.log('Section hidden');
-                    });
-                    button.removeClass('active');
-                    console.log('Button active class removed');
-                }
+            // Mapbox Initialization
+            mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
+            const map = new mapboxgl.Map({
+                container: 'active-tasks-map',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [46.6753, 24.7136], // Default Riyadh
+                zoom: 10
             });
+            let markers = [];
 
             // Function to update task count
             window.updateTaskCount = function(count) {
@@ -692,6 +695,51 @@
                 if (data && data.pagination && data.pagination.total !== undefined) {
                     updateTaskCount(data.pagination.total);
                 }
+                
+                // Update map markers
+                if (data && data.data) {
+                    // Clear existing markers
+                    markers.forEach(m => m.remove());
+                    markers = [];
+                    
+                    const bounds = new mapboxgl.LngLatBounds();
+                    let hasCoordinates = false;
+
+                    data.data.forEach(task => {
+                        if (task.status !== 'completed' && task.status !== 'canceled') {
+                            if (task.pickup && task.pickup.longitude && task.pickup.latitude) {
+                                const el = document.createElement('div');
+                                el.className = 'marker';
+                                el.innerHTML = '<i class="ti ti-map-pin text-primary fs-3"></i>';
+                                
+                                const popup = new mapboxgl.Popup({ offset: 25 })
+                                    .setHTML(`<strong>Task #${task.id}</strong><br>${task.status}`);
+
+                                const marker = new mapboxgl.Marker(el)
+                                    .setLngLat([task.pickup.longitude, task.pickup.latitude])
+                                    .setPopup(popup)
+                                    .addTo(map);
+                                
+                                markers.push(marker);
+                                bounds.extend([task.pickup.longitude, task.pickup.latitude]);
+                                hasCoordinates = true;
+                            }
+                        }
+                    });
+
+                    if (hasCoordinates) {
+                        map.fitBounds(bounds, { padding: 50 });
+                    }
+                }
+            });
+
+            // Ensure map resizes correctly when the tab is shown
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                if (e.target.id === 'map-tab') {
+                    setTimeout(function() {
+                        map.resize();
+                    }, 200);
+                }
             });
         });
     </script>
@@ -701,139 +749,57 @@
 
     <div class="customer-dashboard-container">
         <div class="row">
-            <!-- Enhanced User Sidebar -->
-            <div class="col-xl-3 col-lg-4 order-1 order-md-0">
-                <!-- Enhanced User Card -->
-                <div class="user-profile-card mb-6 fade-in">
-                    <div class="card-body pt-12">
-                        <div class="user-avatar-section">
-                            <div class="d-flex align-items-center flex-column">
-                                <img class="user-avatar mb-4"
-                                    src="{{ auth()->user()->image ? asset(auth()->user()->image) : asset('assets/img/person.png') }}"
-                                    alt="User avatar" />
-                                <div class="user-info text-center">
-                                    <h5>{{ auth()->user()->name }}</h5>
-                                    @if (auth()->user()->is_customs_clearance_agent)
-                                        <span class="bg-primary text-white p-2 rounded mb-3"> Customs Clearance Broker
+            <!-- Main Content Area -->
+            <div class="col-12">
+                
+                <!-- Dashboard Tabs Navigation -->
+                <ul class="nav nav-tabs custom-tabs mb-4" id="dashboardTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active d-flex align-items-center" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks-tab-pane" type="button" role="tab" aria-controls="tasks-tab-pane" aria-selected="true">
+                            <i class="ti ti-truck-delivery me-2 fs-5"></i>{{ __('My Tasks') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center" id="map-tab" data-bs-toggle="tab" data-bs-target="#map-tab-pane" type="button" role="tab" aria-controls="map-tab-pane" aria-selected="false">
+                            <i class="ti ti-map-2 me-2 fs-5"></i>{{ __('Live Map') }}
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tabs Content -->
+                <div class="tab-content p-0 bg-transparent border-0 shadow-none" id="dashboardTabsContent">
+                    
+                    <!-- My Tasks Tab Pane (Active) -->
+                    <div class="tab-pane fade show active" id="tasks-tab-pane" role="tabpanel" aria-labelledby="tasks-tab" tabindex="0">
+                        @if (auth()->user()->is_customs_clearance_agent)
+                            <div class="card mb-4 shadow-sm border-0 bg-white">
+                                <div class="card-body position-relative p-4">
+                                    <h4>
+                                        <i class="ti ti-clipboard-check"></i>
+                                        {{ __('Clearance Tasks') }}
+                                    </h4>
+
+                                    <p class="text-muted mb-4 fs-6">
+                                        {{ __('There are') }} <strong>{{ $clearance }}</strong>
+                                        {{ __('customs clearance tasks available. You can view them and submit your offer.') }}
+                                    </p>
+
+                                    <a href="{{ route('customer.customs-clearances.ads') }}"
+                                        class="btn btn-primary btn-lg px-4 py-2 d-inline-flex align-items-center">
+                                        <i class="ti ti-clipboard-check me-2 fs-5"></i>
+                                        {{ __('View Customs Clearance Tasks Now') }}
+                                    </a>
+
+                                    <div class="position-absolute top-0 end-0 m-3">
+                                        <span class="badge bg-success fs-6 px-3 py-2 rounded-pill shadow-sm">
+                                            {{ $clearance }} {{ __('new customs clearance available') }}
                                         </span>
-                                    @endif
-                                    <br>
-                                    <br>
-                                    <span
-                                        class="badge bg-label-secondary">{{ auth()->user()->company_name ?? 'No Company' }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Enhanced Stats Section -->
-                        <div class="user-stats">
-                            <div class="row">
-                                <div class="col-6">
-                                    <div class="stat-item">
-                                        <div class="avatar">
-                                            <div class="avatar-initial">
-                                                <i class='ti ti-checkbox'></i>
-                                            </div>
-                                        </div>
-                                        <h5>{{ auth()->user()->tasks()->where('status', 'completed')->count() }}</h5>
-                                        <span>Tasks Done</span>
-                                    </div>
-                                </div>
-                                <div class="col-6 ">
-                                    <div class="stat-item">
-                                        <div class="avatar">
-                                            <div class="avatar-initial">
-                                                <i class='ti ti-truck-delivery'></i>
-                                            </div>
-                                        </div>
-                                        <h5>{{ auth()->user()->tasks()->where('status', '!=', 'completed')->where('status', '!=', 'canceled')->count() }}
-                                        </h5>
-                                        <span>Running Tasks</span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        @endif
 
-                        <h5 class="pb-4 border-bottom mb-4 px-4">Details</h5>
-                        <div class="info-container px-4">
-                            <ul class="list-unstyled mb-6">
-                                <li class="mb-3">
-                                    <span class="h6 text-muted">Phone:</span><br>
-                                    <span class="fw-semibold">{{ auth()->user()->phone }}</span>
-                                </li>
-                                <li class="mb-3">
-                                    <span class="h6 text-muted">Email:</span><br>
-                                    <span class="fw-semibold">{{ auth()->user()->email }}</span>
-                                </li>
-                                <li class="mb-3">
-                                    <span class="h6 text-muted">Address:</span><br>
-                                    <span class="fw-semibold">{{ auth()->user()->address ?? 'Not specified' }}</span>
-                                </li>
-                                <li class="mb-3">
-                                    <span class="h6 text-muted">Company:</span><br>
-                                    <span class="fw-semibold">{{ auth()->user()->company_name ?? 'Not specified' }}</span>
-                                </li>
-                                <li class="mb-3">
-                                    <span class="h6 text-muted">Status:</span><br>
-                                    <span class="badge bg-success">{{ ucfirst(auth()->user()->status) }}</span>
-                                </li>
-                                <li class="mb-3">
-                                    @if (auth()->user()->role)
-                                        <span class="h6 text-muted">Role:</span><br>
-                                        <span class="fw-semibold">{{ ucfirst(auth()->user()->role) }}</span>
-                                    @endif
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <!-- /Enhanced User Card -->
-            </div>
-            <!--/ Enhanced User Sidebar -->
-
-            <!-- Enhanced Tasks Section -->
-            <div class="col-xl-9 col-lg-8">
-                @if (auth()->user()->is_customs_clearance_agent)
-                    <div class="card mb-4 shadow-sm border-0 bg-white">
-                        <div class="card-body position-relative p-4">
-                            <h4>
-                                <i class="ti ti-clipboard-check"></i>
-                                {{ __('Clearance Tasks') }}
-                            </h4>
-
-                            <p class="text-muted mb-4 fs-6">
-                                {{ __('There are') }} <strong>{{ $clearance }}</strong>
-                                {{ __('customs clearance tasks available. You can view them and submit your offer.') }}
-                            </p>
-
-                            <a href="{{ route('customer.customs-clearances.ads') }}"
-                                class="btn btn-primary btn-lg px-4 py-2 d-inline-flex align-items-center">
-                                <i class="ti ti-clipboard-check me-2 fs-5"></i>
-                                {{ __('View Customs Clearance Tasks Now') }}
-                            </a>
-
-                            <div class="position-absolute top-0 end-0 m-3">
-                                <span class="badge bg-success fs-6 px-3 py-2 rounded-pill shadow-sm">
-                                    {{ $clearance }} {{ __('new customs clearance available') }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Section Toggle Buttons -->
-                <div class="section-toggles">
-                    <button class="toggle-button" id="toggle-tasks" data-target="tasks-section">
-                        <i class="ti ti-truck-delivery icon"></i>
-                        <span>My Tasks</span>
-                        <span class="count-badge" id="tasks-count">0</span>
-                    </button>
-                    <!-- Future toggle buttons can be added here -->
-                </div>
-
-                <div class="tasks-section fade-in hidden" id="tasks-section">
-
-                    <!-- Enhanced Tasks Header -->
+                        <div class="tasks-section fade-in mt-4" id="tasks-section">                    <!-- Enhanced Tasks Header -->
                     <div class="tasks-header">
                         <div class="d-flex justify-content-between align-items-center flex-wrap">
                             <h4>
@@ -906,10 +872,61 @@
                         <div id="pagination-container"></div>
                     </div>
                 </div>
+                    </div> <!-- End Tasks Tab Pane -->
+
+                    <!-- Map Tab Pane -->
+                    <div class="tab-pane fade" id="map-tab-pane" role="tabpanel" aria-labelledby="map-tab" tabindex="0">
+                        <div class="card shadow-sm border-0 bg-white overflow-hidden" style="border-radius: 15px;">
+                            <div class="position-relative w-100" style="height: 65vh; min-height: 400px;">
+                                <!-- Map Container -->
+                                <div id="active-tasks-map" class="w-100 h-100"></div>
+
+                                <!-- Floating Stats Card (Bottom Left) -->
+                                <div class="position-absolute" style="bottom: 20px; left: 20px; z-index: 1000; width: 220px;">
+                                    <div class="card shadow-lg border-0 rounded-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="ti ti-chart-bar text-danger fs-5 me-2"></i>
+                                                <h6 class="m-0 fw-bold" style="color: #333; font-size: 14px;">{{ __('Task Statistics') }}</h6>
+                                            </div>
+                                            <div class="d-flex flex-column gap-2">
+                                                <!-- Running Tasks -->
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="rounded p-1 me-2" style="background: rgba(33, 150, 243, 0.1);"><i class="ti ti-truck-delivery fs-6" style="color: #2196F3;"></i></div>
+                                                        <span class="text-muted" style="font-size: 12px; font-weight: 600;">{{ __('Running') }}</span>
+                                                    </div>
+                                                    <span class="badge rounded-pill" style="background-color: #2196F3; font-size: 11px;">{{ auth()->user()->tasks()->where('status', '!=', 'completed')->where('status', '!=', 'canceled')->count() }}</span>
+                                                </div>
+                                                <!-- Completed Tasks -->
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="rounded p-1 me-2" style="background: rgba(156, 39, 176, 0.1);"><i class="ti ti-checkbox fs-6" style="color: #9C27B0;"></i></div>
+                                                        <span class="text-muted" style="font-size: 12px; font-weight: 600;">{{ __('Completed') }}</span>
+                                                    </div>
+                                                    <span class="badge rounded-pill" style="background-color: #9C27B0; font-size: 11px;">{{ auth()->user()->tasks()->where('status', 'completed')->count() }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Floating Add Task Button (Bottom Right) -->
+                                <div class="position-absolute" style="bottom: 20px; right: 20px; z-index: 1000;">
+                                    <button class="btn btn-primary rounded-pill shadow-lg px-4 py-2 d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#taskTypeModal" style="background-color: #696cff; border: none;">
+                                        <i class="ti ti-bolt fs-5 text-white"></i> 
+                                        <span class="fw-bold text-white">{{ __('New Fast Task') }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Map Tab Pane -->
+                </div> <!-- End Tabs Content -->
             </div>
         </div>
     </div>
 
     @include('customers.tasks.from-modal')
+    @include('customers.tasks.payment-modal')
 
 @endsection

@@ -248,8 +248,10 @@
             
             <!-- App Cancel Button -->
             @if(isset($isApp) && $isApp)
-            <div style="text-align: center; margin-top: 20px;">
-                <button type="button" onclick="window.close();" style="background:none; border:none; color:var(--text-muted); font-size:0.85rem; text-decoration:underline; cursor:pointer;">{{ __('Cancel Payment') }}</button>
+            <div style="text-align: center; margin-top: 20px; padding: 15px; border-radius: 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
+                <p style="color: var(--warning); font-size: 0.85rem; margin-bottom: 0;">
+                    {{ __('To cancel the payment, please press the Close (X) button at the top of the screen to return to the app.') }}
+                </p>
             </div>
             @endif
         </div>

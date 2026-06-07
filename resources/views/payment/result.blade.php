@@ -245,21 +245,33 @@
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-primary">{{ __('Back to Home') }}</a>
             @else
-                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
+                <div style="text-align: center; margin-top: 10px; padding: 15px; border-radius: 12px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2);">
+                    <p style="color: var(--success); font-size: 0.9rem; font-weight: bold; line-height: 1.5; margin-bottom: 0;">
+                        {{ __('Payment successful! You may now close this screen using the (X) button at the top to return to the app.') }}
+                    </p>
+                </div>
             @endif
         @elseif($status === 'pending')
             <button class="btn btn-primary" onclick="location.reload()">{{ __('Refresh Status') }}</button>
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
             @else
-                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
+                <div style="text-align: center; margin-top: 15px;">
+                    <p style="color: var(--warning); font-size: 0.85rem; margin-bottom: 0;">
+                        {{ __('Please wait, or press (X) at the top to return.') }}
+                    </p>
+                </div>
             @endif
         @elseif($status === 'expired' || $status === 'failed')
             <a href="javascript:history.back()" class="btn btn-primary">{{ __('Try Again') }}</a>
             @if(!isset($isApp) || !$isApp)
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
             @else
-                <button onclick="window.close();" class="btn btn-ghost">{{ __('Close') }}</button>
+                <div style="text-align: center; margin-top: 15px;">
+                    <p style="color: var(--danger); font-size: 0.85rem; margin-bottom: 0;">
+                        {{ __('Payment failed or canceled. Press (X) at the top to return to the app.') }}
+                    </p>
+                </div>
             @endif
         @endif
     </div>

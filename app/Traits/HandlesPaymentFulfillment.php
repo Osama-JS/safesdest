@@ -52,6 +52,10 @@ trait HandlesPaymentFulfillment
                 'payment_method' => $payment->payment_method,
                 'payment_id'     => $payment->id,
             ]);
+            
+            // التسوية للمستثمر إذا كانت المهمة ممولة
+            app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($task);
+
             Log::info("Task #{$task->id} marked as paid via payment #{$payment->id}");
         }
     }

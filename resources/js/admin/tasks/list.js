@@ -138,7 +138,11 @@ $(function () {
           orderable: false,
           responsivePriority: 1,
           render: function (data, type, full, meta) {
-            return `<span>${full.id}</span>`;
+            let html = `<span>${full.id}</span>`;
+            if (full.investor_name) {
+              html += `<br><small class="text-info fw-bold">ممولة من: ${full.investor_name}</small>`;
+            }
+            return html;
           }
         },
         {

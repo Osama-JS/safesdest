@@ -100,7 +100,7 @@ class TasksController extends Controller
 
     public function getData(Request $request)
     {
-        $query = Task::with('points', 'customer', 'user', 'driver', 'driver.team', 'vehicle_size.type.vehicle');
+        $query = Task::with('points', 'customer', 'user', 'driver', 'driver.team', 'vehicle_size.type.vehicle', 'investor');
 
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -183,6 +183,7 @@ class TasksController extends Controller
                   'type' => $task->vehicle_size->type->name ?? '-',
                   'size' => $task->vehicle_size->name ?? '-',
               ] : null,
+              'investor_name' => $task->investor ? $task->investor->name : null,
             ];
 
             if ($driver) {
@@ -2091,7 +2092,7 @@ class TasksController extends Controller
         $search    = $request->input('search.value'); // البحث من DataTables
         $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
-        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle']);
+        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle', 'investor']);
 
         // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
         try {
@@ -2178,6 +2179,7 @@ class TasksController extends Controller
                   'customer' => $task->customer->name ?? '-',
                   default => '-',
               },
+              'investor_name' => $task->investor ? $task->investor->name : null,
               'address'    => ($task->pickup->address ?? '-') .' - To - '. ($task->delivery->address ?? '-') ,
               'pickup_address' => $task->pickup->address ?? '-',
               'delivery_address' => $task->delivery->address ?? '-',
@@ -2413,6 +2415,9 @@ class TasksController extends Controller
                 $data->update([
                   'payment_status' => 'completed'
                 ]);
+                
+                // التسوية للمستثمر إذا كانت المهمة ممولة
+                app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($data);
 
                 DB::commit();
                 return response()->json([

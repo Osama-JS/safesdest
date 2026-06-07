@@ -148,13 +148,6 @@ class PaymentController extends Controller
                 'expires_at'            => Carbon::now()->addHours(2),
             ]);
 
-            // Update subject payment_status → pending
-            $subject?->update([
-                'payment_method' => $method,
-                'payment_status' => 'pending',
-                'payment_id'     => $payment->id,
-            ]);
-
             DB::commit();
 
             $paymentUrl = route('payment.page', ['token' => $token]);
@@ -226,8 +219,9 @@ class PaymentController extends Controller
      */
     public function handleCallback(Request $request)
     {
-        $checkoutId = $request->query('id');
-        $token      = $request->query('token');
+        $checkoutId   = $request->query('id');
+        $token        = $request->query('token');
+        $resourcePath = $request->query('resourcePath');
 
         $payment = Payments::where('payment_token', $token)->first()
                 ?? Payments::where('transaction_reference', $checkoutId)->first();
@@ -241,7 +235,15 @@ class PaymentController extends Controller
 
         // Query status from HyperPay
         $brand  = $this->methodToBrand($payment->payment_method);
-        $result = $this->hyperpay->getPaymentStatus($payment->transaction_reference, $brand);
+        $result = null;
+
+        if ($resourcePath) {
+            $result = $this->hyperpay->getPaymentStatusByResourcePath($resourcePath, $brand);
+        }
+
+        if (empty($result) && $checkoutId) {
+            $result = $this->hyperpay->getPaymentStatus($payment->transaction_reference, $brand);
+        }
 
         $code        = data_get($result, 'result.code', '');
         $description = data_get($result, 'result.description', '');
@@ -533,6 +535,11 @@ class PaymentController extends Controller
             'payment_id'     => $payment->id,
             'payment_paid'   => 'all',
         ]);
+        
+        // التسوية للمستثمر إذا كانت المهمة ممولة
+        if ($subject instanceof Task) {
+            app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($subject);
+        }
 
         return [
             'success' => __('Payment completed successfully via wallet'),

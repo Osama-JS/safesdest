@@ -185,6 +185,11 @@
                                         <span class="status-badge bg-white text-info fw-bold">
                                             {{ ucfirst($task->payment_status ?? 'pending') }}
                                         </span>
+                                        @if(in_array(strtolower($task->payment_status ?? 'unpaid'), ['pending', 'unpaid', '']) && $task->total_price > 0)
+                                            <button onclick="openPaymentModal({{ $task->id }}, {{ $task->total_price }})" class="btn btn-light btn-sm mt-2 text-info fw-bold rounded-pill px-3 shadow-sm border">
+                                                <i class="ti ti-credit-card me-1"></i> {{ __('Pay Now') }}
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -598,4 +603,5 @@
                 });
         }
     </script>
+    @include('customers.tasks.payment-modal')
 @endsection

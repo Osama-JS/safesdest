@@ -890,6 +890,10 @@ Route::middleware(['auth:web', 'investor'])
         Route::post('personal-wallet/reinvest-profits', [App\Http\Controllers\investor\InvestorWalletController::class, 'reinvestProfits'])
             ->name('personal-wallet.reinvest');
 
+        // Delete duplicate commission
+        Route::delete('personal-wallet/transaction/{id}/delete', [App\Http\Controllers\investor\InvestorWalletController::class, 'deleteCommissionTransaction'])
+            ->name('personal-wallet.transaction.delete');
+
         // دفع المهام (مستثمر بالمهام فقط)
         Route::get('task-payment', [App\Http\Controllers\investor\InvestorTaskPaymentController::class, 'index'])
             ->name('task-payment');

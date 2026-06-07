@@ -31,15 +31,7 @@
                 <i class="ti ti-calculator me-1"></i> {{ __('Calculate Commissions Now') }}
             </button>
         @endif
-        @if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty())
-            <button type="button" class="btn btn-danger shadow-sm" data-bs-toggle="modal" data-bs-target="#checkErrorsModal">
-                <i class="ti ti-alert-triangle me-1"></i> {{ __('Check for Errors') }}
-            </button>
-        @else
-            <button type="button" class="btn btn-outline-danger shadow-sm" onclick="Swal.fire('{{ __('No Errors') }}', '{{ __('No duplicate commissions found.') }}', 'success')">
-                <i class="ti ti-shield-check me-1"></i> {{ __('Check for Errors') }}
-            </button>
-        @endif
+
         </div>
     </div>
 
@@ -396,68 +388,7 @@
         </div>
     </div>
     @endif
-    {{-- Check for errors modal --}}
-    @if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty())
-    <div class="modal fade" id="checkErrorsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header border-bottom">
-                    <h5 class="modal-title d-flex align-items-center text-danger">
-                        <i class="ti ti-alert-triangle me-2 ti-md"></i>
-                        {{ __('Duplicate Commissions Found') }}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning mb-4">
-                        <i class="ti ti-info-circle me-2"></i>
-                        {{ __('The following tasks have multiple commissions recorded in your wallet. Please review and delete the duplicates. You can only keep one commission per task.') }}
-                    </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>{{ __('Task #') }}</th>
-                                    <th>{{ __('Amount') }}</th>
-                                    <th>{{ __('Date') }}</th>
-                                    <th>{{ __('Action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($duplicateCommissions as $taskId => $transactionsGroup)
-                                    @foreach($transactionsGroup as $index => $transaction)
-                                        <tr>
-                                            @if($index === 0)
-                                                <td rowspan="{{ $transactionsGroup->count() }}" class="align-middle text-center fw-bold text-primary">
-                                                    #{{ $taskId }}
-                                                </td>
-                                            @endif
-                                            <td>{{ number_format($transaction->amount, 2) }} {{ __('SAR') }}</td>
-                                            <td>{{ $transaction->created_at->format('Y-m-d H:i') }}</td>
-                                            <td>
-                                                <form action="{{ route('personal-wallet.transaction.delete', $transaction->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this duplicate commission?') }}');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger">
-                                                        <i class="ti ti-trash"></i> {{ __('Delete') }}
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
 
 @endsection
 

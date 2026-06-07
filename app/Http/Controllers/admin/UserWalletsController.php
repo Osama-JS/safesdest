@@ -59,6 +59,26 @@ class UserWalletsController extends Controller
             $investmentWalletBalance = $investmentWallet?->balance ?? 0;
             $activeContract = $isInvestor ? $user->activeInvestmentContract : null;
 
+            $duplicateCommissions = collect();
+            if ($wallet && $isInvestor) {
+                $duplicateTaskIds = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+                    ->where('transaction_type', 'credit')
+                    ->whereNotNull('task_id')
+                    ->select('task_id')
+                    ->groupBy('task_id')
+                    ->havingRaw('COUNT(id) > 1')
+                    ->pluck('task_id');
+
+                if ($duplicateTaskIds->isNotEmpty()) {
+                    $duplicateCommissions = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+                        ->where('transaction_type', 'credit')
+                        ->whereIn('task_id', $duplicateTaskIds)
+                        ->with('task')
+                        ->get()
+                        ->groupBy('task_id');
+                }
+            }
+
             return view('admin.user-wallets.show', [
                 'user' => $user,
                 'wallet' => $wallet,
@@ -72,6 +92,7 @@ class UserWalletsController extends Controller
                 'investmentWalletBalance' => $investmentWalletBalance,
                 'hasInvestmentWallet' => (bool) $investmentWallet,
                 'activeContract' => $activeContract,
+                'duplicateCommissions' => $duplicateCommissions,
             ]);
 
         } catch (Exception $e) {
@@ -556,6 +577,32 @@ class UserWalletsController extends Controller
             }
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('Transaction deleted')]);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+
+    public function destroyDuplicateCommission(Request $req)
+    {
+        DB::beginTransaction();
+        try {
+            $find = UserWalletTransaction::find($req->id);
+            if (!$find || $find->transaction_type !== 'credit' || !$find->task_id) {
+                return response()->json([
+                  'status' => 2,
+                  'error'  => __('Invalid transaction or not a commission.')
+                ]);
+            }
+            
+            $done = $find->delete();
+
+            if (!$done) {
+                DB::rollBack();
+                return response()->json(['status' => 2, 'error' => 'Error deleting transaction']);
+            }
+            DB::commit();
+            return response()->json(['status' => 1, 'success' => __('Duplicate commission deleted successfully.')]);
         } catch (Exception $ex) {
             DB::rollBack();
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);

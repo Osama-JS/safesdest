@@ -417,6 +417,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/user-wallets/transaction', [UserWalletsController::class, 'addTransaction'])->name('admin.user-wallets.addTransaction');
                 Route::get('/user-wallets/transaction/edit/{id}', [UserWalletsController::class, 'editTransaction'])->name('admin.user-wallets.editTransaction');
                 Route::delete('/user-wallets/transaction/delete/{id}', [UserWalletsController::class, 'destroyTransaction'])->name('admin.user-wallets.destroyTransaction');
+                Route::delete('/user-wallets/duplicate-commission/delete/{id}', [UserWalletsController::class, 'destroyDuplicateCommission'])->name('admin.user-wallets.destroyDuplicateCommission');
 
                 Route::post('/user-wallets/withdrawal', [UserWalletsController::class, 'processWithdrawal'])->name('admin.user-wallets.withdrawal');
                 Route::get('/user-wallets/{userId}/stats', [UserWalletsController::class, 'getWalletStats'])->name('admin.user-wallets.stats');

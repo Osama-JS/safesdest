@@ -61,29 +61,8 @@ class InvestorWalletController extends Controller
                 ->latest()->paginate(20)
             : UserWalletTransaction::where('id', 0)->paginate(20);
 
-        // Fetch duplicate task commissions for "Check for Errors" feature
-        $duplicateCommissions = collect();
-        if ($personalWallet) {
-            $duplicateTaskIds = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
-                ->where('transaction_type', 'credit')
-                ->whereNotNull('task_id')
-                ->select('task_id')
-                ->groupBy('task_id')
-                ->havingRaw('COUNT(id) > 1')
-                ->pluck('task_id');
-
-            if ($duplicateTaskIds->isNotEmpty()) {
-                $duplicateCommissions = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
-                    ->where('transaction_type', 'credit')
-                    ->whereIn('task_id', $duplicateTaskIds)
-                    ->with('task')
-                    ->get()
-                    ->groupBy('task_id');
-            }
-        }
-
         return view('investor.personal-wallet.index', compact(
-            'investor', 'personalWallet', 'transactions', 'contract', 'duplicateCommissions'
+            'investor', 'personalWallet', 'transactions', 'contract'
         ));
     }
 

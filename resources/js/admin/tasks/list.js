@@ -397,7 +397,7 @@ $(function () {
           type: 'column',
           renderer: function (api, rowIdx, columns) {
             var data = $.map(columns, function (col) {
-              return col.title
+              return col.hidden && col.title
                 ? `<tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
                       <td>${col.title}:</td>
                       <td>${col.data}</td>

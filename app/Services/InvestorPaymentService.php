@@ -126,7 +126,7 @@ class InvestorPaymentService
                 'source_type'        => 'capital_return',
                 'amount'             => $taskPrice,
                 'description'        => __('Return of invested capital for Task') . " #{$task->id}",
-                'performed_by'       => auth()->id() ?? clone $task->investor_id,
+                'performed_by'       => auth()->id() ?? $task->investor_id,
                 'balance_after'      => $balanceAfterCredit,
             ]);
         });

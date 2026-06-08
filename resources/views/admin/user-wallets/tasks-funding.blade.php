@@ -81,7 +81,7 @@
     {{-- عرض المهام على شكل بطاقات رحلات --}}
     <div class="row g-4">
       @forelse($tasks as $task)
-        <div class="col-md-6 col-xl-4">
+        <div class="col-md-6 col-xl-4 task-card-wrapper" data-task-id="{{ $task->id }}">
           <div class="card h-100 card-action shadow-sm border-0">
             <div class="card-header pb-2">
               <div class="d-flex justify-content-between align-items-start">
@@ -94,10 +94,14 @@
                     <small class="text-muted">{{ $task->created_at->format('M d, Y') }}</small>
                   </div>
                 </div>
-                <div class="dropdown">
-                  <span class="badge bg-label-primary rounded-pill">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
-                  <span class="badge bg-label-info rounded-pill">{{ __('Status label') }}: {{ $task->status }}</span>
-                  <span class="badge bg-label-success rounded-pill">{{ __('Payment label') }}: {{ $task->payment_status }}</span>
+                <div class="dropdown d-flex align-items-center">
+                  <span class="badge bg-label-primary rounded-pill me-1">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
+                  <span class="badge bg-label-info rounded-pill me-1">{{ __('Status label') }}: {{ $task->status }}</span>
+                  <span class="badge bg-label-success rounded-pill me-1">{{ __('Payment label') }}: {{ $task->payment_status }}</span>
+                  
+                  <button type="button" class="btn btn-sm btn-icon btn-text-secondary ms-1 hide-task-btn" data-task-id="{{ $task->id }}" title="إخفاء المهمة عني" data-bs-toggle="tooltip">
+                    <i class="ti ti-x text-muted"></i>
+                  </button>
                 </div>
               </div>
 
@@ -270,6 +274,56 @@
         }
       });
     }
+
+    // إخفاء المهام بناءً على LocalStorage
+    const investorId = {{ $investor->id }};
+    const storageKey = `hidden_funding_tasks_${investorId}`;
+    
+    // جلب المهام المخفية من الذاكرة
+    let hiddenTasks = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+    // إخفاء المهام فور تحميل الصفحة
+    document.querySelectorAll('.task-card-wrapper').forEach(card => {
+      const taskId = card.getAttribute('data-task-id');
+      if (hiddenTasks.includes(taskId)) {
+        card.style.display = 'none';
+        card.classList.add('d-none'); // For extra safety against layout issues
+      }
+    });
+
+    // معالجة ضغطة زر الإخفاء (X)
+    document.querySelectorAll('.hide-task-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation(); // لمنع تفعيل أي أحداث أخرى في البطاقة
+        
+        const taskId = this.getAttribute('data-task-id');
+        const cardWrapper = document.querySelector(`.task-card-wrapper[data-task-id="${taskId}"]`);
+        
+        if (!hiddenTasks.includes(taskId)) {
+          hiddenTasks.push(taskId);
+          localStorage.setItem(storageKey, JSON.stringify(hiddenTasks));
+        }
+
+        // إخفاء البطاقة بتأثير حركي بسيط
+        if (cardWrapper) {
+          cardWrapper.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+          cardWrapper.style.opacity = "0";
+          cardWrapper.style.transform = "scale(0.9)";
+          setTimeout(() => {
+            cardWrapper.style.display = 'none';
+            cardWrapper.classList.add('d-none');
+          }, 300);
+        }
+      });
+    });
+
+    // تفعيل الـ Tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
   });
 </script>
 @endsection

@@ -208,7 +208,13 @@
                 <svg width="44" height="44" viewBox="0 0 24 24" fill="#ef4444"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
             </div>
             <h1>{{ __('Payment Failed') }}</h1>
-            <p class="subtitle">{{ session('error') ?? __('An error occurred during payment. Please try again.') }}</p>
+            @php
+                $failMessage = session('error');
+                if (!$failMessage && isset($payment) && $payment->gateway_code) {
+                    $failMessage = \App\Services\HyperpayService::codeToMessage($payment->gateway_code);
+                }
+            @endphp
+            <p class="subtitle">{{ $failMessage ?? __('An error occurred during payment. Please try again.') }}</p>
         @endif
     </div>
 
@@ -231,6 +237,12 @@
                 {{ ucfirst($status) }}
             </span>
         </div>
+        @if($status === 'failed' && $payment->gateway_code)
+        <div class="detail-row">
+            <span class="label">{{ __('Reason') }}</span>
+            <span class="value" style="color:#ef4444; font-size:0.85rem; text-align:right;">{{ \App\Services\HyperpayService::codeToMessage($payment->gateway_code) }}</span>
+        </div>
+        @endif
         @if($payment->completed_at)
         <div class="detail-row">
             <span class="label">{{ __('Date') }}</span>
@@ -252,8 +264,8 @@
                 </div>
             @endif
         @elseif($status === 'pending')
-            <button class="btn btn-primary" onclick="location.reload()">{{ __('Refresh Status') }}</button>
             @if(!isset($isApp) || !$isApp)
+                <button class="btn btn-primary" onclick="location.reload()">{{ __('Refresh Status') }}</button>
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
             @else
                 <div style="text-align: center; margin-top: 15px;">
@@ -263,8 +275,8 @@
                 </div>
             @endif
         @elseif($status === 'expired' || $status === 'failed')
-            <a href="javascript:history.back()" class="btn btn-primary">{{ __('Try Again') }}</a>
             @if(!isset($isApp) || !$isApp)
+                <a href="javascript:history.back()" class="btn btn-primary">{{ __('Try Again') }}</a>
                 <a href="/" class="btn btn-ghost">{{ __('Back to Home') }}</a>
             @else
                 <div style="text-align: center; margin-top: 15px;">

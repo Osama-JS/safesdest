@@ -183,6 +183,28 @@ class HyperpayService
         return 'failed';
     }
 
+    /**
+     * Map a HyperPay code to a user-friendly translated message.
+     */
+    public static function codeToMessage(string $code, string $defaultMsg = ''): string
+    {
+        // Common HyperPay error codes
+        return match (true) {
+            str_starts_with($code, '800.100.162') => __('Insufficient funds or limit exceeded.'),
+            str_starts_with($code, '800.100.151') => __('Invalid card details.'),
+            str_starts_with($code, '800.110.100') => __('Invalid CVV code.'),
+            str_starts_with($code, '800.100.168') => __('Restricted card.'),
+            str_starts_with($code, '800.100.152') => __('Transaction declined by your bank.'),
+            str_starts_with($code, '800.400.200') => __('Transaction canceled by the user.'),
+            str_starts_with($code, '800.120.100') => __('3D Secure authentication failed.'),
+            str_starts_with($code, '800.400.100') => __('Payment timeout.'),
+            str_starts_with($code, '000.400')     => __('Transaction is under review.'),
+            self::isSuccessCode($code)            => __('Payment completed successfully.'),
+            self::isPendingCode($code)            => __('Payment is pending verification.'),
+            default                               => $defaultMsg ?: __('Payment failed or was declined by the bank.'),
+        };
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Private helpers
     // ─────────────────────────────────────────────────────────────────────────

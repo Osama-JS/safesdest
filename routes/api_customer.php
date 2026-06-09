@@ -162,6 +162,12 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/wallet/transactions', [CustomerWalletController::class, 'getTransactions'])
     ->name('api.customer.wallet-transactions');
 
+    Route::post('/wallet/recharge/initiate', [CustomerWalletController::class, 'initiateRecharge'])
+    ->name('api.customer.wallet-recharge-initiate');
+    
+    Route::get('/wallet/recharge/{id}/status', [CustomerWalletController::class, 'checkRechargeStatus'])
+    ->name('api.customer.wallet-recharge-status');
+
     // // Dashboard routes
     // Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
     //     ->name('api.customer.dashboard');

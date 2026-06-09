@@ -572,6 +572,13 @@ class CustomerTaskController extends Controller
                 ->where('id', $id)
                 ->firstOrFail();
 
+            if (!in_array(strtolower($task->payment_status), ['completed', 'paid'])) {
+                return response()->json([
+                    'status' => 403,
+                    'message' => 'Invoice cannot be downloaded for unpaid tasks.'
+                ], 403);
+            }
+
             $invoice_number = 'INV-' . str_pad($task->id, 6, '0', STR_PAD_LEFT);
             $file_name = "{$invoice_number}_{$task->customer->name}";
 

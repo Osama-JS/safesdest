@@ -192,6 +192,8 @@ class CustomerWalletController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
     public function initiateRecharge(Request $request, \App\Services\HyperpayService $hyperpay)
     {
         try {

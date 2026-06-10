@@ -80,7 +80,9 @@ $(function () {
               attachmentLink =
                 '<div class="mt-1"><a href="javascript:;" class="text-primary fw-bold show-attachment" data-file="' +
                 attachmentUrl +
-                '"><i class="ti ti-link ti-xs me-1"></i>' + __('View attachment') + '</a></div>';
+                '"><i class="ti ti-link ti-xs me-1"></i>' +
+                __('View attachment') +
+                '</a></div>';
             }
             return (
               '<div class="text-wrap" style="min-width: 200px;">' +
@@ -117,10 +119,12 @@ $(function () {
             actions +=
               '<a href="javascript:;" class="text-body print-record me-2" data-id="' +
               data +
-              '" title="' + __('Print') + '"><i class="ti ti-printer ti-sm"></i></a>';
+              '" title="' +
+              __('Print') +
+              '"><i class="ti ti-printer ti-sm"></i></a>';
 
             // 1. Refunds (Investment Recovery) get the secure delete button exclusively
-            if (full['source_type'] === 'refund') {
+            if (full['source_type'] === 'capital_return') {
               var lockTitle = __('Investment recovery locked');
               actions += '<i class="ti ti-lock text-muted me-2" title="' + lockTitle + '"></i>';
               actions +=
@@ -133,12 +137,16 @@ $(function () {
               actions +=
                 '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
                 data +
-                '" title="' + __('Edit') + '"><i class="ti ti-edit ti-sm"></i></a>';
+                '" title="' +
+                __('Edit') +
+                '"><i class="ti ti-edit ti-sm"></i></a>';
               actions +=
                 '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
                 data +
-                '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm"></i></a>';
-            } 
+                '" title="' +
+                __('Delete') +
+                '"><i class="ti ti-trash ti-sm"></i></a>';
+            }
             // 3. Task Funding (debit or linked to task) gets locked, no buttons
             else {
               var lockTitle =
@@ -159,7 +167,9 @@ $(function () {
                 data +
                 '" data-amount="' +
                 full['amount'] +
-                '" title="' + __('Convert to Capital Return') + '"><i class="ti ti-arrow-forward ti-sm"></i></a>';
+                '" title="' +
+                __('Convert to Capital Return') +
+                '"><i class="ti ti-arrow-forward ti-sm"></i></a>';
             }
 
             actions += '</div>';
@@ -325,12 +335,16 @@ $(function () {
       $('#modalFileContent').html(
         '<div class="p-4 text-center">' +
           '<i class="ti ti-file-description ti-lg mb-3 d-block text-secondary"></i>' +
-          '<p class="mb-3"><strong>' + __('File') + ':</strong> ' +
+          '<p class="mb-3"><strong>' +
+          __('File') +
+          ':</strong> ' +
           fileName +
           '</p>' +
           '<a href="' +
           fileUrl +
-          '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> ' + __('Download or open file') + '</a>' +
+          '" target="_blank" class="btn btn-primary"><i class="ti ti-download me-1"></i> ' +
+          __('Download or open file') +
+          '</a>' +
           '</div>'
       );
     }
@@ -511,7 +525,9 @@ $(function () {
             title: 'تم الحذف!',
             text: data.success,
             customClass: { confirmButton: 'btn btn-success' }
-          }).then(() => { location.reload(); });
+          }).then(() => {
+            location.reload();
+          });
         } else {
           Swal.fire({
             icon: 'error',

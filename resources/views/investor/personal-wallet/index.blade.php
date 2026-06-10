@@ -2,6 +2,14 @@
 
 @section('title', __('Commission Wallet - Profits'))
 
+@section('vendor-style')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+@endsection
+
+@section('vendor-script')
+    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js'])
+@endsection
+
 @section('content')
 <div class="container-xxl flex-grow-1 container-p-y">
 
@@ -190,13 +198,11 @@
                         <option value="debit"  {{ request('type') === 'debit'  ? 'selected' : '' }}>{{ __('Withdrawal / Reinvest') }}</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">{{ __('From date') }}</label>
-                    <input type="date" name="from" class="form-control" value="{{ request('from') }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">{{ __('To date') }}</label>
-                    <input type="date" name="to" class="form-control" value="{{ request('to') }}">
+                <div class="col-md-4">
+                    <label class="form-label">{{ __('Date Range') }}</label>
+                    <input type="text" id="dateRange" class="form-control" placeholder="{{ __('Select Date Range') }}">
+                    <input type="hidden" name="from" value="{{ request('from') }}">
+                    <input type="hidden" name="to" value="{{ request('to') }}">
                 </div>
                 <div class="col-md-2 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-primary w-100"><i class="ti ti-filter me-1"></i>{{ __('Filter') }}</button>
@@ -429,4 +435,5 @@
         }
     });
 </script>
+@vite(['resources/js/investor/wallet.js'])
 @endsection

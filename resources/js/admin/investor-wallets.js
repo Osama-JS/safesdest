@@ -126,6 +126,14 @@ $(function () {
                   ? __('Funding transaction locked')
                   : __('Task linked transaction locked');
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+
+              // زر حذف التسوية - يظهر فقط إذا كانت معاملة debit مرتبطة بمهمة
+              if (full['transaction_type'] === 'debit' && full['task_id'] && full['task_id'] !== '-') {
+                actions +=
+                  ' <a href="javascript:;" class="text-danger delete-settlement ms-2" data-id="' +
+                  data +
+                  '" title="حذف معاملة التسوية"><i class="ti ti-trash-off ti-sm"></i></a>';
+              }
             }
 
             // Convert capital deposit to investment recovery
@@ -168,6 +176,19 @@ $(function () {
       },
       buttons: []
     });
+
+    // Fix: Prevent browser from autofilling the DataTable search input with user email
+    setTimeout(function () {
+      var searchInput = dt_transaction_table.closest('.dataTables_wrapper').find('input[type="search"]');
+      searchInput.attr('autocomplete', 'off');
+      searchInput.attr('name', 'dt-search-' + Math.random().toString(36).substr(2, 9));
+      // Clear only if value looks like an email (browser autofill artifact)
+      var val = searchInput.val();
+      if (val && val.indexOf('@') !== -1) {
+        searchInput.val('');
+        dt_transaction.search('').draw();
+      }
+    }, 100);
   }
 
   // Handle Form Submit
@@ -433,6 +454,68 @@ $(function () {
               });
             }
           }
+        });
+      }
+    });
+  });
+
+  // Delete Settlement Transaction (password protected)
+  $('.datatables-transactions tbody').on('click', '.delete-settlement', function () {
+    var id = $(this).data('id');
+    $('#deleteSettlementId').val(id);
+    $('#deleteSettlementPassword').val('');
+    $('#deleteSettlementModal').modal('show');
+  });
+
+  $('#confirmDeleteSettlement').on('click', function () {
+    var id = $('#deleteSettlementId').val();
+    var password = $('#deleteSettlementPassword').val().trim();
+    var button = $(this);
+
+    if (!password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'كلمة المرور مطلوبة',
+        text: 'يرجى إدخال كلمة المرور للمتابعة.',
+        customClass: { confirmButton: 'btn btn-warning' }
+      });
+      return;
+    }
+
+    button.prop('disabled', true);
+
+    $.ajax({
+      type: 'DELETE',
+      url: baseUrl + 'admin/investors/invest-wallet/transaction/delete-settlement/' + id,
+      data: { password: password },
+      headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+      success: function (data) {
+        button.prop('disabled', false);
+        $('#deleteSettlementModal').modal('hide');
+        if (data.status == 1) {
+          dt_transaction.draw();
+          Swal.fire({
+            icon: 'success',
+            title: 'تم الحذف!',
+            text: data.success,
+            customClass: { confirmButton: 'btn btn-success' }
+          }).then(() => { location.reload(); });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: data.error,
+            customClass: { confirmButton: 'btn btn-danger' }
+          });
+        }
+      },
+      error: function () {
+        button.prop('disabled', false);
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ في الاتصال بالخادم.',
+          customClass: { confirmButton: 'btn btn-danger' }
         });
       }
     });

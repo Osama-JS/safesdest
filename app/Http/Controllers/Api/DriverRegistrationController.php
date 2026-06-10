@@ -193,7 +193,7 @@ class DriverRegistrationController extends Controller
         Log::warning('Register driver (API) validation failed', ['errors' => $validator->errors()]);
         return response()->json([
           'success' => false,
-          'message' => 'Validation failed',
+          'message' => $validator->errors()->first(),
           'errors' => $validator->errors(),
         ], 422);
       }
@@ -452,19 +452,19 @@ class DriverRegistrationController extends Controller
 
           if ($field->required) {
             if (!$hasFile) {
-              $errors["additional_fields.{$fieldName}_file"] = ["The {$field->label} file is required."];
+              $errors["additional_fields.{$fieldName}_file"] = [__('The :label file is required.', ['label' => $field->label])];
             }
             if (empty($expiration)) {
-              $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} is required."];
+              $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label is required.', ['label' => $field->label])];
             }
           } else {
             if ($hasFile && empty($expiration)) {
-              $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} is required."];
+              $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label is required.', ['label' => $field->label])];
             }
           }
 
           if (!empty($expiration) && !strtotime($expiration)) {
-            $errors["additional_fields.{$expKey}"] = ["The expiration date for {$field->label} must be a valid date."];
+            $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label must be a valid date.', ['label' => $field->label])];
           }
           break;
 
@@ -479,14 +479,14 @@ class DriverRegistrationController extends Controller
 
           if ($field->required) {
             if (!$hasFile) {
-              $errors["additional_fields.{$fieldName}_file"] = ["The {$field->label} file is required."];
+              $errors["additional_fields.{$fieldName}_file"] = [__('The :label file is required.', ['label' => $field->label])];
             }
             if (empty($text)) {
-              $errors["additional_fields.{$textKey}"] = ["The text field for {$field->label} is required."];
+              $errors["additional_fields.{$textKey}"] = [__('The text field for :label is required.', ['label' => $field->label])];
             }
           } else {
             if ($hasFile && empty($text)) {
-              $errors["additional_fields.{$textKey}"] = ["The text field for {$field->label} is required."];
+              $errors["additional_fields.{$textKey}"] = [__('The text field for :label is required.', ['label' => $field->label])];
             }
           }
           break;
@@ -498,7 +498,7 @@ class DriverRegistrationController extends Controller
           $fileKey3 = "additional_fields_{$fieldName}";
           
           if ($field->required && !$request->hasFile($fileKey1) && !$request->hasFile($fileKey2) && !$request->hasFile($fileKey3)) {
-            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} file is required."];
+            $errors["additional_fields.{$fieldName}"] = [__('The :label file is required.', ['label' => $field->label])];
           }
           break;
 
@@ -506,7 +506,7 @@ class DriverRegistrationController extends Controller
           $fieldValue = $additionalFieldsData[$fieldName] ?? $request->input($fieldName);
 
           if ($field->required && (is_null($fieldValue) || $fieldValue === '')) {
-            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} field is required."];
+            $errors["additional_fields.{$fieldName}"] = [__('The :label field is required.', ['label' => $field->label])];
             continue 2;
           }
 
@@ -515,11 +515,11 @@ class DriverRegistrationController extends Controller
           }
 
           if ($field->type === 'number' && !is_numeric($fieldValue)) {
-            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a number."];
+            $errors["additional_fields.{$fieldName}"] = [__('The :label must be a number.', ['label' => $field->label])];
           } elseif ($field->type === 'url' && !filter_var($fieldValue, FILTER_VALIDATE_URL)) {
-            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid URL."];
+            $errors["additional_fields.{$fieldName}"] = [__('The :label must be a valid URL.', ['label' => $field->label])];
           } elseif ($field->type === 'date' && !strtotime($fieldValue)) {
-            $errors["additional_fields.{$fieldName}"] = ["The {$field->label} must be a valid date."];
+            $errors["additional_fields.{$fieldName}"] = [__('The :label must be a valid date.', ['label' => $field->label])];
           }
           break;
       }
@@ -527,9 +527,13 @@ class DriverRegistrationController extends Controller
 
     if (!empty($errors)) {
       Log::warning('Additional fields validation failed', ['errors' => $errors]);
+      
+      // Get the first error message to display in the app
+      $firstError = reset($errors)[0] ?? 'Validation failed for additional fields';
+      
       return response()->json([
         'success' => false,
-        'message' => 'Additional fields validation failed',
+        'message' => $firstError,
         'errors' => $errors
       ], 422);
     }

@@ -2,6 +2,14 @@
 
 @section('title', __('Task Funding') . ' - ' . $investor->name)
 
+@section('vendor-style')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+@endsection
+
+@section('vendor-script')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+@endsection
+
 @section('content')
   <div class="container-xxl flex-grow-1 container-p-y">
 
@@ -64,8 +72,8 @@
       </div>
       <div class="col-lg-4">
         <div class="card h-100 shadow-none border">
-          <div class="card-body py-2">
-            <form method="GET" class="d-flex align-items-center h-100">
+          <div class="card-body py-2 d-flex align-items-center">
+            <form method="GET" class="d-flex align-items-center h-100 flex-grow-1">
               <div class="input-group input-group-merge border-0">
                 <span class="input-group-text border-0 ps-0"><i class="ti ti-search text-muted"></i></span>
                 <input type="text" name="search" class="form-control border-0 shadow-none"
@@ -73,6 +81,9 @@
                 <button type="submit" class="btn btn-sm btn-primary rounded ms-2 px-3">{{ __('Search') }}</button>
               </div>
             </form>
+            <button class="btn btn-sm btn-icon btn-label-secondary ms-2 flex-shrink-0 d-none" id="restoreHiddenTasksBtn" title="{{ __('Restore Hidden Tasks') }}" data-bs-toggle="tooltip">
+              <i class="ti ti-reload"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -82,8 +93,11 @@
     <div class="row g-4">
       @forelse($tasks as $task)
         <div class="col-md-6 col-xl-4 task-card-wrapper" data-task-id="{{ $task->id }}">
-          <div class="card h-100 card-action shadow-sm border-0">
-            <div class="card-header pb-2">
+          <div class="card h-100 card-action shadow-sm border-0 position-relative">
+            <button type="button" class="btn btn-sm btn-icon btn-text-secondary hide-task-btn position-absolute top-0 end-0 m-2" data-task-id="{{ $task->id }}" title="{{ __('Hide Task') }}" data-bs-toggle="tooltip" style="z-index: 10;">
+                <i class="ti ti-x text-muted fs-5"></i>
+            </button>
+            <div class="card-header pb-2 mt-2">
               <div class="d-flex justify-content-between align-items-start">
                 <div class="d-flex align-items-center">
                   <div class="avatar avatar-sm me-2">
@@ -94,21 +108,17 @@
                     <small class="text-muted">{{ $task->created_at->format('M d, Y') }}</small>
                   </div>
                 </div>
-                <div class="dropdown d-flex align-items-center">
-                  <span class="badge bg-label-primary rounded-pill me-1">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
-                  <span class="badge bg-label-info rounded-pill me-1">{{ __('Status label') }}: {{ $task->status }}</span>
-                  <span class="badge bg-label-success rounded-pill me-1">{{ __('Payment label') }}: {{ $task->payment_status }}</span>
-                  
-                  <button type="button" class="btn btn-sm btn-icon btn-text-secondary ms-1 hide-task-btn" data-task-id="{{ $task->id }}" title="إخفاء المهمة عني" data-bs-toggle="tooltip">
-                    <i class="ti ti-x text-muted"></i>
-                  </button>
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <span class="badge bg-label-primary rounded-pill">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
+                  <span class="badge bg-label-info rounded-pill">{{ __('Status') }}: {{ __($task->status) }}</span>
+                  <span class="badge bg-label-success rounded-pill">{{ __('Payment Status') }}: {{ __($task->payment_status) }}</span>
                 </div>
               </div>
 
             </div>
             <div class="card-body">
               <div>
-                <span class="badge bg-label-info mb-3  rounded-pill">{{ __('Vehicle label') }}: {{ $task->vehicle_size?->VehicleName }}
+                <span class="badge bg-label-info mb-3  rounded-pill">{{ __('Vehicle Size') }}: {{ $task->vehicle_size?->VehicleName ?? __('Not specified') }}
                 </span>
               </div>
               {{-- مسار الرحلة --}}
@@ -281,6 +291,35 @@
     
     // جلب المهام المخفية من الذاكرة
     let hiddenTasks = JSON.parse(localStorage.getItem(storageKey)) || [];
+    
+    const restoreBtn = document.getElementById('restoreHiddenTasksBtn');
+    if (hiddenTasks.length > 0 && restoreBtn) {
+      restoreBtn.classList.remove('d-none');
+    }
+
+    if (restoreBtn) {
+      restoreBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        Swal.fire({
+          title: '{{ __("Are you sure?") }}',
+          text: '{{ __("Do you want to restore all hidden tasks?") }}',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: '{{ __("Yes, restore them") }}',
+          cancelButtonText: '{{ __("Cancel") }}',
+          customClass: {
+            confirmButton: 'btn btn-primary me-3',
+            cancelButton: 'btn btn-label-secondary'
+          },
+          buttonsStyling: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            localStorage.removeItem(storageKey);
+            window.location.reload();
+          }
+        });
+      });
+    }
 
     // إخفاء المهام فور تحميل الصفحة
     document.querySelectorAll('.task-card-wrapper').forEach(card => {
@@ -300,21 +339,38 @@
         const taskId = this.getAttribute('data-task-id');
         const cardWrapper = document.querySelector(`.task-card-wrapper[data-task-id="${taskId}"]`);
         
-        if (!hiddenTasks.includes(taskId)) {
-          hiddenTasks.push(taskId);
-          localStorage.setItem(storageKey, JSON.stringify(hiddenTasks));
-        }
+        Swal.fire({
+          title: '{{ __("Are you sure?") }}',
+          text: '{{ __("Do you really want to hide this task?") }}',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: '{{ __("Yes, hide it!") }}',
+          cancelButtonText: '{{ __("Cancel") }}',
+          customClass: {
+            confirmButton: 'btn btn-primary me-3',
+            cancelButton: 'btn btn-label-secondary'
+          },
+          buttonsStyling: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            if (!hiddenTasks.includes(taskId)) {
+              hiddenTasks.push(taskId);
+              localStorage.setItem(storageKey, JSON.stringify(hiddenTasks));
+              if (restoreBtn) restoreBtn.classList.remove('d-none');
+            }
 
-        // إخفاء البطاقة بتأثير حركي بسيط
-        if (cardWrapper) {
-          cardWrapper.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-          cardWrapper.style.opacity = "0";
-          cardWrapper.style.transform = "scale(0.9)";
-          setTimeout(() => {
-            cardWrapper.style.display = 'none';
-            cardWrapper.classList.add('d-none');
-          }, 300);
-        }
+            // إخفاء البطاقة بتأثير حركي بسيط
+            if (cardWrapper) {
+              cardWrapper.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+              cardWrapper.style.opacity = "0";
+              cardWrapper.style.transform = "scale(0.9)";
+              setTimeout(() => {
+                cardWrapper.style.display = 'none';
+                cardWrapper.classList.add('d-none');
+              }, 300);
+            }
+          }
+        });
       });
     });
 

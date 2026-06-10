@@ -26,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
         'api/hyperpay/webhook/payout',
         'api/signit/webhook',
       ]);
+      $middleware->encryptCookies(except: [
+        'direction',
+      ]);
       $middleware->web(LocaleMiddleware::class);
       $middleware->alias([
         'guard.strict' => \App\Http\Middleware\EnsureUserIsAuthenticatedWithCorrectGuard::class,

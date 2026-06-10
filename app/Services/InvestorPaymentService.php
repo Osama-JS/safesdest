@@ -161,7 +161,16 @@ class InvestorPaymentService
             throw new \Exception(__('No personal wallet for investor'));
         }
 
-        // جلب المهام المغلقة ضمن نطاق تاريخ العقد
+        // قفل لمنع الـ Race Condition وتنفيذ الدالة مرتين متتاليتين في نفس الوقت لنفس المستثمر
+        $lockKey = 'calc_general_commissions_investor_' . $investor->id;
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 15); // القفل يمتد لـ 15 ثانية كحد أقصى
+
+        if (!$lock->get()) {
+            throw new \Exception(__('Calculation is already in progress, please wait.'));
+        }
+
+        try {
+            // جلب المهام المغلقة ضمن نطاق تاريخ العقد
         $tasksQuery = Task::with('ad')
             ->where('closed', true) // فقط المهام المغلقة والمكتملة
             ->where(function($q) use ($investor) {
@@ -241,6 +250,11 @@ class InvestorPaymentService
         });
 
         return ['count' => $count, 'total_commission' => $totalCommission];
+        
+        } finally {
+            // فك القفل دائماً بعد الانتهاء أو عند حدوث خطأ
+            $lock->release();
+        }
     }
 
     /**

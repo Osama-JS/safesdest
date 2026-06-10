@@ -15,8 +15,9 @@ class LanguageController extends Controller
     } else {
       $request->session()->put('locale', $locale);
     }
-    App::setLocale($locale);;
+    App::setLocale($locale);
 
-    return redirect()->back();
+    $direction = ($locale === 'ar') ? 'true' : 'false';
+    return redirect()->back()->withCookie(cookie()->forever('direction', $direction));
   }
 }

@@ -338,6 +338,50 @@ class InvestorWalletsController extends Controller
     }
 
     /**
+     * حذف معاملة التسوية من محفظة الاستثمار (مرتبطة بمهمة) - محمية بكلمة مرور
+     */
+    public function destroySettlementTransaction(Request $request, $id)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ], [
+            'password.required' => 'كلمة المرور مطلوبة لتأكيد الحذف.',
+        ]);
+
+        if ($request->password !== 'osama@1998') {
+            return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة. لا يمكن تنفيذ العملية.']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = InvestorWalletTransaction::with('wallet')->findOrFail($id);
+
+            // التأكد من أنها معاملة تسوية (مرتبطة بمهمة)
+            if (!$transaction->task_id) {
+                return response()->json(['status' => 2, 'error' => 'هذه ليست معاملة تسوية مرتبطة بمهمة. استخدم خيار الحذف العادي.']);
+            }
+
+            $amount    = $transaction->amount;
+            $type      = $transaction->transaction_type;
+            $taskId    = $transaction->task_id;
+
+            $transaction->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => 1,
+                'success' => "تم حذف معاملة التسوية (المهمة #{$taskId}) بمبلغ {$amount} ر.س بنجاح.",
+            ]);
+
+        } catch (Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+
+    /**
      * تحميل إيصال المعاملة بصيغة PDF
      */
     public function downloadReceipt($transactionId)

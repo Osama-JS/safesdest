@@ -98,13 +98,29 @@
                             {{ __('Task Details') }} #{{ $task->id }}
                         </h5>
 
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
                             @if (!$task->closed && in_array($task->status, ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'unloading']))
                                 <a href="{{ route('customer.tasks.track', $task->id) }}" class="btn btn-sm btn-primary">
                                     <i class="ti ti-map-pin me-1"></i>{{ __('Track Task') }}
                                 </a>
                             @endif
 
+                            {{-- Policy buttons - always visible --}}
+                            <a href="{{ route('customer.tasks.download-policy', $task->id) }}"
+                                target="_blank" class="btn btn-sm btn-info">
+                                <i class="ti ti-file-certificate me-1"></i>
+                                {{ __('Download Policy') }}
+                            </a>
+
+                            @if($task->customer && $task->customer->policy_file_name)
+                                <a href="{{ route('customer.tasks.policy_custom', $task->id) }}"
+                                    target="_blank" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-print me-1"></i>
+                                    {{ __('Custom Policy') }}
+                                </a>
+                            @endif
+
+                            {{-- Invoice - only when paid --}}
                             @if ($task->payment_status === 'paid' || $task->payment_status === 'completed' || $task->status === 'completed')
                                 <a href="javascript:void(0);" onclick="downloadInvoice({{ $task->id }})"
                                     class="btn btn-sm btn-success">
@@ -155,6 +171,7 @@
                                 @endif
                             </div>
                         </div>
+
 
                         @if ($task->conditions)
                             <div class="alert alert-warning mt-3">
@@ -490,6 +507,86 @@
                                             @endswitch
                                         </div>
                                     </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Driver Additional Data (Moved here) -->
+                @if ($task->driver && !empty((array) $task->driver->driver_visible_additional_data))
+                    <div class="card mb-4 info-card">
+                        <div class="card-header bg-white border-bottom">
+                            <h5 class="mb-0 text-dark">
+                                <i class="ti ti-id-badge me-2 text-primary"></i>
+                                {{ __('Driver Additional Information') }}
+                            </h5>
+                        </div>
+                        <div class="card-body mt-3">
+                            <div class="row">
+                                @php $driverAdditional = (array) $task->driver->driver_visible_additional_data; @endphp
+                                @foreach ($driverAdditional as $field)
+                                    @if(isset($field['label']) && isset($field['value']) && $field['value'])
+                                        <div class="col-md-6 mb-4">
+                                            <div class="border rounded p-3 h-100 shadow-sm">
+                                                <h6 class="text-muted mb-2">{{ $field['label'] }}</h6>
+
+                                                @switch($field['type'] ?? 'text')
+                                                    @case('image')
+                                                        <div class="text-center">
+                                                            <img src="{{ asset('storage/' . $field['value']) }}"
+                                                                alt="{{ $field['label'] }}" class="img-fluid rounded border mt-2"
+                                                                style="max-height: 200px; object-fit: cover;">
+                                                            <div class="mt-2">
+                                                                <a href="{{ asset('storage/' . $field['value']) }}" target="_blank" class="btn btn-sm btn-label-primary">
+                                                                    <i class="ti ti-eye me-1"></i>{{ __('View Full Image') }}
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                        @if(isset($field['expiration']) && $field['expiration'])
+                                                            <div class="mt-2 text-center">
+                                                                <span class="badge bg-label-warning">{{ __('Exp') }}: {{ $field['expiration'] }}</span>
+                                                            </div>
+                                                        @endif
+                                                    @break
+
+                                                    @case('file')
+                                                    @case('file_expiration_date')
+                                                        @php
+                                                            $ext = strtolower(pathinfo($field['value'], PATHINFO_EXTENSION));
+                                                            $icons = [
+                                                                'pdf' => 'ti ti-file-text',
+                                                                'doc' => 'ti ti-file-description',
+                                                                'docx' => 'ti ti-file-description',
+                                                                'xls' => 'ti ti-file-spreadsheet',
+                                                                'xlsx' => 'ti ti-file-spreadsheet',
+                                                            ];
+                                                            $iconClass = $icons[$ext] ?? 'ti ti-file';
+                                                        @endphp
+                                                        <div class="d-flex flex-column gap-2">
+                                                            <a href="{{ asset('storage/' . $field['value']) }}" target="_blank"
+                                                                class="d-flex align-items-center text-decoration-none border p-2 rounded bg-light">
+                                                                <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
+                                                                <span class="text-truncate text-dark">{{ basename($field['value']) }}</span>
+                                                            </a>
+                                                            @if(isset($field['expiration']) && $field['expiration'])
+                                                                <div class="badge bg-label-warning align-self-start">
+                                                                    <i class="ti ti-calendar-event me-1"></i>
+                                                                    {{ __('Expires') }}: {{ $field['expiration'] }}
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    @break
+
+                                                    @default
+                                                        <p class="mb-0 fw-bold">{{ $field['value'] }}</p>
+                                                        @if(isset($field['expiration']) && $field['expiration'])
+                                                            <span class="badge bg-label-warning mt-2 d-inline-block">{{ __('Exp') }}: {{ $field['expiration'] }}</span>
+                                                        @endif
+                                                @endswitch
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>

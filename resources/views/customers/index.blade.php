@@ -675,15 +675,87 @@
     <script>
         $(document).ready(function() {
 
-            // Mapbox Initialization
-            mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
-            const map = new mapboxgl.Map({
-                container: 'active-tasks-map',
-                style: 'mapbox://styles/mapbox/streets-v11',
-                center: [46.6753, 24.7136], // Default Riyadh
-                zoom: 10
-            });
+            let map = null;
             let markers = [];
+            let mapInitialized = false;
+
+            // Function to initialize map
+            function initMap() {
+                if (mapInitialized) return;
+                mapInitialized = true;
+
+                mapboxgl.accessToken = 'pk.eyJ1Ijoib3NhbWExOTk4IiwiYSI6ImNtOWk3eXd4MjBkbWcycHF2MDkxYmI3NjcifQ.2axcu5Sk9dx6GX3NtjjAvA';
+                map = new mapboxgl.Map({
+                    container: 'active-tasks-map',
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [46.6753, 24.7136],
+                    zoom: 10
+                });
+
+                map.addControl(new mapboxgl.NavigationControl());
+                map.addControl(new mapboxgl.FullscreenControl());
+
+                // Load markers from last loaded tasks data
+                map.on('load', function() {
+                    if (window._lastTasksData) {
+                        renderMapMarkers(window._lastTasksData);
+                    }
+                });
+            }
+
+            // Render markers function
+            function renderMapMarkers(data) {
+                if (!map) return;
+                // Clear existing markers
+                markers.forEach(m => m.remove());
+                markers = [];
+
+                if (!data || !data.data) return;
+
+                const bounds = new mapboxgl.LngLatBounds();
+                let hasCoordinates = false;
+
+                data.data.forEach(task => {
+                    if (task.status !== 'completed' && task.status !== 'canceled') {
+                        if (task.pickup && task.pickup.longitude && task.pickup.latitude) {
+                            const el = document.createElement('div');
+                            el.className = 'custom-marker';
+                            el.style.cssText = 'width:32px;height:32px;background:linear-gradient(135deg,#696cff,#5a67d8);border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(105,108,255,0.5);cursor:pointer;';
+                            el.innerHTML = '<i class="ti ti-truck-delivery" style="color:white;font-size:14px;"></i>';
+
+                            const statusColors = {
+                                'in_progress': '#ff9f43', 'assign': '#696cff',
+                                'started': '#00cfe8', 'completed': '#28c76f', 'pending': '#ea5455'
+                            };
+                            const color = statusColors[task.status] || '#696cff';
+                            el.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
+
+                            const popup = new mapboxgl.Popup({ offset: 25, closeButton: false })
+                                .setHTML(`
+                                    <div style="min-width:180px;font-family:sans-serif;">
+                                        <strong style="color:#696cff;">Task #${task.id}</strong><br>
+                                        <span class="badge" style="background:${color};color:white;padding:2px 8px;border-radius:12px;font-size:11px;">${task.status}</span><br>
+                                        <small style="color:#666;margin-top:4px;display:block;">📍 ${task.pickup.address || ''}</small>
+                                        <a href="${baseUrl}customer/tasks/show/${task.id}" style="display:block;margin-top:6px;color:#696cff;font-size:12px;">View Details →</a>
+                                    </div>
+                                `);
+
+                            const marker = new mapboxgl.Marker(el)
+                                .setLngLat([parseFloat(task.pickup.longitude), parseFloat(task.pickup.latitude)])
+                                .setPopup(popup)
+                                .addTo(map);
+
+                            markers.push(marker);
+                            bounds.extend([parseFloat(task.pickup.longitude), parseFloat(task.pickup.latitude)]);
+                            hasCoordinates = true;
+                        }
+                    }
+                });
+
+                if (hasCoordinates && markers.length > 0) {
+                    map.fitBounds(bounds, { padding: 60, maxZoom: 14 });
+                }
+            }
 
             // Function to update task count
             window.updateTaskCount = function(count) {
@@ -695,50 +767,22 @@
                 if (data && data.pagination && data.pagination.total !== undefined) {
                     updateTaskCount(data.pagination.total);
                 }
-                
-                // Update map markers
-                if (data && data.data) {
-                    // Clear existing markers
-                    markers.forEach(m => m.remove());
-                    markers = [];
-                    
-                    const bounds = new mapboxgl.LngLatBounds();
-                    let hasCoordinates = false;
-
-                    data.data.forEach(task => {
-                        if (task.status !== 'completed' && task.status !== 'canceled') {
-                            if (task.pickup && task.pickup.longitude && task.pickup.latitude) {
-                                const el = document.createElement('div');
-                                el.className = 'marker';
-                                el.innerHTML = '<i class="ti ti-map-pin text-primary fs-3"></i>';
-                                
-                                const popup = new mapboxgl.Popup({ offset: 25 })
-                                    .setHTML(`<strong>Task #${task.id}</strong><br>${task.status}`);
-
-                                const marker = new mapboxgl.Marker(el)
-                                    .setLngLat([task.pickup.longitude, task.pickup.latitude])
-                                    .setPopup(popup)
-                                    .addTo(map);
-                                
-                                markers.push(marker);
-                                bounds.extend([task.pickup.longitude, task.pickup.latitude]);
-                                hasCoordinates = true;
-                            }
-                        }
-                    });
-
-                    if (hasCoordinates) {
-                        map.fitBounds(bounds, { padding: 50 });
-                    }
+                // Store last data for when map tab opens
+                window._lastTasksData = data;
+                // Update map if already initialized
+                if (mapInitialized && map) {
+                    renderMapMarkers(data);
                 }
             });
 
-            // Ensure map resizes correctly when the tab is shown
+            // Initialize map when tab is shown
             $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
                 if (e.target.id === 'map-tab') {
-                    setTimeout(function() {
-                        map.resize();
-                    }, 200);
+                    if (!mapInitialized) {
+                        initMap();
+                    } else {
+                        setTimeout(function() { map.resize(); }, 100);
+                    }
                 }
             });
         });

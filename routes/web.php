@@ -201,7 +201,9 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/track/{id}', [App\Http\Controllers\customer\TasksController::class, 'track'])->name('customer.tasks.track');
                 Route::get('/tasks/report', [App\Http\Controllers\customer\TasksController::class, 'generateReport'])->name('customer.tasks.report');
                 Route::get('/tasks/download-policy/{id}', [App\Http\Controllers\customer\TasksController::class, 'downloadTaskPolicy'])->name('customer.tasks.download-policy');
+                Route::get('/tasks/policy-custom/{id}', [App\Http\Controllers\customer\TasksController::class, 'printCustomPolicy'])->name('customer.tasks.policy_custom');
                 Route::get('/tasks/invoice/{id}', [App\Http\Controllers\customer\TasksController::class, 'downloadTaskInvoice'])->name('customer.tasks.invoice');
+
                 Route::post('/tasks/export-excel', [App\Http\Controllers\customer\TasksController::class, 'exportToExcel'])->name('customer.tasks.export-excel');
 
                 // Customer Wallet Management
@@ -330,6 +332,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/invest-wallet/transaction', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'addTransaction'])->name('invest-wallet.addTransaction');
                     Route::post('/invest-wallet/transaction/convert/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'convertTransactionToRefund'])->name('invest-wallet.convertTransaction');
                     Route::delete('/invest-wallet/transaction/delete/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroyTransaction'])->name('invest-wallet.destroyTransaction');
+                    Route::delete('/invest-wallet/transaction/delete-settlement/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroySettlementTransaction'])->name('invest-wallet.destroySettlement');
                     Route::get('/invest-wallet/transaction/receipt/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'downloadReceipt'])->name('invest-wallet.downloadReceipt');
                     
                     Route::get('/{userId}/invest-wallet/check-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'checkFunding'])->name('invest-wallet.checkFunding');

@@ -2,6 +2,14 @@
 
 @section('title', __('Task Funding'))
 
+@section('vendor-style')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+@endsection
+
+@section('vendor-script')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+@endsection
+
 @section('content')
   <div class="container-xxl flex-grow-1 container-p-y">
 
@@ -34,8 +42,8 @@
     @foreach(['success', 'error'] as $msg)
       @if(session($msg))
         <div class="alert alert-{{ $msg === 'error' ? 'danger' : $msg }} alert-dismissible mb-4" role="alert">
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           {{ session($msg) }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
       @endif
     @endforeach
@@ -64,15 +72,23 @@
       </div>
       <div class="col-lg-4">
         <div class="card h-100 shadow-none border">
-          <div class="card-body py-2">
-            <form method="GET" class="d-flex align-items-center h-100">
+          <div class="card-body py-2 d-flex align-items-center">
+            <form method="GET" class="d-flex align-items-center h-100 flex-grow-1">
               <div class="input-group input-group-merge border-0">
                 <span class="input-group-text border-0 ps-0"><i class="ti ti-search text-muted"></i></span>
                 <input type="text" name="search" class="form-control border-0 shadow-none"
                   placeholder="{{ __('Search by task number') }}" value="{{ request('search') }}">
+                @if(request('search'))
+                  <a href="{{ route('investor.task-payment') }}" class="input-group-text border-0 text-muted" aria-label="Clear Search">
+                    <i class="ti ti-x"></i>
+                  </a>
+                @endif
                 <button type="submit" class="btn btn-sm btn-primary rounded ms-2 px-3">{{ __('Search') }}</button>
               </div>
             </form>
+            <button class="btn btn-sm btn-icon btn-label-secondary ms-2 flex-shrink-0 d-none" id="restoreHiddenTasksBtn" title="{{ __('Restore Hidden Tasks') }}" data-bs-toggle="tooltip">
+              <i class="ti ti-reload"></i>
+            </button>
           </div>
         </div>
       </div>
@@ -81,9 +97,12 @@
     {{-- عرض المهام على شكل بطاقات رحلات --}}
     <div class="row g-4">
       @forelse($tasks as $task)
-        <div class="col-md-6 col-xl-4">
-          <div class="card h-100 card-action shadow-sm border-0">
-            <div class="card-header pb-2">
+        <div class="col-md-6 col-xl-4 task-card-wrapper" data-task-id="{{ $task->id }}">
+          <div class="card h-100 card-action shadow-sm border-0 position-relative">
+            <button type="button" class="btn btn-sm btn-icon btn-text-secondary hide-task-btn position-absolute top-0 end-0 m-2" data-task-id="{{ $task->id }}" title="{{ __('Hide Task') }}" data-bs-toggle="tooltip" style="z-index: 10;">
+                <i class="ti ti-x text-muted fs-5"></i>
+            </button>
+            <div class="card-header pb-2 mt-2">
               <div class="d-flex justify-content-between align-items-start">
                 <div class="d-flex align-items-center">
                   <div class="avatar avatar-sm me-2">
@@ -94,17 +113,17 @@
                     <small class="text-muted">{{ $task->created_at->format('M d, Y') }}</small>
                   </div>
                 </div>
-                <div class="dropdown">
+                <div class="d-flex flex-column align-items-end gap-1">
                   <span class="badge bg-label-primary rounded-pill">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
-                  <span class="badge bg-label-info rounded-pill">{{ __('Status label') }}: {{ $task->status }}</span>
-                  <span class="badge bg-label-success rounded-pill">{{ __('Payment label') }}: {{ $task->payment_status }}</span>
+                  <span class="badge bg-label-info rounded-pill">{{ __('Status') }}: {{ __($task->status) }}</span>
+                  <span class="badge bg-label-success rounded-pill">{{ __('Payment Status') }}: {{ __($task->payment_status) }}</span>
                 </div>
               </div>
 
             </div>
             <div class="card-body">
               <div>
-                <span class="badge bg-label-info mb-3  rounded-pill">{{ __('Vehicle label') }}: {{ $task->vehicle_size?->VehicleName }}
+                <span class="badge bg-label-info mb-3  rounded-pill">{{ __('Vehicle Size') }}: {{ $task->vehicle_size?->VehicleName ?? __('Not specified') }}
                 </span>
               </div>
               {{-- مسار الرحلة --}}
@@ -285,6 +304,101 @@
         }
       });
     }
+    
+    // إخفاء المهام بناءً على LocalStorage
+    const investorId = {{ auth()->id() ?? '0' }};
+    const storageKey = `hidden_funding_tasks_${investorId}`;
+    
+    // جلب المهام المخفية من الذاكرة
+    let hiddenTasks = JSON.parse(localStorage.getItem(storageKey)) || [];
+    
+    const restoreBtn = document.getElementById('restoreHiddenTasksBtn');
+    if (hiddenTasks.length > 0 && restoreBtn) {
+      restoreBtn.classList.remove('d-none');
+    }
+
+    if (restoreBtn) {
+      restoreBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        Swal.fire({
+          title: '{{ __("Are you sure?") }}',
+          text: '{{ __("Do you want to restore all hidden tasks?") }}',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: '{{ __("Yes, restore them") }}',
+          cancelButtonText: '{{ __("Cancel") }}',
+          customClass: {
+            confirmButton: 'btn btn-primary me-3',
+            cancelButton: 'btn btn-label-secondary'
+          },
+          buttonsStyling: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            localStorage.removeItem(storageKey);
+            window.location.reload();
+          }
+        });
+      });
+    }
+
+    // إخفاء المهام فور تحميل الصفحة
+    document.querySelectorAll('.task-card-wrapper').forEach(card => {
+      const taskId = card.getAttribute('data-task-id');
+      if (hiddenTasks.includes(taskId)) {
+        card.style.display = 'none';
+        card.classList.add('d-none');
+      }
+    });
+
+    // معالجة ضغطة زر الإخفاء (X)
+    document.querySelectorAll('.hide-task-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation(); 
+        
+        const taskId = this.getAttribute('data-task-id');
+        const cardWrapper = document.querySelector(`.task-card-wrapper[data-task-id="${taskId}"]`);
+        
+        Swal.fire({
+          title: '{{ __("Are you sure?") }}',
+          text: '{{ __("Do you really want to hide this task?") }}',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: '{{ __("Yes, hide it!") }}',
+          cancelButtonText: '{{ __("Cancel") }}',
+          customClass: {
+            confirmButton: 'btn btn-primary me-3',
+            cancelButton: 'btn btn-label-secondary'
+          },
+          buttonsStyling: false
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            if (!hiddenTasks.includes(taskId)) {
+              hiddenTasks.push(taskId);
+              localStorage.setItem(storageKey, JSON.stringify(hiddenTasks));
+              if (restoreBtn) restoreBtn.classList.remove('d-none');
+            }
+
+            // إخفاء البطاقة
+            if (cardWrapper) {
+              cardWrapper.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+              cardWrapper.style.opacity = "0";
+              cardWrapper.style.transform = "scale(0.9)";
+              setTimeout(() => {
+                cardWrapper.style.display = 'none';
+                cardWrapper.classList.add('d-none');
+              }, 300);
+            }
+          }
+        });
+      });
+    });
+
+    // تفعيل الـ Tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
   });
 </script>
 @endsection

@@ -536,10 +536,11 @@ class PaymentController extends Controller
             'payment_paid'   => 'all',
         ]);
         
-        // التسوية للمستثمر إذا كانت المهمة ممولة
-        if ($subject instanceof Task) {
-            app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($subject);
-        }
+        // تم تجاهل التسوية المباشرة في حالة الدفع عبر المحفظة بناءً على طلبك
+        // سيتم التسوية لاحقاً
+        // if ($subject instanceof Task) {
+        //     app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($subject);
+        // }
 
         return [
             'success' => __('Payment completed successfully via wallet'),

@@ -385,4 +385,45 @@
             </div>
         </div>
     </div>
+
+    <!-- Delete Settlement Transaction Modal -->
+    <div class="modal fade" id="deleteSettlementModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="ti ti-trash-off me-2"></i>
+                        حذف معاملة تسوية
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger d-flex align-items-start mb-3">
+                        <i class="ti ti-alert-triangle ti-lg me-2 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong>تحذير:</strong> أنت على وشك حذف معاملة تسوية مرتبطة بمهمة من محفظة الاستثمار.
+                            هذا الإجراء <strong>لا يمكن التراجع عنه</strong> وسيؤثر على رصيد المحفظة.
+                        </div>
+                    </div>
+                    <input type="hidden" id="deleteSettlementId">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium" for="deleteSettlementPassword">
+                            <i class="ti ti-lock me-1"></i>
+                            كلمة المرور للتأكيد
+                        </label>
+                        <input type="password" id="deleteSettlementPassword" class="form-control"
+                            placeholder="أدخل كلمة المرور" autocomplete="current-password">
+                        <div class="form-text text-muted">مطلوبة لحماية العملية من التنفيذ غير المقصود.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" id="confirmDeleteSettlement" class="btn btn-danger">
+                        <i class="ti ti-trash me-1"></i>
+                        تأكيد الحذف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

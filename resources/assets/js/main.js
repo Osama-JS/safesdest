@@ -185,25 +185,15 @@ if (document.getElementById('layout-menu')) {
 
   if (languageDropdown.length) {
     let dropdownItems = languageDropdown[0].querySelectorAll('.dropdown-item');
-    const dropdownActiveItem = languageDropdown[0].querySelector('.dropdown-item.active');
-
-    directionChange(dropdownActiveItem.dataset.textDirection);
 
     for (let i = 0; i < dropdownItems.length; i++) {
-      dropdownItems[i].addEventListener('click', function () {
+      dropdownItems[i].addEventListener('click', function (e) {
         let textDirection = this.getAttribute('data-text-direction');
-        window.templateCustomizer.setLang(this.getAttribute('data-language'));
-        directionChange(textDirection);
+        if (window.templateCustomizer) {
+          window.templateCustomizer._setSetting('Lang', this.getAttribute('data-language'));
+          window.templateCustomizer._setSetting('Rtl', textDirection === 'rtl' ? 'true' : 'false');
+        }
       });
-    }
-    function directionChange(textDirection) {
-      if (textDirection === 'rtl') {
-        if (localStorage.getItem('templateCustomizer-' + templateName + '--Rtl') !== 'true')
-          window.templateCustomizer ? window.templateCustomizer.setRtl(true) : '';
-      } else {
-        if (localStorage.getItem('templateCustomizer-' + templateName + '--Rtl') === 'true')
-          window.templateCustomizer ? window.templateCustomizer.setRtl(false) : '';
-      }
     }
   }
 

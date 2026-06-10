@@ -154,7 +154,7 @@ $(function () {
                                   `
                                       : ''
                                   }
-                                  <a href="${baseUrl + 'customer/tasks/details/' + task.id}" class="dropdown-item">
+                                  <a href="${baseUrl + 'customer/tasks/show/' + task.id}" class="dropdown-item">
                                     <i class="ti ti-eye me-2"></i>View Details
                                   </a>
                                   ${

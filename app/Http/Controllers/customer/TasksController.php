@@ -370,6 +370,99 @@ class TasksController extends Controller
         }
     }
 
+    public function downloadTaskPolicy($id, Request $request)
+    {
+        Log::info('downloadTaskPolicy Start');
+        try {
+            $user = Auth::user();
+
+            if (!$user) {
+                return redirect()->route('login');
+            }
+
+            Log::info('downloadTaskPolicy user: '. $user->id);
+
+            $task = Task::with([
+                'customer',
+                'pickup',
+                'delivery',
+                'vehicle_size.type.vehicle',
+                'driver',
+                'team'
+            ])
+                ->where('customer_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            $file_name = "Policy-{$task->id}.pdf";
+
+            return $this->pdfService->generate('admin.tasks.report_pdf', [
+                'task' => $task
+            ], $file_name, true);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->with('error', __('Task not found or you do not have permission to view it.'));
+        } catch (Exception $e) {
+            Log::error('Failed to generate policy: ' . $e->getMessage());
+            return redirect()->back()->with('error', __('Failed to generate policy.'));
+        }
+    }
+
+    public function printCustomPolicy($id)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'user', 'driver'])
+            ->where('customer_id', $user->id)
+            ->findOrFail($id);
+
+        if (!$task->customer || empty($task->customer->policy_file_name)) {
+            \Illuminate\Support\Facades\Log::info('PrintCustomPolicy: No customer or policy file name', ['customer_id' => $task->customer_id ?? 'null', 'policy' => $task->customer?->policy_file_name]);
+            return redirect()->back()->with('error', __('This task does not belong to a customer with a custom policy.'));
+        }
+
+        $viewName = str_replace(['.blade.php', '.blade', '.php'], '', $task->customer->policy_file_name);
+        \Illuminate\Support\Facades\Log::info('PrintCustomPolicy: Checking view', ['original' => $task->customer->policy_file_name, 'sanitized' => $viewName]);
+
+        // Ensure the view exists
+        if (!\Illuminate\Support\Facades\View::exists($viewName)) {
+             // Try with admin.tasks prefix if absolute path fails
+             if (\Illuminate\Support\Facades\View::exists('admin.tasks.' . $viewName)) {
+                 $viewName = 'admin.tasks.' . $viewName;
+             } else {
+                 \Illuminate\Support\Facades\Log::error('Custom policy view not found', ['viewName' => $viewName, 'prefixed' => 'admin.tasks.' . $viewName]);
+                 return redirect()->back()->with('error', __('Custom policy template not found.') . ' (' . $viewName . ')');
+             }
+        }
+
+        $customerName = $task->customer->company_name ?? $task->customer->name ?? 'customer';
+        $file_name = "Shipping_Policy_{$task->id}_" . Str::slug($customerName, '_') . ".pdf";
+
+        $customerLogo = null;
+        if ($task->customer && $task->customer->image) {
+            $cleanPath = preg_replace('/^storage\//', '', $task->customer->image);
+            $possiblePaths = [
+                public_path('storage/' . $cleanPath),
+                storage_path('app/public/' . $cleanPath),
+                storage_path('app/' . $cleanPath),
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    $customerLogo = $path;
+                    break;
+                }
+            }
+        }
+
+        return $this->pdfService->generate($viewName, [
+            'task' => $task,
+            'watermark_image' => $customerLogo
+        ], $file_name, true);
+    }
+
     public function validateStep1(Request $req)
     {
         $rules = [

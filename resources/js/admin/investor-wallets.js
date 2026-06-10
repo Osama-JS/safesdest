@@ -116,24 +116,24 @@ $(function () {
                 '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
                 data +
                 '" title="' + __('Edit') + '"><i class="ti ti-edit ti-sm"></i></a>';
-              
-              if (full['source_type'] === 'capital') {
-                actions +=
-                  '<a href="javascript:;" class="text-danger delete-settlement me-2" data-id="' +
-                  data +
-                  '" title="حذف إيداع رأس مال"><i class="ti ti-trash-off ti-sm"></i></a>';
-              } else {
-                actions +=
-                  '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
-                  data +
-                  '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm"></i></a>';
-              }
+              actions +=
+                '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
+                data +
+                '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm"></i></a>';
             } else {
               var lockTitle =
                 full['transaction_type'] === 'debit'
                   ? __('Funding transaction locked')
                   : __('Task linked transaction locked');
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+
+              // زر حذف التسوية - يظهر فقط إذا كانت معاملة credit مرتبطة بمهمة ومصدرها refund
+              if (full['transaction_type'] === 'credit' && full['source_type'] === 'refund' && full['task_id'] && full['task_id'] !== '-') {
+                actions +=
+                  ' <a href="javascript:;" class="text-danger delete-settlement ms-2" data-id="' +
+                  data +
+                  '" title="حذف معاملة التسوية"><i class="ti ti-trash-off ti-sm"></i></a>';
+              }
             }
 
             // Convert capital deposit to investment recovery

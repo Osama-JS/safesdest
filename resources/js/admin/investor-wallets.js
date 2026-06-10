@@ -110,8 +110,17 @@ $(function () {
               data +
               '" title="' + __('Print') + '"><i class="ti ti-printer ti-sm"></i></a>';
 
-            // Only allow edit/delete if not related to a task AND not a debit transaction
-            if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
+            // 1. Refunds (Investment Recovery) get the secure delete button exclusively
+            if (full['source_type'] === 'refund') {
+              var lockTitle = __('Investment recovery locked');
+              actions += '<i class="ti ti-lock text-muted me-2" title="' + lockTitle + '"></i>';
+              actions +=
+                '<a href="javascript:;" class="text-danger delete-settlement me-2" data-id="' +
+                data +
+                '" title="حذف استعادة الاستثمار (تسوية)"><i class="ti ti-trash-off ti-sm"></i></a>';
+            }
+            // 2. Normal Capital Deposits (credit without task_id and not refund) get normal edit/delete
+            else if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
               actions +=
                 '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
                 data +
@@ -120,20 +129,14 @@ $(function () {
                 '<a href="javascript:;" class="text-body delete-record me-2" data-id="' +
                 data +
                 '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm"></i></a>';
-            } else {
+            } 
+            // 3. Task Funding (debit or linked to task) gets locked, no buttons
+            else {
               var lockTitle =
                 full['transaction_type'] === 'debit'
                   ? __('Funding transaction locked')
                   : __('Task linked transaction locked');
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
-
-              // زر حذف التسوية - يظهر فقط إذا كانت معاملة credit مرتبطة بمهمة ومصدرها refund
-              if (full['transaction_type'] === 'credit' && full['source_type'] === 'refund' && full['task_id'] && full['task_id'] !== '-') {
-                actions +=
-                  ' <a href="javascript:;" class="text-danger delete-settlement ms-2" data-id="' +
-                  data +
-                  '" title="حذف معاملة التسوية"><i class="ti ti-trash-off ti-sm"></i></a>';
-              }
             }
 
             // Convert capital deposit to investment recovery

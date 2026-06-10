@@ -357,9 +357,9 @@ class InvestorWalletsController extends Controller
 
             $transaction = InvestorWalletTransaction::with('wallet')->findOrFail($id);
 
-            // التأكد من أنها معاملة تسوية (مرتبطة بمهمة)
-            if (!$transaction->task_id) {
-                return response()->json(['status' => 2, 'error' => 'هذه ليست معاملة تسوية مرتبطة بمهمة. استخدم خيار الحذف العادي.']);
+            // التأكد من أنها معاملة استعادة استثمار (refund)
+            if ($transaction->source_type !== 'refund') {
+                return response()->json(['status' => 2, 'error' => 'هذه ليست عملية استعادة استثمار (refund).']);
             }
 
             $amount    = $transaction->amount;
@@ -367,20 +367,6 @@ class InvestorWalletsController extends Controller
             $taskId    = $transaction->task_id;
 
             $transaction->delete();
-
-            // إرجاع حالة التسوية في عملية التمويل الأصلية
-            $fundingTx = \App\Models\Wallet_Transaction::where('task_id', $taskId)
-                ->where('transaction_type', 'debit')
-                ->first();
-
-            if ($fundingTx) {
-                $fundingTx->settled_amount -= $amount;
-                if ($fundingTx->settled_amount < 0) {
-                    $fundingTx->settled_amount = 0;
-                }
-                $fundingTx->is_settled = false;
-                $fundingTx->save();
-            }
 
             DB::commit();
 

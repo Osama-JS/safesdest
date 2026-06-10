@@ -324,6 +324,10 @@ class InvestorWalletsController extends Controller
                 return response()->json(['status' => 2, 'error' => 'لا يمكن حذف عمليات التمويل/السحب.']);
             }
 
+            if ($transaction->source_type === 'capital') {
+                return response()->json(['status' => 2, 'error' => 'حذف عمليات إيداع رأس المال يتطلب تأكيد كلمة المرور من الزر المخصص.']);
+            }
+
             // Update balance before deleting (only for credits since debits are blocked above)
             $wallet = $transaction->wallet;
             // Balance is calculated dynamically, no need to update and save it.
@@ -338,7 +342,7 @@ class InvestorWalletsController extends Controller
     }
 
     /**
-     * حذف معاملة التسوية من محفظة الاستثمار (مرتبطة بمهمة) - محمية بكلمة مرور
+     * حذف معاملة إيداع رأس مال من محفظة الاستثمار - محمية بكلمة مرور
      */
     public function destroySettlementTransaction(Request $request, $id)
     {
@@ -357,9 +361,9 @@ class InvestorWalletsController extends Controller
 
             $transaction = InvestorWalletTransaction::with('wallet')->findOrFail($id);
 
-            // التأكد من أنها معاملة تسوية (مرتبطة بمهمة)
-            if (!$transaction->task_id) {
-                return response()->json(['status' => 2, 'error' => 'هذه ليست معاملة تسوية مرتبطة بمهمة. استخدم خيار الحذف العادي.']);
+            // التأكد من أنها معاملة إيداع رأس مال
+            if ($transaction->source_type !== 'capital' || $transaction->transaction_type !== 'credit' || $transaction->task_id) {
+                return response()->json(['status' => 2, 'error' => 'هذه العملية ليست عملية إيداع رأس مال.']);
             }
 
             $amount    = $transaction->amount;
@@ -372,7 +376,7 @@ class InvestorWalletsController extends Controller
 
             return response()->json([
                 'status'  => 1,
-                'success' => "تم حذف معاملة التسوية (المهمة #{$taskId}) بمبلغ {$amount} ر.س بنجاح.",
+                'success' => "تم حذف معاملة إيداع رأس المال بمبلغ {$amount} ر.س بنجاح.",
             ]);
 
         } catch (Exception $ex) {

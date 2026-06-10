@@ -393,7 +393,7 @@
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title fw-bold">
                         <i class="ti ti-trash-off me-2"></i>
-                        حذف معاملة تسوية
+                        حذف معاملة إيداع رأس مال
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -401,7 +401,7 @@
                     <div class="alert alert-danger d-flex align-items-start mb-3">
                         <i class="ti ti-alert-triangle ti-lg me-2 mt-1 flex-shrink-0"></i>
                         <div>
-                            <strong>تحذير:</strong> أنت على وشك حذف معاملة تسوية مرتبطة بمهمة من محفظة الاستثمار.
+                            <strong>تحذير:</strong> أنت على وشك حذف معاملة إيداع رأس مال من محفظة الاستثمار.
                             هذا الإجراء <strong>لا يمكن التراجع عنه</strong> وسيؤثر على رصيد المحفظة.
                         </div>
                     </div>

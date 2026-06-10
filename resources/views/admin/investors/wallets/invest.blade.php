@@ -231,6 +231,7 @@
                         <th>#</th>
                         <th>{{ __('Amount') }}</th>
                         <th>{{ __('Type') }}</th>
+                        <th>{{ __('Source Type') }}</th>
                         <th>{{ __('Statement description') }}</th>
                         <th>{{ __('Task ID') }}</th>
                         <th>{{ __('Date') }}</th>

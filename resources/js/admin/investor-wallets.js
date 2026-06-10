@@ -20,6 +20,7 @@ $(function () {
         { data: 'id' },
         { data: 'amount' },
         { data: 'transaction_type' },
+        { data: 'source_type' },
         { data: 'description' },
         { data: 'task_id' },
         { data: 'created_at' },
@@ -62,8 +63,16 @@ $(function () {
           }
         },
         {
-          // Description
+          // Source Type
           targets: 3,
+          render: function (data, type, full, meta) {
+            var val = data || '-';
+            return '<span class="text-muted">' + val + '</span>';
+          }
+        },
+        {
+          // Description
+          targets: 4,
           render: function (data, type, full, meta) {
             var attachmentLink = '';
             if (full['attachment']) {
@@ -85,7 +94,7 @@ $(function () {
         },
         {
           // Task ID
-          targets: 4,
+          targets: 5,
           render: function (data, type, full, meta) {
             if (data && data !== '-') {
               return (

@@ -436,11 +436,11 @@ class InvestorPaymentService
      * @param  float  $amount
      * @param  string $description
      */
-    public function depositToInvestorWallet(User $investor, float $amount, ?string $description = null): void
+    public function depositToInvestorWallet(User $investor, float $amount, ?string $description = null, string $sourceType = 'capital'): void
     {
         $description ??= __('Deposit from administration');
 
-        DB::transaction(function () use ($investor, $amount, $description) {
+        DB::transaction(function () use ($investor, $amount, $description, $sourceType) {
             $wallet = $investor->investorWallet;
 
             if (!$wallet) {
@@ -452,7 +452,7 @@ class InvestorPaymentService
             InvestorWalletTransaction::create([
                 'investor_wallet_id' => $wallet->id,
                 'transaction_type'   => 'credit',
-                'source_type'        => 'capital',
+                'source_type'        => $sourceType,
                 'amount'             => $amount,
                 'description'        => $description,
                 'performed_by'       => auth()->id(),

@@ -296,7 +296,8 @@ class InvestorWalletController extends Controller
                 $this->paymentService->depositToInvestorWallet(
                     $investor,
                     (float) $payment->amount,
-                    __('Electronic wallet top-up #:id', ['id' => $payment->id])
+                    __('Electronic wallet top-up #:id', ['id' => $payment->id]),
+                    'hyperpay'
                 );
 
                 return redirect()->route('investor.investment-wallet')->with('success', __('Wallet topped up success', [

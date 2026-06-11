@@ -195,6 +195,10 @@ class InvestorWalletsController extends Controller
                     return response()->json(['status' => 2, 'error' => 'لا يمكن تعديل عمليات التمويل/السحب.']);
                 }
 
+                if ($transaction->source_type === 'hyperpay') {
+                    return response()->json(['status' => 2, 'error' => 'لا يمكن تعديل عمليات الشحن الإلكتروني.']);
+                }
+
                 $oldAmount = $transaction->amount;
                 $oldType = $transaction->transaction_type;
 
@@ -322,6 +326,10 @@ class InvestorWalletsController extends Controller
 
             if ($transaction->transaction_type === 'debit') {
                 return response()->json(['status' => 2, 'error' => 'لا يمكن حذف عمليات التمويل/السحب.']);
+            }
+
+            if ($transaction->source_type === 'hyperpay') {
+                return response()->json(['status' => 2, 'error' => 'لا يمكن حذف عمليات الشحن الإلكتروني.']);
             }
 
             // Update balance before deleting (only for credits since debits are blocked above)

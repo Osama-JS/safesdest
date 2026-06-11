@@ -67,6 +67,13 @@ $(function () {
           targets: 3,
           render: function (data, type, full, meta) {
             var val = data || '-';
+            if (val === 'capital_return' || val === 'refund') {
+              return '<span class="badge bg-label-info">' + __('Capital return') + '</span>';
+            } else if (val === 'hyperpay') {
+              return '<span class="badge bg-label-primary">شحن هايبر باي</span>';
+            } else if (val === 'capital') {
+              return '<span class="badge bg-label-success">' + __('Capital deposit') + '</span>';
+            }
             return '<span class="text-muted">' + val + '</span>';
           }
         },
@@ -132,8 +139,8 @@ $(function () {
                 data +
                 '" title="حذف استعادة الاستثمار (تسوية)"><i class="ti ti-trash-off ti-sm"></i></a>';
             }
-            // 2. Normal Capital Deposits (credit without task_id and not refund) get normal edit/delete
-            else if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit') {
+            // 2. Normal Capital Deposits (credit without task_id and not refund and not hyperpay) get normal edit/delete
+            else if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit' && full['source_type'] !== 'hyperpay') {
               actions +=
                 '<a href="javascript:;" class="text-body edit-record me-2" data-id="' +
                 data +
@@ -147,12 +154,16 @@ $(function () {
                 __('Delete') +
                 '"><i class="ti ti-trash ti-sm"></i></a>';
             }
-            // 3. Task Funding (debit or linked to task) gets locked, no buttons
+            // 3. Task Funding (debit or linked to task) OR HyperPay gets locked, no buttons
             else {
-              var lockTitle =
-                full['transaction_type'] === 'debit'
+              var lockTitle = '';
+              if (full['source_type'] === 'hyperpay') {
+                  lockTitle = 'عملية شحن إلكتروني محمية';
+              } else {
+                  lockTitle = full['transaction_type'] === 'debit'
                   ? __('Funding transaction locked')
                   : __('Task linked transaction locked');
+              }
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
             }
 

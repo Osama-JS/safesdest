@@ -130,14 +130,14 @@ $(function () {
               __('Print') +
               '"><i class="ti ti-printer ti-sm"></i></a>';
 
-            // 1. Refunds (Investment Recovery) get the secure delete button exclusively
-            if (full['source_type'] === 'capital_return') {
-              var lockTitle = __('Investment recovery locked');
+            // 1. Refunds (Investment Recovery) and HyperPay get the secure delete button exclusively
+            if (full['source_type'] === 'capital_return' || full['source_type'] === 'hyperpay') {
+              var lockTitle = full['source_type'] === 'hyperpay' ? 'عملية شحن إلكتروني محمية' : __('Investment recovery locked');
               actions += '<i class="ti ti-lock text-muted me-2" title="' + lockTitle + '"></i>';
               actions +=
                 '<a href="javascript:;" class="text-danger delete-settlement me-2" data-id="' +
                 data +
-                '" title="حذف استعادة الاستثمار (تسوية)"><i class="ti ti-trash-off ti-sm"></i></a>';
+                '" title="حذف العملية المحمية"><i class="ti ti-trash-off ti-sm"></i></a>';
             }
             // 2. Normal Capital Deposits (credit without task_id and not refund and not hyperpay) get normal edit/delete
             else if ((!full['task_id'] || full['task_id'] === '-') && full['transaction_type'] !== 'debit' && full['source_type'] !== 'hyperpay') {
@@ -601,40 +601,62 @@ $(function () {
 
   // Restore payment
   window.restoreMissingPayment = function (paymentId) {
-    if (!confirm('هل أنت متأكد من استعادة هذه العملية وإضافتها لمحفظة المستثمر؟')) return;
-
-    $.ajax({
-      url: baseUrl + 'admin/investors/invest-wallet/restore-payment',
-      type: 'POST',
-      data: {
-        payment_id: paymentId,
-        _token: $('meta[name="csrf-token"]').attr('content')
+    Swal.fire({
+      title: 'استعادة عملية الشحن',
+      text: 'أدخل كلمة المرور لتأكيد إضافة هذه العملية إلى المحفظة:',
+      input: 'password',
+      inputPlaceholder: 'كلمة المرور',
+      showCancelButton: true,
+      confirmButtonText: 'تأكيد الاستعادة',
+      cancelButtonText: 'إلغاء',
+      customClass: {
+        confirmButton: 'btn btn-primary me-3',
+        cancelButton: 'btn btn-label-secondary'
       },
-      success: function (res) {
-        if (res.status == 1) {
-          Swal.fire({
-            icon: 'success',
-            title: 'نجاح!',
-            text: res.success,
-            customClass: { confirmButton: 'btn btn-success' }
-          }).then(() => {
-            location.reload();
-          });
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'خطأ!',
-            text: res.error || 'حدث خطأ غير معروف.',
-            customClass: { confirmButton: 'btn btn-danger' }
-          });
+      buttonsStyling: false,
+      preConfirm: (password) => {
+        if (!password) {
+          Swal.showValidationMessage('كلمة المرور مطلوبة');
         }
-      },
-      error: function () {
-        Swal.fire({
-          icon: 'error',
-          title: 'خطأ!',
-          text: 'حدث خطأ في الاتصال بالخادم.',
-          customClass: { confirmButton: 'btn btn-danger' }
+        return password;
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: baseUrl + 'admin/investors/invest-wallet/restore-payment',
+          type: 'POST',
+          data: {
+            payment_id: paymentId,
+            password: result.value,
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (res) {
+            if (res.status == 1) {
+              Swal.fire({
+                icon: 'success',
+                title: 'نجاح!',
+                text: res.success,
+                customClass: { confirmButton: 'btn btn-success' }
+              }).then(() => {
+                location.reload();
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'خطأ!',
+                text: res.error || 'حدث خطأ غير معروف.',
+                customClass: { confirmButton: 'btn btn-danger' }
+              });
+            }
+          },
+          error: function () {
+            Swal.fire({
+              icon: 'error',
+              title: 'خطأ!',
+              text: 'حدث خطأ في الاتصال بالخادم.',
+              customClass: { confirmButton: 'btn btn-danger' }
+            });
+          }
         });
       }
     });

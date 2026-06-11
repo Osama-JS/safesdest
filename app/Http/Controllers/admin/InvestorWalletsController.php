@@ -272,11 +272,11 @@ class InvestorWalletsController extends Controller
         $request->validate([
             'password' => 'required|string',
         ], [
-            'password.required' => 'كلمة المرور مطلوبة لتأكيد العملية.',
+            'password.required' => 'كلمة المرور مطلوبة لتأكيد التحويل.',
         ]);
 
         if ($request->password !== 'osama@1998') {
-            return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة.']);
+            return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة. لا يمكن تنفيذ العملية.']);
         }
 
         try {
@@ -289,7 +289,7 @@ class InvestorWalletsController extends Controller
                 return response()->json(['status' => 2, 'error' => 'المحفظة المرتبطة بهذه العملية غير موجودة.']);
             }
 
-            if ($transaction->transaction_type !== 'credit' || $transaction->source_type === 'refund') {
+            if ($transaction->transaction_type !== 'credit' || $transaction->source_type === 'capital_return') {
                 return response()->json(['status' => 2, 'error' => 'هذه العملية ليست إيداع رأس مال صالح للتحويل.']);
             }
 
@@ -298,7 +298,7 @@ class InvestorWalletsController extends Controller
             }
 
             $transaction->update([
-                'source_type' => 'refund',
+                'source_type' => 'capital_return',
                 'description' => $transaction->description . ' | تم تحويل الإيداع إلى استعادة استثمار',
             ]);
 
@@ -329,7 +329,7 @@ class InvestorWalletsController extends Controller
             }
 
             if ($transaction->source_type === 'hyperpay') {
-                return response()->json(['status' => 2, 'error' => 'لا يمكن حذف عمليات الشحن الإلكتروني.']);
+                return response()->json(['status' => 2, 'error' => 'لا يمكن حذف عمليات الشحن الإلكتروني إلا عبر زر الحذف المحمي.']);
             }
 
             // Update balance before deleting (only for credits since debits are blocked above)
@@ -365,9 +365,9 @@ class InvestorWalletsController extends Controller
 
             $transaction = InvestorWalletTransaction::with('wallet')->findOrFail($id);
 
-            // التأكد من أنها معاملة استعادة استثمار (refund)
-            if ($transaction->source_type !== 'refund') {
-                return response()->json(['status' => 2, 'error' => 'هذه ليست عملية استعادة استثمار (refund).']);
+            // التأكد من أنها معاملة استعادة استثمار أو شحن هايبرباي
+            if (!in_array($transaction->source_type, ['refund', 'capital_return', 'hyperpay'])) {
+                return response()->json(['status' => 2, 'error' => 'هذه العملية ليست استعادة استثمار ولا شحن إلكتروني.']);
             }
 
             $amount    = $transaction->amount;
@@ -686,7 +686,14 @@ class InvestorWalletsController extends Controller
 
         $request->validate([
             'payment_id' => 'required|exists:payments,id',
+            'password' => 'required|string',
+        ], [
+            'password.required' => 'كلمة المرور مطلوبة لاستعادة العملية.',
         ]);
+
+        if ($request->password !== 'osama@1998') {
+            return response()->json(['status' => 0, 'error' => 'كلمة المرور غير صحيحة.']);
+        }
 
         try {
             DB::beginTransaction();
@@ -700,19 +707,17 @@ class InvestorWalletsController extends Controller
 
             $amount = (float) $payment->amount;
             $newBalance = $wallet->balance + $amount;
-            
-            $createdAt = $payment->completed_at ? \Carbon\Carbon::parse($payment->completed_at) : \Carbon\Carbon::parse($payment->created_at);
 
             InvestorWalletTransaction::create([
                 'investor_wallet_id' => $wallet->id,
                 'transaction_type'   => 'credit',
                 'source_type'        => 'hyperpay',
                 'amount'             => $amount,
-                'description'        => 'استعادة شحن إلكتروني مفقود #' . $payment->id,
+                'description'        => __('Electronic wallet top-up #:id', ['id' => $payment->id]),
                 'performed_by'       => Auth::id(),
                 'balance_after'      => $newBalance,
-                'created_at'         => $createdAt,
-                'updated_at'         => $createdAt,
+                'created_at'         => \Carbon\Carbon::now(),
+                'updated_at'         => \Carbon\Carbon::now(),
             ]);
 
             DB::commit();

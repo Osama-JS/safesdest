@@ -56,7 +56,7 @@ class InvestorWallet extends Model
     {
         return (float) $this->transactions()
             ->where('transaction_type', 'credit')
-            ->where('source_type', 'capital')
+            ->whereIn('source_type', ['capital', 'hyperpay'])
             ->sum('amount');
     }
 
@@ -67,7 +67,7 @@ class InvestorWallet extends Model
     {
         return (float) $this->transactions()
             ->where('transaction_type', 'credit')
-            ->where('source_type', 'refund')
+            ->whereIn('source_type', ['refund', 'capital_return'])
             ->sum('amount');
     }
 

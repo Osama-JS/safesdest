@@ -18,6 +18,8 @@ class InvestorWalletTransaction extends Model
         'balance_after',
         'attachment',
         'source_type',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [

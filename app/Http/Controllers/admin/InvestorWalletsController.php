@@ -708,6 +708,8 @@ class InvestorWalletsController extends Controller
             $amount = (float) $payment->amount;
             $newBalance = $wallet->balance + $amount;
 
+            $createdAt = $payment->completed_at ? \Carbon\Carbon::parse($payment->completed_at) : \Carbon\Carbon::parse($payment->created_at);
+
             InvestorWalletTransaction::create([
                 'investor_wallet_id' => $wallet->id,
                 'transaction_type'   => 'credit',
@@ -716,8 +718,8 @@ class InvestorWalletsController extends Controller
                 'description'        => __('Electronic wallet top-up #:id', ['id' => $payment->id]),
                 'performed_by'       => Auth::id(),
                 'balance_after'      => $newBalance,
-                'created_at'         => \Carbon\Carbon::now(),
-                'updated_at'         => \Carbon\Carbon::now(),
+                'created_at'         => $createdAt,
+                'updated_at'         => $createdAt,
             ]);
 
             DB::commit();

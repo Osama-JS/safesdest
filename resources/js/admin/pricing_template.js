@@ -459,19 +459,35 @@ $(function () {
                 pricingPoints++;
               }
 
+              const isPointsMethod = status.type === 'points';
+              const driverPriceField = isPointsMethod ? `
+                <div class="col-md-2">
+                  <label class="form-label small text-muted mb-1">سعر السائق <span class="text-muted">(اختياري)</span></label>
+                  <input type="number" name="params[${methodId}][${index}][driver_price]"
+                         min="0" step="any"
+                         class="form-control driver-price-input"
+                         placeholder="اتركه فارغاً للعمولة العامة"
+                         value="${param.driver_price ?? ''}"
+                  >
+                  <span class="params-${methodId}-${index}-driver_price-error text-danger text-error"></span>
+                </div>` : '';
+
               const row = `
                   <div class="row g-2 parameter-row mt-2">
                     <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
                     ${fields}
-                    <div class="col-md-3">
-                      <input type="number" name="params[${methodId}][${index}][price]" min="0" step="any" class="form-control" placeholder="Price" value="${param.price}">
+                    <div class="${isPointsMethod ? 'col-md-2' : 'col-md-3'}">
+                      ${isPointsMethod ? '<label class="form-label small text-muted mb-1">سعر العميل</label>' : ''}
+                      <input type="number" name="params[${methodId}][${index}][price]" min="0" step="any" class="form-control price-input" placeholder="Price" value="${param.price}">
                       <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
                     </div>
-                    <div class="col-md-3">
+                    ${driverPriceField}
+                    <div class="col-md-2">
                       ${actionButton}
                     </div>
                   </div>
                 `;
+
 
               container.append(row);
             });
@@ -684,16 +700,19 @@ $(function () {
               <div class="row g-2 parameter-row">
                 <input type="hidden" name="params[${methodId}][0][method_id]" value="${methodId}">
                 ${fields}
+                ${methodType !== 'points' ? `
                 <div class="col-md-3">
-                  <input type="number" name="params[${methodId}][0][price]" min="0" step="any" class="form-control" placeholder="Price" value="0.00">
-                </div>
-                <div class="col-md-3">
+                  <input type="number" name="params[${methodId}][0][price]" min="0" step="any" class="form-control price-input" placeholder="Price" value="0.00">
+                  <span class="params-${methodId}-0-price-error text-danger text-error"></span>
+                </div>` : ''}
+                <div class="col-md-2">
                   <button type="button" class="btn btn-sm btn-icon border add-row"><i class="ti ti-plus"></i></button>
                 </div>
               </div>
             </div>
           </div>
         `;
+
       }
 
       // Add it after the selected checkbox.
@@ -704,41 +723,55 @@ $(function () {
     }
   });
 
-  function renderMethodParameters(type, methodId) {
+  function renderMethodParameters(type, methodId, forceIndex = null) {
     let fields = '';
 
     if (type === 'distance') {
+      const idx = forceIndex !== null ? forceIndex : pricingParamsIndex;
       fields = `
         <div class="col-md-3">
-          <input type="number" name="params[${methodId}][${pricingParamsIndex}][from_val]" class="form-control from-input" placeholder="From">
-            <span class="params-${methodId}-${pricingParamsIndex}-from_val-error text-danger text-error"></span>
+          <input type="number" name="params[${methodId}][${idx}][from_val]" class="form-control from-input" placeholder="From">
+            <span class="params-${methodId}-${idx}-from_val-error text-danger text-error"></span>
 
         </div>
         <div class="col-md-3">
-          <input type="number" name="params[${methodId}][${pricingParamsIndex}][to_val]" class="form-control to-input" placeholder="To">
-            <span class="params-${methodId}-${pricingParamsIndex}-to_val-error text-danger text-error"></span>
+          <input type="number" name="params[${methodId}][${idx}][to_val]" class="form-control to-input" placeholder="To">
+            <span class="params-${methodId}-${idx}-to_val-error text-danger text-error"></span>
 
         </div>
       `;
-      pricingParamsIndex++;
+      if (forceIndex === null) pricingParamsIndex++;
     } else if (type === 'points') {
+      const idx = forceIndex !== null ? forceIndex : pricingPoints;
       fields = `
-        <div class="col-md-3">
-          <select name="params[${methodId}][${pricingPoints}][from_val]" class="form-select select-point from-input">
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">من نقطة</label>
+          <select name="params[${methodId}][${idx}][from_val]" class="form-select select-point from-input">
             <option value="">From Point</option>${groupedOptionsHTML}
           </select>
-          <span class="params-${methodId}-${pricingPoints}-from_val-error text-danger text-error"></span>
-
+          <span class="params-${methodId}-${idx}-from_val-error text-danger text-error"></span>
         </div>
-        <div class="col-md-3">
-          <select name="params[${methodId}][${pricingPoints}][to_val]" class="form-select select-point to-input">
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">إلى نقطة</label>
+          <select name="params[${methodId}][${idx}][to_val]" class="form-select select-point to-input">
             <option value="">To Point</option>${groupedOptionsHTML}
           </select>
-          <span class="params-${methodId}-${pricingPoints}-to_val-error text-danger text-error"></span>
-
+          <span class="params-${methodId}-${idx}-to_val-error text-danger text-error"></span>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">سعر العميل</label>
+          <input type="number" name="params[${methodId}][${idx}][price]"
+                 min="0" step="any" class="form-control price-input" placeholder="0.00">
+          <span class="params-${methodId}-${idx}-price-error text-danger text-error"></span>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small text-muted mb-1">سعر السائق <span class="text-muted">(اختياري)</span></label>
+          <input type="number" name="params[${methodId}][${idx}][driver_price]"
+                 min="0" step="any" class="form-control driver-price-input" placeholder="اتركه فارغاً للعمولة العامة">
+          <span class="params-${methodId}-${idx}-driver_price-error text-danger text-error"></span>
         </div>
       `;
-      pricingPoints++;
+      if (forceIndex === null) pricingPoints++;
     }
 
     return fields;
@@ -807,25 +840,47 @@ $(function () {
     }
   });
 
+  /* ====================== التحقق اللحظي: سعر السائق < سعر العميل =============================== */
+  $(document).on('blur', '.driver-price-input', function () {
+    const driverPriceVal = parseFloat($(this).val());
+    if (isNaN(driverPriceVal) || $(this).val() === '') return; // اختياري — فارغ = عمولة عامة
+
+    // البحث عن حقل سعر العميل في نفس الصف
+    const row = $(this).closest('.parameter-row');
+    const priceInput = row.find('.price-input');
+    const clientPrice = parseFloat(priceInput.val());
+
+    if (!isNaN(clientPrice) && driverPriceVal >= clientPrice) {
+      showAlert('warning', 'يجب أن يكون سعر السائق أقل من سعر العميل دائماً.', 4000, true);
+      $(this).val('');
+    }
+  });
+
   // Add params action Button
   $(document).on('click', '.add-row', function () {
     const wrapper = $(this).closest('.parameter-rows');
     const methodId = wrapper.data('method');
     const type = wrapper.data('type');
+    // استخدام عدد الصفوف الحالية في هذا الحاوي فقط (وليس العداد العالمي)
     const index = wrapper.find('.parameter-row').length;
 
-    let fields = renderMethodParameters(type, methodId);
+    // تمرير index صراحةً لمنع تعارض العدادات العالمية pricingPoints/pricingParamsIndex
+    let fields = renderMethodParameters(type, methodId, index);
+
+    // للمسارات الأخرى (distance) نضيف حقل السعر هنا
+    const priceField = type !== 'points' ? `
+      <div class="col-md-3">
+        <input type="number" name="params[${methodId}][${index}][price]" value="0.00" class="form-control price-input" placeholder="Price">
+        <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
+      </div>` : '';
 
     const row = `
         <div class="row g-2 parameter-row mt-2">
           <input type="hidden" name="params[${methodId}][${index}][method_id]" value="${methodId}">
           ${fields}
-          <div class="col-md-3">
-            <input type="number" name="params[${methodId}][${index}][price]" value="0.00" class="form-control" placeholder="Price">
-            <span class="params-${methodId}-${index}-price-error text-danger text-error"></span>
-          </div>
-          <div class="col-md-3">
-            <button type="button" class="btn btn-sm btn-icon  text-danger remove-row"><i class="ti ti-trash"></i></button>
+          ${priceField}
+          <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-icon text-danger remove-row"><i class="ti ti-trash"></i></button>
           </div>
         </div>
       `;

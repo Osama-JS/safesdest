@@ -49,7 +49,7 @@
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['customer_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['customer_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -67,7 +67,7 @@
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['driver_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['driver_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -86,7 +86,7 @@
                             @endif
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['user_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['user_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -102,7 +102,7 @@
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['task_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['task_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -117,7 +117,7 @@
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['task_from_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['task_from_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -132,7 +132,7 @@
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['task_to_port_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['task_to_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -147,7 +147,7 @@
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['customs_clearance_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['customs_clearance_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -163,7 +163,7 @@
                             <option value="">{{ __('--- Select Template') }}</option>
                             @foreach ($templates as $val)
                                 <option value="{{ $val->id }}"
-                                    {{ $settings['customs_clearance_agent_template']['value'] == $val->id ? 'selected' : '' }}>
+                                    {{ ($settings['customs_clearance_agent_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
                                     {{ $val->name }}
                                 </option>
                             @endforeach
@@ -197,7 +197,7 @@
             </div>
         </div>
         </div>
-        <!-- <div class="col-md-4">
+        {{-- <div class="col-md-4">
             <div class="card">
                 <div class="card-header">
                     <div class="divider text-start">
@@ -210,10 +210,10 @@
                         <label for="commission-type" class="mb-2">{{ __('Commission Type') }}</label>
                         <select class="form-select  update-setting-select" data-key="commission_type">
 
-                            <option value="rate" {{ $settings['commission_type']['value'] == 'rate' ? 'selected' : '' }}>
+                            <option value="rate" {{ ($settings['commission_type']['value'] ?? null) == 'rate' ? 'selected' : '' }}>
                                 {{ __('Rate') }}</option>
                             <option value="fixed"
-                                {{ $settings['commission_type']['value'] == 'fixed' ? 'selected' : '' }}>
+                                {{ ($settings['commission_type']['value'] ?? null) == 'fixed' ? 'selected' : '' }}>
                                 {{ __('Fixed') }}</option>
                         </select>
                         <span class="commission_type-error text-danger"></span>
@@ -221,19 +221,19 @@
                     <div class="form-group mb-9">
                         <label for="commission_rate" class="mb-2">{{ __('Commission Rate') }}</label>
                         <input type="number" data-key="commission_rate" max="100" min="0" step="any"
-                            value={{ $settings['commission_rate']['value'] }} class="form-control update-setting-input">
+                            value="{{ $settings['commission_rate']['value'] ?? '' }}" class="form-control update-setting-input">
                         <span class="commission_rate-error text-danger"></span>
                     </div>
 
                     <div class="form-group mb-9">
                         <label for="commission_fixed" class="mb-2">{{ __('Commission fixed Amount') }}</label>
                         <input type="number" data-key="commission_fixed" min="0" step="any"
-                            value={{ $settings['commission_fixed']['value'] }} class="form-control update-setting-input">
+                            value="{{ $settings['commission_fixed']['value'] ?? '' }}" class="form-control update-setting-input">
                         <span class="commission_fixed-error text-danger"></span>
                     </div>
                 </div>
             </div>
-        </div> -->
+        </div> --}}
         <div class="col-md-8">
 
             <div class="card border ">

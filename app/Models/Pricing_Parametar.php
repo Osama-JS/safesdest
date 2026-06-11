@@ -11,8 +11,10 @@ class Pricing_Parametar extends Model
     'from_val',
     'to_val',
     'price',
+    'driver_price',
     'pricing_id'
   ];
+
 
   public function pricing()
   {

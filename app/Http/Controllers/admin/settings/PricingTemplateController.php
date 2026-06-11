@@ -126,10 +126,11 @@ class PricingTemplateController extends Controller
         ];
       }),
       'params' =>   $data->pricing_methods->map(fn($method) => $method->parametars->map(fn($param) => [
-        'method_id' => $method->pricing_method_id,
-        'from_val' => $param->from_val,
-        'to_val' => $param->to_val,
-        'price' => $param->price,
+        'method_id'    => $method->pricing_method_id,
+        'from_val'     => $param->from_val,
+        'to_val'       => $param->to_val,
+        'price'        => $param->price,
+        'driver_price' => $param->driver_price, // null إذا لم تكن عمولة مخصصة
       ])),
       'sizes' => $data->sizes->pluck('id'),
       'field_pricing' => $data->fields->map(fn($item) => [
@@ -251,6 +252,19 @@ class PricingTemplateController extends Controller
           $rules["params.$method_id.$index.from_val"] = 'required|string';
           $rules["params.$method_id.$index.to_val"] = 'required|string';
           $rules["params.$method_id.$index.price"] = 'required|numeric|min:0';
+          // سعر السائق اختياري — إذا كان موجوداً يجب أن يكون أقل من سعر العميل
+          $rules["params.$method_id.$index.driver_price"] = [
+            'nullable',
+            'numeric',
+            'min:0',
+            function ($attribute, $value, $fail) use ($param) {
+              if (!is_null($value) && $value !== '' && isset($param['price'])) {
+                if ((float) $value >= (float) $param['price']) {
+                  $fail(__('يجب أن يكون سعر السائق أقل من سعر العميل دائماً.'));
+                }
+              }
+            },
+          ];
         }
       }
     }
@@ -372,10 +386,15 @@ class PricingTemplateController extends Controller
 
           if (isset($req->params[$methodId])) {
             foreach ($req->params[$methodId] as $param) {
+              $driverPrice = isset($param['driver_price']) && $param['driver_price'] !== ''
+                ? (float) $param['driver_price']
+                : null;
+
               $method->parametars()->create([
-                'from_val' => $param['from_val'],
-                'to_val'   => $param['to_val'],
-                'price'    => $param['price'],
+                'from_val'     => $param['from_val'],
+                'to_val'       => $param['to_val'],
+                'price'        => $param['price'],
+                'driver_price' => $driverPrice,
               ]);
             }
           }

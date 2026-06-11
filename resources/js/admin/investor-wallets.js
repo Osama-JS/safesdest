@@ -188,7 +188,7 @@ $(function () {
           }
         }
       ],
-      order: [[0, 'desc']],
+      order: [[6, 'desc']],
       dom:
         '<"row me-2"' +
         '<"col-md-2"<"me-3"l>>' +

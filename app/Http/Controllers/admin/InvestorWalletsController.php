@@ -79,9 +79,11 @@ class InvestorWalletsController extends Controller
                 0 => 'id',
                 1 => 'amount',
                 2 => 'transaction_type',
-                3 => 'description',
-                4 => 'task_id',
-                5 => 'created_at',
+                3 => 'source_type',
+                4 => 'description',
+                5 => 'task_id',
+                6 => 'created_at',
+                7 => 'id',
             ];
 
             $fromDate  = $request->input('from_date');

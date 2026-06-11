@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <!-- WhatsApp Metadata -->
-    <meta property="og:title" content="مهمة جديدة #{{ $data['task']->id }}">
+    <meta property="og:title" content="{{ __('New Task #') }}{{ $data['task']->id }}">
     <meta property="og:image" content="{{ asset('images/logo.png') }}">
 
     <title>SafeDest Driver - Redirecting...</title>
@@ -51,12 +51,12 @@
     <img src="{{ asset('assets/img/icon.png') }}" alt="Logo" class="logo">
 
     <div class="message">
-        <h3>جاري توجيهك إلى التطبيق...</h3>
-        <p>إذا لم يفتح التطبيق تلقائياً، اضغط على الزر أدناه</p>
+        <h3>{{ __('Redirecting to app...') }}</h3>
+        <p>{{ __('If the app does not open automatically, click the button below') }}</p>
     </div>
 
-    <a href="{{ $data['app_scheme'] }}" class="btn" id="appBtn">فتح التطبيق</a>
-    <a href="https://play.google.com/store/apps/details?id={{ $data['android_package'] }}" class="btn store">تحميل من المتجر</a>
+    <a href="{{ $data['app_scheme'] }}" class="btn" id="appBtn">{{ __('Open App') }}</a>
+    <a href="https://play.google.com/store/apps/details?id={{ $data['android_package'] }}" class="btn store">{{ __('Download from Store') }}</a>
 
     <script>
         window.onload = function() {

@@ -138,8 +138,8 @@
         <tr>
             <td>
                 <div class="platform-info">
-                    <div><strong>{{ __('شركة وجهات آمنة') }}</strong></div>
-                    <div>{{__('السجل التجاري')}} : 5850148029</div>
+                    <div><strong>{{ __('Safe Destinations Company') }}</strong></div>
+                    <div>{{ __('Commercial Register:') }} 5850148029</div>
                     <div>{{ __('+966556978782') }}</div>
                     <div style="margin-top: 5px; font-size: 10px;">{{ __('VAT Number') }}: 300000000000003</div>
                 </div>
@@ -153,72 +153,71 @@
         </tr>
     </table>
 
-    {{-- Title --}}
     <div class="invoice-title">
-        فاتورة شحن / Shipment Invoice
+        {{ __('Shipment Invoice') }}
     </div>
 
     {{-- Invoice Info Sections --}}
     <table class="invoice-info-table">
         <tr>
             <td width="50%">
-                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">بيانات الفاتورة</h4>
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">{{ __('Invoice Info') }}</h4>
                 <div>
-                    <span class="info-label">رقم الفاتورة:</span>
+                    <span class="info-label">{{ __('Invoice Number:') }}</span>
                     <span class="info-value">#{{ $invoice_number }}</span>
                 </div>
                 <div>
-                    <span class="info-label">تاريخ الإصدار:</span>
+                    <span class="info-label">{{ __('Issue Date:') }}</span>
                     <span class="info-value">{{ \Carbon\Carbon::parse($invoice_date)->format('Y-m-d') }}</span>
                 </div>
                 <div>
-                    <span class="info-label">طريقة الدفع:</span>
+                    <span class="info-label">{{ __('Payment Method:') }}</span>
                    @switch($task->payment_method)
                        @case('cash')
-                           <span class="info-value">نقدي</span>
+                           <span class="info-value">{{ __('Cash') }}</span>
                            @break
                        @case('credit')
-                           <span class="info-value">بطاقة</span>
+                           <span class="info-value">{{ __('Credit Card') }}</span>
                            @break
                        @case('banking')
-                           <span class="info-value">تحويل بنكي</span>
+                           <span class="info-value">{{ __('Bank Transfer') }}</span>
                            @break
                        @case('wallet')
-                           <span class="info-value">محفظة</span>
+                           <span class="info-value">{{ __('Wallet') }}</span>
                            @break
                        @default
-                           <span class="info-value">غير معروف</span>
+                           <span class="info-value">{{ __('Unknown') }}</span>
                    @endswitch
                 </div>
                 <div>
-                    <span class="info-label">حالة الدفع:</span>
+                    <span class="info-label">{{ __('Payment Status:') }}</span>
                     @if($task->payment_status == 'completed')
-                        <span class="status-badge status-paid">مدفوعة</span>
+                        <span class="status-badge status-paid">{{ __('Paid') }}</span>
                     @else
-                        <span class="status-badge status-pending">غير مدفوعة</span>
+                        <span class="status-badge status-pending">{{ __('Unpaid') }}</span>
                     @endif
                 </div>
 
             </td>
             <td width="50%">
-                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">فوترة إلى</h4>
+                <h4 style="margin: 0 0 10px 0; color: #2c3e50;">{{ __('Bill To') }}</h4>
                 <div>
-                    <span class="info-label">العميل:</span>
+                    <span class="info-label">{{ __('Customer:') }}</span>
                     <span class="info-value">{{ $task->customer->name ?? $task->user->name ?? 'N/A' }}</span>
                 </div>
                 <div>
-                    <span class="info-label">رقم الهاتف:</span>
+                    <span class="info-label">{{ __('Phone Number:') }}</span>
                     <span class="info-value">{{ $task->customer->phone ?? $task->user->phone ?? 'N/A' }}</span>
                 </div>
                 @if($task->pickup)
                 <div>
-                    <span class="info-label">المصدر:</span>
+                    <span class="info-label">{{ __('Source:') }}</span>
                     <span class="info-value">{{ \Illuminate\Support\Str::limit($task->pickup->address ?? '', 40) }}</span>
                 </div>
                 @endif
                 @if($task->delivery)
                 <div>
-                    <span class="info-label">الوجهة:</span>
+                    <span class="info-label">{{ __('Destination:') }}</span>
                     <span class="info-value">{{ \Illuminate\Support\Str::limit($task->delivery->address ?? '', 40) }}</span>
                 </div>
                 @endif
@@ -230,29 +229,29 @@
     <table class="invoice-table">
         <thead>
             <tr>
-                <th width="40%">الوصف / Description</th>
-                <th width="15%">الكمية / Qty</th>
-                <th width="20%">السعر / Price</th>
-                <th width="25%">الإجمالي / Total</th>
+                <th width="40%">{{ __('Description') }}</th>
+                <th width="15%">{{ __('Quantity') }}</th>
+                <th width="20%">{{ __('Price') }}</th>
+                <th width="25%">{{ __('Total') }}</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td class="text-start">
-                    <strong>خدمة توصيل / Delivery Service</strong><br>
+                    <strong>{{ __('Delivery Service') }}</strong><br>
                     <span style="font-size: 11px; color: #666;">
-                        مهمة رقم #{{ $task->id }}<br>
-                        نوع المركبة: {{ ($task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name) ?? 'N/A' }}
+                        {{ __('Task Number #') }}{{ $task->id }}<br>
+                        {{ __('Vehicle Type:') }} {{ ($task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name) ?? 'N/A' }}
                     </span>
                 </td>
                 <td>1</td>
-                <td>{{ number_format($task->total_price, 2) }} ريال</td>
-                <td>{{ number_format($task->total_price, 2) }} ريال</td>
+                <td>{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</td>
+                <td>{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</td>
             </tr>
 
             <tr class="total-row" style="background-color: #e8f5e9;">
-                <td colspan="3" class="text-start" style="font-size: 14px;">الإجمالي الكلي / Grand Total</td>
-                <td style="font-size: 14px; color: #28a745;">{{ number_format($task->total_price, 2) }} ريال</td>
+                <td colspan="3" class="text-start" style="font-size: 14px;">{{ __('Grand Total') }}</td>
+                <td style="font-size: 14px; color: #28a745;">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</td>
             </tr>
         </tbody>
     </table>
@@ -260,7 +259,7 @@
     {{-- Footer (Same as Receipt) --}}
     <footer>
         <div class="company-info">
-            <strong>شركة وجهات آمنة</strong> | السجل التجاري: 5850148029 | الرقم الضريبي: 300000000000003<br>
+            <strong>{{ __('Safe Destinations Company') }}</strong> | {{ __('Commercial Register:') }} 5850148029 | {{ __('VAT Number:') }} 300000000000003<br>
             +966556978782 | info@safedest.com
         </div>
         <div style="margin-top: 10px;">

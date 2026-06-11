@@ -72,7 +72,7 @@ $(function () {
     $('.body-container-block').block({
       message: `
       <div class="d-flex justify-content-center">
-        <p class="mb-0">Please wait...</p>
+        <p class="mb-0">${__('Please wait...')}</p>
         <div class="sk-wave m-0">
           <div class="sk-rect sk-wave-rect"></div>
           <div class="sk-rect sk-wave-rect"></div>
@@ -127,9 +127,9 @@ $(function () {
         } else {
           $('.body-container-block').unblock({
             onUnblock: function () {
-              showAlert('warning', 'Error loading Data. Please refresh the page');
+              showAlert('warning', __('Error loading Data. Please refresh the page'));
               $('#task-unassigned-container, #task-assigned-container, #task-completed-container').html(
-                '<div class="alert alert-danger">Error loading Data. Please refresh the page</div>'
+                `<div class="alert alert-danger">${__('Error loading Data. Please refresh the page')}</div>`
               );
             }
           });
@@ -147,38 +147,38 @@ $(function () {
       const statusClass = getStatusBadgeClass(task.status);
       const driverHtml = task.driver
         ? `<div class="mt-2  small bg-primary  text-white p-1 rounded ">
-            <i class="bi bi-truck"></i> Driver: ${task.driver.name} (${task.driver.phone_code} ${task.driver.phone})
+            <i class="bi bi-truck"></i> ${__('Driver')}: ${task.driver.name} (${task.driver.phone_code} ${task.driver.phone})
          </div>`
         : '';
       const teamHtml =
         task.driver && task.driver.team
           ? `<div class="mt-2  small text-white bg-success p-1 rounded  ">
-        <i class="bi bi-truck"></i> Team: ${task.driver.team}
+        <i class="bi bi-truck"></i> ${__('Team')}: ${task.driver.team}
      </div>`
           : '';
 
       const conditionsHtml = task.conditions
         ? `<div class="mt-2  small bg-warning  text-white p-1 rounded ">
-        <i class="bi bi-truck"></i> Conditions: ${task.conditions}
+        <i class="bi bi-truck"></i> ${__('Conditions')}: ${task.conditions}
      </div>`
         : '';
 
       const vehicleHtml = task.vehicle_info
         ? `<div class="mt-2 small bg-label-info text-info p-1 rounded border border-info">
-            <i class="ti ti-truck me-1"></i> Vehicle: ${task.vehicle_info.truck_name} (${task.vehicle_info.type} - ${task.vehicle_info.size})
+            <i class="ti ti-truck me-1"></i> ${__('Vehicle')}: ${task.vehicle_info.truck_name} (${task.vehicle_info.type} - ${task.vehicle_info.size})
          </div>`
         : '';
 
       const completeAt = task.complete_at
         ? `
         <div class='mt-2 text-muted small text-white  '>
-          <i class='bi bi-truck'></i> Complete At: ${task.complete_at}
+          <i class='bi bi-truck'></i> ${__('Complete At')}: ${task.complete_at}
         </div>`
         : '';
 
       const signatureHtml = task.signature_request_id
         ? `<div class="mt-2 d-flex justify-content-between align-items-center bg-info text-white p-1 rounded">
-            <div><i class="ti ti-edit"></i> Signature: <span class="text-capitalize">${task.signature_status || 'Pending'}</span></div>
+            <div><i class="ti ti-edit"></i> ${__('Signature')}: <span class="text-capitalize">${task.signature_status || __('Pending')}</span></div>
             <button class="btn btn-sm btn-icon text-white verify-signature p-0" data-id="${task.id}" title="Verify Signature Status">
                 <i class="ti ti-refresh"></i>
             </button>
@@ -423,18 +423,18 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" data-is-b2b="${task.data.is_b2b ? '1' : ''}"><i class="ti ti-edit me-2"></i>Edit Task</a></li>
-                    ${task.data.status !== 'advertised' && !task.data.is_b2b ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>Edit Task Pricing</a></li>` : ``}
-                    ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>Edit Task Ad</a></li>` : ``}
-                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  ><i class="ti ti-map-pin me-2"></i>Tracking Task</a></li>` : ``}
-                    <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  ><i class="ti ti-steering-wheel me-2"></i>Assign Driver</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-switch-horizontal me-2"></i>Change Status</a></li>
-                    <li><a href="javascript:;" class="dropdown-item duplicate-record" data-id="${task.data.id}" data-name="${task.data.id}"><i class="ti ti-copy me-2"></i>Duplicate Task</a></li>
-                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-note me-2"></i>Add Note</a></li>
-                    <li><a href="${baseUrl}admin/tasks/${task.data.id}/invoice" target="_blank" class="dropdown-item"><i class="ti ti-file-invoice me-2"></i>Print Invoice</a></li>
-                    ${task.data.signature_request_id ? `<li><a href="javascript:;" class="dropdown-item verify-signature" data-id="${task.data.id}"><i class="ti ti-refresh me-2"></i>Verify Signature Status</a></li>` : ''}
-                    ${task.data.driver_id && !task.data.closed ? `<li><a href="javascript:;" class="dropdown-item drop-task text-danger" data-id="${task.data.id}"><i class="ti ti-user-minus me-2"></i>Drop Task from Driver</a></li>` : ``}
-                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>download task status report</a></li>
+                    <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" data-is-b2b="${task.data.is_b2b ? '1' : ''}"><i class="ti ti-edit me-2"></i>${__('Edit Task')}</a></li>
+                    ${task.data.status !== 'advertised' && !task.data.is_b2b ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>${__('Edit Task Pricing')}</a></li>` : ``}
+                    ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>${__('Edit Task Ad')}</a></li>` : ``}
+                    ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  ><i class="ti ti-map-pin me-2"></i>${__('Tracking Task')}</a></li>` : ``}
+                    <li><a href="javascript:;" class="dropdown-item assign-task" data-id="${task.data.id}"  ><i class="ti ti-steering-wheel me-2"></i>${__('Assign Driver')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item duplicate-record" data-id="${task.data.id}" data-name="${task.data.id}"><i class="ti ti-copy me-2"></i>${__('Duplicate Task')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${task.data.id}" data-name="${task.data.id}" data-status="${task.data.status}"><i class="ti ti-note me-2"></i>${__('Add Note')}</a></li>
+                    <li><a href="${baseUrl}admin/tasks/${task.data.id}/invoice" target="_blank" class="dropdown-item"><i class="ti ti-file-invoice me-2"></i>${__('Print Invoice')}</a></li>
+                    ${task.data.signature_request_id ? `<li><a href="javascript:;" class="dropdown-item verify-signature" data-id="${task.data.id}"><i class="ti ti-refresh me-2"></i>${__('Verify Signature Status')}</a></li>` : ''}
+                    ${task.data.driver_id && !task.data.closed ? `<li><a href="javascript:;" class="dropdown-item drop-task text-danger" data-id="${task.data.id}"><i class="ti ti-user-minus me-2"></i>${__('Drop Task from Driver')}</a></li>` : ``}
+                    <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>${__('download task status report')}</a></li>
 
                   </ul>
               </div>
@@ -494,7 +494,7 @@ $(function () {
                   task.data.signature_request_id
                     ? `<li class="list-group-item d-flex justify-content-between align-items-center bg-info text-white">
                   <strong>Signature Status</strong>
-                  <span class="text-capitalize">${task.data.signature_status || 'Pending'}</span>
+                  <span class="text-capitalize">${task.data.signature_status || __('Pending')}</span>
                 </li>`
                     : ''
                 }
@@ -1091,15 +1091,15 @@ $(function () {
       const blockedStatuses = ['completed', 'canceled', 'refund'];
       if (blockedStatuses.includes(data.data.status) || data.data.closed) {
         $('#pricing-total-price').closest('.col-md-6').hide();
-        $('#pricing-commission').closest('.col-md-6').hide();
+        $('#pricing-driver-price').closest('.col-md-6').hide();
       } else {
         $('#pricing-total-price').closest('.col-md-6').show();
-        $('#pricing-commission').closest('.col-md-6').show();
+        $('#pricing-driver-price').closest('.col-md-6').show();
       }
 
       $('#pricing-total-price').val(data.data.total_price);
 
-      $('#pricing-commission').val(data.data.commission);
+      $('#pricing-driver-price').val(data.data.total_price - data.data.commission);
       renderPricingDetails(data.data.pricing_details, $('#pricing-pricing-details-container'));
       $('#pricingModal').modal('show');
       $('#pricingTitle').html(`Edit Task Pricing: <span class="bg-info text-white px-2 rounded">#${id}</span>`);

@@ -307,7 +307,7 @@ $(function () {
         },
         {
           targets: 17,
-          title: 'Actions',
+          title: __('Actions'),
           searchable: false,
           orderable: false,
           responsivePriority: 3,
@@ -327,16 +327,16 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>Payment Task</a></li>
-                    ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">Connect</a></li>` : ''}
-                    <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>View Details</a></li>
-                    ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>Close Task</a></li>`}
-                    ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-truck-name="${full.vehicle_info ? full.vehicle_info.truck_name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-vehicle-size="${full.vehicle_info ? full.vehicle_info.size : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>Share on WhatsApp</a></li>` : ''}
-                    ${full.order ? `<li><a href="javascript:;" class="dropdown-item share-order-whatsapp" data-order-id="${full.order}" data-task-id="${full.id}"><i class="ti ti-brand-whatsapp me-2"></i>Share Order on WhatsApp</a></li>` : ''}
-                    <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>Refund Task</a></li>
-                    <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">Fix Connection</a></li>
+                    <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>${__('Payment Task')}</a></li>
+                    ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">${__('Connect')}</a></li>` : ''}
+                    <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
+                    ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>${__('Close Task')}</a></li>`}
+                    ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-truck-name="${full.vehicle_info ? full.vehicle_info.truck_name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-vehicle-size="${full.vehicle_info ? full.vehicle_info.size : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>${__('Share on WhatsApp')}</a></li>` : ''}
+                    ${full.order ? `<li><a href="javascript:;" class="dropdown-item share-order-whatsapp" data-order-id="${full.order}" data-task-id="${full.id}"><i class="ti ti-brand-whatsapp me-2"></i>${__('Share Order on WhatsApp')}</a></li>` : ''}
+                    <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>${__('Refund Task')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">${__('Fix Connection')}</a></li>
 
-                    ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>Delete Task</a></li>` : ''}
+                    ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>${__('Delete Task')}</a></li>` : ''}
                   </ul>
                 </div>
               </div>`;

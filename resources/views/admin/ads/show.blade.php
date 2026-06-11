@@ -744,7 +744,7 @@
                                     </span>
                                 </div>
                                 <div class="text-end">
-                                    <small class="text-muted">Created</small>
+                                    <small class="text-muted">{{ __('Created') }}</small>
                                     <div class="fw-semibold">{{ $ad->created_at->format('M d, Y') }}</div>
                                     <small class="text-muted">{{ $ad->created_at->format('H:i') }}</small>
                                 </div>
@@ -763,7 +763,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Highest Price') }}</small>
                                                 <div class="fw-bold text-danger fs-5">
-                                                    {{ number_format($ad->final_highest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_highest_price, 0) }} <small>{{ __('SAR') }}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -779,7 +779,7 @@
                                             <div>
                                                 <small class="text-muted d-block">{{ __('Lowest Price') }}</small>
                                                 <div class="fw-bold text-success fs-5">
-                                                    {{ number_format($ad->final_lowest_price, 0) }} <small>SAR</small>
+                                                    {{ number_format($ad->final_lowest_price, 0) }} <small>{{ __('SAR') }}</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -862,7 +862,7 @@
                                             </div>
                                             <div class="ms-3">
                                                 <h6 class="mb-0 text-primary">{{ __('Pickup Point') }}</h6>
-                                                <small class="text-muted">Collection Location</small>
+                                                <small class="text-muted">{{ __('Collection Location') }}</small>
                                             </div>
                                         </div>
                                         @if (optional($task->pickup)->latitude && optional($task->pickup)->longitude)
@@ -914,7 +914,7 @@
                                             </div>
                                             <div class="ms-3">
                                                 <h6 class="mb-0 text-success">{{ __('Delivery Point') }}</h6>
-                                                <small class="text-muted">Destination Location</small>
+                                                <small class="text-muted">{{ __('Destination Location') }}</small>
                                             </div>
                                         </div>
                                         @if (optional($task->delivery)->latitude && optional($task->delivery)->longitude)

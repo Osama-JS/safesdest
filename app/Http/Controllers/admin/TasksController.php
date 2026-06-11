@@ -3366,7 +3366,7 @@ class TasksController extends Controller
     {
         $validator = Validator::make($req->all(), [
           'price' => 'required|numeric|min:0',
-          'commission' => 'required|numeric|lt:price',
+          'driver_price' => 'required|numeric|lt:price|min:0',
           'pricing_details' => 'nullable|array',
           'pricing_details.*.label' => 'required_with:pricing_details.*.amount|string',
           'pricing_details.*.amount' => 'required_with:pricing_details.*.label|numeric'
@@ -3402,6 +3402,8 @@ class TasksController extends Controller
                 return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
             }
 
+            $commission = $req->price - $req->driver_price;
+
             $userIp = IpHelper::getUserIpAddress();
             $history = [
               [
@@ -3414,7 +3416,7 @@ class TasksController extends Controller
             $find->history()->createMany($history);
             $done = $find->update([
               'total_price' => $req->price,
-              'commission' => $req->commission,
+              'commission' => $commission,
               'pricing_details' => $details,
               'pricing_type' => 'manual',
               'commission_type' => 'manual'

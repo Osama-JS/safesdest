@@ -437,7 +437,7 @@
                     <tr>
                         <td style="text-align: center; padding: 10px; border: none;">
                             <div class="document-title-ar">بوليصة شحن</div>
-                            <div class="document-title-en">Loading Order</div>
+                            <div class="document-title-en">{{ __('Loading Order') }}</div>
                         </td>
                     </tr>
                 </table>

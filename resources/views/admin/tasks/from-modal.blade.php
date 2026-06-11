@@ -19,15 +19,15 @@
                             <ul class="nav nav-tabs" id="taskTabs" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active" id="tab-step1" data-bs-toggle="tab"
-                                        data-bs-target="#step1" type="button" role="tab">Step 1</button>
+                                        data-bs-target="#step1" type="button" role="tab">{{ __('Step 1') }}</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link disabled" id="tab-step2" data-bs-toggle="tab"
-                                        data-bs-target="#step2" type="button" role="tab">Step 2</button>
+                                        data-bs-target="#step2" type="button" role="tab">{{ __('Step 2') }}</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link disabled" id="tab-step3" data-bs-toggle="tab"
-                                        data-bs-target="#step3" type="button" role="tab">Step 3</button>
+                                        data-bs-target="#step3" type="button" role="tab">{{ __('Step 3') }}</button>
                                 </li>
                             </ul>
 
@@ -49,7 +49,7 @@
                                             <label for="task-customer" class="form-label">*
                                                 {{ __('Select Customer') }}</label>
                                             <select name="customer" id="task-customer" class="form-select">
-                                                <option value="">Select Customer</option>
+                                                <option value="">{{ __('Select Customer') }}</option>
                                                 @foreach ($customers as $val)
                                                     <option value="{{ $val->id }}" data-notes="{{ $val->general_task_notes ?? '' }}">
                                                         {{ $val->name }}</option>
@@ -66,7 +66,7 @@
                                     <!-- Vehicle Selection -->
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>Vehicle Selection</strong></div>
+                                            <div class="divider-text"><strong>{{ __('Vehicle Selection') }}</strong></div>
                                         </div>
 
                                         <div id="vehicle-selection-container">
@@ -80,7 +80,7 @@
 
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>Task Information</strong></div>
+                                            <div class="divider-text"><strong>{{ __('Task Information') }}</strong></div>
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-6">
@@ -133,7 +133,7 @@
                                     </div>
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>(Pickup / Delivery) Point</strong></div>
+                                            <div class="divider-text"><strong>{{ __('(Pickup / Delivery) Point') }}</strong></div>
                                         </div>
                                         <div id="accordionCustomIcon" class="accordion mt-4 accordion-custom-button">
                                             <div class="accordion-item">
@@ -144,7 +144,7 @@
                                                         data-bs-target="#accordionCustomIcon-1"
                                                         aria-controls="accordionCustomIcon-1">
                                                         <i class="ri-bar-chart-2-line me-2 ri-20px"></i>
-                                                        <h5> Pickup Point</h5>
+                                                        <h5> {{ __('Pickup Point') }}</h5>
                                                     </button>
                                                 </h4>
 
@@ -233,17 +233,17 @@
                                                                     <div class="form-control p-0"
                                                                         id="pickup-geocoder">
                                                                     </div>
-                                                                    <button type="button" title="تحليل رابط موقع"
+                                                                    <button type="button" title="{{ __('Parse link') }}"
                                                                         id="pickup-toggle-link-input"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-link text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="إدخال يدوي"
+                                                                    <button type="button" title="{{ __('Manual entry') }}"
                                                                         id="pickup-manual-btn"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-globe text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="موقعي الحالي"
+                                                                    <button type="button" title="{{ __('My current location') }}"
                                                                         id="pickup-getCurrentLocation"
                                                                         class="input-group-text bg-white">
                                                                         <i
@@ -255,10 +255,10 @@
                                                                     <div class="input-group">
                                                                         <input type="text" id="pickup-map-link"
                                                                             class="form-control"
-                                                                            placeholder="ألصق رابط الموقع هنا" />
+                                                                            placeholder="{{ __('Paste map link here') }}" />
                                                                         <button type="button" id="pickup-parse-link"
                                                                             class="btn btn-secondary">
-                                                                            تحليل الرابط
+                                                                            {{ __('Parse Link') }}
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -275,14 +275,14 @@
                                                                                 name="pickup_latitude" step="any"
                                                                                 id="pickup-latitude"
                                                                                 class="form-control"
-                                                                                placeholder="(Latitude)">
+                                                                                placeholder="({{ __('Latitude') }})">
                                                                         </div>
                                                                         <div class="col">
                                                                             <input type="number"
                                                                                 name="pickup_longitude" step="any"
                                                                                 id="pickup-longitude"
                                                                                 class="form-control"
-                                                                                placeholder="(Longitude)">
+                                                                                placeholder="({{ __('Longitude') }})">
                                                                         </div>
                                                                     </div>
                                                                     <button id="pickup-confirm-location"
@@ -348,7 +348,7 @@
                                                         data-bs-target="#accordionCustomIcon-2"
                                                         aria-controls="accordionCustomIcon-2">
                                                         <i class="ri-bar-chart-2-line me-2 ri-20px"></i>
-                                                        <h5> Delivery Point</h5>
+                                                        <h5> {{ __('Delivery Point') }}</h5>
                                                     </button>
                                                 </h4>
 
@@ -435,17 +435,17 @@
                                                                     <div class="form-control p-0"
                                                                         id="delivery-geocoder">
                                                                     </div>
-                                                                    <button type="button" title="تحليل رابط موقع"
+                                                                    <button type="button" title="{{ __('Parse link') }}"
                                                                         id="delivery-toggle-link-input"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-link text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="إدخال يدوي"
+                                                                    <button type="button" title="{{ __('Manual entry') }}"
                                                                         id="delivery-manual-btn"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-globe text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="موقعي الحالي"
+                                                                    <button type="button" title="{{ __('My current location') }}"
                                                                         id="delivery-getCurrentLocation"
                                                                         class="input-group-text bg-white">
                                                                         <i
@@ -457,11 +457,11 @@
                                                                     <div class="input-group">
                                                                         <input type="text" id="delivery-map-link"
                                                                             class="form-control"
-                                                                            placeholder="ألصق رابط الموقع هنا" />
+                                                                            placeholder="{{ __('Paste map link here') }}" />
                                                                         <button type="button"
                                                                             id="delivery-parse-link"
                                                                             class="btn btn-secondary">
-                                                                            تحليل الرابط
+                                                                            {{ __('Parse Link') }}
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -477,14 +477,14 @@
                                                                                 name="delivery_latitude"
                                                                                 step="any" id="delivery-latitude"
                                                                                 class="form-control"
-                                                                                placeholder="(Latitude)">
+                                                                                placeholder="({{ __('Latitude') }})">
                                                                         </div>
                                                                         <div class="col">
                                                                             <input type="number"
                                                                                 name="delivery_longitude"
                                                                                 step="any" id="delivery-longitude"
                                                                                 class="form-control"
-                                                                                placeholder="(Longitude)">
+                                                                                placeholder="({{ __('Longitude') }})">
                                                                         </div>
                                                                     </div>
                                                                     <button id="delivery-confirm-location"
@@ -620,8 +620,7 @@
                                     <button type="button" id="back-to-step2" class="btn btn-light mt-3"><i
                                             class="ti ti-arrow-left"></i>{{ __('Back') }}
                                     </button>
-                                    <button type="submit" id="go-to-step2" class="btn btn-primary mt-3 mx-2"> Submit
-                                    </button>
+                                    <button type="submit" id="go-to-step2" class="btn btn-primary mt-3 mx-2">{{ __('Submit') }}</button>
 
                                 </div>
                             </div>
@@ -684,8 +683,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
         </div>
@@ -707,15 +706,10 @@
                         <div class="form-check mb-2">
                             <input type="checkbox" name="included" id="ad-included-price" class="form-check-input"
                                 value="1">
-                            <label class="form-check-label fw-bold" for="not-price">
-                                Including VAT and service charge
-                            </label>
+                            <label class="form-check-label fw-bold" for="not-price">{{ __('Including VAT and service charge') }}</label>
                         </div>
 
-                        <p class="small text-muted">
-                            If you do not select this option, both the VAT and the service commission will be calculated
-                            on top of the amount you display.
-                        </p>
+                        <p class="small text-muted">{{ __('If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.') }}</p>
                         @can('view_task_commissions')
                         <p class="small text-muted" id="ad-commission-info">
 
@@ -725,27 +719,27 @@
                     </div>
                     <div class="mb-3 row">
                         <div class="col-md-6">
-                            <label for="min-price">* Min Price</label>
+                            <label for="min-price">* {{ __('Min Price') }}</label>
                             <input type="number" name="min_price" id="ad-min-price" class="form-control"
                                 step="any">
                             <span class="min_price-error text-danger text-error"></span>
                         </div>
                         <div class="col-md-6">
-                            <label for="max-price">* Max Price</label>
+                            <label for="max-price">* {{ __('Max Price') }}</label>
                             <input type="number" name="max_price" id="ad-max-price" class="form-control"
                                 step="any">
                             <span class="max_price-error text-danger text-error"></span>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="not-price">Note</label>
+                        <label for="not-price">{{ __('Note') }}</label>
                         <textarea name="note_price" id="ad-not-price" class="form-control"></textarea>
                         <span class="note_price-error text-danger text-error"></span>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
         </div>
@@ -775,9 +769,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="">{{ __('Set the The commission Manual') }}</label>
-                                <input type="number" id="pricing-commission" step="any" min="0.00"
-                                    name="commission" class="form-control" placeholder="0.00">
+                                <label for="">{{ __('Set driver price Manual') }}</label>
+                                <input type="number" id="pricing-driver-price" step="any" min="0.00"
+                                    name="driver_price" class="form-control" placeholder="0.00">
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
@@ -794,8 +788,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
         </div>

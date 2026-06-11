@@ -38,12 +38,7 @@ class SettingsController extends Controller
       'value' => 'nullable|string'
     ]);
 
-    $setting = Settings::where('key', $req->key)->first();
-
-    if (!$setting) {
-      return response()->json(['success' => false, 'message' => 'Setting not found']);
-    }
-
+    $setting = Settings::firstOrNew(['key' => $req->key]);
     $setting->value = $req->value;
     $setting->save();
 

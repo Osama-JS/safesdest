@@ -433,7 +433,7 @@
 
                                                         @if (isset($field['text']) && $field['text'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Additional Info:</small>
+                                                                <small class="text-muted">{{ __('Additional Info:') }}</small>
                                                                 <p class="mb-0 fw-medium">{{ $field['text'] }}</p>
                                                             </div>
                                                         @endif
@@ -470,7 +470,7 @@
 
                                                         @if (isset($field['expiration']) && $field['expiration'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Expires:</small>
+                                                                <small class="text-muted">{{ __('Expires:') }}</small>
                                                                 <p class="mb-0 fw-medium">
                                                                     {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
                                                                 </p>

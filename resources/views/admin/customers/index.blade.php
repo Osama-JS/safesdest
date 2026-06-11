@@ -136,7 +136,7 @@
          </div>
          <div class="card-datatable table-responsive">
              <table class="datatables-users table">
-                 <thead class="class="table-light"">
+                 <thead class="table-light">
                      <tr>
                          <th></th>
                          <th>#</th>

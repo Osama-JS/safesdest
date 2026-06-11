@@ -297,7 +297,7 @@
                                         <input type="number" class="form-control" id="totalPaymentAmount"
                                             name="total_amount" placeholder="{{ __('Enter payment amount') }}"
                                             step="0.01" min="0" required>
-                                        <span class="input-group-text">SAR</span>
+                                        <span class="input-group-text">{{ __('SAR') }}</span>
                                     </div>
                                     <div class="row mt-2">
                                         <div class="col-md-6">

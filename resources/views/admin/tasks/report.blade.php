@@ -360,7 +360,7 @@
                                                 <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
                                                 <span class="text-truncate">{{ basename($field['value']) }}</span>
                                             </a>
-                                            <p class="mt-3">expiration date: {{ $field['expiration'] ?? '-' }}</p>
+                                            <p class="mt-3">{{ __('expiration date:') }} {{ $field['expiration'] ?? '-' }}</p>
                                         @break
 
                                         @default
@@ -422,7 +422,7 @@
                                             <i class="{{ $iconClass }} me-2 fs-4 text-primary"></i>
                                             <span class="text-truncate">{{ basename($field['value']) }}</span>
                                         </a>
-                                        <p class="mt-3">expiration date: {{ $field['expiration'] }}</p>
+                                        <p class="mt-3">{{ __('expiration date:') }} {{ $field['expiration'] }}</p>
                                     @break
 
                                     @default

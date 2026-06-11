@@ -88,9 +88,9 @@
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
         <div class="col-md-4">
-          <label class="form-label">* Vehicle</label>
+          <label class="form-label">* {{ __('Vehicle') }}</label>
           <select class="form-select vehicle-select" name="vehicles[{index}][vehicle]">
-            <option value="">Select a vehicle</option>
+            <option value="">{{ __('Select a vehicle') }}</option>
             @foreach ($vehicles as $vehicle)
               <option value="{{ $vehicle->id }}">{{ $vehicle->name }}</option>
             @endforeach
@@ -99,23 +99,23 @@
 
         </div>
         <div class="col-md-3">
-          <label class="form-label">* Vehicle Type</label>
+          <label class="form-label">* {{ __('Vehicle Type') }}</label>
           <select class="form-select vehicle-type-select" name="vehicles[{index}][vehicle_type]" disabled>
-            <option value="">Select a vehicle type</option>
+            <option value="">{{ __('Select a vehicle type') }}</option>
           </select>
           <span class="vehicles-{index}-vehicle_type-error text-danger text-error"></span>
 
         </div>
         <div class="col-md-3">
-          <label class="form-label">* Vehicle Size</label>
+          <label class="form-label">* {{ __('Vehicle Size') }}</label>
           <select class="form-select vehicle-size-select" name="vehicles[{index}][vehicle_size]" disabled>
-            <option value="">Select a vehicle size</option>
+            <option value="">{{ __('Select a vehicle size') }}</option>
           </select>
           <span class="vehicles-{index}-vehicle_size-error text-danger text-error"></span>
 
         </div>
         <div class="col-md-2 vehicle-quantity">
-          <label class="form-label">* Quantity</label>
+          <label class="form-label">* {{ __('Quantity') }}</label>
           <input type="number" class="form-control vehicle-quantity" name="vehicles[{index}][quantity]" min="1" value="1" />
           <span class="vehicles-{index}-quantity-error text-danger text-error"></span>
 
@@ -179,22 +179,22 @@
     <div class="d-flex flex-wrap align-items-center gap-2 my-2">
         <!-- Date Range -->
         <div>
-            <input type="text" id="dateRange" class="form-control" placeholder="Select Date Range">
+            <input type="text" id="dateRange" class="form-control" placeholder="{{ __('Select Date Range') }}">
         </div>
 
         <!-- Owner Type Dropdown -->
         <div>
             <select class="form-select" id="owner-fillter">
-                <option value="">All</option>
-                <option value="admin">Admin</option>
-                <option value="customer">Customer</option>
+                <option value="">{{ __('All') }}</option>
+                <option value="admin">{{ __('Admin') }}</option>
+                <option value="customer">{{ __('Customer') }}</option>
             </select>
         </div>
 
         <!-- Teams Dropdown -->
         <div>
             <select class="form-select task-teams-select2" id="team-fillter">
-                <option value="">All Teams</option>
+                <option value="">{{ __('All Teams') }}</option>
                 @foreach ($teams as $key)
                     <option value="{{ $key->id }}">{{ $key->name }}</option>
                 @endforeach
@@ -204,7 +204,7 @@
         <!-- Drivers Dropdown -->
         <div>
             <select class="form-select task-drivers-select2" id="driver-fillter">
-                <option value="">All Driver</option>
+                <option value="">{{ __('All Driver') }}</option>
                 {{-- Populate via JS if needed --}}
             </select>
         </div>

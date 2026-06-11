@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'Customers - Details')
+@section('title', __('Customers') . ' - ' . __('Details'))
 
 @section('vendor-style')
     @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss'])
@@ -205,7 +205,7 @@
                                                         @endif
                                                         @if (isset($field['text']) && $field['text'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Info:</small>
+                                                                <small class="text-muted">{{ __('Info:') }}</small>
                                                                 <p class="card-text fw-medium">{{ $field['text'] }}</p>
                                                             </div>
                                                         @endif
@@ -222,7 +222,7 @@
                                                         @endif
                                                         @if (isset($field['expiration']) && $field['expiration'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Expires:</small>
+                                                                <small class="text-muted">{{ __('Expires:') }}</small>
                                                                 <p class="card-text fw-medium">
                                                                     {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
                                                                 </p>

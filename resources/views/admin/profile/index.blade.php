@@ -59,7 +59,7 @@
                 <ul class="nav nav-pills mb-3" role="tablist">
                     <li class="nav-item">
                         <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profileOverview"
-                            type="button"><i class="ti ti-details ti-sm me-1_5"></i>More Information</button>
+                            type="button"><i class="ti ti-details ti-sm me-1_5"></i>{{ __('More Information') }}</button>
                     </li>
                     <li class="nav-item">
                         <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profileEdit" type="button"><i
@@ -73,7 +73,7 @@
                     <div class="tab-pane fade show active" id="profileOverview">
 
                         <div class="card-body">
-                            <h5 class="mb-3">More Information</h5>
+                            <h5 class="mb-3">{{ __('More Information') }}</h5>
                             <div class="row">
                                 @if ($user->additional_data && count($user->additional_data))
                                     @foreach ($user->additional_data as $field)

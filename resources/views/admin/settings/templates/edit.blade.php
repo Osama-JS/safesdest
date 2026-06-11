@@ -290,7 +290,7 @@
                                         <th>#</th> <!-- للـ fake_id -->
                                         <th>Role name</th>
                                         <th>Created at</th>
-                                        <th>Action</th>
+                                        <th>{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
 
@@ -332,7 +332,7 @@
                                         <th>#</th> <!-- للـ fake_id -->
                                         <th>Role name</th>
                                         <th>Created at</th>
-                                        <th>Action</th>
+                                        <th>{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
 

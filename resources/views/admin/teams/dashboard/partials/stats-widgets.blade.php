@@ -120,7 +120,7 @@
                             <h4 class="mb-0 me-2 {{ $balanceClass }}">
                                 {{ $balanceSign }}{{ number_format(abs($balance), 2) }}
                             </h4>
-                            <small class="text-muted">SAR</small>
+                            <small class="text-muted">{{ __('SAR') }}</small>
                         </div>
                     </div>
                 </div>

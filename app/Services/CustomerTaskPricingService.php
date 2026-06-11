@@ -370,16 +370,27 @@ class CustomerTaskPricingService
 
 
             if ($pricingTemplate->service_commission_status) {
-                if ($pricingTemplate->service_commission_type === 'fixed') {
-                    $totalPrice += $pricingTemplate->service_tax_commission;
+                $hasCustomCommission = $data['has_custom_commission'] ?? false;
+
+                if ($hasCustomCommission) {
+                    // ✅ عمولة مخصصة للمسار: تُتجاهل عمولة القالب العامة
+                    $serviceCommission = $data['custom_commission'];
+                    $data['service_commission_type'] = 'custom_route';
+                    $data['service_tax_commission']  = $data['custom_commission'];
+                    $data['service_commission']      = $serviceCommission;
+                } elseif ($pricingTemplate->service_commission_type === 'fixed') {
+                    // إبقاء سعر العميل كما هو، وحساب العمولة لتُخصم من السائق
                     $serviceCommission = $pricingTemplate->service_tax_commission;
+                    $data['service_commission_type'] = $pricingTemplate->service_commission_type;
+                    $data['service_tax_commission']  = $pricingTemplate->service_tax_commission;
+                    $data['service_commission']      = $serviceCommission;
                 } elseif ($pricingTemplate->service_commission_type === 'percentage') {
-                    $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+                    // إبقاء سعر العميل كما هو، وحساب العمولة لتُخصم من السائق
                     $serviceCommission = $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+                    $data['service_commission_type'] = $pricingTemplate->service_commission_type;
+                    $data['service_tax_commission']  = $pricingTemplate->service_tax_commission;
+                    $data['service_commission']      = $serviceCommission;
                 }
-                $data['service_commission_type'] = $pricingTemplate->service_commission_type;
-                $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
-                $data['service_commission'] =  $serviceCommission;
             }
 
             Log::alert("okkkkk22");
@@ -398,13 +409,15 @@ class CustomerTaskPricingService
             $data['total_price'] = $totalPrice;
         } else {
             if ($pricingTemplate->service_commission_status) {
+                // إبقاء سعر العميل كما هو، فقط نقوم بتخزين بيانات العمولة لاستخدامها لاحقاً في خصمها من السائق
                 if ($pricingTemplate->service_commission_type === 'fixed') {
-                    $totalPrice += $pricingTemplate->service_tax_commission;
+                    $serviceCommission = $pricingTemplate->service_tax_commission;
                 } elseif ($pricingTemplate->service_commission_type === 'percentage') {
-                    $totalPrice += $totalPrice * ($pricingTemplate->service_tax_commission / 100);
+                    $serviceCommission = $totalPrice * ($pricingTemplate->service_tax_commission / 100);
                 }
                 $data['service_commission_type'] = $pricingTemplate->service_commission_type;
                 $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
+                $data['service_commission'] = $serviceCommission ?? 0;
             }
             $data['vat_commission'] = $pricingTemplate->vat_commission;
         }
@@ -461,6 +474,16 @@ class CustomerTaskPricingService
             $pointTo = Point::find($param->to_val);
             $data['point_id'] = $param->id;
             $data['points'] = 'From: ' . $pointFrom->name . ' To: ' . $pointTo->name;
+
+            // التحقق من وجود عمولة مخصصة لهذا المسار
+            if (!is_null($param->driver_price)) {
+                $customCommission = (float) $param->price - (float) $param->driver_price;
+                $data['has_custom_commission']  = true;
+                $data['driver_price']           = (float) $param->driver_price;
+                $data['custom_commission']      = $customCommission;
+            } else {
+                $data['has_custom_commission'] = false;
+            }
         } elseif ($method === 'manual') {
             $data['manual'] = true;
         }

@@ -71,7 +71,7 @@
 
         <!-- Date Range -->
         <div>
-            <input type="text" id="dateRange" class="form-control" placeholder="Select Date Range">
+            <input type="text" id="dateRange" class="form-control" placeholder="{{ __('Select Date Range') }}">
         </div>
 
         <!-- Action Buttons -->
@@ -170,7 +170,7 @@
 
 
                                 <div class="divider text-start">
-                                    <div class="divider-text"><strong>Customs Clearance Information</strong></div>
+                                    <div class="divider-text"><strong>{{ __('Customs Clearance Information') }}</strong></div>
                                 </div>
                                 <!-- Template Selection -->
                                 <div class="col-12 mb-3">
@@ -196,7 +196,7 @@
                             </div>
                             <div class="col-lg-5  ">
                                 <div class="divider text-start">
-                                    <div class="divider-text"><strong>Customize your order</strong></div>
+                                    <div class="divider-text"><strong>{{ __('Customize your order') }}</strong></div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="customs-price"
@@ -238,7 +238,7 @@
 
                                 <div class="mb-3">
                                     <label for="customs-notes" class="form-label">{{ __('Notes') }}</label>
-                                    <textarea name="notes" id="customs-notes" class="form-control" placeholder="Enter Your Notes Or Description"
+                                    <textarea name="notes" id="customs-notes" class="form-control" placeholder="{{ __('Enter Your Notes Or Description') }}"
                                         cols="30" rows="5"></textarea>
                                     <span class="notes-error text-danger text-error"></span>
 
@@ -309,8 +309,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
             </div>
@@ -378,8 +378,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
 

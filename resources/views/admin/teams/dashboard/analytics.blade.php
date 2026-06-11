@@ -218,7 +218,7 @@
                                     $totalRevenue = $analytics['kpis']['total_revenue_this_month'] ?? 0;
                                 @endphp
                                 <h4 class="mb-0 me-2 kpi-total-revenue">{{ number_format($totalRevenue, 0) }}</h4>
-                                <small class="text-muted">SAR</small>
+                                <small class="text-muted">{{ __('SAR') }}</small>
                             </div>
                         </div>
                     </div>
@@ -649,15 +649,15 @@
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Average Rating') }}</strong></td>
-                                    <td><span class="text-muted">Under Development</span></td>
-                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="text-muted">{{ __('Under Development') }}</span></td>
+                                    <td><span class="text-muted">{{ __('Under Development') }}</span></td>
                                     <td><span class="badge bg-label-secondary">N/A</span></td>
                                     <td><i class="ti ti-clock text-muted"></i></td>
                                 </tr>
                                 <tr>
                                     <td><strong>{{ __('Customer Satisfaction') }}</strong></td>
-                                    <td><span class="text-muted">Under Development</span></td>
-                                    <td><span class="text-muted">Under Development</span></td>
+                                    <td><span class="text-muted">{{ __('Under Development') }}</span></td>
+                                    <td><span class="text-muted">{{ __('Under Development') }}</span></td>
                                     <td><span class="badge bg-label-secondary">N/A</span></td>
                                     <td><i class="ti ti-clock text-muted"></i></td>
                                 </tr>

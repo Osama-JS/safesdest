@@ -743,7 +743,7 @@
                                     </span>
                                 </div>
                                 <div class="text-end">
-                                    <small class="text-muted">Created</small>
+                                    <small class="text-muted">{{ __('Created') }}</small>
                                     <div class="fw-semibold">{{ $data->created_at->format('M d, Y') }}</div>
                                     <small class="text-muted">{{ $data->created_at->format('H:i') }}</small>
                                 </div>
@@ -763,7 +763,7 @@
                                         <small class="text-muted d-block">{{ __('The Offering Price') }}</small>
                                         <div class="fw-bold text-info fs-5">
                                             @if ($data->total_price != 0)
-                                                {{ number_format($data->total_price, 0) }} <small>SAR</small>
+                                                {{ number_format($data->total_price, 0) }} <small>{{ __('SAR') }}</small>
                                             @else
                                                 <span class="text-muted">Not specified</span>
                                             @endif

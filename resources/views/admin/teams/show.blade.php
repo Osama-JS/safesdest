@@ -821,7 +821,7 @@
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="totalPaymentAmount"
                                         name="total_amount" step="0.01" min="0" required>
-                                    <span class="input-group-text">SAR</span>
+                                    <span class="input-group-text">{{ __('SAR') }}</span>
                                 </div>
                                 <small class="text-muted">{{ __('Maximum amount') }}: <span id="maxAmountDisplay"
                                         class="fw-bold text-primary">0.00 SAR</span></small>

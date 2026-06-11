@@ -58,22 +58,22 @@
         <div id="taskMap" class="w-100 h-100"></div>
         <div class="task-info-box position-absolute bg-white rounded shadow p-3"
             style="top: 20px; left: 20px; z-index: 10;  max-width: 300px;">
-            <h5 class="mb-2">Task Information</h5>
+            <h5 class="mb-2">{{ __('Task Information') }}</h5>
             <ul class="list-unstyled mb-2">
-                <li><strong>ID:</strong> {{ $task->id }}</li>
-                <li><strong>Status:</strong> {{ $task->status }}</li>
-                <li><strong>From:</strong> {{ $task->pickup->address }}</li>
-                <li><strong>To:</strong> {{ $task->delivery->address }}</li>
+                <li><strong>{{ __('ID:') }}</strong> {{ $task->id }}</li>
+                <li><strong>{{ __('Status:') }}</strong> {{ $task->status }}</li>
+                <li><strong>{{ __('From:') }}</strong> {{ $task->pickup->address }}</li>
+                <li><strong>{{ __('To:') }}</strong> {{ $task->delivery->address }}</li>
             </ul>
 
             @if ($task->driver)
-                <h6 class="mt-3 mb-2">Driver</h6>
+                <h6 class="mt-3 mb-2">{{ __('Driver') }}</h6>
                 <ul class="list-unstyled">
-                    <li><strong>Name:</strong> {{ $task->driver->name }}</li>
-                    <li><strong>phone:</strong> {{ $task->driver->phone }}</li>
+                    <li><strong>{{ __('Name:') }}</strong> {{ $task->driver->name }}</li>
+                    <li><strong>{{ __('Phone:') }}</strong> {{ $task->driver->phone }}</li>
                 </ul>
             @else
-                <p class="text-muted">No Driver assign yet </p>
+                <p class="text-muted">{{ __('No Driver assigned yet') }}</p>
             @endif
         </div>
     </div>

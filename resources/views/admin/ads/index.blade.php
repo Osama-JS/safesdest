@@ -312,16 +312,16 @@
                         <i class="tf-icons ti ti-speakerphone me-2 fs-3 text-white bg-primary rounded p-1"></i>
                         {{ __('Tasks Ads') }}
                     </h5>
-                    <p class="text-muted mb-0">Browse and manage all task advertisements in the system</p>
+                    <p class="text-muted mb-0">{{ __('Browse and manage all task advertisements in the system') }}</p>
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-secondary" id="refresh-ads">
                         <i class="ti ti-refresh me-1"></i>
-                        Refresh
+                        {{ __('Refresh') }}
                     </button>
                     <button class="btn btn-outline-primary" id="toggle-filters">
                         <i class="ti ti-filter me-1"></i>
-                        Filters
+                        {{ __('Filters') }}
                     </button>
                 </div>
             </div>
@@ -333,7 +333,7 @@
         <div class="card-header">
             <h6 class="card-title mb-0">
                 <i class="ti ti-adjustments me-2"></i>
-                Advanced Filters
+                {{ __('Advanced Filters') }}
             </h6>
         </div>
         <div class="card-body">
@@ -341,74 +341,74 @@
                 <div class="row g-3">
                     <!-- Search Input -->
                     <div class="col-md-3">
-                        <label class="form-label">Search</label>
+                        <label class="form-label">{{ __('Search') }}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="ti ti-search"></i></span>
-                            <input type="text" class="form-control" id="search-input" placeholder="Search ads...">
+                            <input type="text" class="form-control" id="search-input" placeholder="{{ __('Search ads...') }}">
                         </div>
                     </div>
 
                     <!-- Status Filter -->
                     <div class="col-md-3">
-                        <label class="form-label">Status</label>
+                        <label class="form-label">{{ __('Status') }}</label>
                         <select class="form-select" id="status-filter">
-                            <option value="">All Status</option>
-                            <option value="running">Running</option>
-                            <option value="closed">Closed</option>
+                            <option value="">{{ __('All Status') }}</option>
+                            <option value="running">{{ __('Running') }}</option>
+                            <option value="closed">{{ __('Closed') }}</option>
                         </select>
                     </div>
 
                     <!-- Price Range -->
                     <div class="col-md-3">
-                        <label class="form-label">Price Range</label>
+                        <label class="form-label">{{ __('Price Range') }}</label>
                         <select class="form-select" id="price-range-filter">
-                            <option value="">All Prices</option>
-                            <option value="0-100">0 - 100 SAR</option>
-                            <option value="100-500">100 - 500 SAR</option>
-                            <option value="500-1000">500 - 1000 SAR</option>
-                            <option value="1000+">1000+ SAR</option>
+                            <option value="">{{ __('All Prices') }}</option>
+                            <option value="0-100">0 - 100 {{ __('SAR') }}</option>
+                            <option value="100-500">100 - 500 {{ __('SAR') }}</option>
+                            <option value="500-1000">500 - 1000 {{ __('SAR') }}</option>
+                            <option value="1000+">1000+ {{ __('SAR') }}</option>
                         </select>
                     </div>
 
                     <!-- Date Filter -->
                     <div class="col-md-3">
-                        <label class="form-label">Date Created</label>
+                        <label class="form-label">{{ __('Date Created') }}</label>
                         <select class="form-select" id="date-filter">
-                            <option value="">All Time</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
+                            <option value="">{{ __('All Time') }}</option>
+                            <option value="today">{{ __('Today') }}</option>
+                            <option value="week">{{ __('This Week') }}</option>
+                            <option value="month">{{ __('This Month') }}</option>
                         </select>
                     </div>
 
                     <!-- Owner Type Filter -->
                     <div class="col-md-3">
-                        <label class="form-label">Owner Type</label>
+                        <label class="form-label">{{ __('Owner Type') }}</label>
                         <select class="form-select" id="owner-filter">
-                            <option value="">All Owners</option>
-                            <option value="customer">Customer</option>
-                            <option value="admin">Admin</option>
+                            <option value="">{{ __('All Owners') }}</option>
+                            <option value="customer">{{ __('Customer') }}</option>
+                            <option value="admin">{{ __('Admin') }}</option>
                         </select>
                     </div>
 
                     <!-- Sort Options -->
                     <div class="col-md-3">
-                        <label class="form-label">Sort By</label>
+                        <label class="form-label">{{ __('Sort By') }}</label>
                         <select class="form-select" id="sort-filter">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="price_high">Price: High to Low</option>
-                            <option value="price_low">Price: Low to High</option>
+                            <option value="newest">{{ __('Newest First') }}</option>
+                            <option value="oldest">{{ __('Oldest First') }}</option>
+                            <option value="price_high">{{ __('Price: High to Low') }}</option>
+                            <option value="price_low">{{ __('Price: Low to High') }}</option>
                         </select>
                     </div>
 
                     <!-- Items Per Page -->
                     <div class="col-md-3">
-                        <label class="form-label">Items Per Page</label>
+                        <label class="form-label">{{ __('Items Per Page') }}</label>
                         <select class="form-select" id="per-page-filter">
-                            <option value="9">9 Items</option>
-                            <option value="18">18 Items</option>
-                            <option value="36">36 Items</option>
+                            <option value="9">9 {{ __('Items') }}</option>
+                            <option value="18">18 {{ __('Items') }}</option>
+                            <option value="36">36 {{ __('Items') }}</option>
                         </select>
                     </div>
 
@@ -417,11 +417,11 @@
                         <div class="btn-group w-100">
                             <button type="button" class="btn btn-primary" id="apply-filters">
                                 <i class="ti ti-check me-1"></i>
-                                Apply
+                                {{ __('Apply') }}
                             </button>
                             <button type="button" class="btn btn-outline-secondary" id="clear-filters">
                                 <i class="ti ti-x me-1"></i>
-                                Clear
+                                {{ __('Clear') }}
                             </button>
                         </div>
                     </div>
@@ -441,7 +441,7 @@
                         </span>
                     </div>
                     <h5 class="mb-1" id="total-ads">0</h5>
-                    <small class="text-muted">Total Ads</small>
+                    <small class="text-muted">{{ __('Total Ads') }}</small>
                 </div>
             </div>
         </div>
@@ -454,7 +454,7 @@
                         </span>
                     </div>
                     <h5 class="mb-1" id="running-ads">0</h5>
-                    <small class="text-muted">Running Ads</small>
+                    <small class="text-muted">{{ __('Running Ads') }}</small>
                 </div>
             </div>
         </div>
@@ -467,7 +467,7 @@
                         </span>
                     </div>
                     <h5 class="mb-1" id="closed-ads">0</h5>
-                    <small class="text-muted">Closed Ads</small>
+                    <small class="text-muted">{{ __('Closed Ads') }}</small>
                 </div>
             </div>
         </div>
@@ -480,7 +480,7 @@
                         </span>
                     </div>
                     <h5 class="mb-1" id="avg-price">0</h5>
-                    <small class="text-muted">Avg Price (SAR)</small>
+                    <small class="text-muted">{{ __('Avg Price (SAR)') }}</small>
                 </div>
             </div>
         </div>
@@ -490,9 +490,9 @@
     <div class="card mt-3" id="loading-card" style="display: none;">
         <div class="card-body text-center py-5">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">{{ __('Loading...') }}</span>
             </div>
-            <p class="mt-3 text-muted">Loading advertisements...</p>
+            <p class="mt-3 text-muted">{{ __('Loading advertisements...') }}</p>
         </div>
     </div>
 

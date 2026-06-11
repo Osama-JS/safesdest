@@ -312,8 +312,8 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary me-3 data-submit">Submit</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
 

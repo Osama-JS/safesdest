@@ -317,13 +317,13 @@
 
 
                                     <ul class="list-unstyled mb-3">
-                                        <li><strong>Address:</strong> {{ optional($task->pickup)->address }}</li>
-                                        <li><strong>Contact Name:</strong> {{ optional($task->pickup)->contact_name }}</li>
-                                        <li><strong>Phone:</strong> {{ optional($task->pickup)->contact_phone }}</li>
-                                        <li><strong>Email:</strong> {{ optional($task->pickup)->contact_emil }}</li>
-                                        <li><strong>Note:</strong> {{ optional($task->pickup)->note }}</li>
+                                        <li><strong>{{ __('Address:') }}</strong> {{ optional($task->pickup)->address }}</li>
+                                        <li><strong>{{ __('Contact Name:') }}</strong> {{ optional($task->pickup)->contact_name }}</li>
+                                        <li><strong>{{ __('Phone:') }}</strong> {{ optional($task->pickup)->contact_phone }}</li>
+                                        <li><strong>{{ __('Email:') }}</strong> {{ optional($task->pickup)->contact_emil }}</li>
+                                        <li><strong>{{ __('Note:') }}</strong> {{ optional($task->pickup)->note }}</li>
                                         @if (optional($task->pickup)->scheduled_time)
-                                            <li><strong>Pickup Before:</strong>
+                                            <li><strong>{{ __('Pickup Before:') }}</strong>
                                                 {{ \Carbon\Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i') }}
                                             </li>
                                         @endif
@@ -331,7 +331,7 @@
 
                                     @if (optional($task->pickup)->image)
                                         <div class="mt-3">
-                                            <strong>Image:</strong>
+                                            <strong>{{ __('Image:') }}</strong>
                                             <div class="mt-2 border rounded overflow-hidden" style=" width: 150px;">
                                                 <img src="{{ asset($task->pickup->image) }}" alt="Pickup Image"
                                                     class="img-fluid rounded">
@@ -358,14 +358,14 @@
 
 
                                     <ul class="list-unstyled mb-3">
-                                        <li><strong>Address:</strong> {{ optional($task->delivery)->address }}</li>
-                                        <li><strong>Contact Name:</strong> {{ optional($task->delivery)->contact_name }}
+                                        <li><strong>{{ __('Address:') }}</strong> {{ optional($task->delivery)->address }}</li>
+                                        <li><strong>{{ __('Contact Name:') }}</strong> {{ optional($task->delivery)->contact_name }}
                                         </li>
-                                        <li><strong>Phone:</strong> {{ optional($task->delivery)->contact_phone }}</li>
-                                        <li><strong>Email:</strong> {{ optional($task->delivery)->contact_emil }}</li>
-                                        <li><strong>Note:</strong> {{ optional($task->delivery)->note }}</li>
+                                        <li><strong>{{ __('Phone:') }}</strong> {{ optional($task->delivery)->contact_phone }}</li>
+                                        <li><strong>{{ __('Email:') }}</strong> {{ optional($task->delivery)->contact_emil }}</li>
+                                        <li><strong>{{ __('Note:') }}</strong> {{ optional($task->delivery)->note }}</li>
                                         @if (optional($task->delivery)->scheduled_time)
-                                            <li><strong>Delivery Before:</strong>
+                                            <li><strong>{{ __('Delivery Before:') }}</strong>
                                                 {{ \Carbon\Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i') }}
                                             </li>
                                         @endif
@@ -373,7 +373,7 @@
 
                                     @if (optional($task->delivery)->image_path)
                                         <div class="mt-3">
-                                            <strong>Image:</strong>
+                                            <strong>{{ __('Image:') }}</strong>
                                             <div class="mt-2 border rounded overflow-hidden" style="max-height: 250px;">
                                                 <img src="{{ asset('storage/' . $task->delivery->image_path) }}"
                                                     alt="Delivery Image" class="img-fluid rounded">
@@ -632,7 +632,7 @@
 
                                                         @if (isset($field['text']) && $field['text'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Additional Info:</small>
+                                                                <small class="text-muted">{{ __('Additional Info:') }}</small>
                                                                 <p class="mb-0 fw-medium">{{ $field['text'] }}</p>
                                                             </div>
                                                         @endif
@@ -669,7 +669,7 @@
 
                                                         @if (isset($field['expiration']) && $field['expiration'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Expires:</small>
+                                                                <small class="text-muted">{{ __('Expires:') }}</small>
                                                                 <p class="mb-0 fw-medium">
                                                                     {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
                                                                 </p>
@@ -722,14 +722,14 @@
                                             <p class="mb-1">{{ $entry->description }}</p>
                                             @if ($entry->file_path)
                                                 <a href="{{ asset('storage/' . $entry->file_path) }}" target="_blank"
-                                                    class="btn btn-sm btn-outline-primary">عرض المرفق</a>
+                                                    class="btn btn-sm btn-outline-primary">{{ __('View Attachment') }}</a>
                                             @endif
                                         </div>
                                     </li>
                                 @endforeach
                             </ul>
                         @else
-                            <p class="text-muted">لا توجد أحداث مسجلة.</p>
+                            <p class="text-muted">{{ __('No events recorded.') }}</p>
                         @endif
                     </div>
                 </div>

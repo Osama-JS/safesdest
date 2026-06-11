@@ -247,7 +247,7 @@
                             <label class="form-label">{{ __('Export Format') }}</label>
                             <select name="format" class="form-select" required>
                                 <option value="">{{ __('Choose Format') }}</option>
-                                <option value="excel">Excel</option>
+                                <option value="excel">{{ __('Excel') }}</option>
                                 <option value="pdf">PDF</option>
                             </select>
                         </div>

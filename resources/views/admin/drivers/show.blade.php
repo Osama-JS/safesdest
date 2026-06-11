@@ -100,12 +100,12 @@
                                         </a>
                                         @if ($data->phone_is_whatsapp)
                                             <small class="text-muted d-block">
-                                                <i class="ti ti-info-circle me-1"></i>Same as phone number
+                                                <i class="ti ti-info-circle me-1"></i>{{ __('Same as phone number') }}
                                             </small>
                                         @endif
                                     @else
                                         <span class="text-muted">
-                                            <i class="ti ti-minus me-1"></i>Not provided
+                                            <i class="ti ti-minus me-1"></i>{{ __('Not provided') }}
                                         </span>
                                     @endif
                                 </span>
@@ -162,10 +162,10 @@
                                     <tr>
                                         <th></th>
                                         <th>#</th>
-                                        <th>Status</th>
-                                        <th>Total</th>
-                                        <th>Issued Date</th>
-                                        <th>Action</th>
+                                        <th>{{ __('Status') }}</th>
+                                        <th>{{ __('Total') }}</th>
+                                        <th>{{ __('Issued Date') }}</th>
+                                        <th>{{ __('Action') }}</th>
                                     </tr>
                                 </thead>
                             </table>
@@ -231,7 +231,7 @@
                                                         @endif
                                                         @if (isset($field['text']) && $field['text'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Info:</small>
+                                                                <small class="text-muted">{{ __('Info:') }}</small>
                                                                 <p class="card-text fw-medium">{{ $field['text'] }}</p>
                                                             </div>
                                                         @endif
@@ -248,7 +248,7 @@
                                                         @endif
                                                         @if (isset($field['expiration']) && $field['expiration'])
                                                             <div class="mt-2">
-                                                                <small class="text-muted">Expires:</small>
+                                                                <small class="text-muted">{{ __('Expires:') }}</small>
                                                                 <p class="card-text fw-medium">
                                                                     {{ \Carbon\Carbon::parse($field['expiration'])->format('Y-m-d') }}
                                                                 </p>

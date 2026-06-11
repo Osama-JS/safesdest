@@ -559,4 +559,85 @@ $(function () {
       }
     });
   });
+
+  // Fetch missing payments
+  window.fetchMissingPayments = function () {
+    var amountFilter = $('#restorePaymentAmountFilter').val();
+    $('#restorePaymentsTableBody').html('<tr><td colspan="6" class="text-center">جاري التحميل...</td></tr>');
+
+    $.ajax({
+      url: baseUrl + 'admin/investors/' + investorId + '/invest-wallet/missing-payments',
+      type: 'GET',
+      data: { amount: amountFilter },
+      success: function (res) {
+        var html = '';
+        if (res.data && res.data.length > 0) {
+          res.data.forEach(function (payment) {
+            html += '<tr>';
+            html += '<td>#' + payment.id + '</td>';
+            html += '<td class="fw-bold text-success">' + payment.amount + ' ريال</td>';
+            html += '<td>' + (payment.completed_at ? payment.completed_at : payment.created_at) + '</td>';
+            html += '<td><span class="badge bg-label-secondary">' + payment.transaction_reference + '</span></td>';
+            
+            if (payment.already_restored) {
+               html += '<td><span class="badge bg-label-warning">مستعادة مسبقاً</span></td>';
+               html += '<td><button class="btn btn-sm btn-outline-secondary" disabled>تمت الاستعادة</button></td>';
+            } else {
+               html += '<td><span class="badge bg-label-success">ناجحة</span></td>';
+               html += '<td><button class="btn btn-sm btn-primary" onclick="restoreMissingPayment(' + payment.id + ')"><i class="ti ti-restore me-1"></i> استعادة</button></td>';
+            }
+            html += '</tr>';
+          });
+        } else {
+          html = '<tr><td colspan="6" class="text-center">لا توجد عمليات تطابق البحث.</td></tr>';
+        }
+        $('#restorePaymentsTableBody').html(html);
+      },
+      error: function () {
+        $('#restorePaymentsTableBody').html('<tr><td colspan="6" class="text-center text-danger">حدث خطأ في تحميل البيانات.</td></tr>');
+      }
+    });
+  };
+
+  // Restore payment
+  window.restoreMissingPayment = function (paymentId) {
+    if (!confirm('هل أنت متأكد من استعادة هذه العملية وإضافتها لمحفظة المستثمر؟')) return;
+
+    $.ajax({
+      url: baseUrl + 'admin/investors/invest-wallet/restore-payment',
+      type: 'POST',
+      data: {
+        payment_id: paymentId,
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (res) {
+        if (res.status == 1) {
+          Swal.fire({
+            icon: 'success',
+            title: 'نجاح!',
+            text: res.success,
+            customClass: { confirmButton: 'btn btn-success' }
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: res.error || 'حدث خطأ غير معروف.',
+            customClass: { confirmButton: 'btn btn-danger' }
+          });
+        }
+      },
+      error: function () {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ في الاتصال بالخادم.',
+          customClass: { confirmButton: 'btn btn-danger' }
+        });
+      }
+    });
+  };
+
 });

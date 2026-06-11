@@ -337,6 +337,10 @@ Route::middleware('rate.limit')->group(function () {
                     
                     Route::get('/{userId}/invest-wallet/check-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'checkFunding'])->name('invest-wallet.checkFunding');
                     Route::post('/{userId}/invest-wallet/fix-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'fixFunding'])->name('invest-wallet.fixFunding');
+
+                    // Missing Payments Tool
+                    Route::get('/{userId}/invest-wallet/missing-payments', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getMissingPayments'])->name('invest-wallet.missingPayments');
+                    Route::post('/invest-wallet/restore-payment', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'restorePayment'])->name('invest-wallet.restorePayment');
                 });
 
                 // B2B Module Routes

@@ -640,4 +640,86 @@ class InvestorWalletsController extends Controller
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
+
+    /**
+     * الحصول على سجل المدفوعات للمستثمر
+     */
+    public function getMissingPayments(Request $request, $userId)
+    {
+        if (Auth::user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['data' => []]);
+        }
+
+        $query = \App\Models\Payments::where('owner_type', 'investor')
+            ->where('owner_id', $userId)
+            ->where('status', 'paid')
+            ->orderBy('id', 'desc');
+
+        if ($request->has('amount') && $request->amount != '') {
+            $query->where('amount', $request->amount);
+        }
+
+        $payments = $query->get()->map(function ($payment) use ($userId) {
+            // Check if it's already restored by checking same amount and date (within a day) or same description
+            $exists = InvestorWalletTransaction::whereHas('wallet', function($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->where('amount', $payment->amount)
+              ->where('source_type', 'hyperpay')
+              ->whereDate('created_at', \Carbon\Carbon::parse($payment->completed_at ?? $payment->created_at)->toDateString())
+              ->exists();
+
+            $payment->already_restored = $exists;
+            return $payment;
+        });
+
+        return response()->json(['data' => $payments]);
+    }
+
+    /**
+     * استعادة عملية دفع وإضافتها للمحفظة
+     */
+    public function restorePayment(Request $request)
+    {
+        if (Auth::user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['status' => 0, 'error' => 'غير مصرح']);
+        }
+
+        $request->validate([
+            'payment_id' => 'required|exists:payments,id',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $payment = \App\Models\Payments::findOrFail($request->payment_id);
+            $investor = User::findOrFail($payment->owner_id);
+            $wallet = $investor->investorWallet;
+
+            if (!$wallet) {
+                $wallet = InvestorWallet::create(['user_id' => $investor->id]);
+            }
+
+            $amount = (float) $payment->amount;
+            $newBalance = $wallet->balance + $amount;
+            
+            $createdAt = $payment->completed_at ? \Carbon\Carbon::parse($payment->completed_at) : \Carbon\Carbon::parse($payment->created_at);
+
+            InvestorWalletTransaction::create([
+                'investor_wallet_id' => $wallet->id,
+                'transaction_type'   => 'credit',
+                'source_type'        => 'hyperpay',
+                'amount'             => $amount,
+                'description'        => 'استعادة شحن إلكتروني مفقود #' . $payment->id,
+                'performed_by'       => Auth::id(),
+                'balance_after'      => $newBalance,
+                'created_at'         => $createdAt,
+                'updated_at'         => $createdAt,
+            ]);
+
+            DB::commit();
+            return response()->json(['status' => 1, 'success' => 'تم استعادة عملية الدفع وإضافتها للمحفظة بنجاح']);
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $ex->getMessage()]);
+        }
+    }
 }

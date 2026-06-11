@@ -216,6 +216,11 @@
                     <i class="ti ti-cash me-1"></i> تمويل المهام
                 </a>
                 @endif
+                @if(auth()->user()->email === 'osama.samomy@gmail.com')
+                <button class="btn btn-dark me-2" data-bs-toggle="modal" data-bs-target="#restorePaymentsModal" onclick="fetchMissingPayments()">
+                    <i class="ti ti-history me-1"></i> استعادة الدفع
+                </button>
+                @endif
                 <button class="btn btn-warning me-2" onclick="checkFunding()">
                     <i class="ti ti-search me-1"></i> فحص التمويل
                 </button>
@@ -427,4 +432,51 @@
             </div>
         </div>
     </div>
+
+    <!-- Restore Payments Modal -->
+    @if(auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="restorePaymentsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title text-white"><i class="ti ti-history me-2"></i> استعادة مدفوعات هايبر باي المفقودة</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">بحث بالمبلغ</label>
+                            <div class="input-group">
+                                <input type="number" id="restorePaymentAmountFilter" class="form-control" placeholder="أدخل المبلغ للبحث...">
+                                <button class="btn btn-outline-primary" type="button" onclick="fetchMissingPayments()">بحث</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th># ID</th>
+                                    <th>المبلغ</th>
+                                    <th>تاريخ العملية</th>
+                                    <th>المرجع (Checkout ID)</th>
+                                    <th>الحالة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="restorePaymentsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">جاري التحميل...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 @endsection

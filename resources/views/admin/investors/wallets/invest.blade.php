@@ -478,5 +478,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Confirm Restore Payment Password Modal -->
+    <div class="modal fade" id="confirmRestorePaymentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold text-white">
+                        <i class="ti ti-restore me-2"></i>
+                        استعادة عملية الشحن
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center mt-3">
+                    <p>أدخل كلمة المرور لتأكيد إضافة هذه العملية إلى المحفظة:</p>
+                    <input type="hidden" id="restorePaymentIdInput">
+                    <div class="mb-3 text-start">
+                        <label class="form-label fw-medium" for="restorePaymentPasswordInput">كلمة المرور</label>
+                        <input type="password" id="restorePaymentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="current-password">
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" id="submitRestorePaymentBtn" class="btn btn-primary">تأكيد الاستعادة</button>
+                </div>
+            </div>
+        </div>
+    </div>
     @endif
 @endsection

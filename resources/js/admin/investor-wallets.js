@@ -601,65 +601,73 @@ $(function () {
 
   // Restore payment
   window.restoreMissingPayment = function (paymentId) {
-    Swal.fire({
-      title: 'استعادة عملية الشحن',
-      text: 'أدخل كلمة المرور لتأكيد إضافة هذه العملية إلى المحفظة:',
-      input: 'password',
-      inputPlaceholder: 'كلمة المرور',
-      showCancelButton: true,
-      confirmButtonText: 'تأكيد الاستعادة',
-      cancelButtonText: 'إلغاء',
-      customClass: {
-        confirmButton: 'btn btn-primary me-3',
-        cancelButton: 'btn btn-label-secondary'
+    $('#restorePaymentIdInput').val(paymentId);
+    $('#restorePaymentPasswordInput').val('');
+    // Hide the large table modal to avoid backdrop issues
+    $('#restorePaymentsModal').modal('hide');
+    // Wait for the previous modal to hide before showing the new one
+    setTimeout(function() {
+      $('#confirmRestorePaymentModal').modal('show');
+    }, 400);
+  };
+
+  // Submit Restore Payment
+  $('#submitRestorePaymentBtn').on('click', function () {
+    var paymentId = $('#restorePaymentIdInput').val();
+    var password = $('#restorePaymentPasswordInput').val().trim();
+    var button = $(this);
+
+    if (!password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'كلمة المرور مطلوبة',
+        text: 'يرجى إدخال كلمة المرور للاستمرار.',
+        customClass: { confirmButton: 'btn btn-warning' }
+      });
+      return;
+    }
+
+    button.prop('disabled', true);
+
+    $.ajax({
+      url: baseUrl + 'admin/investors/invest-wallet/restore-payment',
+      type: 'POST',
+      data: {
+        payment_id: paymentId,
+        password: password,
+        _token: $('meta[name="csrf-token"]').attr('content')
       },
-      buttonsStyling: false,
-      preConfirm: (password) => {
-        if (!password) {
-          Swal.showValidationMessage('كلمة المرور مطلوبة');
+      success: function (res) {
+        button.prop('disabled', false);
+        $('#confirmRestorePaymentModal').modal('hide');
+        if (res.status == 1) {
+          Swal.fire({
+            icon: 'success',
+            title: 'نجاح!',
+            text: res.success,
+            customClass: { confirmButton: 'btn btn-success' }
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: res.error || 'حدث خطأ غير معروف.',
+            customClass: { confirmButton: 'btn btn-danger' }
+          });
         }
-        return password;
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: baseUrl + 'admin/investors/invest-wallet/restore-payment',
-          type: 'POST',
-          data: {
-            payment_id: paymentId,
-            password: result.value,
-            _token: $('meta[name="csrf-token"]').attr('content')
-          },
-          success: function (res) {
-            if (res.status == 1) {
-              Swal.fire({
-                icon: 'success',
-                title: 'نجاح!',
-                text: res.success,
-                customClass: { confirmButton: 'btn btn-success' }
-              }).then(() => {
-                location.reload();
-              });
-            } else {
-              Swal.fire({
-                icon: 'error',
-                title: 'خطأ!',
-                text: res.error || 'حدث خطأ غير معروف.',
-                customClass: { confirmButton: 'btn btn-danger' }
-              });
-            }
-          },
-          error: function () {
-            Swal.fire({
-              icon: 'error',
-              title: 'خطأ!',
-              text: 'حدث خطأ في الاتصال بالخادم.',
-              customClass: { confirmButton: 'btn btn-danger' }
-            });
-          }
+      },
+      error: function () {
+        button.prop('disabled', false);
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ في الاتصال بالخادم.',
+          customClass: { confirmButton: 'btn btn-danger' }
         });
       }
     });
-  };
+  });
 
 });

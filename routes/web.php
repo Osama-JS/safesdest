@@ -318,7 +318,7 @@ Route::middleware('rate.limit')->group(function () {
                 // Investor Management Routes
                 
         // Banks
-        Route::resource('banks', \App\Http\Controllers\Admin\BankController::class)->names('admin.banks');
+        Route::resource('banks', \App\Http\Controllers\admin\BankController::class)->names('admin.banks');
 
         Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');

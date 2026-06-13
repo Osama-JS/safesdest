@@ -316,7 +316,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
 
                 // Investor Management Routes
-                Route::prefix('investors')->name('admin.investors.')->group(function () {
+                
+        // Banks
+        Route::resource('banks', \App\Http\Controllers\Admin\BankController::class)->names('admin.banks');
+
+        Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
                     Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');

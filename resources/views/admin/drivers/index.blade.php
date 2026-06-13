@@ -470,28 +470,12 @@
                                                         <div class="mb-4">
                                                             <label class="form-label"
                                                                 for="driver-bank-name">{{ __('Bank Name') }}</label>
-                                                            <select name="bank_name" id="driver-bank-name"
-                                                                class="form-select">
-                                                                <option value="">{{ __('Select Bank') }}</option>
-                                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
-                                                                </option>
-                                                                <option value="بنك الراجحي">بنك الراجحي</option>
-                                                                <option value="بنك الرياض">بنك الرياض</option>
-                                                                <option value="البنك السعودي للاستثمار">البنك السعودي
-                                                                    للاستثمار</option>
-                                                                <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي
-                                                                </option>
-                                                                <option value="البنك السعودي البريطاني">البنك السعودي
-                                                                    البريطاني (ساب)</option>
-                                                                <option value="بنك العربي الوطني">بنك العربي الوطني
-                                                                </option>
-                                                                <option value="بنك سامبا">بنك سامبا</option>
-                                                                <option value="البنك الأول">البنك الأول</option>
-                                                                <option value="بنك الجزيرة">بنك الجزيرة</option>
-                                                                <option value="بنك الإنماء">بنك الإنماء</option>
-                                                                <option value="البنك العربي">البنك العربي</option>
-                                                                <option value="other">{{ __('Other') }}</option>
-                                                            </select>
+                                                                                                                          <select name="bank_name" id="driver-bank-name" class="form-select">
+                                                                  <option value="">{{ __('Select Bank') }}</option>
+                                                                  @foreach($banks as $bank)
+                                                                      <option value="{{ $bank->name }}" data-code="{{ $bank->code }}">{{ $bank->name }}</option>
+                                                                  @endforeach
+                                                                </select>
                                                             <span class="bank_name-error text-danger text-error"></span>
                                                         </div>
                                                     </div>

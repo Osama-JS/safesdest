@@ -39,40 +39,17 @@ $(function () {
   // Handle bank selection change
   $(document).on('change', '#driver-bank-name', function () {
     const bankName = $(this).val();
-    const customBankField = $('#driver-custom-bank-field');
     const bicField = $('#driver-bic-code');
 
-    // Bank to BIC Mapping
-    const bankBicMapping = {
-      'البنك الأهلي السعودي': 'NCBKSAJE',
-      'بنك الراجحي': 'RJHISARI',
-      'بنك الرياض': 'RIBLSARI',
-      'البنك السعودي للاستثمار': 'SIBCSARI',
-      'البنك السعودي الفرنسي': 'BSFRSARI',
-      'البنك السعودي البريطاني (ساب)': 'SABBSA22',
-      'بنك العربي الوطني': 'ARNBSARI',
-      'بنك سامبا': 'SAMBSA22',
-      'البنك الأول': 'SAUBSARI',
-      'بنك الجزيرة': 'BJAZSAJE',
-      'بنك الإنماء': 'INMASARI',
-      'البنك العربي': 'ARNBUS6XXX'
-    };
+    // Auto-fill BIC Code from data-code attribute
+      const selectedOption = $(this).find('option:selected');
+      const bicCode = selectedOption.data('code');
 
-    if (bankName === 'other') {
-      customBankField.show();
-      $('#driver-custom-bank-name').attr('required', true);
-      bicField.val('').prop('readonly', false); // Allow manual entry
-    } else {
-      customBankField.hide();
-      $('#driver-custom-bank-name').attr('required', false).val('');
-
-      // Auto-fill BIC Code and make it readonly
-      if (bankBicMapping[bankName]) {
-        bicField.val(bankBicMapping[bankName]).prop('readonly', true);
+      if (bicCode) {
+        bicField.val(bicCode).prop('readonly', true);
       } else {
         bicField.val('').prop('readonly', false);
       }
-    }
   });
 
   // Format account number (numbers only)
@@ -481,11 +458,6 @@ $(function () {
       $('#driver-bank-city').val(data.bank_city || '');
       $('#driver-bank-country').val(data.bank_country || 'SA');
 
-      // Handle custom bank name
-      if (data.bank_name && !$('#driver-bank-name option[value="' + data.bank_name + '"]').length) {
-        $('#driver-bank-name').val('other');
-        $('#driver-custom-bank-name').val(data.bank_name);
-      }
       $('#driver-bank-name').trigger('change');
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
@@ -594,8 +566,6 @@ $(function () {
 
     // Reset bank details
     $('#driver-bank-name').val('');
-    $('#driver-custom-bank-name').val('');
-    $('#driver-custom-bank-field').hide();
     $('#driver-account-number').val('');
     $('#driver-iban-number').val('');
     $('#driver-bic-code').val('');

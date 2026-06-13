@@ -41,8 +41,9 @@ class DriversController extends Controller
         $roles = Role::where('guard_name', 'driver')->get();
         $vehicles = Vehicle::all();
         $driver_template = Settings::where('key', 'driver_template')->first();
+        $banks = \App\Models\Bank::where('is_active', true)->get();
 
-        return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template'));
+        return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks'));
     }
 
     public function getDrivers(Request $request)

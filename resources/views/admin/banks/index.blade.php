@@ -64,7 +64,7 @@
 <!-- Add Modal -->
 <div class="modal fade" id="addBankModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form action="{{ route('admin.banks.store') }}" method="POST">
+        <form action="{{ route('admin.banks.store') }}" method="POST" class="form_submit">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
@@ -105,7 +105,7 @@
 <!-- Edit Modal -->
 <div class="modal fade" id="editBankModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog" role="document">
-        <form id="editBankForm" method="POST">
+        <form id="editBankForm" method="POST" class="form_submit">
             @csrf
             @method('PUT')
             <div class="modal-content">
@@ -165,72 +165,11 @@
             });
         });
 
-        // AJAX submit for Edit Bank Form
-        $('#editBankForm').on('submit', function (e) {
-            e.preventDefault();
-            const form = $(this);
-            const url = form.attr('action');
-            
-            $.ajax({
-                type: 'POST',
-                url: url,
-                data: form.serialize(),
-                success: function (response) {
-                    if (response.success) {
-                        $('#editBankModal').modal('hide');
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500 }).then(() => location.reload());
-                        } else {
-                            location.reload();
-                        }
-                    }
-                },
-                error: function (xhr) {
-                    let errorMessage = 'An error occurred. Please try again.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'Error', text: errorMessage });
-                    } else {
-                        alert(errorMessage);
-                    }
-                }
-            });
-        });
-        
-        // AJAX submit for Add Bank Form
-        $('#addBankModal form').on('submit', function (e) {
-            e.preventDefault();
-            const form = $(this);
-            const url = form.attr('action');
-            
-            $.ajax({
-                type: 'POST',
-                url: url,
-                data: form.serialize(),
-                success: function (response) {
-                    if (response.success) {
-                        $('#addBankModal').modal('hide');
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500 }).then(() => location.reload());
-                        } else {
-                            location.reload();
-                        }
-                    }
-                },
-                error: function (xhr) {
-                    let errorMessage = 'An error occurred. Please try again.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'error', title: 'Error', text: errorMessage });
-                    } else {
-                        alert(errorMessage);
-                    }
-                }
-            });
+        // Listen for standard formSubmitted event from ajax.js to refresh page
+        document.addEventListener('formSubmitted', function(e) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         });
     });
 </script>

@@ -16,11 +16,18 @@ class BankController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'nullable'
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => 0, 'error' => $validator->errors()]);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         Bank::create([
             'name' => $request->name,
@@ -37,11 +44,18 @@ class BankController extends Controller
 
     public function update(Request $request, Bank $bank)
     {
-        $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'nullable'
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => 0, 'error' => $validator->errors()]);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $bank->update([
             'name' => $request->name,

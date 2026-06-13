@@ -28,6 +28,10 @@ class BankController extends Controller
             'is_active' => $request->has('is_active') ? true : false
         ]);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => __('Bank added successfully.')]);
+        }
+
         return redirect()->route('admin.banks.index')->with('success', __('Bank added successfully.'));
     }
 
@@ -45,12 +49,21 @@ class BankController extends Controller
             'is_active' => $request->has('is_active') ? true : false
         ]);
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => __('Bank updated successfully.')]);
+        }
+
         return redirect()->route('admin.banks.index')->with('success', __('Bank updated successfully.'));
     }
 
-    public function destroy(Bank $bank)
+    public function destroy(Request $request, Bank $bank)
     {
         $bank->delete();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => __('Bank deleted successfully.')]);
+        }
+
         return redirect()->route('admin.banks.index')->with('success', __('Bank deleted successfully.'));
     }
 }

@@ -164,6 +164,74 @@
                 document.getElementById('editBankForm').action = '/admin/banks/' + id;
             });
         });
+
+        // AJAX submit for Edit Bank Form
+        $('#editBankForm').on('submit', function (e) {
+            e.preventDefault();
+            const form = $(this);
+            const url = form.attr('action');
+            
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        $('#editBankModal').modal('hide');
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500 }).then(() => location.reload());
+                        } else {
+                            location.reload();
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    let errorMessage = 'An error occurred. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', text: errorMessage });
+                    } else {
+                        alert(errorMessage);
+                    }
+                }
+            });
+        });
+        
+        // AJAX submit for Add Bank Form
+        $('#addBankModal form').on('submit', function (e) {
+            e.preventDefault();
+            const form = $(this);
+            const url = form.attr('action');
+            
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        $('#addBankModal').modal('hide');
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'success', title: response.message, showConfirmButton: false, timer: 1500 }).then(() => location.reload());
+                        } else {
+                            location.reload();
+                        }
+                    }
+                },
+                error: function (xhr) {
+                    let errorMessage = 'An error occurred. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', text: errorMessage });
+                    } else {
+                        alert(errorMessage);
+                    }
+                }
+            });
+        });
     });
 </script>
 @endsection

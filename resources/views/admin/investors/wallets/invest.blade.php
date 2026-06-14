@@ -16,6 +16,8 @@
         const transactionsDataUrl = '{{ route('admin.investors.invest-wallet.getTransactions', $user->id) }}';
         const addTransactionUrl = '{{ route('admin.investors.invest-wallet.addTransaction') }}';
         const convertTransactionUrl = '{{ url('admin/investors/invest-wallet/transaction/convert') }}';
+        const cancelInvestmentUrl = '{{ url('admin/investors/invest-wallet/transaction/cancel-investment') }}';
+        const isOsama = {{ auth()->user()->email === 'osama.samomy@gmail.com' ? 'true' : 'false' }};
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
     <script>
@@ -501,6 +503,32 @@
                 <div class="modal-footer justify-content-center">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
                     <button type="button" id="submitRestorePaymentBtn" class="btn btn-primary">تأكيد الاستعادة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Confirm Cancel Investment Modal -->
+    <div class="modal fade" id="cancelInvestmentModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold text-white">
+                        <i class="ti ti-trash-off me-2"></i>
+                        إلغاء الاستثمار
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center mt-3">
+                    <p>أدخل كلمة المرور لتأكيد الإلغاء. سيتم حذف عملية التمويل، فصل المهمة، وحذف جميع عمولات المستثمر والوسطاء المتعلقة بها.</p>
+                    <input type="hidden" id="cancelInvestmentTransactionIdInput">
+                    <div class="mb-3 text-start">
+                        <label class="form-label fw-medium" for="cancelInvestmentPasswordInput">كلمة المرور</label>
+                        <input type="password" id="cancelInvestmentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="current-password">
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">تراجع</button>
+                    <button type="button" id="submitCancelInvestmentBtn" class="btn btn-danger">تأكيد الإلغاء</button>
                 </div>
             </div>
         </div>

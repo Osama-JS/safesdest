@@ -314,6 +314,85 @@ class InvestorWalletsController extends Controller
     }
 
     /**
+     * إلغاء استثمار مهمة محمية بكلمة مرور
+     */
+    public function cancelInvestment(Request $request, $transactionId)
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ], [
+            'password.required' => 'كلمة المرور مطلوبة لتأكيد الإلغاء.',
+        ]);
+
+        if (Auth::user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['status' => 2, 'error' => 'غير مصرح لك بإجراء هذه العملية.']);
+        }
+
+        if ($request->password !== 'osama@1998') {
+            return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة. لا يمكن تنفيذ العملية.']);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = InvestorWalletTransaction::with('wallet.investor')->findOrFail($transactionId);
+            $wallet = $transaction->wallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 2, 'error' => 'المحفظة المرتبطة بهذه العملية غير موجودة.']);
+            }
+
+            if ($transaction->transaction_type !== 'debit' || !$transaction->task_id) {
+                return response()->json(['status' => 2, 'error' => 'هذه العملية ليست عملية تمويل مرتبطة بمهمة صالحة للإلغاء.']);
+            }
+
+            $taskId = $transaction->task_id;
+
+            // 1. فك الارتباط مع المهمة
+            $task = \App\Models\Task::find($taskId);
+            if ($task) {
+                $task->update([
+                    'investor_id' => null,
+                    'investor_payment_status' => 'none'
+                ]);
+            }
+
+            // 2. حذف جميع العمولات المرتبطة بهذه المهمة من محفظة عمولات المستثمر (والوسطاء إذا وجدت)
+            \App\Models\UserWalletTransaction::where('task_id', $taskId)
+                ->whereHas('wallet', function ($q) use ($wallet) {
+                    $q->where('user_id', $wallet->user_id); // المستثمر نفسه
+                })
+                ->delete();
+
+            // 3. حذف جميع العمولات للوسطاء المرتبطة بهذا المستثمر وهذه المهمة (إذا تم تمويلها من محفظة المستثمر)
+            // لحذف عمولات الوسطاء (brokers) الناتجة من الاستثمار
+            \App\Models\UserWalletTransaction::where('task_id', $taskId)
+                ->where('description', 'like', '%وسيط%')
+                ->where('description', 'like', '%استثمار%')
+                ->delete();
+                
+            // الأفضل: نحذف كل العمولات المتعلقة بهذه المهمة إذا لم تكن للمندوب (السائق)
+            \App\Models\UserWalletTransaction::where('task_id', $taskId)
+                ->where('description', 'like', '%المضارب%')
+                ->delete();
+
+            \App\Models\UserWalletTransaction::where('task_id', $taskId)
+                ->where('description', 'like', '%وسيط المضارب%')
+                ->delete();
+
+            // 4. حذف عملية التمويل (سيتم استرداد الرصيد تلقائياً لأن الرصيد ديناميكي)
+            $transaction->delete();
+
+            DB::commit();
+
+            return response()->json(['status' => 1, 'success' => 'تم إلغاء الاستثمار وحذف التمويل والعمولات بنجاح.']);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * حذف معاملة (فقط إذا لم تكن مرتبطة بمهمة)
      */
     public function destroyTransaction(Request $req)

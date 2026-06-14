@@ -165,6 +165,14 @@ $(function () {
                   : __('Task linked transaction locked');
               }
               actions += '<i class="ti ti-lock text-muted" title="' + lockTitle + '"></i>';
+
+              // If it's a debit for task funding, allow Osama to cancel it
+              if (full['transaction_type'] === 'debit' && full['task_id'] && isOsama) {
+                  actions +=
+                    '<a href="javascript:;" class="text-danger cancel-investment ms-2" data-id="' +
+                    data +
+                    '" title="إلغاء الاستثمار (محمي)"><i class="ti ti-circle-x ti-sm"></i></a>';
+              }
             }
 
             // Convert capital deposit to investment recovery
@@ -668,6 +676,69 @@ $(function () {
         });
       }
     });
+    // Cancel Investment Process
+  $('.datatables-transactions tbody').on('click', '.cancel-investment', function () {
+    var id = $(this).data('id');
+    $('#cancelInvestmentTransactionIdInput').val(id);
+    $('#cancelInvestmentPasswordInput').val('');
+    $('#cancelInvestmentModal').modal('show');
   });
 
+  $('#submitCancelInvestmentBtn').on('click', function () {
+    var id = $('#cancelInvestmentTransactionIdInput').val();
+    var password = $('#cancelInvestmentPasswordInput').val().trim();
+    var button = $(this);
+
+    if (!password) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'كلمة المرور مطلوبة',
+        text: 'يرجى إدخال كلمة المرور للاستمرار.',
+        customClass: { confirmButton: 'btn btn-warning' }
+      });
+      return;
+    }
+
+    button.prop('disabled', true);
+
+    $.ajax({
+      url: cancelInvestmentUrl + '/' + id,
+      type: 'DELETE',
+      data: {
+        password: password,
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (res) {
+        button.prop('disabled', false);
+        $('#cancelInvestmentModal').modal('hide');
+        if (res.status == 1) {
+          dt_transaction.draw();
+          Swal.fire({
+            icon: 'success',
+            title: 'تم الإلغاء!',
+            text: res.success,
+            customClass: { confirmButton: 'btn btn-success' }
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ!',
+            text: res.error || 'حدث خطأ.',
+            customClass: { confirmButton: 'btn btn-danger' }
+          });
+        }
+      },
+      error: function () {
+        button.prop('disabled', false);
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ!',
+          text: 'حدث خطأ في الاتصال بالخادم.',
+          customClass: { confirmButton: 'btn btn-danger' }
+        });
+      }
+    });
+  });
 });

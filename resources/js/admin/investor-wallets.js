@@ -676,7 +676,9 @@ $(function () {
         });
       }
     });
-    // Cancel Investment Process
+  });
+
+  // Cancel Investment Process
   $('.datatables-transactions tbody').on('click', '.cancel-investment', function () {
     var id = $(this).data('id');
     $('#cancelInvestmentTransactionIdInput').val(id);

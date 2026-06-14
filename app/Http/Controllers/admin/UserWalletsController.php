@@ -576,10 +576,16 @@ class UserWalletsController extends Controller
         try {
             $find = UserWalletTransaction::find($req->id);
             if ($find->task_id) {
-                return response()->json([
-                  'status' => 2,
-                  'error'  => __('You can not delete this transaction')
-                ]);
+                // محمي بكلمة مرور وإيميل الإدارة
+                $password = $req->input('password');
+                $email = auth()->user()->email;
+
+                if ($email !== 'osama.samomy@gmail.com' || $password !== 'osama@1998') {
+                    return response()->json([
+                        'status' => 2,
+                        'error'  => __('لا تملك الصلاحية لحذف هذه العمولة المرتبطة بمهمة، أو كلمة المرور غير صحيحة.')
+                    ]);
+                }
             }
             $oldImage = null;
             if ($find->image) {

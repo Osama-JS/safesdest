@@ -116,14 +116,14 @@ $(function () {
                 ${
                   full.task_id !== ''
                     ? `
-                    <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}" data-name="${full.sequence}" >
+                    <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}" data-name="${full.sequence}" data-task-id="${full.task_id}" >
                   <i class="ti ti-trash"></i>
                 </button>
                     `
                     : `<button class="btn btn-sm btn-icon edit-record " data-id="${full.id}"  >
                   <i class="ti ti-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.sequence}">
+                <button class="btn btn-sm btn-icon delete-record " data-id="${full.id}"  data-name="${full.sequence}" data-task-id="${full.task_id}">
                   <i class="ti ti-trash"></i>
                 </button>`
                 }
@@ -305,8 +305,53 @@ $(function () {
     });
   });
   $(document).on('click', '.delete-record', function () {
-    let url = baseUrl + 'admin/user-wallets/transaction/delete/' + $(this).data('id');
-    deleteRecord('Transaction : #' + $(this).data('name'), url);
+    let id = $(this).data('id');
+    let sequence = $(this).data('name');
+    let taskId = $(this).data('task-id');
+    let url = baseUrl + 'admin/user-wallets/transaction/delete/' + id;
+
+    if (taskId && taskId !== '' && taskId !== 'null' && taskId !== null) {
+      Swal.fire({
+        title: 'صلاحية مطلوبة',
+        text: 'هذه العمولة مرتبطة بمهمة. يرجى إدخال كلمة المرور لحذفها:',
+        input: 'password',
+        inputAttributes: {
+          autocapitalize: 'off',
+          autocorrect: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'حذف العمولة',
+        cancelButtonText: 'إلغاء',
+        customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-label-secondary' }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          if (!result.value) {
+            Swal.fire('خطأ', 'كلمة المرور مطلوبة', 'error');
+            return;
+          }
+          $.ajax({
+            url: url,
+            type: 'DELETE',
+            data: {
+              password: result.value,
+              _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (res) {
+              if (res.status == 1) {
+                Swal.fire('تم החذف!', res.success, 'success').then(() => dt_transactions.draw());
+              } else {
+                Swal.fire('خطأ!', res.error || 'حدث خطأ.', 'error');
+              }
+            },
+            error: function () {
+              Swal.fire('خطأ!', 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
+            }
+          });
+        }
+      });
+    } else {
+      deleteRecord('Transaction : #' + sequence, url);
+    }
   });
 
   $(document).on('click', '.show-image', function () {

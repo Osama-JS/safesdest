@@ -359,9 +359,7 @@ class InvestorWalletsController extends Controller
 
             // 2. حذف جميع العمولات المرتبطة بهذه المهمة من محفظة عمولات المستثمر (والوسطاء إذا وجدت)
             \App\Models\UserWalletTransaction::where('task_id', $taskId)
-                ->whereHas('wallet', function ($q) use ($wallet) {
-                    $q->where('user_id', $wallet->user_id); // المستثمر نفسه
-                })
+                ->where('user_id', $wallet->user_id) // المستثمر نفسه
                 ->delete();
 
             // 3. حذف جميع العمولات للوسطاء المرتبطة بهذا المستثمر وهذه المهمة (إذا تم تمويلها من محفظة المستثمر)

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * User Wallets Management
  */
 
@@ -73,7 +73,7 @@ $(function () {
             let imageBtn = '';
             if (full.image) {
               imageBtn = `
-                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="عرض الصورة">
+                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="Ø¹Ø±Ø¶ Ø§Ù„ØµÙˆØ±Ø©">
                   <i class="ti ti-photo"></i>
                 </button>
               `;
@@ -312,21 +312,21 @@ $(function () {
 
     if (taskId && taskId !== '' && taskId !== 'null' && taskId !== null) {
       Swal.fire({
-        title: 'صلاحية مطلوبة',
-        text: 'هذه العمولة مرتبطة بمهمة. يرجى إدخال كلمة المرور لحذفها:',
+        title: 'ØµÙ„Ø§Ø­ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©',
+        text: 'Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù…ÙˆÙ„Ø© Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù…Ù‡Ù…Ø©. ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø­Ø°ÙÙ‡Ø§:',
         input: 'password',
         inputAttributes: {
           autocapitalize: 'off',
           autocorrect: 'off'
         },
         showCancelButton: true,
-        confirmButtonText: 'حذف العمولة',
-        cancelButtonText: 'إلغاء',
+        confirmButtonText: 'Ø­Ø°Ù Ø§Ù„Ø¹Ù…ÙˆÙ„Ø©',
+        cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
         customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-label-secondary' }
       }).then((result) => {
         if (result.isConfirmed) {
           if (!result.value) {
-            Swal.fire('خطأ', 'كلمة المرور مطلوبة', 'error');
+            Swal.fire('Ø®Ø·Ø£', 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø·Ù„ÙˆØ¨Ø©', 'error');
             return;
           }
           $.ajax({
@@ -338,13 +338,13 @@ $(function () {
             },
             success: function (res) {
               if (res.status == 1) {
-                Swal.fire('تم החذف!', res.success, 'success').then(() => dt_transactions.draw());
+                Swal.fire('ØªÙ… ×”×—Ø°Ù!', res.success, 'success').then(() => dt_transactions.draw());
               } else {
-                Swal.fire('خطأ!', res.error || 'حدث خطأ.', 'error');
+                Swal.fire('Ø®Ø·Ø£!', res.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£.', 'error');
               }
             },
             error: function () {
-              Swal.fire('خطأ!', 'حدث خطأ أثناء الاتصال بالخادم.', 'error');
+              Swal.fire('Ø®Ø·Ø£!', 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù….', 'error');
             }
           });
         }
@@ -355,39 +355,39 @@ $(function () {
   });
 
   $(document).on('click', '.show-image', function () {
-    const fileUrl = $(this).data('image'); // الرابط الكامل للملف
+    const fileUrl = $(this).data('image'); // Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„ÙƒØ§Ù…Ù„ Ù„Ù„Ù…Ù„Ù
 
-    // استخرج اسم الملف من الرابط
+    // Ø§Ø³ØªØ®Ø±Ø¬ Ø§Ø³Ù… Ø§Ù„Ù…Ù„Ù Ù…Ù† Ø§Ù„Ø±Ø§Ø¨Ø·
     const fileName = fileUrl.split('/').pop();
 
-    // استخرج الامتداد
+    // Ø§Ø³ØªØ®Ø±Ø¬ Ø§Ù„Ø§Ù…ØªØ¯Ø§Ø¯
     const extension = fileName.split('.').pop().toLowerCase();
 
-    // الامتدادات المسموح بها للصور
+    // Ø§Ù„Ø§Ù…ØªØ¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡Ø§ Ù„Ù„ØµÙˆØ±
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     if (imageExtensions.includes(extension)) {
-      // إذا كان صورة -> اعرضها داخل <img>
+      // Ø¥Ø°Ø§ ÙƒØ§Ù† ØµÙˆØ±Ø© -> Ø§Ø¹Ø±Ø¶Ù‡Ø§ Ø¯Ø§Ø®Ù„ <img>
       $('#modalContent').html(`
             <img id="modalImage" src="${fileUrl}" class="img-fluid rounded" alt="${fileName}">
         `);
     } else if (extension === 'pdf') {
-      // استخدام Google Docs Viewer
+      // Ø§Ø³ØªØ®Ø¯Ø§Ù… Google Docs Viewer
       $('#modalContent').html(`
         <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true"
                 width="100%" height="600px" style="border:none;"></iframe>
     `);
     } else {
-      // أي ملف آخر (Word, Excel, ...) -> اعرض اسمه مع زر فتح
+      // Ø£ÙŠ Ù…Ù„Ù Ø¢Ø®Ø± (Word, Excel, ...) -> Ø§Ø¹Ø±Ø¶ Ø§Ø³Ù…Ù‡ Ù…Ø¹ Ø²Ø± ÙØªØ­
       $('#modalContent').html(`
             <div class="p-3 text-center">
-                <p><strong>الملف:</strong> ${fileName}</p>
-                <a href="${fileUrl}" target="_blank" class="btn btn-primary">فتح الملف</a>
+                <p><strong>Ø§Ù„Ù…Ù„Ù:</strong> ${fileName}</p>
+                <a href="${fileUrl}" target="_blank" class="btn btn-primary">ÙØªØ­ Ø§Ù„Ù…Ù„Ù</a>
             </div>
         `);
     }
 
-    // افتح المودال
+    // Ø§ÙØªØ­ Ø§Ù„Ù…ÙˆØ¯Ø§Ù„
     $('#fileModal').modal('show');
   });
 
@@ -401,17 +401,17 @@ $(function () {
   });
   $(document).on('click', '#clearWalletBtn', function () {
     Swal.fire({
-      title: 'طلب كلمة المرور السرية',
-      text: 'الرجاء إدخال الكلمة السرية لتأكيد عملية تصفية المحفظة بالكامل:',
+      title: 'Ø·Ù„Ø¨ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø³Ø±ÙŠØ©',
+      text: 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ© Ù„ØªØ£ÙƒÙŠØ¯ Ø¹Ù…Ù„ÙŠØ© ØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„:',
       input: 'password',
-      inputPlaceholder: 'أدخل الكلمة السرية...',
+      inputPlaceholder: 'Ø£Ø¯Ø®Ù„ Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ©...',
       inputAttributes: {
         autocapitalize: 'off',
         autocorrect: 'off'
       },
       showCancelButton: true,
-      confirmButtonText: 'تحقق وتصفية المحفظة',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: 'ØªØ­Ù‚Ù‚ ÙˆØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø©',
+      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
       customClass: {
         confirmButton: 'btn btn-danger me-3',
         cancelButton: 'btn btn-label-secondary'
@@ -421,8 +421,8 @@ $(function () {
       if (result.isConfirmed) {
         if (result.value !== 'OsamaAlsamomy@1998') {
           Swal.fire({
-            title: 'خطأ في التحقق!',
-            text: 'الكلمة السرية المدخلة غير صحيحة، لا يمكن إتمام عملية التصفية.',
+            title: 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ù‚Ù‚!',
+            text: 'Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ© Ø§Ù„Ù…Ø¯Ø®Ù„Ø© ØºÙŠØ± ØµØ­ÙŠØ­Ø©ØŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø¥ØªÙ…Ø§Ù… Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªØµÙÙŠØ©.',
             icon: 'error',
             customClass: {
               confirmButton: 'btn btn-primary'
@@ -431,14 +431,14 @@ $(function () {
           return;
         }
 
-        // كلمة المرور صحيحة، نقوم بطلب التأكيد النهائي أو البدء الفوري
+        // ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØµØ­ÙŠØ­Ø©ØŒ Ù†Ù‚ÙˆÙ… Ø¨Ø·Ù„Ø¨ Ø§Ù„ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø£Ùˆ Ø§Ù„Ø¨Ø¯Ø¡ Ø§Ù„ÙÙˆØ±ÙŠ
         Swal.fire({
-          title: 'هل أنت متأكد نهائياً؟',
-          text: 'سيتم مسح كافة الحركات المالية من المحفظة نهائياً وتصفير الرصيد!',
+          title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ',
+          text: 'Ø³ÙŠØªÙ… Ù…Ø³Ø­ ÙƒØ§ÙØ© Ø§Ù„Ø­Ø±ÙƒØ§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ© Ù…Ù† Ø§Ù„Ù…Ø­ÙØ¸Ø© Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ ÙˆØªØµÙÙŠØ± Ø§Ù„Ø±ØµÙŠØ¯!',
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonText: 'نعم، مسح وتصفية!',
-          cancelButtonText: 'تراجع',
+          confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ù…Ø³Ø­ ÙˆØªØµÙÙŠØ©!',
+          cancelButtonText: 'ØªØ±Ø§Ø¬Ø¹',
           customClass: {
             confirmButton: 'btn btn-danger me-3',
             cancelButton: 'btn btn-label-secondary'
@@ -456,7 +456,7 @@ $(function () {
                 if (response.status === 1) {
                   Swal.fire({
                     icon: 'success',
-                    title: 'تمت التصفية!',
+                    title: 'ØªÙ…Øª Ø§Ù„ØªØµÙÙŠØ©!',
                     text: response.success,
                     customClass: {
                       confirmButton: 'btn btn-success'
@@ -466,7 +466,7 @@ $(function () {
                   });
                 } else {
                   Swal.fire({
-                    title: 'خطأ!',
+                    title: 'Ø®Ø·Ø£!',
                     text: response.error,
                     icon: 'error',
                     customClass: {
@@ -477,8 +477,8 @@ $(function () {
               },
               error: function () {
                 Swal.fire({
-                  title: 'خطأ!',
-                  text: 'حدث خطأ أثناء محاولة تصفية المحفظة.',
+                  title: 'Ø®Ø·Ø£!',
+                  text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ù…Ø­Ø§ÙˆÙ„Ø© ØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø©.',
                   icon: 'error',
                   customClass: {
                     confirmButton: 'btn btn-primary'
@@ -524,18 +524,18 @@ $(function () {
           let allowCalc = true;
 
           if (response.already_calculated) {
-            eligibilityMsg = '<i class="ti ti-alert-triangle me-1"></i> تنبيه: تم احتساب عمولة هذه المهمة مسبقاً لهذا المستثمر.';
+            eligibilityMsg = '<i class="ti ti-alert-triangle me-1"></i> ØªÙ†Ø¨ÙŠÙ‡: ØªÙ… Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø© Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ø³Ø¨Ù‚Ø§Ù‹ Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±.';
             alertClass = 'alert-warning';
             allowCalc = false;
           } else if (response.funded_by_other) {
-            eligibilityMsg = '<i class="ti ti-circle-x me-1"></i> خطأ: هذه المهمة ممولة من قبل مستثمر آخر.';
+            eligibilityMsg = '<i class="ti ti-circle-x me-1"></i> Ø®Ø·Ø£: Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ù…ÙˆÙ„Ø© Ù…Ù† Ù‚Ø¨Ù„ Ù…Ø³ØªØ«Ù…Ø± Ø¢Ø®Ø±.';
             alertClass = 'alert-danger';
             allowCalc = false;
           } else {
-            eligibilityMsg = '<i class="ti ti-check me-1"></i> المهمة جاهزة للاحتساب اليدوي.';
+            eligibilityMsg = '<i class="ti ti-check me-1"></i> Ø§Ù„Ù…Ù‡Ù…Ø© Ø¬Ø§Ù‡Ø²Ø© Ù„Ù„Ø§Ø­ØªØ³Ø§Ø¨ Ø§Ù„ÙŠØ¯ÙˆÙŠ.';
             alertClass = 'alert-success';
             if (response.is_cancelled) {
-              eligibilityMsg += ' (ملاحظة: المهمة ملغاة)';
+              eligibilityMsg += ' (Ù…Ù„Ø§Ø­Ø¸Ø©: Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ù„ØºØ§Ø©)';
             }
           }
 
@@ -546,14 +546,14 @@ $(function () {
             $('#btnConfirmManualCalc').addClass('d-none');
           }
         } else {
-          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+          Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
           $('#taskSearchResult').addClass('d-none');
           $('#btnConfirmManualCalc').addClass('d-none');
         }
       },
       error: function () {
         btn.prop('disabled', false).html('<i class="ti ti-search"></i>');
-        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء البحث عن المهمة.', icon: 'error' });
+        Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„Ù…Ù‡Ù…Ø©.', icon: 'error' });
       }
     });
   });
@@ -563,12 +563,12 @@ $(function () {
     const btn = $(this);
 
     Swal.fire({
-      title: 'هل أنت متأكد؟',
-      text: "سيتم احتساب عمولة المهمة رقم #" + taskId + " يدوياً.",
+      title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ØŸ',
+      text: "Ø³ÙŠØªÙ… Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø© Ø§Ù„Ù…Ù‡Ù…Ø© Ø±Ù‚Ù… #" + taskId + " ÙŠØ¯ÙˆÙŠØ§Ù‹.",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، احتسبها',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø­ØªØ³Ø¨Ù‡Ø§',
+      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
       customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -584,15 +584,15 @@ $(function () {
           success: function (response) {
             btn.prop('disabled', false).text('Calculate Commission');
             if (response.status === 1) {
-              Swal.fire({ icon: 'success', title: 'نجاح!', text: response.success, customClass: { confirmButton: 'btn btn-success' } })
+              Swal.fire({ icon: 'success', title: 'Ù†Ø¬Ø§Ø­!', text: response.success, customClass: { confirmButton: 'btn btn-success' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
             btn.prop('disabled', false).text('Calculate Commission');
-            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
           }
         });
       }
@@ -602,12 +602,12 @@ $(function () {
   $(document).on('click', '#calculateGeneralBtn', function () {
     const btn = $(this);
     Swal.fire({
-      title: 'تأكيد',
-      text: 'هل تريد احتساب جميع العمولات العامة المستحقة لهذا المستثمر؟',
+      title: 'ØªØ£ÙƒÙŠØ¯',
+      text: 'Ù‡Ù„ ØªØ±ÙŠØ¯ Ø§Ø­ØªØ³Ø§Ø¨ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø© Ø§Ù„Ù…Ø³ØªØ­Ù‚Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±ØŸ',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، ابدأ الاحتساب',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨',
+      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
       customClass: { confirmButton: 'btn btn-success me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -622,15 +622,15 @@ $(function () {
           success: function (response) {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
             if (response.status === 1) {
-              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ØªÙ†Ø¨ÙŠÙ‡' : 'Ù†Ø¬Ø§Ø­!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
-            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
           }
         });
       }
@@ -640,17 +640,17 @@ $(function () {
   $(document).on('click', '#calculateBrokerBtn', function () {
     const btn = $(this);
     Swal.fire({
-      title: 'تأكيد احتساب عمولات الوسيط',
-      text: 'هل تريد فحص واحتساب كافة عمولات الوساطة المستحقة لهذا المستخدم عن المهام التي مولها المستثمرون المرتبطون به؟',
+      title: 'ØªØ£ÙƒÙŠØ¯ Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·',
+      text: 'Ù‡Ù„ ØªØ±ÙŠØ¯ ÙØ­Øµ ÙˆØ§Ø­ØªØ³Ø§Ø¨ ÙƒØ§ÙØ© Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³Ø§Ø·Ø© Ø§Ù„Ù…Ø³ØªØ­Ù‚Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¹Ù† Ø§Ù„Ù…Ù‡Ø§Ù… Ø§Ù„ØªÙŠ Ù…ÙˆÙ„Ù‡Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±ÙˆÙ† Ø§Ù„Ù…Ø±ØªØ¨Ø·ÙˆÙ† Ø¨Ù‡ØŸ',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'نعم، ابدأ الاحتساب',
-      cancelButtonText: 'إلغاء',
+      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨',
+      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
       customClass: { confirmButton: 'btn btn-warning me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
       if (result.value) {
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الاحتساب...');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨...');
         $.ajax({
           url: calculateBrokerUrl,
           type: 'POST',
@@ -658,24 +658,24 @@ $(function () {
             _token: $('meta[name="csrf-token"]').attr('content')
           },
           success: function (response) {
-            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط</span>');
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·</span>');
             if (response.status === 1) {
-              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ØªÙ†Ø¨ÙŠÙ‡' : 'Ù†Ø¬Ø§Ø­!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
-            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط</span>');
-            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·</span>');
+            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
           }
         });
       }
     });
   });
 
-  // إعادة استثمار الأرباح (للمضاربين)
+  // Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø³ØªØ«Ù…Ø§Ø± Ø§Ù„Ø£Ø±Ø¨Ø§Ø­ (Ù„Ù„Ù…Ø¶Ø§Ø±Ø¨ÙŠÙ†)
   $(document).on('submit', '#reinvestProfitsForm', function (e) {
     e.preventDefault();
 
@@ -757,3 +757,4 @@ $(function () {
     }
   });
 });
+

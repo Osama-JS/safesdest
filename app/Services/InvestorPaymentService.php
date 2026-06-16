@@ -347,7 +347,7 @@ class InvestorPaymentService
                     $investorCommission = $contract->calculateCommission($platformCut);
                     if ($investorCommission <= 0) continue;
 
-                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "احتساب متأخر للمهمة");
+                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, null);
 
                     $totalCommission += $investorCommission;
                     $count++;

@@ -347,7 +347,7 @@ class InvestorPaymentService
                     $investorCommission = $contract->calculateCommission($platformCut);
                     if ($investorCommission <= 0) continue;
 
-                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, null);
+                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "");
 
                     $totalCommission += $investorCommission;
                     $count++;

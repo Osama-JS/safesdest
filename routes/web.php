@@ -437,6 +437,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/users/{userId}/wallet/search-task', [UserWalletsController::class, 'searchTaskForCommission'])->name('admin.user-wallets.search-task');
                 Route::post('/users/{userId}/wallet/calculate-manual', [UserWalletsController::class, 'calculateManualCommission'])->name('admin.user-wallets.calculate-manual');
                 Route::post('/users/{userId}/wallet/calculate-general', [UserWalletsController::class, 'calculateGeneralCommissions'])->name('admin.user-wallets.calculate-general');
+                Route::post('/users/{userId}/wallet/calculate-tasks', [UserWalletsController::class, 'calculateTasksCommissions'])->name('admin.user-wallets.calculate-tasks');
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
                 Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');

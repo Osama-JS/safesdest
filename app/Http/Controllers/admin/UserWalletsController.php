@@ -852,6 +852,31 @@ class UserWalletsController extends Controller
         }
     }
 
+    public function calculateTasksCommissions(Request $request, $userId, InvestorPaymentService $paymentService)
+    {
+        try {
+            $investor = User::findOrFail($userId);
+            $contract = $investor->activeInvestmentContract;
+
+            if (!$contract || $contract->contract_type !== 'task_investment') {
+                return response()->json(['status' => 0, 'error' => 'هذه الميزة متاحة للمضارب بالمهام فقط.']);
+            }
+
+            $result = $paymentService->calculateTasksCommissions($investor, $contract);
+
+            if ($result['count'] === 0) {
+                return response()->json(['status' => 1, 'info' => 'لا توجد مهام جديدة لاحتساب عمولاتها.']);
+            }
+
+            return response()->json([
+                'status' => 1,
+                'success' => "تم احتساب عمولات {$result['count']} مهمة بإجمالي " . number_format($result['total_commission'], 2) . " ر.س"
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
     public function calculateBrokerCommissions(Request $request, $userId)
     {
         DB::beginTransaction();

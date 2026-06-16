@@ -258,6 +258,110 @@ class InvestorPaymentService
     }
 
     /**
+     * احتساب عمولات المهام المحددة (للمضارب بالمهام).
+     * تُستدعى عند الضغط على زر "احتساب عمولات المهام" من لوحة تحكم المستثمر.
+     *
+     * القواعد:
+     * - تُحتسب فقط المهام الممولة من قبل هذا المستثمر (investor_id == user_id)
+     * - لا يشترط حالة دفع معينة.
+     * - لا تُحتسب عمولة على مهمة سبق احتساب عمولتها ولم يتم إلغاؤها
+     *
+     * @param  User               $investor
+     * @param  InvestmentContract $contract
+     * @return array ['count' => int, 'total_commission' => float]
+     * @throws \Exception
+     */
+    public function calculateTasksCommissions(User $investor, InvestmentContract $contract): array
+    {
+        if ($contract->contract_type !== 'task_investment') {
+            throw new \Exception(__('This feature is for task investors only.'));
+        }
+
+        if (!$contract->isActive()) {
+            throw new \Exception(__('Contract not active or expired'));
+        }
+
+        $personalWallet = $investor->userWallet;
+        if (!$personalWallet) {
+            throw new \Exception(__('No personal wallet for investor'));
+        }
+
+        // قفل لمنع الـ Race Condition وتنفيذ الدالة مرتين متتاليتين في نفس الوقت لنفس المستثمر
+        $lockKey = 'calc_tasks_commissions_investor_' . $investor->id;
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 15); // القفل يمتد لـ 15 ثانية كحد أقصى
+
+        if (!$lock->get()) {
+            throw new \Exception(__('Calculation is already in progress, please wait.'));
+        }
+
+        try {
+            // جلب المهام المرتبطة بهذا المستثمر كممول
+            $tasksQuery = Task::with('ad')
+                ->where('investor_id', $investor->id)
+                ->where(function($q) {
+                    // المهمة يجب أن تكون لها عمولة (إما في جدول المهام أو الإعلان)
+                    $q->where('commission', '>', 0)
+                      ->orWhereHas('ad', fn($sub) => $sub->where('service_commission', '>', 0));
+                })
+                // استثناء المهام التي تم احتساب عمولتها مسبقاً
+                ->whereNotIn('id', function ($query) use ($personalWallet) {
+                    $query->select('task_id')
+                          ->from('user_wallet_transactions')
+                          ->where('user_wallet_id', $personalWallet->id)
+                          ->whereNotNull('task_id')
+                          ->groupBy('task_id')
+                          ->havingRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0");
+                });
+
+            $tasks = $tasksQuery->get();
+
+            if ($tasks->isEmpty()) {
+                return ['count' => 0, 'total_commission' => 0.0];
+            }
+
+            $totalCommission = 0.0;
+            $count           = 0;
+
+            DB::transaction(function () use ($tasks, $contract, $personalWallet, $investor, &$totalCommission, &$count) {
+                foreach ($tasks as $task) {
+                    // 1. حساب مبلغ عمولة المنصة الفعلي
+                    $platformCut = 0;
+                    if ($task->ad) {
+                        if ($task->ad->service_commission_type == 1) { 
+                            $platformCut = (float) $task->ad->service_commission;
+                        } else {
+                            $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                        }
+                    } else {
+                        $platformCut = (float) $task->commission;
+                    }
+
+                    if ($platformCut <= 0) continue;
+
+                    // 2. التحقق من الحد الأدنى للعمولة في العقد
+                    if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
+                        continue;
+                    }
+
+                    // 3. حساب نصيب المضارب
+                    $investorCommission = $contract->calculateCommission($platformCut);
+                    if ($investorCommission <= 0) continue;
+
+                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "احتساب متأخر للمهمة");
+
+                    $totalCommission += $investorCommission;
+                    $count++;
+                }
+            });
+
+            return ['count' => $count, 'total_commission' => $totalCommission];
+            
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
      * إيداع عمولة المضارب في محفظته الشخصية بعد الدفع على مهمة.
      * مشتركة بين نوعي الاستثمار.
      */

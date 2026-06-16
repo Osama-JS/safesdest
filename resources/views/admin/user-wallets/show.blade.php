@@ -233,10 +233,17 @@
                     <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
                     <span class="d-none d-sm-inline-block"> {{ __('Manual Calculation') }}</span>
                 </button>
+                @if($activeContract && $activeContract->contract_type === 'general_investment')
                 <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateGeneralBtn">
                     <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
                     <span class="d-none d-sm-inline-block"> {{ __('Calculate General Commissions') }}</span>
                 </button>
+                @elseif($activeContract && $activeContract->contract_type === 'task_investment')
+                <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateTasksBtn">
+                    <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات المهام الممولة</span>
+                </button>
+                @endif
                 @if(($withdrawableBalance ?? 0) > 0)
                 <button class="btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
                     data-bs-target="#reinvestProfitsModal">
@@ -626,6 +633,7 @@
         const searchTaskUrl = '{{ route('admin.user-wallets.search-task', $user->id) }}';
         const calculateManualUrl = '{{ route('admin.user-wallets.calculate-manual', $user->id) }}';
         const calculateGeneralUrl = '{{ route('admin.user-wallets.calculate-general', $user->id) }}';
+        const calculateTasksUrl = '{{ route('admin.user-wallets.calculate-tasks', $user->id) }}';
         const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
         const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
         const isInvestor = {{ $isInvestor ? 'true' : 'false' }};

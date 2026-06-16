@@ -1,4 +1,4 @@
-﻿/**
+/**
  * User Wallets Management
  */
 
@@ -631,6 +631,44 @@ $(function () {
           error: function () {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
             Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
+          }
+        });
+      }
+    });
+  });
+
+  $(document).on('click', '#calculateTasksBtn', function () {
+    const btn = $(this);
+    Swal.fire({
+      title: 'تأكيد',
+      text: 'هل تريد احتساب عمولات جميع المهام الممولة التي لم يتم احتسابها بعد؟',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'نعم، ابدأ الاحتساب',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-success me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false
+    }).then(function (result) {
+      if (result.value) {
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+        $.ajax({
+          url: calculateTasksUrl,
+          type: 'POST',
+          data: {
+            _token: $('meta[name="csrf-token"]').attr('content')
+          },
+          success: function (response) {
+            btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات المهام الممولة</span>');
+            if (response.status === 1) {
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+                .then(() => location.reload());
+            } else {
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+            }
+          },
+          error: function () {
+            btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب عمولات المهام الممولة</span>');
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
           }
         });
       }

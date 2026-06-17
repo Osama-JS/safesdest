@@ -623,6 +623,7 @@
 
     function fixInvestmentConflict(taskId) {
         Swal.fire({
+            target: document.getElementById('investmentConflictsModal'),
             title: 'تأكيد الإصلاح',
             text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
             input: 'password',

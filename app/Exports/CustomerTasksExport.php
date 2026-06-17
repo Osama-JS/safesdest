@@ -34,39 +34,58 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
     public function collection()
     {
         $tasks = collect($this->reportData['tasks']);
+        $showCurrency = !isset($this->filters['show_currency']) || $this->filters['show_currency'] == 1;
+        $briefData = isset($this->filters['brief_data']) && $this->filters['brief_data'] == 1;
 
-        return $tasks->map(function ($task) {
+        return $tasks->map(function ($task) use ($showCurrency, $briefData) {
             $row = [];
 
             foreach ($this->selectedColumns as $column) {
+                if (str_starts_with($column, 'driver_extra:')) {
+                    $row[] = $task[$column] ?? 'غير محدد';
+                    continue;
+                }
                 switch ($column) {
                     case 'task_id':
                         $row[] = $task['id'];
                         break;
                     case 'total_price':
+                        $priceSuffix = $showCurrency ? ' ريال' : '';
                         if ($task['total_price'] == 0 && isset($task['original_price']) && $task['original_price'] > 0) {
-                            $row[] = 'مسترجع/ملغي - السعر الأصلي: ' . number_format($task['original_price'], 2) . ' ريال - المبلغ الفعلي: 0.00 ريال';
+                            $row[] = 'مسترجع/ملغي - السعر الأصلي: ' . number_format($task['original_price'], 2) . $priceSuffix . ' - المبلغ الفعلي: 0.00' . $priceSuffix;
                         } else {
-                            $row[] = number_format($task['total_price'], 2) . ' ريال';
+                            $row[] = number_format($task['total_price'], 2) . $priceSuffix;
                         }
                         break;
                     case 'pickup_info':
-                        $row[] = $task['pickup_address'] . "\n" .
-                                'المسؤول: ' . $task['pickup_contact_name'] . "\n" .
-                                'الهاتف: ' . $task['pickup_contact_phone'];
+                        if ($briefData) {
+                            $row[] = $task['pickup_address'];
+                        } else {
+                            $row[] = $task['pickup_address'] . "\n" .
+                                    'المسؤول: ' . $task['pickup_contact_name'] . "\n" .
+                                    'الهاتف: ' . $task['pickup_contact_phone'];
+                        }
                         break;
                     case 'delivery_info':
-                        $row[] = $task['delivery_address'] . "\n" .
-                                'المسؤول: ' . $task['delivery_contact_name'] . "\n" .
-                                'الهاتف: ' . $task['delivery_contact_phone'];
+                        if ($briefData) {
+                            $row[] = $task['delivery_address'];
+                        } else {
+                            $row[] = $task['delivery_address'] . "\n" .
+                                    'المسؤول: ' . $task['delivery_contact_name'] . "\n" .
+                                    'الهاتف: ' . $task['delivery_contact_phone'];
+                        }
                         break;
                     case 'vehicle_name':
                         $row[] = $task['vehicle_name'];
                         break;
                     case 'driver_info':
-                        $row[] = $task['driver_name'] . "\n" .
-                                'الهاتف: ' . $task['driver_phone'] . "\n" .
-                                'الفريق: ' . $task['team_name'];
+                        if ($briefData) {
+                            $row[] = $task['driver_name'];
+                        } else {
+                            $row[] = $task['driver_name'] . "\n" .
+                                    'الهاتف: ' . $task['driver_phone'] . "\n" .
+                                    'الفريق: ' . $task['team_name'];
+                        }
                         break;
                     case 'status':
                         $row[] = $task['status_ar'];
@@ -91,23 +110,28 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
                         $row[] = $task['completed_at_formatted'] ?: 'لم تكتمل بعد';
                         break;
                     case 'closed_at':
-                        $row[] = $task['closed_at_formatted'] ?: 'لم تُغلق بعد';
+                        $row[] = $task['closed_at_formatted'] ?: 'لم تغلق بعد';
+                        break;
+                    case 'delivery_number':
+                        $row[] = $task['delivery_number'];
                         break;
                 }
             }
-
             return $row;
         });
     }
 
     /**
-     * Return headings
+     * Return headings for the spreadsheet
      */
     public function headings(): array
     {
         $headings = [];
-
         foreach ($this->selectedColumns as $column) {
+            if (str_starts_with($column, 'driver_extra:')) {
+                $headings[] = $this->reportData['extra_columns_map'][$column] ?? 'Extra';
+                continue;
+            }
             switch ($column) {
                 case 'task_id':
                     $headings[] = 'رقم المهمة';
@@ -147,6 +171,9 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
                     break;
                 case 'closed_at':
                     $headings[] = 'تاريخ الإغلاق';
+                    break;
+                case 'delivery_number':
+                    $headings[] = 'رقم مذكرة التوصيل';
                     break;
             }
         }
@@ -329,10 +356,12 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
         $sheet->setCellValue('A' . ($lastRow + 1), 'ملخص التقرير');
         $sheet->mergeCells('A' . ($lastRow + 1) . ':' . chr(64 + count($this->selectedColumns)) . ($lastRow + 1));
 
+        $priceSuffix = (!isset($this->filters['show_currency']) || $this->filters['show_currency'] == 1) ? ' ريال' : '';
+
         // Summary data
         $sheet->setCellValue('A' . ($lastRow + 2), 'إجمالي عدد المهام: ' . $this->reportData['summary']['total_tasks']);
-        $sheet->setCellValue('A' . ($lastRow + 3), 'إجمالي المبلغ: ' . number_format($this->reportData['summary']['total_amount'], 2) . ' ريال');
-        $sheet->setCellValue('A' . ($lastRow + 4), 'متوسط سعر المهمة: ' . number_format($this->reportData['summary']['average_amount'], 2) . ' ريال');
+        $sheet->setCellValue('A' . ($lastRow + 3), 'إجمالي المبلغ: ' . number_format($this->reportData['summary']['total_amount'], 2) . $priceSuffix);
+        $sheet->setCellValue('A' . ($lastRow + 4), 'متوسط سعر المهمة: ' . number_format($this->reportData['summary']['average_amount'], 2) . $priceSuffix);
 
         // Style summary
         $sheet->getStyle('A' . ($lastRow + 1) . ':A' . ($lastRow + 4))->applyFromArray([
@@ -348,3 +377,4 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
         ]);
     }
 }
+

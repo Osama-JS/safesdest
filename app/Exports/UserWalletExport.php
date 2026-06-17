@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\InvestorWalletTransaction;
+use App\Models\UserWalletTransaction;
 use App\Models\User;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -18,7 +18,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle, WithEvents
+class UserWalletExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithTitle, WithEvents
 {
     protected $userId;
     protected $fromDate;
@@ -39,14 +39,14 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
 
     public function collection()
     {
-        $wallet = $this->user->investorWallet;
+        $wallet = $this->user->userWallet;
 
         if (!$wallet) {
             return collect([]);
         }
 
-        $query = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
-            ->with(['task'])
+        $query = UserWalletTransaction::where('user_wallet_id', $wallet->id)
+            ->with(['task', 'task.user', 'user'])
             ->orderBy('created_at', 'asc');
 
         if ($this->fromDate && $this->toDate) {
@@ -58,6 +58,7 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
 
         $data = $query->get();
         
+        // Calculate totals for summary
         $this->totalRecords = $data->count();
         $this->totalCredit = $data->where('transaction_type', 'credit')->sum('amount');
         $this->totalDebit = $data->where('transaction_type', 'debit')->sum('amount');
@@ -71,9 +72,9 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
             'رقم العملية',
             'المبلغ (SAR)',
             'نوع العملية',
-            'المصدر',
             'الوصف',
             'رقم المهمة المرتبطة',
+            'مستخدم المهمة',
             'التاريخ والوقت',
         ];
     }
@@ -83,40 +84,32 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
         // Format transaction type
         $type = '';
         if ($transaction->transaction_type === 'credit') {
-            if ($transaction->source_type === 'refund' || $transaction->source_type === 'capital_return') {
-                $type = 'استعادة استثمار';
-            } else {
-                $type = 'إيداع رأس مال';
-            }
+            $type = 'إيداع (عمولة/مكافأة)';
         } else {
-            $type = 'تمويل مهمة';
+            $type = 'سحب';
         }
 
-        // Format source type
-        $sourceType = $transaction->source_type ?? '-';
-        if ($sourceType === 'capital_return' || $sourceType === 'refund') {
-            $sourceType = 'استعادة استثمار';
-        } elseif ($sourceType === 'hyperpay') {
-            $sourceType = 'شحن هايبر باي';
-        } elseif ($sourceType === 'capital') {
-            $sourceType = 'إيداع رأس مال';
+        // Get Task user or transaction user
+        $taskUser = '-';
+        if ($transaction->task_id) {
+            $taskUser = $transaction->task->user->name ?? 'مستخدم غير موجود';
         }
 
         return [
-            $this->sequence++,
+            $transaction->sequence,
             number_format($transaction->amount, 2),
             $type,
-            $sourceType,
             $transaction->description,
             $transaction->task_id ?? '-',
+            $taskUser,
             $transaction->created_at->format('Y-m-d H:i:s'),
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $lastColumn = 'G'; // A to G
-        $lastRow = $this->totalRecords + 8;
+        $lastColumn = 'G'; // A to G (7 columns)
+        $lastRow = $this->totalRecords + 8; // 8 is the start of data rows after header
 
         return [
             // Header row styling
@@ -158,17 +151,17 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
         return [
             'A' => 15, // رقم العملية
             'B' => 18, // المبلغ
-            'C' => 20, // نوع العملية
-            'D' => 20, // المصدر
-            'E' => 45, // الوصف
-            'F' => 20, // رقم المهمة
+            'C' => 25, // نوع العملية
+            'D' => 45, // الوصف
+            'E' => 20, // رقم المهمة
+            'F' => 25, // مستخدم المهمة
             'G' => 25, // التاريخ والوقت
         ];
     }
 
     public function title(): string
     {
-        return 'تقرير محفظة الاستثمار';
+        return 'تقرير محفظة العمولات';
     }
 
     public function registerEvents(): array
@@ -193,11 +186,11 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
         $sheet->mergeCells("A1:{$lastCol}1");
 
         // Report title
-        $sheet->setCellValue('A2', 'تقرير محفظة الاستثمار (تمويل المهام)');
+        $sheet->setCellValue('A2', 'تقرير محفظة العمولات والمكافآت');
         $sheet->mergeCells("A2:{$lastCol}2");
 
         // User info
-        $sheet->setCellValue('A3', 'المستثمر: ' . $this->user->name . ' (' . $this->user->email . ')');
+        $sheet->setCellValue('A3', 'المستخدم: ' . $this->user->name . ' (' . $this->user->email . ')');
         $sheet->mergeCells("A3:{$lastCol}3");
 
         // Date range
@@ -228,7 +221,7 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
                 'startColor' => ['rgb' => 'E8F4FD']
             ]
         ]);
-
+        
         // Ensure RTL
         $sheet->getDelegate()->setRightToLeft(true);
     }
@@ -243,8 +236,8 @@ class InvestorWalletExport implements FromCollection, WithHeadings, WithMapping,
 
         // Summary data
         $sheet->setCellValue('A' . ($lastRow + 2), 'إجمالي العمليات: ' . $this->totalRecords);
-        $sheet->setCellValue('A' . ($lastRow + 3), 'إجمالي إيداعات رأس المال: ' . number_format($this->totalCredit, 2) . ' SAR');
-        $sheet->setCellValue('A' . ($lastRow + 4), 'إجمالي تمويل المهام (خصم): ' . number_format($this->totalDebit, 2) . ' SAR');
+        $sheet->setCellValue('A' . ($lastRow + 3), 'إجمالي الإيداعات: ' . number_format($this->totalCredit, 2) . ' SAR');
+        $sheet->setCellValue('A' . ($lastRow + 4), 'إجمالي السحوبات/الخصومات: ' . number_format($this->totalDebit, 2) . ' SAR');
         $sheet->setCellValue('A' . ($lastRow + 5), 'الصافي في الفترة: ' . number_format($this->totalCredit - $this->totalDebit, 2) . ' SAR');
 
         // Style summary

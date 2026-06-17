@@ -167,6 +167,13 @@
     @vite(['resources/js/admin/reports/customer-tasks.js'])
 
     <script>
+        window.driverExtraColumns = {};
+        @if(isset($driverExtraFields) && count($driverExtraFields) > 0)
+            @foreach($driverExtraFields as $field)
+                window.driverExtraColumns['driver_extra:{{ $field->id }}'] = { name: '{{ $field->label }} (سائق)', required: false };
+            @endforeach
+        @endif
+
         // Set up routes for the JavaScript class
         window.routes = {
             preview: '{{ route('admin.reports.customer-tasks.preview') }}',
@@ -237,10 +244,11 @@
                             <div class="row">
                                 <!-- Customer Selection -->
                                 <div class="col-md-4 mb-3">
-                                    <label for="customer_ids" class="form-label">{{ __('Select Customers') }} <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select  filter-select" id="customer_ids" name="customer_ids[]"
-                                        multiple required>
+                                    <label for="customer_ids" class="form-label">{{ __('Select Customers') }} 
+                                        <small class="text-muted">({{ __('Leave empty to select all') }})</small>
+                                    </label>
+                                    <select class="form-select filter-select" id="customer_ids" name="customer_ids[]"
+                                        multiple>
                                         @foreach ($customers as $customer)
                                             <option value="{{ $customer->id }}">{{ $customer->name }} @if ($customer->company_name)
                                                     - {{ $customer->company_name }}
@@ -273,7 +281,7 @@
                                 <!-- Payment Status -->
                                 <div class="col-md-4 mb-3">
                                     <label for="payment_status" class="form-label">{{ __('Payment Status') }}</label>
-                                    <select class=" filter-select form-select" id="payment_status" name="payment_status">
+                                    <select class="form-select filter-select" id="payment_status" name="payment_status">
                                         <option value="">{{ __('All Payment Statuses') }}</option>
                                         @foreach ($paymentStatuses as $key => $value)
                                             <option value="{{ $key }}">{{ $value }}</option>
@@ -316,11 +324,26 @@
                                 <!-- Created By -->
                                 <div class="col-md-4 mb-3">
                                     <label for="created_by" class="form-label">{{ __('Created By') }}</label>
-                                    <select class="form-select" id="created_by" name="created_by">
+                                    <select class="form-select filter-select" id="created_by" name="created_by">
                                         <option value="">{{ __('All') }}</option>
                                         <option value="customer">{{ __('Customer') }}</option>
                                         <option value="admin">{{ __('Admin') }}</option>
                                     </select>
+                                </div>
+
+                                <!-- Display Options -->
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label d-block">{{ __('خيارات العرض') }}</label>
+                                    <div class="d-flex gap-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="show_currency" name="show_currency" checked value="1">
+                                            <label class="form-check-label" for="show_currency">{{ __('إظهار كلمة SAR / ريال') }}</label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="brief_data" name="brief_data" value="1">
+                                            <label class="form-check-label" for="brief_data">{{ __('إظهار بيانات مختصرة') }}</label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -431,3 +454,4 @@
     </div>
 
 @endsection
+

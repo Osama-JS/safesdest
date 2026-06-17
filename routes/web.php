@@ -332,6 +332,7 @@ Route::middleware('rate.limit')->group(function () {
 
                     // Wallet management
                     Route::get('/{userId}/invest-wallet', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'show'])->name('invest-wallet');
+                    Route::get('/{userId}/invest-wallet/export', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'exportExcel'])->name('invest-wallet.export');
                     Route::get('/{userId}/invest-wallet/transactions', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getTransactions'])->name('invest-wallet.getTransactions');
                     Route::post('/invest-wallet/transaction', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'addTransaction'])->name('invest-wallet.addTransaction');
                     Route::post('/invest-wallet/transaction/convert/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'convertTransactionToRefund'])->name('invest-wallet.convertTransaction');
@@ -425,6 +426,7 @@ Route::middleware('rate.limit')->group(function () {
 
                 // User Wallets Routes
                 Route::get('/users/{userId}/wallet', [UserWalletsController::class, 'show'])->name('admin.user-wallets.show');
+                Route::get('/users/{userId}/wallet/export', [UserWalletsController::class, 'exportExcel'])->name('admin.user-wallets.export');
                 Route::get('/users/{userId}/wallet/transactions', [UserWalletsController::class, 'getTransactions'])->name('admin.user-wallets.getTransactions');
                 Route::post('/user-wallets/transaction', [UserWalletsController::class, 'addTransaction'])->name('admin.user-wallets.addTransaction');
                 Route::get('/user-wallets/transaction/edit/{id}', [UserWalletsController::class, 'editTransaction'])->name('admin.user-wallets.editTransaction');

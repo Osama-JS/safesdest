@@ -99,13 +99,44 @@ class UserWalletsController extends Controller
                 }
             }
 
+            $fromDate = request()->input('from_date');
+            $toDate = request()->input('to_date');
+
+            $queryBase = clone $wallet->transactions();
+
+            $queryInPeriod = clone $queryBase;
+            if ($fromDate && $toDate) {
+                $queryInPeriod->whereBetween('created_at', [
+                    Carbon::parse($fromDate)->startOfDay(),
+                    Carbon::parse($toDate)->endOfDay()
+                ]);
+            }
+
+            // Credit (Deposits/Commissions) - ONLY within date range
+            $credit = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'credit')
+                ->sum('amount');
+
+            // Debit (Withdrawals) - ONLY within date range
+            $debit = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'debit')
+                ->sum('amount');
+
+            // Available Balance (Actual Balance for Investor Commission Wallet)
+            // It remains the actual Withdrawable Balance up to now, regardless of date range.
+            // But we can limit it by to_date if we want point-in-time, however, $withdrawableBalance logic in Model is complex.
+            // As decided, Balance is not filtered by from_date, but let's keep the actual current withdrawableBalance as it is.
+            $balance = $wallet->balance;
+
             return view('admin.user-wallets.show', [
                 'user' => $user,
                 'wallet' => $wallet,
-                'balance' => $wallet->balance,
-                'credit' => $wallet->credit,
-                'debit' => $wallet->debit,
+                'balance' => $balance,
+                'credit' => $credit,
+                'debit' => $debit,
                 'lastTransaction' => $wallet->last_transaction,
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
                 'isBroker' => $isBroker,
                 'isInvestor' => $isInvestor,
                 'withdrawableBalance' => $withdrawableBalance,
@@ -118,6 +149,22 @@ class UserWalletsController extends Controller
 
         } catch (Exception $e) {
             return redirect()->back()->with('error', __('User not found'));
+        }
+    }
+
+    /**
+     * تصدير العمليات إلى ملف Excel
+     */
+    public function exportExcel(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\UserWalletExport($userId, $request->from_date, $request->to_date),
+                'user_wallet_'.$user->name.'_'.date('Y-m-d').'.xlsx'
+            );
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'حدث خطأ أثناء التصدير: ' . $e->getMessage());
         }
     }
 
@@ -176,13 +223,13 @@ class UserWalletsController extends Controller
                     $q->where('description', 'LIKE', "%{$search}%")
                       ->orWhere('amount', 'LIKE', "%{$search}%");
                 });
-
-                $totalFiltered = $query->count();
             }
 
             if (!empty($type) && $type != 'all') {
                 $query->where('transaction_type', $type);
             }
+
+            $totalFiltered = $query->count();
 
             $transactions = $query->offset($start)
                 ->limit($limit)

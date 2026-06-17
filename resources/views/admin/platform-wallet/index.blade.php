@@ -189,6 +189,13 @@
                             </select>
                         </div>
 
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="netCommissionFilter" name="net_commission_filter" value="1">
+                                <label class="form-check-label fw-bold" for="netCommissionFilter">{{ __('Net Platform Commission') }}</label>
+                            </div>
+                        </div>
+
                         <div class="col-12 d-flex justify-content-end gap-2">
                             <button type="button" class="btn btn-primary" id="applyFilters">
                                 <i class="ti ti-search me-1"></i>{{ __('Apply Filters') }}
@@ -235,6 +242,7 @@
                                     <th>{{ __('Route') }}</th>
                                     <th>{{ __('Total Price') }}</th>
                                     <th>{{ __('Commission') }}</th>
+                                    <th class="net-commission-col" style="display:none;">{{ __('Net Commission') }}</th>
                                     <th>{{ __('Type') }}</th>
                                     <th>{{ __('Payment Status') }}</th>
                                     <th>{{ __('Task Status') }}</th>

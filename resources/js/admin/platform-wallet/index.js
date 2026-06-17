@@ -52,6 +52,7 @@ $(function () {
           d.commission_type = $('#commissionType').val();
           d.task_status = $('#taskStatus').val();
           d.is_closed = $('#isClosed').val();
+          d.net_commission_filter = $('#netCommissionFilter').is(':checked') ? 1 : 0;
         }
       },
       columns: [
@@ -62,6 +63,7 @@ $(function () {
         { data: null }, // المسار (مخصص)
         { data: 'total_price' }, // السعر الإجمالي
         { data: 'commission' }, // العمولة
+        { data: 'net_commission' }, // العمولة الصافية
         { data: 'commission_type' }, // نوع العمولة
         { data: 'payment_status' }, // حالة الدفع
         { data: 'task_status' }, // حالة المهمة
@@ -122,13 +124,21 @@ $(function () {
         },
         {
           targets: 7,
+          visible: false, // Hidden by default, toggled later
+          className: 'text-nowrap w-auto',
+          render: function (data, type, full, meta) {
+            return `<span class="commission-badge bg-info text-white">${data} SAR</span>`;
+          }
+        },
+        {
+          targets: 8,
           render: function (data, type, full, meta) {
             const badgeClass = data === 'Dynamic' ? 'bg-primary' : 'bg-secondary';
             return `<span class="badge ${badgeClass}">${data}</span>`;
           }
         },
         {
-          targets: 8,
+          targets: 9,
           render: function (data, type, full, meta) {
             let badgeClass = '';
             let displayText = '';
@@ -155,7 +165,7 @@ $(function () {
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             let statusClasses = {
               pending_payment: 'bg-label-warning',
@@ -189,7 +199,7 @@ $(function () {
           }
         },
         {
-          targets: 10,
+          targets: 11,
           render: function (data, type, full, meta) {
             return `<span class="text-muted small">${data}</span>`;
           }
@@ -211,7 +221,7 @@ $(function () {
           }
         }
       ],
-      order: [[9, 'desc']],
+      order: [[10, 'desc']],
       dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"table-responsive"t><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 25,
       lengthMenu: [10, 25, 50, 75, 100],
@@ -275,7 +285,8 @@ $(function () {
         task_status: $('#taskStatus').val(),
         is_closed: $('#isClosed').val(),
         payment_status: $('#paymentStatus').val(),
-        commission_type: $('#commissionType').val()
+        commission_type: $('#commissionType').val(),
+        net_commission_filter: $('#netCommissionFilter').is(':checked') ? 1 : 0
       },
       success: function (response) {
         console.log('Statistics response:', response); // Debug log
@@ -357,6 +368,13 @@ $(function () {
 
   // Apply filters
   $('#applyFilters').on('click', function () {
+    const isNetChecked = $('#netCommissionFilter').is(':checked');
+    dt_platform.column(7).visible(isNetChecked);
+    if(isNetChecked) {
+      $('.net-commission-col').show();
+    } else {
+      $('.net-commission-col').hide();
+    }
     dt_platform.ajax.reload();
     loadStatistics();
   });
@@ -382,7 +400,8 @@ $(function () {
       payment_status: $('#paymentStatus').val() || '',
       commission_type: $('#commissionType').val() || '',
       task_status: $('#taskStatus').val() || '',
-      is_closed: $('#isClosed').val() || ''
+      is_closed: $('#isClosed').val() || '',
+      net_commission_filter: $('#netCommissionFilter').is(':checked') ? 1 : 0
     });
 
     window.open(walletView + 'export?' + params.toString(), '_blank');
@@ -396,7 +415,8 @@ $(function () {
       payment_status: $('#paymentStatus').val() || '',
       commission_type: $('#commissionType').val() || '',
       task_status: $('#taskStatus').val() || '',
-      is_closed: $('#isClosed').val() || ''
+      is_closed: $('#isClosed').val() || '',
+      net_commission_filter: $('#netCommissionFilter').is(':checked') ? 1 : 0
     });
 
     window.open(walletView + 'export-excel?' + params.toString(), '_blank');

@@ -50,8 +50,25 @@ class ReportService
         // Execute query
         $tasks = $query->orderBy('created_at', 'desc')->get();
 
+        // Build extra columns map for dynamic driver fields
+        $extraColumnsMap = [];
+        if (!empty($filters['columns'])) {
+            $extraFieldIds = [];
+            foreach ($filters['columns'] as $col) {
+                if (str_starts_with($col, 'driver_extra:')) {
+                    $extraFieldIds[] = str_replace('driver_extra:', '', $col);
+                }
+            }
+            if (!empty($extraFieldIds)) {
+                $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label']);
+                foreach ($fields as $field) {
+                    $extraColumnsMap['driver_extra:' . $field->id] = $field->label;
+                }
+            }
+        }
+
         // Process tasks data
-        $processedTasks = $this->processTasksData($tasks, $filters);
+        $processedTasks = $this->processTasksData($tasks, $filters, $extraColumnsMap);
 
         // Generate summary
         $summary = $this->generateSummary($tasks, $filters);
@@ -60,6 +77,7 @@ class ReportService
             'tasks' => $processedTasks,
             'summary' => $summary,
             'filters_applied' => $this->getAppliedFilters($filters),
+            'extra_columns_map' => $extraColumnsMap,
             'generated_at' => now(),
             'generated_by' => $user->name
         ];
@@ -73,10 +91,16 @@ class ReportService
         // Filter customers based on user permissions
         if (!$user->can('mange_customers')) {
             $allowedCustomerIds = $user->customers->pluck('id')->toArray();
-            $requestedCustomerIds = array_intersect($filters['customer_ids'], $allowedCustomerIds);
-            $query->whereIn('customer_id', $requestedCustomerIds);
+            if (!empty($filters['customer_ids'])) {
+                $requestedCustomerIds = array_intersect($filters['customer_ids'], $allowedCustomerIds);
+                $query->whereIn('customer_id', $requestedCustomerIds);
+            } else {
+                $query->whereIn('customer_id', $allowedCustomerIds);
+            }
         } else {
-            $query->whereIn('customer_id', $filters['customer_ids']);
+            if (!empty($filters['customer_ids'])) {
+                $query->whereIn('customer_id', $filters['customer_ids']);
+            }
         }
 
         // Filter tasks based on user permissions
@@ -161,15 +185,15 @@ class ReportService
     /**
      * Process tasks data for report
      */
-    private function processTasksData($tasks, $filters)
+    private function processTasksData($tasks, $filters, $extraColumnsMap = [])
     {
         // dd($tasks);
 
-        $t = $tasks->map(function ($task) {
+        $t = $tasks->map(function ($task) use ($extraColumnsMap) {
             // Handle refunded/cancelled tasks - set price to 0
             $effectivePrice = $this->getEffectivePrice($task);
             $effectivePaymentMethod = $this->getEffectivePaymentMethod($task);
-            return [
+            $processedTask = [
                 'id' => $task->id,
                 'total_price' => $effectivePrice,
                 'original_price' => $task->total_price, // Keep original for reference
@@ -186,7 +210,7 @@ class ReportService
                 'delivery_contact_phone' => $task->delivery->contact_phone ?? '',
                 'vehicle_name' => $this->getVehicleName($task),
                 'status' => $task->status,
-                'status_ar' => $task->status,
+                'status_ar' => $this->getStatusInArabic($task->status),
                 'payment_status' => $task->payment_status,
                 'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method,
@@ -199,7 +223,30 @@ class ReportService
                 'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
                 'completed_at_formatted' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : '',
                 'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
+                'delivery_number' => $task->delivery_number ?? 'غير محدد',
             ];
+
+            // Attach dynamic driver extra fields
+            if (!empty($extraColumnsMap) && $task->driver && !empty($task->driver->additional_data)) {
+                $additionalData = is_string($task->driver->additional_data) ? json_decode($task->driver->additional_data, true) : $task->driver->additional_data;
+                if (is_array($additionalData)) {
+                    foreach ($extraColumnsMap as $colKey => $label) {
+                        $processedTask[$colKey] = 'غير محدد';
+                        foreach ($additionalData as $item) {
+                            if (is_array($item) && isset($item['label']) && $item['label'] === $label) {
+                                $processedTask[$colKey] = $item['value'] ?? 'غير محدد';
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                foreach ($extraColumnsMap as $colKey => $label) {
+                    $processedTask[$colKey] = 'غير محدد';
+                }
+            }
+
+            return $processedTask;
         })->toArray();
         return  $t;
     }
@@ -375,7 +422,7 @@ class ReportService
         $statuses = [
             'in_progress' => 'قيد التنفيذ',
             'advertised' => 'معلن عنها',
-            'assign' => 'مُعيّنة',
+            'assign' => 'معيّنة',
             'accepted' => 'مقبولة',
             'started' => 'بدأت',
             'in pickup point' => 'في نقطة الاستلام',
@@ -383,6 +430,7 @@ class ReportService
             'in the way' => 'في الطريق',
             'in delivery point' => 'في نقطة التسليم',
             'unloading' => 'جاري التفريغ',
+            'invoiced' => 'مفوترة',
             'completed' => 'مكتملة',
             'canceled' => 'ملغية',
             'refund' => 'مرتجعة'
@@ -511,8 +559,11 @@ class ReportService
                 'created_by' => $task->user ? 'admin' : 'customer',
                 'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
                 'status' => $task->status ?? '',
+                'status_ar' => $this->getStatusInArabic($task->status),
                 'payment_status' => $task->payment_status ?? '',
+                'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method ?? '',
+                'payment_method_ar' => $this->getPaymentMethodInArabic($task->payment_method),
                 'created_at' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
                 'completed_at' => $task->completed_at ? $task->completed_at->format('Y-m-d H:i') : '',
                 'closed_at' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
@@ -599,8 +650,8 @@ class ReportService
                 'id' => $task->id,
                 'total_price' => $task->total_price ?? 0,
                 'commission' => $task->commission ?? 0,
-                'pickup_address' => $task->pickup_address ?? '',
-                'delivery_address' => $task->delivery_address ?? '',
+                'pickup_address' => $task->pickup->address ?? '',
+                'delivery_address' => $task->delivery->address ?? '',
                 'customer_name' => $task->customer->name ?? '',
                 'customer_phone' => $task->customer->phone ?? '',
                 'customer_company_name' => $task->customer->company_name ?? '',
@@ -630,11 +681,11 @@ class ReportService
                 'created_by' => $task->user ? 'admin' : 'customer',
                 'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
 
-                'status_ar' => $task->status ?? '',
+                'status_ar' => $this->getStatusInArabic($task->status),
                 'payment_status' => $task->payment_status ?? '',
-                'payment_status_ar' => $task->payment_status ?? '',
+                'payment_status_ar' => $this->getPaymentStatusInArabic($task->payment_status),
                 'payment_method' => $task->payment_method ?? '',
-                'payment_method_ar' => $task->payment_method ?? '',
+                'payment_method_ar' => $this->getPaymentMethodInArabic($task->payment_method),
                 'created_at_formatted' => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '',
                 'closed_at_formatted' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
                 'notes' => $task->notes ?? ''
@@ -841,3 +892,5 @@ class ReportService
 
 
 }
+
+

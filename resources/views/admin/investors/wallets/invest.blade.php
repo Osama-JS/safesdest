@@ -13,7 +13,7 @@
 @section('page-script')
     <script>
         const investorId = {{ $user->id }};
-        const transactionsDataUrl = '{{ route('admin.investors.invest-wallet.getTransactions', $user->id) }}';
+        const transactionsDataUrl = '{!! route('admin.investors.invest-wallet.getTransactions', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]) !!}';
         const addTransactionUrl = '{{ route('admin.investors.invest-wallet.addTransaction') }}';
         const convertTransactionUrl = '{{ url('admin/investors/invest-wallet/transaction/convert') }}';
         const cancelInvestmentUrl = '{{ url('admin/investors/invest-wallet/transaction/cancel-investment') }}';
@@ -135,6 +135,37 @@
                             <i class="ti ti-arrow-right me-1"></i> {{ __('Back to Investors List') }}
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form action="{{ route('admin.investors.invest-wallet', $user->id) }}" method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="from_date" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="to_date" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-filter me-1"></i> تصفية
+                            </button>
+                            <a href="{{ route('admin.investors.invest-wallet', $user->id) }}" class="btn btn-outline-secondary">
+                                إعادة ضبط
+                            </a>
+                            <a href="{{ route('admin.investors.invest-wallet.export', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]) }}" class="btn btn-success ms-auto">
+                                <i class="ti ti-file-spreadsheet me-1"></i> تصدير Excel
+                            </a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

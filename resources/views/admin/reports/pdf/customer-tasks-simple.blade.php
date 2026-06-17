@@ -286,7 +286,17 @@
                     <th style="width: 6%">{{ __('Task ID') }}</th>
                     <th style="width: 10%">{{ __('Task Price') }}</th>
                     <th style="width: 20%">{{ __('Route') }}</th>
+                    @if(in_array('delivery_number', $filters['columns'] ?? []))
+                        <th style="width: 15%">رقم مذكرة التوصيل</th>
+                    @endif
                     <th style="width: 15%">{{ __('Driver') }}</th>
+                    @if(!empty($filters['columns']))
+                        @foreach($filters['columns'] as $col)
+                            @if(str_starts_with($col, 'driver_extra:'))
+                                <th>{{ $reportData['extra_columns_map'][$col] ?? 'Extra' }}</th>
+                            @endif
+                        @endforeach
+                    @endif
                     <th style="width: 10%">{{ __('Task Status') }}</th>
                     <th style="width: 10%">{{ __('Payment Status') }}</th>
                     <th style="width: 10%">{{ __('Payment Method') }}</th>
@@ -295,6 +305,11 @@
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $showCurrency = !isset($filters['show_currency']) || $filters['show_currency'] == 1;
+                    $briefData = isset($filters['brief_data']) && $filters['brief_data'] == 1;
+                    $priceSuffix = $showCurrency ? ' ' . __('SAR') : '';
+                @endphp
                 @forelse($reportData['tasks'] as $task)
                     <tr>
                         <td>{{ $task['id'] }}</td>
@@ -302,23 +317,40 @@
                             @if ($task['total_price'] == 0 && isset($task['original_price']) && $task['original_price'] > 0)
                                 <span
                                     style="text-decoration: line-through; color: #6c757d;">{{ number_format($task['original_price'], 2) }}</span>
-                                <br><strong style="color: #dc3545;">0.00</strong> {{ __('SAR') }}
+                                <br><strong style="color: #dc3545;">0.00</strong>{{ $priceSuffix }}
                                 <br><small style="color: #dc3545;">{{ __('Refunded/Cancelled') }}</small>
                             @else
-                                {{ number_format($task['total_price'], 2) }} {{ __('SAR') }}
+                                {{ number_format($task['total_price'], 2) }}{{ $priceSuffix }}
                             @endif
                         </td>
                         <td class="text-truncate">
-                            <strong>{{ __('From') }}:</strong> {{ $task['pickup_address'] }}<br>
-                            <strong>{{ __('To') }}:</strong> {{ $task['delivery_address'] }}
-                        </td>
-                        <td>
-                            <strong>{{ $task['driver_name'] }}</strong><br>
-                            <span class="small-text">{{ $task['driver_phone'] }}</span><br>
-                            @if ($task['team_name'] !== 'غير محدد')
-                                <span class="small-text">{{ __('Team') }}: {{ $task['team_name'] }}</span>
+                            @if($briefData)
+                                {{ $task['pickup_address'] }}<br>
+                                {{ $task['delivery_address'] }}
+                            @else
+                                <strong>{{ __('From') }}:</strong> {{ $task['pickup_address'] }}<br>
+                                <strong>{{ __('To') }}:</strong> {{ $task['delivery_address'] }}
                             @endif
                         </td>
+                        @if(in_array('delivery_number', $filters['columns'] ?? []))
+                            <td>{{ $task['delivery_number'] ?? 'غير محدد' }}</td>
+                        @endif
+                        <td>
+                            <strong>{{ $task['driver_name'] }}</strong><br>
+                            @if(!$briefData)
+                                <span class="small-text">{{ $task['driver_phone'] }}</span><br>
+                                @if ($task['team_name'] !== 'غير محدد')
+                                    <span class="small-text">{{ __('Team') }}: {{ $task['team_name'] }}</span>
+                                @endif
+                            @endif
+                        </td>
+                        @if(!empty($filters['columns']))
+                            @foreach($filters['columns'] as $col)
+                                @if(str_starts_with($col, 'driver_extra:'))
+                                    <td>{{ $task[$col] ?? 'غير محدد' }}</td>
+                                @endif
+                            @endforeach
+                        @endif
                         <td>
                             @php
                                 $statusClass = 'status-pending';
@@ -382,13 +414,11 @@
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Total Amount') }}</div>
-                        <div class="summary-value">{{ number_format($reportData['summary']['total_amount'], 2) }}
-                            {{ __('SAR') }}</div>
+                        <div class="summary-value">{{ number_format($reportData['summary']['total_amount'], 2) }}{{ $priceSuffix }}</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Average Task Price') }}</div>
-                        <div class="summary-value">{{ number_format($reportData['summary']['average_amount'], 2) }}
-                            {{ __('SAR') }}</div>
+                        <div class="summary-value">{{ number_format($reportData['summary']['average_amount'], 2) }}{{ $priceSuffix }}</div>
                     </div>
                 </div>
 
@@ -398,23 +428,22 @@
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Paid Amount') }}</div>
                         <div class="summary-value" style="color: #28a745;">
-                            {{ number_format($reportData['summary']['paid_amount'], 2) }} {{ __('SAR') }}</div>
+                            {{ number_format($reportData['summary']['paid_amount'], 2) }}{{ $priceSuffix }}</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Pending Amount') }}</div>
                         <div class="summary-value" style="color: #ffc107;">
-                            {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}
-                            {{ __('SAR') }}</div>
+                            {{ number_format($reportData['summary']['partially_paid_amount'], 2) }}{{ $priceSuffix }}</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Unpaid Amount') }}</div>
                         <div class="summary-value" style="color: #dc3545;">
-                            {{ number_format($reportData['summary']['unpaid_amount'], 2) }} {{ __('SAR') }}</div>
+                            {{ number_format($reportData['summary']['unpaid_amount'], 2) }}{{ $priceSuffix }}</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-label">{{ __('Remaining Amount') }}</div>
                         <div class="summary-value" style="color: #fd7e14; font-weight: bold;">
-                            {{ number_format($reportData['summary']['remaining_amount'], 2) }} {{ __('SAR') }}
+                            {{ number_format($reportData['summary']['remaining_amount'], 2) }}{{ $priceSuffix }}
                         </div>
                     </div>
                 </div>
@@ -449,13 +478,12 @@
                                     @endswitch
                                     ({{ $data['count'] }} {{ __('tasks') }})
                                 </div>
-                                <div class="summary-value">{{ number_format($data['total'], 2) }}
-                                    {{ __('SAR') }}<br>
+                                <div class="summary-value">{{ number_format($data['total'], 2) }}{{ $priceSuffix }}<br>
                                     @if ($method == 'wallet')
                                         @foreach ($customerNames as $cust)
                                             <span class="info-value">
                                                 {{ $cust->name }} :
-                                                {{ __('Wallet Balance: ') . number_format($cust->wallet->balance, 2) . __('SAR') }}
+                                                {{ __('Wallet Balance: ') . number_format($cust->wallet->balance, 2) }}{{ $priceSuffix }}
                                             </span>
                                         @endforeach
                                     @endif

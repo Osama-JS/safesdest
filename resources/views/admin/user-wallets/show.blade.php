@@ -39,6 +39,37 @@
         </div>
     </div>
 
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form action="{{ route('admin.user-wallets.show', $user->id) }}" method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="from_date" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="to_date" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-filter me-1"></i> تصفية
+                            </button>
+                            <a href="{{ route('admin.user-wallets.show', $user->id) }}" class="btn btn-outline-secondary">
+                                إعادة ضبط
+                            </a>
+                            <a href="{{ route('admin.user-wallets.export', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]) }}" class="btn btn-success ms-auto">
+                                <i class="ti ti-file-spreadsheet me-1"></i> تصدير Excel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Wallet Statistics -->
     <div class="row g-6 mb-6">
         <div class="col-sm-6 col-xl-3">
@@ -626,7 +657,7 @@
     <script>
         const baseUrl = '{{ url('/') }}/';
         const userId = {{ $user->id }};
-        const transactionsDataUrl = '{{ route('admin.user-wallets.getTransactions', $user->id) }}';
+        const transactionsDataUrl = '{!! route('admin.user-wallets.getTransactions', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]) !!}';
         const addTransactionUrl = '{{ route('admin.user-wallets.addTransaction') }}';
         const withdrawalUrl = '{{ route('admin.user-wallets.withdrawal') }}';
         const clearWalletUrl = '{{ route('admin.user-wallets.clear', $user->id) }}';

@@ -8,6 +8,8 @@ use App\Models\Driver;
 use App\Models\Task;
 use App\Models\Teams;
 use App\Models\User;
+use App\Models\Settings;
+use App\Models\Form_Template;
 use App\Services\ReportService;
 use App\Exports\CustomerTasksExport;
 use App\Exports\DriverTasksExport;
@@ -65,6 +67,16 @@ class PlatformReportsController extends Controller
         $drivers = Driver::select('id', 'name', 'phone')->get();
         $teams = Teams::select('id', 'name')->get();
 
+        // Get driver extra fields from template
+        $driverExtraFields = [];
+        $driverTemplateId = Settings::getValue('driver_template');
+        if ($driverTemplateId) {
+            $driverTemplate = Form_Template::with('fields')->find($driverTemplateId);
+            if ($driverTemplate) {
+                $driverExtraFields = $driverTemplate->fields;
+            }
+        }
+
         $taskStatuses = [
             'in_progress' => 'in_progress',
             'advertised' => 'advertised',
@@ -99,7 +111,8 @@ class PlatformReportsController extends Controller
             'teams',
             'taskStatuses',
             'paymentStatuses',
-            'paymentMethods'
+            'paymentMethods',
+            'driverExtraFields'
         ));
     }
 
@@ -111,7 +124,7 @@ class PlatformReportsController extends Controller
         try {
             // Validate request
             $request->validate([
-                'customer_ids' => 'required|array|min:1',
+                'customer_ids' => 'nullable|array',
                 'customer_ids.*' => 'exists:customers,id',
                 'date_from' => 'required|date',
                 'date_to' => 'required|date|after_or_equal:date_from',
@@ -155,7 +168,7 @@ class PlatformReportsController extends Controller
     private function exportToPdf($reportData, $filters)
     {
         // Get customer names for the report
-        $customerNames = Customer::whereIn('id', $filters['customer_ids'])
+        $customerNames = Customer::whereIn('id', $filters['customer_ids'] ?? [])
             ->get();
 
         return view('admin.reports.pdf.customer-tasks-simple', compact(
@@ -172,7 +185,7 @@ class PlatformReportsController extends Controller
     {
         try {
             $request->validate([
-                'customer_ids' => 'required|array|min:1',
+                'customer_ids' => 'nullable|array',
                 'customer_ids.*' => 'exists:customers,id',
                 'date_from' => 'required|date',
                 'date_to' => 'required|date|after_or_equal:date_from'
@@ -420,3 +433,4 @@ class PlatformReportsController extends Controller
         return view('admin.reports.pdf.team-tasks-simple', compact('reportData', 'filters', 'teamNames'));
     }
 }
+

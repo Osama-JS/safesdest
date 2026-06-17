@@ -18,8 +18,13 @@ class CustomerTasksReport {
       created_by: { name: 'Created By', required: false },
       created_at: { name: 'Creation Date', required: false },
       completed_at: { name: 'Completion Date', required: false },
-      closed_at: { name: 'Closing Date', required: false }
+      closed_at: { name: 'Closing Date', required: false },
+      delivery_number: { name: 'رقم مذكرة التوصيل', required: false }
     };
+
+    if (window.driverExtraColumns) {
+      Object.assign(this.availableColumns, window.driverExtraColumns);
+    }
 
     this.selectedColumns = ['task_id', 'total_price'];
     this.reportData = null;
@@ -146,7 +151,6 @@ class CustomerTasksReport {
         const $this = $(this);
         if (!$this.hasClass('select2-hidden-accessible')) {
           $this.select2({
-            theme: 'bootstrap-5',
             placeholder: $this.attr('multiple') ? 'Select one or more...' : 'Select...',
             allowClear: true,
             language: {
@@ -254,6 +258,7 @@ class CustomerTasksReport {
           console.log('CustomerTasksReport: Preview response received', response);
           if (response.success) {
             this.reportData = response.data;
+
             this.displayPreview(response.data, response.summary);
             $('.preview-section').show();
             this.updateSelectedCount();
@@ -298,7 +303,9 @@ class CustomerTasksReport {
     previewData.forEach(row => {
       html += '<tr>';
       this.selectedColumns.forEach(column => {
-        html += `<td>${this.formatCellValue(column, row)}</td>`;
+        if (this.availableColumns[column]) {
+          html += `<td>${this.formatCellValue(column, row)}</td>`;
+        }
       });
       html += '</tr>';
     });
@@ -308,18 +315,34 @@ class CustomerTasksReport {
   }
 
   formatCellValue(column, row) {
+    const showCurrency = $('#show_currency').is(':checked');
+    const briefData = $('#brief_data').is(':checked');
+
     switch (column) {
       case 'task_id':
         return row.id;
       case 'total_price':
-        return parseFloat(row.total_price).toLocaleString() + ' SAR';
+        let priceText = parseFloat(row.total_price).toLocaleString();
+        if (showCurrency) {
+          priceText += ' SAR';
+        }
+        return priceText;
       case 'pickup_info':
+        if (briefData) {
+          return row.pickup_address;
+        }
         return `${row.pickup_address}<br><small>Contact: ${row.pickup_contact_name}<br>Phone: ${row.pickup_contact_phone}</small>`;
       case 'delivery_info':
+        if (briefData) {
+          return row.delivery_address;
+        }
         return `${row.delivery_address}<br><small>Contact: ${row.delivery_contact_name}<br>Phone: ${row.delivery_contact_phone}</small>`;
       case 'vehicle_name':
         return row.vehicle_name;
       case 'driver_info':
+        if (briefData) {
+          return row.driver_name;
+        }
         return `${row.driver_name}<br><small>Phone: ${row.driver_phone}<br>Team: ${row.team_name}</small>`;
       case 'status':
         return `<span class="badge bg-primary">${row.status_ar}</span>`;
@@ -335,7 +358,12 @@ class CustomerTasksReport {
         return row.completed_at_formatted || 'Not completed yet';
       case 'closed_at':
         return row.closed_at_formatted || 'Not closed yet';
+      case 'delivery_number':
+        return row.delivery_number || 'غير محدد';
       default:
+        if (column.startsWith('driver_extra:')) {
+          return row[column] || 'غير محدد';
+        }
         return '';
     }
   }
@@ -448,7 +476,9 @@ class CustomerTasksReport {
       payment_method: $('#payment_method').val(),
       driver_ids: $('#driver_ids').val() || [],
       team_ids: $('#team_ids').val() || [],
-      created_by: $('#created_by').val()
+      created_by: $('#created_by').val(),
+      show_currency: $('#show_currency').is(':checked') ? 1 : 0,
+      brief_data: $('#brief_data').is(':checked') ? 1 : 0
     };
   }
 
@@ -456,11 +486,6 @@ class CustomerTasksReport {
     const customerIds = $('#customer_ids').val();
     const dateFrom = $('#date_from').val();
     const dateTo = $('#date_to').val();
-
-    if (!customerIds || customerIds.length === 0) {
-      this.showError('Please select at least one customer');
-      return false;
-    }
 
     if (!dateFrom || !dateTo) {
       this.showError('Please specify the time period');
@@ -499,7 +524,7 @@ class CustomerTasksReport {
         this.selectedColumns = [
           'task_id',
           'total_price',
-          ...savedColumns.filter(col => !['task_id', 'total_price'].includes(col))
+          ...savedColumns.filter(col => !['task_id', 'total_price'].includes(col) && this.availableColumns[col] !== undefined)
         ];
         this.initializeColumnSelector();
       } catch (e) {
@@ -633,6 +658,4 @@ class CustomerTasksReport {
 }
 
 // Class will be initialized from the Blade template
-
-// Expose to window for global access
 window.CustomerTasksReport = CustomerTasksReport;

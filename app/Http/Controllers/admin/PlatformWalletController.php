@@ -26,6 +26,9 @@ class PlatformWalletController extends Controller
   public function data(Request $request)
   {
     $query = Task::with(['customer', 'driver', 'team', 'pickup', 'delivery'])
+      ->withSum(['userWalletTransactions as total_given_commission' => function($q) {
+          $q->where('transaction_type', 'credit');
+      }], 'amount')
       ->where('commission', '>', 0);
 
     // Default exclusion if no status filter is active
@@ -75,6 +78,7 @@ class PlatformWalletController extends Controller
         'is_closed' => $task->closed,
         'completed_at' => $task->completed_at ? $task->completed_at : 'N/A',
         'closed_at' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : 'N/A',
+        'net_commission' => number_format(max(0, $task->commission - ($task->total_given_commission ?? 0)), 2),
       ];
     });
 
@@ -89,7 +93,10 @@ class PlatformWalletController extends Controller
   public function statistics(Request $request)
   {
     // Base query ensures tasks have commission
-    $baseQuery = Task::where('commission', '>', 0);
+    $baseQuery = Task::where('commission', '>', 0)
+        ->withSum(['userWalletTransactions as total_given_commission' => function($q) {
+            $q->where('transaction_type', 'credit');
+        }], 'amount');
 
     // Apply Filters (Same as data method)
     if ($request->filled('task_status')) {
@@ -146,6 +153,31 @@ class PlatformWalletController extends Controller
       ->where('commission_type', 'manual')
       ->sum('commission');
 
+    // Net commission calculations
+    // We need to sum (commission - total_given_commission) for the whole query.
+    // Since total_given_commission is aggregated via withSum, we cannot just do ->sum('commission - total_given_commission') easily in Eloquent without raw query.
+    // However, we can fetch the tasks and sum them in PHP if the count is reasonable, or use a DB::raw subquery.
+    // Given the statistics method might be called for many records, a raw query is better.
+    // But since $baseQuery already has filters applied, let's just use get() and sum it using collections to be safe and accurate.
+    $allTasksForNet = (clone $baseQuery)->get(['id', 'commission']); // withSum is already added
+    $totalNetCommissions = $allTasksForNet->sum(function($task) {
+        return max(0, $task->commission - ($task->total_given_commission ?? 0));
+    });
+
+    $paidTasksForNet = clone $baseQuery;
+    $paidTasksForNet = $paidTasksForNet->whereIn('payment_paid', ['all', 'just_commission'])->get(['id', 'commission']);
+    $paidNetCommissions = $paidTasksForNet->sum(function($task) {
+        return max(0, $task->commission - ($task->total_given_commission ?? 0));
+    });
+
+    $pendingTasksForNet = clone $baseQuery;
+    $pendingTasksForNet = $pendingTasksForNet->where('payment_paid', 'pending')->get(['id', 'commission']);
+    $pendingNetCommissions = $pendingTasksForNet->sum(function($task) {
+        return max(0, $task->commission - ($task->total_given_commission ?? 0));
+    });
+
+    $isNetFilter = $request->filled('net_commission_filter') && $request->net_commission_filter == 1;
+
     // Monthly statistics for chart - PostgreSQL compatible
     $monthlyStats = (clone $baseQuery)
       ->select(
@@ -162,16 +194,16 @@ class PlatformWalletController extends Controller
 
     // Validate data before returning
     $responseData = [
-      'total_commissions' => $totalCommissions ?? 0,
-      'paid_commissions' => $paidCommissions ?? 0,
-      'pending_commissions' => $pendingCommissions ?? 0,
+      'total_commissions' => $isNetFilter ? $totalNetCommissions : ($totalCommissions ?? 0),
+      'paid_commissions' => $isNetFilter ? $paidNetCommissions : ($paidCommissions ?? 0),
+      'pending_commissions' => $isNetFilter ? $pendingNetCommissions : ($pendingCommissions ?? 0),
       'total_tasks' => $totalTasks ?? 0,
       'paid_tasks' => $paidTasks ?? 0,
       'pending_tasks' => $pendingTasks ?? 0,
       'dynamic_commissions' => $dynamicCommissions ?? 0,
       'manual_commissions' => $manualCommissions ?? 0,
       'monthly_stats' => $monthlyStats ?? [],
-      'collection_rate' => $totalCommissions > 0 ? round(($paidCommissions / $totalCommissions) * 100, 2) : 0
+      'collection_rate' => $totalCommissions > 0 ? round((($isNetFilter ? $paidNetCommissions : $paidCommissions) / ($isNetFilter ? $totalNetCommissions : $totalCommissions)) * 100, 2) : 0
     ];
 
     // Debug: Log the response data
@@ -280,6 +312,9 @@ class PlatformWalletController extends Controller
   {
     // 1. Get Tasks Data (Same logic as data() method)
     $query = Task::with(['customer', 'driver', 'team', 'pickup', 'delivery'])
+      ->withSum(['userWalletTransactions as total_given_commission' => function($q) {
+          $q->where('transaction_type', 'credit');
+      }], 'amount')
       ->where('commission', '>', 0);
 
     if ($request->filled('task_status')) {
@@ -320,6 +355,7 @@ class PlatformWalletController extends Controller
         'delivery_address' => $task->delivery ? $task->delivery->address : 'N/A',
         'total_price' => $task->total_price,
         'commission' => $task->commission,
+        'net_commission' => max(0, $task->commission - ($task->total_given_commission ?? 0)),
         'commission_type' => ucfirst($task->commission_type),
         'payment_status' => $task->payment_paid,
         'task_status' => $task->status,
@@ -334,7 +370,8 @@ class PlatformWalletController extends Controller
     // 3. Filters for header
     $filters = [
       'date_from' => $request->date_from,
-      'date_to' => $request->date_to
+      'date_to' => $request->date_to,
+      'net_commission_filter' => $request->net_commission_filter
     ];
 
     $filename = 'platform_wallet_report_' . date('Y-m-d_H-i') . '.xlsx';

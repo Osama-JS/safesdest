@@ -31,7 +31,7 @@ class InvestorWalletsController extends Controller
     /**
      * عرض محفظة الاستثمار
      */
-    public function show($userId)
+    public function show(Request $request, $userId)
     {
         try {
             $user = User::findOrFail($userId);
@@ -43,17 +43,74 @@ class InvestorWalletsController extends Controller
                 ]);
             }
 
+            $fromDate = $request->input('from_date');
+            $toDate = $request->input('to_date');
+
+            $queryBase = $wallet->transactions();
+            
+            $queryInPeriod = clone $queryBase;
+            if ($fromDate && $toDate) {
+                $queryInPeriod->whereBetween('created_at', [
+                    Carbon::parse($fromDate)->startOfDay(),
+                    Carbon::parse($toDate)->endOfDay()
+                ]);
+            }
+
+            // Credit (Deposits/Capital) - ONLY within date range
+            $credit = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'credit')
+                ->whereIn('source_type', ['capital', 'hyperpay'])
+                ->sum('amount');
+
+            // Returned Capital - ONLY within date range
+            $returned_capital = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'credit')
+                ->whereIn('source_type', ['refund', 'capital_return'])
+                ->sum('amount');
+
+            // Debit (Withdrawals/Funding) - ONLY within date range
+            $debit = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'debit')
+                ->sum('amount');
+
+            // Balance - All transactions UP TO the to_date
+            $queryUpToDate = clone $queryBase;
+            if ($toDate) {
+                $queryUpToDate->where('created_at', '<=', Carbon::parse($toDate)->endOfDay());
+            }
+            $balance = (float) $queryUpToDate
+                ->selectRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as balance")
+                ->value('balance') ?? 0;
+
             return view('admin.investors.wallets.invest', [
                 'user' => $user,
                 'wallet' => $wallet,
-                'balance' => $wallet->balance,
-                'credit' => $wallet->credit,
-                'returned_capital' => $wallet->returned_capital,
-                'debit' => $wallet->debit,
+                'balance' => $balance,
+                'credit' => $credit,
+                'returned_capital' => $returned_capital,
+                'debit' => $debit,
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
             ]);
 
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'المستثمر غير موجود');
+        }
+    }
+
+    /**
+     * تصدير العمليات إلى ملف Excel
+     */
+    public function exportExcel(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\InvestorWalletExport($userId, $request->from_date, $request->to_date),
+                'investor_wallet_'.$user->name.'_'.date('Y-m-d').'.xlsx'
+            );
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'حدث خطأ أثناء التصدير: ' . $e->getMessage());
         }
     }
 
@@ -114,12 +171,13 @@ class InvestorWalletsController extends Controller
                     $q->where('description', 'LIKE', "%{$searchValue}%")
                       ->orWhere('amount', 'LIKE', "%{$searchValue}%");
                 });
-                $totalFiltered = $query->count();
             }
 
             if (!empty($type) && $type != 'all') {
                 $query->where('transaction_type', $type);
             }
+
+            $totalFiltered = $query->count();
 
             $transactions = $query->offset($start)
                 ->limit($limit)

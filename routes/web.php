@@ -738,6 +738,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::delete('/tasks/delete', [TasksController::class, 'destroy'])->name('tasks.delete');
                 Route::delete('/tasks/connect/{id}', [TasksController::class, 'connectTeam'])->name('tasks.connect');
                 Route::get('tasks/list', [TasksController::class, 'indexList'])->name('tasks.list');
+                Route::get('tasks/investment-conflicts/data', [TasksController::class, 'getInvestmentConflicts'])->name('tasks.investment_conflicts.data');
+                Route::post('tasks/investment-conflicts/fix', [TasksController::class, 'fixInvestmentConflicts'])->name('tasks.investment_conflicts.fix');
                 Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
                 Route::get('tasks/order-share-data/{orderId}', [TasksController::class, 'getOrderShareData'])->name('tasks.order_share_data');
                 Route::post('tasks/bulk-share-data', [TasksController::class, 'getBulkShareData'])->name('tasks.bulk_share_data');

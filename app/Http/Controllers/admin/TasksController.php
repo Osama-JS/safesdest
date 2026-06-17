@@ -4104,4 +4104,65 @@ class TasksController extends Controller
             return response()->json(['status' => 0, 'message' => 'حدث خطأ أثناء تجميع البيانات المحددة']);
         }
     }
+
+    public function getInvestmentConflicts()
+    {
+        if (auth()->guard('web')->user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['status' => 0, 'message' => 'غير مصرح']);
+        }
+
+        $tasks = Task::whereNull('investor_id')
+                     ->where('investor_payment_status', 'paid')
+                     ->select('id', 'total_price', 'status', 'customer_id')
+                     ->with('customer:id,name')
+                     ->get();
+
+        return response()->json([
+            'status' => 1,
+            'tasks' => $tasks
+        ]);
+    }
+
+    public function fixInvestmentConflicts(Request $request)
+    {
+        if (auth()->guard('web')->user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['status' => 0, 'message' => 'غير مصرح']);
+        }
+
+        $password = $request->input('password');
+        if ($password !== 'osama@1998') {
+            return response()->json(['status' => 0, 'message' => 'كلمة المرور غير صحيحة']);
+        }
+
+        $taskId = $request->input('task_id');
+
+        try {
+            DB::beginTransaction();
+
+            if ($taskId === 'all') {
+                $affected = Task::whereNull('investor_id')
+                                ->where('investor_payment_status', 'paid')
+                                ->update(['investor_payment_status' => 'none']);
+                $message = "تم إصلاح {$affected} مهمة بنجاح.";
+            } else {
+                $task = Task::findOrFail($taskId);
+                if (is_null($task->investor_id) && $task->investor_payment_status === 'paid') {
+                    $task->investor_payment_status = 'none';
+                    $task->save();
+                    $message = "تم إصلاح المهمة رقم {$taskId} بنجاح.";
+                } else {
+                    DB::rollBack();
+                    return response()->json(['status' => 0, 'message' => 'هذه المهمة لا تحتوي على التعارض المطلوب']);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['status' => 1, 'message' => $message]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('fixInvestmentConflicts Error: ' . $e->getMessage());
+            return response()->json(['status' => 0, 'message' => 'حدث خطأ أثناء الإصلاح']);
+        }
+    }
 }

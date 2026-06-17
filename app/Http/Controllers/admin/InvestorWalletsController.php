@@ -659,6 +659,7 @@ class InvestorWalletsController extends Controller
 
                 if ($fixAction === 'unlink_task') {
                     $task->investor_id = null;
+                    $task->investor_payment_status = 'none';
                     $task->save();
                     $message = "تم فصل المهمة #{$taskId} من هذا المضارب بنجاح.";
                 } elseif ($fixAction === 'create_funding') {

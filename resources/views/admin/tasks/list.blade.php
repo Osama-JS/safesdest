@@ -1,4 +1,4 @@
-@extends('layouts/layoutMaster')
+﻿@extends('layouts/layoutMaster')
 
 @section('title', __('Tasks List'))
 
@@ -15,6 +15,140 @@
 
 
 
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
 
 <!-- Vendor Scripts -->
@@ -24,6 +158,140 @@
     @vite('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js')
 
     <!-- Daterangepicker JS -->
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
 
 <!-- Page Scripts -->
@@ -43,13 +311,13 @@
 
         function moveCustomNav() {
             if (window.innerWidth < 1124) {
-                // شاشة صغيرة، انقل المحتوى إلى الأسفل
+                // Ø´Ø§Ø´Ø© ØµØºÙŠØ±Ø©ØŒ Ø§Ù†Ù‚Ù„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ø§Ù„Ø£Ø³ÙÙ„
                 if (originalContent && mobileContainer && mobileContainer.innerHTML.trim() === '') {
                     mobileContainer.innerHTML = originalContent;
                     navContent.innerHTML = '';
                 }
             } else {
-                // شاشة كبيرة، أعد المحتوى إلى مكانه الأصلي
+                // Ø´Ø§Ø´Ø© ÙƒØ¨ÙŠØ±Ø©ØŒ Ø£Ø¹Ø¯ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ù…ÙƒØ§Ù†Ù‡ Ø§Ù„Ø£ØµÙ„ÙŠ
                 if (originalContent && navContent && navContent.innerHTML.trim() === '') {
                     navContent.innerHTML = originalContent;
                     mobileContainer.innerHTML = '';
@@ -57,12 +325,280 @@
             }
         }
 
-        moveCustomNav(); // تنفيذ أولي
-        window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
+        moveCustomNav(); // ØªÙ†ÙÙŠØ° Ø£ÙˆÙ„ÙŠ
+        window.addEventListener('resize', moveCustomNav); // ØªÙ†ÙÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
     </script>
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
 @section('task-isactive')
     active
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
 @section('navbar-custom-nav')
 
@@ -119,15 +655,154 @@
 
 
 
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
 @section('content')
-    <!-- خارج الـ navbar (أسفلها مباشرة) -->
+    <!-- Ø®Ø§Ø±Ø¬ Ø§Ù„Ù€ navbar (Ø£Ø³ÙÙ„Ù‡Ø§ Ù…Ø¨Ø§Ø´Ø±Ø©) -->
     <div id="mobile-custom-nav" class="d-lg-none  z-1 card shadow mb-3 p-2" style="white-space: nowrap;">
     </div>
     <!-- /Search -->
     <div class="card">
-        <div class="card-header border-bottom">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">{{ __('Tasks') }}</h5>
+            @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+                <button type="button" class="btn btn-warning waves-effect waves-light" onclick="openInvestmentConflictsModal()">
+                    <i class="ti ti-alert-triangle me-1"></i> ÙØ­Øµ ØªØ¹Ø§Ø±Ø¶ Ø§Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±
+                </button>
+            @endif
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-tasks table ">
@@ -276,7 +951,7 @@
                                         </div>
                                         <span class="id-error text-danger text-error"></span>
 
-                                        <!-- حقل رقم مذكرة التوصيل -->
+                                        <!-- Ø­Ù‚Ù„ Ø±Ù‚Ù… Ù…Ø°ÙƒØ±Ø© Ø§Ù„ØªÙˆØµÙŠÙ„ -->
                                         <div class="form-group mb-3">
                                             <label for="delivery_number" class="form-label">
                                                 <i class="fas fa-hashtag me-1"></i>
@@ -288,7 +963,7 @@
                                             <span class="delivery_number-error text-danger text-error"></span>
                                         </div>
 
-                                        <!-- حقل ملف مذكرة التوصيل -->
+                                        <!-- Ø­Ù‚Ù„ Ù…Ù„Ù Ù…Ø°ÙƒØ±Ø© Ø§Ù„ØªÙˆØµÙŠÙ„ -->
                                         <div class="form-group mb-3">
                                             <label for="delivery_note" class="form-label">
                                                 <i class="fas fa-file-upload me-1"></i>
@@ -339,7 +1014,7 @@
                                     <div class="tab-pane fade show active">
                                         <input type="hidden" name="id" id="task-refund-id">
                                         <span class="id-error text-danger text-error"></span>
-                                        <!-- حقل رقم مذكرة التوصيل -->
+                                        <!-- Ø­Ù‚Ù„ Ø±Ù‚Ù… Ù…Ø°ÙƒØ±Ø© Ø§Ù„ØªÙˆØµÙŠÙ„ -->
                                         <div class="form-group mb-3">
                                             <label for="reason" class="form-label">
                                                 *
@@ -365,7 +1040,7 @@
                                                 <li>{{ __('All wallet and financial transactions linked to this task will be removed.') }}</li>
                                                 <li>{{ __('Payments and the payment receipt image (if any) will be deleted.') }}</li>
                                                 <li>{{ __('The assigned driver will be unassigned, and any delivery notes or delivery numbers will be cleared.') }}</li>
-                                                <li>{{ __('The action will be recorded in the task’s activity history (History Log).') }}</li>
+                                                <li>{{ __('The action will be recorded in the taskâ€™s activity history (History Log).') }}</li>
                                                 <li>{{ __('Notifications will be sent to the user, the customer, and the driver about the refund.') }}</li>
                                             </ul>
                                             <div class="alert alert-danger p-2 rounded-3">
@@ -471,23 +1146,23 @@
 
                                             <select name="bank_name" id="bankName" class="form-select">
                                                 <option value="">{{ __('Select Bank') }}</option>
-                                                <option value="البنك الأهلي السعودي">البنك الأهلي السعودي
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
                                                 </option>
-                                                <option value="بنك الراجحي">بنك الراجحي</option>
-                                                <option value="بنك الرياض">بنك الرياض</option>
-                                                <option value="البنك السعودي للاستثمار">البنك السعودي
-                                                    للاستثمار</option>
-                                                <option value="البنك السعودي الفرنسي">البنك السعودي
-                                                    الفرنسي</option>
-                                                <option value="البنك السعودي البريطاني">البنك السعودي
-                                                    البريطاني (ساب)</option>
-                                                <option value="بنك العربي الوطني">بنك العربي الوطني
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø±Ø§Ø¬Ø­ÙŠ">Ø¨Ù†Ùƒ Ø§Ù„Ø±Ø§Ø¬Ø­ÙŠ</option>
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø±ÙŠØ§Ø¶">Ø¨Ù†Ùƒ Ø§Ù„Ø±ÙŠØ§Ø¶</option>
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                    Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±</option>
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„ÙØ±Ù†Ø³ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                    Ø§Ù„ÙØ±Ù†Ø³ÙŠ</option>
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„Ø¨Ø±ÙŠØ·Ø§Ù†ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                    Ø§Ù„Ø¨Ø±ÙŠØ·Ø§Ù†ÙŠ (Ø³Ø§Ø¨)</option>
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ">Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ
                                                 </option>
-                                                <option value="بنك سامبا">بنك سامبا</option>
-                                                <option value="البنك الأول">البنك الأول</option>
-                                                <option value="بنك الجزيرة">بنك الجزيرة</option>
-                                                <option value="بنك الإنماء">بنك الإنماء</option>
-                                                <option value="البنك العربي">البنك العربي</option>
+                                                <option value="Ø¨Ù†Ùƒ Ø³Ø§Ù…Ø¨Ø§">Ø¨Ù†Ùƒ Ø³Ø§Ù…Ø¨Ø§</option>
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£ÙˆÙ„">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£ÙˆÙ„</option>
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø¬Ø²ÙŠØ±Ø©">Ø¨Ù†Ùƒ Ø§Ù„Ø¬Ø²ÙŠØ±Ø©</option>
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø¥Ù†Ù…Ø§Ø¡">Ø¨Ù†Ùƒ Ø§Ù„Ø¥Ù†Ù…Ø§Ø¡</option>
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ</option>
                                                 <option value="other">{{ __('Other') }}</option>
                                             </select>
                                             <input type="text" class="form-control mt-2" id="customBankName"
@@ -533,4 +1208,139 @@
     </div>
 
 
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+    <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-4">
+                    <div class="alert alert-info">
+                        يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="conflictsTable">
+                            <thead>
+                                <tr>
+                                    <th>رقم المهمة</th>
+                                    <th>العميل</th>
+                                    <th>حالة المهمة</th>
+                                    <th>إجمالي التكلفة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded here via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
+                        <i class="ti ti-tool me-1"></i> إصلاح الكل
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openInvestmentConflictsModal() {
+            const tbody = document.querySelector('#conflictsTable tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+            const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+            modal.show();
+
+            fetch('{{ route("tasks.investment_conflicts.data") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        tbody.innerHTML = '';
+                        if (data.tasks.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                            document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                        } else {
+                            data.tasks.forEach(task => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = 
+                                    <td># + task.id + </td>
+                                    <td> + (task.customer ? task.customer.name : '-') + </td>
+                                    <td><span class="badge bg-label-primary"> + task.status + </span></td>
+                                    <td> + task.total_price +  ر.س</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="fixInvestmentConflict( + task.id + )">
+                                            إصلاح
+                                        </button>
+                                    </td>
+                                ;
+                                tbody.appendChild(tr);
+                            });
+                            document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                        }
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                });
+        }
+
+        function fixInvestmentConflict(taskId) {
+            Swal.fire({
+                title: 'تأكيد الإصلاح',
+                text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                input: 'password',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    required: 'true'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'تأكيد وإصلاح',
+                cancelButtonText: 'إلغاء',
+                showLoaderOnConfirm: true,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                        return false;
+                    }
+                    return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ task_id: taskId, password: password })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== 1) {
+                            throw new Error(data.message || 'حدث خطأ');
+                        }
+                        return data;
+                    })
+                    .catch(error => {
+                        Swal.showValidationMessage(خطأ:  + error.message);
+                    });
+                },
+                allowOutsideClick: () => !Swal.isLoading()
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'نجاح!',
+                        text: result.value.message
+                    });
+                    openInvestmentConflictsModal(); // Refresh list
+                }
+            });
+        }
+    </script>
+    @endif
+
 @endsection
+

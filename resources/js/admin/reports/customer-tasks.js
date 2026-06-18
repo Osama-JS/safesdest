@@ -250,7 +250,7 @@ class CustomerTasksReport {
       $.ajax({
         url: window.routes.preview,
         method: 'POST',
-        data: formData,
+        data: { ...formData, columns: this.selectedColumns },
         headers: {
           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         },

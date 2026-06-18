@@ -9,6 +9,7 @@ use App\Models\Teams;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class ReportService
@@ -23,7 +24,7 @@ class ReportService
         // Build base query
         $query = Task::with([
             'customer:id,name,company_name',
-            'driver:id,name,phone,team_id',
+            'driver:id,name,phone,team_id,additional_data',
             'driver.team:id,name',
             'user:id,name',
             'pickup:id,task_id,address,contact_name,contact_phone',
@@ -52,6 +53,7 @@ class ReportService
 
         // Build extra columns map for dynamic driver fields
         $extraColumnsMap = [];
+        $extraFieldNamesMap = [];
         if (!empty($filters['columns'])) {
             $extraFieldIds = [];
             foreach ($filters['columns'] as $col) {
@@ -60,15 +62,16 @@ class ReportService
                 }
             }
             if (!empty($extraFieldIds)) {
-                $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label']);
+                $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label', 'name']);
                 foreach ($fields as $field) {
-                    $extraColumnsMap['driver_extra:' . $field->id] = $field->label;
+                    $extraColumnsMap['driver_extra:' . $field->id]     = trim($field->label);
+                    $extraFieldNamesMap['driver_extra:' . $field->id]  = trim($field->name);
                 }
             }
         }
 
         // Process tasks data
-        $processedTasks = $this->processTasksData($tasks, $filters, $extraColumnsMap);
+        $processedTasks = $this->processTasksData($tasks, $filters, $extraColumnsMap, $extraFieldNamesMap);
 
         // Generate summary
         $summary = $this->generateSummary($tasks, $filters);
@@ -185,11 +188,11 @@ class ReportService
     /**
      * Process tasks data for report
      */
-    private function processTasksData($tasks, $filters, $extraColumnsMap = [])
+    private function processTasksData($tasks, $filters, $extraColumnsMap = [], $extraFieldNamesMap = [])
     {
         // dd($tasks);
 
-        $t = $tasks->map(function ($task) use ($extraColumnsMap) {
+        $t = $tasks->map(function ($task) use ($extraColumnsMap, $extraFieldNamesMap) {
             // Handle refunded/cancelled tasks - set price to 0
             $effectivePrice = $this->getEffectivePrice($task);
             $effectivePaymentMethod = $this->getEffectivePaymentMethod($task);
@@ -227,22 +230,61 @@ class ReportService
             ];
 
             // Attach dynamic driver extra fields
-            if (!empty($extraColumnsMap) && $task->driver && !empty($task->driver->additional_data)) {
-                $additionalData = is_string($task->driver->additional_data) ? json_decode($task->driver->additional_data, true) : $task->driver->additional_data;
-                if (is_array($additionalData)) {
+            if (!empty($extraColumnsMap)) {
+                $additionalData = [];
+                if ($task->driver && $task->driver->additional_data) {
+                    $additionalData = is_string($task->driver->additional_data)
+                        ? json_decode($task->driver->additional_data, true)
+                        : $task->driver->additional_data;
+                }
+
+                if (!empty($additionalData) && is_array($additionalData)) {
                     foreach ($extraColumnsMap as $colKey => $label) {
                         $processedTask[$colKey] = 'غير محدد';
+                        $fieldName = $extraFieldNamesMap[$colKey] ?? null;
+                        $fieldId   = str_replace('driver_extra:', '', $colKey);
+
+                        $val = null;
+
+                        // 1. Match by field name key (e.g. "name", "phone")
+                        if ($fieldName && isset($additionalData[$fieldName])) {
+                            $raw = $additionalData[$fieldName];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        // 2. Match by numeric id key (e.g. "1", "3")
+                        if (($val === null || $val === '') && isset($additionalData[$fieldId])) {
+                            $raw = $additionalData[$fieldId];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        // 3. Match by string id key as integer string
+                        if (($val === null || $val === '') && isset($additionalData[(int)$fieldId])) {
+                            $raw = $additionalData[(int)$fieldId];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        if ($val !== null && $val !== '') {
+                            $processedTask[$colKey] = is_string($val) ? $val : json_encode($val, JSON_UNESCAPED_UNICODE);
+                            continue;
+                        }
+
+                        // 4. Fallback: match any array item whose 'label' matches
                         foreach ($additionalData as $item) {
-                            if (is_array($item) && isset($item['label']) && $item['label'] === $label) {
-                                $processedTask[$colKey] = $item['value'] ?? 'غير محدد';
+                            if (is_array($item) && isset($item['label']) && trim($item['label']) === trim($label)) {
+                                if (isset($item['value']) && $item['value'] !== null && $item['value'] !== '') {
+                                    $processedTask[$colKey] = is_string($item['value'])
+                                        ? $item['value']
+                                        : json_encode($item['value'], JSON_UNESCAPED_UNICODE);
+                                }
                                 break;
                             }
                         }
                     }
-                }
-            } else {
-                foreach ($extraColumnsMap as $colKey => $label) {
-                    $processedTask[$colKey] = 'غير محدد';
+                } else {
+                    foreach ($extraColumnsMap as $colKey => $label) {
+                        $processedTask[$colKey] = 'غير محدد';
+                    }
                 }
             }
 

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+</head>
+<body>
+<table id="example" class="display" style="width:100%"></table>
+<script>
+$(document).ready(function() {
+    $('#example').DataTable({
+        data: [
+            { "task_id": 1, "driver_extra:1": "علي بن علي" },
+            { "task_id": 2, "driver_extra:1": null }
+        ],
+        columns: [
+            { data: 'task_id', title: 'Task ID' },
+            { data: 'driver_extra:1', title: 'Driver Extra', defaultContent: 'غير محدد' }
+        ]
+    });
+});
+</script>
+</body>
+</html>

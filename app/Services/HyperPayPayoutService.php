@@ -143,7 +143,7 @@ class HyperPayPayoutService
                     'Accept'        => 'application/json',
                 ])
                 ->get($url, [
-                    'payout-reference' => $referenceId
+                    'payoutreference' => $referenceId
                 ]);
 
             $result = $response->json();

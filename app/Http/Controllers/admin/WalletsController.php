@@ -337,7 +337,7 @@ class WalletsController extends Controller
                     'driver_id' => $driver->id,
                     'amount' => $request->total_amount,
                     'payout_type' => 'WP',
-                    'transaction_details' => $request->all(),
+                    'transaction_details' => array_merge($request->all(), ['admin_id' => auth()->id()]),
                     'status' => 'pending'
                 ]);
 
@@ -838,7 +838,8 @@ class WalletsController extends Controller
                         'maturity' => $req->maturity,
                         'task_id' => $req->task_id,
                         'image' => $imagePath,
-                        'settlement_tasks' => $req->settlement_tasks ?? []
+                        'settlement_tasks' => $req->settlement_tasks ?? [],
+                        'admin_id' => auth()->id()
                     ],
                     'status' => 'pending'
                 ]);

@@ -247,7 +247,7 @@ class HyperPayWebhookController extends Controller
                         $paymentAmount = $originalAmount;
                         $remainingAmount -= $originalAmount;
 
-                        $walletTransaction->update(['status' => 1, 'user_id' => 1]);
+                        $walletTransaction->update(['status' => 1, 'user_id' => $details['admin_id'] ?? 1]);
                         $paymentDescription = "دفع مستحقات سائق (كامل) للمعاملة رقم #{$walletTransaction->sequence}";
                     } elseif ($remainingAmount > 0) {
                         $paymentAmount = $remainingAmount;
@@ -257,7 +257,7 @@ class HyperPayWebhookController extends Controller
                         $walletTransaction->update([
                             'status' => 1,
                             'amount' => $paymentAmount,
-                            'user_id' => 1
+                            'user_id' => $details['admin_id'] ?? 1
                         ]);
 
                         \App\Models\Wallet_Transaction::create([
@@ -266,7 +266,7 @@ class HyperPayWebhookController extends Controller
                             'transaction_type' => $walletTransaction->transaction_type,
                             'description' => "المبلغ المتبقي من المعاملة #{$walletTransaction->sequence} - تم دفع {$paymentAmount} من أصل {$originalAmount} ريال",
                             'status' => 0,
-                            'user_id' => 1,
+                            'user_id' => $details['admin_id'] ?? 1,
                             'maturity_time' => $walletTransaction->maturity_time,
                             'task_id' => $walletTransaction->task_id,
                             'image' => $walletTransaction->image
@@ -282,7 +282,7 @@ class HyperPayWebhookController extends Controller
                             'transaction_type' => 'debit',
                             'description' => $paymentDescription . (!empty($details['notes']) ? " - ملاحظات: {$details['notes']}" : ""),
                             'status' => 1,
-                            'user_id' => 1,
+                            'user_id' => $details['admin_id'] ?? 1,
                             'maturity_time' => now()
                         ]);
                     }
@@ -303,7 +303,7 @@ class HyperPayWebhookController extends Controller
                 // Direct Manual Transaction
                 \App\Models\Wallet_Transaction::create([
                     'wallet_id' => $payout->wallet_id,
-                    'user_id' => 1,
+                    'user_id' => $details['admin_id'] ?? 1,
                     'amount' => $payout->amount,
                     'transaction_type' => 'debit',
                     'description' => $details['description'] ?? "سحب مباشر عبر HyperPay",

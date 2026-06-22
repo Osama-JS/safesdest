@@ -319,6 +319,7 @@ class WalletsController extends Controller
                     'country' => $driver->bank_country ?? 'SA',
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
+                    'purpose' => '11',
                     'description' => "Wallet Payment for {$driver->beneficiary_name}"
                 ]);
 
@@ -818,6 +819,7 @@ class WalletsController extends Controller
                     'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
+                    'purpose' => '11',
                     'description' => "Manual Payout for {$driver->beneficiary_name}"
                 ]);
 

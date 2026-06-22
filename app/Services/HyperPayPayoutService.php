@@ -144,6 +144,7 @@ class HyperPayPayoutService
                 ])
                 ->get($url, [
                     'merchantId'       => $this->merchantId,
+                    'entityId'         => $this->merchantId,
                     'payout-reference' => $referenceId
                 ]);
 

@@ -211,7 +211,7 @@ $(function () {
     
     if (payloadStr) {
       try {
-        var payloadObj = JSON.parse(payloadStr);
+        var payloadObj = typeof payloadStr === 'object' ? payloadStr : JSON.parse(payloadStr);
         htmlContent += `<div class="text-start mb-2 fw-bold">Webhook Response:</div>`;
         htmlContent += `<pre class="text-start bg-light p-3 rounded border" style="font-size: 13px; max-height: 300px; overflow-y: auto;"><code>${JSON.stringify(payloadObj, null, 2)}</code></pre>`;
       } catch (e) {

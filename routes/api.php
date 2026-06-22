@@ -18,7 +18,7 @@ Route::get('/user', function (Request $request) {
 */
 
 // HyperPay Webhook
-Route::post('/hyperpay/webhook/payout', [\App\Http\Controllers\api\HyperPayWebhookController::class, 'handlePayout']);
+Route::post('/hyperpay/webhook/payout', [\App\Http\Controllers\Api\HyperPayWebhookController::class, 'handlePayout']);
 
 // Signit Webhook
 Route::post('/signit/webhook', [\App\Http\Controllers\Api\SignitWebhookController::class, 'handleWebhook']);

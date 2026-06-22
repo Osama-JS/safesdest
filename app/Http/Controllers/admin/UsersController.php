@@ -262,6 +262,7 @@ class UsersController extends Controller
           'bank_address2'           => 'nullable|string|max:255',
           'bank_city'               => 'nullable|string|max:255',
           'bank_country'            => 'nullable|string|max:10',
+          'commission_start_date'   => 'nullable|date',
         ];
 
         $messages = [
@@ -446,6 +447,7 @@ class UsersController extends Controller
               'bank_address2' => $req->bank_address2,
               'bank_city' => $req->bank_city,
               'bank_country' => $req->bank_country,
+              'commission_start_date' => $req->commission_start_date,
             ];
 
             if ($req->filled('password')) {

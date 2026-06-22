@@ -51,6 +51,9 @@ class Task extends Model
     'company_end_client_id',
     'investor_id',
     'investor_payment_status',
+    'broker_id',
+    'broker_commission_type',
+    'broker_commission_value',
   ];
 
   protected $casts = [
@@ -100,6 +103,11 @@ class Task extends Model
   public function pricingTemplate()
   {
     return $this->belongsTo(Pricing_Template::class, 'pricing_id');
+  }
+
+  public function broker()
+  {
+    return $this->belongsTo(User::class, 'broker_id');
   }
 
   public function payments()

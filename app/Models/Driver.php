@@ -62,7 +62,11 @@ class Driver extends Authenticatable
       'bank_address2',
       'bank_city',
       'bank_country',
-      'signature_image'
+      'signature_image',
+      'broker_id',
+      'broker_commission_type',
+      'broker_commission_value',
+      'broker_commission_start_date'
     ];
     protected $casts = [
       'additional_data' => 'array',
@@ -74,6 +78,11 @@ class Driver extends Authenticatable
     public function team()
     {
         return $this->belongsTo(Teams::class, 'team_id');
+    }
+
+    public function broker()
+    {
+        return $this->belongsTo(User::class, 'broker_id');
     }
     public function tags()
     {

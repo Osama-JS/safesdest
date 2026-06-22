@@ -53,6 +53,10 @@ class UserWalletsController extends Controller
                 ->where('status', 'active')
                 ->exists();
 
+            // التحقق مما إذا كان المستخدم وسيط شاحنات
+            $isTruckBroker = \App\Models\Driver::where('broker_id', $userId)->exists() || 
+                             \App\Models\Task::where('broker_id', $userId)->exists();
+
             $isInvestor = (bool) $user->investor;
             $withdrawableBalance = $isInvestor ? $wallet->withdrawable_balance : null;
             $investmentWallet = $isInvestor ? $user->investorWallet : null;
@@ -138,6 +142,7 @@ class UserWalletsController extends Controller
                 'from_date' => $fromDate,
                 'to_date' => $toDate,
                 'isBroker' => $isBroker,
+                'isTruckBroker' => $isTruckBroker,
                 'isInvestor' => $isInvestor,
                 'withdrawableBalance' => $withdrawableBalance,
                 'investmentWalletBalance' => $investmentWalletBalance,
@@ -1058,6 +1063,128 @@ class UserWalletsController extends Controller
             return response()->json([
                 'status' => 1,
                 'success' => "تم احتساب العمولات بنجاح لـ {$processedTasksCount} مهمة بإجمالي " . number_format($totalCommissionCredited, 2) . " ر.س وتمت إضافتها لمحفظة الوسيط."
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * حساب عمولات وسطاء الشاحنات
+     */
+    public function calculateTruckBrokerCommissions(Request $request, $userId)
+    {
+        DB::beginTransaction();
+        try {
+            $broker = User::findOrFail($userId);
+            $brokerWallet = $broker->userWallet;
+
+            if (!$brokerWallet) {
+                $brokerWallet = $this->createWallet($userId);
+            }
+
+            // 1. استخراج المهام المرتبطة مباشرة بالوسيط
+            $directTasks = Task::where('broker_id', $userId)
+                ->where('closed', 1)
+                ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
+                ->get();
+
+            // 2. استخراج المهام للسائقين المرتبطين بالوسيط
+            $drivers = \App\Models\Driver::where('broker_id', $userId)->get();
+            $driverTaskIds = [];
+            foreach ($drivers as $driver) {
+                $query = Task::where('driver_id', $driver->id)
+                    ->whereNull('broker_id')
+                    ->where('closed', 1)
+                    ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
+                
+                if ($driver->broker_commission_start_date) {
+                    $query->where('created_at', '>=', $driver->broker_commission_start_date);
+                }
+                
+                $dTasks = $query->get();
+                foreach($dTasks as $dt) {
+                    $dt->broker_commission_type = $driver->broker_commission_type;
+                    $dt->broker_commission_value = $driver->broker_commission_value;
+                    $driverTaskIds[$dt->id] = $dt;
+                }
+            }
+
+            $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
+
+            $processedTasksCount = 0;
+            $totalCommissionCredited = 0;
+
+            foreach ($allTasks as $task) {
+                // منع التكرار
+                $exists = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
+                    ->where('task_id', $task->id)
+                    ->where('transaction_type', 'credit')
+                    ->where('description', 'LIKE', '%عمولة وساطة شاحنات%')
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                // تحديد قيمة العمولة ونوعها (تأخذ من المهمة أولاً إذا كانت مباشرة، ثم من السائق)
+                $commissionType = $task->broker_commission_type;
+                $commissionValue = $task->broker_commission_value;
+
+                if (!$commissionType || !$commissionValue) {
+                    continue;
+                }
+
+                $platformCut = 0;
+                if ($task->ad) {
+                    if ($task->ad->service_commission_type == 1) {
+                        $platformCut = (float) $task->ad->service_commission;
+                    } else {
+                        $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                    }
+                } else {
+                    $platformCut = (float) $task->commission;
+                }
+
+                $brokerShare = 0;
+                if ($commissionType === 'percentage') {
+                    $brokerShare = ($platformCut * $commissionValue) / 100;
+                } else {
+                    $brokerShare = (float) $commissionValue;
+                }
+
+                if ($brokerShare <= 0) {
+                    continue;
+                }
+
+                UserWalletTransaction::create([
+                    'user_wallet_id'   => $brokerWallet->id,
+                    'task_id'          => $task->id,
+                    'amount'           => $brokerShare,
+                    'transaction_type' => 'credit',
+                    'description'      => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}",
+                    'created_by'       => Auth::id(),
+                    'status'           => true,
+                ]);
+
+                $processedTasksCount++;
+                $totalCommissionCredited += $brokerShare;
+            }
+
+            if ($processedTasksCount === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 1,
+                    'info' => 'لا توجد مهام جديدة غير محتسبة لاحتساب عمولة وساطة الشاحنات عليها.'
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 1,
+                'success' => "تم احتساب عمولات وساطة الشاحنات بنجاح لـ {$processedTasksCount} مهمة بإجمالي " . number_format($totalCommissionCredited, 2) . " ر.س وتمت إضافتها لمحفظة الوسيط."
             ]);
 
         } catch (Exception $e) {

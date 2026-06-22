@@ -303,7 +303,13 @@
             @if($isBroker)
                 <button class="btn btn-warning waves-effect waves-light mt-5 mx-2" id="calculateBrokerBtn">
                     <i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i>
-                    <span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط </span>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط (مضارب) </span>
+                </button>
+            @endif
+            @if(!$isInvestor)
+                <button class="btn btn-dark waves-effect waves-light mt-5 mx-2" id="calculateTruckBrokerBtn">
+                    <i class="ti ti-truck me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات وسيط الشاحنات </span>
                 </button>
             @endif
         </div>
@@ -666,6 +672,7 @@
         const calculateGeneralUrl = '{{ route('admin.user-wallets.calculate-general', $user->id) }}';
         const calculateTasksUrl = '{{ route('admin.user-wallets.calculate-tasks', $user->id) }}';
         const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
+        const calculateTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-truck-broker', $user->id) }}';
         const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
         const isInvestor = {{ $isInvestor ? 'true' : 'false' }};
         const withdrawableBalance = {{ $isInvestor ? ($withdrawableBalance ?? 0) : 0 }};

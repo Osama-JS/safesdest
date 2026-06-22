@@ -335,6 +335,9 @@ $(function () {
                     ${full.order ? `<li><a href="javascript:;" class="dropdown-item share-order-whatsapp" data-order-id="${full.order}" data-task-id="${full.id}"><i class="ti ti-brand-whatsapp me-2"></i>${__('Share Order on WhatsApp')}</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item  refund-task" data-id="${full.id}"><i class="ti ti-arrow-back me-2"></i>${__('Refund Task')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item  fix-connection-task" data-id="${full.id}">${__('Fix Connection')}</a></li>
+                    ${!full.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${full.id}" target="_blank" class="dropdown-item "><i class="ti ti-map-pin me-2"></i>${__('Tracking Task')}</a></li>` : ``}
+                    <li><a href="${baseUrl}admin/tasks/${full.id}/report" class="dropdown-item task-report" data-id="${full.id}"><i class="ti ti-file me-2"></i>${__('download task status report')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item edit-task-broker" data-id="${full.id}"><i class="ti ti-truck me-2"></i>${__('Connect Broker')}</a></li>
 
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>${__('Delete Task')}</a></li>` : ''}
                   </ul>
@@ -428,6 +431,7 @@ $(function () {
       $('#paymentModal').modal('hide');
       $('#closedModal').modal('hide');
       $('#checkPaymentModal').modal('hide');
+      $('#brokerModal').modal('hide');
       $('#assignTitle').html('');
       $('#refundModal').html('');
     }, 2000);
@@ -435,6 +439,24 @@ $(function () {
     if (dt_data) {
       dt_data.draw();
     }
+  });
+
+  $(document).on('click', '.edit-task-broker', function () {
+    const id = $(this).data('id');
+
+    $.get(`${baseUrl}admin/tasks/broker/edit/${id}`, function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#broker-task-id').val(data.data.id);
+      $('#modal-task-broker-id').val(data.data.broker_id).trigger('change');
+      $('#modal-task-broker-commission-type').val(data.data.broker_commission_type);
+      $('#modal-task-broker-commission-value').val(data.data.broker_commission_value);
+      
+      $('#brokerModal').modal('show');
+      $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+    });
   });
 
   $('#owner-fillter').on('change', function () {

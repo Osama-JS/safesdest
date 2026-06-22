@@ -104,8 +104,9 @@
             @can('generate_payment_request')
                 @if ($data->user_type === 'driver')
                     <div class="mt-4">
-                        <a href="javascript:;" class="btn btn-success" id="payment-request"><i
+                        <a href="javascript:;" class="btn btn-success me-2" id="payment-request"><i
                                 class="ti ti-receipt me-1"></i>{{ __('Payment Request') }}</a>
+                        <a href="{{ route('wallets.hyperpay_payouts', $data->id) }}" class="btn btn-primary" id="hyperpay-payouts-btn"><i class="ti ti-brand-mastercard me-1"></i>{{ __('HyperPay Payouts') }}</a>
                     </div>
                 @endif
             @endcan

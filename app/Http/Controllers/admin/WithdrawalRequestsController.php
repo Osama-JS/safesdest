@@ -149,6 +149,11 @@ class WithdrawalRequestsController extends Controller
                     throw new \Exception(__('Insufficient wallet balance for this amount'));
                 }
 
+                $receiptPath = null;
+                if ($request->hasFile('receipt')) {
+                    $receiptPath = FileHelper::uploadFile($request->file('receipt'), 'wallets/receipts');
+                }
+
                 // --- HyperPay Payout Logic ---
                 if ($request->payment_method === 'hyperpay') {
                     // Validate Driver Bank Details
@@ -156,10 +161,11 @@ class WithdrawalRequestsController extends Controller
                         throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
                     }
 
+                    $externalId = 'WD-' . $withdrawal->id . '-' . time();
                     $payoutResponse = $payoutService->sendPayout([
                         'amount' => $amountPaid,
                         'currency' => 'SAR',
-                        'externalId' => 'WD-' . $withdrawal->id . '-' . time(),
+                        'externalId' => $externalId,
                         'beneficiary_name' => $driver->beneficiary_name,
                         'address1' => $driver->bank_address1 ?? $driver->address,
                         'address2' => $driver->bank_address2 ?? '.',
@@ -174,19 +180,40 @@ class WithdrawalRequestsController extends Controller
                         throw new \Exception(__('HyperPay Error: ') . $payoutResponse['message']);
                     }
 
-                    // Store HyperPay references in admin notes
                     $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
                     $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                    $refInfo = "HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
                     
-                    $request->merge(['admin_notes' => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . $refInfo]);
+                    \App\Models\HyperpayPayout::create([
+                        'reference_id' => $externalId,
+                        'payout_id' => $payoutId,
+                        'bulk_id' => $bulkId,
+                        'wallet_id' => $wallet->id,
+                        'driver_id' => $driver->id,
+                        'amount' => $amountPaid,
+                        'payout_type' => 'WD',
+                        'source_withdrawal_id' => $withdrawal->id,
+                        'transaction_details' => [
+                            'amount_paid' => $amountPaid,
+                            'admin_notes' => $request->admin_notes,
+                            'receipt_image' => $receiptPath,
+                        ],
+                        'status' => 'pending'
+                    ]);
+
+                    $withdrawal->update([
+                        'status' => 'processing',
+                        'amount_paid' => $amountPaid,
+                        'payment_method' => 'hyperpay',
+                        'admin_notes' => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . "HyperPay Initiated",
+                        'receipt_image' => $receiptPath,
+                        'processed_by' => auth()->id(),
+                        'processed_at' => now(),
+                    ]);
+
+                    DB::commit();
+                    return response()->json(['success' => true, 'message' => __('Payout initiated. Awaiting bank confirmation.')]);
                 }
                 // --- End HyperPay Logic ---
-
-                $receiptPath = null;
-                if ($request->hasFile('receipt')) {
-                    $receiptPath = FileHelper::uploadFile($request->file('receipt'), 'wallets/receipts');
-                }
 
                 // 1. Create Wallet Transaction
                 $transaction = Wallet_Transaction::create([
@@ -202,7 +229,7 @@ class WithdrawalRequestsController extends Controller
 
                 // 2. Update Withdrawal Request
                 $withdrawal->update([
-                    'status' => ($request->payment_method === 'hyperpay') ? 'processing' : 'completed',
+                    'status' => 'completed',
                     'amount_paid' => $amountPaid,
                     'payment_method' => $request->payment_method,
                     'admin_notes' => $request->admin_notes,

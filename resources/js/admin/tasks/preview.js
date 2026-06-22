@@ -435,6 +435,7 @@ $(function () {
                     ${task.data.signature_request_id ? `<li><a href="javascript:;" class="dropdown-item verify-signature" data-id="${task.data.id}"><i class="ti ti-refresh me-2"></i>${__('Verify Signature Status')}</a></li>` : ''}
                     ${task.data.driver_id && !task.data.closed ? `<li><a href="javascript:;" class="dropdown-item drop-task text-danger" data-id="${task.data.id}"><i class="ti ti-user-minus me-2"></i>${__('Drop Task from Driver')}</a></li>` : ``}
                     <li><a href="javascript:;" class="dropdown-item task-report" data-id="${task.data.id}"><i class="ti ti-file me-2"></i>${__('download task status report')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item edit-task-broker" data-id="${task.data.id}"><i class="ti ti-truck me-2"></i>${__('Connect Broker')}</a></li>
 
                   </ul>
               </div>
@@ -939,6 +940,7 @@ $(function () {
     setTimeout(() => {
       $('#submitModal').modal('hide');
       $('#assignModal').modal('hide');
+      $('#brokerModal').modal('hide');
       $('#adModal').modal('hide');
       $('#pricingModal').modal('hide');
       $('#addNoteModal').modal('hide');
@@ -1106,6 +1108,24 @@ $(function () {
     });
   });
 
+  $(document).on('click', '.edit-task-broker', function () {
+    const id = $(this).data('id');
+
+    $.get(`${baseUrl}admin/tasks/broker/edit/${id}`, function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
+      $('#broker-task-id').val(data.data.id);
+      $('#modal-task-broker-id').val(data.data.broker_id).trigger('change');
+      $('#modal-task-broker-commission-type').val(data.data.broker_commission_type);
+      $('#modal-task-broker-commission-value').val(data.data.broker_commission_value);
+      
+      $('#brokerModal').modal('show');
+      $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+    });
+  });
+
   $(document).on('click', '.edit-task-ad', function () {
     const id = $(this).data('id');
 
@@ -1186,6 +1206,12 @@ $(function () {
       $('#task-id').val(data.id);
       $('#task-owner').val(data.owner).trigger('change');
       $('#task-customer').val(data.customer_id).trigger('change');
+      
+      // Populate broker details
+      $('#task-broker-id').val(data.broker_id).trigger('change');
+      $('#task-broker-commission-type').val(data.broker_commission_type).trigger('change');
+      $('#task-broker-commission-value').val(data.broker_commission_value);
+
       let date = new Date(data.created_at);
       let formattedDate = date.toISOString().slice(0, 16);
       $('#task_created_at').val(formattedDate);

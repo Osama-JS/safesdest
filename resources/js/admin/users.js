@@ -444,6 +444,7 @@ $(function () {
       $('#user-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
       $('#user-role').val(data.role_id);
+      $('#commission-start-date').val(data.commission_start_date ? data.commission_start_date.split('T')[0] : '');
       $('#user-teams').val(data.teamsIds).trigger('change');
       $('#user-customers').val(data.customersIds).trigger('change');
 

@@ -441,6 +441,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/calculate-general', [UserWalletsController::class, 'calculateGeneralCommissions'])->name('admin.user-wallets.calculate-general');
                 Route::post('/users/{userId}/wallet/calculate-tasks', [UserWalletsController::class, 'calculateTasksCommissions'])->name('admin.user-wallets.calculate-tasks');
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
+                Route::post('/users/{userId}/wallet/calculate-truck-broker', [UserWalletsController::class, 'calculateTruckBrokerCommissions'])->name('admin.user-wallets.calculate-truck-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
                 Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');
                 Route::post('/users/{userId}/wallet/pay-task/{task}', [UserWalletsController::class, 'fundTask'])->name('admin.user-wallets.pay-task');
@@ -609,6 +610,9 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/driver-tasks/{driverId}', [WalletsController::class, 'getDriverTasks'])->name('wallets.driver-tasks');
                 Route::get('/wallets/transactions/{id}', [WalletsController::class, 'getDataTransactions'])->name('wallets.transactions');
                 Route::get('/wallets/transaction/data', [WalletsController::class, 'getDataTransactions'])->name('wallets.transaction.data');
+                Route::get('/wallets/{id}/hyperpay-payouts', [WalletsController::class, 'hyperpayPayouts'])->name('wallets.hyperpay_payouts');
+                Route::get('/wallets/data/payouts', [WalletsController::class, 'getDataPayouts'])->name('wallets.data.payouts');
+                Route::post('/hyperpay-payouts/{id}/check-status', [WalletsController::class, 'checkPayoutStatus'])->name('wallets.hyperpay_payouts.check_status');
                 Route::post('/wallets/transaction/store', [WalletsController::class, 'storeTransaction'])->name('wallets.transaction.store');
                 Route::get('/wallets/transaction/edit/{id}', [WalletsController::class, 'editTransaction'])->name('wallets.transaction.edit');
                 Route::delete('/wallets/transaction/delete/{id}', [WalletsController::class, 'destroy'])->name('wallets.transaction.delete');
@@ -749,6 +753,9 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::get('tasks/pricing/edit/{id}', [TasksController::class, 'editPricing'])->name('tasks.pricing.edit');
                 Route::post('tasks/pricing/edit/', [TasksController::class, 'updatePricing'])->name('tasks.pricing.update');
+
+                Route::get('tasks/broker/edit/{id}', [TasksController::class, 'editBroker'])->name('admin.tasks.broker.edit');
+                Route::post('tasks/broker/update', [TasksController::class, 'updateBroker'])->name('admin.tasks.broker.update');
 
 
                 Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');

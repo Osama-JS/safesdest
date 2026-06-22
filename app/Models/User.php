@@ -53,12 +53,14 @@ class User extends Authenticatable
       'bank_address2',
       'bank_city',
       'bank_country',
+      'commission_start_date',
     ];
 
     protected $casts = [
       'additional_data' => 'array',
       'is_customs_clearance_agent' => 'boolean',
       'investor' => 'boolean',
+      'commission_start_date' => 'date',
     ];
 
     protected $dates = ['deleted_at'];

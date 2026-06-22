@@ -98,6 +98,12 @@ class UserCommissionsController extends Controller
                     continue;
                 }
 
+                // التحقق من تاريخ بدء احتساب العمولات للمستخدم
+                if ($user->commission_start_date && $task->created_at->startOfDay() < \Carbon\Carbon::parse($user->commission_start_date)->startOfDay()) {
+                    Log::info("Skipping commission for user #{$user->id} on task #{$task->id}. Task created before user's commission_start_date.");
+                    continue;
+                }
+
                 // إنشاء أو جلب محفظة المستخدم
                 $userWallet = $user->userWallet;
                 if (!$userWallet) {

@@ -95,7 +95,8 @@ class TasksController extends Controller
         $task_template = Settings::where('key', 'task_template')->first();
         $task_from_template = Settings::where('key', 'task_from_port_template')->first();
         $task_to_template = Settings::where('key', 'task_to_port_template')->first();
-        return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'teams', 'task_template', 'task_from_template', 'task_to_template'));
+        $brokers = User::where('status', 'active')->where('investor', 0)->get();
+        return view('admin.tasks.index', compact('customers', 'vehicles', 'templates', 'teams', 'task_template', 'task_from_template', 'task_to_template', 'brokers'));
     }
 
     public function getData(Request $request)
@@ -969,7 +970,10 @@ class TasksController extends Controller
               'pricing_id'       => $taskData['pricing'],
               'vehicle_size_id'  => $taskData['vehicles'][0],
               'conditions'       => $req->conditions,
-              'sales_invoice_id' => $req->sales_invoice_id ?? null
+              'sales_invoice_id' => $req->sales_invoice_id ?? null,
+              'broker_id'        => $req->broker_id ?? null,
+              'broker_commission_type' => $req->broker_commission_type ?? null,
+              'broker_commission_value' => $req->broker_commission_value ?? null,
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -1432,7 +1436,10 @@ class TasksController extends Controller
               'user_id'          => Auth::id(),
               'pricing_id'       => $taskData['pricing'],
               'vehicle_size_id' => $taskData['vehicles'][0],
-              'conditions'       => $req->conditions
+              'conditions'       => $req->conditions,
+              'broker_id'        => $req->broker_id ?? null,
+              'broker_commission_type' => $req->broker_commission_type ?? null,
+              'broker_commission_value' => $req->broker_commission_value ?? null,
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -2060,8 +2067,9 @@ class TasksController extends Controller
     public function indexList()
     {
         $teams = Teams::all();
+        $brokers = User::where('status', 'active')->where('investor', 0)->get();
 
-        return view('admin.tasks.list', compact('teams'));
+        return view('admin.tasks.list', compact('teams', 'brokers'));
     }
 
     public function getListData(Request $request)
@@ -3339,6 +3347,73 @@ class TasksController extends Controller
     }
 
 
+    public function editBroker($id)
+    {
+        try {
+            $data = Task::select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value'])->findOrFail($id);
+            $user = auth()->user();
+            if (!$user || !$user->checkTask($data->id)) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+            }
+            if ($data->closed) {
+                return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
+            }
+            
+            return response()->json(['status' => 1, 'data' => $data]);
+        } catch (\Exception $ex) {
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+
+    public function updateBroker(Request $req)
+    {
+        $validator = Validator::make($req->all(), [
+          'id' => 'required|exists:tasks,id',
+          'broker_id' => 'nullable|exists:users,id',
+          'broker_commission_type' => 'nullable|in:percentage,fixed',
+          'broker_commission_value' => 'nullable|numeric|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $find = Task::findOrFail($req->id);
+            $user = auth()->user();
+            if (!$user || !$user->checkTask($find->id)) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+            }
+            if ($find->closed) {
+                return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
+            }
+
+            $userIp = IpHelper::getUserIpAddress();
+            $history = [
+              [
+                'action_type' => 'updated',
+                'description' => 'Update Truck Broker',
+                'ip' => $userIp,
+                'user_id' => Auth::user()->id
+              ]
+            ];
+            $find->history()->createMany($history);
+            
+            $find->update([
+              'broker_id' => $req->broker_id,
+              'broker_commission_type' => $req->broker_commission_type,
+              'broker_commission_value' => $req->broker_commission_value
+            ]);
+
+            DB::commit();
+            return response()->json(['status' => 1, 'success' => __('Broker updated successfully.')]);
+        } catch (\Exception $ex) {
+            DB::rollBack();
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+
     public function editPricing($id)
     {
         try {
@@ -3685,6 +3760,12 @@ class TasksController extends Controller
                 $user = $userCommission->user;
 
                 if (!$user) {
+                    continue;
+                }
+
+                // التحقق من تاريخ بدء احتساب العمولات للمستخدم
+                if ($user->commission_start_date && $task->created_at->startOfDay() < \Carbon\Carbon::parse($user->commission_start_date)->startOfDay()) {
+                    Log::info("Skipping commission for user #{$user->id} on task #{$task->id}. Task created before user's commission_start_date.");
                     continue;
                 }
 

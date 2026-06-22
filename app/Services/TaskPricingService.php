@@ -80,6 +80,9 @@ class TaskPricingService
           'delivery_latitude' => 'required|string',
           'delivery_note' => 'nullable|string|max:500',
           'delivery_image' => 'nullable|file',
+          'broker_id' => 'nullable|exists:users,id',
+          'broker_commission_type' => 'nullable|in:percentage,fixed',
+          'broker_commission_value' => 'nullable|numeric|min:0',
         ];
 
         if ($request->filled('params_select')) {

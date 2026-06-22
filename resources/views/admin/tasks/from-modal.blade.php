@@ -884,3 +884,54 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade " id="brokerModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="brokerTitle">{{ __('Connect Broker') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('admin.tasks.broker.update') }}" method="POST" id="brokerForm" class="form_submit card shadow-sm p-4 border-0" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="id" id="broker-task-id">
+                <span class="task-error text-danger text-error"></span>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label class="form-label" for="modal-task-broker-id">{{ __('Truck Broker') }}</label>
+                            <select name="broker_id" id="modal-task-broker-id" class="form-select select2" data-dropdown-parent="#brokerModal">
+                                <option value="">{{ __('None') }}</option>
+                                @foreach ($brokers as $broker)
+                                    <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
+                                @endforeach
+                            </select>
+                            <span class="broker_id-error text-danger text-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label class="form-label" for="modal-task-broker-commission-type">{{ __('Broker Commission') }}</label>
+                            <div class="input-group">
+                                <select name="broker_commission_type" id="modal-task-broker-commission-type" class="form-select">
+                                    <option value="">{{ __('Select Type') }}</option>
+                                    <option value="percentage">{{ __('Percentage (%)') }}</option>
+                                    <option value="fixed">{{ __('Fixed Amount') }}</option>
+                                </select>
+                                <input type="number" name="broker_commission_value" class="form-control" step="0.01" id="modal-task-broker-commission-value" placeholder="{{ __('Value') }}" />
+                            </div>
+                            <span class="broker_commission_type-error text-danger text-error"></span>
+                            <span class="broker_commission_value-error text-danger text-error"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Save changes') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

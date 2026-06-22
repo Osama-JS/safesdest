@@ -42,8 +42,9 @@ class DriversController extends Controller
         $vehicles = Vehicle::all();
         $driver_template = Settings::where('key', 'driver_template')->first();
         $banks = \App\Models\Bank::where('is_active', true)->get();
+        $brokers = \App\Models\User::where('status', 'active')->get();
 
-        return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks'));
+        return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks', 'brokers'));
     }
 
     public function getDrivers(Request $request)
@@ -272,6 +273,11 @@ class DriversController extends Controller
           'bank_address2'           => 'nullable|string|max:255',
           'bank_city'               => 'nullable|string|max:255',
           'bank_country'            => 'nullable|string|size:2',
+          // Broker fields
+          'broker_id'               => 'nullable|exists:users,id',
+          'broker_commission_type'  => 'nullable|in:percentage,fixed',
+          'broker_commission_value' => 'nullable|numeric|min:0',
+          'broker_commission_start_date' => 'nullable|date',
         ];
 
         if ($req->filled('template')) {
@@ -462,6 +468,10 @@ class DriversController extends Controller
               'bank_address2' => $req->bank_address2,
               'bank_city' => $req->bank_city,
               'bank_country' => $req->bank_country ?? 'SA',
+              'broker_id' => $req->broker_id,
+              'broker_commission_type' => $req->broker_commission_type,
+              'broker_commission_value' => $req->broker_commission_value,
+              'broker_commission_start_date' => $req->broker_commission_start_date,
             ];
 
             // Handle WhatsApp number logic

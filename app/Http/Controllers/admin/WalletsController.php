@@ -306,11 +306,12 @@ class WalletsController extends Controller
                     throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
                 }
 
+                $externalId = 'WP-' . $wallet->id . '-' . time();
                 $payoutService = app(HyperPayPayoutService::class);
                 $payoutResponse = $payoutService->sendPayout([
                     'amount' => $request->total_amount,
                     'currency' => 'SAR',
-                    'externalId' => 'WP-' . $wallet->id . '-' . time(),
+                    'externalId' => $externalId,
                     'beneficiary_name' => $driver->beneficiary_name,
                     'address1' => $driver->bank_address1 ?? $driver->address,
                     'address2' => $driver->bank_address2 ?? '.',
@@ -327,7 +328,30 @@ class WalletsController extends Controller
 
                 $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
                 $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+                
+                \App\Models\HyperpayPayout::create([
+                    'reference_id' => $externalId,
+                    'payout_id' => $payoutId,
+                    'bulk_id' => $bulkId,
+                    'wallet_id' => $wallet->id,
+                    'driver_id' => $driver->id,
+                    'amount' => $request->total_amount,
+                    'payout_type' => 'WP',
+                    'transaction_details' => $request->all(),
+                    'status' => 'pending'
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                  'success' => true,
+                  'message' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.'),
+                  'data' => [
+                    'processed_transactions' => [],
+                    'total_amount' => $request->total_amount,
+                    'transactions_count' => 0
+                  ]
+                ]);
             }
             // --- End HyperPay Logic ---
 
@@ -555,6 +579,118 @@ class WalletsController extends Controller
         ]);
     }
 
+    public function hyperpayPayouts($id)
+    {
+        $data = Wallet::findOrFail($id);
+        return view('admin.wallets.hyperpay_payouts', compact('data'));
+    }
+
+    public function checkPayoutStatus(Request $request, $id)
+    {
+        try {
+            $payout = \App\Models\HyperpayPayout::findOrFail($id);
+            if (!$payout->reference_id) {
+                return response()->json(['status' => 2, 'error' => __('No valid reference ID to check')]);
+            }
+            
+            $payoutService = app(HyperPayPayoutService::class);
+            $response = $payoutService->checkPayoutStatus($payout->reference_id);
+            
+            if (!$response['status'] && !in_array($response['code'], ['63000', '90000', '77000'])) {
+                return response()->json(['status' => 2, 'error' => $response['message']]);
+            }
+            
+            // Extract actual status and message
+            $hyperpayStatus = $response['message'] ?? 'Unknown';
+            $statusCode = $response['code'] ?? '';
+            
+            // If the status has changed from 'pending' to final, we trigger the webhook logic
+            // '00000' = Success, '63000' = Rejected/Failed, '77000' = Cancelled
+            if ($payout->status === 'pending') {
+                if ($statusCode === '00000' || in_array($statusCode, ['63000', '77000'])) {
+                    // Spoof webhook payload
+                    $webhookPayload = [
+                        'payoutReference' => $payout->reference_id,
+                        'responseCode' => $statusCode,
+                        'payoutId' => $response['data']['payoutId'] ?? $payout->payout_id,
+                        'amount' => $payout->amount,
+                        'responseMessage' => $hyperpayStatus
+                    ];
+                    $webhookRequest = new \Illuminate\Http\Request();
+                    $webhookRequest->replace($webhookPayload);
+                    app(\App\Http\Controllers\Api\HyperPayWebhookController::class)->handlePayout($webhookRequest);
+                }
+            }
+
+            return response()->json(['status' => 1, 'success' => __('Status from HyperPay: ') . $hyperpayStatus]);
+        } catch (\Exception $ex) {
+            return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+    public function getDataPayouts(Request $request, $id = null)
+    {
+        $columns = [
+            1 => 'id',
+            2 => 'reference_id',
+            3 => 'amount',
+            4 => 'status',
+            5 => 'payout_type',
+            6 => 'payout_id',
+            7 => 'created_at',
+        ];
+
+        $wallet = $id ?? $request->input('wallet');
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+        
+        $query = \App\Models\HyperpayPayout::where('wallet_id', $wallet);
+
+        if ($fromDate && $toDate) {
+            $query->whereBetween('created_at', [
+                Carbon::parse($fromDate)->startOfDay(),
+                Carbon::parse($toDate)->endOfDay()
+            ]);
+        }
+
+        $totalData = $query->count();
+        $totalFiltered = $totalData;
+
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = $columns[$request->input('order.0.column')] ?? 'id';
+        $dir = $request->input('order.0.dir') ?? 'desc';
+
+        $payouts = $query
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
+
+        $data = [];
+        $fakeId = $start;
+
+        foreach ($payouts as $val) {
+            $data[] = [
+                'id' => $val->id,
+                'fake_id' => ++$fakeId,
+                'reference_id' => $val->reference_id,
+                'amount' => (float) $val->amount,
+                'status' => $val->status,
+                'type' => $val->payout_type,
+                'payout_id' => $val->payout_id ?? '-',
+                'created_at' => $val->created_at->format('Y-m-d H:i'),
+            ];
+        }
+
+        return response()->json([
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalData,
+            'recordsFiltered' => $totalFiltered,
+            'code' => 200,
+            'data' => $data,
+        ]);
+    }
+
     public function editTransaction($id)
     {
         $data = Wallet_Transaction::findOrFail($id);
@@ -659,10 +795,11 @@ class WalletsController extends Controller
                 $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
 
                 $payoutService = app(HyperPayPayoutService::class);
+                $externalId = 'MT-' . $wallet->id . '-' . time();
                 $payoutResponse = $payoutService->sendPayout([
                     'amount' => $req->amount,
                     'currency' => 'SAR',
-                    'externalId' => 'MT-' . $wallet->id . '-' . time(),
+                    'externalId' => $externalId,
                     'beneficiary_name' => $driver->beneficiary_name,
                     'address1' => $driver->bank_address1 ?? $driver->address,
                     'address2' => $driver->bank_address2 ?? '.',
@@ -679,7 +816,35 @@ class WalletsController extends Controller
 
                 $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
                 $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+                
+                $imagePath = null;
+                if ($req->hasFile('image')) {
+                    $imagePath = FileHelper::uploadFile($req->file("image"), 'wallets/transactions');
+                }
+
+                \App\Models\HyperpayPayout::create([
+                    'reference_id' => $externalId,
+                    'payout_id' => $payoutId,
+                    'bulk_id' => $bulkId,
+                    'wallet_id' => $wallet->id,
+                    'driver_id' => $driver->id,
+                    'amount' => $req->amount,
+                    'payout_type' => 'MT',
+                    'transaction_details' => [
+                        'amount' => $req->amount,
+                        'description' => $req->description,
+                        'maturity' => $req->maturity,
+                        'task_id' => $req->task_id,
+                        'image' => $imagePath,
+                        'settlement_tasks' => $req->settlement_tasks ?? []
+                    ],
+                    'status' => 'pending'
+                ]);
+
+                return response()->json([
+                    'status'  => 1,
+                    'success' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.'),
+                ]);
             }
             // --- End HyperPay Logic ---
 

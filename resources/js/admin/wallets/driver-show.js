@@ -151,6 +151,47 @@ $(document).ready(function () {
     });
   }
 
+  let dt_payouts;
+  if ($('.datatables-payouts').length) {
+    dt_payouts = $('.datatables-payouts').DataTable({
+      processing: true,
+      serverSide: true,
+      ajax: {
+        url: `${baseUrl}admin/wallets/payouts/${walletId}`,
+        type: 'GET'
+      },
+      columns: [
+        { data: 'fake_id' },
+        { data: 'reference_id' },
+        { 
+          data: 'amount',
+          render: function(data) { return parseFloat(data).toFixed(2) + ' SAR'; }
+        },
+        { 
+          data: 'status',
+          render: function(data) {
+            let badgeClass = 'bg-secondary';
+            if(data === 'pending') badgeClass = 'bg-warning';
+            else if(data === 'completed') badgeClass = 'bg-success';
+            else if(data === 'failed') badgeClass = 'bg-danger';
+            return `<span class="badge ${badgeClass}">${data}</span>`;
+          }
+        },
+        { data: 'type' },
+        { data: 'payout_id' },
+        { data: 'created_at' }
+      ],
+      order: [[6, 'desc']],
+      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"table-responsive"t><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      language: {
+        paginate: {
+          previous: '&nbsp;',
+          next: '&nbsp;'
+        }
+      }
+    });
+  }
+
   // Handle individual checkbox change
   $(document).on('change', '.transaction-checkbox', function () {
     const transactionId = parseInt($(this).val());

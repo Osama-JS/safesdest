@@ -167,6 +167,13 @@
     @vite(['resources/js/admin/reports/driver-tasks.js'])
 
     <script>
+        window.driverExtraColumns = {};
+        @if(isset($driverExtraFields) && count($driverExtraFields) > 0)
+            @foreach($driverExtraFields as $field)
+                window.driverExtraColumns['driver_extra:{{ $field->id }}'] = { name: '{{ $field->label }} (سائق)', required: false };
+            @endforeach
+        @endif
+
         // Set up routes for the JavaScript class
         window.routes = {
             preview: '{{ route('admin.reports.driver-tasks.preview') }}',

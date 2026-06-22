@@ -249,13 +249,24 @@ class PlatformReportsController extends Controller
             'wallet' => 'wallet'
         ];
 
+        // Get driver extra fields from template
+        $driverExtraFields = [];
+        $driverTemplateId = Settings::getValue('driver_template');
+        if ($driverTemplateId) {
+            $driverTemplate = Form_Template::with('fields')->find($driverTemplateId);
+            if ($driverTemplate) {
+                $driverExtraFields = $driverTemplate->fields;
+            }
+        }
+
         return view('admin.reports.driver-tasks', compact(
             'customers',
             'drivers',
             'teams',
             'taskStatuses',
             'paymentStatuses',
-            'paymentMethods'
+            'paymentMethods',
+            'driverExtraFields'
         ));
     }
     /**

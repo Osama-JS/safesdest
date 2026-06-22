@@ -22,6 +22,10 @@ class DriverTasksReport {
       company_commission: { name: 'Company Commission', required: false }
     };
 
+    if (window.driverExtraColumns) {
+      Object.assign(this.availableColumns, window.driverExtraColumns);
+    }
+
     this.selectedColumns = ['task_id', 'total_price', 'driver_info'];
     this.reportData = null;
 
@@ -253,6 +257,9 @@ class DriverTasksReport {
       case 'company_commission':
         return parseFloat(row.company_commission || 0).toLocaleString() + ' SAR';
       default:
+        if (column.startsWith('driver_extra:')) {
+          return row[column] || 'غير محدد';
+        }
         return '';
     }
   }

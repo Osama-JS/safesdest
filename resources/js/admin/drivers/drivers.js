@@ -439,6 +439,12 @@ $(function () {
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);
 
+      // Broker fields
+      $('#driver-broker-id').val(data.broker_id || '').trigger('change');
+      $('#driver-broker-commission-type').val(data.broker_commission_type || '');
+      $('#driver-broker-commission-value').val(data.broker_commission_value || '');
+      $('#driver-broker-commission-start-date').val(data.broker_commission_start_date ? data.broker_commission_start_date.split('T')[0] : '');
+
       // Load WhatsApp data
       $('#phone-is-whatsapp').prop('checked', data.phone_is_whatsapp == 1 || data.phone_is_whatsapp === true);
       $('#whatsapp-country-code').val(data.whatsapp_country_code || '');
@@ -574,6 +580,12 @@ $(function () {
     $('#driver-bank-address2').val('');
     $('#driver-bank-city').val('');
     $('#driver-bank-country').val('SA');
+
+    // Reset Broker fields
+    $('#driver-broker-id').val('').trigger('change');
+    $('#driver-broker-commission-type').val('');
+    $('#driver-broker-commission-value').val('');
+    $('#driver-broker-commission-start-date').val('');
   });
 
   $(document).on('click', '.signature-record', function () {

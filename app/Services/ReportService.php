@@ -521,7 +521,7 @@ class ReportService
         // Build base query
         $query = Task::with([
             'customer:id,name,phone,company_name',
-            'driver:id,name,phone,team_id',
+            'driver:id,name,phone,team_id,additional_data',
             'driver.team:id,name'
         ]);
 
@@ -572,9 +572,28 @@ class ReportService
         // Get tasks
         $tasks = $query->orderBy('created_at', 'desc')->get();
 
+        // Build extra columns map for dynamic driver fields
+        $extraColumnsMap = [];
+        $extraFieldNamesMap = [];
+        if (!empty($filters['columns'])) {
+            $extraFieldIds = [];
+            foreach ($filters['columns'] as $col) {
+                if (str_starts_with($col, 'driver_extra:')) {
+                    $extraFieldIds[] = str_replace('driver_extra:', '', $col);
+                }
+            }
+            if (!empty($extraFieldIds)) {
+                $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label', 'name']);
+                foreach ($fields as $field) {
+                    $extraColumnsMap['driver_extra:' . $field->id]     = trim($field->label);
+                    $extraFieldNamesMap['driver_extra:' . $field->id]  = trim($field->name);
+                }
+            }
+        }
+
         // Process tasks data
-        $processedTasks = $tasks->map(function ($task) {
-            return [
+        $processedTasks = $tasks->map(function ($task) use ($extraColumnsMap, $extraFieldNamesMap) {
+            $processedTask = [
                 'id' => $task->id,
                 'total_price' => ($task->total_price - $task->commission) ?? 0,
                 'pickup' => [
@@ -611,6 +630,62 @@ class ReportService
                 'closed_at' => $task->closed_at ? $task->closed_at->format('Y-m-d H:i') : '',
                 'notes' => $task->notes ?? ''
             ];
+
+            if (!empty($extraColumnsMap)) {
+                $additionalData = [];
+                if ($task->driver && $task->driver->additional_data) {
+                    $additionalData = is_string($task->driver->additional_data)
+                        ? json_decode($task->driver->additional_data, true)
+                        : $task->driver->additional_data;
+                }
+
+                if (!empty($additionalData) && is_array($additionalData)) {
+                    foreach ($extraColumnsMap as $colKey => $label) {
+                        $processedTask[$colKey] = 'غير محدد';
+                        $fieldName = $extraFieldNamesMap[$colKey] ?? null;
+                        $fieldId   = str_replace('driver_extra:', '', $colKey);
+
+                        $val = null;
+
+                        if ($fieldName && isset($additionalData[$fieldName])) {
+                            $raw = $additionalData[$fieldName];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        if (($val === null || $val === '') && isset($additionalData[$fieldId])) {
+                            $raw = $additionalData[$fieldId];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        if (($val === null || $val === '') && isset($additionalData[(int)$fieldId])) {
+                            $raw = $additionalData[(int)$fieldId];
+                            $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
+                        }
+
+                        if ($val !== null && $val !== '') {
+                            $processedTask[$colKey] = is_string($val) ? $val : json_encode($val, JSON_UNESCAPED_UNICODE);
+                            continue;
+                        }
+
+                        foreach ($additionalData as $item) {
+                            if (is_array($item) && isset($item['label']) && trim($item['label']) === trim($label)) {
+                                if (isset($item['value']) && $item['value'] !== null && $item['value'] !== '') {
+                                    $processedTask[$colKey] = is_string($item['value'])
+                                        ? $item['value']
+                                        : json_encode($item['value'], JSON_UNESCAPED_UNICODE);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    foreach ($extraColumnsMap as $colKey => $label) {
+                        $processedTask[$colKey] = 'غير محدد';
+                    }
+                }
+            }
+
+            return $processedTask;
         });
 
         // Calculate summary
@@ -621,7 +696,8 @@ class ReportService
             'summary' => $summary,
             'generated_at' => now(),
             'generated_by' => $user->name ?? 'System',
-            'filters_applied' => $this->getAppliedFilters($filters)
+            'filters_applied' => $this->getAppliedFilters($filters),
+            'extra_columns_map' => $extraColumnsMap
         ];
     }
 

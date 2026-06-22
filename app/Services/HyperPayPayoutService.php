@@ -126,4 +126,49 @@ class HyperPayPayoutService
             ];
         }
     }
+
+    /**
+     * Check payout status by payoutReference
+     */
+    public function checkPayoutStatus($referenceId)
+    {
+        try {
+            $url = config('services.hyperpay.payout_url', 'https://gateway.sandbox.hyperpay.com/payouts');
+            // The doc says endpoint is `/payout` for GET. If `payout_url` ends with `/payouts`, we need to change to `/payout`
+            $url = str_replace('/payouts', '/payout', $url);
+            
+            $response = Http::withBasicAuth($this->username, $this->password)
+                ->withHeaders([
+                    'X-Merchant-Id' => $this->merchantId,
+                    'Accept'        => 'application/json',
+                ])
+                ->get($url, [
+                    'payout-reference' => $referenceId
+                ]);
+
+            $result = $response->json();
+            
+            Log::info('HyperPay Check Status Response:', ['result' => $result]);
+            
+            $responseCode = $result['responseCode'] ?? 'ERROR';
+            $message = $result['responseMessage'] ?? 'Unknown Error';
+            
+            // Note: HyperSplits 2.0 GET response
+            $isSuccessCode = in_array($responseCode, ['00000', '00001', '33000', '33333']);
+
+            return [
+                'status'  => $isSuccessCode,
+                'code'    => $responseCode,
+                'message' => $this->getResponseMessage($responseCode, $message),
+                'data'    => $result
+            ];
+
+        } catch (Exception $e) {
+            Log::error('HyperPay Check Status Exception:', ['message' => $e->getMessage()]);
+            return [
+                'status'  => false,
+                'message' => 'Exception: ' . $e->getMessage()
+            ];
+        }
+    }
 }

@@ -115,6 +115,10 @@ class DriverTasksExport implements FromCollection, WithHeadings, WithStyles, Wit
                         break;
 
                     default:
+                        if (str_starts_with($column, 'driver_extra:')) {
+                            $row[] = $task[$column] ?? 'غير محدد';
+                            continue 2;
+                        }
                         $row[] = '';
                         break;
                 }
@@ -178,6 +182,10 @@ class DriverTasksExport implements FromCollection, WithHeadings, WithStyles, Wit
                     $headings[] = 'تاريخ الإغلاق';
                     break;
                 default:
+                    if (str_starts_with($column, 'driver_extra:')) {
+                        $headings[] = $this->reportData['extra_columns_map'][$column] ?? $column;
+                        continue 2;
+                    }
                     $headings[] = ucfirst($column);
                     break;
             }

@@ -73,7 +73,7 @@ $(function () {
             let imageBtn = '';
             if (full.image) {
               imageBtn = `
-                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="Ø¹Ø±Ø¶ Ø§Ù„ØµÙˆØ±Ø©">
+                <button class="btn btn-sm btn-icon show-image" data-bs-toggle="modal" data-bs-target="#imageModal" data-image="${baseUrl + full.image}" title="عرض ا�ص�ˆرة">
                   <i class="ti ti-photo"></i>
                 </button>
               `;
@@ -312,21 +312,21 @@ $(function () {
 
     if (taskId && taskId !== '' && taskId !== 'null' && taskId !== null) {
       Swal.fire({
-        title: 'ØµÙ„Ø§Ø­ÙŠØ© Ù…Ø·Ù„ÙˆØ¨Ø©',
-        text: 'Ù‡Ø°Ù‡ Ø§Ù„Ø¹Ù…ÙˆÙ„Ø© Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ù…Ù‡Ù…Ø©. ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø­Ø°ÙÙ‡Ø§:',
+        title: 'ص�اح�`ة �&ط��ˆبة',
+        text: '�!ذ�! ا�ع�&�ˆ�ة �&رتبطة ب�&�!�&ة. �`رج�0 إدخا� ْ��&ة ا��&ر�ˆر �حذف�!ا:',
         input: 'password',
         inputAttributes: {
           autocapitalize: 'off',
           autocorrect: 'off'
         },
         showCancelButton: true,
-        confirmButtonText: 'Ø­Ø°Ù Ø§Ù„Ø¹Ù…ÙˆÙ„Ø©',
-        cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
+        confirmButtonText: 'حذف ا�ع�&�ˆ�ة',
+        cancelButtonText: 'إ�غاء',
         customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-label-secondary' }
       }).then((result) => {
         if (result.isConfirmed) {
           if (!result.value) {
-            Swal.fire('Ø®Ø·Ø£', 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ø·Ù„ÙˆØ¨Ø©', 'error');
+            Swal.fire('خطأ', 'ْ��&ة ا��&ر�ˆر �&ط��ˆبة', 'error');
             return;
           }
           $.ajax({
@@ -338,13 +338,13 @@ $(function () {
             },
             success: function (res) {
               if (res.status == 1) {
-                Swal.fire('ØªÙ… ×”×—Ø°Ù!', res.success, 'success').then(() => dt_transactions.draw());
+                Swal.fire('ت�& ×”×—ذف!', res.success, 'success').then(() => dt_transactions.draw());
               } else {
-                Swal.fire('Ø®Ø·Ø£!', res.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£.', 'error');
+                Swal.fire('خطأ!', res.error || 'حدث خطأ.', 'error');
               }
             },
             error: function () {
-              Swal.fire('Ø®Ø·Ø£!', 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù….', 'error');
+              Swal.fire('خطأ!', 'حدث خطأ أث� اء ا�اتصا� با�خاد�&.', 'error');
             }
           });
         }
@@ -355,39 +355,39 @@ $(function () {
   });
 
   $(document).on('click', '.show-image', function () {
-    const fileUrl = $(this).data('image'); // Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„ÙƒØ§Ù…Ù„ Ù„Ù„Ù…Ù„Ù
+    const fileUrl = $(this).data('image'); // ا�رابط ا�ْا�&� ���&�ف
 
-    // Ø§Ø³ØªØ®Ø±Ø¬ Ø§Ø³Ù… Ø§Ù„Ù…Ù„Ù Ù…Ù† Ø§Ù„Ø±Ø§Ø¨Ø·
+    // استخرج اس�& ا��&�ف �&�  ا�رابط
     const fileName = fileUrl.split('/').pop();
 
-    // Ø§Ø³ØªØ®Ø±Ø¬ Ø§Ù„Ø§Ù…ØªØ¯Ø§Ø¯
+    // استخرج ا�ا�&تداد
     const extension = fileName.split('.').pop().toLowerCase();
 
-    // Ø§Ù„Ø§Ù…ØªØ¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡Ø§ Ù„Ù„ØµÙˆØ±
+    // ا�ا�&تدادات ا��&س�&�ˆح ب�!ا ��ص�ˆر
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     if (imageExtensions.includes(extension)) {
-      // Ø¥Ø°Ø§ ÙƒØ§Ù† ØµÙˆØ±Ø© -> Ø§Ø¹Ø±Ø¶Ù‡Ø§ Ø¯Ø§Ø®Ù„ <img>
+      // إذا ْا�  ص�ˆرة -> اعرض�!ا داخ� <img>
       $('#modalContent').html(`
             <img id="modalImage" src="${fileUrl}" class="img-fluid rounded" alt="${fileName}">
         `);
     } else if (extension === 'pdf') {
-      // Ø§Ø³ØªØ®Ø¯Ø§Ù… Google Docs Viewer
+      // استخدا�& Google Docs Viewer
       $('#modalContent').html(`
         <iframe src="https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true"
                 width="100%" height="600px" style="border:none;"></iframe>
     `);
     } else {
-      // Ø£ÙŠ Ù…Ù„Ù Ø¢Ø®Ø± (Word, Excel, ...) -> Ø§Ø¹Ø±Ø¶ Ø§Ø³Ù…Ù‡ Ù…Ø¹ Ø²Ø± ÙØªØ­
+      // أ�` �&�ف آخر (Word, Excel, ...) -> اعرض اس�&�! �&ع زر فتح
       $('#modalContent').html(`
             <div class="p-3 text-center">
-                <p><strong>Ø§Ù„Ù…Ù„Ù:</strong> ${fileName}</p>
-                <a href="${fileUrl}" target="_blank" class="btn btn-primary">ÙØªØ­ Ø§Ù„Ù…Ù„Ù</a>
+                <p><strong>ا��&�ف:</strong> ${fileName}</p>
+                <a href="${fileUrl}" target="_blank" class="btn btn-primary">فتح ا��&�ف</a>
             </div>
         `);
     }
 
-    // Ø§ÙØªØ­ Ø§Ù„Ù…ÙˆØ¯Ø§Ù„
+    // افتح ا��&�ˆدا�
     $('#fileModal').modal('show');
   });
 
@@ -401,17 +401,17 @@ $(function () {
   });
   $(document).on('click', '#clearWalletBtn', function () {
     Swal.fire({
-      title: 'Ø·Ù„Ø¨ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø³Ø±ÙŠØ©',
-      text: 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ© Ù„ØªØ£ÙƒÙŠØ¯ Ø¹Ù…Ù„ÙŠØ© ØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„:',
+      title: 'ط�ب ْ��&ة ا��&ر�ˆر ا�سر�`ة',
+      text: 'ا�رجاء إدخا� ا�ْ��&ة ا�سر�`ة �تأْ�`د ع�&��`ة تصف�`ة ا��&حفظة با�ْا�&�:',
       input: 'password',
-      inputPlaceholder: 'Ø£Ø¯Ø®Ù„ Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ©...',
+      inputPlaceholder: 'أدخ� ا�ْ��&ة ا�سر�`ة...',
       inputAttributes: {
         autocapitalize: 'off',
         autocorrect: 'off'
       },
       showCancelButton: true,
-      confirmButtonText: 'ØªØ­Ù‚Ù‚ ÙˆØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø©',
-      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
+      confirmButtonText: 'تح�� Ùˆتصف�`ة ا��&حفظة',
+      cancelButtonText: 'إ�غاء',
       customClass: {
         confirmButton: 'btn btn-danger me-3',
         cancelButton: 'btn btn-label-secondary'
@@ -421,8 +421,8 @@ $(function () {
       if (result.isConfirmed) {
         if (result.value !== 'OsamaAlsamomy@1998') {
           Swal.fire({
-            title: 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ­Ù‚Ù‚!',
-            text: 'Ø§Ù„ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ© Ø§Ù„Ù…Ø¯Ø®Ù„Ø© ØºÙŠØ± ØµØ­ÙŠØ­Ø©ØŒ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø¥ØªÙ…Ø§Ù… Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ØªØµÙÙŠØ©.',
+            title: 'خطأ ف�` ا�تح��!',
+            text: 'ا�ْ��&ة ا�سر�`ة ا��&دخ�ة غ�`ر صح�`حة�R �ا �`�&ْ�  إت�&ا�& ع�&��`ة ا�تصف�`ة.',
             icon: 'error',
             customClass: {
               confirmButton: 'btn btn-primary'
@@ -431,14 +431,14 @@ $(function () {
           return;
         }
 
-        // ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØµØ­ÙŠØ­Ø©ØŒ Ù†Ù‚ÙˆÙ… Ø¨Ø·Ù„Ø¨ Ø§Ù„ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ Ø£Ùˆ Ø§Ù„Ø¨Ø¯Ø¡ Ø§Ù„ÙÙˆØ±ÙŠ
+        // ْ��&ة ا��&ر�ˆر صح�`حة�R � ��ˆ�& بط�ب ا�تأْ�`د ا�� �!ائ�` أ�ˆ ا�بدء ا�ف�ˆر�`
         Swal.fire({
-          title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ',
-          text: 'Ø³ÙŠØªÙ… Ù…Ø³Ø­ ÙƒØ§ÙØ© Ø§Ù„Ø­Ø±ÙƒØ§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ© Ù…Ù† Ø§Ù„Ù…Ø­ÙØ¸Ø© Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ ÙˆØªØµÙÙŠØ± Ø§Ù„Ø±ØµÙŠØ¯!',
+          title: '�!� أ� ت �&تأْد � �!ائ�`ا�9�x',
+          text: 'س�`ت�& �&سح ْافة ا�حرْات ا��&ا��`ة �&�  ا��&حفظة � �!ائ�`ا�9 Ùˆتصف�`ر ا�رص�`د!',
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ù…Ø³Ø­ ÙˆØªØµÙÙŠØ©!',
-          cancelButtonText: 'ØªØ±Ø§Ø¬Ø¹',
+          confirmButtonText: '� ع�&�R �&سح Ùˆتصف�`ة!',
+          cancelButtonText: 'تراجع',
           customClass: {
             confirmButton: 'btn btn-danger me-3',
             cancelButton: 'btn btn-label-secondary'
@@ -456,7 +456,7 @@ $(function () {
                 if (response.status === 1) {
                   Swal.fire({
                     icon: 'success',
-                    title: 'ØªÙ…Øª Ø§Ù„ØªØµÙÙŠØ©!',
+                    title: 'ت�&ت ا�تصف�`ة!',
                     text: response.success,
                     customClass: {
                       confirmButton: 'btn btn-success'
@@ -466,7 +466,7 @@ $(function () {
                   });
                 } else {
                   Swal.fire({
-                    title: 'Ø®Ø·Ø£!',
+                    title: 'خطأ!',
                     text: response.error,
                     icon: 'error',
                     customClass: {
@@ -477,8 +477,8 @@ $(function () {
               },
               error: function () {
                 Swal.fire({
-                  title: 'Ø®Ø·Ø£!',
-                  text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ù…Ø­Ø§ÙˆÙ„Ø© ØªØµÙÙŠØ© Ø§Ù„Ù…Ø­ÙØ¸Ø©.',
+                  title: 'خطأ!',
+                  text: 'حدث خطأ أث� اء �&حا�ˆ�ة تصف�`ة ا��&حفظة.',
                   icon: 'error',
                   customClass: {
                     confirmButton: 'btn btn-primary'
@@ -524,18 +524,18 @@ $(function () {
           let allowCalc = true;
 
           if (response.already_calculated) {
-            eligibilityMsg = '<i class="ti ti-alert-triangle me-1"></i> ØªÙ†Ø¨ÙŠÙ‡: ØªÙ… Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø© Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ø³Ø¨Ù‚Ø§Ù‹ Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±.';
+            eligibilityMsg = '<i class="ti ti-alert-triangle me-1"></i> ت� ب�`�!: ت�& احتساب ع�&�ˆ�ة �!ذ�! ا��&�!�&ة �&سب�ا�9 ��!ذا ا��&ستث�&ر.';
             alertClass = 'alert-warning';
             allowCalc = false;
           } else if (response.funded_by_other) {
-            eligibilityMsg = '<i class="ti ti-circle-x me-1"></i> Ø®Ø·Ø£: Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ù…ÙˆÙ„Ø© Ù…Ù† Ù‚Ø¨Ù„ Ù…Ø³ØªØ«Ù…Ø± Ø¢Ø®Ø±.';
+            eligibilityMsg = '<i class="ti ti-circle-x me-1"></i> خطأ: �!ذ�! ا��&�!�&ة �&�&�ˆ�ة �&�  �ب� �&ستث�&ر آخر.';
             alertClass = 'alert-danger';
             allowCalc = false;
           } else {
-            eligibilityMsg = '<i class="ti ti-check me-1"></i> Ø§Ù„Ù…Ù‡Ù…Ø© Ø¬Ø§Ù‡Ø²Ø© Ù„Ù„Ø§Ø­ØªØ³Ø§Ø¨ Ø§Ù„ÙŠØ¯ÙˆÙŠ.';
+            eligibilityMsg = '<i class="ti ti-check me-1"></i> ا��&�!�&ة جا�!زة ��احتساب ا��`د�ˆ�`.';
             alertClass = 'alert-success';
             if (response.is_cancelled) {
-              eligibilityMsg += ' (Ù…Ù„Ø§Ø­Ø¸Ø©: Ø§Ù„Ù…Ù‡Ù…Ø© Ù…Ù„ØºØ§Ø©)';
+              eligibilityMsg += ' (�&�احظة: ا��&�!�&ة �&�غاة)';
             }
           }
 
@@ -546,14 +546,14 @@ $(function () {
             $('#btnConfirmManualCalc').addClass('d-none');
           }
         } else {
-          Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
+          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
           $('#taskSearchResult').addClass('d-none');
           $('#btnConfirmManualCalc').addClass('d-none');
         }
       },
       error: function () {
         btn.prop('disabled', false).html('<i class="ti ti-search"></i>');
-        Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„Ù…Ù‡Ù…Ø©.', icon: 'error' });
+        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أث� اء ا�بحث ع�  ا��&�!�&ة.', icon: 'error' });
       }
     });
   });
@@ -563,12 +563,12 @@ $(function () {
     const btn = $(this);
 
     Swal.fire({
-      title: 'Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ØŸ',
-      text: "Ø³ÙŠØªÙ… Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø© Ø§Ù„Ù…Ù‡Ù…Ø© Ø±Ù‚Ù… #" + taskId + " ÙŠØ¯ÙˆÙŠØ§Ù‹.",
+      title: '�!� أ� ت �&تأْد�x',
+      text: "س�`ت�& احتساب ع�&�ˆ�ة ا��&�!�&ة ر��& #" + taskId + " �`د�ˆ�`ا�9.",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø­ØªØ³Ø¨Ù‡Ø§',
-      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
+      confirmButtonText: '� ع�&�R احتسب�!ا',
+      cancelButtonText: 'إ�غاء',
       customClass: { confirmButton: 'btn btn-primary me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -584,15 +584,15 @@ $(function () {
           success: function (response) {
             btn.prop('disabled', false).text('Calculate Commission');
             if (response.status === 1) {
-              Swal.fire({ icon: 'success', title: 'Ù†Ø¬Ø§Ø­!', text: response.success, customClass: { confirmButton: 'btn btn-success' } })
+              Swal.fire({ icon: 'success', title: '� جاح!', text: response.success, customClass: { confirmButton: 'btn btn-success' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
             btn.prop('disabled', false).text('Calculate Commission');
-            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أث� اء ع�&��`ة ا�احتساب.', icon: 'error' });
           }
         });
       }
@@ -602,12 +602,12 @@ $(function () {
   $(document).on('click', '#calculateGeneralBtn', function () {
     const btn = $(this);
     Swal.fire({
-      title: 'ØªØ£ÙƒÙŠØ¯',
-      text: 'Ù‡Ù„ ØªØ±ÙŠØ¯ Ø§Ø­ØªØ³Ø§Ø¨ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø© Ø§Ù„Ù…Ø³ØªØ­Ù‚Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±ØŸ',
+      title: 'تأْ�`د',
+      text: '�!� تر�`د احتساب ج�&�`ع ا�ع�&�ˆ�ات ا�عا�&ة ا��&ستح�ة ��!ذا ا��&ستث�&ر�x',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨',
-      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
+      confirmButtonText: '� ع�&�R ابدأ ا�احتساب',
+      cancelButtonText: 'إ�غاء',
       customClass: { confirmButton: 'btn btn-success me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
@@ -622,15 +622,15 @@ $(function () {
           success: function (response) {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
             if (response.status === 1) {
-              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ØªÙ†Ø¨ÙŠÙ‡' : 'Ù†Ø¬Ø§Ø­!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ت� ب�`�!' : '� جاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
             btn.prop('disabled', false).html('<i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Calculate General Commissions</span>');
-            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أث� اء ع�&��`ة ا�احتساب.', icon: 'error' });
           }
         });
       }
@@ -678,17 +678,17 @@ $(function () {
   $(document).on('click', '#calculateBrokerBtn', function () {
     const btn = $(this);
     Swal.fire({
-      title: 'ØªØ£ÙƒÙŠØ¯ Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·',
-      text: 'Ù‡Ù„ ØªØ±ÙŠØ¯ ÙØ­Øµ ÙˆØ§Ø­ØªØ³Ø§Ø¨ ÙƒØ§ÙØ© Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³Ø§Ø·Ø© Ø§Ù„Ù…Ø³ØªØ­Ù‚Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¹Ù† Ø§Ù„Ù…Ù‡Ø§Ù… Ø§Ù„ØªÙŠ Ù…ÙˆÙ„Ù‡Ø§ Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±ÙˆÙ† Ø§Ù„Ù…Ø±ØªØ¨Ø·ÙˆÙ† Ø¨Ù‡ØŸ',
+      title: 'تأْ�`د احتساب ع�&�ˆ�ات ا��ˆس�`ط',
+      text: '�!� تر�`د فحص Ùˆاحتساب ْافة ع�&�ˆ�ات ا��ˆساطة ا��&ستح�ة ��!ذا ا��&ستخد�& ع�  ا��&�!ا�& ا�ت�` �&�ˆ��!ا ا��&ستث�&ر�ˆ�  ا��&رتبط�ˆ�  ب�!�x',
       icon: 'question',
       showCancelButton: true,
-      confirmButtonText: 'Ù†Ø¹Ù…ØŒ Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨',
-      cancelButtonText: 'Ø¥Ù„ØºØ§Ø¡',
+      confirmButtonText: '� ع�&�R ابدأ ا�احتساب',
+      cancelButtonText: 'إ�غاء',
       customClass: { confirmButton: 'btn btn-warning me-3', cancelButton: 'btn btn-label-secondary' },
       buttonsStyling: false
     }).then(function (result) {
       if (result.value) {
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨...');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جار�` ا�احتساب...');
         $.ajax({
           url: calculateBrokerUrl,
           type: 'POST',
@@ -696,17 +696,17 @@ $(function () {
             _token: $('meta[name="csrf-token"]').attr('content')
           },
           success: function (response) {
-            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·</span>');
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب ع�&�ˆ�ات ا��ˆس�`ط</span>');
             if (response.status === 1) {
-              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ØªÙ†Ø¨ÙŠÙ‡' : 'Ù†Ø¬Ø§Ø­!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'ت� ب�`�!' : '� جاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
                 .then(() => location.reload());
             } else {
-              Swal.fire({ title: 'Ø®Ø·Ø£!', text: response.error, icon: 'error' });
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
             }
           },
           error: function () {
-            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> Ø§Ø­ØªØ³Ø§Ø¨ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„ÙˆØ³ÙŠØ·</span>');
-            Swal.fire({ title: 'Ø®Ø·Ø£!', text: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¹Ù…Ù„ÙŠØ© Ø§Ù„Ø§Ø­ØªØ³Ø§Ø¨.', icon: 'error' });
+            btn.prop('disabled', false).html('<i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> احتساب ع�&�ˆ�ات ا��ˆس�`ط</span>');
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أث� اء ع�&��`ة ا�احتساب.', icon: 'error' });
           }
         });
       }
@@ -751,7 +751,7 @@ $(function () {
     });
   });
 
-  // Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø³ØªØ«Ù…Ø§Ø± Ø§Ù„Ø£Ø±Ø¨Ø§Ø­ (Ù„Ù„Ù…Ø¶Ø§Ø±Ø¨ÙŠÙ†)
+  // إعادة استث�&ار ا�أرباح (���&ضارب�`� )
   $(document).on('submit', '#reinvestProfitsForm', function (e) {
     e.preventDefault();
 

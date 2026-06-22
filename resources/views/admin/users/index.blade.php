@@ -287,6 +287,16 @@
                                                 </div>
 
                                                 <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="commission-start-date">
+                                                            {{ __('Commission Calculation Start Date') }}
+                                                        </label>
+                                                        <input type="date" id="commission-start-date" class="form-control" name="commission_start_date" />
+                                                        <span class="commission_start_date-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
                                                     <div class="  mb-6">
                                                         <label class="form-label"
                                                             for="user-customers">{{ __('Customers') }}</label>

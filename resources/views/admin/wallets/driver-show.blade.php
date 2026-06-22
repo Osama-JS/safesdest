@@ -243,28 +243,66 @@
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 datatables-transactions">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="40">
-                                <input type="checkbox" id="select-all-transactions" class="form-check-input">
-                            </th>
-                            <th>#</th>
-                            <th>{{ __('Amount') }}</th>
-                            <th>{{ __('Description') }}</th>
-                            <th>{{ __('Maturity') }}</th>
-                            <th>{{ __('Task') }}</th>
-                            <th>{{ __('Status') }}</th>
-                            <th>{{ __('User') }}</th>
-                            <th>{{ __('Created At') }}</th>
-                            <th>{{ __('Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        <!-- Tabs -->
+        <div class="card-body px-0 pb-0">
+            <ul class="nav nav-tabs nav-fill mb-0" role="tablist">
+                <li class="nav-item">
+                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-transactions" aria-controls="navs-transactions" aria-selected="true">
+                        <i class="ti ti-list me-1"></i> {{ __('Transactions') }}
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#navs-payouts" aria-controls="navs-payouts" aria-selected="false">
+                        <i class="ti ti-brand-mastercard me-1"></i> {{ __('HyperPay Payouts') }}
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content p-0 m-0 border-0">
+            <!-- Transactions Tab -->
+            <div class="tab-pane fade show active" id="navs-transactions" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatables-transactions">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="select-all-transactions" class="form-check-input">
+                                </th>
+                                <th>#</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Description') }}</th>
+                                <th>{{ __('Maturity') }}</th>
+                                <th>{{ __('Task') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('User') }}</th>
+                                <th>{{ __('Created At') }}</th>
+                                <th>{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Payouts Tab -->
+            <div class="tab-pane fade" id="navs-payouts" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatables-payouts">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>{{ __('Reference') }}</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Type') }}</th>
+                                <th>{{ __('Payout ID') }}</th>
+                                <th>{{ __('Created At') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

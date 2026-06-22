@@ -319,7 +319,7 @@ class WalletsController extends Controller
                     'country' => $driver->bank_country ?? 'SA',
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'description' => "Wallet Payment for {$driver->name}"
+                    'description' => "Wallet Payment for {$driver->beneficiary_name}"
                 ]);
 
                 if (!$payoutResponse['status']) {
@@ -807,7 +807,7 @@ class WalletsController extends Controller
                     'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'description' => "Manual Payout for {$driver->name}"
+                    'description' => "Manual Payout for {$driver->beneficiary_name}"
                 ]);
 
                 if (!$payoutResponse['status']) {

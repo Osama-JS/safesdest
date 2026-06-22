@@ -319,7 +319,7 @@ class WalletsController extends Controller
                     'country' => $driver->bank_country ?? 'SA',
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'description' => "Wallet Payment for Driver #{$driver->id}"
+                    'description' => "Wallet Payment for {$driver->name}"
                 ]);
 
                 if (!$payoutResponse['status']) {
@@ -594,7 +594,7 @@ class WalletsController extends Controller
             }
             
             $payoutService = app(HyperPayPayoutService::class);
-            $response = $payoutService->checkPayoutStatus($payout->reference_id);
+            $response = $payoutService->checkPayoutStatus($payout->reference_id, $payout->payout_id);
             
             if (!$response['status'] && !in_array($response['code'], ['63000', '90000', '77000'])) {
                 return response()->json(['status' => 2, 'error' => $response['message']]);
@@ -807,7 +807,7 @@ class WalletsController extends Controller
                     'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'description' => "Manual Payout for Driver #{$driver->id}"
+                    'description' => "Manual Payout for {$driver->name}"
                 ]);
 
                 if (!$payoutResponse['status']) {

@@ -130,25 +130,32 @@ class HyperPayPayoutService
     /**
      * Check payout status by payoutReference
      */
-    public function checkPayoutStatus($referenceId)
+    public function checkPayoutStatus($referenceId, $payoutId = null)
     {
         try {
             $url = config('services.hyperpay.payout_url', 'https://gateway.sandbox.hyperpay.com/payouts');
             // The doc says endpoint is `/payout` for GET. If `payout_url` ends with `/payouts`, we need to change to `/payout`
             $url = str_replace('/payouts', '/payout', $url);
             
+            $payload = [
+                'merchantId'       => $this->merchantId,
+                'entityId'         => $this->merchantId,
+                'payout-reference' => $referenceId
+            ];
+            
+            if ($payoutId) {
+                $payload['payout-id'] = $payoutId;
+            }
+
             $response = Http::withBasicAuth($this->username, $this->password)
                 ->withHeaders([
                     'X-Merchant-Id' => $this->merchantId,
-                    'merchantId'    => $this->merchantId,
                     'Content-Type'  => 'application/json',
                     'Accept'        => 'application/json',
                 ])
-                ->get($url, [
-                    'merchantId'       => $this->merchantId,
-                    'merchant_id'      => $this->merchantId,
-                    'entityId'         => $this->merchantId,
-                    'payout-reference' => $referenceId
+                ->send('GET', $url, [
+                    'query' => $payload,
+                    'json'  => $payload
                 ]);
 
             $result = $response->json();

@@ -215,7 +215,10 @@ class HyperPayWebhookController extends Controller
         }
 
         if ($isSuccess) {
-            $payout->update(['status' => 'completed']);
+            $payout->update([
+                'status' => 'completed',
+                'webhook_payload' => request()->all()
+            ]);
             Log::info("Driver Payout for reference {$reference} confirmed by Webhook. PayoutId: " . $payoutId);
             
             $details = $payout->transaction_details;
@@ -324,7 +327,8 @@ class HyperPayWebhookController extends Controller
         } else {
             $payout->update([
                 'status' => 'failed',
-                'failure_reason' => $failureReason
+                'failure_reason' => $failureReason,
+                'webhook_payload' => request()->all()
             ]);
             Log::error("Driver Payout for reference {$reference} failed via Webhook. Reason: " . $failureReason);
         }

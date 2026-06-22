@@ -106,8 +106,10 @@ $(function () {
                 <i class="ti ti-refresh"></i>
               </button>`;
               
-            if (full['status'] === 'failed' && full['failure_reason']) {
-              actions += `<button class="btn btn-sm btn-icon btn-text-danger rounded-pill waves-effect show-error-btn" data-reason="${full['failure_reason'].replace(/"/g, '&quot;')}" data-bs-toggle="tooltip" title="View Failure Reason">
+            if (full['status'] === 'failed' || full['status'] === 'completed') {
+              let payloadStr = full['webhook_payload'] ? full['webhook_payload'].replace(/"/g, '&quot;') : '';
+              let reasonStr = full['failure_reason'] ? full['failure_reason'].replace(/"/g, '&quot;') : '';
+              actions += `<button class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect show-error-btn" data-reason="${reasonStr}" data-payload="${payloadStr}" data-status="${full['status']}" data-bs-toggle="tooltip" title="View Details">
                 <i class="ti ti-info-circle"></i>
               </button>`;
             }
@@ -192,16 +194,41 @@ $(function () {
     });
   });
 
-  // Handle Show Error Button Click
+  // Handle Show Details Button Click
   $(document).on('click', '.show-error-btn', function () {
     var reason = $(this).data('reason');
-    Swal.fire({
-      icon: 'error',
-      title: 'Failure Reason',
-      text: reason,
-      customClass: {
-        confirmButton: 'btn btn-danger'
+    var payloadStr = $(this).data('payload');
+    var status = $(this).data('status');
+    
+    var title = status === 'completed' ? 'Payout Details' : 'Failure Details';
+    var icon = status === 'completed' ? 'success' : 'error';
+    
+    var htmlContent = '';
+    
+    if (reason && status === 'failed') {
+      htmlContent += `<div class="alert alert-danger mb-3 text-start"><strong>Reason:</strong> ${reason}</div>`;
+    }
+    
+    if (payloadStr) {
+      try {
+        var payloadObj = JSON.parse(payloadStr);
+        htmlContent += `<div class="text-start mb-2 fw-bold">Webhook Response:</div>`;
+        htmlContent += `<pre class="text-start bg-light p-3 rounded border" style="font-size: 13px; max-height: 300px; overflow-y: auto;"><code>${JSON.stringify(payloadObj, null, 2)}</code></pre>`;
+      } catch (e) {
+        htmlContent += `<pre class="text-start bg-light p-3 rounded border" style="font-size: 13px; max-height: 300px; overflow-y: auto;"><code>${payloadStr}</code></pre>`;
       }
+    } else {
+      htmlContent += `<p class="text-muted text-start">No additional payload data recorded.</p>`;
+    }
+
+    Swal.fire({
+      icon: icon,
+      title: title,
+      html: htmlContent,
+      customClass: {
+        confirmButton: 'btn btn-primary'
+      },
+      width: '600px'
     });
   });
 });

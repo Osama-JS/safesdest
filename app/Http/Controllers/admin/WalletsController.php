@@ -679,6 +679,7 @@ class WalletsController extends Controller
                 'type' => $val->payout_type,
                 'payout_id' => $val->payout_id ?? '-',
                 'failure_reason' => $val->failure_reason ?? '',
+                'webhook_payload' => $val->webhook_payload ? json_encode($val->webhook_payload, JSON_UNESCAPED_UNICODE) : null,
                 'created_at' => $val->created_at->format('Y-m-d H:i'),
             ];
         }

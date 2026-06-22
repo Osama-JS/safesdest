@@ -19,12 +19,14 @@ class HyperpayPayout extends Model
         'transaction_details',
         'status',
         'failure_reason',
+        'webhook_payload',
         'payout_type', // e.g. 'MT' (Manual), 'WP' (Wallet Payment), 'WD' (Withdrawal)
         'source_withdrawal_id'
     ];
 
     protected $casts = [
         'transaction_details' => 'array',
+        'webhook_payload' => 'array',
     ];
 
     public function wallet()

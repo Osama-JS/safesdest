@@ -25,6 +25,7 @@ $(function () {
         { data: 'payout_id' },
         { data: 'amount' },
         { data: 'type' },
+        { data: 'admin_name' },
         { data: 'status' },
         { data: 'created_at' },
         { data: 'action', orderable: false, searchable: false }
@@ -75,6 +76,12 @@ $(function () {
         {
           targets: 6,
           render: function (data, type, full, meta) {
+            return `<span class="text-muted">${full['admin_name'] ?? 'System'}</span>`;
+          }
+        },
+        {
+          targets: 7,
+          render: function (data, type, full, meta) {
             var status = full['status'];
             var badgeClass = 'bg-label-warning';
             var statusText = 'Pending';
@@ -91,13 +98,13 @@ $(function () {
           }
         },
         {
-          targets: 7,
+          targets: 8,
           render: function (data, type, full, meta) {
             return `<span>${full['created_at']}</span>`;
           }
         },
         {
-          targets: 8,
+          targets: 9,
           title: 'Actions',
           searchable: false,
           orderable: false,
@@ -118,7 +125,7 @@ $(function () {
           }
         }
       ],
-      order: [[7, 'desc']],
+      order: [[8, 'desc']],
       dom: '<"row mx-1"' +
         '<"col-12 col-md-6 d-flex align-items-center justify-content-center justify-content-md-start gap-2"l<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start mt-md-0 mt-3"B>>' +
         '<"col-12 col-md-6 d-flex align-items-center justify-content-end flex-column flex-md-row pe-3 gap-md-2"f<"invoice_status mb-3 mb-md-0">>' +

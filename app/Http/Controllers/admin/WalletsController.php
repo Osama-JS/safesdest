@@ -666,10 +666,18 @@ class WalletsController extends Controller
             ->orderBy($order, $dir)
             ->get();
 
+        $adminIds = $payouts->map(function($p) {
+            return $p->transaction_details['admin_id'] ?? null;
+        })->filter()->unique()->toArray();
+        $admins = \App\Models\User::whereIn('id', $adminIds)->pluck('name', 'id');
+
         $data = [];
         $fakeId = $start;
 
         foreach ($payouts as $val) {
+            $adminId = $val->transaction_details['admin_id'] ?? null;
+            $adminName = $adminId && isset($admins[$adminId]) ? $admins[$adminId] : 'System';
+
             $data[] = [
                 'id' => $val->id,
                 'fake_id' => ++$fakeId,
@@ -680,6 +688,7 @@ class WalletsController extends Controller
                 'payout_id' => $val->payout_id ?? '-',
                 'failure_reason' => $val->failure_reason ?? '',
                 'webhook_payload' => $val->webhook_payload ? json_encode($val->webhook_payload, JSON_UNESCAPED_UNICODE) : null,
+                'admin_name' => $adminName,
                 'created_at' => $val->created_at->format('Y-m-d H:i'),
             ];
         }

@@ -52,6 +52,7 @@
                             <th>{{ __('Payout ID') }}</th>
                             <th>{{ __('Amount') }}</th>
                             <th>{{ __('Type') }}</th>
+                            <th>{{ __('Initiated By') }}</th>
                             <th>{{ __('Status') }}</th>
                             <th>{{ __('Created At') }}</th>
                             <th class="text-end">{{ __('Actions') }}</th>

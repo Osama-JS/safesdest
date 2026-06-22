@@ -140,10 +140,13 @@ class HyperPayPayoutService
             $response = Http::withBasicAuth($this->username, $this->password)
                 ->withHeaders([
                     'X-Merchant-Id' => $this->merchantId,
+                    'merchantId'    => $this->merchantId,
+                    'Content-Type'  => 'application/json',
                     'Accept'        => 'application/json',
                 ])
                 ->get($url, [
                     'merchantId'       => $this->merchantId,
+                    'merchant_id'      => $this->merchantId,
                     'entityId'         => $this->merchantId,
                     'payout-reference' => $referenceId
                 ]);

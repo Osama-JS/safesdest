@@ -678,6 +678,7 @@ class WalletsController extends Controller
                 'status' => $val->status,
                 'type' => $val->payout_type,
                 'payout_id' => $val->payout_id ?? '-',
+                'failure_reason' => $val->failure_reason ?? '',
                 'created_at' => $val->created_at->format('Y-m-d H:i'),
             ];
         }

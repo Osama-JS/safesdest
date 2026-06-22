@@ -102,11 +102,17 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
-            return (
-              `<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect check-status-btn" data-id="${full['id']}" data-bs-toggle="tooltip" title="Check Status">
+            let actions = `<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill waves-effect check-status-btn" data-id="${full['id']}" data-bs-toggle="tooltip" title="Check Status">
                 <i class="ti ti-refresh"></i>
-              </button>`
-            );
+              </button>`;
+              
+            if (full['status'] === 'failed' && full['failure_reason']) {
+              actions += `<button class="btn btn-sm btn-icon btn-text-danger rounded-pill waves-effect show-error-btn" data-reason="${full['failure_reason'].replace(/"/g, '&quot;')}" data-bs-toggle="tooltip" title="View Failure Reason">
+                <i class="ti ti-info-circle"></i>
+              </button>`;
+            }
+            
+            return actions;
           }
         }
       ],
@@ -182,6 +188,19 @@ $(function () {
             confirmButton: 'btn btn-primary'
           }
         });
+      }
+    });
+  });
+
+  // Handle Show Error Button Click
+  $(document).on('click', '.show-error-btn', function () {
+    var reason = $(this).data('reason');
+    Swal.fire({
+      icon: 'error',
+      title: 'Failure Reason',
+      text: reason,
+      customClass: {
+        confirmButton: 'btn btn-danger'
       }
     });
   });

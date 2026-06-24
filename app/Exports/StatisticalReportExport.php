@@ -123,7 +123,7 @@ class StatisticalReportExport implements FromArray, WithStyles, WithTitle, WithE
         $rC3 = ['', 'Cash Gap'];
         $totalGap = 0;
         foreach ($days as $day) {
-            $gap = ($cash['paid_to_carriers'][$day] ?? 0) - ($cash['collected'][$day] ?? 0);
+            $gap = ($cash['collected'][$day] ?? 0) - ($cash['paid_to_carriers'][$day] ?? 0);
             $totalGap += $gap;
             $rC3[] = $formatCur($gap);
         }

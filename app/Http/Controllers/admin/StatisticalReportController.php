@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Task;
 use App\Models\Payments;
 use App\Models\UserWalletTransaction;
+use App\Models\Wallet_Transaction;
 use App\Models\InvestorWalletTransaction;
 use App\Exports\StatisticalReportExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -84,6 +85,7 @@ class StatisticalReportController extends Controller
             'cash' => [
                 'collected' => array_fill_keys($days, 0),
                 'paid_to_carriers' => array_fill_keys($days, 0),
+                'gap' => array_fill_keys($days, 0),
             ]
         ];
 
@@ -145,8 +147,8 @@ class StatisticalReportController extends Controller
             }
         }
 
-        $driverTransactionsQuery = UserWalletTransaction::where('transaction_type', 'credit')
-            ->whereHas('userWallet', function($q) {
+        $driverTransactionsQuery = Wallet_Transaction::where('transaction_type', 'debit')
+            ->whereHas('wallet', function($q) {
                 $q->where('user_type', 'driver');
             })
             ->whereBetween('created_at', [$dateFrom, $dateTo]);

@@ -343,6 +343,8 @@ Route::middleware('rate.limit')->group(function () {
                     
                     Route::get('/{userId}/invest-wallet/check-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'checkFunding'])->name('invest-wallet.checkFunding');
                     Route::post('/{userId}/invest-wallet/fix-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'fixFunding'])->name('invest-wallet.fixFunding');
+                    Route::get('/{userId}/invest-wallet/unsettled-tasks', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getUnsettledTasks'])->name('invest-wallet.unsettledTasks');
+                    Route::post('/{userId}/invest-wallet/manual-settlement', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'manualSettlement'])->name('invest-wallet.manualSettlement');
 
                     // Missing Payments Tool
                     Route::get('/{userId}/invest-wallet/missing-payments', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getMissingPayments'])->name('invest-wallet.missingPayments');
@@ -857,6 +859,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('reports/wallet/preview', [App\Http\Controllers\admin\WalletReportsController::class, 'getWalletPreview'])->name('admin.reports.wallet.preview');
                 Route::post('reports/wallet/generate', [App\Http\Controllers\admin\WalletReportsController::class, 'generateReport'])->name('admin.reports.wallet.generate');
                 Route::post('reports/wallet/get-owners', [App\Http\Controllers\admin\WalletReportsController::class, 'getOwnersByType'])->name('admin.reports.wallet.get-owners');
+
+                // Statistical Report Routes
+                Route::get('reports/statistical', [App\Http\Controllers\admin\StatisticalReportController::class, 'index'])->name('admin.reports.statistical');
+                Route::post('reports/statistical/generate', [App\Http\Controllers\admin\StatisticalReportController::class, 'generateReport'])->name('admin.reports.statistical.generate');
+                Route::post('reports/statistical/preview', [App\Http\Controllers\admin\StatisticalReportController::class, 'previewReport'])->name('admin.reports.statistical.preview');
 
                 // Sales Routes
                 Route::group(['prefix' => 'sales'], function () {

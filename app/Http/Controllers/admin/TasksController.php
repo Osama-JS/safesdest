@@ -2948,16 +2948,30 @@ class TasksController extends Controller
         $validator = Validator::make($req->all(), [
           'id' => 'required|exists:tasks,id',
           'delivery_number' => 'nullable|string|max:255',
-          'delivery_note' => 'required|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx,txt,csv|max:10240',
+          'delivery_note' => 'required|array|min:1',
+          'delivery_note.*' => [
+              'required',
+              function ($attribute, $value, $fail) {
+                  if (!$value->isValid()) {
+                      return $fail(__('The file :name is invalid or exceeds the upload limit. Please try again.', ['name' => $value->getClientOriginalName()]));
+                  }
+                  $allowed = ['jpeg','png','jpg','webp','pdf','doc','docx','txt','csv','xls','xlsx','heic','heif'];
+                  $ext = strtolower($value->getClientOriginalExtension());
+                  $guessedExt = strtolower($value->extension());
+                  if (!in_array($ext, $allowed) && !in_array($guessedExt, $allowed)) {
+                      $fail(__('The delivery note must be a file of type: jpeg, png, jpg, webp, pdf, doc, docx, txt, csv, xls, xlsx, heic, heif.'));
+                  }
+              },
+              'max:10240'
+          ],
         ], [
           'id.required'  => __('Can not find the selected Task'),
           'id.exists'  => __('Can not find the selected Task'),
           'delivery_number.string' => __('The delivery number must be a valid text.'),
           'delivery_number.max' => __('The delivery number may not be greater than 255 characters.'),
           'delivery_note.required' => __('The delivery note file is required.'),
-          'delivery_note.file' => __('The delivery note must be a valid file.'),
-          'delivery_note.mimes' => __('The delivery note must be a file of type: jpeg, png, jpg, webp, pdf, doc, docx, txt, csv.'),
-          'delivery_note.max' => __('The delivery note file size must not exceed 10MB.'),
+          'delivery_note.array' => __('The delivery note must be an array of files.'),
+          'delivery_note.*.max' => __('The delivery note file size must not exceed 10MB.'),
         ]);
 
         if ($validator->fails()) {
@@ -2965,7 +2979,7 @@ class TasksController extends Controller
         }
 
         DB::beginTransaction();
-        $deliveryNotePath = null;
+        $deliveryNotePaths = [];
 
         try {
             $task = Task::findOrFail($req->id);
@@ -3004,18 +3018,29 @@ class TasksController extends Controller
                 ]);
             }
 
-            // حذف الملف القديم إذا كان موجوداً
-            if ($task->delivery_note) {
+            // حذف الملف القديم إذا كان موجوداً ولم يتم استخدام delivery_notes بعد
+            if ($task->delivery_note && empty($task->delivery_notes)) {
                 FileHelper::deleteFileIfExists($task->delivery_note);
             }
 
-            // رفع الملف الجديد باستخدام FileHelper
-            $deliveryNotePath = FileHelper::uploadFile($req->file('delivery_note'), 'tasks/deliveryNotes');
+            // رفع الملفات المتعددة
+            if ($req->hasFile('delivery_note')) {
+                foreach ($req->file('delivery_note') as $file) {
+                    $path = FileHelper::uploadFile($file, 'tasks/deliveryNotes');
+                    if ($path) {
+                        $deliveryNotePaths[] = $path;
+                    }
+                }
+            }
 
-            // تحديث المهمة مع رقم مذكرة التوصيل والملف
+            // إذا كان هناك ملفات قديمة مخزنة كـ JSON، قد نحتاج لدمجها ولكن بما أن هذه دالة إغلاق المهمة لأول مرة، فنكتفي بالجديد
+
+            // تحديث المهمة مع أرقام وملفات مذكرات التوصيل
             $updateData = [
               'closed' => true,
-              'delivery_note' => $deliveryNotePath,
+              'delivery_notes' => !empty($deliveryNotePaths) ? json_encode($deliveryNotePaths) : null,
+              // نحتفظ بأول ملف في الحقل القديم لضمان التوافق مع أي أنظمة أخرى تقرأ الحقل القديم
+              'delivery_note' => !empty($deliveryNotePaths) ? $deliveryNotePaths[0] : null,
               'delivery_number' => $req->delivery_number
             ];
 

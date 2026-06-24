@@ -298,7 +298,18 @@
                 </div>
 
                 <!-- Delivery Note (User implemented section) -->
-                @if ($task->closed && ($task->delivery_note || $task->delivery_number))
+                @php
+                    $deliveryNotes = [];
+                    if (!empty($task->delivery_notes)) {
+                        $decoded = json_decode($task->delivery_notes, true);
+                        $deliveryNotes = is_array($decoded) ? $decoded : [$task->delivery_notes];
+                    } elseif (!empty($task->delivery_note)) {
+                        $decoded = json_decode($task->delivery_note, true);
+                        $deliveryNotes = is_array($decoded) ? $decoded : [$task->delivery_note];
+                    }
+                @endphp
+
+                @if ($task->closed && (!empty($deliveryNotes) || $task->delivery_number))
                     <div class="card mb-4 info-card">
                         <div class="card-header bg-white border-bottom">
                             <h5 class="mb-0 text-dark">
@@ -320,8 +331,7 @@
                                                     <i class="fas fa-barcode"></i>
                                                 </div>
                                                 <div>
-                                                    <h4 class="mb-0 text-primary fw-bold">{{ $task->delivery_number }}
-                                                    </h4>
+                                                    <h4 class="mb-0 text-primary fw-bold">{{ $task->delivery_number }}</h4>
                                                     <small class="text-muted">{{ __('Reference Number') }}</small>
                                                 </div>
                                             </div>
@@ -329,82 +339,65 @@
                                     </div>
                                 @endif
 
-                                @if ($task->delivery_note)
+                                @if (!empty($deliveryNotes))
                                     <div class="col-md-{{ $task->delivery_number ? '6' : '12' }}">
                                         <div class="border rounded p-3 h-100 bg-light">
                                             <h6 class="text-success mb-3">
                                                 <i class="fas fa-file-alt me-1"></i>
-                                                {{ __('Delivery Note File') }}
+                                                {{ __('Delivery Note Files') }}
                                             </h6>
 
-                                            @php
-                                                $filePath = $task->delivery_note;
-                                                $fileName = basename($filePath);
-                                                $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-                                                $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                                $fileIcons = [
-                                                    'pdf' => ['icon' => 'fas fa-file-pdf', 'color' => 'text-danger'],
-                                                    'doc' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
-                                                    'docx' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
-                                                    'txt' => ['icon' => 'fas fa-file-alt', 'color' => 'text-secondary'],
-                                                    'csv' => ['icon' => 'fas fa-file-csv', 'color' => 'text-success'],
-                                                ];
-                                                $fileIcon = $fileIcons[$fileExtension] ?? ['icon' => 'fas fa-file', 'color' => 'text-muted'];
-                                            @endphp
+                                            <div class="d-flex flex-wrap gap-3">
+                                                @foreach ($deliveryNotes as $filePath)
+                                                    @php
+                                                        $fileName = basename($filePath);
+                                                        $fileExtension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                                                        $isImage = in_array($fileExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                                        $fileIcons = [
+                                                            'pdf' => ['icon' => 'fas fa-file-pdf', 'color' => 'text-danger'],
+                                                            'doc' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
+                                                            'docx' => ['icon' => 'fas fa-file-word', 'color' => 'text-primary'],
+                                                            'txt' => ['icon' => 'fas fa-file-alt', 'color' => 'text-secondary'],
+                                                            'csv' => ['icon' => 'fas fa-file-csv', 'color' => 'text-success'],
+                                                        ];
+                                                        $fileIcon = $fileIcons[$fileExtension] ?? ['icon' => 'fas fa-file', 'color' => 'text-muted'];
+                                                    @endphp
 
-                                            @if ($isImage)
-                                                <div class="text-center">
-                                                    <img src="{{ asset('storage/' . $filePath) }}"
-                                                        alt="{{ __('Delivery Note') }}"
-                                                        class="delivery-note-preview img-fluid border shadow-sm"
-                                                        data-bs-toggle="modal" data-bs-target="#deliveryNoteModal"
-                                                        style="cursor: pointer;">
-                                                    <div class="mt-2">
-                                                        <small class="text-muted">{{ $fileName }}</small>
-                                                    </div>
-                                                </div>
-                                            @else
-                                                <div class="text-center">
-                                                    <div class="mb-3">
-                                                        <i class="{{ $fileIcon['icon'] }} file-icon {{ $fileIcon['color'] }}"></i>
-                                                    </div>
-                                                    <h6 class="mb-2 text-truncate">{{ $fileName }}</h6>
-                                                    <a href="{{ asset('storage/' . $filePath) }}" target="_blank"
-                                                        class="btn btn-outline-primary btn-sm">
-                                                        <i class="fas fa-download me-1"></i>
-                                                        {{ __('Download File') }}
-                                                    </a>
-                                                </div>
-                                            @endif
+                                                    @if ($isImage)
+                                                        <div class="text-center" style="width: 150px;">
+                                                            <a href="{{ asset('storage/' . $filePath) }}" target="_blank">
+                                                                <img src="{{ asset('storage/' . $filePath) }}"
+                                                                    alt="{{ __('Delivery Note') }}"
+                                                                    class="delivery-note-preview img-fluid border shadow-sm"
+                                                                    style="cursor: pointer; max-height: 120px; object-fit: contain;">
+                                                            </a>
+                                                            <div class="mt-2 text-truncate" title="{{ $fileName }}">
+                                                                <small class="text-muted">{{ $fileName }}</small>
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <div class="text-center border rounded p-2 bg-white" style="width: 150px;">
+                                                            <div class="mb-2">
+                                                                <i class="{{ $fileIcon['icon'] }} fs-1 {{ $fileIcon['color'] }}"></i>
+                                                            </div>
+                                                            <div class="text-truncate mb-2" title="{{ $fileName }}">
+                                                                <small>{{ $fileName }}</small>
+                                                            </div>
+                                                            <a href="{{ asset('storage/' . $filePath) }}" target="_blank"
+                                                                class="btn btn-outline-primary btn-sm w-100">
+                                                                <i class="fas fa-download me-1"></i>
+                                                                {{ __('Download') }}
+                                                            </a>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
                                         </div>
                                     </div>
                                 @endif
                             </div>
                         </div>
                     </div>
-
-                    <!-- Modal -->
-                    @if ($task->delivery_note && in_array(strtolower(pathinfo($task->delivery_note, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'gif', 'webp']))
-                        <div class="modal fade" id="deliveryNoteModal" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{{ __('Delivery Note') }} - #{{ $task->id }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <img src="{{ asset('storage/' . $task->delivery_note) }}" class="img-fluid rounded shadow">
-                                    </div>
-                                    <div class="modal-footer">
-                                        <a href="{{ asset('storage/' . $task->delivery_note) }}" target="_blank" class="btn btn-primary">
-                                            <i class="fas fa-external-link-alt me-1"></i> {{ __('Open in New Tab') }}
-                                        </a>
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
                 @endif
 
                 <!-- Additional Data (Adopted Admin Style) -->

@@ -508,9 +508,9 @@
                                                             <!-- Note -->
                                                             <div class="mb-3">
                                                                 <label for="delivery-note">{{ __('Note') }}</label>
-                                                                <input type="text" id="delivery-note"
-                                                                    name="delivery_note" class="form-control"
-                                                                    placeholder="{{ __('Note') }}" />
+                                                                <input type="file"
+                                                                    name="delivery_note[]" class="form-control"
+                                                                    id="delivery_note" multiple placeholder="{{ __('Note') }}" />
                                                                 <span
                                                                     class="delivery_note-error text-danger text-error"></span>
                                                             </div>

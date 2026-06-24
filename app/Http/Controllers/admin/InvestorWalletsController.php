@@ -867,4 +867,126 @@ class InvestorWalletsController extends Controller
             return response()->json(['status' => 0, 'error' => $ex->getMessage()]);
         }
     }
+
+    /**
+     * جلب المهام غير المسواة (التي لم يسترد المستثمر رأس مالها)
+     */
+    public function getUnsettledTasks($userId)
+    {
+        if (!auth()->user()->can('manual_investment_settlement')) {
+            return response()->json(['status' => 0, 'error' => 'ليس لديك صلاحية.']);
+        }
+
+        try {
+            $user = User::findOrFail($userId);
+            $wallet = $user->investorWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 0, 'error' => __('المحفظة غير موجودة')]);
+            }
+
+            // المهام التي تم تمويلها من هذه المحفظة
+            $fundedTaskIds = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                ->where('transaction_type', 'debit')
+                ->whereNotNull('task_id')
+                ->pluck('task_id');
+
+            // المهام التي تم استردادها بالفعل (تم تسويتها)
+            $refundedTaskIds = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                ->where('transaction_type', 'credit')
+                ->whereIn('source_type', ['refund', 'capital_return'])
+                ->whereNotNull('task_id')
+                ->pluck('task_id');
+
+            // المهام غير المسواة
+            $unsettledTaskIds = $fundedTaskIds->diff($refundedTaskIds);
+
+            // جلب تفاصيل المهام المطلوبة
+            $tasks = \App\Models\Task::with('user')->whereIn('id', $unsettledTaskIds)->get()->map(function($task) {
+                return [
+                    'id' => $task->id,
+                    'customer_name' => $task->user ? $task->user->name : 'غير محدد',
+                    'total_price' => $task->total_price,
+                    'created_at' => $task->created_at->format('Y-m-d'),
+                ];
+            });
+
+            return response()->json(['status' => 1, 'data' => $tasks]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * تسوية استثمار يدوية من قبل الإدارة
+     */
+    public function manualSettlement(Request $request, $userId)
+    {
+        if (!auth()->user()->can('manual_investment_settlement')) {
+            return response()->json(['status' => 0, 'error' => 'ليس لديك صلاحية لإجراء التسوية اليدوية.']);
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'task_ids' => 'required|array',
+            'task_ids.*' => 'exists:tasks,id',
+            'admin_note' => 'nullable|string'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::findOrFail($userId);
+            $wallet = $user->investorWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 0, 'error' => __('المحفظة غير موجودة')]);
+            }
+
+            $tasks = \App\Models\Task::whereIn('id', $request->task_ids)->get();
+            $sum = $tasks->sum('total_price');
+
+            // التأكد من أن مجموع تكلفة المهام يساوي المبلغ المدخل (لضمان الدقة المحاسبية)
+            if (abs($sum - $request->amount) > 0.01) {
+                return response()->json(['status' => 0, 'error' => "مجموع المهام المحددة (" . number_format($sum, 2) . ") لا يطابق المبلغ المدخل (" . number_format($request->amount, 2) . ")"]);
+            }
+
+            $notePrefix = $request->admin_note ? "[ملاحظة الإدارة: " . $request->admin_note . "] - " : "";
+
+            foreach ($tasks as $task) {
+                // التأكد من عدم استردادها مسبقاً
+                $hasCapitalReturned = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
+                    ->where('task_id', $task->id)
+                    ->where('transaction_type', 'credit')
+                    ->whereIn('source_type', ['refund', 'capital_return'])
+                    ->exists();
+
+                if ($hasCapitalReturned) {
+                    continue; // تم استردادها مسبقاً، نتجاهلها
+                }
+
+                $newBalance = $wallet->balance + $task->total_price;
+
+                InvestorWalletTransaction::create([
+                    'investor_wallet_id' => $wallet->id,
+                    'task_id' => $task->id,
+                    'transaction_type' => 'credit',
+                    'source_type' => 'capital_return',
+                    'amount' => $task->total_price,
+                    'description' => $notePrefix . "استرداد رأس مال للمهمة رقم #{$task->id} من قبل الإدارة",
+                    'performed_by' => Auth::id(),
+                    'balance_after' => $newBalance,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['status' => 1, 'success' => 'تمت تسوية الاستثمار بنجاح.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
 }

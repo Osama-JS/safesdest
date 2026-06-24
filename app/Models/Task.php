@@ -22,6 +22,7 @@ class Task extends Model
     'distribution_attempts',
     'last_attempt_at',
     'delivery_note',
+    'delivery_notes',
     'delivery_number',
     'pending_driver_id',
     'pricing_history',

@@ -192,6 +192,31 @@
                 </div>
             </div>
 
+            <!-- Statistical Report -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon primary mx-auto" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                            <i class="ti ti-chart-bar"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('Statistical Report (Matrix)') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('Generate a custom matrix-style report covering activity, profitability, cash flow, and collections by day.') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-success me-2">{{ __('Excel Export') }}</span>
+                            <span class="badge bg-info">{{ __('Custom Matrix') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.statistical') }}" class="btn btn-success" style="background-color: #11998e; border-color: #11998e;">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- <!-- Driver Performance Report (Coming Soon) -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100 opacity-50">

@@ -21,98 +21,170 @@
     </script>
     @vite(['resources/js/admin/investor-wallets.js'])
     <script>
-        function checkFunding() {
+        // ===== الدوال التي تُستدعى من onclick في HTML - يجب أن تكون عالمية =====
+
+        window.checkFunding = function() {
             $('#fundingCheckModal').modal('show');
             $('#fundingCheckLoading').removeClass('d-none');
             $('#fundingCheckResults').addClass('d-none').html('');
-
             $.ajax({
                 url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/check-funding',
                 type: 'GET',
                 success: function(response) {
                     $('#fundingCheckLoading').addClass('d-none');
                     $('#fundingCheckResults').removeClass('d-none');
-
                     if (response.status === 1) {
                         let html = '';
                         if (response.anomalies.length === 0) {
-                            html = '<div class="alert alert-success"><i class="ti ti-circle-check me-2"></i>لا توجد أي تعارضات. تمويل المهام متطابق مع المحفظة الاستثمارية بالكامل.</div>';
+                            html = '<div class="alert alert-success"><i class="ti ti-circle-check me-2"></i>لا توجد أي تعارضات.</div>';
                         } else {
-                            html = '<div class="alert alert-danger"><i class="ti ti-alert-triangle me-2"></i>تم العثور على ' + response.anomalies.length + ' تعارض(ات). يرجى مراجعتها وإصلاحها:</div>';
-                            html += '<div class="list-group">';
-
+                            html = '<div class="alert alert-danger"><i class="ti ti-alert-triangle me-2"></i>تم العثور على ' + response.anomalies.length + ' تعارض(ات).</div><div class="list-group">';
                             response.anomalies.forEach(function(anomaly, index) {
                                 html += '<div class="list-group-item border-start border-4 border-danger mb-2 rounded">';
-                                html += '<div class="d-flex w-100 justify-content-between mb-2">';
-                                html += '<h6 class="mb-0 text-danger fw-bold"><i class="ti ti-alert-triangle me-1"></i> تعارض #' + (index + 1) + '</h6>';
+                                html += '<div class="d-flex w-100 justify-content-between mb-2"><h6 class="mb-0 text-danger fw-bold">تعارض #' + (index + 1) + '</h6>';
+                                html += anomaly.type === 'task_without_transaction'
+                                    ? '<span class="badge bg-label-warning">مهمة #' + anomaly.task_id + '</span>'
+                                    : '<span class="badge bg-label-info">عملية #' + anomaly.transaction_id + '</span>';
+                                html += '</div><p class="mb-3">' + anomaly.message + '</p><div class="d-flex gap-2">';
                                 if (anomaly.type === 'task_without_transaction') {
-                                    html += '<span class="badge bg-label-warning">مهمة #' + anomaly.task_id + '</span>';
-                                } else {
-                                    html += '<span class="badge bg-label-info">عملية #' + anomaly.transaction_id + '</span>';
-                                }
-                                html += '</div>';
-                                html += '<p class="mb-3 text-body">' + anomaly.message + '</p>';
-                                html += '<div class="d-flex gap-2">';
-                                if (anomaly.type === 'task_without_transaction') {
-                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\', \'unlink_task\', ' + anomaly.task_id + ', null)"><i class="ti ti-unlink me-1"></i>فصل المهمة من المضارب</button>';
-                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\', \'create_funding\', ' + anomaly.task_id + ', null)"><i class="ti ti-plus me-1"></i>إنشاء عملية تمويل</button>';
+                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\',\'unlink_task\',' + anomaly.task_id + ',null)"><i class="ti ti-unlink me-1"></i>فصل المهمة</button>';
+                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\',\'create_funding\',' + anomaly.task_id + ',null)"><i class="ti ti-plus me-1"></i>إنشاء تمويل</button>';
                                 } else if (anomaly.type === 'transaction_without_task') {
-                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\', \'delete_transaction\', ' + anomaly.task_id + ', ' + anomaly.transaction_id + ')"><i class="ti ti-trash me-1"></i>حذف عملية التمويل</button>';
-                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\', \'link_task\', ' + anomaly.task_id + ', ' + anomaly.transaction_id + ')"><i class="ti ti-link me-1"></i>ربط المهمة بالمضارب</button>';
+                                    html += '<button class="btn btn-sm btn-outline-danger" onclick="fixAnomaly(\'' + anomaly.type + '\',\'delete_transaction\',' + anomaly.task_id + ',' + anomaly.transaction_id + ')"><i class="ti ti-trash me-1"></i>حذف العملية</button>';
+                                    html += '<button class="btn btn-sm btn-primary" onclick="fixAnomaly(\'' + anomaly.type + '\',\'link_task\',' + anomaly.task_id + ',' + anomaly.transaction_id + ')"><i class="ti ti-link me-1"></i>ربط المهمة</button>';
                                 }
-                                html += '</div>';
-                                html += '</div>';
+                                html += '</div></div>';
                             });
-
                             html += '</div>';
                         }
                         $('#fundingCheckResults').html(html);
                     } else {
-                        $('#fundingCheckResults').html('<div class="alert alert-danger">حدث خطأ أثناء الفحص: ' + response.error + '</div>');
+                        $('#fundingCheckResults').html('<div class="alert alert-danger">حدث خطأ: ' + response.error + '</div>');
                     }
                 },
                 error: function() {
                     $('#fundingCheckLoading').addClass('d-none');
-                    $('#fundingCheckResults').removeClass('d-none').html('<div class="alert alert-danger">حدث خطأ غير متوقع بالاتصال.</div>');
+                    $('#fundingCheckResults').removeClass('d-none').html('<div class="alert alert-danger">حدث خطأ بالاتصال.</div>');
                 }
             });
-        }
+        };
 
-        function fixAnomaly(anomalyType, fixAction, taskId, transactionId) {
-            if (!confirm('هل أنت متأكد من تنفيذ هذا الإجراء؟ لا يمكن التراجع عنه.')) return;
-
+        window.fixAnomaly = function(anomalyType, fixAction, taskId, transactionId) {
+            if (!confirm('هل أنت متأكد؟')) return;
             $('#fundingCheckLoading').removeClass('d-none');
             $('#fundingCheckResults').addClass('d-none');
-
             $.ajax({
                 url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/fix-funding',
                 type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    anomaly_type: anomalyType,
-                    fix_action: fixAction,
-                    task_id: taskId,
-                    transaction_id: transactionId
+                data: { _token: $('meta[name="csrf-token"]').attr('content'), anomaly_type: anomalyType, fix_action: fixAction, task_id: taskId, transaction_id: transactionId },
+                success: function(response) {
+                    if (response.status === 1) { alert(response.success); window.checkFunding(); }
+                    else { alert('خطأ: ' + response.error); $('#fundingCheckLoading').addClass('d-none'); $('#fundingCheckResults').removeClass('d-none'); }
                 },
+                error: function() { alert('حدث خطأ بالاتصال.'); $('#fundingCheckLoading').addClass('d-none'); $('#fundingCheckResults').removeClass('d-none'); }
+            });
+        };
+
+        window.openManualSettlementModal = function() {
+            $('#manualSettlementAmount').val('');
+            $('#manualSettlementNote').val('');
+            $('#unsettledTasksTableBody').html('<tr><td colspan="5" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...</td></tr>');
+            $('#manualSettlementTotal').text('0.00 ر.س');
+            $('#manualSettlementError').addClass('d-none');
+            $('#submitManualSettlementBtn').prop('disabled', true);
+            $('#selectAllUnsettledTasks').prop('checked', false);
+            $('#manualSettlementModal').modal('show');
+            $.ajax({
+                url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/unsettled-tasks',
+                type: 'GET',
                 success: function(response) {
                     if (response.status === 1) {
-                        alert(response.success);
-                        checkFunding();
+                        let html = '';
+                        if (response.data.length === 0) {
+                            html = '<tr><td colspan="5" class="text-center py-3 text-muted">لا توجد مهام معلقة للتسوية</td></tr>';
+                        } else {
+                            response.data.forEach(function(task) {
+                                html += '<tr><td><input class="form-check-input task-checkbox" type="checkbox" value="' + task.id + '" data-price="' + task.total_price + '"></td>';
+                                html += '<td>#' + task.id + '</td><td>' + task.customer_name + '</td><td>' + task.created_at + '</td>';
+                                html += '<td class="fw-bold">' + parseFloat(task.total_price).toFixed(2) + '</td></tr>';
+                            });
+                        }
+                        $('#unsettledTasksTableBody').html(html);
+                        bindSettlementEvents();
                     } else {
-                        alert('خطأ: ' + response.error);
-                        $('#fundingCheckLoading').addClass('d-none');
-                        $('#fundingCheckResults').removeClass('d-none');
+                        $('#unsettledTasksTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">حدث خطأ: ' + response.error + '</td></tr>');
                     }
                 },
                 error: function() {
-                    alert('حدث خطأ بالاتصال بالخادم.');
-                    $('#fundingCheckLoading').addClass('d-none');
-                    $('#fundingCheckResults').removeClass('d-none');
+                    $('#unsettledTasksTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">حدث خطأ بالاتصال</td></tr>');
                 }
             });
+        };
+
+        // ===== دوال داخلية + event listeners =====
+        function validateManualSettlement() {
+            let total = 0;
+            $('.task-checkbox:checked').each(function() { total += parseFloat($(this).data('price')); });
+            $('#manualSettlementTotal').text(total.toFixed(2) + ' ر.س');
+            let entered = parseFloat($('#manualSettlementAmount').val()) || 0;
+            if (entered > 0 && Math.abs(total - entered) < 0.01) {
+                $('#submitManualSettlementBtn').prop('disabled', false);
+                $('#manualSettlementError').addClass('d-none');
+            } else {
+                $('#submitManualSettlementBtn').prop('disabled', true);
+                entered > 0 ? $('#manualSettlementError').removeClass('d-none') : $('#manualSettlementError').addClass('d-none');
+            }
         }
+
+        function bindSettlementEvents() {
+            $(document).off('change keyup', '.task-checkbox, #manualSettlementAmount')
+                       .on('change keyup',  '.task-checkbox, #manualSettlementAmount', validateManualSettlement);
+            $('#selectAllUnsettledTasks').off('change').on('change', function() {
+                $('.task-checkbox').prop('checked', this.checked);
+                validateManualSettlement();
+            });
+        }
+
+        window.addEventListener('load', function () {
+            $(document).on('click', '#submitManualSettlementBtn', function() {
+                let selectedTasks = [];
+                $('.task-checkbox:checked').each(function() { selectedTasks.push($(this).val()); });
+                if (selectedTasks.length === 0) { toastr.warning('يرجى تحديد مهمة واحدة على الأقل'); return; }
+                let amount = parseFloat($('#manualSettlementAmount').val()) || 0;
+                if (amount <= 0) { toastr.warning('يرجى إدخال مبلغ صحيح'); return; }
+                let adminNote = $('#manualSettlementNote').val();
+                let btn = $(this);
+                btn.prop('disabled', true);
+                btn.find('.spinner-border').removeClass('d-none');
+                $.ajax({
+                    url: baseUrl + 'admin/investors/{{ $user->id }}/invest-wallet/manual-settlement',
+                    type: 'POST', dataType: 'json',
+                    data: { _token: $('meta[name="csrf-token"]').attr('content'), amount: amount, task_ids: selectedTasks, admin_note: adminNote },
+                    success: function(response) {
+                        btn.find('.spinner-border').addClass('d-none');
+                        if (response.status === 1) {
+                            $('#manualSettlementModal').modal('hide');
+                            toastr.options = { closeButton: true, progressBar: true, timeOut: 4000, positionClass: 'toast-top-center', preventDuplicates: true };
+                            toastr.success(response.success || 'تمت التسوية بنجاح');
+                            setTimeout(() => { window.location.reload(); }, 1800);
+                        } else {
+                            btn.prop('disabled', false); validateManualSettlement();
+                            toastr.options = { closeButton: true, progressBar: true, timeOut: 7000, positionClass: 'toast-top-center', preventDuplicates: true };
+                            toastr.error(response.error || 'حدث خطأ أثناء التسوية');
+                        }
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false); btn.find('.spinner-border').addClass('d-none'); validateManualSettlement();
+                        let errMsg = xhr.responseJSON ? (xhr.responseJSON.message || xhr.responseJSON.error || 'حدث خطأ') : 'حدث خطأ بالاتصال';
+                        toastr.options = { closeButton: true, progressBar: true, timeOut: 7000, positionClass: 'toast-top-center', preventDuplicates: true };
+                        toastr.error(errMsg);
+                    }
+                });
+            });
+        }); // end window.load
     </script>
 @endsection
+
 
 @section('content')
     <!-- User Info -->
@@ -257,6 +329,11 @@
                 <button class="btn btn-warning me-2" onclick="checkFunding()">
                     <i class="ti ti-search me-1"></i> فحص التمويل
                 </button>
+                @can('manual_investment_settlement')
+                <button class="btn btn-success me-2" onclick="openManualSettlementModal()">
+                    <i class="ti ti-cash-banknote me-1"></i> تسوية يدوية
+                </button>
+                @endcan
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
                     <i class="ti ti-plus me-1"></i> {{ __('Add new operation') }}
                 </button>
@@ -420,6 +497,79 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Settlement Modal -->
+    <div class="modal fade" id="manualSettlementModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-white border-bottom">
+                    <h5 class="modal-title text-dark fw-bold">
+                        <i class="ti ti-cash-banknote me-2 text-success"></i> تسوية استثمار يدوية من قبل الإدارة
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body mt-2">
+                    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                        <span class="alert-icon text-info me-2">
+                            <i class="ti ti-info-circle ti-xs"></i>
+                        </span>
+                        <span>تستخدم هذه الميزة لإرجاع رأس مال المهام للمستثمر في حال تأخر العميل بالسداد. يجب أن يطابق المبلغ المدخل مجموع تكلفة المهام المحددة.</span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="manualSettlementAmount">* المبلغ المراد تسويته (ر.س)</label>
+                            <input type="number" id="manualSettlementAmount" class="form-control" placeholder="أدخل المبلغ..." step="0.01" min="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="manualSettlementNote">ملاحظة الإدارة</label>
+                            <input type="text" id="manualSettlementNote" class="form-control" placeholder="مثال: شكراً لك لقد تم تسوية مبلغ الاستثمار من قبل الإدارة...">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mt-4 mb-2">المهام الممولة غير المسواة:</h6>
+                    <div class="table-responsive border rounded" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 50px;">
+                                        <input class="form-check-input" type="checkbox" id="selectAllUnsettledTasks">
+                                    </th>
+                                    <th>رقم المهمة</th>
+                                    <th>صاحب المهمة (العميل)</th>
+                                    <th>تاريخ التمويل</th>
+                                    <th>التكلفة (ر.س)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unsettledTasksTableBody">
+                                <!-- Tasks will be loaded here via AJAX -->
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-light rounded">
+                        <span class="fw-bold">المجموع المحدد:</span>
+                        <span id="manualSettlementTotal" class="fw-bold text-success fs-5">0.00 ر.س</span>
+                    </div>
+                    <div id="manualSettlementError" class="text-danger mt-2 d-none fw-bold small">
+                        المبلغ المحدد لا يطابق المبلغ المدخل!
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" id="submitManualSettlementBtn" class="btn btn-success" disabled>
+                        <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                        حفظ التسوية
+                    </button>
                 </div>
             </div>
         </div>

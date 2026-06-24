@@ -294,14 +294,15 @@
                                         </div>
 
                                         <!-- Ø­Ù‚Ù„ Ù…Ù„Ù Ù…Ø°ÙƒØ±Ø© Ø§Ù„ØªÙˆØµÙŠÙ„ -->
+                                        <!-- Ø­Ù‚Ù„ Ù…Ù„Ù  Ù…Ø°ÙƒØ±Ø© Ø§Ù„ØªÙˆØµÙŠÙ„ -->
                                         <div class="form-group mb-3">
                                             <label for="delivery_note" class="form-label">
                                                 <i class="fas fa-file-upload me-1"></i>
                                                 * {{ __('Delivery Note File') }}
                                             </label>
-                                            <input type="file" name="delivery_note" class="form-control"
-                                                id="delivery_note"
-                                                accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx,.txt,.csv" required>
+                                            <input type="file" name="delivery_note[]" class="form-control"
+                                                id="delivery_note" multiple
+                                                accept="image/png, image/gif, image/jpeg, image/jpg, application/pdf,.doc,.docx,.txt,.csv" required>
                                             <div class="form-text text-muted mt-1">
                                                 <small>
                                                     <i class="fas fa-info-circle me-1"></i>

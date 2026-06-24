@@ -930,18 +930,29 @@ class WalletsController extends Controller
                                 ['status' => 1]
                             );
                             
-                            $newBalance = $investorWallet->balance + $payment;
-                            
-                            \App\Models\InvestorWalletTransaction::create([
-                                'investor_wallet_id' => $investorWallet->id,
-                                'task_id' => $debitTx->task->id,
-                                'amount' => $payment,
-                                'transaction_type' => 'credit',
-                                'source_type' => 'refund',
-                                'description' => "استرداد رأس مال للمهمة رقم #{$debitTx->task->id} بعد سداد العميل",
-                                'performed_by' => auth()->id(),
-                                'balance_after' => $newBalance
-                            ]);
+                            $totalReturned = \App\Models\InvestorWalletTransaction::where('investor_wallet_id', $investorWallet->id)
+                                ->where('task_id', $debitTx->task->id)
+                                ->where('transaction_type', 'credit')
+                                ->whereIn('source_type', ['refund', 'capital_return'])
+                                ->sum('amount');
+
+                            $remainingToRefund = max(0, $debitTx->amount - $totalReturned);
+                            $amountToRefund = min($payment, $remainingToRefund);
+
+                            if ($amountToRefund > 0) {
+                                $newBalance = $investorWallet->balance + $amountToRefund;
+                                
+                                \App\Models\InvestorWalletTransaction::create([
+                                    'investor_wallet_id' => $investorWallet->id,
+                                    'task_id' => $debitTx->task->id,
+                                    'amount' => $amountToRefund,
+                                    'transaction_type' => 'credit',
+                                    'source_type' => 'refund',
+                                    'description' => "استرداد رأس مال للمهمة رقم #{$debitTx->task->id} بعد سداد العميل",
+                                    'performed_by' => auth()->id(),
+                                    'balance_after' => $newBalance
+                                ]);
+                            }
                         }
                     }
                 }

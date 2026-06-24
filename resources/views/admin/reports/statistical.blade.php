@@ -371,14 +371,16 @@
             tbody.append(trC2);
 
             // Row 3: Cash Gap
-            let trC3 = '<tr><td class="fw-bold text-danger">Cash Gap</td>';
+            let trC3 = '<tr><td class="fw-bold">Cash Gap</td>';
             let totalCashGap = 0;
             days.forEach(day => { 
-                let gap = (cash.paid_to_carriers[day] || 0) - (cash.collected[day] || 0);
+                let gap = (cash.collected[day] || 0) - (cash.paid_to_carriers[day] || 0);
                 totalCashGap += gap;
-                trC3 += '<td class="text-center text-danger">' + formatCurrency(gap, showCurrency) + '</td>'; 
+                let colorClass = gap > 0 ? 'text-success' : (gap < 0 ? 'text-danger' : '');
+                trC3 += '<td class="text-center ' + colorClass + '">' + formatCurrency(gap, showCurrency) + '</td>'; 
             });
-            trC3 += '<td class="text-center fw-bold bg-label-danger">' + formatCurrency(totalCashGap, showCurrency) + '</td></tr>';
+            let totalColorClass = totalCashGap > 0 ? 'bg-label-success text-success' : (totalCashGap < 0 ? 'bg-label-danger text-danger' : 'bg-label-info');
+            trC3 += '<td class="text-center fw-bold ' + totalColorClass + '">' + formatCurrency(totalCashGap, showCurrency) + '</td></tr>';
             tbody.append(trC3);
 
         }

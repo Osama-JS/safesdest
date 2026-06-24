@@ -88,7 +88,10 @@ class StatisticalReportController extends Controller
         ];
 
         // 1. Activity & Profitability Data
-        $tasksQuery = Task::whereBetween('created_at', [$dateFrom, $dateTo]);
+        $tasksQuery = Task::whereBetween('created_at', [$dateFrom, $dateTo])
+            ->withSum(['userWalletTransactions as total_given_commission' => function($q) {
+                $q->where('transaction_type', 'credit');
+            }], 'amount');
         if (!empty($customerIds)) {
             $tasksQuery->whereIn('user_id', $customerIds);
         }
@@ -106,23 +109,15 @@ class StatisticalReportController extends Controller
                 $revenue = $task->total_price ?: 0;
                 $reportData['activity']['revenue'][$date] += $revenue;
                 
-                $carrierCost = $task->ad ? $task->ad->service_cost : 0;
+                $commission = $task->commission ?: 0;
+                $carrierCost = max(0, $revenue - $commission);
                 $reportData['activity']['carrier_cost'][$date] += $carrierCost;
 
                 if ($calcNetCommission) {
                     $grossMargin = $revenue - $carrierCost;
+                    $givenCommission = $task->total_given_commission ?: 0;
+                    $netCommission = max(0, $grossMargin - $givenCommission);
                     
-                    $investorComm = UserWalletTransaction::where('task_id', $task->id)
-                        ->where('transaction_type', 'credit')
-                        ->where('description', 'like', '%استثمار%')
-                        ->sum('amount');
-                        
-                    $brokerComm = UserWalletTransaction::where('task_id', $task->id)
-                        ->where('transaction_type', 'credit')
-                        ->where('description', 'like', '%وسيط%')
-                        ->sum('amount');
-
-                    $netCommission = $grossMargin - $investorComm - $brokerComm;
                     $reportData['activity']['net_commission'][$date] += $netCommission;
                 }
             }

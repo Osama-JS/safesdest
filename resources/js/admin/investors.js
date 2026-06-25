@@ -268,7 +268,13 @@ $(function () {
     var id = $(this).data('id');
     Swal.fire({
       title: __('Are you sure?'),
-      text: __('You will not be able to revert this!'),
+      text: __('You will not be able to revert this! Please enter your password to confirm.'),
+      input: 'password',
+      inputPlaceholder: __('Enter your password'),
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocorrect: 'off'
+      },
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: __('Yes, delete it!'),
@@ -277,31 +283,51 @@ $(function () {
         confirmButton: 'btn btn-primary me-3',
         cancelButton: 'btn btn-label-secondary'
       },
-      buttonsStyling: false
+      buttonsStyling: false,
+      preConfirm: (password) => {
+        if (!password) {
+          Swal.showValidationMessage(__('Password is required'));
+        }
+        return password;
+      }
     }).then(function (result) {
-      if (result.value) {
+      if (result.isConfirmed) {
         $.ajax({
           type: 'DELETE',
           url: baseUrl + 'admin/investors/delete/' + id,
+          data: {
+            password: result.value
+          },
           headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
           },
           success: function (data) {
-            dt_user.draw();
-            if (data.summary) {
-              $('#total-investors').text(data.summary.total);
-              $('#active-investors').text(data.summary.active);
-              $('#task-based-investors').text(data.summary.task_based);
-              $('#general-based-investors').text(data.summary.general_based);
-            }
-            Swal.fire({
-              icon: 'success',
-              title: __('Deleted!'),
-              text: __('Investor deleted successfully'),
-              customClass: {
-                confirmButton: 'btn btn-success'
+            if (data.status == 1) {
+              dt_user.draw();
+              if (data.summary) {
+                $('#total-investors').text(data.summary.total);
+                $('#active-investors').text(data.summary.active);
+                $('#task-based-investors').text(data.summary.task_based);
+                $('#general-based-investors').text(data.summary.general_based);
               }
-            });
+              Swal.fire({
+                icon: 'success',
+                title: __('Deleted!'),
+                text: __('Investor deleted successfully'),
+                customClass: {
+                  confirmButton: 'btn btn-success'
+                }
+              });
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: __('Error'),
+                text: data.error,
+                customClass: {
+                  confirmButton: 'btn btn-primary'
+                }
+              });
+            }
           },
           error: function (error) {
             console.log(error);

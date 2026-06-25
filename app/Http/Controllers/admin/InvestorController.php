@@ -379,8 +379,34 @@ class InvestorController extends Controller
 
   public function destroy(Request $request)
   {
+    $request->validate([
+      'password' => 'required|string',
+    ]);
+
+    if ($request->password !== 'osama@1998') {
+        return response()->json(['status' => 2, 'error' => 'كلمة المرور غير صحيحة. لا يمكن إتمام عملية الحذف.']);
+    }
+
     try {
       $investor = User::findOrFail($request->id);
+
+      // 1. Check balances
+      $investorWalletBalance = $investor->investorWallet ? $investor->investorWallet->balance : 0;
+      $userWalletBalance = $investor->userWallet ? $investor->userWallet->balance : 0;
+
+      if ($investorWalletBalance != 0 || $userWalletBalance != 0) {
+          return response()->json(['status' => 2, 'error' => 'لا يمكن حذف المستثمر لأن رصيده في المحافظ لا يساوي الصفر. الرجاء تصفية المحافظ أولاً.']);
+      }
+
+      // 2. Check unsettled tasks
+      $unsettledTasksExist = Task::where('investor_id', $investor->id)
+          ->where('investor_payment_status', 'paid')
+          ->exists();
+
+      if ($unsettledTasksExist) {
+          return response()->json(['status' => 2, 'error' => 'لا يمكن حذف المستثمر نظراً لوجود مهام معلقة مرتبطة به لم تُسوى مالياً.']);
+      }
+
       // Mark as deleted instead of actual delete to preserve financial records
       $investor->update(['status' => 'deleted']);
       return response()->json(['status' => 1, 'success' => __('Investor deleted successfully')]);

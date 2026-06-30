@@ -50,6 +50,14 @@ Route::prefix('driver')->group(function () {
         ->middleware(['throttle:5,1', 'api.route'])
         ->name('api.driver.login');
 
+    Route::post('/auth/request-otp', [DriverAuthController::class, 'requestOtp'])
+        ->middleware(['throttle:5,1'])
+        ->name('api.driver.request-otp');
+
+    Route::post('/auth/verify-otp', [DriverAuthController::class, 'verifyOtp'])
+        ->middleware(['throttle:5,1'])
+        ->name('api.driver.verify-otp');
+
     // Password reset routes
     Route::post('/forgot-password', [DriverAuthController::class, 'forgotPassword'])
         ->middleware(['throttle:3,1'])
@@ -83,29 +91,7 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/profile', [DriverProfileController::class, 'show'])
         ->name('api.driver.profile');
 
-    Route::put('/profile', [DriverProfileController::class, 'update'])
-        ->name('api.driver.profile.update');
-
-    // Alternative route for multipart form data (POST with _method=PUT)
-    Route::post('/profile', [DriverProfileController::class, 'update'])
-        ->name('api.driver.profile.update.multipart');
-
-    Route::post('/change-password', [DriverProfileController::class, 'changePassword'])
-        ->name('api.driver.change-password');
-
-    Route::post('/delete-account', [DriverProfileController::class, 'deleteAccount'])->name('api.driver.delete.account');
-
-    Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
-        ->name('api.driver.profile.stats');
-
-    Route::get('/profile/additional-data', [DriverProfileController::class, 'getAdditionalData'])
-        ->name('api.driver.profile.additional-data');
-
-    Route::post('/profile/signature', [DriverProfileController::class, 'updateSignature'])
-        ->name('api.driver.profile.signature');
-
-    Route::post('/profile/bank-details', [DriverProfileController::class, 'updateBankDetails'])
-        ->name('api.driver.profile.bank-details');
+    // Profile update and other actions are protected below
 
     Route::post('/refresh-token', [DriverAuthController::class, 'refreshToken'])
         ->name('api.driver.refresh-token');
@@ -113,19 +99,42 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/check-status', [DriverAuthController::class, 'checkStatus'])
         ->name('api.driver.check-status');
 
-    // Task management routes
-    Route::prefix('tasks')->group(function () {
-        Route::get('/', [DriverTaskController::class, 'index'])
+    // Available tasks can be viewed by anyone including guests
+    Route::get('/tasks/available', [\App\Http\Controllers\Api\DriverAvailableTasksController::class, 'index'])
+        ->name('api.driver.tasks.available');
+    Route::get('/tasks/available/{id}', [\App\Http\Controllers\Api\DriverAvailableTasksController::class, 'show'])
+        ->name('api.driver.tasks.available.show');
+
+    // Profile completion required for below routes
+    Route::middleware('driver.profile.completed')->group(function () {
+        
+        // Profile actions that require completed profile
+        Route::put('/profile', [DriverProfileController::class, 'update'])
+            ->name('api.driver.profile.update');
+        Route::post('/profile', [DriverProfileController::class, 'update'])
+            ->name('api.driver.profile.update.multipart');
+        Route::post('/change-password', [DriverProfileController::class, 'changePassword'])
+            ->name('api.driver.change-password');
+        Route::post('/delete-account', [DriverProfileController::class, 'deleteAccount'])->name('api.driver.delete.account');
+        Route::get('/profile/stats', [DriverProfileController::class, 'getStats'])
+            ->name('api.driver.profile.stats');
+        Route::get('/profile/additional-data', [DriverProfileController::class, 'getAdditionalData'])
+            ->name('api.driver.profile.additional-data');
+        Route::post('/profile/signature', [DriverProfileController::class, 'updateSignature'])
+            ->name('api.driver.profile.signature');
+        Route::post('/profile/bank-details', [DriverProfileController::class, 'updateBankDetails'])
+            ->name('api.driver.profile.bank-details');
+
+        // Task management routes
+        Route::prefix('tasks')->group(function () {
+            Route::get('/', [DriverTaskController::class, 'index'])
             ->name('api.driver.tasks.index');
 
         Route::get('/history/completed', [DriverTaskController::class, 'history'])
             ->name('api.driver.tasks.history');
 
         // Available Tasks & Claims Routes
-        Route::get('/available', [DriverAvailableTasksController::class, 'index'])
-            ->name('api.driver.tasks.available');
-        Route::get('/available/{id}', [DriverAvailableTasksController::class, 'show'])
-            ->name('api.driver.tasks.available.show');
+        // Note: index and show are moved outside this middleware to allow guests to view them
         Route::post('/available/{id}/claim', [DriverAvailableTasksController::class, 'claim'])
             ->name('api.driver.tasks.available.claim');
         Route::get('/my-claims', [DriverAvailableTasksController::class, 'myClaims'])
@@ -239,8 +248,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
         Route::post('/withdraw', [DriverWalletController::class, 'requestWithdrawal'])
             ->name('api.driver.wallet.withdraw');
 
-        Route::get('/withdrawals', [DriverWalletController::class, 'getWithdrawalHistory'])
-            ->name('api.driver.wallet.withdrawals');
+            Route::get('/withdrawals', [DriverWalletController::class, 'getWithdrawalHistory'])
+                ->name('api.driver.wallet.withdrawals');
+        });
     });
 
     // Notification routes

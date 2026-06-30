@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\WhatsAppService;
 
 class DriverAuthController extends Controller
 {
@@ -122,8 +124,157 @@ class DriverAuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Login failed. Please try again.'
+            ], 500);
+        }
+    }
+    /**
+     * Request OTP for login/registration
+     */
+    public function requestOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'phone_code' => 'required|string'
+        ]);
+
+        $phone = $request->phone;
+        $phoneCode = $request->phone_code;
+        $fullPhone = $phoneCode . ltrim($phone, '0');
+
+        $minuteKey = 'otp_minute_' . $phone;
+        if (RateLimiter::tooManyAttempts($minuteKey, 1)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please wait a minute before requesting another OTP.'
+            ], 429);
+        }
+
+        $driver = Driver::where('phone', $phone)->first();
+
+        if (!$driver) {
+            // Create guest driver
+            $driver = Driver::create([
+                'name' => 'سائق زائر - ' . $phone,
+                'username' => 'guest_' . Str::random(8),
+                'email' => 'guest_' . Str::random(8) . '@safedest.app',
+                'phone' => $phone,
+                'phone_code' => $phoneCode,
+                'password' => Hash::make(Str::random(16)),
+                'address' => 'غير محدد',
+                'status' => 'active',
+                'is_guest' => true,
+                'vehicle_size_id' => \App\Models\Vehicle_Size::first()->id ?? 1
             ]);
         }
+
+        // Generate OTP
+        // Using 1234 if simulation is on, otherwise random 4 digits
+        $otpCode = env('WHATSAPP_SIMULATION', true) ? '1234' : rand(1000, 9999);
+        $lang = $request->input('language', 'ar');
+        
+        $driver->update([
+            'otp_code' => Hash::make($otpCode),
+            'otp_expires_at' => now()->addMinutes(5)
+        ]);
+
+        $whatsAppService = new WhatsAppService();
+        $isSent = $whatsAppService->sendOTP($fullPhone, $otpCode, $lang);
+
+        if ($isSent) {
+            RateLimiter::hit($minuteKey, 60); // 1 minute block only if actually sent
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP sent successfully',
+                'is_new_user' => $driver->is_guest
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send OTP. Please check the number and try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify OTP and Login
+     */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'otp_code' => 'required|string',
+            'device_name' => 'required|string|max:255',
+            'device_id' => 'nullable|string|max:255',
+            'fcm_token' => 'nullable|string',
+            'app_version' => 'nullable|string|max:50',
+        ]);
+
+        $driver = Driver::where('phone', $request->phone)->first();
+
+        if (!$driver) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Driver not found'
+            ], 404);
+        }
+
+        if (!$driver->otp_code || !$driver->otp_expires_at || $driver->otp_expires_at->isPast()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP expired or invalid'
+            ], 401);
+        }
+
+        if (!Hash::check($request->otp_code, $driver->otp_code)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid OTP'
+            ], 401);
+        }
+
+        // Clear OTP
+        $driver->update([
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'last_activity_at' => now(),
+            'app_version' => $request->app_version
+        ]);
+
+        if ($request->device_name) {
+            $driver->revokeDeviceTokens($request->device_name);
+        }
+
+        $token = $driver->createDriverToken(
+            $request->device_name,
+            $request->device_id,
+            $request->fcm_token
+        );
+
+        Log::info('Driver OTP login successful', [
+            'driver_id' => $driver->id,
+            'device_name' => $request->device_name,
+            'ip' => $request->ip()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful',
+            'data' => [
+                'token' => $token->plainTextToken,
+                'driver' => [
+                    'id' => $driver->id,
+                    'name' => $driver->name,
+                    'email' => $driver->email,
+                    'phone' => $driver->phone,
+                    'status' => $driver->status,
+                    'online' => $driver->online,
+                    'is_guest' => $driver->is_guest,
+                    'team_id' => $driver->team_id,
+                    'vehicle_size_id' => $driver->vehicle_size_id,
+                ],
+                'abilities' => $token->accessToken->abilities
+            ]
+        ], 200);
     }
 
     /**

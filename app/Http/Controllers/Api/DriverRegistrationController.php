@@ -153,14 +153,21 @@ class DriverRegistrationController extends Controller
           ? null
           : $teamId,
       ]);
+      $existingGuest = Driver::where('phone', $request->phone)
+                            ->where('phone_code', $request->phone_code)
+                            ->where('is_guest', true)
+                            ->first();
+
+      $driverIdToIgnore = $existingGuest ? $existingGuest->id : null;
+
       $baseRules = [
         'name' => 'required|string|max:255',
-        'username' => 'required|string|max:255|unique:drivers,username',
-        'email' => 'required|email|max:255|unique:drivers,email',
-        'phone' => 'nullable|string|max:20|unique:drivers,phone',
+        'username' => 'required|string|max:255|unique:drivers,username' . ($driverIdToIgnore ? ',' . $driverIdToIgnore : ''),
+        'email' => 'required|email|max:255|unique:drivers,email' . ($driverIdToIgnore ? ',' . $driverIdToIgnore : ''),
+        'phone' => 'nullable|string|max:20|unique:drivers,phone' . ($driverIdToIgnore ? ',' . $driverIdToIgnore : ''),
         'phone_code' => 'nullable|string|max:10',
-        'password' => 'required|string|min:8|confirmed',
-        'password_confirmation' => 'required|string|min:8',
+        'password' => 'nullable|string|min:8|confirmed',
+        'password_confirmation' => 'nullable|string|min:8',
         'address' => 'required|string|max:500',
         'vehicle_size_id' => 'nullable|exists:vehicle_sizes,id',
         'team_id' => 'nullable|exists:teams,id',
@@ -215,12 +222,15 @@ class DriverRegistrationController extends Controller
         'email' => $request->email,
         'phone' => $request->phone,
         'phone_code' => $request->phone_code,
-        'password' => Hash::make($request->password),
         'address' => $request->address,
         'vehicle_size_id' => $request->vehicle_size_id,
         'team_id' => $request->team_id,
         'phone_is_whatsapp' => $request->has('phone_is_whatsapp') ? (bool) $request->phone_is_whatsapp : false,
       ];
+
+      if ($request->filled('password')) {
+        $driverData['password'] = Hash::make($request->password);
+      }
 
       // منطق الواتساب
       if ($request->has('phone_is_whatsapp') && $request->phone_is_whatsapp) {
@@ -238,19 +248,24 @@ class DriverRegistrationController extends Controller
         // ملاحظة مهمة: لا تستخدم json_encode هنا
       }
 
-      $driver = Driver::create($driverData);
+      $driverData['is_guest'] = false; // They are no longer a guest!
+      $driverData['email_verified_at'] = now(); // Automatically verify since they used OTP
 
-      $this->sendVerificationEmail($driver);
-
+      if ($existingGuest) {
+          $existingGuest->update($driverData);
+          $driver = $existingGuest;
+      } else {
+          $driver = Driver::create($driverData);
+      }
       DB::commit();
 
       return response()->json([
         'success' => true,
-        'message' => 'Driver registered successfully. Please check your email to verify your account.',
+        'message' => 'Driver profile completed successfully.',
         'data' => [
           'driver_id' => $driver->id,
           'email' => $driver->email,
-          'verification_required' => true,
+          'verification_required' => false,
         ],
       ], 201);
 

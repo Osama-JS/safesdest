@@ -185,13 +185,14 @@ $(function () {
             </div>`;
             }
 
-            return `
+              var guestBadge = full.is_guest ? '<span class="badge bg-label-warning ms-2" style="font-size: 0.7rem;">سائق زائر</span>' : '';
+              return `
               <div class="d-flex align-items-center">
                 <div class="avatar-wrapper me-3">
                   ${img}
                 </div>
                 <div class="d-flex flex-column">
-                  <span class="fw-medium">${$name}</span>
+                  <span class="fw-medium">${$name} ${guestBadge}</span>
                 </div>
               </div>`;
           }

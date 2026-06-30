@@ -66,11 +66,16 @@ class Driver extends Authenticatable
       'broker_id',
       'broker_commission_type',
       'broker_commission_value',
-      'broker_commission_start_date'
+      'broker_commission_start_date',
+      'is_guest',
+      'otp_code',
+      'otp_expires_at'
     ];
     protected $casts = [
       'additional_data' => 'array',
       'reset_token_expires_at' => 'datetime',
+      'otp_expires_at' => 'datetime',
+      'is_guest' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];

@@ -138,6 +138,7 @@ class DriversController extends Controller
               'tags'       => $val->tags->pluck('tag.name')->implode(', '),
               'role'       => $val->role->name ?? "",
               'wallet'     => $val->wallet?->id,
+              'is_guest'   => $val->is_guest,
               'created_at' => $val->created_at->format('Y-m-d H:i'),
               'status'     => $val->status,
             ];

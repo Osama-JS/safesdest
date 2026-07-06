@@ -211,7 +211,7 @@ class BackupController extends Controller
 
     // Build pg_dump command with proper escaping
     $command = sprintf(
-      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --no-owner --file=%s 2>&1',
+      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --no-owner --exclude-schema=topology --file=%s 2>&1',
       escapeshellarg($pgDumpBinary),
       escapeshellarg($dbConfig['host']),
       escapeshellarg($dbConfig['port'] ?? 5432),

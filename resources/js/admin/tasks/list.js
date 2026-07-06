@@ -1682,10 +1682,3 @@ $(function () {
       });
   });
 });
-    taskBrokerRowIndex++;
-  });
-
-  $(document).on('click', '#task-brokers-container .remove-broker-row', function() {
-    $(this).closest('.broker-row').remove();
-  });
-});

@@ -207,11 +207,11 @@ class BackupController extends Controller
       throw new Exception('Invalid PostgreSQL database configuration');
     }
 
-    $pgDumpBinary = env('PG_DUMP_BINARY', 'pg_dump');
+    $pgDumpBinary = 'pg_dump'; // fallback إلى "pg_dump" لو لم يُحدد
 
     // Build pg_dump command with proper escaping
     $command = sprintf(
-      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --no-owner --exclude-schema=topology --file=%s 2>&1',
+      '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --clean --if-exists --no-owner --file=%s 2>&1',
       escapeshellarg($pgDumpBinary),
       escapeshellarg($dbConfig['host']),
       escapeshellarg($dbConfig['port'] ?? 5432),
@@ -449,10 +449,12 @@ class BackupController extends Controller
       // إعداد المرفق
 
       // الكود الجديد (حل)
-      $attachments = [[
-        'file' => $backupInfo['file_path'],
-        'options' => ['as' => $backupName . '.zip', 'mime' => 'application/zip']
-      ]];
+      $attachments = [
+        [
+          'file' => $backupInfo['file_path'],
+          'options' => ['as' => $backupName . '.zip', 'mime' => 'application/zip']
+        ]
+      ];
 
 
       // إرسال المهمة
@@ -706,12 +708,12 @@ class BackupController extends Controller
     }
 
     $dbConfig = config('database.connections.pgsql');
-    $psqlBinary = env('PG_RESTORE_BINARY', 'psql');
+    $pgDumpBinary = 'C:\Program Files\PostgreSQL\15\bin\psql.exe'; // fallback إلى "pg_dump" لو لم يُحدد
 
     // Build psql command for restore
     $command = sprintf(
       '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --file=%s 2>&1',
-      escapeshellarg($psqlBinary),
+      escapeshellarg($pgDumpBinary),
       escapeshellarg($dbConfig['host']),
       escapeshellarg($dbConfig['port'] ?? 5432),
       escapeshellarg($dbConfig['username']),
@@ -760,10 +762,9 @@ class BackupController extends Controller
       return;
     }
 
-    $backupCurrentPath = storage_path('app/temp/current_files_backup_' . time());
-
     try {
       // Backup current files before restore (safety measure)
+      $backupCurrentPath = storage_path('app/temp/current_files_backup_' . time());
       if (File::exists($storagePath)) {
         File::copyDirectory($storagePath, $backupCurrentPath);
         Log::info('Current files backed up before restore', ['backup_path' => $backupCurrentPath]);
@@ -783,23 +784,8 @@ class BackupController extends Controller
         'storage_path' => $storagePath
       ]);
     } catch (Exception $e) {
-      Log::error('Files restore failed, attempting rollback', ['error' => $e->getMessage()]);
-      
-      // Rollback
-      if (File::exists($backupCurrentPath)) {
-        if (File::exists($storagePath)) {
-            File::deleteDirectory($storagePath);
-        }
-        File::copyDirectory($backupCurrentPath, $storagePath);
-        Log::info('Rolled back files restore to original state');
-      }
-      
+      Log::error('Files restore failed', ['error' => $e->getMessage()]);
       throw new Exception('Files restore failed: ' . $e->getMessage());
-    } finally {
-      // Clean up safety backup to save space
-      if (File::exists($backupCurrentPath)) {
-          File::deleteDirectory($backupCurrentPath);
-      }
     }
   }
 

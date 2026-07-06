@@ -42,7 +42,7 @@ class DriversController extends Controller
         $vehicles = Vehicle::all();
         $driver_template = Settings::where('key', 'driver_template')->first();
         $banks = \App\Models\Bank::where('is_active', true)->get();
-        $brokers = \App\Models\User::where('status', 'active')->where('investor', 0)->get();
+        $brokers = \App\Models\User::where('status', 'active')->get();
 
         return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks', 'brokers'));
     }
@@ -57,8 +57,8 @@ class DriversController extends Controller
         // }
 
         $drivers->select('id', 'name')
-          ->limit(20)
-          ->get();
+            ->limit(20)
+            ->get();
 
         return response()->json(['results' => $drivers]);
     }
@@ -66,17 +66,17 @@ class DriversController extends Controller
     public function getData(Request $request)
     {
         $columns = [
-          1 => 'id',
-          2 => 'username',
-          3 => 'name',
-          4 => 'email',
-          5 => 'phone',
-          6 => 'whatsapp',
-          7 => 'team',
-          8 => 'role',
-          9 => 'tags',
-          10 => 'status',
-          11 => 'created_at'
+            1 => 'id',
+            2 => 'username',
+            3 => 'name',
+            4 => 'email',
+            5 => 'phone',
+            6 => 'whatsapp',
+            7 => 'team',
+            8 => 'role',
+            9 => 'tags',
+            10 => 'status',
+            11 => 'created_at'
         ];
 
 
@@ -96,12 +96,12 @@ class DriversController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%{$search}%")
-                  ->orWhere('name', 'LIKE', "%{$search}%")
-                  ->orWhere('username', 'LIKE', "%{$search}%")
-                  ->orWhere('driver_code', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%")
-                  ->orWhere('phone', 'LIKE', "%{$search}%")
-                  ->orWhereRaw("additional_data::text ILIKE ?", ["%{$search}%"]);
+                    ->orWhere('name', 'LIKE', "%{$search}%")
+                    ->orWhere('username', 'LIKE', "%{$search}%")
+                    ->orWhere('driver_code', 'LIKE', "%{$search}%")
+                    ->orWhere('email', 'LIKE', "%{$search}%")
+                    ->orWhere('phone', 'LIKE', "%{$search}%")
+                    ->orWhereRaw("additional_data::text ILIKE ?", ["%{$search}%"]);
             });
         }
         if (!empty($statusFilter)) {
@@ -111,11 +111,11 @@ class DriversController extends Controller
         $totalFiltered = $query->count();
 
         $drivers = $query
-          ->with(['team', 'role', 'tags.tag'])
-          ->offset($start)
-          ->limit($limit)
-          ->orderBy($order, $dir)
-          ->get();
+            ->with(['team', 'role', 'tags.tag'])
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
 
 
         $data = [];
@@ -125,51 +125,51 @@ class DriversController extends Controller
         foreach ($drivers as $val) {
 
             $data[] = [
-              'id' => $val->id,
-              'fake_id' => ++$fakeId,
-              'driver_code' => $val->driver_code,
-              'name' => $val->name,
-              'image'      => $val->image ? url($val->image) : null,
-              'username' => $val->username,
-              'email' => $val->email,
-              'phone' => $val->phone_code . ' ' . $val->phone,
-              'whatsapp'   => $val->full_whatsapp_number ? str_replace('+', '', $val->full_whatsapp_number) : 'Not provided',
-              'team'       => $val->team->name ?? 'No Team',
-              'tags'       => $val->tags->pluck('tag.name')->implode(', '),
-              'role'       => $val->role->name ?? "",
-              'wallet'     => $val->wallet?->id,
-              'is_guest'   => $val->is_guest,
-              'created_at' => $val->created_at->format('Y-m-d H:i'),
-              'status'     => $val->status,
+                'id' => $val->id,
+                'fake_id' => ++$fakeId,
+                'driver_code' => $val->driver_code,
+                'name' => $val->name,
+                'image' => $val->image ? url($val->image) : null,
+                'username' => $val->username,
+                'email' => $val->email,
+                'phone' => $val->phone_code . ' ' . $val->phone,
+                'whatsapp' => $val->full_whatsapp_number ? str_replace('+', '', $val->full_whatsapp_number) : 'Not provided',
+                'team' => $val->team->name ?? 'No Team',
+                'tags' => $val->tags->pluck('tag.name')->implode(', '),
+                'role' => $val->role->name ?? "",
+                'wallet' => $val->wallet?->id,
+                'is_guest' => $val->is_guest,
+                'created_at' => $val->created_at->format('Y-m-d H:i'),
+                'status' => $val->status,
             ];
         }
 
 
         return response()->json([
-          'draw'            => intval($request->input('draw')),
-          'recordsTotal'    => $totalData,
-          'recordsFiltered' => $totalFiltered,
-          'code'            => 200,
-          'data'            => $data,
-          'summary' => [
-            'total' => Driver::count(),
-            'total_active' => Driver::where('status', 'active')->count(),
-            'total_verified' => Driver::where('status', 'verified')->count(),
-            'total_pending' => Driver::where('status', 'pending')->count(),
-            'total_blocked' => Driver::where('status', 'blocked')->count(),
-          ]
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalData,
+            'recordsFiltered' => $totalFiltered,
+            'code' => 200,
+            'data' => $data,
+            'summary' => [
+                'total' => Driver::count(),
+                'total_active' => Driver::where('status', 'active')->count(),
+                'total_verified' => Driver::where('status', 'verified')->count(),
+                'total_pending' => Driver::where('status', 'pending')->count(),
+                'total_blocked' => Driver::where('status', 'blocked')->count(),
+            ]
         ]);
     }
 
     public function chang_status(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:drivers,id',
-          'status' => 'required',
+            'id' => 'required|exists:drivers,id',
+            'status' => 'required',
         ], [
-          'id.required' => __('The driver id is required.'),
-          'id.exists' => __('The selected driver does not exist.'),
-          'status.required' => __('The status field is required.'),
+            'id.required' => __('The driver id is required.'),
+            'id.exists' => __('The selected driver does not exist.'),
+            'status.required' => __('The status field is required.'),
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
@@ -215,7 +215,7 @@ class DriversController extends Controller
             }
 
             if (!$done) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Driver Status')]);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('Error to Change Driver Status')]);
             }
             return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Driver Status changed')]);
         } catch (Exception $ex) {
@@ -229,13 +229,13 @@ class DriversController extends Controller
 
     public function edit($id)
     {
-        $data = Driver::with('brokers')->findOrFail($id);
+        $data = Driver::findOrFail($id);
         $data->img = $data->image ? url($data->image) : null;
         $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
         $data->vehicle = $data->vehicle_size->type->vehicle_id;
         $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
-        $data->fields =  $fields;
+        $data->fields = $fields;
 
         return response()->json($data);
     }
@@ -243,47 +243,42 @@ class DriversController extends Controller
     public function store(Request $req)
     {
         $req->merge([
-             'iban_number' => preg_replace('/\s+/', '', $req->iban_number),
-         ]);
+            'iban_number' => preg_replace('/\s+/', '', $req->iban_number),
+        ]);
         $rules = [
-          'name'            => 'required|string|max:255',
-          'email'           => 'required|email|unique:drivers,email,' . ($req->id ?? 0),
-          'phone'           => 'required|unique:drivers,phone,' . ($req->id ?? 0),
-          'phone_code'      => 'required|string',
-          'username'        => 'required|unique:drivers,username,' . ($req->id ?? 0),
-          'password'        => 'nullable|same:confirm-password',
-          'address'         => 'required|string|max:255',
-          'vehicle'         => 'required|exists:vehicle_sizes,id',
-          'role'            => 'nullable|exists:roles,id',
-          'team'            => 'nullable|exists:teams,id',
-          'commission_type' => 'nullable|in:fixed,rate,subscription',
-          'commission'      => 'required_with:commission_type|min:0',
-          'image'           => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-          // WhatsApp validation rules
-          'phone_is_whatsapp'       => 'nullable|boolean',
-          'whatsapp_country_code'   => 'nullable|string|max:10',
-          'whatsapp_number'         => 'nullable|string|max:20',
-          // Bank details validation rules
-          'bank_name'               => 'nullable|string|max:255',
-          'custom_bank_name'        => 'nullable|string|max:255',
-          'account_number'          => 'nullable|string|min:8|max:20|regex:/^[0-9]+$/',
-          'iban_number'             => 'nullable|string|size:24|regex:/^SA[0-9]{22}$/',
-          'bic_code'                => 'nullable|string|max:20',
-          'beneficiary_name'        => 'nullable|string|max:255',
-          'bank_address1'           => 'nullable|string|max:255',
-          'bank_address2'           => 'nullable|string|max:255',
-          'bank_city'               => 'nullable|string|max:255',
-          'bank_country'            => 'nullable|string|size:2',
-          // Broker fields (Old single broker)
-          'broker_id'               => 'nullable|exists:users,id',
-          'broker_commission_type'  => 'nullable|in:percentage,fixed',
-          'broker_commission_value' => 'nullable|numeric|min:0',
-          'broker_commission_start_date' => 'nullable|date',
-          // Multiple Brokers fields
-          'brokers'                 => 'nullable|array',
-          'brokers.*.id'            => 'required_with:brokers|exists:users,id',
-          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
-          'brokers.*.commission_value'=> 'required_with:brokers|numeric|min:0',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:drivers,email,' . ($req->id ?? 0),
+            'phone' => 'required|unique:drivers,phone,' . ($req->id ?? 0),
+            'phone_code' => 'required|string',
+            'username' => 'required|unique:drivers,username,' . ($req->id ?? 0),
+            'password' => 'nullable|same:confirm-password',
+            'address' => 'required|string|max:255',
+            'vehicle' => 'required|exists:vehicle_sizes,id',
+            'role' => 'nullable|exists:roles,id',
+            'team' => 'nullable|exists:teams,id',
+            'commission_type' => 'nullable|in:fixed,rate,subscription',
+            'commission' => 'required_with:commission_type|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            // WhatsApp validation rules
+            'phone_is_whatsapp' => 'nullable|boolean',
+            'whatsapp_country_code' => 'nullable|string|max:10',
+            'whatsapp_number' => 'nullable|string|max:20',
+            // Bank details validation rules
+            'bank_name' => 'nullable|string|max:255',
+            'custom_bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|min:8|max:20|regex:/^[0-9]+$/',
+            'iban_number' => 'nullable|string|size:24|regex:/^SA[0-9]{22}$/',
+            'bic_code' => 'nullable|string|max:20',
+            'beneficiary_name' => 'nullable|string|max:255',
+            'bank_address1' => 'nullable|string|max:255',
+            'bank_address2' => 'nullable|string|max:255',
+            'bank_city' => 'nullable|string|max:255',
+            'bank_country' => 'nullable|string|size:2',
+            // Broker fields
+            'broker_id' => 'nullable|exists:users,id',
+            'broker_commission_type' => 'nullable|in:percentage,fixed',
+            'broker_commission_value' => 'nullable|numeric|min:0',
+            'broker_commission_start_date' => 'nullable|date',
         ];
 
         if ($req->filled('template')) {
@@ -413,26 +408,26 @@ class DriversController extends Controller
                 if ($field->type === 'file_expiration_date') {
                     $fieldKey = 'additional_fields.' . $field->name;
                     $customMessages = array_merge($customMessages, [
-                      $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
                     ]);
                 }
 
                 if ($field->type === 'file_with_text') {
                     $fieldKey = 'additional_fields.' . $field->name;
                     $customMessages = array_merge($customMessages, [
-                      $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.required' => __('The text field for :attribute is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.string' => __('The text field for :attribute must be a valid text.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.max' => __('The text field for :attribute must not exceed 255 characters.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.required' => __('The text field for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.string' => __('The text field for :attribute must be a valid text.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.max' => __('The text field for :attribute must not exceed 255 characters.', ['attribute' => $field->label]),
                     ]);
                 }
             }
@@ -442,8 +437,8 @@ class DriversController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-              'status' => 0,
-              'error'  => $validator->errors()
+                'status' => 0,
+                'error' => $validator->errors()
             ]);
         }
 
@@ -452,32 +447,32 @@ class DriversController extends Controller
 
         try {
             $data = [
-              'name'            => $req->name,
-              'email'           => $req->email,
-              'phone'           => $req->phone,
-              'phone_code'      => $req->phone_code,
-              'username'        => $req->username,
-              'address'         => $req->address,
-              'vehicle_size_id' => $req->vehicle,
-              'role_id'         => $req->role ?? null,
-              'commission_type' => $req->commission_type,
-              'commission'      => $req->commission,
-              // WhatsApp data processing
-              'phone_is_whatsapp' => $req->has('phone_is_whatsapp') ? (bool)$req->phone_is_whatsapp : false,
-              // Bank details processing
-              'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
-              'account_number' => $req->account_number,
-              'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
-              'bic_code' => $req->bic_code,
-              'beneficiary_name' => $req->beneficiary_name,
-              'bank_address1' => $req->bank_address1,
-              'bank_address2' => $req->bank_address2,
-              'bank_city' => $req->bank_city,
-              'bank_country' => $req->bank_country ?? 'SA',
-              'broker_id' => $req->broker_id,
-              'broker_commission_type' => $req->broker_commission_type,
-              'broker_commission_value' => $req->broker_commission_value,
-              'broker_commission_start_date' => $req->broker_commission_start_date,
+                'name' => $req->name,
+                'email' => $req->email,
+                'phone' => $req->phone,
+                'phone_code' => $req->phone_code,
+                'username' => $req->username,
+                'address' => $req->address,
+                'vehicle_size_id' => $req->vehicle,
+                'role_id' => $req->role ?? null,
+                'commission_type' => $req->commission_type,
+                'commission' => $req->commission,
+                // WhatsApp data processing
+                'phone_is_whatsapp' => $req->has('phone_is_whatsapp') ? (bool) $req->phone_is_whatsapp : false,
+                // Bank details processing
+                'bank_name' => $req->bank_name === 'other' ? $req->custom_bank_name : $req->bank_name,
+                'account_number' => $req->account_number,
+                'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
+                'bic_code' => $req->bic_code,
+                'beneficiary_name' => $req->beneficiary_name,
+                'bank_address1' => $req->bank_address1,
+                'bank_address2' => $req->bank_address2,
+                'bank_city' => $req->bank_city,
+                'bank_country' => $req->bank_country ?? 'SA',
+                'broker_id' => $req->broker_id,
+                'broker_commission_type' => $req->broker_commission_type,
+                'broker_commission_value' => $req->broker_commission_value,
+                'broker_commission_start_date' => $req->broker_commission_start_date,
             ];
 
             // Handle WhatsApp number logic
@@ -538,10 +533,10 @@ class DriversController extends Controller
                             $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'customers/files');
 
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $path,
-                              'expiration' => $req->input("additional_fields.$expirationFieldName"),
-                              'type'  => $field->type,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $field->type,
                             ];
                         } else {
                             // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث تاريخ الانتهاء إذا تم تغييره
@@ -565,10 +560,10 @@ class DriversController extends Controller
                             $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'drivers/files');
 
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $path,
-                              'text' => $req->input("additional_fields.$textFieldName"),
-                              'type'  => $field->type,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'text' => $req->input("additional_fields.$textFieldName"),
+                                'type' => $field->type,
                             ];
                         } else {
                             // في حال لم يتم رفع ملف جديد، نحتفظ بالبيانات القديمة مع تحديث النص إذا تم تغييره
@@ -588,9 +583,9 @@ class DriversController extends Controller
                             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'drivers/files');
 
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $path,
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'type' => $fieldType,
                             ];
                         } elseif (isset($oldAdditionalData[$fieldName])) {
                             $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
@@ -598,9 +593,9 @@ class DriversController extends Controller
                     } else {
                         if ($req->has("additional_fields.$fieldName")) {
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $req->input("additional_fields.$fieldName"),
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $req->input("additional_fields.$fieldName"),
+                                'type' => $fieldType,
                             ];
                         }
                     }
@@ -632,20 +627,6 @@ class DriversController extends Controller
                 if ($req->role) {
                     $find->syncRoles($req->role);
                 }
-
-                if ($req->has('brokers') && is_array($req->brokers)) {
-                    $brokersData = [];
-                    foreach ($req->brokers as $b) {
-                        if (!empty($b['id'])) {
-                            $brokersData[$b['id']] = [
-                                'commission_type' => $b['commission_type'] ?? 'percentage',
-                                'commission_value' => $b['commission_value'] ?? 0,
-                                'status' => 1
-                            ];
-                        }
-                    }
-                    $find->brokers()->sync($brokersData);
-                }
             } else {
                 if ($req->hasFile('image')) {
                     $data['image'] = (new FunctionsController())->convert($req->image, 'drivers');
@@ -658,20 +639,6 @@ class DriversController extends Controller
                     if ($role) {
                         $done->assignRole($role->name);
                     }
-                }
-
-                if ($req->has('brokers') && is_array($req->brokers)) {
-                    $brokersData = [];
-                    foreach ($req->brokers as $b) {
-                        if (!empty($b['id'])) {
-                            $brokersData[$b['id']] = [
-                                'commission_type' => $b['commission_type'] ?? 'percentage',
-                                'commission_value' => $b['commission_value'] ?? 0,
-                                'status' => 1
-                            ];
-                        }
-                    }
-                    $done->brokers()->sync($brokersData);
                 }
 
                 (new WalletsController())->store('driver', $done->id, true);
@@ -696,14 +663,14 @@ class DriversController extends Controller
             }
 
             return response()->json([
-              'status'  => 1,
-              'success' => __('Driver saved successfully'),
+                'status' => 1,
+                'success' => __('Driver saved successfully'),
             ]);
         } catch (\Exception $ex) {
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'error'  => $ex->getMessage()
+                'status' => 2,
+                'error' => $ex->getMessage()
             ]);
         }
     }
@@ -713,7 +680,7 @@ class DriversController extends Controller
     public function createWallet(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:drivers,id',
+            'id' => 'required|exists:drivers,id',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'type' => 'error', 'message' => $req->id]);
@@ -729,12 +696,12 @@ class DriversController extends Controller
             }
             $wallet = Wallet::where('user_type', 'driver')->where('driver_id', $req->id)->first();
             if ($wallet) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'this wallet already exist']);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'this wallet already exist']);
             }
             $done = (new WalletsController())->store('driver', $req->id, true);
 
             if (!$done) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to create Wallet']);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'error to create Wallet']);
             }
             return response()->json(['status' => 1, 'type' => 'success', 'message' => 'Wallet created successfully']);
         } catch (Exception $ex) {
@@ -765,10 +732,10 @@ class DriversController extends Controller
 
             // التحقق من وجود علاقات (نشاطات)
             $hasRelations =
-              $find->transactions()->exists() ||
-              $find->tasks()->exists() ||
-              $find->possible_tasks()->exists() ||
-              $find->tags()->exists();
+                $find->transactions()->exists() ||
+                $find->tasks()->exists() ||
+                $find->possible_tasks()->exists() ||
+                $find->tags()->exists();
 
             // حذف نهائي إذا لا يوجد علاقات
             if (!$hasRelations) {
@@ -804,19 +771,19 @@ class DriversController extends Controller
     public function getCustomerTasks(Request $request)
     {
         $columns = [
-          2 => 'task_id',
-          3 => 'status',
-          4 => 'price',
-          8 => 'created_at'
+            2 => 'task_id',
+            3 => 'status',
+            4 => 'price',
+            8 => 'created_at'
         ];
 
         $totalData = Task::where('driver_id', $request->driver)->count();
         $totalFiltered = $totalData;
 
-        $limit  = $request->input('length');
-        $start  = $request->input('start');
-        $order  = $columns[$request->input('order.0.column')] ?? 'id';
-        $dir    = $request->input('order.0.dir') ?? 'desc';
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = $columns[$request->input('order.0.column')] ?? 'id';
+        $dir = $request->input('order.0.dir') ?? 'desc';
 
         $search = $request->input('search');
         $statusFilter = $request->input('status');
@@ -826,7 +793,7 @@ class DriversController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%{$search}%")
-                  ->orWhere('id', 'LIKE', "%{$search}%");
+                    ->orWhere('id', 'LIKE', "%{$search}%");
             });
         }
         if (!empty($statusFilter)) {
@@ -837,28 +804,28 @@ class DriversController extends Controller
 
 
         $items = $query
-          ->offset($start)
-          ->limit($limit)
-          ->orderBy($order, $dir)
-          ->get();
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
 
         $data = [];
         foreach ($items as $item) {
             $data[] = [
-              'task_id'    => $item->id,
-              'status'     => $item->status,
-              'price'       => $item->total_price,
-              'commission'       => $item->commission,
-              'created_at' => $item->created_at->format('Y-m-d H:i'),
+                'task_id' => $item->id,
+                'status' => $item->status,
+                'price' => $item->total_price,
+                'commission' => $item->commission,
+                'created_at' => $item->created_at->format('Y-m-d H:i'),
             ];
         }
 
         return response()->json([
-          'draw'            => intval($request->input('draw')),
-          'recordsTotal'    => $totalData,
-          'recordsFiltered' => $totalFiltered,
-          'code'            => 200,
-          'data'            => $data,
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalData,
+            'recordsFiltered' => $totalFiltered,
+            'code' => 200,
+            'data' => $data,
         ]);
     }
 }

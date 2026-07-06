@@ -23,61 +23,61 @@ class Driver extends Authenticatable
 
     protected $table = 'drivers';
     protected $fillable = [
-      'name',
-      'driver_code',
-      'phone',
-      'phone_code',
-      'email',
-      'image',
-      'username',
-      'password',
-      'status',
-      'address',
-      'online',
-      'free',
-      'longitude',
-      'altitude',
-      'last_seen_at',
-      'commission_type',
-      'commission_value',
-      'location_update_interval',
-      'additional_data',
-      'form_template_id',
-      'team_id',
-      'vehicle_size_id',
-      'role_id',
-      'whatsapp_country_code',
-      'whatsapp_number',
-      'phone_is_whatsapp',
-      'device_id',
-      'fcm_token',
-      'app_version',
-      'last_activity_at',
-      'reset_token',
-      'reset_token_expires_at',
-      'bank_name',
-      'account_number',
-      'iban_number',
-      'bic_code',
-      'beneficiary_name',
-      'bank_address1',
-      'bank_address2',
-      'bank_city',
-      'bank_country',
-      'signature_image',
-      'broker_id',
-      'broker_commission_type',
-      'broker_commission_value',
-      'broker_commission_start_date',
-      'is_guest',
-      'otp_code',
-      'otp_expires_at'
+        'name',
+        'driver_code',
+        'phone',
+        'phone_code',
+        'email',
+        'image',
+        'username',
+        'password',
+        'status',
+        'address',
+        'online',
+        'free',
+        'longitude',
+        'altitude',
+        'last_seen_at',
+        'commission_type',
+        'commission_value',
+        'location_update_interval',
+        'additional_data',
+        'form_template_id',
+        'team_id',
+        'vehicle_size_id',
+        'role_id',
+        'whatsapp_country_code',
+        'whatsapp_number',
+        'phone_is_whatsapp',
+        'device_id',
+        'fcm_token',
+        'app_version',
+        'last_activity_at',
+        'reset_token',
+        'reset_token_expires_at',
+        'bank_name',
+        'account_number',
+        'iban_number',
+        'bic_code',
+        'beneficiary_name',
+        'bank_address1',
+        'bank_address2',
+        'bank_city',
+        'bank_country',
+        'signature_image',
+        'broker_id',
+        'broker_commission_type',
+        'broker_commission_value',
+        'broker_commission_start_date',
+        'is_guest',
+        'otp_code',
+        'otp_expires_at'
     ];
     protected $casts = [
-      'additional_data' => 'array',
-      'reset_token_expires_at' => 'datetime',
-      'otp_expires_at' => 'datetime',
-      'is_guest' => 'boolean',
+        'additional_data' => 'array',
+        'reset_token_expires_at' => 'datetime',
+        'otp_expires_at' => 'datetime',
+        'is_guest' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];
@@ -91,14 +91,6 @@ class Driver extends Authenticatable
     {
         return $this->belongsTo(User::class, 'broker_id');
     }
-
-    public function brokers()
-    {
-        return $this->belongsToMany(User::class, 'driver_brokers', 'driver_id', 'broker_id')
-                    ->withPivot('commission_type', 'commission_value', 'status')
-                    ->withTimestamps();
-    }
-
     public function tags()
     {
         return $this->hasMany(Tag_Drivers::class, 'driver_id');
@@ -206,7 +198,7 @@ class Driver extends Authenticatable
 
             return $formFields->contains(function ($field) use ($item) {
                 return $field->label == $item['label'] &&
-                  in_array($field->customer_can, ['read', 'write']);
+                    in_array($field->customer_can, ['read', 'write']);
             });
         })->all();
     }

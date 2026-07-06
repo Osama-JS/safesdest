@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\admin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -34,7 +34,7 @@ class ActivityLogController extends Controller
 
         $limit = $request->input('length') ?? 10;
         $start = $request->input('start') ?? 0;
-        
+
         $orderColumnIndex = $request->input('order.0.column', 0);
         $order = $columns[$orderColumnIndex] ?? 'id';
         $dir = $request->input('order.0.dir', 'desc');
@@ -66,11 +66,11 @@ class ActivityLogController extends Controller
             $search = $request->input('search.value') ?: $request->input('general_search');
             $query->where(function ($q) use ($search) {
                 $q->where('action', 'LIKE', "%{$search}%")
-                  ->orWhere('table_name', 'LIKE', "%{$search}%")
-                  ->orWhere('ip_address', 'LIKE', "%{$search}%")
-                  ->orWhereHas('user', function ($uq) use ($search) {
-                      $uq->where('name', 'LIKE', "%{$search}%");
-                  });
+                    ->orWhere('table_name', 'LIKE', "%{$search}%")
+                    ->orWhere('ip_address', 'LIKE', "%{$search}%")
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -85,10 +85,10 @@ class ActivityLogController extends Controller
 
         foreach ($logs as $log) {
             $nestedData = [];
-            
+
             $nestedData['id'] = $log->id;
             $nestedData['user'] = $log->user ? $log->user->name : '<span class="text-muted">مستخدم محذوف</span>';
-            
+
             // شارة نوع الحركة
             $actionBadge = '';
             if ($log->action == 'إنشاء') {
@@ -101,11 +101,11 @@ class ActivityLogController extends Controller
                 $actionBadge = '<span class="badge bg-label-primary">' . $log->action . '</span>';
             }
             $nestedData['action'] = $actionBadge;
-            
+
             $nestedData['table_name'] = '<span class="fw-medium">' . $log->table_name . '</span>';
             $nestedData['ip_address'] = $log->ip_address ?? '-';
             $nestedData['created_at'] = Carbon::parse($log->created_at)->format('Y-m-d H:i');
-            
+
             // زر عرض التفاصيل
             $nestedData['actions'] = '<button class="btn btn-sm btn-icon btn-text-secondary rounded-pill view-record" data-id="' . $log->id . '"><i class="ti ti-eye"></i></button>';
 
@@ -113,17 +113,17 @@ class ActivityLogController extends Controller
         }
 
         return response()->json([
-            "draw"            => intval($request->input('draw')),
-            "recordsTotal"    => intval($totalData),
+            "draw" => intval($request->input('draw')),
+            "recordsTotal" => intval($totalData),
             "recordsFiltered" => intval($totalFiltered),
-            "data"            => $data
+            "data" => $data
         ]);
     }
 
     public function show($id)
     {
         $log = ActivityLog::with('user')->findOrFail($id);
-        
+
         $html = view('admin.activity-logs.show', compact('log'))->render();
 
         return response()->json(['html' => $html]);

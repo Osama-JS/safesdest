@@ -64,8 +64,8 @@ class ReportService
             if (!empty($extraFieldIds)) {
                 $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label', 'name']);
                 foreach ($fields as $field) {
-                    $extraColumnsMap['driver_extra:' . $field->id]     = trim($field->label);
-                    $extraFieldNamesMap['driver_extra:' . $field->id]  = trim($field->name);
+                    $extraColumnsMap['driver_extra:' . $field->id] = trim($field->label);
+                    $extraFieldNamesMap['driver_extra:' . $field->id] = trim($field->name);
                 }
             }
         }
@@ -111,7 +111,7 @@ class ReportService
             $teamIds = $user->teams->pluck('id')->toArray();
             $query->where(function ($q) use ($user, $teamIds) {
                 $q->where('user_id', $user->id)
-                  ->orWhereIn('team_id', $teamIds);
+                    ->orWhereIn('team_id', $teamIds);
             });
         }
     }
@@ -200,7 +200,6 @@ class ReportService
                 'id' => $task->id,
                 'total_price' => $effectivePrice,
                 'original_price' => $task->total_price, // Keep original for reference
-                'driver_price' => max(0, $effectivePrice - (float)($task->commission ?? 0)),
                 'customer_name' => $task->customer->name ?? 'غير محدد',
                 'customer_company' => $task->customer->company_name ?? '',
                 'driver_name' => $task->driver->name ?? 'غير محدد',
@@ -243,7 +242,7 @@ class ReportService
                     foreach ($extraColumnsMap as $colKey => $label) {
                         $processedTask[$colKey] = 'غير محدد';
                         $fieldName = $extraFieldNamesMap[$colKey] ?? null;
-                        $fieldId   = str_replace('driver_extra:', '', $colKey);
+                        $fieldId = str_replace('driver_extra:', '', $colKey);
 
                         $val = null;
 
@@ -260,8 +259,8 @@ class ReportService
                         }
 
                         // 3. Match by string id key as integer string
-                        if (($val === null || $val === '') && isset($additionalData[(int)$fieldId])) {
-                            $raw = $additionalData[(int)$fieldId];
+                        if (($val === null || $val === '') && isset($additionalData[(int) $fieldId])) {
+                            $raw = $additionalData[(int) $fieldId];
                             $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
                         }
 
@@ -291,7 +290,7 @@ class ReportService
 
             return $processedTask;
         })->toArray();
-        return  $t;
+        return $t;
     }
 
     /**
@@ -586,8 +585,8 @@ class ReportService
             if (!empty($extraFieldIds)) {
                 $fields = \App\Models\Form_Field::whereIn('id', $extraFieldIds)->get(['id', 'label', 'name']);
                 foreach ($fields as $field) {
-                    $extraColumnsMap['driver_extra:' . $field->id]     = trim($field->label);
-                    $extraFieldNamesMap['driver_extra:' . $field->id]  = trim($field->name);
+                    $extraColumnsMap['driver_extra:' . $field->id] = trim($field->label);
+                    $extraFieldNamesMap['driver_extra:' . $field->id] = trim($field->name);
                 }
             }
         }
@@ -616,7 +615,7 @@ class ReportService
                     'name' => $task->driver->name ?? '',
                     'phone' => ($task->driver->phone_code . $task->driver->phone) ?? ''
                 ],
-                'vehicle' =>  $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name,
+                'vehicle' => $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name,
                 'team_name' => $task->driver->team->name ?? '',
                 'created_by' => $task->user ? 'admin' : 'customer',
                 'created_by_name' => $task->user->name ?? $task->customer->name ?? 'غير محدد',
@@ -644,7 +643,7 @@ class ReportService
                     foreach ($extraColumnsMap as $colKey => $label) {
                         $processedTask[$colKey] = 'غير محدد';
                         $fieldName = $extraFieldNamesMap[$colKey] ?? null;
-                        $fieldId   = str_replace('driver_extra:', '', $colKey);
+                        $fieldId = str_replace('driver_extra:', '', $colKey);
 
                         $val = null;
 
@@ -658,8 +657,8 @@ class ReportService
                             $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
                         }
 
-                        if (($val === null || $val === '') && isset($additionalData[(int)$fieldId])) {
-                            $raw = $additionalData[(int)$fieldId];
+                        if (($val === null || $val === '') && isset($additionalData[(int) $fieldId])) {
+                            $raw = $additionalData[(int) $fieldId];
                             $val = is_array($raw) ? ($raw['value'] ?? null) : $raw;
                         }
 
@@ -778,7 +777,7 @@ class ReportService
                 'driver_phone' => $task->driver->phone ?? '',
                 'team_name' => $task->driver->team->name ?? '',
                 'status' => $task->status ?? '',
-                 'pickup' => [
+                'pickup' => [
                     'address' => $task->pickup->address ?? '',
                     'contact_name' => $task->pickup->contact_name ?? '',
                     'contact_phone' => $task->pickup->contact_phone ?? ''
@@ -1011,5 +1010,3 @@ class ReportService
 
 
 }
-
-

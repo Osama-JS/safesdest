@@ -12,7 +12,7 @@ use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\TeamsController;
 use App\Http\Controllers\admin\UsersController;
-use App\Http\Controllers\admin\ActivityLogController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\admin\UserCommissionsController;
 use App\Http\Controllers\admin\UserWalletsController;
 use App\Http\Controllers\Auth\CaptchaController;
@@ -68,10 +68,10 @@ Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::
 // Payment Routes (no session auth required — secured via payment_token)
 // ──────────────────────────────────────────────────────────────────────────────
 Route::prefix('payment')->name('payment.')->group(function () {
-    Route::post('/initiate',            [PaymentController::class, 'initiatePayment'])->name('initiate');
-    Route::get('/callback',             [PaymentController::class, 'handleCallback'])->name('callback');
+    Route::post('/initiate', [PaymentController::class, 'initiatePayment'])->name('initiate');
+    Route::get('/callback', [PaymentController::class, 'handleCallback'])->name('callback');
     Route::get('/result/{status}/{token}', [PaymentController::class, 'showResult'])->name('result');
-    Route::get('/{token}',              [PaymentController::class, 'showPaymentPage'])->name('page');
+    Route::get('/{token}', [PaymentController::class, 'showPaymentPage'])->name('page');
 });
 
 Route::middleware('rate.limit')->group(function () {
@@ -322,11 +322,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/activity-logs/show/{id}', [ActivityLogController::class, 'show'])->name('admin.activity_logs.show');
 
                 // Investor Management Routes
-                
-        // Banks
-        Route::resource('banks', \App\Http\Controllers\admin\BankController::class)->names('admin.banks');
 
-        Route::prefix('investors')->name('admin.investors.')->group(function () {
+                // Banks
+                Route::resource('banks', \App\Http\Controllers\admin\BankController::class)->names('admin.banks');
+
+                Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
                     Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');
@@ -346,7 +346,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::delete('/invest-wallet/transaction/delete-settlement/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'destroySettlementTransaction'])->name('invest-wallet.destroySettlement');
                     Route::delete('/invest-wallet/transaction/cancel-investment/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'cancelInvestment'])->name('invest-wallet.cancelInvestment');
                     Route::get('/invest-wallet/transaction/receipt/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'downloadReceipt'])->name('invest-wallet.downloadReceipt');
-                    
+
                     Route::get('/{userId}/invest-wallet/check-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'checkFunding'])->name('invest-wallet.checkFunding');
                     Route::post('/{userId}/invest-wallet/fix-funding', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'fixFunding'])->name('invest-wallet.fixFunding');
                     Route::get('/{userId}/invest-wallet/unsettled-tasks', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getUnsettledTasks'])->name('invest-wallet.unsettledTasks');

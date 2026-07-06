@@ -47,46 +47,42 @@ class TaskPricingService
     protected function buildValidationRules($request, $type)
     {
         $rules = [
-          'owner' => 'required|in:admin,customer',
-          'customer' => 'required_if:owner,customer',
-          'template' => 'required|exists:form_templates,id',
-          'vehicles.*.vehicle' => 'required|exists:vehicles,id',
-          'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
-          'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
-          'vehicles.*.quantity' => 'required|integer|min:1',
-          'pricing_method' => [
-            'required',
-            function ($attribute, $value, $fail) {
-                if ($value != 0 && ! DB::table('pricing_methods')->where('id', $value)->exists()) {
-                    $fail(__('The selected pricing method not available'));
+            'owner' => 'required|in:admin,customer',
+            'customer' => 'required_if:owner,customer',
+            'template' => 'required|exists:form_templates,id',
+            'vehicles.*.vehicle' => 'required|exists:vehicles,id',
+            'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
+            'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
+            'vehicles.*.quantity' => 'required|integer|min:1',
+            'pricing_method' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    if ($value != 0 && !DB::table('pricing_methods')->where('id', $value)->exists()) {
+                        $fail(__('The selected pricing method not available'));
+                    }
                 }
-            }
-          ],
+            ],
 
 
-          'pickup_name' => 'required|string|max:200',
-          'pickup_phone' => 'required|string|max:200',
-          'pickup_email' => 'required|email',
-          'pickup_before' => 'required|date',
-          'pickup_longitude' => 'required|string',
-          'pickup_latitude' => 'required|string',
-          'pickup_note' => 'nullable|string|max:500',
-          'pickup_image' => 'nullable|file',
-          'delivery_name' => 'required|string|max:200',
-          'delivery_phone' => 'required|string|max:200',
-          'delivery_email' => 'required|email',
-          'delivery_before' => 'required|date',
-          'delivery_longitude' => 'required|string',
-          'delivery_latitude' => 'required|string',
-          'delivery_note' => 'nullable|string|max:500',
-          'delivery_image' => 'nullable|file',
-          'broker_id' => 'nullable|exists:users,id',
-          'broker_commission_type' => 'nullable|in:percentage,fixed',
-          'broker_commission_value' => 'nullable|numeric|min:0',
-          'brokers'                 => 'nullable|array',
-          'brokers.*.id'            => 'required_with:brokers|exists:users,id',
-          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
-          'brokers.*.commission_value'=> 'required_with:brokers|numeric|min:0',
+            'pickup_name' => 'required|string|max:200',
+            'pickup_phone' => 'required|string|max:200',
+            'pickup_email' => 'required|email',
+            'pickup_before' => 'required|date',
+            'pickup_longitude' => 'required|string',
+            'pickup_latitude' => 'required|string',
+            'pickup_note' => 'nullable|string|max:500',
+            'pickup_image' => 'nullable|file',
+            'delivery_name' => 'required|string|max:200',
+            'delivery_phone' => 'required|string|max:200',
+            'delivery_email' => 'required|email',
+            'delivery_before' => 'required|date',
+            'delivery_longitude' => 'required|string',
+            'delivery_latitude' => 'required|string',
+            'delivery_note' => 'nullable|string|max:500',
+            'delivery_image' => 'nullable|file',
+            'broker_id' => 'nullable|exists:users,id',
+            'broker_commission_type' => 'nullable|in:percentage,fixed',
+            'broker_commission_value' => 'nullable|numeric|min:0',
         ];
 
         if ($request->filled('params_select')) {
@@ -247,13 +243,13 @@ class TaskPricingService
                 if ($field->type === 'file_expiration_date') {
                     $fieldKey = 'additional_fields.' . $field->name;
                     $customMessages = array_merge($customMessages, [
-                      $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
                     ]);
                 }
             }
@@ -299,22 +295,22 @@ class TaskPricingService
             }
 
             $pricing = Pricing::where('pricing_template_id', $pricingTemplate->id)
-              ->where('pricing_method_id', $method->id)
-              ->first();
+                ->where('pricing_method_id', $method->id)
+                ->first();
         }
 
 
 
         $data = [
-          'pricing_role' => $pricingTemplate->name,
-          'pricing_method' => $method->name ?? 'Place your offer',
-          'pricing_method_id' => $method->id ?? 0,
+            'pricing_role' => $pricingTemplate->name,
+            'pricing_method' => $method->name ?? 'Place your offer',
+            'pricing_method_id' => $method->id ?? 0,
         ];
 
         $taskData = [
-          'pricing' => $pricingTemplate->id,
-          'vehicles' => $vehicles = array_column($request->vehicles, 'vehicle_size'),
-          'method' => $method->id ?? 0,
+            'pricing' => $pricingTemplate->id,
+            'vehicles' => $vehicles = array_column($request->vehicles, 'vehicle_size'),
+            'method' => $method->id ?? 0,
         ];
 
 
@@ -338,20 +334,20 @@ class TaskPricingService
                     // ✅ عمولة مخصصة للمسار: تُتجاهل عمولة القالب العامة
                     $serviceCommission = $data['custom_commission'];
                     $data['service_commission_type'] = 'custom_route';
-                    $data['service_tax_commission']  = $data['custom_commission'];
-                    $data['service_commission']      = $serviceCommission;
+                    $data['service_tax_commission'] = $data['custom_commission'];
+                    $data['service_commission'] = $serviceCommission;
                 } elseif ($pricingTemplate->service_commission_type === 'fixed') {
                     // إبقاء سعر العميل كما هو، وحساب العمولة لتُخصم من السائق
                     $serviceCommission = $pricingTemplate->service_tax_commission;
                     $data['service_commission_type'] = $pricingTemplate->service_commission_type;
-                    $data['service_tax_commission']  = $pricingTemplate->service_tax_commission;
-                    $data['service_commission']      = $serviceCommission;
+                    $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
+                    $data['service_commission'] = $serviceCommission;
                 } elseif ($pricingTemplate->service_commission_type === 'percentage') {
                     // إبقاء سعر العميل كما هو، وحساب العمولة لتُخصم من السائق
                     $serviceCommission = $totalPrice * ($pricingTemplate->service_tax_commission / 100);
                     $data['service_commission_type'] = $pricingTemplate->service_commission_type;
-                    $data['service_tax_commission']  = $pricingTemplate->service_tax_commission;
-                    $data['service_commission']      = $serviceCommission;
+                    $data['service_tax_commission'] = $pricingTemplate->service_tax_commission;
+                    $data['service_commission'] = $serviceCommission;
                 }
             }
 
@@ -413,9 +409,9 @@ class TaskPricingService
             }
 
             $row = $pricing->parametars()
-              ->whereRaw('CAST(from_val AS DECIMAL(10, 2)) <= ?', $route['distance_km'])
-              ->whereRaw('CAST(to_val AS DECIMAL(10, 2)) >= ?', $route['distance_km'])
-              ->first();
+                ->whereRaw('CAST(from_val AS DECIMAL(10, 2)) <= ?', $route['distance_km'])
+                ->whereRaw('CAST(to_val AS DECIMAL(10, 2)) >= ?', $route['distance_km'])
+                ->first();
 
             $price = $route['distance_km'] * $row->price;
             $data['distance'] = $route['distance_km'];
@@ -432,9 +428,9 @@ class TaskPricingService
             // التحقق من وجود عمولة مخصصة لهذا المسار
             if (!is_null($param->driver_price)) {
                 $customCommission = (float) $param->price - (float) $param->driver_price;
-                $data['has_custom_commission']  = true;
-                $data['driver_price']           = (float) $param->driver_price;
-                $data['custom_commission']      = $customCommission;
+                $data['has_custom_commission'] = true;
+                $data['driver_price'] = (float) $param->driver_price;
+                $data['custom_commission'] = $customCommission;
             } else {
                 $data['has_custom_commission'] = false;
             }
@@ -473,11 +469,11 @@ class TaskPricingService
                     $price += $increment;
 
                     $data['fields'] = [
-                      'name' => $pricingField->form_field->label,
-                      'value' => $userValue,
-                      'type' => $pricingField->type,
-                      'amount' => $pricingField->amount,
-                      'increase' => $increment,
+                        'name' => $pricingField->form_field->label,
+                        'value' => $userValue,
+                        'type' => $pricingField->type,
+                        'amount' => $pricingField->amount,
+                        'increase' => $increment,
                     ];
                 }
             }
@@ -494,14 +490,14 @@ class TaskPricingService
             $deliveryWKT = "POINT({$request->delivery_longitude} {$request->delivery_latitude})";
 
             $matchedPickup = DB::table('geofences')
-              ->whereRaw("ST_Contains(coordinates, ST_GeomFromText(?, 4326))", [$pickupWKT])
-              ->pluck('id')
-              ->toArray();
+                ->whereRaw("ST_Contains(coordinates, ST_GeomFromText(?, 4326))", [$pickupWKT])
+                ->pluck('id')
+                ->toArray();
 
             $matchedDelivery = DB::table('geofences')
-              ->whereRaw("ST_Contains(coordinates, ST_GeomFromText(?, 4326))", [$deliveryWKT])
-              ->pluck('id')
-              ->toArray();
+                ->whereRaw("ST_Contains(coordinates, ST_GeomFromText(?, 4326))", [$deliveryWKT])
+                ->pluck('id')
+                ->toArray();
 
             $matchedIds = array_unique(array_merge($matchedPickup, $matchedDelivery));
 
@@ -510,18 +506,18 @@ class TaskPricingService
             }
 
             $pricingGeofences = Pricing_Geofence::where('pricing_template_id', $pricingTemplate->id)
-              ->whereIn('geofence_id', $matchedIds)
-              ->get();
+                ->whereIn('geofence_id', $matchedIds)
+                ->get();
 
             foreach ($pricingGeofences as $pg) {
                 $increment = $pg->type === 'fixed' ? $pg->amount : ($price * ($pg->amount / 100));
                 $price += $increment;
 
                 $data['geo_fence'] = [
-                  'name' => $pg->geofence->name,
-                  'type' => $pg->type,
-                  'amount' => $pg->amount,
-                  'increase' => $increment,
+                    'name' => $pg->geofence->name,
+                    'type' => $pg->type,
+                    'amount' => $pg->amount,
+                    'increase' => $increment,
                 ];
             }
         }

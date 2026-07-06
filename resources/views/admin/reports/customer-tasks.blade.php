@@ -12,7 +12,8 @@
 <!-- Page Styles -->
 @section('page-style')
     @vite(['resources/css/app.css'])
-    {{-- <link rel="stylesheet" href="{{ asset('css/admin/reports.css') }}"> --}}
+    {{--
+    <link rel="stylesheet" href="{{ asset('css/admin/reports.css') }}"> --}}
     <style>
         /* Select2 Bootstrap 5 Compatibility */
         .select2-container--bootstrap-5 .select2-selection {
@@ -177,7 +178,7 @@
         // Set up routes for the JavaScript class
         window.routes = {
             preview: '{{ route('admin.reports.customer-tasks.preview') }}',
-            generate: '{{ route('admin.reports.customer-tasks.generate') }}'
+                generate: '{{ route('admin.reports.customer-tasks.generate') }}'
         };
 
         // Function to check if all required libraries are loaded
@@ -243,14 +244,15 @@
                         <form id="reportForm">
                             <div class="row">
                                 <!-- Customer Selection -->
-                                <div class="col-md-3 col-sm-6 mb-3">
-                                    <label for="customer_ids" class="form-label">{{ __('Select Customers') }} 
+                                <div class="col-md-4 mb-3">
+                                    <label for="customer_ids" class="form-label">{{ __('Select Customers') }}
                                         <small class="text-muted">({{ __('Leave empty to select all') }})</small>
                                     </label>
                                     <select class="form-select filter-select" id="customer_ids" name="customer_ids[]"
                                         multiple>
                                         @foreach ($customers as $customer)
-                                            <option value="{{ $customer->id }}">{{ $customer->name }} @if ($customer->company_name)
+                                            <option value="{{ $customer->id }}">{{ $customer->name }}
+                                                @if ($customer->company_name)
                                                     - {{ $customer->company_name }}
                                                 @endif
                                             </option>
@@ -259,7 +261,7 @@
                                 </div>
 
                                 <!-- Date Range -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="dateRange" class="form-label">{{ __('Date Range') }} <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="dateRange" name="dateRange" required>
@@ -268,7 +270,7 @@
                                 </div>
 
                                 <!-- Task Status -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="task_statuses" class="form-label">{{ __('Task Status') }}</label>
                                     <select class="form-select filter-select" id="task_statuses" name="task_statuses[]"
                                         multiple>
@@ -279,7 +281,7 @@
                                 </div>
 
                                 <!-- Payment Status -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="payment_status" class="form-label">{{ __('Payment Status') }}</label>
                                     <select class="form-select filter-select" id="payment_status" name="payment_status">
                                         <option value="">{{ __('All Payment Statuses') }}</option>
@@ -290,7 +292,7 @@
                                 </div>
 
                                 <!-- Payment Method -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="payment_method" class="form-label">{{ __('Payment Method') }}</label>
                                     <select class="form-select filter-select" id="payment_method" name="payment_method">
                                         <option value="">{{ __('All Payment Methods') }}</option>
@@ -301,18 +303,19 @@
                                 </div>
 
                                 <!-- Driver Selection -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="driver_ids" class="form-label">{{ __('Select Drivers') }}</label>
                                     <select class="form-select filter-select" id="driver_ids" name="driver_ids[]" multiple>
                                         @foreach ($drivers as $driver)
                                             <option value="{{ $driver->id }}">{{ $driver->name }} -
-                                                {{ $driver->phone }}</option>
+                                                {{ $driver->phone }}
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
 
                                 <!-- Team Selection -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="team_ids" class="form-label">{{ __('Select Teams') }}</label>
                                     <select class="form-select filter-select" id="team_ids" name="team_ids[]" multiple>
                                         @foreach ($teams as $team)
@@ -322,7 +325,7 @@
                                 </div>
 
                                 <!-- Created By -->
-                                <div class="col-md-3 col-sm-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label for="created_by" class="form-label">{{ __('Created By') }}</label>
                                     <select class="form-select filter-select" id="created_by" name="created_by">
                                         <option value="">{{ __('All') }}</option>
@@ -336,12 +339,16 @@
                                     <label class="form-label d-block">{{ __('خيارات العرض') }}</label>
                                     <div class="d-flex gap-4">
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="show_currency" name="show_currency" checked value="1">
-                                            <label class="form-check-label" for="show_currency">{{ __('إظهار كلمة SAR / ريال') }}</label>
+                                            <input class="form-check-input" type="checkbox" id="show_currency"
+                                                name="show_currency" checked value="1">
+                                            <label class="form-check-label"
+                                                for="show_currency">{{ __('إظهار كلمة SAR / ريال') }}</label>
                                         </div>
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="brief_data" name="brief_data" value="1">
-                                            <label class="form-check-label" for="brief_data">{{ __('إظهار بيانات مختصرة') }}</label>
+                                            <input class="form-check-input" type="checkbox" id="brief_data"
+                                                name="brief_data" value="1">
+                                            <label class="form-check-label"
+                                                for="brief_data">{{ __('إظهار بيانات مختصرة') }}</label>
                                         </div>
                                     </div>
                                 </div>
@@ -351,11 +358,13 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-primary" id="previewBtn" title="{{ __('Preview Report') }}" data-bs-toggle="tooltip">
-                                            <i class="ti ti-eye"></i>
+                                        <button type="button" class="btn btn-primary" id="previewBtn">
+                                            <i class="ti ti-eye me-1"></i>
+                                            {{ __('Preview Report') }}
                                         </button>
-                                        <button type="button" class="btn btn-outline-secondary" id="resetBtn" title="{{ __('Reset Filters') }}" data-bs-toggle="tooltip">
-                                            <i class="ti ti-refresh"></i>
+                                        <button type="button" class="btn btn-outline-secondary" id="resetBtn">
+                                            <i class="ti ti-refresh me-1"></i>
+                                            {{ __('Reset Filters') }}
                                         </button>
                                     </div>
                                 </div>
@@ -430,7 +439,8 @@
                     </div>
                     <h6 class="mb-2">{{ __('Processing Request') }}</h6>
                     <p class="text-muted small mb-0">
-                        {{ __('Please wait while we process your request...') }}</p>
+                        {{ __('Please wait while we process your request...') }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -452,4 +462,3 @@
     </div>
 
 @endsection
-

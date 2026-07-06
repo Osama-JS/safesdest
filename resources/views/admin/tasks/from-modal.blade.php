@@ -51,8 +51,10 @@
                                             <select name="customer" id="task-customer" class="form-select">
                                                 <option value="">{{ __('Select Customer') }}</option>
                                                 @foreach ($customers as $val)
-                                                    <option value="{{ $val->id }}" data-notes="{{ $val->general_task_notes ?? '' }}">
-                                                        {{ $val->name }}</option>
+                                                    <option value="{{ $val->id }}"
+                                                        data-notes="{{ $val->general_task_notes ?? '' }}">
+                                                        {{ $val->name }}
+                                                    </option>
                                                 @endforeach
                                             </select>
                                             <span class="customer-error text-danger text-error"></span>
@@ -66,7 +68,8 @@
                                     <!-- Vehicle Selection -->
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>{{ __('Vehicle Selection') }}</strong></div>
+                                            <div class="divider-text"><strong>{{ __('Vehicle Selection') }}</strong>
+                                            </div>
                                         </div>
 
                                         <div id="vehicle-selection-container">
@@ -74,13 +77,14 @@
                                         </div>
 
                                         {{-- <button type="button" id="add-vehicle-btn" class="btn btn-sm border mt-2">
-                                          <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> Add Another Vehicle
-                                      </button> --}}
+                                            <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i> Add Another Vehicle
+                                        </button> --}}
                                     </div>
 
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>{{ __('Task Information') }}</strong></div>
+                                            <div class="divider-text"><strong>{{ __('Task Information') }}</strong>
+                                            </div>
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-6">
@@ -111,8 +115,7 @@
                                     </div>
 
 
-                                    <button type="button" id="go-to-step2"
-                                        class="btn btn-primary mt-3">{{ __('Next') }}
+                                    <button type="button" id="go-to-step2" class="btn btn-primary mt-3">{{ __('Next') }}
                                         <i class="ti ti-arrow-right"></i></button>
 
                                 </div>
@@ -133,7 +136,8 @@
                                     </div>
                                     <div class="mb-3">
                                         <div class="divider text-start">
-                                            <div class="divider-text"><strong>{{ __('(Pickup / Delivery) Point') }}</strong></div>
+                                            <div class="divider-text">
+                                                <strong>{{ __('(Pickup / Delivery) Point') }}</strong></div>
                                         </div>
                                         <div id="accordionCustomIcon" class="accordion mt-4 accordion-custom-button">
                                             <div class="accordion-item">
@@ -150,8 +154,7 @@
 
 
 
-                                                <div id="accordionCustomIcon-1"
-                                                    class="accordion-collapse collapse show"
+                                                <div id="accordionCustomIcon-1" class="accordion-collapse collapse show"
                                                     data-bs-parent="#accordionCustomIcon">
                                                     <div class="accordion-body">
 
@@ -174,8 +177,7 @@
                                                                     <div class="col-md-6">
                                                                         <label for="pickup-contact-phone">*
                                                                             {{ __('Phone') }}</label>
-                                                                        <input type="number"
-                                                                            id="pickup-contact-phone"
+                                                                        <input type="number" id="pickup-contact-phone"
                                                                             name="pickup_phone" class="form-control"
                                                                             placeholder="{{ __('Enter pickup address') }}"
                                                                             required />
@@ -191,20 +193,18 @@
                                                                     <div class="col-md-6">
                                                                         <label for="pickup-contact-email">*
                                                                             {{ __('Email') }}</label>
-                                                                        <input type="email"
-                                                                            id="pickup-contact-email"
+                                                                        <input type="email" id="pickup-contact-email"
                                                                             name="pickup_email" class="form-control"
-                                                                            placeholder="{{ __('Email') }}"
-                                                                            required />
+                                                                            placeholder="{{ __('Email') }}" required />
                                                                         <span
                                                                             class="pickup_email-error text-danger text-error"></span>
                                                                     </div>
                                                                     <div class="col-md-6">
                                                                         <label for="pickup-before">*
                                                                             {{ __('Pickup before') }}</label>
-                                                                        <input type="datetime-local"
-                                                                            id="pickup-before" name="pickup_before"
-                                                                            class="form-control" required
+                                                                        <input type="datetime-local" id="pickup-before"
+                                                                            name="pickup_before" class="form-control"
+                                                                            required
                                                                             value="{{ now()->format('Y-m-d\TH:i') }}" />
                                                                         <span
                                                                             class="pickup_before-error text-danger text-error"></span>
@@ -230,20 +230,21 @@
                                                                 <label for="pickup-location">*
                                                                     {{ __('Location') }}</label>
                                                                 <div class="input-group mb-2">
-                                                                    <div class="form-control p-0"
-                                                                        id="pickup-geocoder">
+                                                                    <div class="form-control p-0" id="pickup-geocoder">
                                                                     </div>
                                                                     <button type="button" title="{{ __('Parse link') }}"
                                                                         id="pickup-toggle-link-input"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-link text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="{{ __('Manual entry') }}"
+                                                                    <button type="button"
+                                                                        title="{{ __('Manual entry') }}"
                                                                         id="pickup-manual-btn"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-globe text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="{{ __('My current location') }}"
+                                                                    <button type="button"
+                                                                        title="{{ __('My current location') }}"
                                                                         id="pickup-getCurrentLocation"
                                                                         class="input-group-text bg-white">
                                                                         <i
@@ -271,22 +272,19 @@
                                                                     <div
                                                                         class="row mb-2 position-absolute top-0 start-0 m-2 z-3">
                                                                         <div class="col">
-                                                                            <input type="number"
-                                                                                name="pickup_latitude" step="any"
-                                                                                id="pickup-latitude"
+                                                                            <input type="number" name="pickup_latitude"
+                                                                                step="any" id="pickup-latitude"
                                                                                 class="form-control"
                                                                                 placeholder="({{ __('Latitude') }})">
                                                                         </div>
                                                                         <div class="col">
-                                                                            <input type="number"
-                                                                                name="pickup_longitude" step="any"
-                                                                                id="pickup-longitude"
+                                                                            <input type="number" name="pickup_longitude"
+                                                                                step="any" id="pickup-longitude"
                                                                                 class="form-control"
                                                                                 placeholder="({{ __('Longitude') }})">
                                                                         </div>
                                                                     </div>
-                                                                    <button id="pickup-confirm-location"
-                                                                        type="button"
+                                                                    <button id="pickup-confirm-location" type="button"
                                                                         class="btn btn-primary btn-sm position-absolute top-0 end-0 m-2 z-3"
                                                                         style="display: none;">
                                                                         {{ __('confirm location') }}
@@ -306,8 +304,8 @@
                                                             <!-- Note -->
                                                             <div class="mb-3">
                                                                 <label for="pickup-note">{{ __('Note') }}</label>
-                                                                <input type="text" id="pickup-note"
-                                                                    name="pickup_note" class="form-control"
+                                                                <input type="text" id="pickup-note" name="pickup_note"
+                                                                    class="form-control"
                                                                     placeholder="{{ __('Note') }}" />
                                                                 <span
                                                                     class="pickup_note-error text-danger text-error"></span>
@@ -320,8 +318,7 @@
                                                                 <div class="form-group mt-2">
                                                                     <img src="{{ url(asset('assets/img/placeholder.jpg')) }}"
                                                                         data-image="{{ url(asset('assets/img/placeholder.jpg')) }}"
-                                                                        alt="" id="image"
-                                                                        style="width: 120px;    height: 100px;
+                                                                        alt="" id="image" style="width: 120px;    height: 100px;
                                                                 object-fit: cover;"
                                                                         class="rounded preview-pickup-image image-input">
 
@@ -365,8 +362,7 @@
                                                                     <div class="col-md-6">
                                                                         <label for="delivery-contact-name">*
                                                                             {{ __('Name') }}</label>
-                                                                        <input type="text"
-                                                                            id="delivery-contact-name"
+                                                                        <input type="text" id="delivery-contact-name"
                                                                             name="delivery_name" class="form-control"
                                                                             placeholder="{{ __('Enter delivery name') }}"
                                                                             required />
@@ -376,8 +372,7 @@
                                                                     <div class="col-md-6">
                                                                         <label for="delivery-contact-phone">*
                                                                             {{ __('Phone') }}</label>
-                                                                        <input type="number"
-                                                                            id="delivery-contact-phone"
+                                                                        <input type="number" id="delivery-contact-phone"
                                                                             name="delivery_phone" class="form-control"
                                                                             placeholder="{{ __('Enter delivery phone') }}"
                                                                             required />
@@ -393,11 +388,9 @@
                                                                     <div class="col-md-6">
                                                                         <label for="delivery-email">*
                                                                             {{ __('Email') }}</label>
-                                                                        <input type="email"
-                                                                            id="delivery-contact-email"
+                                                                        <input type="email" id="delivery-contact-email"
                                                                             name="delivery_email" class="form-control"
-                                                                            placeholder="{{ __('Email') }}"
-                                                                            required />
+                                                                            placeholder="{{ __('Email') }}" required />
                                                                         <span
                                                                             class="delivery_email-error text-danger text-error"></span>
                                                                     </div>
@@ -405,8 +398,7 @@
                                                                         <label for="delivery-before">*
                                                                             {{ __('Delivery before') }}</label>
                                                                         <input type="datetime-local"
-                                                                            id="delivery-before"
-                                                                            name="delivery_before"
+                                                                            id="delivery-before" name="delivery_before"
                                                                             class="form-control" required
                                                                             value="{{ now()->format('Y-m-d\TH:i') }}" />
                                                                         <span
@@ -440,12 +432,14 @@
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-link text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="{{ __('Manual entry') }}"
+                                                                    <button type="button"
+                                                                        title="{{ __('Manual entry') }}"
                                                                         id="delivery-manual-btn"
                                                                         class="input-group-text bg-white">
                                                                         <i class="fas fa-globe text-secondary"></i>
                                                                     </button>
-                                                                    <button type="button" title="{{ __('My current location') }}"
+                                                                    <button type="button"
+                                                                        title="{{ __('My current location') }}"
                                                                         id="delivery-getCurrentLocation"
                                                                         class="input-group-text bg-white">
                                                                         <i
@@ -458,8 +452,7 @@
                                                                         <input type="text" id="delivery-map-link"
                                                                             class="form-control"
                                                                             placeholder="{{ __('Paste map link here') }}" />
-                                                                        <button type="button"
-                                                                            id="delivery-parse-link"
+                                                                        <button type="button" id="delivery-parse-link"
                                                                             class="btn btn-secondary">
                                                                             {{ __('Parse Link') }}
                                                                         </button>
@@ -474,21 +467,20 @@
                                                                         class="row mb-2 position-absolute top-0 start-0 m-2 z-3">
                                                                         <div class="col">
                                                                             <input type="number"
-                                                                                name="delivery_latitude"
-                                                                                step="any" id="delivery-latitude"
+                                                                                name="delivery_latitude" step="any"
+                                                                                id="delivery-latitude"
                                                                                 class="form-control"
                                                                                 placeholder="({{ __('Latitude') }})">
                                                                         </div>
                                                                         <div class="col">
                                                                             <input type="number"
-                                                                                name="delivery_longitude"
-                                                                                step="any" id="delivery-longitude"
+                                                                                name="delivery_longitude" step="any"
+                                                                                id="delivery-longitude"
                                                                                 class="form-control"
                                                                                 placeholder="({{ __('Longitude') }})">
                                                                         </div>
                                                                     </div>
-                                                                    <button id="delivery-confirm-location"
-                                                                        type="button"
+                                                                    <button id="delivery-confirm-location" type="button"
                                                                         class="btn btn-primary btn-sm position-absolute top-0 end-0 m-2 z-3"
                                                                         style="display: none;">
                                                                         {{ __('confirm location') }}
@@ -508,9 +500,9 @@
                                                             <!-- Note -->
                                                             <div class="mb-3">
                                                                 <label for="delivery-note">{{ __('Note') }}</label>
-                                                                <input type="file"
-                                                                    name="delivery_note[]" class="form-control"
-                                                                    id="delivery_note" multiple placeholder="{{ __('Note') }}" />
+                                                                <input type="file" name="delivery_note[]"
+                                                                    class="form-control" id="delivery_note" multiple
+                                                                    placeholder="{{ __('Note') }}" />
                                                                 <span
                                                                     class="delivery_note-error text-danger text-error"></span>
                                                             </div>
@@ -522,8 +514,7 @@
                                                                 <div class="form-group mt-2">
                                                                     <img src="{{ url(asset('assets/img/placeholder.jpg')) }}"
                                                                         data-image="{{ url(asset('assets/img/placeholder.jpg')) }}"
-                                                                        alt="" id="image"
-                                                                        style="width: 120px;    height: 100px;
+                                                                        alt="" id="image" style="width: 120px;    height: 100px;
                                                                 object-fit: cover;"
                                                                         class="rounded preview-deliver-image image-input">
 
@@ -570,17 +561,15 @@
                                         <div class="mb-3">
                                             <div class="form-group border p-3 rounded ">
                                                 {{-- <div class="form-group">
-                                                    <label
-                                                        for="">{{ __('Set the total price Manual') }}</label>
+                                                    <label for="">{{ __('Set the total price Manual') }}</label>
                                                     <input type="number" id="total-price" step="any"
                                                         name="manual_total_pricing" class="form-control">
                                                     <span class="owner-error text-danger text-error"></span>
                                                 </div>
                                                 <div class="form-group">
-                                                    <label
-                                                        for="">{{ __('Set the The commission Manual') }}</label>
-                                                    <input type="number" id="task-commission" step="any"
-                                                        min="0.00" name="manual_commission" class="form-control"
+                                                    <label for="">{{ __('Set the The commission Manual') }}</label>
+                                                    <input type="number" id="task-commission" step="any" min="0.00"
+                                                        name="manual_commission" class="form-control"
                                                         placeholder="0.00">
                                                     <span class="owner-error text-danger text-error"></span>
                                                 </div>
@@ -620,7 +609,8 @@
                                     <button type="button" id="back-to-step2" class="btn btn-light mt-3"><i
                                             class="ti ti-arrow-left"></i>{{ __('Back') }}
                                     </button>
-                                    <button type="submit" id="go-to-step2" class="btn btn-primary mt-3 mx-2">{{ __('Submit') }}</button>
+                                    <button type="submit" id="go-to-step2"
+                                        class="btn btn-primary mt-3 mx-2">{{ __('Submit') }}</button>
 
                                 </div>
                             </div>
@@ -645,8 +635,7 @@
             </div>
 
             <div class="modal-footer pt-3">
-                <button type="button" class="btn btn-label-secondary"
-                    data-bs-dismiss="modal">{{ __('Close') }}</button>
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
             </div>
 
         </div>
@@ -673,8 +662,7 @@
                                     <span class="id-error text-danger text-error"></span>
                                     <div class="mb-4">
                                         <label class="form-label" for="team-name">* {{ __('Driver') }}</label>
-                                        <select name="driver" id="task-driver"
-                                            class="task-driver form-select"></select>
+                                        <select name="driver" id="task-driver" class="task-driver form-select"></select>
                                         <span class="name-error text-danger text-error"></span>
                                     </div>
                                 </div>
@@ -683,7 +671,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
@@ -706,28 +695,29 @@
                         <div class="form-check mb-2">
                             <input type="checkbox" name="included" id="ad-included-price" class="form-check-input"
                                 value="1">
-                            <label class="form-check-label fw-bold" for="not-price">{{ __('Including VAT and service charge') }}</label>
+                            <label class="form-check-label fw-bold"
+                                for="not-price">{{ __('Including VAT and service charge') }}</label>
                         </div>
 
-                        <p class="small text-muted">{{ __('If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.') }}</p>
-                        @can('view_task_commissions')
-                        <p class="small text-muted" id="ad-commission-info">
-
+                        <p class="small text-muted">
+                            {{ __('If you do not select this option, both the VAT and the service commission will be calculated on top of the amount you display.') }}
                         </p>
+                        @can('view_task_commissions')
+                            <p class="small text-muted" id="ad-commission-info">
+
+                            </p>
                         @endcan
                         <span class="included-error text-danger mt-2"></span>
                     </div>
                     <div class="mb-3 row">
                         <div class="col-md-6">
                             <label for="min-price">* {{ __('Min Price') }}</label>
-                            <input type="number" name="min_price" id="ad-min-price" class="form-control"
-                                step="any">
+                            <input type="number" name="min_price" id="ad-min-price" class="form-control" step="any">
                             <span class="min_price-error text-danger text-error"></span>
                         </div>
                         <div class="col-md-6">
                             <label for="max-price">* {{ __('Max Price') }}</label>
-                            <input type="number" name="max_price" id="ad-max-price" class="form-control"
-                                step="any">
+                            <input type="number" name="max_price" id="ad-max-price" class="form-control" step="any">
                             <span class="max_price-error text-danger text-error"></span>
                         </div>
                     </div>
@@ -738,7 +728,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
@@ -770,8 +761,8 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="">{{ __('Set driver price Manual') }}</label>
-                                <input type="number" id="pricing-driver-price" step="any" min="0.00"
-                                    name="driver_price" class="form-control" placeholder="0.00">
+                                <input type="number" id="pricing-driver-price" step="any" min="0.00" name="driver_price"
+                                    class="form-control" placeholder="0.00">
                                 <span class="owner-error text-danger text-error"></span>
                             </div>
                         </div>
@@ -788,7 +779,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                 </div>
             </form>
@@ -892,49 +884,49 @@
                 <h5 class="modal-title" id="brokerTitle">{{ __('Connect Broker') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.tasks.broker.update') }}" method="POST" id="brokerForm" class="form_submit card shadow-sm p-4 border-0" enctype="multipart/form-data">
+            <form action="{{ route('admin.tasks.broker.update') }}" method="POST" id="brokerForm"
+                class="form_submit card shadow-sm p-4 border-0" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="id" id="broker-task-id">
                 <span class="task-error text-danger text-error"></span>
 
                 <div class="row mb-3">
-                    <div class="col-md-12">
-                        <div id="task-brokers-container">
-                            <div class="row broker-row align-items-center mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label" for="modal-task-broker-id">{{ __('Truck Broker') }}</label>
-                                    <select name="brokers[0][id]" class="form-select select2 broker-select" data-dropdown-parent="#brokerModal">
-                                        <option value="">{{ __('None') }}</option>
-                                        @foreach ($brokers as $broker)
-                                            <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">{{ __('Commission Type') }}</label>
-                                    <select name="brokers[0][commission_type]" class="form-select broker-commission-type">
-                                        <option value="">{{ __('Select Type') }}</option>
-                                        <option value="percentage">{{ __('Percentage (%)') }}</option>
-                                        <option value="fixed">{{ __('Fixed Amount') }}</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">{{ __('Value') }}</label>
-                                    <input type="number" name="brokers[0][commission_value]" class="form-control broker-commission-value" step="0.01" placeholder="{{ __('Value') }}" />
-                                </div>
-                                <div class="col-md-1 mt-4 text-end">
-                                    <button type="button" class="btn btn-danger btn-sm remove-broker-row" style="display:none;"><i class="ti ti-trash"></i></button>
-                                </div>
-                            </div>
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label class="form-label" for="modal-task-broker-id">{{ __('Truck Broker') }}</label>
+                            <select name="broker_id" id="modal-task-broker-id" class="form-select select2"
+                                data-dropdown-parent="#brokerModal">
+                                <option value="">{{ __('None') }}</option>
+                                @foreach ($brokers as $broker)
+                                    <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
+                                @endforeach
+                            </select>
+                            <span class="broker_id-error text-danger text-error"></span>
                         </div>
-                        <div class="text-end mb-4">
-                            <button type="button" class="btn btn-primary btn-sm" id="add-task-broker-btn"><i class="ti ti-plus me-1"></i>{{ __('Add Broker') }}</button>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-4">
+                            <label class="form-label"
+                                for="modal-task-broker-commission-type">{{ __('Broker Commission') }}</label>
+                            <div class="input-group">
+                                <select name="broker_commission_type" id="modal-task-broker-commission-type"
+                                    class="form-select">
+                                    <option value="">{{ __('Select Type') }}</option>
+                                    <option value="percentage">{{ __('Percentage (%)') }}</option>
+                                    <option value="fixed">{{ __('Fixed Amount') }}</option>
+                                </select>
+                                <input type="number" name="broker_commission_value" class="form-control" step="0.01"
+                                    id="modal-task-broker-commission-value" placeholder="{{ __('Value') }}" />
+                            </div>
+                            <span class="broker_commission_type-error text-danger text-error"></span>
+                            <span class="broker_commission_value-error text-danger text-error"></span>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-label-secondary"
+                        data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary">{{ __('Save changes') }}</button>
                 </div>
             </form>

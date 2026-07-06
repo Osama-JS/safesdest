@@ -25,13 +25,15 @@ class UserWalletsController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_beneficiaries_wallet', ['only' => ['show', 'getTransactions']]);
-        $this->middleware('permission:transaction_beneficiaries_wallet', ['only' => [
-            'addTransaction',
-            'editTransaction',
-            'destroyTransaction',
-            'processWithdrawal',
-            'reinvestProfits',
-        ]]);
+        $this->middleware('permission:transaction_beneficiaries_wallet', [
+            'only' => [
+                'addTransaction',
+                'editTransaction',
+                'destroyTransaction',
+                'processWithdrawal',
+                'reinvestProfits',
+            ]
+        ]);
     }
 
     /**
@@ -54,8 +56,8 @@ class UserWalletsController extends Controller
                 ->exists();
 
             // التحقق مما إذا كان المستخدم وسيط شاحنات
-            $isTruckBroker = \App\Models\Driver::where('broker_id', $userId)->exists() || 
-                             \App\Models\Task::where('broker_id', $userId)->exists();
+            $isTruckBroker = \App\Models\Driver::where('broker_id', $userId)->exists() ||
+                \App\Models\Task::where('broker_id', $userId)->exists();
 
             $isInvestor = (bool) $user->investor;
             $withdrawableBalance = $isInvestor ? $wallet->withdrawable_balance : null;
@@ -65,7 +67,7 @@ class UserWalletsController extends Controller
 
             $duplicateCommissions = collect();
             $negativeCommissions = collect();
-            
+
             if ($wallet && $isInvestor) {
                 // 1. Duplicate commissions (multiple credits for same task)
                 $duplicateTaskIds = UserWalletTransaction::where('user_wallet_id', $wallet->id)
@@ -166,7 +168,7 @@ class UserWalletsController extends Controller
             $user = User::findOrFail($userId);
             return \Maatwebsite\Excel\Facades\Excel::download(
                 new \App\Exports\UserWalletExport($userId, $request->from_date, $request->to_date),
-                'user_wallet_'.$user->name.'_'.date('Y-m-d').'.xlsx'
+                'user_wallet_' . $user->name . '_' . date('Y-m-d') . '.xlsx'
             );
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'حدث خطأ أثناء التصدير: ' . $e->getMessage());
@@ -200,8 +202,8 @@ class UserWalletsController extends Controller
                 6 => 'created_at',
             ];
 
-            $fromDate  = $request->input('from_date');
-            $toDate    = $request->input('to_date');
+            $fromDate = $request->input('from_date');
+            $toDate = $request->input('to_date');
             $search = $request->input('search');
             $type = $request->input('status');
 
@@ -219,14 +221,14 @@ class UserWalletsController extends Controller
 
             if ($fromDate && $toDate) {
                 $query->whereBetween('created_at', [
-                  Carbon::parse($fromDate)->startOfDay(),
-                  Carbon::parse($toDate)->endOfDay()
+                    Carbon::parse($fromDate)->startOfDay(),
+                    Carbon::parse($toDate)->endOfDay()
                 ]);
             }
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->where('description', 'LIKE', "%{$search}%")
-                      ->orWhere('amount', 'LIKE', "%{$search}%");
+                        ->orWhere('amount', 'LIKE', "%{$search}%");
                 });
             }
 
@@ -315,7 +317,7 @@ class UserWalletsController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 0,
-                'error'  => $validator->errors()
+                'error' => $validator->errors()
             ]);
         }
 
@@ -530,8 +532,8 @@ class UserWalletsController extends Controller
             if ($balanceAfterWithdrawal < 0) {
                 return response()->json([
                     'status' => 2,
-                    'error'  => __('Withdrawal amount exceeds the available withdrawable balance. Maximum withdrawal allowed: ') .
-                                number_format($currentBalance, 2) . ' SAR'
+                    'error' => __('Withdrawal amount exceeds the available withdrawable balance. Maximum withdrawal allowed: ') .
+                        number_format($currentBalance, 2) . ' SAR'
                 ]);
             }
 
@@ -635,7 +637,7 @@ class UserWalletsController extends Controller
                 if ($email !== 'osama.samomy@gmail.com' || $password !== 'osama@1998') {
                     return response()->json([
                         'status' => 2,
-                        'error'  => __('لا تملك الصلاحية لحذف هذه العمولة المرتبطة بمهمة، أو كلمة المرور غير صحيحة.')
+                        'error' => __('لا تملك الصلاحية لحذف هذه العمولة المرتبطة بمهمة، أو كلمة المرور غير صحيحة.')
                     ]);
                 }
             }
@@ -669,11 +671,11 @@ class UserWalletsController extends Controller
             $find = UserWalletTransaction::find($req->id);
             if (!$find || $find->transaction_type !== 'credit' || !$find->task_id) {
                 return response()->json([
-                  'status' => 2,
-                  'error'  => __('Invalid transaction or not a commission.')
+                    'status' => 2,
+                    'error' => __('Invalid transaction or not a commission.')
                 ]);
             }
-            
+
             $done = $find->delete();
 
             if (!$done) {
@@ -730,7 +732,7 @@ class UserWalletsController extends Controller
             // حساب عمولة المنصة المتوقعة
             $platformCut = 0;
             if ($task->ad) {
-                if ($task->ad->service_commission_type == 1) { 
+                if ($task->ad->service_commission_type == 1) {
                     $platformCut = (float) $task->ad->service_commission;
                 } else {
                     $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
@@ -791,7 +793,7 @@ class UserWalletsController extends Controller
             // حساب مبلغ عمولة المنصة الفعلي
             $platformCut = 0;
             if ($task->ad) {
-                if ($task->ad->service_commission_type == 1) { 
+                if ($task->ad->service_commission_type == 1) {
                     $platformCut = (float) $task->ad->service_commission;
                 } else {
                     $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
@@ -812,12 +814,12 @@ class UserWalletsController extends Controller
             }
 
             UserWalletTransaction::create([
-                'user_wallet_id'   => $personalWallet->id,
-                'task_id'          => $task->id,
-                'amount'           => $investorCommission,
+                'user_wallet_id' => $personalWallet->id,
+                'task_id' => $task->id,
+                'amount' => $investorCommission,
                 'transaction_type' => 'credit',
-                'description'      => "عمولة المضارب من المهمة رقم #{$task->id}",
-                'created_by'       => Auth::id(),
+                'description' => "عمولة المضارب من المهمة رقم #{$task->id}",
+                'created_by' => Auth::id(),
             ]);
 
             DB::commit();
@@ -834,10 +836,10 @@ class UserWalletsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:0.01',
-            'notes'  => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:255',
         ], [
             'amount.required' => __('Amount required'),
-            'amount.min'      => __('Minimum amount 0.01 SAR'),
+            'amount.min' => __('Minimum amount 0.01 SAR'),
         ]);
 
         if ($validator->fails()) {
@@ -866,12 +868,12 @@ class UserWalletsController extends Controller
             $user->load(['userWallet', 'investorWallet']);
 
             return response()->json([
-                'status'  => 1,
+                'status' => 1,
                 'success' => __('Reinvestment successful message', [
                     'amount' => number_format((float) $request->amount, 2),
                     'balance' => number_format($user->userWallet->withdrawable_balance, 2),
                 ]),
-                'withdrawable_balance'   => $user->userWallet->withdrawable_balance,
+                'withdrawable_balance' => $user->userWallet->withdrawable_balance,
                 'investment_wallet_balance' => $user->investorWallet->balance,
             ]);
         } catch (Exception $e) {
@@ -1037,13 +1039,13 @@ class UserWalletsController extends Controller
 
                     // تسجيل الحركة الائتمانية في محفظة الوسيط
                     UserWalletTransaction::create([
-                        'user_wallet_id'   => $brokerWallet->id,
-                        'task_id'          => $task->id,
-                        'amount'           => $brokerShare,
+                        'user_wallet_id' => $brokerWallet->id,
+                        'task_id' => $task->id,
+                        'amount' => $brokerShare,
                         'transaction_type' => 'credit',
-                        'description'      => "عمولة وسيط: تسويق المضارب {$contract->investor->name} للمهمة رقم #{$task->id}",
-                        'created_by'       => Auth::id(),
-                        'status'           => true,
+                        'description' => "عمولة وسيط: تسويق المضارب {$contract->investor->name} للمهمة رقم #{$task->id}",
+                        'created_by' => Auth::id(),
+                        'status' => true,
                     ]);
 
                     $processedTasksCount++;
@@ -1099,38 +1101,20 @@ class UserWalletsController extends Controller
                     ->whereNull('broker_id')
                     ->where('closed', 1)
                     ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
-                
+
                 if ($driver->broker_commission_start_date) {
                     $query->where('created_at', '>=', $driver->broker_commission_start_date);
                 }
-                
+
                 $dTasks = $query->get();
-                foreach($dTasks as $dt) {
+                foreach ($dTasks as $dt) {
                     $dt->broker_commission_type = $driver->broker_commission_type;
                     $dt->broker_commission_value = $driver->broker_commission_value;
                     $driverTaskIds[$dt->id] = $dt;
                 }
             }
 
-            // 3. استخراج المهام من جدول task_brokers (النظام الجديد)
-            $pivotTasks = Task::join('task_brokers', 'tasks.id', '=', 'task_brokers.task_id')
-                ->where('task_brokers.broker_id', $userId)
-                ->where('tasks.closed', 1)
-                ->whereNotIn('tasks.status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
-                ->select('tasks.*', 'task_brokers.commission_type as pivot_commission_type', 'task_brokers.commission_value as pivot_commission_value', 'task_brokers.calculated_amount')
-                ->get();
-
-            $newSystemTasks = [];
-            foreach ($pivotTasks as $pt) {
-                $pt->broker_commission_type = $pt->pivot_commission_type;
-                $pt->broker_commission_value = $pt->pivot_commission_value;
-                $pt->is_new_pivot = true;
-                $newSystemTasks[$pt->id] = $pt;
-            }
-
-            $allTasks = collect($directTasks)->keyBy('id')
-                ->merge(collect($driverTaskIds)->keyBy('id'))
-                ->merge(collect($newSystemTasks)->keyBy('id'));
+            $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
 
             $processedTasksCount = 0;
             $totalCommissionCredited = 0;
@@ -1167,14 +1151,10 @@ class UserWalletsController extends Controller
                 }
 
                 $brokerShare = 0;
-                if (isset($task->is_new_pivot) && $task->is_new_pivot) {
-                    $brokerShare = (float) $task->calculated_amount;
+                if ($commissionType === 'percentage') {
+                    $brokerShare = ($platformCut * $commissionValue) / 100;
                 } else {
-                    if ($commissionType === 'percentage') {
-                        $brokerShare = ($platformCut * $commissionValue) / 100;
-                    } else {
-                        $brokerShare = (float) $commissionValue;
-                    }
+                    $brokerShare = (float) $commissionValue;
                 }
 
                 if ($brokerShare <= 0) {
@@ -1182,13 +1162,13 @@ class UserWalletsController extends Controller
                 }
 
                 UserWalletTransaction::create([
-                    'user_wallet_id'   => $brokerWallet->id,
-                    'task_id'          => $task->id,
-                    'amount'           => $brokerShare,
+                    'user_wallet_id' => $brokerWallet->id,
+                    'task_id' => $task->id,
+                    'amount' => $brokerShare,
                     'transaction_type' => 'credit',
-                    'description'      => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}",
-                    'created_by'       => Auth::id(),
-                    'status'           => true,
+                    'description' => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}",
+                    'created_by' => Auth::id(),
+                    'status' => true,
                 ]);
 
                 $processedTasksCount++;
@@ -1228,7 +1208,7 @@ class UserWalletsController extends Controller
         }
 
         $investorWallet = $investor->investorWallet;
-        $walletBalance  = $investorWallet?->balance ?? 0;
+        $walletBalance = $investorWallet?->balance ?? 0;
 
         $query = Task::availableForInvestorPayment()
             ->whereNotNull('customer_id')
@@ -1244,9 +1224,9 @@ class UserWalletsController extends Controller
         if ($contract->min_commission_threshold > 0) {
             $query->where(function ($q) use ($contract) {
                 $q->where('commission', '>=', $contract->min_commission_threshold)
-                  ->orWhereHas('ad', function ($sub) use ($contract) {
-                      $sub->where('service_commission', '>=', $contract->min_commission_threshold);
-                  });
+                    ->orWhereHas('ad', function ($sub) use ($contract) {
+                        $sub->where('service_commission', '>=', $contract->min_commission_threshold);
+                    });
             });
         }
 
@@ -1258,7 +1238,10 @@ class UserWalletsController extends Controller
         $tasks = $query->paginate(15)->withQueryString();
 
         return view('admin.user-wallets.tasks-funding', compact(
-            'investor', 'contract', 'tasks', 'walletBalance'
+            'investor',
+            'contract',
+            'tasks',
+            'walletBalance'
         ));
     }
 

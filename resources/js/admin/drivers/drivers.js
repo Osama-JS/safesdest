@@ -34,22 +34,20 @@ $(function () {
     toggleWhatsAppFields();
   });
 
-
-
   // Handle bank selection change
   $(document).on('change', '#driver-bank-name', function () {
     const bankName = $(this).val();
     const bicField = $('#driver-bic-code');
 
     // Auto-fill BIC Code from data-code attribute
-      const selectedOption = $(this).find('option:selected');
-      const bicCode = selectedOption.data('code');
+    const selectedOption = $(this).find('option:selected');
+    const bicCode = selectedOption.data('code');
 
-      if (bicCode) {
-        bicField.val(bicCode).prop('readonly', true);
-      } else {
-        bicField.val('').prop('readonly', false);
-      }
+    if (bicCode) {
+      bicField.val(bicCode).prop('readonly', true);
+    } else {
+      bicField.val('').prop('readonly', false);
+    }
   });
 
   // Format account number (numbers only)
@@ -185,8 +183,10 @@ $(function () {
             </div>`;
             }
 
-              var guestBadge = full.is_guest ? '<span class="badge bg-label-warning ms-2" style="font-size: 0.7rem;">سائق زائر</span>' : '';
-              return `
+            var guestBadge = full.is_guest
+              ? '<span class="badge bg-label-warning ms-2" style="font-size: 0.7rem;">سائق زائر</span>'
+              : '';
+            return `
               <div class="d-flex align-items-center">
                 <div class="avatar-wrapper me-3">
                   ${img}
@@ -441,18 +441,14 @@ $(function () {
       $('#driver-commission').val(data.commission);
 
       // Broker fields
-      $('#driver-brokers-container').empty();
-      if (data.brokers && data.brokers.length > 0) {
-        data.brokers.forEach((broker, index) => {
-          addBrokerRow(index, broker.id, broker.pivot.commission_type, broker.pivot.commission_value);
-        });
-        brokerRowIndex = data.brokers.length;
-      } else {
-        // Fallback for old single broker or empty
-        addBrokerRow(0, data.broker_id || '', data.broker_commission_type || '', data.broker_commission_value || '');
-        brokerRowIndex = 1;
-      }
-      $('#driver-broker-commission-start-date').val(data.broker_commission_start_date ? data.broker_commission_start_date.split('T')[0] : '');
+      $('#driver-broker-id')
+        .val(data.broker_id || '')
+        .trigger('change');
+      $('#driver-broker-commission-type').val(data.broker_commission_type || '');
+      $('#driver-broker-commission-value').val(data.broker_commission_value || '');
+      $('#driver-broker-commission-start-date').val(
+        data.broker_commission_start_date ? data.broker_commission_start_date.split('T')[0] : ''
+      );
 
       // Load WhatsApp data
       $('#phone-is-whatsapp').prop('checked', data.phone_is_whatsapp == 1 || data.phone_is_whatsapp === true);
@@ -591,9 +587,9 @@ $(function () {
     $('#driver-bank-country').val('SA');
 
     // Reset Broker fields
-    $('#driver-brokers-container').empty();
-    addBrokerRow(0, '', '', '');
-    brokerRowIndex = 1;
+    $('#driver-broker-id').val('').trigger('change');
+    $('#driver-broker-commission-type').val('');
+    $('#driver-broker-commission-value').val('');
     $('#driver-broker-commission-start-date').val('');
   });
 
@@ -610,51 +606,6 @@ $(function () {
       dt_data.draw();
     }
   };
-
-  // Multiple Brokers Logic
-  let brokerRowIndex = 1;
-  const brokersOptionsHtml = $('#driver-brokers-container .broker-select').first().html() || '<option value="">None</option>';
-
-  window.addBrokerRow = function(index, brokerId = '', type = '', value = '') {
-    const rowHtml = `
-      <div class="row broker-row align-items-center mb-3">
-          <div class="col-md-4">
-              <label class="form-label">Truck Broker</label>
-              <select name="brokers[${index}][id]" class="form-select broker-select">
-                  ${brokersOptionsHtml}
-              </select>
-          </div>
-          <div class="col-md-3">
-              <label class="form-label">Commission Type</label>
-              <select name="brokers[${index}][commission_type]" class="form-select broker-commission-type">
-                  <option value="">Select Type</option>
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed Amount</option>
-              </select>
-          </div>
-          <div class="col-md-3">
-              <label class="form-label">Value</label>
-              <input type="number" name="brokers[${index}][commission_value]" class="form-control broker-commission-value" step="0.01" placeholder="Value" value="${value}">
-          </div>
-          <div class="col-md-2 mt-4 text-end">
-              <button type="button" class="btn btn-danger btn-sm remove-broker-row" ${index === 0 ? 'style="display:none;"' : ''}><i class="ti ti-trash"></i></button>
-          </div>
-      </div>
-    `;
-    const $row = $(rowHtml);
-    $('#driver-brokers-container').append($row);
-    if (brokerId) $row.find('.broker-select').val(brokerId).trigger('change');
-    if (type) $row.find('.broker-commission-type').val(type);
-  };
-
-  $('#add-driver-broker-btn').on('click', function() {
-    addBrokerRow(brokerRowIndex);
-    brokerRowIndex++;
-  });
-
-  $(document).on('click', '.remove-broker-row', function() {
-    $(this).closest('.broker-row').remove();
-  });
 });
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;

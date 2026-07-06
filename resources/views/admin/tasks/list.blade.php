@@ -111,7 +111,8 @@
         </div>
         <!-- Bulk Actions -->
         <div>
-            <button type="button" class="btn btn-brand-whatsapp text-white share-selected-whatsapp" id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
+            <button type="button" class="btn btn-brand-whatsapp text-white share-selected-whatsapp"
+                id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
                 <i class="ti ti-brand-whatsapp me-1"></i> {{ __('Share Selected') }}
             </button>
         </div>
@@ -139,11 +140,11 @@
                 <thead class="border ">
                     <tr>
                         <th></th>
-                        <th class="px-2 select-checkbox-header"><input type="checkbox" class="form-check-input select-all" id="selectAll"></th>
+                        <th class="px-2 select-checkbox-header"><input type="checkbox" class="form-check-input select-all"
+                                id="selectAll"></th>
                         <th>{{ __('task id') }}</th>
                         <th>{{ __('customer task no') }}</th>
                         <th>{{ __('order id') }}</th>
-                        <th>{{ __('Customer Name') }}</th>
                         <th>{{ __('price') }}</th>
                         <th>{{ __('Driver price') }}</th>
                         <th>{{ __('team') }}</th>
@@ -215,7 +216,8 @@
                                             <div class="form-group mb-3">
                                                 <label class="form-label" for="receipt_image">*
                                                     {{ __('Receipt Note') }}</label>
-                                                <textarea name="note" id="receipt_note" cols="30" rows="5" class="form-control"></textarea>
+                                                <textarea name="note" id="receipt_note" cols="30" rows="5"
+                                                    class="form-control"></textarea>
 
                                                 <span class="receipt_image-error text-danger text-error"></span>
                                             </div>
@@ -226,7 +228,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
@@ -303,7 +306,8 @@
                                             </label>
                                             <input type="file" name="delivery_note[]" class="form-control"
                                                 id="delivery_note" multiple
-                                                accept="image/png, image/gif, image/jpeg, image/jpg, application/pdf,.doc,.docx,.txt,.csv" required>
+                                                accept="image/png, image/gif, image/jpeg, image/jpg, application/pdf,.doc,.docx,.txt,.csv"
+                                                required>
                                             <div class="form-text text-muted mt-1">
                                                 <small>
                                                     <i class="fas fa-info-circle me-1"></i>
@@ -319,7 +323,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
@@ -368,15 +373,22 @@
                                                 <li>{{ __('The task will be canceled and its status will be changed to') }}
                                                     <strong>{{ __('Canceled') }}</strong>.
                                                 </li>
-                                                <li>{{ __('Any advertisements or offers related to the task will be deleted.') }}</li>
-                                                <li>{{ __('All wallet and financial transactions linked to this task will be removed.') }}</li>
-                                                <li>{{ __('Payments and the payment receipt image (if any) will be deleted.') }}</li>
-                                                <li>{{ __('The assigned driver will be unassigned, and any delivery notes or delivery numbers will be cleared.') }}</li>
-                                                <li>{{ __('The action will be recorded in the taskâ€™s activity history (History Log).') }}</li>
-                                                <li>{{ __('Notifications will be sent to the user, the customer, and the driver about the refund.') }}</li>
+                                                <li>{{ __('Any advertisements or offers related to the task will be deleted.') }}
+                                                </li>
+                                                <li>{{ __('All wallet and financial transactions linked to this task will be removed.') }}
+                                                </li>
+                                                <li>{{ __('Payments and the payment receipt image (if any) will be deleted.') }}
+                                                </li>
+                                                <li>{{ __('The assigned driver will be unassigned, and any delivery notes or delivery numbers will be cleared.') }}
+                                                </li>
+                                                <li>{{ __('The action will be recorded in the taskâ€™s activity history (History Log).') }}
+                                                </li>
+                                                <li>{{ __('Notifications will be sent to the user, the customer, and the driver about the refund.') }}
+                                                </li>
                                             </ul>
                                             <div class="alert alert-danger p-2 rounded-3">
-                                                <strong>{{ __('Note:') }}</strong> {{ __('Once the refund is confirmed, it cannot be undone.') }}
+                                                <strong>{{ __('Note:') }}</strong>
+                                                {{ __('Once the refund is confirmed, it cannot be undone.') }}
                                             </div>
 
                                         </div>
@@ -386,7 +398,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="submit" class="btn btn-primary me-3 data-submit">{{ __('Submit') }}</button>
                     </div>
                 </form>
@@ -403,7 +416,8 @@
                     <h5 class="modal-title" id="brokerTitle">{{ __('Connect Broker') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="{{ route('admin.tasks.broker.update') }}" method="POST" id="brokerForm" class="form_submit card shadow-sm p-4 border-0" enctype="multipart/form-data">
+                <form action="{{ route('admin.tasks.broker.update') }}" method="POST" id="brokerForm"
+                    class="form_submit card shadow-sm p-4 border-0" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" name="id" id="broker-task-id">
                     <span class="task-error text-danger text-error"></span>
@@ -412,7 +426,8 @@
                         <div class="col-md-6">
                             <div class="mb-4">
                                 <label class="form-label" for="modal-task-broker-id">{{ __('Truck Broker') }}</label>
-                                <select name="broker_id" id="modal-task-broker-id" class="form-select select2" data-dropdown-parent="#brokerModal">
+                                <select name="broker_id" id="modal-task-broker-id" class="form-select select2"
+                                    data-dropdown-parent="#brokerModal">
                                     <option value="">{{ __('None') }}</option>
                                     @foreach ($brokers as $broker)
                                         <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
@@ -423,14 +438,17 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-4">
-                                <label class="form-label" for="modal-task-broker-commission-type">{{ __('Broker Commission') }}</label>
+                                <label class="form-label"
+                                    for="modal-task-broker-commission-type">{{ __('Broker Commission') }}</label>
                                 <div class="input-group">
-                                    <select name="broker_commission_type" id="modal-task-broker-commission-type" class="form-select">
+                                    <select name="broker_commission_type" id="modal-task-broker-commission-type"
+                                        class="form-select">
                                         <option value="">{{ __('Select Type') }}</option>
                                         <option value="percentage">{{ __('Percentage (%)') }}</option>
                                         <option value="fixed">{{ __('Fixed Amount') }}</option>
                                     </select>
-                                    <input type="number" name="broker_commission_value" class="form-control" step="0.01" id="modal-task-broker-commission-value" placeholder="{{ __('Value') }}" />
+                                    <input type="number" name="broker_commission_value" class="form-control" step="0.01"
+                                        id="modal-task-broker-commission-value" placeholder="{{ __('Value') }}" />
                                 </div>
                                 <span class="broker_commission_type-error text-danger text-error"></span>
                                 <span class="broker_commission_value-error text-danger text-error"></span>
@@ -439,7 +457,8 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="submit" class="btn btn-primary">{{ __('Save changes') }}</button>
                     </div>
                 </form>
@@ -503,13 +522,13 @@
                                             <label class="form-label" for="requestedAmount">*
                                                 {{ __('Requested Amount') }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.01" class="form-control"
-                                                    id="requestedAmount" name="requested_amount" required>
+                                                <input type="number" step="0.01" class="form-control" id="requestedAmount"
+                                                    name="requested_amount" required>
                                                 <span class="input-group-text">{{ __('SAR') }}</span>
                                             </div>
                                             <div class="form-text">
-                                                <small class="text-muted">{{ __('Maximum amount') }}: <span
-                                                        id="maxAmount" class="text-primary fw-bold"></span></small>
+                                                <small class="text-muted">{{ __('Maximum amount') }}: <span id="maxAmount"
+                                                        class="text-primary fw-bold"></span></small>
                                             </div>
                                             <span class="requested_amount-error text-danger text-error"></span>
                                         </div>
@@ -530,17 +549,22 @@
 
                                             <select name="bank_name" id="bankName" class="form-select">
                                                 <option value="">{{ __('Select Bank') }}</option>
-                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ
+                                                    Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
                                                 </option>
                                                 <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø±Ø§Ø¬Ø­ÙŠ">Ø¨Ù†Ùƒ Ø§Ù„Ø±Ø§Ø¬Ø­ÙŠ</option>
                                                 <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø±ÙŠØ§Ø¶">Ø¨Ù†Ùƒ Ø§Ù„Ø±ÙŠØ§Ø¶</option>
-                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±">Ø§Ù„Ø¨Ù†Ùƒ
+                                                    Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
                                                     Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±</option>
-                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„ÙØ±Ù†Ø³ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„ÙØ±Ù†Ø³ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ
+                                                    Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
                                                     Ø§Ù„ÙØ±Ù†Ø³ÙŠ</option>
-                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„Ø¨Ø±ÙŠØ·Ø§Ù†ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
+                                                <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„Ø¨Ø±ÙŠØ·Ø§Ù†ÙŠ">Ø§Ù„Ø¨Ù†Ùƒ
+                                                    Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ
                                                     Ø§Ù„Ø¨Ø±ÙŠØ·Ø§Ù†ÙŠ (Ø³Ø§Ø¨)</option>
-                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ">Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ
+                                                <option value="Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ">Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ
+                                                    Ø§Ù„ÙˆØ·Ù†ÙŠ
                                                 </option>
                                                 <option value="Ø¨Ù†Ùƒ Ø³Ø§Ù…Ø¨Ø§">Ø¨Ù†Ùƒ Ø³Ø§Ù…Ø¨Ø§</option>
                                                 <option value="Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£ÙˆÙ„">Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£ÙˆÙ„</option>
@@ -558,16 +582,15 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="accountNumber">*
                                                 {{ __('Account Number') }}</label>
-                                            <input type="text" class="form-control" id="accountNumber"
-                                                name="account_number" placeholder="1234567890" minlength="8" required>
+                                            <input type="text" class="form-control" id="accountNumber" name="account_number"
+                                                placeholder="1234567890" minlength="8" required>
                                             <span class="account_number-error text-danger text-error"></span>
                                         </div>
 
                                         <div class="mb-3">
                                             <label class="form-label" for="ibanNumber">* {{ __('IBAN Number') }}</label>
-                                            <input type="text" class="form-control" id="ibanNumber"
-                                                name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
-                                                maxlength="29" required>
+                                            <input type="text" class="form-control" id="ibanNumber" name="iban_number"
+                                                placeholder="SA12 3456 7890 1234 5678 90" maxlength="29" required>
                                             <div class="form-text">
                                                 <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
                                             </div>
@@ -582,8 +605,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary"
-                        data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <button type="button" class="btn btn-primary"
                         id="generatePaymentRequest">{{ __('Generate Payment Request') }}</button>
                 </div>
@@ -593,139 +615,141 @@
 
 
 
-<!-- Investment Conflicts Modal -->
-@if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
-<div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body pt-4">
-                <div class="alert alert-info">
-                    يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ "مدفوعة".
+    <!-- Investment Conflicts Modal -->
+    @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+        <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title text-white"><i class="ti ti-alert-triangle me-2"></i> فحص تعارض الاستثمار</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pt-4">
+                        <div class="alert alert-info">
+                            يعرض هذا الجدول المهام التي تم فك ارتباطها بمستثمر ولكن حالة الدفع للاستثمار فيها لازالت مسجلة كـ
+                            "مدفوعة".
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="conflictsTable">
+                                <thead>
+                                    <tr>
+                                        <th>رقم المهمة</th>
+                                        <th>العميل</th>
+                                        <th>حالة المهمة</th>
+                                        <th>إجمالي التكلفة</th>
+                                        <th>إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data will be loaded here via AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                        <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;"
+                            onclick="fixInvestmentConflict('all')">
+                            <i class="ti ti-tool me-1"></i> إصلاح الكل
+                        </button>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="conflictsTable">
-                        <thead>
-                            <tr>
-                                <th>رقم المهمة</th>
-                                <th>العميل</th>
-                                <th>حالة المهمة</th>
-                                <th>إجمالي التكلفة</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Data will be loaded here via AJAX -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
-                <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;" onclick="fixInvestmentConflict('all')">
-                    <i class="ti ti-tool me-1"></i> إصلاح الكل
-                </button>
             </div>
         </div>
-    </div>
-</div>
 
-<script>
-    function openInvestmentConflictsModal() {
-        const tbody = document.querySelector('#conflictsTable tbody');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
-        const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
-        modal.show();
+        <script>
+            function openInvestmentConflictsModal() {
+                const tbody = document.querySelector('#conflictsTable tbody');
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div> جاري التحميل...</td></tr>';
+                const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
+                modal.show();
 
-        fetch('{{ route("tasks.investment_conflicts.data") }}')
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 1) {
-                    tbody.innerHTML = '';
-                    if (data.tasks.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
-                        document.getElementById('fixAllConflictsBtn').style.display = 'none';
-                    } else {
-                        data.tasks.forEach(task => {
-                            const tr = document.createElement('tr');
-                            const cName = task.customer ? task.customer.name : '-';
-                            tr.innerHTML = 
-                                '<td>#' + task.id + '</td>' +
-                                '<td>' + cName + '</td>' +
-                                '<td><span class="badge bg-label-primary">' + task.status + '</span></td>' +
-                                '<td>' + task.total_price + ' ر.س</td>' +
-                                '<td>' +
-                                    '<button class="btn btn-sm btn-success" onclick="fixInvestmentConflict(' + task.id + ')">' +
+                fetch('{{ route("tasks.investment_conflicts.data") }}')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 1) {
+                            tbody.innerHTML = '';
+                            if (data.tasks.length === 0) {
+                                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success fw-bold">لا يوجد أي تعارضات حالياً!</td></tr>';
+                                document.getElementById('fixAllConflictsBtn').style.display = 'none';
+                            } else {
+                                data.tasks.forEach(task => {
+                                    const tr = document.createElement('tr');
+                                    const cName = task.customer ? task.customer.name : '-';
+                                    tr.innerHTML =
+                                        '<td>#' + task.id + '</td>' +
+                                        '<td>' + cName + '</td>' +
+                                        '<td><span class="badge bg-label-primary">' + task.status + '</span></td>' +
+                                        '<td>' + task.total_price + ' ر.س</td>' +
+                                        '<td>' +
+                                        '<button class="btn btn-sm btn-success" onclick="fixInvestmentConflict(' + task.id + ')">' +
                                         'إصلاح' +
-                                    '</button>' +
-                                '</td>';
-                            tbody.appendChild(tr);
-                        });
-                        document.getElementById('fixAllConflictsBtn').style.display = 'block';
-                    }
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
-                }
-            })
-            .catch(err => {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
-            });
-    }
-
-    function fixInvestmentConflict(taskId) {
-        Swal.fire({
-            target: document.getElementById('investmentConflictsModal'),
-            title: 'تأكيد الإصلاح',
-            text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
-            input: 'password',
-            inputAttributes: {
-                autocapitalize: 'off',
-                required: 'true'
-            },
-            showCancelButton: true,
-            confirmButtonText: 'تأكيد وإصلاح',
-            cancelButtonText: 'إلغاء',
-            showLoaderOnConfirm: true,
-            preConfirm: (password) => {
-                if (!password) {
-                    Swal.showValidationMessage('يرجى إدخال كلمة المرور');
-                    return false;
-                }
-                return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ task_id: taskId, password: password })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status !== 1) {
-                        throw new Error(data.message || 'حدث خطأ');
-                    }
-                    return data;
-                })
-                .catch(error => {
-                    Swal.showValidationMessage('خطأ: ' + error.message);
-                });
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'نجاح!',
-                    text: result.value.message
-                });
-                openInvestmentConflictsModal(); // Refresh list
+                                        '</button>' +
+                                        '</td>';
+                                    tbody.appendChild(tr);
+                                });
+                                document.getElementById('fixAllConflictsBtn').style.display = 'block';
+                            }
+                        } else {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                        }
+                    })
+                    .catch(err => {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في الاتصال.</td></tr>';
+                    });
             }
-        });
-    }
-</script>
-@endif
-@endsection
 
+            function fixInvestmentConflict(taskId) {
+                Swal.fire({
+                    target: document.getElementById('investmentConflictsModal'),
+                    title: 'تأكيد الإصلاح',
+                    text: "أدخل كلمة المرور الخاصة بك للتأكيد:",
+                    input: 'password',
+                    inputAttributes: {
+                        autocapitalize: 'off',
+                        required: 'true'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'تأكيد وإصلاح',
+                    cancelButtonText: 'إلغاء',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (password) => {
+                        if (!password) {
+                            Swal.showValidationMessage('يرجى إدخال كلمة المرور');
+                            return false;
+                        }
+                        return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ task_id: taskId, password: password })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.status !== 1) {
+                                    throw new Error(data.message || 'حدث خطأ');
+                                }
+                                return data;
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage('خطأ: ' + error.message);
+                            });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'نجاح!',
+                            text: result.value.message
+                        });
+                        openInvestmentConflictsModal(); // Refresh list
+                    }
+                });
+            }
+        </script>
+    @endif
+@endsection

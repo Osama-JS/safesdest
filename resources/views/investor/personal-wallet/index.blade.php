@@ -227,6 +227,7 @@
                         <th class="text-muted small">{{ __('Amount') }}</th>
                         <th class="text-muted small">{{ __('Description') }}</th>
                         <th class="text-muted small">{{ __('Date and Time') }}</th>
+                        <th class="text-muted small">{{ __('Attachment') }}</th>
                     </tr>
                 </thead>
                 <tbody class="table-border-bottom-0">
@@ -258,10 +259,19 @@
                         </td>
                         <td class="text-truncate" style="max-width: 280px;">{{ $tx->description ?? '—' }}</td>
                         <td class="small">{{ $tx->created_at->format('Y-m-d') }} <br> <span class="text-muted">{{ $tx->created_at->format('H:i') }}</span></td>
+                        <td>
+                            @if($tx->image)
+                                <button type="button" class="btn btn-sm btn-label-primary" title="{{ __('View Attachment') }}" onclick="openAttachmentModal('{{ asset('storage/' . $tx->image) }}')">
+                                    <i class="ti ti-file-symlink"></i>
+                                </button>
+                            @else
+                                <span class="text-muted small">—</span>
+                            @endif
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-5">
+                        <td colspan="6" class="text-center py-5">
                             <img src="{{ asset('assets/img/illustrations/empty-state.png') }}" alt="Empty state" width="120" class="mb-3 opacity-50">
                             <p class="text-muted">{{ __('No transactions yet.') }}</p>
                         </td>
@@ -395,12 +405,57 @@
     </div>
     @endif
 
+    <!-- View Attachment Modal -->
+    <div class="modal fade" id="viewAttachmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ __('View Attachment') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0" id="attachmentModalBody">
+                    <!-- Dynamic content will be injected here -->
+                </div>
+                <div class="modal-footer">
+                    <a href="#" id="attachmentDownloadBtn" class="btn btn-primary" download>
+                        <i class="ti ti-download me-1"></i> {{ __('Download') }}
+                    </a>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
 @section('page-script')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        
+        window.openAttachmentModal = function(url) {
+            const modalBody = document.getElementById('attachmentModalBody');
+            const downloadBtn = document.getElementById('attachmentDownloadBtn');
+            const ext = url.split('.').pop().toLowerCase();
+            
+            modalBody.innerHTML = '';
+            downloadBtn.href = url;
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                modalBody.innerHTML = `<img src="${url}" class="img-fluid" style="max-height: 70vh;" alt="Attachment">`;
+            } else if (ext === 'pdf') {
+                modalBody.innerHTML = `<iframe src="${url}" width="100%" height="500px" style="border: none;"></iframe>`;
+            } else {
+                modalBody.innerHTML = `
+                    <div class="py-5">
+                        <i class="ti ti-file-text display-1 text-muted mb-3"></i>
+                        <h5>{{ __('File preview not available') }}</h5>
+                        <p class="text-muted">{{ __('Please download the file to view it.') }}</p>
+                    </div>`;
+            }
+            
+            new bootstrap.Modal(document.getElementById('viewAttachmentModal')).show();
+        };
+
         const calcForm = document.getElementById('calculateCommissionsForm');
         if (calcForm) {
             calcForm.addEventListener('submit', function() {

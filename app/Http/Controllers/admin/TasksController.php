@@ -68,7 +68,7 @@ class TasksController extends Controller
     public function __construct(PdfService $pdfService)
     {
         $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
-        $this->middleware('permission:create_tasks', ['only' => ['store','duplicateTask','fixTeamConnection']]);
+        $this->middleware('permission:create_tasks', ['only' => ['store', 'duplicateTask', 'fixTeamConnection']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
@@ -116,8 +116,8 @@ class TasksController extends Controller
             !empty($request->from_date) && !empty($request->to_date)
         ) {
             $query->whereBetween('created_at', [
-              Carbon::parse($request->from_date)->startOfDay(),
-              Carbon::parse($request->to_date)->endOfDay()
+                Carbon::parse($request->from_date)->startOfDay(),
+                Carbon::parse($request->to_date)->endOfDay()
             ]);
         }
 
@@ -146,13 +146,13 @@ class TasksController extends Controller
         $tasks = $query->get();
 
         $unassignedStatuses = ['in_progress', 'pending_payment', 'payment_failed', 'advertised'];
-        $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point','invoiced', 'unloading'];
-        $completedStatuses = ['completed', 'canceled','refund'];
+        $assignedStatuses = ['assign', 'started', 'in pickup point', 'loading', 'in the way', 'in delivery point', 'invoiced', 'unloading'];
+        $completedStatuses = ['completed', 'canceled', 'refund'];
 
         $grouped = [
-          'unassigned' => [],
-          'assigned' => [],
-          'completed' => [],
+            'unassigned' => [],
+            'assigned' => [],
+            'completed' => [],
         ];
 
         foreach ($tasks as $task) {
@@ -161,40 +161,40 @@ class TasksController extends Controller
             $driver = $task->driver;
 
             $avatar = $customer && $customer->avatar
-              ? asset('storage/' . $customer->avatar)
-              : asset('assets/img/person.png');
+                ? asset('storage/' . $customer->avatar)
+                : asset('assets/img/person.png');
 
             $item = [
-              'id'     => $task->id,
-              'customer_task_number' => $task->customer_task_number,
-              'name'   => $customer ? $customer->name : ($user->name ?? 'غير معروف'),
-              'owner'  => $customer ? 'customer' : 'admin',
-              'status' => $task->status,
-              'conditions' => $task->conditions,
-              'avatar' => $avatar,
-              'point' => $task->point()->where('type', 'pickup')->first(),
-              'signature_status' => $task->signature_status,
-              'signature_request_id' => $task->signature_request_id,
-              'driver_cancel' => $task->driver_cancel,
-              'driver_cancel_reason' => $task->driver_cancel_reason,
-              'customer_cancel_reason' => $task->customer_cancel_reason,
-              'is_b2b' => $task->pricing_type === 'b2b',
-              'vehicle_info' => $task->vehicle_size ? [
-                  'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
-                  'type' => $task->vehicle_size->type->name ?? '-',
-                  'size' => $task->vehicle_size->name ?? '-',
-              ] : null,
-              'investor_name' => $task->investor ? $task->investor->name : null,
+                'id' => $task->id,
+                'customer_task_number' => $task->customer_task_number,
+                'name' => $customer ? $customer->name : ($user->name ?? 'غير معروف'),
+                'owner' => $customer ? 'customer' : 'admin',
+                'status' => $task->status,
+                'conditions' => $task->conditions,
+                'avatar' => $avatar,
+                'point' => $task->point()->where('type', 'pickup')->first(),
+                'signature_status' => $task->signature_status,
+                'signature_request_id' => $task->signature_request_id,
+                'driver_cancel' => $task->driver_cancel,
+                'driver_cancel_reason' => $task->driver_cancel_reason,
+                'customer_cancel_reason' => $task->customer_cancel_reason,
+                'is_b2b' => $task->pricing_type === 'b2b',
+                'vehicle_info' => $task->vehicle_size ? [
+                    'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                    'type' => $task->vehicle_size->type->name ?? '-',
+                    'size' => $task->vehicle_size->name ?? '-',
+                ] : null,
+                'investor_name' => $task->investor ? $task->investor->name : null,
             ];
 
             if ($driver) {
                 $item['driver'] = [
-                  'id' => $driver->id,
-                  'name' => $driver->name,
-                  'phone' => $driver->phone,
-                  'phone_code' => $driver->phone_code,
-                  'avatar' => $driver->image ? asset('storage/' . $driver->image) : asset('assets/img/person.png'),
-                  'team' => $driver->team ? $driver->team->name : null,
+                    'id' => $driver->id,
+                    'name' => $driver->name,
+                    'phone' => $driver->phone,
+                    'phone_code' => $driver->phone_code,
+                    'avatar' => $driver->image ? asset('storage/' . $driver->image) : asset('assets/img/person.png'),
+                    'team' => $driver->team ? $driver->team->name : null,
                 ];
             }
 
@@ -215,79 +215,79 @@ class TasksController extends Controller
         $task = Task::with(['point', 'customer', 'driver'])->findOrFail($id);
 
         return response()->json([
-          'success' => true,
-          'data'    => [
-            'id'         => $task->id,
-            'customer_task_number' => $task->customer_task_number,
-            'status'     => $task->status,
-            'driver'     => $task->driver->name ?? "",
-            'team'       => $task->team->name ?? "",
-            'order_id'   => $task->order_id ?? "",
-            'created_at' => $task->created_at->toDateTimeString(),
-            'owner'      => $task->owner,
-            'total_price'      => $task->total_price,
-            'conditions'      => $task->conditions,
-            'commission'      => $task->commission,
-            'driver_cancel'   => $task->driver_cancel,
-            'driver_cancel_reason' => $task->driver_cancel_reason,
-            'customer_cancel' => $task->customer_cancel,
-            'customer_cancel_reason' => $task->customer_cancel_reason,
-            'is_b2b' => $task->pricing_type === 'b2b',
-            'pickup' => $task->pickup,
-            'delivery' => $task->delivery,
-            'driver_id' => $task->driver_id,
-            'driver' => $task->driver ? $task->driver->name : null,
+            'success' => true,
+            'data' => [
+                'id' => $task->id,
+                'customer_task_number' => $task->customer_task_number,
+                'status' => $task->status,
+                'driver' => $task->driver->name ?? "",
+                'team' => $task->team->name ?? "",
+                'order_id' => $task->order_id ?? "",
+                'created_at' => $task->created_at->toDateTimeString(),
+                'owner' => $task->owner,
+                'total_price' => $task->total_price,
+                'conditions' => $task->conditions,
+                'commission' => $task->commission,
+                'driver_cancel' => $task->driver_cancel,
+                'driver_cancel_reason' => $task->driver_cancel_reason,
+                'customer_cancel' => $task->customer_cancel,
+                'customer_cancel_reason' => $task->customer_cancel_reason,
+                'is_b2b' => $task->pricing_type === 'b2b',
+                'pickup' => $task->pickup,
+                'delivery' => $task->delivery,
+                'driver_id' => $task->driver_id,
+                'driver' => $task->driver ? $task->driver->name : null,
 
 
-            'point' => [
-              'latitude'  => $task->pickup->latitude ?? null,
-              'longitude' => $task->pickup->longitude ?? null,
-              'address'   => $task->pickup->address ?? null,
-            ],
+                'point' => [
+                    'latitude' => $task->pickup->latitude ?? null,
+                    'longitude' => $task->pickup->longitude ?? null,
+                    'address' => $task->pickup->address ?? null,
+                ],
 
-            'customer'   => [
-              'owner'  => $task->owner,
-              'name'   => $task->owner == "customer" ? optional($task->customer)->name : optional($task->user)->name,
-              'phone'  => $task->owner == "customer" ? optional($task->customer)->phone : optional($task->user)->phone,
-              'email'  => $task->owner == "customer" ? optional($task->customer)->email : optional($task->user)->email,
-              'address'  => $task->owner == "customer" ? optional($task->customer)->company_address : '',
-            ],
+                'customer' => [
+                    'owner' => $task->owner,
+                    'name' => $task->owner == "customer" ? optional($task->customer)->name : optional($task->user)->name,
+                    'phone' => $task->owner == "customer" ? optional($task->customer)->phone : optional($task->user)->phone,
+                    'email' => $task->owner == "customer" ? optional($task->customer)->email : optional($task->user)->email,
+                    'address' => $task->owner == "customer" ? optional($task->customer)->company_address : '',
+                ],
 
-            'driver' => $task->driver ? [
-              'name'   => optional($task->driver)->name,
-              'phone'  => optional($task->driver)->phone_code . optional($task->driver)->phone,
-              'whatsapp'    => $task->driver->full_whatsapp_number ? str_replace('+', '', $task->driver->full_whatsapp_number) : 'Not provided',
-              'email'  => optional($task->driver)->email,
-              'image'  => optional($task->driver)->image,
-            ] : null,
+                'driver' => $task->driver ? [
+                    'name' => optional($task->driver)->name,
+                    'phone' => optional($task->driver)->phone_code . optional($task->driver)->phone,
+                    'whatsapp' => $task->driver->full_whatsapp_number ? str_replace('+', '', $task->driver->full_whatsapp_number) : 'Not provided',
+                    'email' => optional($task->driver)->email,
+                    'image' => optional($task->driver)->image,
+                ] : null,
 
-            'history' => $task->history
-              ->sortByDesc('id') // ✅ الترتيب بحسب ID من الأعلى إلى الأدنى
-              ->map(function ($val) {
-                  return [
-                    'type' => $val->action_type,
-                    'description' => $val->description,
-                    'date' => $val->created_at->format('F, Y-d H:i'),
-                    'user' => optional($val->user)->name,
-                    'driver' => optional($val->driver)->name,
-                    'file' => $val->file_path
-                      ? [
-                        'url' => asset('storage/' . $val->file_path),
-                        'type' => pathinfo($val->file_path, PATHINFO_EXTENSION),
-                        'name' => basename($val->file_path),
-                      ]
-                      : null,
-                    'color' => match ($val->action_type) {
-                        'added' => 'success',
-                        'updated' => 'info',
-                        'assign' => 'primary',
-                        'canceld' => 'danger',
-                        default => 'secundary',
-                    }
-                  ];
-              })
-              ->values()
-          ]
+                'history' => $task->history
+                    ->sortByDesc('id') // ✅ الترتيب بحسب ID من الأعلى إلى الأدنى
+                    ->map(function ($val) {
+                        return [
+                            'type' => $val->action_type,
+                            'description' => $val->description,
+                            'date' => $val->created_at->format('F, Y-d H:i'),
+                            'user' => optional($val->user)->name,
+                            'driver' => optional($val->driver)->name,
+                            'file' => $val->file_path
+                                ? [
+                                    'url' => asset('storage/' . $val->file_path),
+                                    'type' => pathinfo($val->file_path, PATHINFO_EXTENSION),
+                                    'name' => basename($val->file_path),
+                                ]
+                                : null,
+                            'color' => match ($val->action_type) {
+                                'added' => 'success',
+                                'updated' => 'info',
+                                'assign' => 'primary',
+                                'canceld' => 'danger',
+                                default => 'secundary',
+                            }
+                        ];
+                    })
+                    ->values()
+            ]
 
 
         ]);
@@ -296,8 +296,8 @@ class TasksController extends Controller
     public function chang_status(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:tasks,id',
-          'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,invoiced,canceled',
+            'id' => 'required|exists:tasks,id',
+            'status' => 'required|in:in_progress,started,in pickup point,loading,in the way,in delivery point,unloading,completed,invoiced,canceled',
         ]);
 
         if ($validator->fails()) {
@@ -312,13 +312,13 @@ class TasksController extends Controller
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
             }
             if ($find->status === 'advertised') {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('This Task is in advertised mode you can not change status')]);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('This Task is in advertised mode you can not change status')]);
             }
             if ($find->closed) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('This Task is already closed')]);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('This Task is already closed')]);
             }
             $data = [
-              'status' => $req->status
+                'status' => $req->status
             ];
             if ($req->status === 'completed') {
                 $data['completed_at'] = now();
@@ -328,16 +328,16 @@ class TasksController extends Controller
 
             $userIp = IpHelper::getUserIpAddress();
             $history = [
-              [
-                'action_type' => $req->status,
-                'description' => 'Change status from ' . $status . 'to ' . $find->status,
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ]
+                [
+                    'action_type' => $req->status,
+                    'description' => 'Change status from ' . $status . 'to ' . $find->status,
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ]
             ];
             $find->history()->createMany($history);
             if (!$done) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'error to Change Task Status']);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'error to Change Task Status']);
             }
 
 
@@ -345,15 +345,15 @@ class TasksController extends Controller
             $notiMessages = [
                 'user' => [
                     'title' => '📌 تحديث حالة المهمة الخاصة بك',
-                    'msg'   => "تم تحديث حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
+                    'msg' => "تم تحديث حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
                 'customer' => [
                     'title' => 'تحديث حالة طلبك',
-                    'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
+                    'msg' => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
                 'driver' => [
                     'title' => 'تحديث حالة المهمة الخاصة المعينة لك',
-                    'msg'   => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
+                    'msg' => "تم تغيير حالة المهمة رقم #{$find->id} من '{$status}' إلى '{$find->status}'."
                 ],
             ];
 
@@ -409,15 +409,15 @@ class TasksController extends Controller
     public function taskAddNote(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'description' => 'nullable|string|required_without:file',
-          'file' => 'nullable|file|max:10240|required_without:description',
-          'task' => 'required|exists:tasks,id',
+            'description' => 'nullable|string|required_without:file',
+            'file' => 'nullable|file|max:10240|required_without:description',
+            'task' => 'required|exists:tasks,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-              'status' => 0,
-              'error'  => $validator->errors()
+                'status' => 0,
+                'error' => $validator->errors()
             ]);
         }
 
@@ -452,12 +452,12 @@ class TasksController extends Controller
                 $fileType = $file->getClientOriginalExtension();
             }
             Task_History::create([
-              'task_id' => $req->task,
-              'description' => $req->description,
-              'file_path' => $filePath,
-              'file_type' => $fileType,
-              'user_id' => Auth::user()->id,
-              'action_type' => 'added',
+                'task_id' => $req->task,
+                'description' => $req->description,
+                'file_path' => $filePath,
+                'file_type' => $fileType,
+                'user_id' => Auth::user()->id,
+                'action_type' => 'added',
             ]);
 
             $task = Task::find($req->task);
@@ -466,23 +466,23 @@ class TasksController extends Controller
                 $notifications = [
                     'user' => [
                         'title' => 'إضافة ملاحظة للمهمة',
-                        'msg'   => "تمت إضافة ملاحظة إلى مهمتك رقم #{$task->id}"
+                        'msg' => "تمت إضافة ملاحظة إلى مهمتك رقم #{$task->id}"
                     ],
                     'customer' => [
                         'title' => 'تحديث على المهمة الخاصة بك',
-                        'msg'   => "تمت إضافة ملاحظة على مهمتك رقم #{$task->id} من قِبل فريق العمل"
+                        'msg' => "تمت إضافة ملاحظة على مهمتك رقم #{$task->id} من قِبل فريق العمل"
                     ],
                     'driver' => [
                         'title' => 'تنبيه للسائق',
-                        'msg'   => "تمت إضافة ملاحظة على المهمة رقم #{$task->id} التي تعمل عليها"
+                        'msg' => "تمت إضافة ملاحظة على المهمة رقم #{$task->id} التي تعمل عليها"
                     ],
                 ];
 
                 // قائمة المستلمين: [نوع => ID]
                 $recipients = [
-                    'user'     => $task->user_id,
+                    'user' => $task->user_id,
                     'customer' => $task->customer_id,
-                    'driver'   => $task->driver_id,
+                    'driver' => $task->driver_id,
                 ];
 
                 foreach ($recipients as $type => $id) {
@@ -508,8 +508,8 @@ class TasksController extends Controller
 
             DB::commit();
             return response()->json([
-              'status' => 1,
-              'success' => 'Task Note Added Successfully',
+                'status' => 1,
+                'success' => 'Task Note Added Successfully',
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
@@ -517,8 +517,8 @@ class TasksController extends Controller
                 unlink($filePath);
             }
             return response()->json([
-              'status' => 2,
-              'error'  => $ex->getMessage()
+                'status' => 2,
+                'error' => $ex->getMessage()
             ]);
         }
     }
@@ -529,8 +529,8 @@ class TasksController extends Controller
             $data = Task::findOrFail($id);
             if (!in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be modified in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be modified in its current state'),
                 ]);
             }
             $drivers = Driver::where('vehicle_size_id', $data->vehicle_size_id)->get();
@@ -544,8 +544,8 @@ class TasksController extends Controller
     public function assign(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:tasks,id',
-          'driver' => 'required|exists:drivers,id',
+            'id' => 'required|exists:tasks,id',
+            'driver' => 'required|exists:drivers,id',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'error' => $validator->errors()->toArray()]);
@@ -556,31 +556,31 @@ class TasksController extends Controller
             $data = Task::with(['customer', 'user', 'pickup', 'delivery', 'vehicle_size'])->find($req->id);
 
             if ($data->closed) {
-                return response()->json(['status' =>  2, 'type' => 'error', 'message' => 'This Task is already closed']);
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => 'This Task is already closed']);
             }
 
             if (!in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be modified in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be modified in its current state'),
                 ]);
             }
 
             $userIp = IpHelper::getUserIpAddress();
             $history = [
-              [
-                'action_type' => 'assign',
-                'description' => 'assign task manual',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id,
-                'driver_id' => $req->task_driver
-              ]
+                [
+                    'action_type' => 'assign',
+                    'description' => 'assign task manual',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id,
+                    'driver_id' => $req->task_driver
+                ]
             ];
 
             if ($data->status === 'advertised') {
                 if ($data->ad->status === 'running') {
                     $data->ad()->update([
-                      'status' => 'closed'
+                        'status' => 'closed'
                     ]);
                 }
             }
@@ -592,7 +592,7 @@ class TasksController extends Controller
 
 
             if ($data->commission_type == 'dynamic') {
-                $data->commission =  $driver->calculateCommission($data->total_price);
+                $data->commission = $driver->calculateCommission($data->total_price);
             }
 
             $data->team_id = $driver->team_id ?? null;
@@ -610,23 +610,23 @@ class TasksController extends Controller
             $notifications = [
                 'user' => [
                     'title' => 'تحديث على مهمتك',
-                    'msg'   => "تم تعيين المهمة رقم #{$data->id} إلى سائق لتنفيذها"
+                    'msg' => "تم تعيين المهمة رقم #{$data->id} إلى سائق لتنفيذها"
                 ],
                 'customer' => [
                     'title' => 'مهمتك قيد التنفيذ',
-                    'msg'   => "تم تعيين المهمة رقم #{$data->id} إلى سائق وسيتم تنفيذها قريبًا"
+                    'msg' => "تم تعيين المهمة رقم #{$data->id} إلى سائق وسيتم تنفيذها قريبًا"
                 ],
                 'driver' => [
                     'title' => 'تم تعيين مهمة جديدة لك',
-                    'msg'   => "لقد تم تعيين المهمة رقم #{$data->id} لك، يرجى مراجعة التفاصيل والبدء في التنفيذ"
+                    'msg' => "لقد تم تعيين المهمة رقم #{$data->id} لك، يرجى مراجعة التفاصيل والبدء في التنفيذ"
                 ],
             ];
 
             // قائمة المستلمين: [نوع => ID]
             $recipients = [
-                'user'     => $data->user_id,
+                'user' => $data->user_id,
                 'customer' => $data->customer_id,
-                'driver'   => $data->driver_id,
+                'driver' => $data->driver_id,
             ];
 
             foreach ($recipients as $type => $id) {
@@ -697,7 +697,7 @@ class TasksController extends Controller
                 Log::alert($signitResponse);
                 // تحديث المهمة بمعرف التوقيع
                 if (isset($signitResponse['id'])) {
-                  Log::alert("update signit data");
+                    Log::alert("update signit data");
                     $data->update([
                         'signature_request_id' => $signitResponse['id'],
                         'signature_status' => 'pending'
@@ -958,22 +958,22 @@ class TasksController extends Controller
         DB::beginTransaction();
         try {
             $userIp = IpHelper::getUserIpAddress();
-            $data     = $pricing['data'];
+            $data = $pricing['data'];
             $taskData = $pricing['task'];
             $ad = [];
             $history = [];
 
             $task = [
-              'total_price'      => $data['total_price'] ?? 0,
-              'form_template_id' => $req->template,
-              'user_id'          => Auth::id(),
-              'pricing_id'       => $taskData['pricing'],
-              'vehicle_size_id'  => $taskData['vehicles'][0],
-              'conditions'       => $req->conditions,
-              'sales_invoice_id' => $req->sales_invoice_id ?? null,
-              'broker_id'        => $req->broker_id ?? null,
-              'broker_commission_type' => $req->broker_commission_type ?? null,
-              'broker_commission_value' => $req->broker_commission_value ?? null,
+                'total_price' => $data['total_price'] ?? 0,
+                'form_template_id' => $req->template,
+                'user_id' => Auth::id(),
+                'pricing_id' => $taskData['pricing'],
+                'vehicle_size_id' => $taskData['vehicles'][0],
+                'conditions' => $req->conditions,
+                'sales_invoice_id' => $req->sales_invoice_id ?? null,
+                'broker_id' => $req->broker_id ?? null,
+                'broker_commission_type' => $req->broker_commission_type ?? null,
+                'broker_commission_value' => $req->broker_commission_value ?? null,
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -981,8 +981,8 @@ class TasksController extends Controller
                     $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
                     if (!$ownsCustomer) {
                         return response()->json([
-                          'status' => 2,
-                          'error' => ['You do not have permission to create task for this customer']
+                            'status' => 2,
+                            'error' => ['You do not have permission to create task for this customer']
                         ]);
                     }
                 }
@@ -990,18 +990,18 @@ class TasksController extends Controller
             }
 
             $history = [
-              [
-                'action_type' => 'created',
-                'description' => 'Create Task',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ],
-              [
-                'action_type' => 'in_progress',
-                'description' => 'Task in progress',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ]
+                [
+                    'action_type' => 'created',
+                    'description' => 'Create Task',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ],
+                [
+                    'action_type' => 'in_progress',
+                    'description' => 'Task in progress',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ]
             ];
 
             if ($req->filled('manual_total_pricing')) {
@@ -1024,11 +1024,11 @@ class TasksController extends Controller
                 $task['commission'] = $driver->calculateCommission($task['total_price']);
                 $task['status'] = 'assign';
                 $history[] = [
-                  'action_type' => 'assigned',
-                  'description' => 'assign task manual ',
-                  'ip' => $userIp,
-                  'user_id' => Auth::id(),
-                  'driver_id' => $req->task_driver
+                    'action_type' => 'assigned',
+                    'description' => 'assign task manual ',
+                    'ip' => $userIp,
+                    'user_id' => Auth::id(),
+                    'driver_id' => $req->task_driver
                 ];
             }
 
@@ -1076,9 +1076,9 @@ class TasksController extends Controller
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('You can not assign driver to advertised Task')]);
                 }
-                $task['total_price']  = 0;
+                $task['total_price'] = 0;
                 $task['pricing_type'] = 'manual';
-                $task['status']       = 'advertised';
+                $task['status'] = 'advertised';
 
                 if (!$req->filled('max_price') || !$req->filled('min_price')) {
                     DB::rollBack();
@@ -1096,28 +1096,28 @@ class TasksController extends Controller
 
 
                 $ad = [
-                  'highest_price' => $req->max_price,
-                  'lowest_price' => $req->min_price,
-                  'description' =>  $req->note_price,
-                  'included' =>  $req->included ?? false,
-                  'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
-                  'service_commission' =>  $data['service_tax_commission'] ?? 0,
-                  'vat_commission' => $data['vat_commission'] ?? 0,
+                    'highest_price' => $req->max_price,
+                    'lowest_price' => $req->min_price,
+                    'description' => $req->note_price,
+                    'included' => $req->included ?? false,
+                    'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
+                    'service_commission' => $data['service_tax_commission'] ?? 0,
+                    'vat_commission' => $data['vat_commission'] ?? 0,
                 ];
 
                 $history[] = [
-                  'action_type' => 'advertised',
-                  'description' => 'set as Advertised',
-                  'ip' => $userIp,
-                  'user_id' => Auth::user()->id,
+                    'action_type' => 'advertised',
+                    'description' => 'set as Advertised',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id,
                 ];
                 $task['driver_id'] = null;
             }
 
             if (isset($taskData['vehicles_quantity']) && $taskData['vehicles_quantity'] > 1) {
                 $order = Order::create([
-                  'customer_id' => $task['customer_id'] ?? null,
-                  'user_id'     => Auth::id(),
+                    'customer_id' => $task['customer_id'] ?? null,
+                    'user_id' => Auth::id(),
                 ]);
                 if (!$order) {
                     DB::rollBack();
@@ -1147,17 +1147,17 @@ class TasksController extends Controller
                             $origenToDelete[] = $path;
                             $filesToDelete[] = $path;
                             $structuredFields[$fieldName] = [
-                              'label'      => $field->label,
-                              'value'      => $path,
-                              'expiration' => $req->input("additional_fields.$expirationFieldName"),
-                              'type'       => $fieldType,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
                             ];
                         } elseif ($req->filled("additional_fields.$expirationFieldName")) {
                             $structuredFields[$fieldName] = [
-                              'label'      => $field->label,
-                              'value'      => null,
-                              'expiration' => $req->input("additional_fields.$expirationFieldName"),
-                              'type'       => $fieldType,
+                                'label' => $field->label,
+                                'value' => null,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
                             ];
                         }
                     } elseif (in_array($fieldType, ['file', 'image'])) {
@@ -1166,17 +1166,17 @@ class TasksController extends Controller
                             $origenToDelete[] = $path;
                             $filesToDelete[] = $path;
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $path,
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'type' => $fieldType,
                             ];
                         }
                     } else {
                         if ($req->has("additional_fields.$fieldName")) {
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $req->input("additional_fields.$fieldName"),
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $req->input("additional_fields.$fieldName"),
+                                'type' => $fieldType,
                             ];
                         }
                     }
@@ -1185,28 +1185,28 @@ class TasksController extends Controller
             }
 
             $pickup_point = [
-              'type'           => 'pickup',
-              'sequence'       => 1,
-              'contact_name'   => $req->pickup_name,
-              'contact_phone'  => $req->pickup_phone,
-              'contact_emil'   => $req->pickup_email,
-              'address'        => $req->pickup_address,
-              'latitude'       => $req->pickup_latitude,
-              'longitude'      => $req->pickup_longitude,
-              'scheduled_time' => $req->pickup_before,
-              'note'           => $req->pickup_note,
+                'type' => 'pickup',
+                'sequence' => 1,
+                'contact_name' => $req->pickup_name,
+                'contact_phone' => $req->pickup_phone,
+                'contact_emil' => $req->pickup_email,
+                'address' => $req->pickup_address,
+                'latitude' => $req->pickup_latitude,
+                'longitude' => $req->pickup_longitude,
+                'scheduled_time' => $req->pickup_before,
+                'note' => $req->pickup_note,
             ];
             $delivery_point = [
-              'type'           => 'delivery',
-              'sequence'       => 1,
-              'contact_name'   => $req->delivery_name,
-              'contact_phone'  => $req->delivery_phone,
-              'contact_emil'   => $req->delivery_email,
-              'address'        => $req->delivery_address,
-              'latitude'       => $req->delivery_latitude,
-              'longitude'      => $req->delivery_longitude,
-              'scheduled_time' => $req->delivery_before,
-              'note'           => $req->delivery_note,
+                'type' => 'delivery',
+                'sequence' => 1,
+                'contact_name' => $req->delivery_name,
+                'contact_phone' => $req->delivery_phone,
+                'contact_emil' => $req->delivery_email,
+                'address' => $req->delivery_address,
+                'latitude' => $req->delivery_latitude,
+                'longitude' => $req->delivery_longitude,
+                'scheduled_time' => $req->delivery_before,
+                'note' => $req->delivery_note,
             ];
 
             if ($req->hasFile('pickup_image')) {
@@ -1229,9 +1229,9 @@ class TasksController extends Controller
                         $newFilePath = FileHelper::duplicateFile($field['value'], 'tasks/c/files');
 
                         $newAdditionalData[$key] = [
-                          'label' => $field['label'],
-                          'value' => $newFilePath,
-                          'type'  => $field['type'],
+                            'label' => $field['label'],
+                            'value' => $newFilePath,
+                            'type' => $field['type'],
                         ];
 
                         if (isset($field['expiration'])) {
@@ -1247,55 +1247,6 @@ class TasksController extends Controller
                 $taskCopy['additional_data'] = $newAdditionalData;
 
                 $newTask = Task::create($taskCopy);
-                
-                // Attach Multiple Brokers
-                if (request()->has('brokers') && is_array(request()->brokers)) {
-                    $brokersData = [];
-                    foreach (request()->brokers as $b) {
-                        if (!empty($b['id'])) {
-                            $calculatedAmount = 0;
-                            $platformCut = $newTask->commission ?? 0;
-                            if (($b['commission_type'] ?? 'percentage') === 'percentage') {
-                                $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
-                            } else {
-                                $calculatedAmount = $b['commission_value'] ?? 0;
-                            }
-                            $brokersData[$b['id']] = [
-                                'commission_type' => $b['commission_type'] ?? 'percentage',
-                                'commission_value' => $b['commission_value'] ?? 0,
-                                'calculated_amount' => $calculatedAmount,
-                            ];
-                        }
-                    }
-                    $newTask->brokers()->sync($brokersData);
-                } elseif (!empty($taskCopy['driver_id'])) {
-                    // Copy driver brokers if no manual brokers provided
-                    $driver = \App\Models\Driver::with('brokers')->find($taskCopy['driver_id']);
-                    if ($driver && $driver->brokers->count() > 0) {
-                        $brokersData = [];
-                        $platformCut = $newTask->commission ?? 0;
-                        $totalBrokersShare = 0;
-                        foreach ($driver->brokers as $b) {
-                            $calculatedAmount = 0;
-                            if ($b->pivot->commission_type === 'percentage') {
-                                $calculatedAmount = ($platformCut * $b->pivot->commission_value) / 100;
-                            } else {
-                                $calculatedAmount = $b->pivot->commission_value;
-                            }
-                            $totalBrokersShare += $calculatedAmount;
-
-                            $brokersData[$b->id] = [
-                                'commission_type' => $b->pivot->commission_type,
-                                'commission_value' => $b->pivot->commission_value,
-                                'calculated_amount' => $calculatedAmount,
-                            ];
-                        }
-                        if ($totalBrokersShare <= $platformCut) {
-                            $newTask->brokers()->sync($brokersData);
-                        }
-                    }
-                }
-
                 $newTask->point()->create($pickup_point);
                 $newTask->point()->create($delivery_point);
                 $newTask->history()->createMany($history);
@@ -1303,9 +1254,9 @@ class TasksController extends Controller
                 if ($newTask->status === 'advertised') {
                     $newTask->ad()->create($ad);
                     $drivers = Driver::where([
-                            ['status', '=', 'active'],
-                            ['vehicle_size_id', '=', $newTask->vehicle_size_id],
-                        ])
+                        ['status', '=', 'active'],
+                        ['vehicle_size_id', '=', $newTask->vehicle_size_id],
+                    ])
                         ->pluck('id');
                     app(\App\Services\NotificationService::class)->send(
                         'driver',
@@ -1323,11 +1274,11 @@ class TasksController extends Controller
                 $notiMessages = [
                     'user' => [
                         'title' => 'إنشاء مهمة جديدة',
-                        'msg'   => "تم إنشاء مهمة جديدة رقم #{$newTask->id} بنجاح."
+                        'msg' => "تم إنشاء مهمة جديدة رقم #{$newTask->id} بنجاح."
                     ],
                     'customer' => [
                         'title' => 'إنشاء مهمة جديدة',
-                        'msg'   => "تم إنشاء مهمة جديدة لحسابك رقم #{$newTask->id} بنجاح. من قبل الـ Adminstrator"
+                        'msg' => "تم إنشاء مهمة جديدة لحسابك رقم #{$newTask->id} بنجاح. من قبل الـ Adminstrator"
                     ],
                 ];
 
@@ -1374,8 +1325,8 @@ class TasksController extends Controller
             DB::commit();
 
             return response()->json([
-              'status'  => 1,
-              'success' => "$number Tasks created successfully.",
+                'status' => 1,
+                'success' => "$number Tasks created successfully.",
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
@@ -1393,8 +1344,8 @@ class TasksController extends Controller
             }
 
             return response()->json([
-              'status' => 2,
-              'error'  => $ex->getMessage(),
+                'status' => 2,
+                'error' => $ex->getMessage(),
             ]);
         }
     }
@@ -1410,12 +1361,12 @@ class TasksController extends Controller
             return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
         }
         if ($data->closed) {
-            return response()->json(['status' =>  2, 'error' => 'This Task is already closed']);
+            return response()->json(['status' => 2, 'error' => 'This Task is already closed']);
         }
         if (!in_array($data->status, ['in_progress', 'advertised'])) {
             return response()->json([
-              'status' => 2,
-              'error' => __('This task cannot be modified in its current state'),
+                'status' => 2,
+                'error' => __('This task cannot be modified in its current state'),
             ]);
         }
 
@@ -1423,7 +1374,7 @@ class TasksController extends Controller
         $data->vehicle = $data->vehicle_size->type->vehicle_id;
         $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
-        $data->fields =  $fields;
+        $data->fields = $fields;
 
         return response()->json($data);
     }
@@ -1438,13 +1389,13 @@ class TasksController extends Controller
         }
 
         if ($oldTask->closed) {
-            return response()->json(['status' =>  2, 'error' => 'This Task is already closed']);
+            return response()->json(['status' => 2, 'error' => 'This Task is already closed']);
         }
         // ✳️ تحقق من صلاحية التعديل
         if (!in_array($oldTask->status, ['in_progress', 'advertised'])) {
             return response()->json([
-              'status' => 2,
-              'error' => __('This task cannot be modified in its current state'),
+                'status' => 2,
+                'error' => __('This task cannot be modified in its current state'),
             ]);
         }
 
@@ -1469,7 +1420,7 @@ class TasksController extends Controller
         try {
 
             $userIp = IpHelper::getUserIpAddress();
-            $data     = $pricing['data'];
+            $data = $pricing['data'];
             $taskData = $pricing['task'];
             $ad = [];
             $history = [];
@@ -1480,15 +1431,15 @@ class TasksController extends Controller
             }
 
             $task = [
-              'total_price'      => $data['total_price'] ?? 0,
-              'form_template_id' => $req->template,
-              'user_id'          => Auth::id(),
-              'pricing_id'       => $taskData['pricing'],
-              'vehicle_size_id' => $taskData['vehicles'][0],
-              'conditions'       => $req->conditions,
-              'broker_id'        => $req->broker_id ?? null,
-              'broker_commission_type' => $req->broker_commission_type ?? null,
-              'broker_commission_value' => $req->broker_commission_value ?? null,
+                'total_price' => $data['total_price'] ?? 0,
+                'form_template_id' => $req->template,
+                'user_id' => Auth::id(),
+                'pricing_id' => $taskData['pricing'],
+                'vehicle_size_id' => $taskData['vehicles'][0],
+                'conditions' => $req->conditions,
+                'broker_id' => $req->broker_id ?? null,
+                'broker_commission_type' => $req->broker_commission_type ?? null,
+                'broker_commission_value' => $req->broker_commission_value ?? null,
             ];
 
             if ($req->filled('owner') && $req->owner === 'customer') {
@@ -1497,8 +1448,8 @@ class TasksController extends Controller
 
                     if (!$ownsCustomer) {
                         return response()->json([
-                          'status' => 2,
-                          'error' => ['You do not have permission to create task for this customer']
+                            'status' => 2,
+                            'error' => ['You do not have permission to create task for this customer']
                         ]);
                     }
                 }
@@ -1506,12 +1457,12 @@ class TasksController extends Controller
             }
 
             $history = [
-              [
-                'action_type' => 'updated',
-                'description' => 'Task updated',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ],
+                [
+                    'action_type' => 'updated',
+                    'description' => 'Task updated',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ],
             ];
 
             if ($req->filled('manual_total_pricing')) {
@@ -1536,11 +1487,11 @@ class TasksController extends Controller
                 // تحديث الحالة وإضافة السجل في التاريخ
                 $task['status'] = 'assign';
                 $history[] = [
-                  'action_type' => 'assigned',
-                  'description' => 'Assign Task manual',
-                  'ip' => $userIp,
-                  'user_id' => Auth::id(),
-                  'driver_id' => $req->task_driver
+                    'action_type' => 'assigned',
+                    'description' => 'Assign Task manual',
+                    'ip' => $userIp,
+                    'user_id' => Auth::id(),
+                    'driver_id' => $req->task_driver
                 ];
             }
 
@@ -1568,9 +1519,9 @@ class TasksController extends Controller
             if ($req->filled('pricing_details')) {
                 $details = $req->pricing_details ?? [];
                 $sumDetails = collect($req->input('pricing_details', []))
-                  ->sum(function ($item) {
-                      return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
-                  });
+                    ->sum(function ($item) {
+                        return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+                    });
                 if ($sumDetails > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
@@ -1590,26 +1541,26 @@ class TasksController extends Controller
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => 'You can not assign driver to advertised Task']);
                 }
-                $task['total_price']  = 0;
+                $task['total_price'] = 0;
                 $task['pricing_type'] = 'manual';
-                $task['status']       = 'advertised';
+                $task['status'] = 'advertised';
 
                 $ad = [
-                  'highest_price' => $req->max_price,
-                  'lowest_price' => $req->min_price,
-                  'description' =>  $req->note_price,
-                  'included' =>  $req->included ?? false,
-                  'service_commission_type' => (($data['service_commission_type'] ?? null) === 'percentage' ? 0 : 1),
-                  'service_commission' =>  $data['service_tax_commission'] ?? 0,
-                  'vat_commission' => $data['vat_commission'] ?? 0,
+                    'highest_price' => $req->max_price,
+                    'lowest_price' => $req->min_price,
+                    'description' => $req->note_price,
+                    'included' => $req->included ?? false,
+                    'service_commission_type' => (($data['service_commission_type'] ?? null) === 'percentage' ? 0 : 1),
+                    'service_commission' => $data['service_tax_commission'] ?? 0,
+                    'vat_commission' => $data['vat_commission'] ?? 0,
                 ];
 
 
                 $history[] = [
-                  'action_type' => 'advertised',
-                  'description' => 'set as Advertised',
-                  'ip' => $userIp,
-                  'user_id' => Auth::user()->id,
+                    'action_type' => 'advertised',
+                    'description' => 'set as Advertised',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id,
                 ];
 
                 $task['driver_id'] = null;
@@ -1617,8 +1568,8 @@ class TasksController extends Controller
 
 
             $oldAdditionalData = $oldTask->additional_data ?? [];
-            $structuredFields  = [];
-            $filesToDelete     = [];
+            $structuredFields = [];
+            $filesToDelete = [];
 
             if ($req->filled('template')) {
                 $template = Form_Template::with('fields')->find($req->input('template'));
@@ -1640,10 +1591,10 @@ class TasksController extends Controller
                             $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
 
                             $structuredFields[$fieldName] = [
-                              'label'      => $field->label,
-                              'value'      => $path,
-                              'expiration' => $req->input("additional_fields.$expirationFieldName"),
-                              'type'       => $fieldType,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                'type' => $fieldType,
                             ];
                         } elseif (isset($oldAdditionalData[$fieldName])) {
                             // لم يتم رفع ملف جديد، نحافظ على الملف القديم مع تحديث تاريخ الانتهاء إذا تم تعديله
@@ -1655,10 +1606,10 @@ class TasksController extends Controller
                             // لم يتم رفع ملف جديد ولا يوجد ملف قديم، لكن قد يكون هناك تاريخ انتهاء فقط
                             if ($req->filled("additional_fields.$expirationFieldName")) {
                                 $structuredFields[$fieldName] = [
-                                  'label'      => $field->label,
-                                  'value'      => null,
-                                  'expiration' => $req->input("additional_fields.$expirationFieldName"),
-                                  'type'       => $fieldType,
+                                    'label' => $field->label,
+                                    'value' => null,
+                                    'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                    'type' => $fieldType,
                                 ];
                             }
                         }
@@ -1671,9 +1622,9 @@ class TasksController extends Controller
                             $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
 
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $path,
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $path,
+                                'type' => $fieldType,
                             ];
                         } elseif (isset($oldAdditionalData[$fieldName])) {
                             $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
@@ -1681,9 +1632,9 @@ class TasksController extends Controller
                     } else {
                         if ($req->has("additional_fields.$fieldName")) {
                             $structuredFields[$fieldName] = [
-                              'label' => $field->label,
-                              'value' => $req->input("additional_fields.$fieldName"),
-                              'type'  => $fieldType,
+                                'label' => $field->label,
+                                'value' => $req->input("additional_fields.$fieldName"),
+                                'type' => $fieldType,
                             ];
                         } elseif (isset($oldAdditionalData[$fieldName])) {
                             $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
@@ -1698,16 +1649,16 @@ class TasksController extends Controller
             $imageForDelete = [];
             // نقطة الالتقاط
             $pickup_point = [
-              'type'           => 'pickup',
-              'sequence'       => 1,
-              'contact_name'   => $req->pickup_name,
-              'contact_phone'  => $req->pickup_phone,
-              'contact_emil'   => $req->pickup_email,
-              'address'        => $req->pickup_address,
-              'latitude'       => $req->pickup_latitude,
-              'longitude'      => $req->pickup_longitude,
-              'scheduled_time' => $req->pickup_before,
-              'note'           => $req->pickup_note,
+                'type' => 'pickup',
+                'sequence' => 1,
+                'contact_name' => $req->pickup_name,
+                'contact_phone' => $req->pickup_phone,
+                'contact_emil' => $req->pickup_email,
+                'address' => $req->pickup_address,
+                'latitude' => $req->pickup_latitude,
+                'longitude' => $req->pickup_longitude,
+                'scheduled_time' => $req->pickup_before,
+                'note' => $req->pickup_note,
             ];
 
             if ($req->hasFile('pickup_image')) {
@@ -1719,16 +1670,16 @@ class TasksController extends Controller
 
             // نقطة التسليم
             $delivery_point = [
-              'type'           => 'delivery',
-              'sequence'       => 1,
-              'contact_name'   => $req->delivery_name,
-              'contact_phone'  => $req->delivery_phone,
-              'contact_emil'   => $req->delivery_email,
-              'address'        => $req->delivery_address,
-              'latitude'       => $req->delivery_latitude,
-              'longitude'      => $req->delivery_longitude,
-              'scheduled_time' => $req->delivery_before,
-              'note'           => $req->delivery_note,
+                'type' => 'delivery',
+                'sequence' => 1,
+                'contact_name' => $req->delivery_name,
+                'contact_phone' => $req->delivery_phone,
+                'contact_emil' => $req->delivery_email,
+                'address' => $req->delivery_address,
+                'latitude' => $req->delivery_latitude,
+                'longitude' => $req->delivery_longitude,
+                'scheduled_time' => $req->delivery_before,
+                'note' => $req->delivery_note,
             ];
 
             if ($req->hasFile('delivery_image')) {
@@ -1739,33 +1690,6 @@ class TasksController extends Controller
             }
             $newTask = Task::findOrFail($req->id);
             $newTask->update($task);
-            
-            // Update Multiple Brokers
-            if ($req->has('brokers') && is_array($req->brokers)) {
-                $brokersData = [];
-                foreach ($req->brokers as $b) {
-                    if (!empty($b['id'])) {
-                        $calculatedAmount = 0;
-                        $platformCut = $newTask->commission ?? 0;
-                        if (($b['commission_type'] ?? 'percentage') === 'percentage') {
-                            $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
-                        } else {
-                            $calculatedAmount = $b['commission_value'] ?? 0;
-                        }
-                        $brokersData[$b['id']] = [
-                            'commission_type' => $b['commission_type'] ?? 'percentage',
-                            'commission_value' => $b['commission_value'] ?? 0,
-                            'calculated_amount' => $calculatedAmount,
-                        ];
-                    }
-                }
-                
-                // Validate total
-                $totalBrokersShare = array_sum(array_column($brokersData, 'calculated_amount'));
-                if ($totalBrokersShare <= ($newTask->commission ?? 0)) {
-                    $newTask->brokers()->sync($brokersData);
-                }
-            }
             $newTask->pickup()->update($pickup_point);
             $newTask->delivery()->update($delivery_point);
             $newTask->history()->createMany($history);
@@ -1790,22 +1714,22 @@ class TasksController extends Controller
             $notiMessages = [
                 'user' => [
                     'title' => 'تعديل على المهمة',
-                    'msg'   => "قام المسؤول بتحديث بيانات المهمة رقم #{$newTask->id}."
+                    'msg' => "قام المسؤول بتحديث بيانات المهمة رقم #{$newTask->id}."
                 ],
                 'customer' => [
                     'title' => 'تحديث في المهمة الخاصة بك',
-                    'msg'   => "تم تعديل بعض التفاصيل في المهمة رقم #{$newTask->id}."
+                    'msg' => "تم تعديل بعض التفاصيل في المهمة رقم #{$newTask->id}."
                 ],
                 'driver' => [
                     'title' => 'تنبيه: تغيير في تفاصيل المهمة',
-                    'msg'   => "تم تحديث بيانات المهمة رقم #{$newTask->id} المسندة إليك. يرجى مراجعتها."
+                    'msg' => "تم تحديث بيانات المهمة رقم #{$newTask->id} المسندة إليك. يرجى مراجعتها."
                 ],
             ];
 
             $recipients = [
-                'user'     => $newTask->user_id,
+                'user' => $newTask->user_id,
                 'customer' => $newTask->customer_id,
-                'driver'   => $newTask->driver_id,
+                'driver' => $newTask->driver_id,
             ];
 
             foreach ($recipients as $type => $id) {
@@ -1831,8 +1755,8 @@ class TasksController extends Controller
             }
 
             return response()->json([
-              'status'  => 1,
-              'success' => "Tasks Updated successfully.",
+                'status' => 1,
+                'success' => "Tasks Updated successfully.",
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
@@ -1858,13 +1782,13 @@ class TasksController extends Controller
     public function validateStep1(Request $req)
     {
         $rules = [
-          'owner' => 'required|in:admin,customer',
-          'customer' => 'required_if:owner,customer',
-          'template' => 'required|exists:form_templates,id',
-          'vehicles.*.vehicle' => 'required|exists:vehicles,id',
-          'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
-          'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
-          'vehicles.*.quantity' => 'required|integer|min:1',
+            'owner' => 'required|in:admin,customer',
+            'customer' => 'required_if:owner,customer',
+            'template' => 'required|exists:form_templates,id',
+            'vehicles.*.vehicle' => 'required|exists:vehicles,id',
+            'vehicles.*.vehicle_type' => 'required|exists:vehicle_types,id',
+            'vehicles.*.vehicle_size' => 'required|exists:vehicle_sizes,id',
+            'vehicles.*.quantity' => 'required|integer|min:1',
         ];
 
         if ($req->filled('template')) {
@@ -1997,26 +1921,26 @@ class TasksController extends Controller
                 if ($field->type === 'file_expiration_date') {
                     $fieldKey = 'additional_fields.' . $field->name;
                     $customMessages = array_merge($customMessages, [
-                      $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
-                      $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.required' => __('The expiration date for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.date' => __('The expiration date for :attribute must be a valid date.', ['attribute' => $field->label]),
+                        $fieldKey . '_expiration.after_or_equal' => __('The expiration date for :attribute must be today or a future date.', ['attribute' => $field->label]),
                     ]);
                 }
 
                 if ($field->type === 'file_with_text') {
                     $fieldKey = 'additional_fields.' . $field->name;
                     $customMessages = array_merge($customMessages, [
-                      $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
-                      $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.required' => __('The text field for :attribute is required.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.string' => __('The text field for :attribute must be a valid text.', ['attribute' => $field->label]),
-                      $fieldKey . '_text.max' => __('The text field for :attribute must not exceed 255 characters.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.required' => __('The :attribute file is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.file' => __('The :attribute must be a valid file.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.mimes' => __('The :attribute must be a file of type: pdf, doc, docx, xls, xlsx, txt, csv, jpeg, png, jpg, webp, gif.', ['attribute' => $field->label]),
+                        $fieldKey . '_file.max' => __('The :attribute file size must not exceed 10MB.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.required' => __('The text field for :attribute is required.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.string' => __('The text field for :attribute must be a valid text.', ['attribute' => $field->label]),
+                        $fieldKey . '_text.max' => __('The text field for :attribute must not exceed 255 characters.', ['attribute' => $field->label]),
                     ]);
                 }
             }
@@ -2026,8 +1950,8 @@ class TasksController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-              'status' => 0,
-              'error' => $validator->errors()
+                'status' => 0,
+                'error' => $validator->errors()
             ]);
         }
 
@@ -2035,8 +1959,8 @@ class TasksController extends Controller
 
         if ($sizes->count() > 1) {
             return response()->json([
-              'status' => 2,
-              'error' => __('You cannot select more than one truck size in the same order')
+                'status' => 2,
+                'error' => __('You cannot select more than one truck size in the same order')
             ]);
         }
 
@@ -2049,8 +1973,8 @@ class TasksController extends Controller
 
         if ($pricingTemplates->count() < 1) {
             return response()->json([
-              'status' => 2,
-              'error' => __('There is no Pricing Role match with your selections')
+                'status' => 2,
+                'error' => __('There is no Pricing Role match with your selections')
             ]);
         }
 
@@ -2060,8 +1984,8 @@ class TasksController extends Controller
 
         if ($methods->count() < 1) {
             return response()->json([
-              'status' => 2,
-              'error' => __('Error to find Pricing Methods')
+                'status' => 2,
+                'error' => __('Error to find Pricing Methods')
             ]);
         }
 
@@ -2079,10 +2003,10 @@ class TasksController extends Controller
 
                     $paramData = $pricing->parametars->map(function ($param) use ($points) {
                         return [
-                          'from_point' => $points->get($param->from_val),
-                          'to_point' => $points->get($param->to_val),
-                          'price' => $param->price,
-                          'param' => $param->id,
+                            'from_point' => $points->get($param->from_val),
+                            'to_point' => $points->get($param->to_val),
+                            'price' => $param->price,
+                            'param' => $param->id,
                         ];
                     });
 
@@ -2096,9 +2020,9 @@ class TasksController extends Controller
 
 
         return response()->json([
-          'status' => 1,
-          'success' => __('Validation passed ✅'),
-          'data' => $methods
+            'status' => 1,
+            'success' => __('Validation passed ✅'),
+            'data' => $methods
         ]);
     }
 
@@ -2108,8 +2032,8 @@ class TasksController extends Controller
         $validation = $pricingService->validateRequest($request);
         if (!$validation['status']) {
             return response()->json([
-              'status' => 0,
-              'error' => $validation['errors']
+                'status' => 0,
+                'error' => $validation['errors']
             ]);
         }
 
@@ -2118,23 +2042,23 @@ class TasksController extends Controller
             $pricing = $pricingService->calculatePricing($request);
         } catch (\Exception $e) {
             return response()->json([
-              'status' => 2,
-              'error' => $e->getMessage()
+                'status' => 2,
+                'error' => $e->getMessage()
             ]);
         }
 
         if (!$pricing['status']) {
             return response()->json([
-              'status' => 2,
-              'error' => $pricing['errors']
+                'status' => 2,
+                'error' => $pricing['errors']
             ]);
         }
 
         // dd($pricing['data']);
         return response()->json([
-          'status' => 1,
-          'success' => __('Validation passed ✅'),
-          'data' => $pricing['data']
+            'status' => 1,
+            'success' => __('Validation passed ✅'),
+            'data' => $pricing['data']
         ]);
     }
 
@@ -2163,17 +2087,17 @@ class TasksController extends Controller
         ];
 
         $totalData = Task::count();
-        $limit     = $request->input('length');
-        $start     = $request->input('start');
-        $order     = $columns[$request->input('order.0.column')] ?? 'id';
-        $dir       = $request->input('order.0.dir') ?? 'desc';
+        $limit = $request->input('length');
+        $start = $request->input('start');
+        $order = $columns[$request->input('order.0.column')] ?? 'id';
+        $dir = $request->input('order.0.dir') ?? 'desc';
 
-        $fromDate  = $request->input('from_date');
-        $toDate    = $request->input('to_date');
-        $owner    = $request->input('owner');
-        $team    = $request->input('team');
-        $driver    = $request->input('driver');
-        $search    = $request->input('search.value'); // البحث من DataTables
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+        $owner = $request->input('owner');
+        $team = $request->input('team');
+        $driver = $request->input('driver');
+        $search = $request->input('search.value'); // البحث من DataTables
         $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
         $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle', 'investor']);
@@ -2182,8 +2106,8 @@ class TasksController extends Controller
         try {
             if ($fromDate && $toDate && $fromDate !== 'undefined' && $toDate !== 'undefined') {
                 $query->whereBetween('created_at', [
-                  Carbon::parse($fromDate)->startOfDay(),
-                  Carbon::parse($toDate)->endOfDay()
+                    Carbon::parse($fromDate)->startOfDay(),
+                    Carbon::parse($toDate)->endOfDay()
                 ]);
             }
         } catch (\Exception $e) {
@@ -2210,26 +2134,26 @@ class TasksController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%{$search}%")
-                ->orWhere('delivery_number', 'LIKE', "%{$search}%")
-                  ->orWhereHas('order', function ($orderQuery) use ($search) {
-                      $orderQuery->where('id', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('customer', function ($customerQuery) use ($search) {
-                      $customerQuery->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%")
-                        ->orWhere('phone', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('driver', function ($driverQuery) use ($search) {
-                      $driverQuery->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%")
-                        ->orWhere('username', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('pickup', function ($pickupQuery) use ($search) {
-                      $pickupQuery->where('address', 'LIKE', "%{$search}%");
-                  })
-                  ->orWhereHas('delivery', function ($deliveryQuery) use ($search) {
-                      $deliveryQuery->where('address', 'LIKE', "%{$search}%");
-                  })
+                    ->orWhere('delivery_number', 'LIKE', "%{$search}%")
+                    ->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('id', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%")
+                            ->orWhere('phone', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('driver', function ($driverQuery) use ($search) {
+                        $driverQuery->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%")
+                            ->orWhere('username', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('pickup', function ($pickupQuery) use ($search) {
+                        $pickupQuery->where('address', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('delivery', function ($deliveryQuery) use ($search) {
+                        $deliveryQuery->where('address', 'LIKE', "%{$search}%");
+                    })
                 ;
             });
         }
@@ -2242,60 +2166,60 @@ class TasksController extends Controller
         $totalFiltered = $query->count();
 
         $tasks = $query
-          ->offset($start)
-          ->limit($limit)
-          ->orderBy($order, $dir)
-          ->get();
+            ->offset($start)
+            ->limit($limit)
+            ->orderBy($order, $dir)
+            ->get();
 
         $data = [];
         foreach ($tasks as $task) {
             $data[] = [
-              'id'         => $task->id,
-          'customer_task_number' => $task->customer_task_number,
-          'order'      => $task->order_id,
-          'order_id'   => $task->order_id,
-              'price'      => $task->total_price,
-              'team'       => $task->team->name ?? "-",
-              'driver'     => $task->driver ?? '-',
-              'owner'     => $task->owner ?? "-",
-              'owner_info' => match ($task->owner) {
-                  'admin' => $task->user->name ?? '-',
-                  'customer' => $task->customer->name ?? '-',
-                  default => '-',
-              },
-              'investor_name' => $task->investor ? $task->investor->name : null,
-              'address'    => ($task->pickup->address ?? '-') .' - To - '. ($task->delivery->address ?? '-') ,
-              'pickup_address' => $task->pickup->address ?? '-',
-              'delivery_address' => $task->delivery->address ?? '-',
-              'start'      => ($task->pickup && $task->pickup->scheduled_time)
-                ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
-                : "",
-              'complete'   => ($task->delivery && $task->delivery->scheduled_time)
-                ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
-                : "",
-              'status'     => $task->status,
-              'driver_price' => $task->total_price - $task->commission,
-              'closed'     => $task->closed,
-              'delivery'     => $task->delivery_number ?? '',
-              'payment'     => $task->payment_status,
-              'signature_status' => $task->signature_status,
-              'signature_request_id' => $task->signature_request_id,
-              'created_at' => $task->created_at->format('Y-m-d H:i'),
-              'vehicle_info' => $task->vehicle_size ? [
-                  'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
-                  'type' => $task->vehicle_size->type->name ?? '-',
-                  'size' => $task->vehicle_size->name ?? '-',
-              ] : null,
+                'id' => $task->id,
+                'customer_task_number' => $task->customer_task_number,
+                'order' => $task->order_id,
+                'order_id' => $task->order_id,
+                'price' => $task->total_price,
+                'team' => $task->team->name ?? "-",
+                'driver' => $task->driver ?? '-',
+                'owner' => $task->owner ?? "-",
+                'owner_info' => match ($task->owner) {
+                    'admin' => $task->user->name ?? '-',
+                    'customer' => $task->customer->name ?? '-',
+                    default => '-',
+                },
+                'investor_name' => $task->investor ? $task->investor->name : null,
+                'address' => ($task->pickup->address ?? '-') . ' - To - ' . ($task->delivery->address ?? '-'),
+                'pickup_address' => $task->pickup->address ?? '-',
+                'delivery_address' => $task->delivery->address ?? '-',
+                'start' => ($task->pickup && $task->pickup->scheduled_time)
+                    ? Carbon::parse($task->pickup->scheduled_time)->format('Y-m-d H:i')
+                    : "",
+                'complete' => ($task->delivery && $task->delivery->scheduled_time)
+                    ? Carbon::parse($task->delivery->scheduled_time)->format('Y-m-d H:i')
+                    : "",
+                'status' => $task->status,
+                'driver_price' => $task->total_price - $task->commission,
+                'closed' => $task->closed,
+                'delivery' => $task->delivery_number ?? '',
+                'payment' => $task->payment_status,
+                'signature_status' => $task->signature_status,
+                'signature_request_id' => $task->signature_request_id,
+                'created_at' => $task->created_at->format('Y-m-d H:i'),
+                'vehicle_info' => $task->vehicle_size ? [
+                    'truck_name' => $task->vehicle_size->type->vehicle->name ?? '-',
+                    'type' => $task->vehicle_size->type->name ?? '-',
+                    'size' => $task->vehicle_size->name ?? '-',
+                ] : null,
             ];
         }
 
 
         return response()->json([
-          'draw'            => intval($request->input('draw')),
-          'recordsTotal'    => $totalData,
-          'recordsFiltered' => $totalFiltered,
-          'code'            => 200,
-          'data'            => $data,
+            'draw' => intval($request->input('draw')),
+            'recordsTotal' => $totalData,
+            'recordsFiltered' => $totalFiltered,
+            'code' => 200,
+            'data' => $data,
         ]);
     }
 
@@ -2305,8 +2229,8 @@ class TasksController extends Controller
             $data = Task::with('investor')->findOrFail($id);
             if (in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be Payed in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be Payed in its current state'),
                 ]);
             }
             if ($data->payment_status !== 'waiting') {
@@ -2318,19 +2242,19 @@ class TasksController extends Controller
                     $payment = Payments::where('task_id', $data->id)->latest()->first();
                     if ($payment) {
                         // Map Payments to Transaction-like object for the JS
-                        $transaction = (object)[
-                            'id'             => $payment->id,
-                            'reference_id'   => $payment->task_id,
-                            'amount'         => $payment->amount,
-                            'payment_type'   => $payment->payment_method,
-                            'status'         => $payment->status,
+                        $transaction = (object) [
+                            'id' => $payment->id,
+                            'reference_id' => $payment->task_id,
+                            'amount' => $payment->amount,
+                            'payment_type' => $payment->payment_method,
+                            'status' => $payment->status,
                             'receipt_number' => $payment->receipt_number,
-                            'receipt_image'  => $payment->receipt_image,
-                            'note'           => $payment->description,
-                            'created_at'     => $payment->created_at->format('Y-m-d H:i:s'),
-                            'user'           => $payment->owner ? (object)['name' => $payment->owner->name] : null,
+                            'receipt_image' => $payment->receipt_image,
+                            'note' => $payment->description,
+                            'created_at' => $payment->created_at->format('Y-m-d H:i:s'),
+                            'user' => $payment->owner ? (object) ['name' => $payment->owner->name] : null,
                             'is_investor_payment' => $data->investor_id ? true : false,
-                            'investor_name'       => $data->investor->name ?? null
+                            'investor_name' => $data->investor->name ?? null
                         ];
                     }
                 }
@@ -2343,9 +2267,9 @@ class TasksController extends Controller
                     }
 
                     return response()->json([
-                      'status' => 3,
-                      'message' => __('This task has already make payment request and it is ' . $data->payment_status),
-                      'data' => $transaction
+                        'status' => 3,
+                        'message' => __('This task has already make payment request and it is ' . $data->payment_status),
+                        'data' => $transaction
                     ]);
                 }
 
@@ -2353,25 +2277,25 @@ class TasksController extends Controller
                 return response()->json([
                     'status' => 3,
                     'message' => __('This task payment status is ' . $data->payment_status),
-                    'data' => (object)[
-                        'id'           => 'N/A',
+                    'data' => (object) [
+                        'id' => 'N/A',
                         'reference_id' => $data->id,
-                        'amount'       => $data->total_price,
+                        'amount' => $data->total_price,
                         'payment_type' => $data->payment_method ?? 'unknown',
-                        'status'       => $data->payment_status,
-                        'note'         => $data->payment_note ?? __('Detailed payment record not found'),
-                        'created_at'   => $data->updated_at->format('Y-m-d H:i:s'),
-                        'user'         => null,
+                        'status' => $data->payment_status,
+                        'note' => $data->payment_note ?? __('Detailed payment record not found'),
+                        'created_at' => $data->updated_at->format('Y-m-d H:i:s'),
+                        'user' => null,
                         'is_investor_payment' => $data->investor_id ? true : false,
-                        'investor_name'       => $data->investor->name ?? null
+                        'investor_name' => $data->investor->name ?? null
                     ]
                 ]);
             }
             return response()->json($data);
         } catch (Exception $e) {
             return response()->json([
-              'status' => 2,
-              'error' => __('Task not found')
+                'status' => 2,
+                'error' => __('Task not found')
             ]);
         }
     }
@@ -2394,8 +2318,8 @@ class TasksController extends Controller
             }
 
             // Get driver info with bank details
-            $driverName = $task->driver->name ??  'غير محدد';
-            $driverPhone = $task->driver->name ? $task->driver->name  . $task->driver->phone_code .  $task->driver->phone : "";
+            $driverName = $task->driver->name ?? 'غير محدد';
+            $driverPhone = $task->driver->name ? $task->driver->name . $task->driver->phone_code . $task->driver->phone : "";
             $driverBankName = $task->driver->bank_name ?? null;
             $driverAccountNumber = $task->driver->account_number ?? null;
             $driverIbanNumber = $task->driver->iban_number ?? null;
@@ -2413,7 +2337,7 @@ class TasksController extends Controller
             if ($driverHasTeam) {
                 $teamLeader = $task->team->users->first()->user;
                 $teamLeaderName = $teamLeader->name ?? 'غير محدد';
-                $teamLeaderPhone = $teamLeader->name ? $teamLeader->phone_code .  $teamLeader->phone : "";
+                $teamLeaderPhone = $teamLeader->name ? $teamLeader->phone_code . $teamLeader->phone : "";
                 $teamLeaderBankName = $teamLeader->bank_name ?? null;
                 $teamLeaderAccountNumber = $teamLeader->account_number ?? null;
                 $teamLeaderIbanNumber = $teamLeader->iban_number ?? null;
@@ -2466,8 +2390,8 @@ class TasksController extends Controller
             }
             if (in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be Payed in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be Payed in its current state'),
                 ]);
             }
 
@@ -2475,10 +2399,10 @@ class TasksController extends Controller
                 $transaction = Transaction::where('reference_id', $data->id)->first();
                 if ($transaction) {
                     $transaction->update([
-                      'status' => 'paid',
-                      'user_check' => Auth::user()->id,
-                      'user_ip' => IpHelper::getUserIpAddress(),
-                      'checkout_at' => Carbon::now(),
+                        'status' => 'paid',
+                        'user_check' => Auth::user()->id,
+                        'user_ip' => IpHelper::getUserIpAddress(),
+                        'checkout_at' => Carbon::now(),
                     ]);
                 } else {
                     $payment = Payments::where('task_id', $data->id)->where('status', 'pending')->latest()->first();
@@ -2497,28 +2421,28 @@ class TasksController extends Controller
                 }
 
                 $data->update([
-                  'payment_status' => 'completed'
+                    'payment_status' => 'completed'
                 ]);
-                
+
                 // التسوية للمستثمر إذا كانت المهمة ممولة
                 app(\App\Services\InvestorPaymentService::class)->settleTaskInvestment($data);
 
                 DB::commit();
                 return response()->json([
-                  'status' => 1,
-                  'message' => __('Payment has been confirmed for task') . ' #' . $data->id,
+                    'status' => 1,
+                    'message' => __('Payment has been confirmed for task') . ' #' . $data->id,
                 ]);
             }
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'message' => __('You can not confirm payment for this task'),
+                'status' => 2,
+                'message' => __('You can not confirm payment for this task'),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'message' => __('Task not found')
+                'status' => 2,
+                'message' => __('Task not found')
             ]);
         }
     }
@@ -2534,8 +2458,8 @@ class TasksController extends Controller
             }
             if (in_array($data->status, ['in_progress', 'advertised'])) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be Payed in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be Payed in its current state'),
                 ]);
             }
             if (in_array($data->payment_status, ['pending', 'failed'])) {
@@ -2561,25 +2485,25 @@ class TasksController extends Controller
                 }
 
                 $data->update([
-                  'payment_status' => 'waiting'
+                    'payment_status' => 'waiting'
                 ]);
 
                 DB::commit();
                 return response()->json([
-                  'status' => 1,
-                  'message' => __('Payment has been canceled for task') . ' #' . $data->id,
+                    'status' => 1,
+                    'message' => __('Payment has been canceled for task') . ' #' . $data->id,
                 ]);
             }
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'message' => __('You can not cancel payment for this task ' . $data->payment_status),
+                'status' => 2,
+                'message' => __('You can not cancel payment for this task ' . $data->payment_status),
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'message' => __('Task not found')
+                'status' => 2,
+                'message' => __('Task not found')
             ]);
         }
     }
@@ -2607,7 +2531,7 @@ class TasksController extends Controller
                         'message' => __('Cannot cancel payment for a closed task. Please provide admin password.')
                     ]);
                 }
-                
+
                 // If password matches, reopen the task
                 $data->closed = false;
                 $data->status = 'in_progress';
@@ -2643,7 +2567,7 @@ class TasksController extends Controller
             $data->update([
                 'payment_status' => 'waiting',
                 'payment_method' => 'cash',
-                'payment_id'     => null,
+                'payment_id' => null,
             ]);
 
             DB::commit();
@@ -2665,19 +2589,19 @@ class TasksController extends Controller
     public function showDetails($id)
     {
         $task = Task::with([
-          'customer',
-          'driver',
-          'user',
-          'pickup',
-          'delivery',
-          'points',
-          'payments',
-          'order',
-          'formTemplate',
-          'pricingTemplate',
-          'vehicle_size',
-          'history.user',
-          'history.driver',
+            'customer',
+            'driver',
+            'user',
+            'pickup',
+            'delivery',
+            'points',
+            'payments',
+            'order',
+            'formTemplate',
+            'pricingTemplate',
+            'vehicle_size',
+            'history.user',
+            'history.driver',
         ])->findOrFail($id);
 
         return view('admin.tasks.show', compact('task'));
@@ -2689,8 +2613,8 @@ class TasksController extends Controller
         $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'order', 'user'])->findOrFail($id);
 
         $customerName = optional($task->customer)->name ?? optional($task->user)->name ?? 'user';
-        $pickup      = optional($task->pickup)->address ?? 'pickup';
-        $delivery    = optional($task->delivery)->address ?? 'delivery';
+        $pickup = optional($task->pickup)->address ?? 'pickup';
+        $delivery = optional($task->delivery)->address ?? 'delivery';
 
         // دالة مساعدة لتنظيف اسم الملف مع الحفاظ على الأحرف العربية
         $sanitize = function ($str) {
@@ -2707,8 +2631,8 @@ class TasksController extends Controller
             '%s_%s',
             $task->id,
             Str::slug($customerName, '_'),
-           // Str::slug($pickup, '_'),
-           // Str::slug($delivery, '_')
+            // Str::slug($pickup, '_'),
+            // Str::slug($delivery, '_')
         );
         if ($task->driver) {
             $file_name .= "_{$task->driver->name}";
@@ -2736,13 +2660,13 @@ class TasksController extends Controller
 
         // Ensure the view exists
         if (!View::exists($viewName)) {
-             // Try with admin.tasks prefix if absolute path fails
-             if (View::exists('admin.tasks.' . $viewName)) {
-                 $viewName = 'admin.tasks.' . $viewName;
-             } else {
-                 \Illuminate\Support\Facades\Log::error('Custom policy view not found', ['viewName' => $viewName, 'prefixed' => 'admin.tasks.' . $viewName]);
-                 return redirect()->back()->with('error', __('Custom policy template not found.') . ' (' . $viewName . ')');
-             }
+            // Try with admin.tasks prefix if absolute path fails
+            if (View::exists('admin.tasks.' . $viewName)) {
+                $viewName = 'admin.tasks.' . $viewName;
+            } else {
+                \Illuminate\Support\Facades\Log::error('Custom policy view not found', ['viewName' => $viewName, 'prefixed' => 'admin.tasks.' . $viewName]);
+                return redirect()->back()->with('error', __('Custom policy template not found.') . ' (' . $viewName . ')');
+            }
         }
 
         $customerName = $task->customer->company_name ?? $task->customer->name ?? 'customer';
@@ -2776,13 +2700,13 @@ class TasksController extends Controller
     public function destroy(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:tasks,id',
+            'id' => 'required|exists:tasks,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-              'status' => 2,
-              'error' => __('Invalid task ID')
+                'status' => 2,
+                'error' => __('Invalid task ID')
             ]);
         }
 
@@ -2791,12 +2715,12 @@ class TasksController extends Controller
         try {
             // جلب المهمة مع جميع العلاقات المرتبطة
             $task = Task::with([
-              'payments',
-              'points',
-              'history',
-              'ad',
-              'customer.wallet.transactions',
-              'driver.wallet.transactions'
+                'payments',
+                'points',
+                'history',
+                'ad',
+                'customer.wallet.transactions',
+                'driver.wallet.transactions'
             ])->findOrFail($req->id);
 
             // 🚫 فحص الحالات التي تمنع الحذف
@@ -2804,8 +2728,8 @@ class TasksController extends Controller
             if (!$deletionChecks['canDelete']) {
                 DB::rollBack();
                 return response()->json([
-                  'status' => 2,
-                  'error' => $deletionChecks['reason']
+                    'status' => 2,
+                    'error' => $deletionChecks['reason']
                 ]);
             }
 
@@ -2824,14 +2748,14 @@ class TasksController extends Controller
             $this->deleteTaskFiles($filesToDelete);
 
             return response()->json([
-              'status' => 1,
-              'success' => __('Task deleted successfully')
+                'status' => 1,
+                'success' => __('Task deleted successfully')
             ]);
         } catch (Exception $ex) {
             DB::rollBack();
             return response()->json([
-              'status' => 2,
-              'error' => __('Error deleting task: ') . $ex->getMessage()
+                'status' => 2,
+                'error' => __('Error deleting task: ') . $ex->getMessage()
             ]);
         }
     }
@@ -2847,16 +2771,16 @@ class TasksController extends Controller
         // 🚫 لا يمكن حذف المهام المكتملة
         if (in_array($task->status, ['completed', 'canceled'])) {
             return [
-              'canDelete' => false,
-              'reason' => __('Cannot delete completed or canceled tasks')
+                'canDelete' => false,
+                'reason' => __('Cannot delete completed or canceled tasks')
             ];
         }
 
         // 🚫 لا يمكن حذف المهام المدفوعة
         if (in_array($task->payment_status, ['completed', 'pending'])) {
             return [
-              'canDelete' => false,
-              'reason' => __('Cannot delete tasks with completed or pending payments')
+                'canDelete' => false,
+                'reason' => __('Cannot delete tasks with completed or pending payments')
             ];
         }
 
@@ -2864,24 +2788,24 @@ class TasksController extends Controller
         $walletTransactions = \App\Models\Wallet_Transaction::where('task_id', $task->id)->count();
         if ($walletTransactions > 0) {
             return [
-              'canDelete' => false,
-              'reason' => __('Cannot delete tasks with wallet transactions')
+                'canDelete' => false,
+                'reason' => __('Cannot delete tasks with wallet transactions')
             ];
         }
 
         // 🚫 لا يمكن حذف المهام التي لها معاملات دفع
         if ($task->payments && $task->payments->count() > 0) {
             return [
-              'canDelete' => false,
-              'reason' => __('Cannot delete tasks with payment records')
+                'canDelete' => false,
+                'reason' => __('Cannot delete tasks with payment records')
             ];
         }
 
         // 🚫 لا يمكن حذف المهام المغلقة
         if ($task->closed) {
             return [
-              'canDelete' => false,
-              'reason' => __('Cannot delete closed tasks')
+                'canDelete' => false,
+                'reason' => __('Cannot delete closed tasks')
             ];
         }
 
@@ -2889,14 +2813,14 @@ class TasksController extends Controller
         $allowedStatuses = ['in_progress', 'advertised'];
         if (!in_array($task->status, $allowedStatuses)) {
             return [
-              'canDelete' => false,
-              'reason' => __('Can only delete tasks in progress or advertised status')
+                'canDelete' => false,
+                'reason' => __('Can only delete tasks in progress or advertised status')
             ];
         }
 
         return [
-          'canDelete' => true,
-          'reason' => null
+            'canDelete' => true,
+            'reason' => null
         ];
     }
 
@@ -2961,8 +2885,8 @@ class TasksController extends Controller
     {
         // 🗑️ حذف معاملات المحفظة المرتبطة بالمهمة (إذا لم تكن مكتملة)
         \App\Models\Wallet_Transaction::where('task_id', $task->id)
-          ->where('status', 0) // فقط المعاملات غير المكتملة
-          ->delete();
+            ->where('status', 0) // فقط المعاملات غير المكتملة
+            ->delete();
 
         // 🗑️ حذف العروض المرتبطة بإعلان المهمة
         if ($task->ad) {
@@ -2982,18 +2906,18 @@ class TasksController extends Controller
         // 🗑️ حذف المعاملات المرتبطة بالمهمة من جدول transactions
         if ($task->customer) {
             $task->customer->transactions()
-              ->where('reference_id', $task->id)
-              ->where('type', 'delivery')
-              ->where('status', '!=', 'completed')
-              ->delete();
+                ->where('reference_id', $task->id)
+                ->where('type', 'delivery')
+                ->where('status', '!=', 'completed')
+                ->delete();
         }
 
         if ($task->driver) {
             $task->driver->transactions()
-              ->where('reference_id', $task->id)
-              ->where('type', 'delivery')
-              ->where('status', '!=', 'completed')
-              ->delete();
+                ->where('reference_id', $task->id)
+                ->where('type', 'delivery')
+                ->where('status', '!=', 'completed')
+                ->delete();
         }
     }
 
@@ -3022,32 +2946,32 @@ class TasksController extends Controller
     public function closeTask(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:tasks,id',
-          'delivery_number' => 'nullable|string|max:255',
-          'delivery_note' => 'required|array|min:1',
-          'delivery_note.*' => [
-              'required',
-              function ($attribute, $value, $fail) {
-                  if (!$value->isValid()) {
-                      return $fail(__('The file :name is invalid or exceeds the upload limit. Please try again.', ['name' => $value->getClientOriginalName()]));
-                  }
-                  $allowed = ['jpeg','png','jpg','webp','pdf','doc','docx','txt','csv','xls','xlsx','heic','heif'];
-                  $ext = strtolower($value->getClientOriginalExtension());
-                  $guessedExt = strtolower($value->extension());
-                  if (!in_array($ext, $allowed) && !in_array($guessedExt, $allowed)) {
-                      $fail(__('The delivery note must be a file of type: jpeg, png, jpg, webp, pdf, doc, docx, txt, csv, xls, xlsx, heic, heif.'));
-                  }
-              },
-              'max:10240'
-          ],
+            'id' => 'required|exists:tasks,id',
+            'delivery_number' => 'nullable|string|max:255',
+            'delivery_note' => 'required|array|min:1',
+            'delivery_note.*' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    if (!$value->isValid()) {
+                        return $fail(__('The file :name is invalid or exceeds the upload limit. Please try again.', ['name' => $value->getClientOriginalName()]));
+                    }
+                    $allowed = ['jpeg', 'png', 'jpg', 'webp', 'pdf', 'doc', 'docx', 'txt', 'csv', 'xls', 'xlsx', 'heic', 'heif'];
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    $guessedExt = strtolower($value->extension());
+                    if (!in_array($ext, $allowed) && !in_array($guessedExt, $allowed)) {
+                        $fail(__('The delivery note must be a file of type: jpeg, png, jpg, webp, pdf, doc, docx, txt, csv, xls, xlsx, heic, heif.'));
+                    }
+                },
+                'max:10240'
+            ],
         ], [
-          'id.required'  => __('Can not find the selected Task'),
-          'id.exists'  => __('Can not find the selected Task'),
-          'delivery_number.string' => __('The delivery number must be a valid text.'),
-          'delivery_number.max' => __('The delivery number may not be greater than 255 characters.'),
-          'delivery_note.required' => __('The delivery note file is required.'),
-          'delivery_note.array' => __('The delivery note must be an array of files.'),
-          'delivery_note.*.max' => __('The delivery note file size must not exceed 10MB.'),
+            'id.required' => __('Can not find the selected Task'),
+            'id.exists' => __('Can not find the selected Task'),
+            'delivery_number.string' => __('The delivery number must be a valid text.'),
+            'delivery_number.max' => __('The delivery number may not be greater than 255 characters.'),
+            'delivery_note.required' => __('The delivery note file is required.'),
+            'delivery_note.array' => __('The delivery note must be an array of files.'),
+            'delivery_note.*.max' => __('The delivery note file size must not exceed 10MB.'),
         ]);
 
         if ($validator->fails()) {
@@ -3067,30 +2991,30 @@ class TasksController extends Controller
 
             if ($task->closed) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This Task already closed'),
+                    'status' => 2,
+                    'error' => __('This Task already closed'),
                 ]);
             }
 
             if ($task->status !== 'completed') {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This task cannot be closed in its current state'),
+                    'status' => 2,
+                    'error' => __('This task cannot be closed in its current state'),
                 ]);
             }
 
             if ($task->payment_status !== 'paid') {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This transaction cannot be closed until the payment is completed.'),
+                    'status' => 2,
+                    'error' => __('This transaction cannot be closed until the payment is completed.'),
                 ]);
             }
 
             $driver = Driver::find($task->driver_id);
             if (!$driver) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This Task cannot be closed due to a driver issue'),
+                    'status' => 2,
+                    'error' => __('This Task cannot be closed due to a driver issue'),
                 ]);
             }
 
@@ -3113,11 +3037,11 @@ class TasksController extends Controller
 
             // تحديث المهمة مع أرقام وملفات مذكرات التوصيل
             $updateData = [
-              'closed' => true,
-              'delivery_notes' => !empty($deliveryNotePaths) ? json_encode($deliveryNotePaths) : null,
-              // نحتفظ بأول ملف في الحقل القديم لضمان التوافق مع أي أنظمة أخرى تقرأ الحقل القديم
-              'delivery_note' => !empty($deliveryNotePaths) ? $deliveryNotePaths[0] : null,
-              'delivery_number' => $req->delivery_number
+                'closed' => true,
+                'delivery_notes' => !empty($deliveryNotePaths) ? json_encode($deliveryNotePaths) : null,
+                // نحتفظ بأول ملف في الحقل القديم لضمان التوافق مع أي أنظمة أخرى تقرأ الحقل القديم
+                'delivery_note' => !empty($deliveryNotePaths) ? $deliveryNotePaths[0] : null,
+                'delivery_number' => $req->delivery_number
             ];
 
             $task->update($updateData);
@@ -3134,37 +3058,37 @@ class TasksController extends Controller
             Log::alert("تم ارسال الإشعارات ");
 
             $task->history()->create([
-              'action_type' => 'closed',
-              'description' => 'Task closed by admin' . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
-              'ip' => IpHelper::getUserIpAddress(),
-              'user_id' => Auth::user()->id,
+                'action_type' => 'closed',
+                'description' => 'Task closed by admin' . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
+                'ip' => IpHelper::getUserIpAddress(),
+                'user_id' => Auth::user()->id,
             ]);
 
             Log::alert("تم تخزين سجل الحالة");
             $wallet = $driver->wallet;
             if (!$wallet) {
                 return response()->json([
-                  'status' => 2,
-                  'error' => __('This Task cannot be closed due to a wallet issue'),
+                    'status' => 2,
+                    'error' => __('This Task cannot be closed due to a wallet issue'),
                 ]);
             }
 
             $data = [
-              'amount'              => $task->total_price - $task->commission,
-              'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
-              'transaction_type'    => 'credit',
-              'wallet_id'           => $wallet->id,
-              'maturity_time'       => Carbon::now()->copy()->addDays(3),
-              'task_id'             => $task->id,
+                'amount' => $task->total_price - $task->commission,
+                'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
+                'transaction_type' => 'credit',
+                'wallet_id' => $wallet->id,
+                'maturity_time' => Carbon::now()->copy()->addDays(3),
+                'task_id' => $task->id,
             ];
 
             Log::alert([
-              'amount'              => $task->total_price - $task->commission,
-              'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
-              'transaction_type'    => 'credit',
-              'wallet_id'           => $wallet->id,
-              'maturity_time'       => Carbon::now()->copy()->addDays(3),
-              'task_id'             => $task->id,
+                'amount' => $task->total_price - $task->commission,
+                'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : ''),
+                'transaction_type' => 'credit',
+                'wallet_id' => $wallet->id,
+                'maturity_time' => Carbon::now()->copy()->addDays(3),
+                'task_id' => $task->id,
             ]);
             if ($driver->team()->exists()) {
                 $data['team_id'] = $driver->team->id;
@@ -3172,22 +3096,22 @@ class TasksController extends Controller
 
             Wallet_Transaction::create($data);
             Log::alert(
-              [
-                 'amount'              => $task->total_price - $task->commission,
-                  'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
-                  'transaction_type'    => 'credit',
+                [
+                    'amount' => $task->total_price - $task->commission,
+                    'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
+                    'transaction_type' => 'credit',
 
-              ]
-              );
+                ]
+            );
 
             Log::alert('انشاء الحركة في المحفظة');
             if ($driver->team()->exists()) {
                 Team_Wallet_Transaction::create([
-                  'amount'              => $task->total_price - $task->commission,
-                  'description'         => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
-                  'transaction_type'    => 'credit',
-                  'team_wallet_id'      => $driver->team->teamWallet->id,
-                  'task_id'             => $task->id,
+                    'amount' => $task->total_price - $task->commission,
+                    'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
+                    'transaction_type' => 'credit',
+                    'team_wallet_id' => $driver->team->teamWallet->id,
+                    'task_id' => $task->id,
                 ]);
             }
 
@@ -3224,14 +3148,14 @@ class TasksController extends Controller
         $validator = Validator::make($req->all(), [
             'id' => 'required|exists:tasks,id',
             'resone' => 'required|string|max:500',
-          ], [
-            'id.required'  => __('Can not find the selected Task'),
-            'id.exists'  => __('Can not find the selected Task'),
+        ], [
+            'id.required' => __('Can not find the selected Task'),
+            'id.exists' => __('Can not find the selected Task'),
             'resone.required' => __('The Refund resone is required'),
             'resone.string' => __('The Refund resone must be a valid text'),
             'resone.max' => __('The Refund resone may not be greater than 500 characters'),
 
-          ]);
+        ]);
 
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'error' => $validator->errors()]);
@@ -3259,14 +3183,14 @@ class TasksController extends Controller
 
                 if ($customerWallet) {
                     \App\Models\Wallet_Transaction::create([
-                        'wallet_id'        => $customerWallet->id,
-                        'task_id'          => $task->id,
+                        'wallet_id' => $customerWallet->id,
+                        'task_id' => $task->id,
                         'transaction_type' => 'credit',
-                        'amount'           => $task->total_price,
-                        'description'      => "إيداع عكسي: استرداد قيمة المهمة المستردة رقم #{$task->id}",
-                        'user_id'          => Auth::id(),
-                        'status'           => 1,
-                        'maturity_time'    => now()
+                        'amount' => $task->total_price,
+                        'description' => "إيداع عكسي: استرداد قيمة المهمة المستردة رقم #{$task->id}",
+                        'user_id' => Auth::id(),
+                        'status' => 1,
+                        'maturity_time' => now()
                     ]);
                 }
             }
@@ -3276,14 +3200,14 @@ class TasksController extends Controller
                 $driverWallet = $task->driver->wallet;
                 if ($driverWallet) {
                     \App\Models\Wallet_Transaction::create([
-                        'wallet_id'        => $driverWallet->id,
-                        'task_id'          => $task->id,
+                        'wallet_id' => $driverWallet->id,
+                        'task_id' => $task->id,
                         'transaction_type' => 'debit',
-                        'amount'           => $task->total_price - $task->commission,
-                        'description'      => "خصم عكسي: إلغاء مستحقات التوصيل للمهمة المستردة رقم #{$task->id}",
-                        'user_id'          => Auth::id(),
-                        'status'           => 1,
-                        'maturity_time'    => now()
+                        'amount' => $task->total_price - $task->commission,
+                        'description' => "خصم عكسي: إلغاء مستحقات التوصيل للمهمة المستردة رقم #{$task->id}",
+                        'user_id' => Auth::id(),
+                        'status' => 1,
+                        'maturity_time' => now()
                     ]);
                 }
             }
@@ -3293,12 +3217,12 @@ class TasksController extends Controller
                 $teamWallet = $task->driver->team->teamWallet;
                 if ($teamWallet) {
                     \App\Models\Team_Wallet_Transaction::create([
-                        'team_wallet_id'   => $teamWallet->id,
-                        'task_id'          => $task->id,
+                        'team_wallet_id' => $teamWallet->id,
+                        'task_id' => $task->id,
                         'transaction_type' => 'debit',
-                        'amount'           => $task->total_price - $task->commission,
-                        'description'      => "خصم عكسي: إلغاء مستحقات المهمة المستردة رقم #{$task->id} - السائق: {$task->driver->name}",
-                        'status'           => 1
+                        'amount' => $task->total_price - $task->commission,
+                        'description' => "خصم عكسي: إلغاء مستحقات المهمة المستردة رقم #{$task->id} - السائق: {$task->driver->name}",
+                        'status' => 1
                     ]);
                 }
             }
@@ -3310,14 +3234,14 @@ class TasksController extends Controller
 
             foreach ($distributedCommissions as $originalComm) {
                 \App\Models\UserWalletTransaction::create([
-                    'user_wallet_id'   => $originalComm->user_wallet_id,
-                    'task_id'          => $task->id,
+                    'user_wallet_id' => $originalComm->user_wallet_id,
+                    'task_id' => $task->id,
                     'transaction_type' => 'debit',
-                    'amount'           => $originalComm->amount,
-                    'description'      => "خصم عكسي: إلغاء عمولة المهمة المستردة رقم #{$task->id}",
-                    'user_id'          => Auth::id(),
-                    'status'           => true,
-                    'maturity_time'    => now()
+                    'amount' => $originalComm->amount,
+                    'description' => "خصم عكسي: إلغاء عمولة المهمة المستردة رقم #{$task->id}",
+                    'user_id' => Auth::id(),
+                    'status' => true,
+                    'maturity_time' => now()
                 ]);
             }
 
@@ -3337,13 +3261,13 @@ class TasksController extends Controller
                         $newBalance = $investorWallet->balance + $task->total_price;
                         \App\Models\InvestorWalletTransaction::create([
                             'investor_wallet_id' => $investorWallet->id,
-                            'task_id'            => $task->id,
-                            'transaction_type'   => 'credit',
-                            'source_type'        => 'refund',
-                            'amount'             => $task->total_price,
-                            'description'        => "إيداع عكسي: استرداد رأس مال المهمة المستردة رقم #{$task->id}",
-                            'performed_by'       => Auth::id(),
-                            'balance_after'      => $newBalance
+                            'task_id' => $task->id,
+                            'transaction_type' => 'credit',
+                            'source_type' => 'refund',
+                            'amount' => $task->total_price,
+                            'description' => "إيداع عكسي: استرداد رأس مال المهمة المستردة رقم #{$task->id}",
+                            'performed_by' => Auth::id(),
+                            'balance_after' => $newBalance
                         ]);
                     } else {
                         // الحالة الثانية: العميل كان قد سدد بالفعل ورأس المال رجع للمستثمر مسبقاً
@@ -3370,45 +3294,45 @@ class TasksController extends Controller
             }
 
             $notifications = [
-               'user' => [
-                   'title' => 'your task #'. $task->id .' was refunded and canceld',
-                   'msg'   => "this task was refunded because of: " . $req->resone
-               ],
-               'customer' => [
-                   'title' =>  'your task #'. $task->id .' was refunded and canceld',
-                   'msg'   => "this task was refunded because of: " . $req->resone
-               ],
-               'driver' => [
-                  'title' => "Task #{$task->id} that was assigned to you was refunded and canceled",
-                  'msg'   => "This task was refunded because of: {$req->resone}"
+                'user' => [
+                    'title' => 'your task #' . $task->id . ' was refunded and canceld',
+                    'msg' => "this task was refunded because of: " . $req->resone
+                ],
+                'customer' => [
+                    'title' => 'your task #' . $task->id . ' was refunded and canceld',
+                    'msg' => "this task was refunded because of: " . $req->resone
+                ],
+                'driver' => [
+                    'title' => "Task #{$task->id} that was assigned to you was refunded and canceled",
+                    'msg' => "This task was refunded because of: {$req->resone}"
                 ],
 
             ];
             // قائمة المستلمين: [نوع => ID]
             $recipients = [
-                'user'     => $task->user_id,
+                'user' => $task->user_id,
                 'customer' => $task->customer_id,
-                'driver'   => $task->driver_id,
+                'driver' => $task->driver_id,
             ];
 
             $deleviry_note = $task->deleviry_note;
 
             $task->update([
-                          'status' => 'refund',
-                          'closed' => false,
-                          'payment_status' => 'waiting',
-                          'driver_id' => null,
-                          'deleviry_note' => null,
-                          'delivery_number' => null,
-                          'investor_id' => null,
-                          'investor_payment_status' => 'none',
-                        ]);
+                'status' => 'refund',
+                'closed' => false,
+                'payment_status' => 'waiting',
+                'driver_id' => null,
+                'deleviry_note' => null,
+                'delivery_number' => null,
+                'investor_id' => null,
+                'investor_payment_status' => 'none',
+            ]);
 
             $task->history()->create([
-              'action_type' => 'refund',
-              'description' => 'The task was refunded by admin. Resone: ' . $req->resone,
-              'ip' => IpHelper::getUserIpAddress(),
-              'user_id' => Auth::user()->id,
+                'action_type' => 'refund',
+                'description' => 'The task was refunded by admin. Resone: ' . $req->resone,
+                'ip' => IpHelper::getUserIpAddress(),
+                'user_id' => Auth::user()->id,
             ]);
 
             if ($deleviry_note) {
@@ -3451,7 +3375,7 @@ class TasksController extends Controller
     public function editBroker($id)
     {
         try {
-            $data = Task::with('brokers')->select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value', 'total_price', 'commission'])->findOrFail($id);
+            $data = Task::select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value'])->findOrFail($id);
             $user = auth()->user();
             if (!$user || !$user->checkTask($data->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
@@ -3459,7 +3383,7 @@ class TasksController extends Controller
             if ($data->closed) {
                 return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
             }
-            
+
             return response()->json(['status' => 1, 'data' => $data]);
         } catch (\Exception $ex) {
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
@@ -3469,11 +3393,10 @@ class TasksController extends Controller
     public function updateBroker(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'id' => 'required|exists:tasks,id',
-          'brokers' => 'nullable|array',
-          'brokers.*.id' => 'required_with:brokers|exists:users,id',
-          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
-          'brokers.*.commission_value' => 'required_with:brokers|numeric|min:0'
+            'id' => 'required|exists:tasks,id',
+            'broker_id' => 'nullable|exists:users,id',
+            'broker_commission_type' => 'nullable|in:percentage,fixed',
+            'broker_commission_value' => 'nullable|numeric|min:0'
         ]);
 
         if ($validator->fails()) {
@@ -3493,50 +3416,20 @@ class TasksController extends Controller
 
             $userIp = IpHelper::getUserIpAddress();
             $history = [
-              [
-                'action_type' => 'updated',
-                'description' => 'Update Truck Broker',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ]
+                [
+                    'action_type' => 'updated',
+                    'description' => 'Update Truck Broker',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ]
             ];
             $find->history()->createMany($history);
-            
+
             $find->update([
-              'broker_id' => null,
-              'broker_commission_type' => null,
-              'broker_commission_value' => null
+                'broker_id' => $req->broker_id,
+                'broker_commission_type' => $req->broker_commission_type,
+                'broker_commission_value' => $req->broker_commission_value
             ]);
-            
-            if ($req->has('brokers') && is_array($req->brokers)) {
-                $brokersData = [];
-                $platformCut = $find->commission ?? 0;
-                $totalBrokersShare = 0;
-                foreach ($req->brokers as $b) {
-                    if (!empty($b['id'])) {
-                        $calculatedAmount = 0;
-                        if (($b['commission_type'] ?? 'percentage') === 'percentage') {
-                            $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
-                        } else {
-                            $calculatedAmount = $b['commission_value'] ?? 0;
-                        }
-                        $totalBrokersShare += $calculatedAmount;
-                        $brokersData[$b['id']] = [
-                            'commission_type' => $b['commission_type'] ?? 'percentage',
-                            'commission_value' => $b['commission_value'] ?? 0,
-                            'calculated_amount' => $calculatedAmount,
-                        ];
-                    }
-                }
-                
-                if ($totalBrokersShare > $platformCut) {
-                    DB::rollBack();
-                    return response()->json(['status' => 2, 'error' => __('Total brokers commission cannot exceed the platform commission.')]);
-                }
-                $find->brokers()->sync($brokersData);
-            } else {
-                $find->brokers()->sync([]);
-            }
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('Broker updated successfully.')]);
@@ -3557,12 +3450,12 @@ class TasksController extends Controller
             if ($data->closed) {
                 return response()->json(['status' => 2, 'error' => __('This Task already closed. you can not update it')]);
             }
-            
+
             $blockedStatuses = ['completed', 'canceled', 'refund'];
             if (in_array($data->status, $blockedStatuses)) {
                 return response()->json(['status' => 2, 'error' => __('You cannot modify the pricing of this task as its status is') . ' ' . $data->status]);
             }
-            
+
             return response()->json(['status' => 1, 'data' => $data]);
         } catch (Exception $ex) {
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
@@ -3572,11 +3465,11 @@ class TasksController extends Controller
     public function updatePricing(Request $req)
     {
         $validator = Validator::make($req->all(), [
-          'price' => 'required|numeric|min:0',
-          'driver_price' => 'required|numeric|lt:price|min:0',
-          'pricing_details' => 'nullable|array',
-          'pricing_details.*.label' => 'required_with:pricing_details.*.amount|string',
-          'pricing_details.*.amount' => 'required_with:pricing_details.*.label|numeric'
+            'price' => 'required|numeric|min:0',
+            'driver_price' => 'required|numeric|lt:price|min:0',
+            'pricing_details' => 'nullable|array',
+            'pricing_details.*.label' => 'required_with:pricing_details.*.amount|string',
+            'pricing_details.*.amount' => 'required_with:pricing_details.*.label|numeric'
         ]);
 
         if ($validator->fails()) {
@@ -3601,9 +3494,9 @@ class TasksController extends Controller
 
             $details = $req->pricing_details ?? [];
             $sumDetails = collect($req->input('pricing_details', []))
-              ->sum(function ($item) {
-                  return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
-              });
+                ->sum(function ($item) {
+                    return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
+                });
             if ($sumDetails > $req->price) {
                 DB::rollBack();
                 return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
@@ -3613,20 +3506,20 @@ class TasksController extends Controller
 
             $userIp = IpHelper::getUserIpAddress();
             $history = [
-              [
-                'action_type' => 'updated',
-                'description' => 'Update Task Pricing Manual',
-                'ip' => $userIp,
-                'user_id' => Auth::user()->id
-              ]
+                [
+                    'action_type' => 'updated',
+                    'description' => 'Update Task Pricing Manual',
+                    'ip' => $userIp,
+                    'user_id' => Auth::user()->id
+                ]
             ];
             $find->history()->createMany($history);
             $done = $find->update([
-              'total_price' => $req->price,
-              'commission' => $commission,
-              'pricing_details' => $details,
-              'pricing_type' => 'manual',
-              'commission_type' => 'manual'
+                'total_price' => $req->price,
+                'commission' => $commission,
+                'pricing_details' => $details,
+                'pricing_type' => 'manual',
+                'commission_type' => 'manual'
             ]);
 
             if (!$done) {
@@ -3650,20 +3543,20 @@ class TasksController extends Controller
                 return redirect()->back();
             }
             $pickup = [
-              'lat' => $task->pickup->latitude,
-              'lng' => $task->pickup->longitude,
+                'lat' => $task->pickup->latitude,
+                'lng' => $task->pickup->longitude,
             ];
 
             $dropoff = [
-              'lat' => $task->delivery->latitude,
-              'lng' => $task->delivery->longitude,
+                'lat' => $task->delivery->latitude,
+                'lng' => $task->delivery->longitude,
             ];
 
             $driver = null;
             if ($task->driver_id && $task->driver) {
                 $driver = [
-                  'lat' => $task->driver->altitude,
-                  'lng' => $task->driver->longitude,
+                    'lat' => $task->driver->altitude,
+                    'lng' => $task->driver->longitude,
                 ];
             }
             return view('admin.tasks.tracking', compact('task', 'pickup', 'dropoff', 'driver'));
@@ -3691,15 +3584,15 @@ class TasksController extends Controller
                     $transaction = Wallet_Transaction::where('task_id', $task->id)->where('transaction_type', 'credit')->first();
                     if ($transaction) {
                         Team_Wallet_Transaction::create([
-                          'amount'              => $transaction->amount,
-                          'description'         => $transaction->description . ' Driver: ' . $task->driver->name,
-                          'transaction_type'    => 'credit',
-                          'team_wallet_id'      => $task->driver->team->teamWallet->id,
-                          'task_id'           => $task->id
+                            'amount' => $transaction->amount,
+                            'description' => $transaction->description . ' Driver: ' . $task->driver->name,
+                            'transaction_type' => 'credit',
+                            'team_wallet_id' => $task->driver->team->teamWallet->id,
+                            'task_id' => $task->id
 
                         ]);
                     }
-                    $transaction->team_id =  $task->driver->team_id;
+                    $transaction->team_id = $task->driver->team_id;
                     $transaction->save();
                 }
                 DB::commit();
@@ -3725,14 +3618,14 @@ class TasksController extends Controller
         try {
             // إعداد بيانات المهمة المشتركة
             $taskData = [
-              'Task ID' => $task->id,
-              'Task Type' => 'Delivery Task',
-              'Pickup Address' => $task->pickup ? $task->pickup->address : 'Not specified',
-              'Delivery Address' => $task->delivery ? $task->delivery->address : 'Not specified',
-              'Price' => $task->total_price - $task->commission . ' SAR',
-              'Vehicle Size' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - (' . $task->vehicle_size->name . ')' : 'Not specified',
-              'Assignment Date' => now()->format('Y-m-d H:i'),
-              'Status' => 'Assigned'
+                'Task ID' => $task->id,
+                'Task Type' => 'Delivery Task',
+                'Pickup Address' => $task->pickup ? $task->pickup->address : 'Not specified',
+                'Delivery Address' => $task->delivery ? $task->delivery->address : 'Not specified',
+                'Price' => $task->total_price - $task->commission . ' SAR',
+                'Vehicle Size' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . ' - ' . $task->vehicle_size->type->name . ' - (' . $task->vehicle_size->name . ')' : 'Not specified',
+                'Assignment Date' => now()->format('Y-m-d H:i'),
+                'Status' => 'Assigned'
             ];
 
             // إرسال إشعار للسائق
@@ -3743,9 +3636,9 @@ class TasksController extends Controller
         } catch (Exception $e) {
             // تسجيل الخطأ دون إيقاف العملية الأساسية
             Log::error('Failed to send task assignment notifications', [
-              'task_id' => $task->id,
-              'driver_id' => $driver->id,
-              'error' => $e->getMessage()
+                'task_id' => $task->id,
+                'driver_id' => $driver->id,
+                'error' => $e->getMessage()
             ]);
         }
     }
@@ -3765,19 +3658,19 @@ class TasksController extends Controller
         }
 
         $emailData = [
-          'to' => $driver->email,
-          'subject' => 'New Task Assigned to You - Task #' . $task->id,
-          'template' => 'emails.task-assigned',
-          'type' => 'task_assignment',
-          'priority' => 'high',
-          'user_name' => $driver->name,
-          'action_url' => route('driver.task.show', $task->id),
-          'action_text' => 'View Task Details',
-          'additional_data' => array_merge($taskData, [
-            'Driver Name' => $driver->name,
-            'Driver Phone' => $driver->phone,
-            'Instructions' => 'Please check the task details and contact the customer if needed.'
-          ])
+            'to' => $driver->email,
+            'subject' => 'New Task Assigned to You - Task #' . $task->id,
+            'template' => 'emails.task-assigned',
+            'type' => 'task_assignment',
+            'priority' => 'high',
+            'user_name' => $driver->name,
+            'action_url' => route('driver.task.show', $task->id),
+            'action_text' => 'View Task Details',
+            'additional_data' => array_merge($taskData, [
+                'Driver Name' => $driver->name,
+                'Driver Phone' => $driver->phone,
+                'Instructions' => 'Please check the task details and contact the customer if needed.'
+            ])
         ];
 
         dispatch(new SendEmailNotificationJob($emailData, $attachments));
@@ -3818,22 +3711,22 @@ class TasksController extends Controller
         }
 
         $emailData = [
-          'to' => $ownerEmail,
-          'subject' => 'Driver Assigned to Your Task #' . $task->id,
-          'template' => 'emails.notification',
-          'type' => 'task_assignment_owner',
-          'priority' => 'normal',
-          'user_name' => $ownerName,
-          'content' => 'A driver has been assigned to your delivery task. The driver will contact you soon to coordinate the pickup and delivery.',
-          'action_url' => $dashboardUrl,
-          'action_text' => 'View Task Details',
-          'additional_data' => array_merge($taskData, [
-            'Assigned Driver' => $driver->name,
-            'Driver Phone' => $driver->phone,
-            'Driver Vehicle' => $driver->vehicle_size ? $driver->vehicle_size->name : 'Not specified',
-            'Expected Contact' => 'The driver will contact you within 30 minutes',
-            'Support Phone' => config('app.support_phone', 'Contact Support')
-          ])
+            'to' => $ownerEmail,
+            'subject' => 'Driver Assigned to Your Task #' . $task->id,
+            'template' => 'emails.notification',
+            'type' => 'task_assignment_owner',
+            'priority' => 'normal',
+            'user_name' => $ownerName,
+            'content' => 'A driver has been assigned to your delivery task. The driver will contact you soon to coordinate the pickup and delivery.',
+            'action_url' => $dashboardUrl,
+            'action_text' => 'View Task Details',
+            'additional_data' => array_merge($taskData, [
+                'Assigned Driver' => $driver->name,
+                'Driver Phone' => $driver->phone,
+                'Driver Vehicle' => $driver->vehicle_size ? $driver->vehicle_size->name : 'Not specified',
+                'Expected Contact' => 'The driver will contact you within 30 minutes',
+                'Support Phone' => config('app.support_phone', 'Contact Support')
+            ])
         ];
 
         dispatch(new SendEmailNotificationJob($emailData, $attachments));
@@ -4102,18 +3995,18 @@ class TasksController extends Controller
         $task = Task::find($id);
         if (!$task) {
             return response()->json([
-                 'status' => 2,
-                 'message' => __('Task Not found')
-             ]);
+                'status' => 2,
+                'message' => __('Task Not found')
+            ]);
         }
         if ($task->driver_id) {
             $task->team_id = $task->driver->team_id ?? null;
             $task->save();
         }
-        return  response()->json([
-                 'status' => 1,
-                 'message' => __('fix tream connection done')
-             ]);
+        return response()->json([
+            'status' => 1,
+            'message' => __('fix tream connection done')
+        ]);
     }
 
     public function createFromInvoice(Request $request)
@@ -4133,7 +4026,7 @@ class TasksController extends Controller
         // Get product details (assuming single product or primary product for location)
         $detail = $invoice->details->first();
         if (!$detail || !$detail->product) {
-             return redirect()->route('sales.show', $invoice_id)->with('error', __('Product details not found'));
+            return redirect()->route('sales.show', $invoice_id)->with('error', __('Product details not found'));
         }
         $product = $detail->product;
 
@@ -4217,10 +4110,10 @@ class TasksController extends Controller
                 $totalOrderPrice += $task->total_price;
 
                 // Create a unique key for grouping: vehicle, price, pickup, delivery
-                $key = ($task->vehicle_size_id ?? '0') . '_' . 
-                       $task->total_price . '_' . 
-                       ($task->pickup->address ?? '') . '_' . 
-                       ($task->delivery->address ?? '');
+                $key = ($task->vehicle_size_id ?? '0') . '_' .
+                    $task->total_price . '_' .
+                    ($task->pickup->address ?? '') . '_' .
+                    ($task->delivery->address ?? '');
 
                 if (!isset($consolidated[$key])) {
                     $consolidated[$key] = [
@@ -4280,10 +4173,10 @@ class TasksController extends Controller
                 $totalPrice += $task->total_price;
 
                 // التجميع بناءً على (نوع المركبة، السعر، موقع الاستلام، موقع التسليم)
-                $key = ($task->vehicle_size_id ?? '0') . '_' . 
-                       $task->total_price . '_' . 
-                       ($task->pickup->address ?? '') . '_' . 
-                       ($task->delivery->address ?? '');
+                $key = ($task->vehicle_size_id ?? '0') . '_' .
+                    $task->total_price . '_' .
+                    ($task->pickup->address ?? '') . '_' .
+                    ($task->delivery->address ?? '');
 
                 if (!isset($consolidated[$key])) {
                     $consolidated[$key] = [
@@ -4325,10 +4218,10 @@ class TasksController extends Controller
         }
 
         $tasks = Task::whereNull('investor_id')
-                     ->where('investor_payment_status', 'paid')
-                     ->select('id', 'total_price', 'status', 'customer_id')
-                     ->with('customer:id,name')
-                     ->get();
+            ->where('investor_payment_status', 'paid')
+            ->select('id', 'total_price', 'status', 'customer_id')
+            ->with('customer:id,name')
+            ->get();
 
         return response()->json([
             'status' => 1,
@@ -4354,8 +4247,8 @@ class TasksController extends Controller
 
             if ($taskId === 'all') {
                 $affected = Task::whereNull('investor_id')
-                                ->where('investor_payment_status', 'paid')
-                                ->update(['investor_payment_status' => 'none']);
+                    ->where('investor_payment_status', 'paid')
+                    ->update(['investor_payment_status' => 'none']);
                 $message = "تم إصلاح {$affected} مهمة بنجاح.";
             } else {
                 $task = Task::findOrFail($taskId);

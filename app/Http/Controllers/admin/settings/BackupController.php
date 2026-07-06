@@ -207,7 +207,7 @@ class BackupController extends Controller
       throw new Exception('Invalid PostgreSQL database configuration');
     }
 
-    $pgDumpBinary = 'pg_dump'; // fallback إلى "pg_dump" لو لم يُحدد
+    $pgDumpBinary = env('PG_DUMP_BINARY', 'pg_dump');
 
     // Build pg_dump command with proper escaping
     $command = sprintf(
@@ -706,12 +706,12 @@ class BackupController extends Controller
     }
 
     $dbConfig = config('database.connections.pgsql');
-    $pgDumpBinary = 'C:\Program Files\PostgreSQL\15\bin\psql.exe'; // fallback إلى "pg_dump" لو لم يُحدد
+    $psqlBinary = env('PG_RESTORE_BINARY', 'psql');
 
     // Build psql command for restore
     $command = sprintf(
       '%s --host=%s --port=%s --username=%s --dbname=%s --no-password --file=%s 2>&1',
-      escapeshellarg($pgDumpBinary),
+      escapeshellarg($psqlBinary),
       escapeshellarg($dbConfig['host']),
       escapeshellarg($dbConfig['port'] ?? 5432),
       escapeshellarg($dbConfig['username']),
@@ -760,9 +760,10 @@ class BackupController extends Controller
       return;
     }
 
+    $backupCurrentPath = storage_path('app/temp/current_files_backup_' . time());
+
     try {
       // Backup current files before restore (safety measure)
-      $backupCurrentPath = storage_path('app/temp/current_files_backup_' . time());
       if (File::exists($storagePath)) {
         File::copyDirectory($storagePath, $backupCurrentPath);
         Log::info('Current files backed up before restore', ['backup_path' => $backupCurrentPath]);
@@ -782,8 +783,23 @@ class BackupController extends Controller
         'storage_path' => $storagePath
       ]);
     } catch (Exception $e) {
-      Log::error('Files restore failed', ['error' => $e->getMessage()]);
+      Log::error('Files restore failed, attempting rollback', ['error' => $e->getMessage()]);
+      
+      // Rollback
+      if (File::exists($backupCurrentPath)) {
+        if (File::exists($storagePath)) {
+            File::deleteDirectory($storagePath);
+        }
+        File::copyDirectory($backupCurrentPath, $storagePath);
+        Log::info('Rolled back files restore to original state');
+      }
+      
       throw new Exception('Files restore failed: ' . $e->getMessage());
+    } finally {
+      // Clean up safety backup to save space
+      if (File::exists($backupCurrentPath)) {
+          File::deleteDirectory($backupCurrentPath);
+      }
     }
   }
 

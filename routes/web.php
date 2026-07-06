@@ -12,7 +12,7 @@ use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\TeamsController;
 use App\Http\Controllers\admin\UsersController;
-use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\admin\ActivityLogController;
 use App\Http\Controllers\admin\UserCommissionsController;
 use App\Http\Controllers\admin\UserWalletsController;
 use App\Http\Controllers\Auth\CaptchaController;

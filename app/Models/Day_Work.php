@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Day_Work extends Model
 {
+    use LogsActivity;
+
   protected $table = 'day_work';
   protected $fillable = [
     'driver_id',

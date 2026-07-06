@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class UserWalletTransaction extends Model
 {
+    use LogsActivity;
+
   protected $table = 'user_wallet_transactions';
   protected $fillable = [
     'user_id',

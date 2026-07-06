@@ -99,6 +99,10 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/check-status', [DriverAuthController::class, 'checkStatus'])
         ->name('api.driver.check-status');
 
+    // OCR Extraction Route
+    Route::post('/ocr/extract', [\App\Http\Controllers\Api\DriverOcrController::class, 'extract'])
+        ->name('api.driver.ocr.extract');
+
     // Available tasks can be viewed by anyone including guests
     Route::get('/tasks/available', [\App\Http\Controllers\Api\DriverAvailableTasksController::class, 'index'])
         ->name('api.driver.tasks.available');

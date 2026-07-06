@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class User_Teams extends Model
 {
+    use LogsActivity;
+
   protected $table = 'user_has_teams';
   protected $fillable = [
     'user_id',

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Customs_Clearance_History extends Model
 {
+    use LogsActivity;
+
   protected $table = 'customs_clearance_history';
   protected $fillable = [
     'action_type',

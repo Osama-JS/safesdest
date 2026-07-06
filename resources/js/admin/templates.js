@@ -303,8 +303,17 @@ $(function () {
 
                 </td>
                 <td>
-                  <input type="text" class="form-control field-value-input" placeholder="For composite fields: label for companion field">
+                  <input type="text" class="form-control field-value-input" placeholder="Default value or placeholder text">
                   <span class="field-${fieldIndex}-value-error text-danger text-error"></span>
+                </td>
+                <td>
+                  <textarea class="form-control field-ocr-prompt" placeholder="AI Prompt (Image/File)"></textarea>
+                </td>
+                <td>
+                    <select class="form-control field-is-auto-filled">
+                        <option value="0">NO</option>
+                        <option value="1">YES</option>
+                    </select>
                 </td>
                 <td>
                     <select class="form-control field-required-select">
@@ -468,7 +477,9 @@ $(function () {
           required: $(this).find('.field-required-select').val(),
           value: type === 'select' ? JSON.stringify(selectValues) : $(this).find('.field-value-input').val(),
           driver_can: $(this).find('.field-manager').val(),
-          customer_can: $(this).find('.field-customer-can-select').val()
+          customer_can: $(this).find('.field-customer-can-select').val(),
+          ocr_prompt: $(this).find('.field-ocr-prompt').val() || null,
+          is_auto_filled: $(this).find('.field-is-auto-filled').val()
         });
       });
 

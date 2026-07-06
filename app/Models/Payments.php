@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Payments extends Model
 {
+    use LogsActivity;
+
     protected $table = 'payments';
 
     protected $fillable = [

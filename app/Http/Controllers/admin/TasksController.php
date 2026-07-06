@@ -1247,6 +1247,55 @@ class TasksController extends Controller
                 $taskCopy['additional_data'] = $newAdditionalData;
 
                 $newTask = Task::create($taskCopy);
+                
+                // Attach Multiple Brokers
+                if (request()->has('brokers') && is_array(request()->brokers)) {
+                    $brokersData = [];
+                    foreach (request()->brokers as $b) {
+                        if (!empty($b['id'])) {
+                            $calculatedAmount = 0;
+                            $platformCut = $newTask->commission ?? 0;
+                            if (($b['commission_type'] ?? 'percentage') === 'percentage') {
+                                $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
+                            } else {
+                                $calculatedAmount = $b['commission_value'] ?? 0;
+                            }
+                            $brokersData[$b['id']] = [
+                                'commission_type' => $b['commission_type'] ?? 'percentage',
+                                'commission_value' => $b['commission_value'] ?? 0,
+                                'calculated_amount' => $calculatedAmount,
+                            ];
+                        }
+                    }
+                    $newTask->brokers()->sync($brokersData);
+                } elseif (!empty($taskCopy['driver_id'])) {
+                    // Copy driver brokers if no manual brokers provided
+                    $driver = \App\Models\Driver::with('brokers')->find($taskCopy['driver_id']);
+                    if ($driver && $driver->brokers->count() > 0) {
+                        $brokersData = [];
+                        $platformCut = $newTask->commission ?? 0;
+                        $totalBrokersShare = 0;
+                        foreach ($driver->brokers as $b) {
+                            $calculatedAmount = 0;
+                            if ($b->pivot->commission_type === 'percentage') {
+                                $calculatedAmount = ($platformCut * $b->pivot->commission_value) / 100;
+                            } else {
+                                $calculatedAmount = $b->pivot->commission_value;
+                            }
+                            $totalBrokersShare += $calculatedAmount;
+
+                            $brokersData[$b->id] = [
+                                'commission_type' => $b->pivot->commission_type,
+                                'commission_value' => $b->pivot->commission_value,
+                                'calculated_amount' => $calculatedAmount,
+                            ];
+                        }
+                        if ($totalBrokersShare <= $platformCut) {
+                            $newTask->brokers()->sync($brokersData);
+                        }
+                    }
+                }
+
                 $newTask->point()->create($pickup_point);
                 $newTask->point()->create($delivery_point);
                 $newTask->history()->createMany($history);
@@ -1690,6 +1739,33 @@ class TasksController extends Controller
             }
             $newTask = Task::findOrFail($req->id);
             $newTask->update($task);
+            
+            // Update Multiple Brokers
+            if ($req->has('brokers') && is_array($req->brokers)) {
+                $brokersData = [];
+                foreach ($req->brokers as $b) {
+                    if (!empty($b['id'])) {
+                        $calculatedAmount = 0;
+                        $platformCut = $newTask->commission ?? 0;
+                        if (($b['commission_type'] ?? 'percentage') === 'percentage') {
+                            $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
+                        } else {
+                            $calculatedAmount = $b['commission_value'] ?? 0;
+                        }
+                        $brokersData[$b['id']] = [
+                            'commission_type' => $b['commission_type'] ?? 'percentage',
+                            'commission_value' => $b['commission_value'] ?? 0,
+                            'calculated_amount' => $calculatedAmount,
+                        ];
+                    }
+                }
+                
+                // Validate total
+                $totalBrokersShare = array_sum(array_column($brokersData, 'calculated_amount'));
+                if ($totalBrokersShare <= ($newTask->commission ?? 0)) {
+                    $newTask->brokers()->sync($brokersData);
+                }
+            }
             $newTask->pickup()->update($pickup_point);
             $newTask->delivery()->update($delivery_point);
             $newTask->history()->createMany($history);
@@ -3375,7 +3451,7 @@ class TasksController extends Controller
     public function editBroker($id)
     {
         try {
-            $data = Task::select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value'])->findOrFail($id);
+            $data = Task::with('brokers')->select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value', 'total_price', 'commission'])->findOrFail($id);
             $user = auth()->user();
             if (!$user || !$user->checkTask($data->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
@@ -3394,9 +3470,10 @@ class TasksController extends Controller
     {
         $validator = Validator::make($req->all(), [
           'id' => 'required|exists:tasks,id',
-          'broker_id' => 'nullable|exists:users,id',
-          'broker_commission_type' => 'nullable|in:percentage,fixed',
-          'broker_commission_value' => 'nullable|numeric|min:0'
+          'brokers' => 'nullable|array',
+          'brokers.*.id' => 'required_with:brokers|exists:users,id',
+          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
+          'brokers.*.commission_value' => 'required_with:brokers|numeric|min:0'
         ]);
 
         if ($validator->fails()) {
@@ -3426,10 +3503,40 @@ class TasksController extends Controller
             $find->history()->createMany($history);
             
             $find->update([
-              'broker_id' => $req->broker_id,
-              'broker_commission_type' => $req->broker_commission_type,
-              'broker_commission_value' => $req->broker_commission_value
+              'broker_id' => null,
+              'broker_commission_type' => null,
+              'broker_commission_value' => null
             ]);
+            
+            if ($req->has('brokers') && is_array($req->brokers)) {
+                $brokersData = [];
+                $platformCut = $find->commission ?? 0;
+                $totalBrokersShare = 0;
+                foreach ($req->brokers as $b) {
+                    if (!empty($b['id'])) {
+                        $calculatedAmount = 0;
+                        if (($b['commission_type'] ?? 'percentage') === 'percentage') {
+                            $calculatedAmount = ($platformCut * ($b['commission_value'] ?? 0)) / 100;
+                        } else {
+                            $calculatedAmount = $b['commission_value'] ?? 0;
+                        }
+                        $totalBrokersShare += $calculatedAmount;
+                        $brokersData[$b['id']] = [
+                            'commission_type' => $b['commission_type'] ?? 'percentage',
+                            'commission_value' => $b['commission_value'] ?? 0,
+                            'calculated_amount' => $calculatedAmount,
+                        ];
+                    }
+                }
+                
+                if ($totalBrokersShare > $platformCut) {
+                    DB::rollBack();
+                    return response()->json(['status' => 2, 'error' => __('Total brokers commission cannot exceed the platform commission.')]);
+                }
+                $find->brokers()->sync($brokersData);
+            } else {
+                $find->brokers()->sync([]);
+            }
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('Broker updated successfully.')]);

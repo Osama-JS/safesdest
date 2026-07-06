@@ -12,6 +12,7 @@ use App\Http\Controllers\admin\RolesController;
 use App\Http\Controllers\admin\TasksController;
 use App\Http\Controllers\admin\TeamsController;
 use App\Http\Controllers\admin\UsersController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\admin\UserCommissionsController;
 use App\Http\Controllers\admin\UserWalletsController;
 use App\Http\Controllers\Auth\CaptchaController;
@@ -314,6 +315,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/status', [UsersController::class, 'chang_status'])->name('user.status');
                 Route::get('/users/edit/{id}', [UsersController::class, 'edit'])->name('user.show');
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
+
+                // Activity Logs Routes
+                Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity_logs');
+                Route::get('/activity-logs/data', [ActivityLogController::class, 'getData'])->name('admin.activity_logs.data');
+                Route::get('/activity-logs/show/{id}', [ActivityLogController::class, 'show'])->name('admin.activity_logs.show');
 
                 // Investor Management Routes
                 

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Task_History extends Model
 {
+    use LogsActivity;
+
   protected $table = 'task_histories';
   protected $fillable = [
     'action_type',

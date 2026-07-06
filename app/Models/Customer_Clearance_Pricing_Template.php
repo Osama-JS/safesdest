@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Customer_Clearance_Pricing_Template extends Model
 {
+    use LogsActivity;
+
   protected $table = "customer_clearance_pricing_template";
   protected $fillable = [
     'customer_id',

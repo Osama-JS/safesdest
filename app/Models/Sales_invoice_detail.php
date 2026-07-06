@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Sales_invoice_detail extends Model
 {
+    use LogsActivity;
+
     protected $table = 'sales_invoice_details';
 
     protected $fillable = [

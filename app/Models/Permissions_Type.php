@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Permission;
 
 class Permissions_Type extends Model
 {
+    use LogsActivity;
+
   protected $table = 'permissions_types';
   protected $fillable = [
     'name',

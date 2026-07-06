@@ -243,7 +243,7 @@
                         <form id="reportForm">
                             <div class="row">
                                 <!-- Customer Selection -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="customer_ids" class="form-label">{{ __('Select Customers') }} 
                                         <small class="text-muted">({{ __('Leave empty to select all') }})</small>
                                     </label>
@@ -259,7 +259,7 @@
                                 </div>
 
                                 <!-- Date Range -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="dateRange" class="form-label">{{ __('Date Range') }} <span
                                             class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="dateRange" name="dateRange" required>
@@ -268,7 +268,7 @@
                                 </div>
 
                                 <!-- Task Status -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="task_statuses" class="form-label">{{ __('Task Status') }}</label>
                                     <select class="form-select filter-select" id="task_statuses" name="task_statuses[]"
                                         multiple>
@@ -279,7 +279,7 @@
                                 </div>
 
                                 <!-- Payment Status -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="payment_status" class="form-label">{{ __('Payment Status') }}</label>
                                     <select class="form-select filter-select" id="payment_status" name="payment_status">
                                         <option value="">{{ __('All Payment Statuses') }}</option>
@@ -290,7 +290,7 @@
                                 </div>
 
                                 <!-- Payment Method -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="payment_method" class="form-label">{{ __('Payment Method') }}</label>
                                     <select class="form-select filter-select" id="payment_method" name="payment_method">
                                         <option value="">{{ __('All Payment Methods') }}</option>
@@ -301,7 +301,7 @@
                                 </div>
 
                                 <!-- Driver Selection -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="driver_ids" class="form-label">{{ __('Select Drivers') }}</label>
                                     <select class="form-select filter-select" id="driver_ids" name="driver_ids[]" multiple>
                                         @foreach ($drivers as $driver)
@@ -312,7 +312,7 @@
                                 </div>
 
                                 <!-- Team Selection -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="team_ids" class="form-label">{{ __('Select Teams') }}</label>
                                     <select class="form-select filter-select" id="team_ids" name="team_ids[]" multiple>
                                         @foreach ($teams as $team)
@@ -322,7 +322,7 @@
                                 </div>
 
                                 <!-- Created By -->
-                                <div class="col-md-4 mb-3">
+                                <div class="col-md-3 col-sm-6 mb-3">
                                     <label for="created_by" class="form-label">{{ __('Created By') }}</label>
                                     <select class="form-select filter-select" id="created_by" name="created_by">
                                         <option value="">{{ __('All') }}</option>
@@ -351,13 +351,11 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-primary" id="previewBtn">
-                                            <i class="ti ti-eye me-1"></i>
-                                            {{ __('Preview Report') }}
+                                        <button type="button" class="btn btn-primary" id="previewBtn" title="{{ __('Preview Report') }}" data-bs-toggle="tooltip">
+                                            <i class="ti ti-eye"></i>
                                         </button>
-                                        <button type="button" class="btn btn-outline-secondary" id="resetBtn">
-                                            <i class="ti ti-refresh me-1"></i>
-                                            {{ __('Reset Filters') }}
+                                        <button type="button" class="btn btn-outline-secondary" id="resetBtn" title="{{ __('Reset Filters') }}" data-bs-toggle="tooltip">
+                                            <i class="ti ti-refresh"></i>
                                         </button>
                                     </div>
                                 </div>

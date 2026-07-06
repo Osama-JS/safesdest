@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class TaskB2bDetail extends Model
 {
+    use LogsActivity;
+
     protected $table = 'task_b2b_details';
 
     protected $fillable = [

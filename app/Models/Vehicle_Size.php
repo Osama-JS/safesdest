@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Vehicle_Size extends Model
 {
+    use LogsActivity;
+
   protected $table = 'vehicle_sizes';
   protected $fillable = [
     'name',

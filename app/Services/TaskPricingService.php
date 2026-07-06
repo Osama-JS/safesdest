@@ -83,6 +83,10 @@ class TaskPricingService
           'broker_id' => 'nullable|exists:users,id',
           'broker_commission_type' => 'nullable|in:percentage,fixed',
           'broker_commission_value' => 'nullable|numeric|min:0',
+          'brokers'                 => 'nullable|array',
+          'brokers.*.id'            => 'required_with:brokers|exists:users,id',
+          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
+          'brokers.*.commission_value'=> 'required_with:brokers|numeric|min:0',
         ];
 
         if ($request->filled('params_select')) {

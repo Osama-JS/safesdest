@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Pricing_Geofence extends Model
 {
+    use LogsActivity;
+
   protected $table = 'pricing_geofences';
   protected $fillable = [
     'type',

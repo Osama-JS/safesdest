@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class TaskClaimRequest extends Model
 {
+    use LogsActivity;
+
     protected $table = 'task_claim_requests';
 
     protected $fillable = [

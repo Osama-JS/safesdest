@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class EmailNotificationLog extends Model
 {
+    use LogsActivity;
+
     use HasFactory;
 
     protected $table = 'email_notifications_log';

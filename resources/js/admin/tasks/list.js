@@ -94,6 +94,8 @@ $(function () {
         { data: 'id' }, // الترقيم التسلسلي
         { data: 'customer_task_number' },
         { data: 'order' }, // الاسم مع الأفاتار
+        { data: 'customer_name' }, // Customer name
+
         { data: 'price', visible: (typeof canViewTotalPrice !== 'undefined' && canViewTotalPrice) }, // السعر الإجمالي (يظهر فقط لمن لديه الصلاحية)
         { data: 'driver_price' }, // الاسم مع الأفاتار
         { data: 'team' }, // البريد
@@ -161,10 +163,8 @@ $(function () {
         },
         {
           targets: 5,
-          responsivePriority: 2,
-          className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
+            return `<span>${full.customer && full.customer.name ? full.customer.name : '-'}</span>`;
           }
         },
         {
@@ -172,17 +172,25 @@ $(function () {
           responsivePriority: 2,
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="border border-info rounded text-info px-2"><strong>${full.driver_price} SAR</strong></span>`;
+            return `<span class="border border-primary rounded text-primary px-2"><strong>${full.price} SAR</strong></span>`;
           }
         },
         {
           targets: 7,
+          responsivePriority: 2,
+          className: 'text-nowrap w-auto',
+          render: function (data, type, full, meta) {
+            return `<span class="border border-info rounded text-info px-2"><strong>${full.driver_price} SAR</strong></span>`;
+          }
+        },
+        {
+          targets: 8,
           render: function (data, type, full, meta) {
             return `<span>${full.team}</span>`;
           }
         },
         {
-          targets: 8,
+          targets: 9,
           responsivePriority: 7,
           render: function (data, type, full, meta) {
             return full.driver === '-'
@@ -196,7 +204,7 @@ $(function () {
           }
         },
         {
-          targets: 9,
+          targets: 10,
           render: function (data, type, full, meta) {
             if (!full.vehicle_info) return '<span>-</span>';
             return `
@@ -208,31 +216,31 @@ $(function () {
           }
         },
         {
-          targets: 10,
+          targets: 11,
           render: function (data, type, full, meta) {
             return `<span>${full.owner} <br> (${full.owner_info})</span>`;
           }
         },
         {
-          targets: 11,
+          targets: 12,
           render: function (data, type, full, meta) {
             return `<span>${full.address}</span>`;
           }
         },
         {
-          targets: 12,
+          targets: 13,
           render: function (data, type, full, meta) {
             return `<span>${full.start}</span>`;
           }
         },
         {
-          targets: 13,
+          targets: 14,
           render: function (data, type, full, meta) {
             return `<span>${full.complete}</span>`;
           }
         },
         {
-          targets: 14,
+          targets: 15,
           responsivePriority: 4,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -267,7 +275,7 @@ $(function () {
           }
         },
         {
-          targets: 15,
+          targets: 16,
           responsivePriority: 5,
           render: function (data, type, full, meta) {
             let colorClass = '';
@@ -289,7 +297,7 @@ $(function () {
           }
         },
         {
-          targets: 16,
+          targets: 17,
           responsivePriority: 7,
           render: function (data, type, full, meta) {
             if (full.closed) {
@@ -306,7 +314,7 @@ $(function () {
           }
         },
         {
-          targets: 17,
+          targets: 18,
           title: __('Actions'),
           searchable: false,
           orderable: false,
@@ -450,9 +458,18 @@ $(function () {
         return;
       }
       $('#broker-task-id').val(data.data.id);
-      $('#modal-task-broker-id').val(data.data.broker_id).trigger('change');
-      $('#modal-task-broker-commission-type').val(data.data.broker_commission_type);
-      $('#modal-task-broker-commission-value').val(data.data.broker_commission_value);
+      
+      $('#task-brokers-container').empty();
+      if (data.data.brokers && data.data.brokers.length > 0) {
+        data.data.brokers.forEach((broker, index) => {
+          addTaskBrokerRow(index, broker.id, broker.pivot.commission_type, broker.pivot.commission_value);
+        });
+        taskBrokerRowIndex = data.data.brokers.length;
+      } else {
+        addTaskBrokerRow(0, data.data.broker_id || '', data.data.broker_commission_type || '', data.data.broker_commission_value || '');
+        taskBrokerRowIndex = 1;
+      }
+      
       
       $('#brokerModal').modal('show');
       $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
@@ -1681,4 +1698,56 @@ $(function () {
         showAlert('danger', 'خطأ في الاتصال بالخادم');
       });
   });
+
+  // Multiple Brokers Logic for Task Modal
+  let taskBrokerRowIndex = 1;
+  const taskBrokersOptionsHtml = $('#task-brokers-container .broker-select').first().html() || '<option value="">None</option>';
+
+  window.addTaskBrokerRow = function(index, brokerId = '', type = '', value = '') {
+    const rowHtml = `
+      <div class="row broker-row align-items-center mb-3">
+          <div class="col-md-4">
+              <label class="form-label">Truck Broker</label>
+              <select name="brokers[${index}][id]" class="form-select select2 broker-select" data-dropdown-parent="#brokerModal">
+                  ${taskBrokersOptionsHtml}
+              </select>
+          </div>
+          <div class="col-md-4">
+              <label class="form-label">Commission Type</label>
+              <select name="brokers[${index}][commission_type]" class="form-select broker-commission-type">
+                  <option value="">Select Type</option>
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount</option>
+              </select>
+          </div>
+          <div class="col-md-3">
+              <label class="form-label">Value</label>
+              <input type="number" name="brokers[${index}][commission_value]" class="form-control broker-commission-value" step="0.01" placeholder="Value" value="${value}">
+          </div>
+          <div class="col-md-1 mt-4 text-end">
+              <button type="button" class="btn btn-danger btn-sm remove-broker-row" ${index === 0 ? 'style="display:none;"' : ''}><i class="ti ti-trash"></i></button>
+          </div>
+      </div>
+    `;
+    const $row = $(rowHtml);
+    $('#task-brokers-container').append($row);
+    if (brokerId) $row.find('.broker-select').val(brokerId).trigger('change');
+    if (type) $row.find('.broker-commission-type').val(type);
+    
+    if ($.fn.select2) {
+      $row.find('.select2').select2({
+          dropdownParent: $('#brokerModal')
+      });
+    }
+  };
+
+  $('#add-task-broker-btn').on('click', function() {
+    addTaskBrokerRow(taskBrokerRowIndex);
+    taskBrokerRowIndex++;
+  });
+
+  $(document).on('click', '#task-brokers-container .remove-broker-row', function() {
+    $(this).closest('.broker-row').remove();
+  });
 });
+

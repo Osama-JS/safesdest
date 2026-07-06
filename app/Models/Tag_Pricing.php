@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Tag_Pricing extends Model
 {
+    use LogsActivity;
+
   protected $table = 'tags_pricing';
   protected $fillable = [
     'tag_id',

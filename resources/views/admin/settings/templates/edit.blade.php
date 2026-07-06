@@ -96,7 +96,9 @@
                             <th>{{ __('driver can') }}</th>
                             <th>{{ __('customer can') }}</th>
                             <th>{{ __('type') }}</th>
-                            <th>{{ __('value') }}</th>
+                            <th>{{ __('Default / Placeholder') }}</th>
+                            <th>{{ __('OCR AI Prompt') }}</th>
+                            <th>{{ __('Auto Filled (OCR)') }}</th>
                             <th>{{ __('require') }}</th>
                             <th></th>
                         </tr>
@@ -192,6 +194,15 @@
                                         placeholder="{{ $placeholder }}">
                                     <span class="field-{{ $key }}-value-error text-danger text-error"></span>
 
+                                </td>
+                                <td>
+                                    <textarea class="form-control field-ocr-prompt" placeholder="AI Prompt (Image/File)">{{ isset($field->ocr_prompt) ? $field->ocr_prompt : '' }}</textarea>
+                                </td>
+                                <td>
+                                    <select class="form-control field-is-auto-filled">
+                                        <option value="0" {{ empty($field->is_auto_filled) ? 'selected' : '' }}>NO</option>
+                                        <option value="1" {{ !empty($field->is_auto_filled) ? 'selected' : '' }}>YES</option>
+                                    </select>
                                 </td>
                                 <td>
                                     <select class="form-control field-required-select">

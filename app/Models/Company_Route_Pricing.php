@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Company_Route_Pricing extends Model
 {
+    use LogsActivity;
+
     protected $table = 'company_route_pricing';
     protected $fillable = [
         'company_id', 'warehouse_id', 'destination_province_id',

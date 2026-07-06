@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class TeamWalletPaymentRequestLog extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'team_wallet_id',
         'user_id',

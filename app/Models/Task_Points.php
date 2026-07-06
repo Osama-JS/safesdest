@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Task_Points extends Model
 {
+    use LogsActivity;
+
   protected $table = 'tasks_points';
   protected $fillable = [
     'task_id',

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Notification_Users extends Model
 {
+    use LogsActivity;
+
   protected $table = 'notifications_users';
   protected $fillable = [
     'notification_id',

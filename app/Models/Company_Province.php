@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Company_Province extends Model
 {
+    use LogsActivity;
+
     protected $table = 'company_provinces';
     protected $fillable = ['name_ar', 'name_en', 'region', 'is_active'];
 

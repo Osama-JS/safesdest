@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Support\Facades\DB;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Geofence extends Model
 {
+    use LogsActivity;
+
   protected $table = 'geofences';
   protected $fillable = [
     'name',

@@ -41,7 +41,8 @@ class DriverRegistrationController extends Controller
       if ($driverTemplateSetting) {
         $driverTemplate = Form_Template::find($driverTemplateSetting->value);
         if ($driverTemplate) {
-          $driverFields = Form_Field::where('form_template_id', $driverTemplate->id)->where('driver_can', 'write')
+          $driverFields = Form_Field::where('form_template_id', $driverTemplate->id)
+            ->whereIn('driver_can', ['write', 'read'])
             ->orderBy('order', 'ASC')
             ->get();
         }
@@ -153,8 +154,12 @@ class DriverRegistrationController extends Controller
           ? null
           : $teamId,
       ]);
+      $cleanPhoneCode = str_replace('+', '', $request->phone_code);
       $existingGuest = Driver::where('phone', $request->phone)
-                            ->where('phone_code', $request->phone_code)
+                            ->where(function ($query) use ($cleanPhoneCode) {
+                                $query->where('phone_code', $cleanPhoneCode)
+                                      ->orWhere('phone_code', '+' . $cleanPhoneCode);
+                            })
                             ->where('is_guest', true)
                             ->first();
 

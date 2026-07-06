@@ -293,7 +293,9 @@ class TemplateController extends Controller
         'required' => $field->required,
         'value' => $field->value,
         'driver_can' => $field->driver_can,
-        'customer_can' => $field->customer_can
+        'customer_can' => $field->customer_can,
+        'ocr_prompt' => $field->ocr_prompt,
+        'is_auto_filled' => $field->is_auto_filled
       ]);
     }
   }
@@ -372,6 +374,8 @@ class TemplateController extends Controller
           'value' => $field['value'],
           'driver_can' => $field['driver_can'],
           'customer_can' => $field['customer_can'],
+          'ocr_prompt' => isset($field['ocr_prompt']) ? $field['ocr_prompt'] : null,
+          'is_auto_filled' => isset($field['is_auto_filled']) ? $field['is_auto_filled'] : 0,
           'order' => $index + 1, // ترتيب الحقل حسب موقعه في المصفوفة (يبدأ من 1)
         ];
         if (isset($field['id'])) {

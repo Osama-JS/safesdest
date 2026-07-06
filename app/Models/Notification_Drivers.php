@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification_Drivers extends Model
 {
+    use LogsActivity;
+
     protected $table = 'notifications_drivers';
     protected $fillable = [
         'notification_id',

@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Team_Wallet_Transaction extends Model
 {
+    use LogsActivity;
+
   protected $table = 'team_wallet_transactions';
   protected $fillable = [
     'amount',

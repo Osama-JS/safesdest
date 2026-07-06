@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Company_End_Client extends Model
 {
+    use LogsActivity;
+
     protected $table = 'company_end_clients';
     protected $fillable = [
         'company_id', 'province_id', 'client_code', 'name', 'phone', 'phone_2',

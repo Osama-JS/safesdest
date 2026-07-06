@@ -284,7 +284,13 @@
             <thead>
                 <tr>
                     <th style="width: 6%">{{ __('Task ID') }}</th>
+                    @if(in_array('customer_info', $filters['columns'] ?? []))
+                        <th style="width: 10%">العميل</th>
+                    @endif
                     <th style="width: 10%">{{ __('Task Price') }}</th>
+                    @if(in_array('driver_price', $filters['columns'] ?? []))
+                        <th style="width: 10%">سعر السائق</th>
+                    @endif
                     <th style="width: 20%">{{ __('Route') }}</th>
                     @if(in_array('delivery_number', $filters['columns'] ?? []))
                         <th style="width: 15%">رقم مذكرة التوصيل</th>
@@ -313,6 +319,14 @@
                 @forelse($reportData['tasks'] as $task)
                     <tr>
                         <td>{{ $task['id'] }}</td>
+                        @if(in_array('customer_info', $filters['columns'] ?? []))
+                            <td>
+                                <strong>{{ $task['customer_name'] }}</strong>
+                                @if(!$briefData && !empty($task['customer_company']))
+                                    <br><span class="small-text">{{ $task['customer_company'] }}</span>
+                                @endif
+                            </td>
+                        @endif
                         <td>
                             @if ($task['total_price'] == 0 && isset($task['original_price']) && $task['original_price'] > 0)
                                 <span
@@ -323,6 +337,9 @@
                                 {{ number_format($task['total_price'], 2) }}{{ $priceSuffix }}
                             @endif
                         </td>
+                        @if(in_array('driver_price', $filters['columns'] ?? []))
+                            <td>{{ number_format($task['driver_price'] ?? 0, 2) }}{{ $priceSuffix }}</td>
+                        @endif
                         <td class="text-truncate">
                             @if($briefData)
                                 {{ $task['pickup_address'] }}<br>

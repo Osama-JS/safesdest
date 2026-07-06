@@ -61,6 +61,56 @@
             background-color: transparent;
             border-bottom: 1px solid #ebeef4;
         }
+
+        /* Sticky Columns CSS */
+        .table-sticky th, .table-sticky td {
+            white-space: nowrap;
+        }
+        
+        .sticky-left-1 {
+            position: sticky !important;
+            inset-inline-start: 0; /* Logical property for LTR/RTL support */
+            z-index: 2;
+        }
+        
+        .sticky-left-2 {
+            position: sticky !important;
+            inset-inline-start: 140px; /* Must EXACTLY match .col-metrics-1 width */
+            z-index: 2;
+            background-color: #fff !important; /* Ensure it has a background to cover scrolling content */
+        }
+        
+        .col-metrics-1 {
+            width: 140px !important;
+            min-width: 140px !important;
+            max-width: 140px !important;
+            white-space: normal !important;
+        }
+        
+        .col-metrics-2 {
+            width: 180px !important;
+            min-width: 180px !important;
+            max-width: 180px !important;
+            white-space: normal !important;
+        }
+        
+        .sticky-right {
+            position: sticky !important;
+            inset-inline-end: 0;
+            z-index: 2;
+        }
+        
+        .table-sticky thead th {
+            position: sticky !important;
+            top: 0;
+            z-index: 3;
+        }
+
+        .table-sticky thead th.sticky-left-1,
+        .table-sticky thead th.sticky-left-2,
+        .table-sticky thead th.sticky-right {
+            z-index: 5; /* Higher z-index for cells that are both horizontally and vertically sticky */
+        }
     </style>
 @endsection
 
@@ -150,8 +200,8 @@
         <h5 class="card-title m-0">نتائج التقرير</h5>
     </div>
     <div class="card-body">
-        <div class="table-responsive text-nowrap" style="overflow-x: auto; max-width: 100%;">
-            <table class="table table-bordered table-striped" id="reportTable">
+        <div class="table-responsive text-nowrap" style="overflow-x: auto; max-width: 100%; max-height: 70vh;">
+            <table class="table table-bordered table-striped table-sticky" id="reportTable">
                 <thead class="table-light">
                     <!-- Headers will be generated dynamically -->
                 </thead>
@@ -281,13 +331,13 @@
             let calcNetCommission = data.calc_net_commission;
 
             // Header Row
-            let headerRow = '<tr><th colspan="2" class="text-center bg-dark text-white">المقاييس / الأيام</th>';
+            let headerRow = '<tr><th colspan="2" class="text-center bg-dark text-white sticky-left-1" style="z-index:5; min-width:320px;">المقاييس / الأيام</th>';
             days.forEach(function(day) {
                 let parts = day.split('-');
                 let shortDate = parts[2] + '-' + parts[1]; // dd-mm
                 headerRow += '<th class="text-center">' + shortDate + '</th>';
             });
-            headerRow += '<th class="text-center fw-bold bg-primary text-white">Total</th></tr>';
+            headerRow += '<th class="text-center fw-bold bg-primary text-white sticky-right" style="z-index:3;">Total</th></tr>';
             thead.append(headerRow);
 
             let act = data.activity;
@@ -300,43 +350,43 @@
             let rowSpanActivity = calcNetCommission ? 7 : 6;
             
             // Row 1: Number of Shipments
-            let tr1 = '<tr><td rowspan="'+rowSpanActivity+'" class="align-middle fw-bold text-center bg-label-primary">النشاط والربحية</td>';
-            tr1 += '<td class="fw-bold">Number of Shipments</td>';
+            let tr1 = '<tr><td rowspan="'+rowSpanActivity+'" class="align-middle fw-bold text-center bg-label-primary sticky-left-1 col-metrics-1" style="background-color: #e7e7ff !important;">النشاط والربحية</td>';
+            tr1 += '<td class="fw-bold sticky-left-2 col-metrics-2">Number of Shipments</td>';
             days.forEach(day => { tr1 += '<td class="text-center">' + (act.shipments[day] || 0) + '</td>'; });
-            tr1 += '<td class="text-center fw-bold bg-label-primary">' + calcTotal(act.shipments) + '</td></tr>';
+            tr1 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">' + calcTotal(act.shipments) + '</td></tr>';
             tbody.append(tr1);
 
             // Row 2: Active Customers
-            let tr2 = '<tr><td class="fw-bold">Active Customer</td>';
+            let tr2 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Active Customer</td>';
             days.forEach(day => { tr2 += '<td class="text-center">' + (act.active_customers[day] || 0) + '</td>'; });
-            tr2 += '<td class="text-center fw-bold bg-label-primary">-</td></tr>'; // Total unique active customers across period is complex, skip or leave -
+            tr2 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">-</td></tr>'; // Total unique active customers across period is complex, skip or leave -
             tbody.append(tr2);
 
             // Row 3: Revenue
-            let tr3 = '<tr><td class="fw-bold">Revenue</td>';
+            let tr3 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Revenue</td>';
             days.forEach(day => { tr3 += '<td class="text-center">' + formatCurrency(act.revenue[day], showCurrency) + '</td>'; });
-            tr3 += '<td class="text-center fw-bold bg-label-primary">' + formatCurrency(calcTotal(act.revenue), showCurrency) + '</td></tr>';
+            tr3 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">' + formatCurrency(calcTotal(act.revenue), showCurrency) + '</td></tr>';
             tbody.append(tr3);
 
             // Row 4: Carrier Cost
-            let tr4 = '<tr><td class="fw-bold">Carrier Cost</td>';
+            let tr4 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Carrier Cost</td>';
             days.forEach(day => { tr4 += '<td class="text-center">' + formatCurrency(act.carrier_cost[day], showCurrency) + '</td>'; });
-            tr4 += '<td class="text-center fw-bold bg-label-primary">' + formatCurrency(calcTotal(act.carrier_cost), showCurrency) + '</td></tr>';
+            tr4 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">' + formatCurrency(calcTotal(act.carrier_cost), showCurrency) + '</td></tr>';
             tbody.append(tr4);
 
             // Row 5: Gross Margin
-            let tr5 = '<tr><td class="fw-bold">Gross Margin</td>';
+            let tr5 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Gross Margin</td>';
             let totalGrossMargin = 0;
             days.forEach(day => { 
                 let margin = (act.revenue[day] || 0) - (act.carrier_cost[day] || 0);
                 totalGrossMargin += margin;
                 tr5 += '<td class="text-center">' + formatCurrency(margin, showCurrency) + '</td>'; 
             });
-            tr5 += '<td class="text-center fw-bold bg-label-primary">' + formatCurrency(totalGrossMargin, showCurrency) + '</td></tr>';
+            tr5 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">' + formatCurrency(totalGrossMargin, showCurrency) + '</td></tr>';
             tbody.append(tr5);
 
             // Row 6: Margin %
-            let tr6 = '<tr><td class="fw-bold">Margin %</td>';
+            let tr6 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Margin %</td>';
             days.forEach(day => { 
                 let margin = (act.revenue[day] || 0) - (act.carrier_cost[day] || 0);
                 let rev = act.revenue[day] || 0;
@@ -345,33 +395,33 @@
             });
             let totalRev = calcTotal(act.revenue);
             let totalPerc = totalRev > 0 ? ((totalGrossMargin / totalRev) * 100).toFixed(2) + '%' : '0%';
-            tr6 += '<td class="text-center fw-bold bg-label-primary">' + totalPerc + '</td></tr>';
+            tr6 += '<td class="text-center fw-bold bg-label-primary sticky-right" style="background-color: #e7e7ff !important;">' + totalPerc + '</td></tr>';
             tbody.append(tr6);
 
             // Row 7 (Optional): Net Platform Commission
             if (calcNetCommission) {
-                let tr7 = '<tr><td class="fw-bold text-success">Net Platform Commission</td>';
+                let tr7 = '<tr><td class="fw-bold text-success sticky-left-2 col-metrics-2">Net Platform Commission</td>';
                 days.forEach(day => { tr7 += '<td class="text-center text-success">' + formatCurrency(act.net_commission[day], showCurrency) + '</td>'; });
-                tr7 += '<td class="text-center fw-bold bg-label-success">' + formatCurrency(calcTotal(act.net_commission), showCurrency) + '</td></tr>';
+                tr7 += '<td class="text-center fw-bold bg-label-success sticky-right" style="background-color: #e8fadf !important;">' + formatCurrency(calcTotal(act.net_commission), showCurrency) + '</td></tr>';
                 tbody.append(tr7);
             }
 
             // Cash Section
             // Row 1: Cash Collected
-            let trC1 = '<tr><td rowspan="3" class="align-middle fw-bold text-center bg-label-info">النقدية والتحصيل</td>';
-            trC1 += '<td class="fw-bold">Cash Collected</td>';
+            let trC1 = '<tr><td rowspan="3" class="align-middle fw-bold text-center bg-label-info sticky-left-1 col-metrics-1" style="background-color: #d7f5fc !important;">النقدية والتحصيل</td>';
+            trC1 += '<td class="fw-bold sticky-left-2 col-metrics-2">Cash Collected</td>';
             days.forEach(day => { trC1 += '<td class="text-center">' + formatCurrency(cash.collected[day], showCurrency) + '</td>'; });
-            trC1 += '<td class="text-center fw-bold bg-label-info">' + formatCurrency(calcTotal(cash.collected), showCurrency) + '</td></tr>';
+            trC1 += '<td class="text-center fw-bold bg-label-info sticky-right" style="background-color: #d7f5fc !important;">' + formatCurrency(calcTotal(cash.collected), showCurrency) + '</td></tr>';
             tbody.append(trC1);
 
             // Row 2: Paid to Carriers
-            let trC2 = '<tr><td class="fw-bold">Paid to Carriers</td>';
+            let trC2 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Paid to Carriers</td>';
             days.forEach(day => { trC2 += '<td class="text-center">' + formatCurrency(cash.paid_to_carriers[day], showCurrency) + '</td>'; });
-            trC2 += '<td class="text-center fw-bold bg-label-info">' + formatCurrency(calcTotal(cash.paid_to_carriers), showCurrency) + '</td></tr>';
+            trC2 += '<td class="text-center fw-bold bg-label-info sticky-right" style="background-color: #d7f5fc !important;">' + formatCurrency(calcTotal(cash.paid_to_carriers), showCurrency) + '</td></tr>';
             tbody.append(trC2);
 
             // Row 3: Cash Gap
-            let trC3 = '<tr><td class="fw-bold">Cash Gap</td>';
+            let trC3 = '<tr><td class="fw-bold sticky-left-2 col-metrics-2">Cash Gap</td>';
             let totalCashGap = 0;
             days.forEach(day => { 
                 let gap = (cash.collected[day] || 0) - (cash.paid_to_carriers[day] || 0);
@@ -380,7 +430,13 @@
                 trC3 += '<td class="text-center ' + colorClass + '">' + formatCurrency(gap, showCurrency) + '</td>'; 
             });
             let totalColorClass = totalCashGap > 0 ? 'bg-label-success text-success' : (totalCashGap < 0 ? 'bg-label-danger text-danger' : 'bg-label-info');
-            trC3 += '<td class="text-center fw-bold ' + totalColorClass + '">' + formatCurrency(totalCashGap, showCurrency) + '</td></tr>';
+            
+            // Map total color class to exact background color
+            let totalBgColor = '#d7f5fc'; // default info
+            if (totalCashGap > 0) totalBgColor = '#e8fadf'; // success
+            if (totalCashGap < 0) totalBgColor = '#ffe2e6'; // danger
+            
+            trC3 += '<td class="text-center fw-bold ' + totalColorClass + ' sticky-right" style="background-color: ' + totalBgColor + ' !important;">' + formatCurrency(totalCashGap, showCurrency) + '</td></tr>';
             tbody.append(trC3);
 
         }

@@ -9,11 +9,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 use Laravel\Sanctum\HasApiTokens;
+use App\Traits\LogsActivity;
 
 class Driver extends Authenticatable
 {
     use HasApiTokens;
     use HasRoles;
+    use LogsActivity;
     use SoftDeletes;
     use HasPushSubscriptions;
 
@@ -89,6 +91,14 @@ class Driver extends Authenticatable
     {
         return $this->belongsTo(User::class, 'broker_id');
     }
+
+    public function brokers()
+    {
+        return $this->belongsToMany(User::class, 'driver_brokers', 'driver_id', 'broker_id')
+                    ->withPivot('commission_type', 'commission_value', 'status')
+                    ->withTimestamps();
+    }
+
     public function tags()
     {
         return $this->hasMany(Tag_Drivers::class, 'driver_id');

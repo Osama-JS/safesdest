@@ -200,6 +200,7 @@ class ReportService
                 'id' => $task->id,
                 'total_price' => $effectivePrice,
                 'original_price' => $task->total_price, // Keep original for reference
+                'driver_price' => max(0, $effectivePrice - (float)($task->commission ?? 0)),
                 'customer_name' => $task->customer->name ?? 'غير محدد',
                 'customer_company' => $task->customer->company_name ?? '',
                 'driver_name' => $task->driver->name ?? 'غير محدد',

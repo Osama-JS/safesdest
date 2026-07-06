@@ -42,7 +42,7 @@ class DriversController extends Controller
         $vehicles = Vehicle::all();
         $driver_template = Settings::where('key', 'driver_template')->first();
         $banks = \App\Models\Bank::where('is_active', true)->get();
-        $brokers = \App\Models\User::where('status', 'active')->get();
+        $brokers = \App\Models\User::where('status', 'active')->where('investor', 0)->get();
 
         return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks', 'brokers'));
     }
@@ -229,7 +229,7 @@ class DriversController extends Controller
 
     public function edit($id)
     {
-        $data = Driver::findOrFail($id);
+        $data = Driver::with('brokers')->findOrFail($id);
         $data->img = $data->image ? url($data->image) : null;
         $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
         $data->vehicle = $data->vehicle_size->type->vehicle_id;
@@ -274,11 +274,16 @@ class DriversController extends Controller
           'bank_address2'           => 'nullable|string|max:255',
           'bank_city'               => 'nullable|string|max:255',
           'bank_country'            => 'nullable|string|size:2',
-          // Broker fields
+          // Broker fields (Old single broker)
           'broker_id'               => 'nullable|exists:users,id',
           'broker_commission_type'  => 'nullable|in:percentage,fixed',
           'broker_commission_value' => 'nullable|numeric|min:0',
           'broker_commission_start_date' => 'nullable|date',
+          // Multiple Brokers fields
+          'brokers'                 => 'nullable|array',
+          'brokers.*.id'            => 'required_with:brokers|exists:users,id',
+          'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
+          'brokers.*.commission_value'=> 'required_with:brokers|numeric|min:0',
         ];
 
         if ($req->filled('template')) {
@@ -627,6 +632,20 @@ class DriversController extends Controller
                 if ($req->role) {
                     $find->syncRoles($req->role);
                 }
+
+                if ($req->has('brokers') && is_array($req->brokers)) {
+                    $brokersData = [];
+                    foreach ($req->brokers as $b) {
+                        if (!empty($b['id'])) {
+                            $brokersData[$b['id']] = [
+                                'commission_type' => $b['commission_type'] ?? 'percentage',
+                                'commission_value' => $b['commission_value'] ?? 0,
+                                'status' => 1
+                            ];
+                        }
+                    }
+                    $find->brokers()->sync($brokersData);
+                }
             } else {
                 if ($req->hasFile('image')) {
                     $data['image'] = (new FunctionsController())->convert($req->image, 'drivers');
@@ -639,6 +658,20 @@ class DriversController extends Controller
                     if ($role) {
                         $done->assignRole($role->name);
                     }
+                }
+
+                if ($req->has('brokers') && is_array($req->brokers)) {
+                    $brokersData = [];
+                    foreach ($req->brokers as $b) {
+                        if (!empty($b['id'])) {
+                            $brokersData[$b['id']] = [
+                                'commission_type' => $b['commission_type'] ?? 'percentage',
+                                'commission_value' => $b['commission_value'] ?? 0,
+                                'status' => 1
+                            ];
+                        }
+                    }
+                    $done->brokers()->sync($brokersData);
                 }
 
                 (new WalletsController())->store('driver', $done->id, true);

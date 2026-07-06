@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Pricing_vehicle extends Model
 {
+    use LogsActivity;
+
   protected $table = 'pricing_vehicle';
   protected $fillable = [
     'pricing_template_id',

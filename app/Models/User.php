@@ -16,6 +16,8 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
+use App\Traits\LogsActivity;
+
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -25,6 +27,7 @@ class User extends Authenticatable
     use Notifiable;
     use TwoFactorAuthenticatable;
     use HasRoles;
+    use LogsActivity;
     use SoftDeletes;
     use HasPushSubscriptions;
 

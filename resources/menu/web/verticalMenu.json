@@ -256,10 +256,16 @@
                  },
                  {
                      "url":  "admin/roles",
-                     "name":  "Roles \u0026 Permissions",
+                     "name":  "Roles & Permissions",
                      "icon":  "menu-icon tf-icons ti ti-shield-lock",
                      "slug":  "role.roles",
                      "permission":  "view_roles"
+                 },
+                 {
+                     "url":  "admin/activity-logs",
+                     "name":  "Activity Logs",
+                     "icon":  "menu-icon tf-icons ti ti-activity",
+                     "slug":  "admin.activity_logs"
                  }
              ]
 }

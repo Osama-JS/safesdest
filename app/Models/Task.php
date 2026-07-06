@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Task extends Model
 {
+    use LogsActivity;
+
   protected $table = 'tasks';
   protected $fillable = [
     'status',
@@ -114,6 +118,18 @@ class Task extends Model
   public function payments()
   {
     return $this->hasMany(Payments::class, 'task_id');
+  }
+
+  public function investmentContract()
+  {
+    return $this->hasOne(InvestmentContract::class, 'task_id');
+  }
+
+  public function brokers()
+  {
+      return $this->belongsToMany(User::class, 'task_brokers', 'task_id', 'broker_id')
+                  ->withPivot('commission_type', 'commission_value', 'calculated_amount')
+                  ->withTimestamps();
   }
 
   public function point()

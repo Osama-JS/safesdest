@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Tag_Customers extends Model
 {
+    use LogsActivity;
+
   protected $table = 'tags_customers';
   protected $fillable = [
     'tag_id',

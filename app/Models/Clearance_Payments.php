@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Clearance_Payments extends Model
 {
+    use LogsActivity;
+
   protected $table = 'custom_clearance_payments';
   protected $fillable = [
     'amount',

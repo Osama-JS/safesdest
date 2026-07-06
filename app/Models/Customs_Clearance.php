@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -9,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Customs_Clearance extends Model
 {
+    use LogsActivity;
+
   protected $table = 'customs_clearance';
   protected $fillable = [
     'status',

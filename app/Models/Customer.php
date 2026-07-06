@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +14,8 @@ use Laravel\Sanctum\HasApiTokens;
 
 class Customer extends Authenticatable
 {
+    use LogsActivity;
+
     use HasRoles;
     use HasFactory;
     use SoftDeletes;

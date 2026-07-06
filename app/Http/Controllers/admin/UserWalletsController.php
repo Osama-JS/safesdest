@@ -1112,7 +1112,25 @@ class UserWalletsController extends Controller
                 }
             }
 
-            $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
+            // 3. استخراج المهام من جدول task_brokers (النظام الجديد)
+            $pivotTasks = Task::join('task_brokers', 'tasks.id', '=', 'task_brokers.task_id')
+                ->where('task_brokers.broker_id', $userId)
+                ->where('tasks.closed', 1)
+                ->whereNotIn('tasks.status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
+                ->select('tasks.*', 'task_brokers.commission_type as pivot_commission_type', 'task_brokers.commission_value as pivot_commission_value', 'task_brokers.calculated_amount')
+                ->get();
+
+            $newSystemTasks = [];
+            foreach ($pivotTasks as $pt) {
+                $pt->broker_commission_type = $pt->pivot_commission_type;
+                $pt->broker_commission_value = $pt->pivot_commission_value;
+                $pt->is_new_pivot = true;
+                $newSystemTasks[$pt->id] = $pt;
+            }
+
+            $allTasks = collect($directTasks)->keyBy('id')
+                ->merge(collect($driverTaskIds)->keyBy('id'))
+                ->merge(collect($newSystemTasks)->keyBy('id'));
 
             $processedTasksCount = 0;
             $totalCommissionCredited = 0;
@@ -1149,10 +1167,14 @@ class UserWalletsController extends Controller
                 }
 
                 $brokerShare = 0;
-                if ($commissionType === 'percentage') {
-                    $brokerShare = ($platformCut * $commissionValue) / 100;
+                if (isset($task->is_new_pivot) && $task->is_new_pivot) {
+                    $brokerShare = (float) $task->calculated_amount;
                 } else {
-                    $brokerShare = (float) $commissionValue;
+                    if ($commissionType === 'percentage') {
+                        $brokerShare = ($platformCut * $commissionValue) / 100;
+                    } else {
+                        $brokerShare = (float) $commissionValue;
+                    }
                 }
 
                 if ($brokerShare <= 0) {

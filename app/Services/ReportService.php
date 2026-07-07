@@ -199,6 +199,7 @@ class ReportService
             $processedTask = [
                 'id' => $task->id,
                 'total_price' => $effectivePrice,
+                'driver_price' => $effectivePrice - ($task->commission ?? 0),
                 'original_price' => $task->total_price, // Keep original for reference
                 'customer_name' => $task->customer->name ?? 'غير محدد',
                 'customer_company' => $task->customer->company_name ?? '',

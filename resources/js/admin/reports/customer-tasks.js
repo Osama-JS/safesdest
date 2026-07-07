@@ -7,7 +7,9 @@ class CustomerTasksReport {
   constructor() {
     this.availableColumns = {
       task_id: { name: 'Task ID', required: true },
+      customer_name: { name: 'اسم العميل', required: false },
       total_price: { name: 'Task Price', required: true },
+      driver_price: { name: 'سعر السائق', required: false },
       pickup_info: { name: 'Pickup Information', required: false },
       delivery_info: { name: 'Delivery Information', required: false },
       vehicle_name: { name: 'Vehicle Name', required: false },
@@ -214,6 +216,8 @@ class CustomerTasksReport {
       } else {
         this.selectedColumns = this.selectedColumns.filter(col => col !== column);
       }
+      const order = Object.keys(this.availableColumns);
+      this.selectedColumns.sort((a, b) => order.indexOf(a) - order.indexOf(b));
       this.updateSelectedCount();
       this.savePreferences();
     });
@@ -321,12 +325,20 @@ class CustomerTasksReport {
     switch (column) {
       case 'task_id':
         return row.id;
+      case 'customer_name':
+        return row.customer_name;
       case 'total_price':
         let priceText = parseFloat(row.total_price).toLocaleString();
         if (showCurrency) {
           priceText += ' SAR';
         }
         return priceText;
+      case 'driver_price':
+        let driverPriceText = parseFloat(row.driver_price).toLocaleString();
+        if (showCurrency) {
+          driverPriceText += ' SAR';
+        }
+        return driverPriceText;
       case 'pickup_info':
         if (briefData) {
           return row.pickup_address;
@@ -521,13 +533,10 @@ class CustomerTasksReport {
     if (saved) {
       try {
         const savedColumns = JSON.parse(saved);
-        this.selectedColumns = [
-          'task_id',
-          'total_price',
-          ...savedColumns.filter(
-            col => !['task_id', 'total_price'].includes(col) && this.availableColumns[col] !== undefined
-          )
-        ];
+        const order = Object.keys(this.availableColumns);
+        this.selectedColumns = Array.from(new Set(['task_id', 'total_price', ...savedColumns]))
+            .filter(col => this.availableColumns[col] !== undefined)
+            .sort((a, b) => order.indexOf(a) - order.indexOf(b));
         this.initializeColumnSelector();
       } catch (e) {
         console.log('Error loading saved preferences');

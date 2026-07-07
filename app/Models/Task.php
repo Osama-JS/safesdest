@@ -115,6 +115,16 @@ class Task extends Model
     return $this->belongsTo(User::class, 'broker_id');
   }
 
+  /**
+   * العلاقة الجديدة لدعم الوسطاء المتعددين
+   */
+  public function brokers()
+  {
+      return $this->belongsToMany(User::class, 'task_brokers', 'task_id', 'broker_id')
+                  ->withPivot('commission_type', 'commission_value')
+                  ->withTimestamps();
+  }
+
   public function payments()
   {
     return $this->hasMany(Payments::class, 'task_id');

@@ -1088,28 +1088,33 @@ class UserWalletsController extends Controller
             }
 
             // 1. استخراج المهام المرتبطة مباشرة بالوسيط
-            $directTasks = Task::where('broker_id', $userId)
+            $directTasks = Task::with(['brokers', 'driver.brokers'])->whereHas('brokers', function($q) use ($userId) {
+                    $q->where('users.id', $userId);
+                })
                 ->where('closed', 1)
                 ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
                 ->get();
 
             // 2. استخراج المهام للسائقين المرتبطين بالوسيط
-            $drivers = \App\Models\Driver::where('broker_id', $userId)->get();
+            $drivers = \App\Models\Driver::with('brokers')->whereHas('brokers', function($q) use ($userId) {
+                    $q->where('users.id', $userId);
+                })->get();
+                
             $driverTaskIds = [];
             foreach ($drivers as $driver) {
-                $query = Task::where('driver_id', $driver->id)
-                    ->whereNull('broker_id')
+                $driverBrokerPivot = $driver->brokers->where('id', $userId)->first()->pivot;
+                
+                $query = Task::with(['brokers', 'driver.brokers'])->where('driver_id', $driver->id)
+                    ->doesntHave('brokers') // No direct brokers
                     ->where('closed', 1)
                     ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
 
-                if ($driver->broker_commission_start_date) {
-                    $query->where('created_at', '>=', $driver->broker_commission_start_date);
+                if ($driverBrokerPivot->commission_start_date) {
+                    $query->where('created_at', '>=', $driverBrokerPivot->commission_start_date);
                 }
 
                 $dTasks = $query->get();
                 foreach ($dTasks as $dt) {
-                    $dt->broker_commission_type = $driver->broker_commission_type;
-                    $dt->broker_commission_value = $driver->broker_commission_value;
                     $driverTaskIds[$dt->id] = $dt;
                 }
             }
@@ -1131,14 +1136,6 @@ class UserWalletsController extends Controller
                     continue;
                 }
 
-                // تحديد قيمة العمولة ونوعها (تأخذ من المهمة أولاً إذا كانت مباشرة، ثم من السائق)
-                $commissionType = $task->broker_commission_type;
-                $commissionValue = $task->broker_commission_value;
-
-                if (!$commissionType || !$commissionValue) {
-                    continue;
-                }
-
                 $platformCut = 0;
                 if ($task->ad) {
                     if ($task->ad->service_commission_type == 1) {
@@ -1150,12 +1147,34 @@ class UserWalletsController extends Controller
                     $platformCut = (float) $task->commission;
                 }
 
-                $brokerShare = 0;
-                if ($commissionType === 'percentage') {
-                    $brokerShare = ($platformCut * $commissionValue) / 100;
-                } else {
-                    $brokerShare = (float) $commissionValue;
+                $activeBrokers = $task->brokers->count() > 0 ? $task->brokers : ($task->driver ? $task->driver->brokers : collect());
+                
+                $totalBrokersShare = 0;
+                $currentBrokerShare = 0;
+                
+                foreach($activeBrokers as $ab) {
+                     $cType = $ab->pivot->commission_type;
+                     $cValue = (float) $ab->pivot->commission_value;
+                     
+                     $share = 0;
+                     if ($cType === 'percentage') {
+                         $share = ($platformCut * $cValue) / 100;
+                     } else {
+                         $share = $cValue;
+                     }
+                     $totalBrokersShare += $share;
+                     
+                     if ($ab->id == $userId) {
+                         $currentBrokerShare = $share;
+                     }
                 }
+                
+                if ($totalBrokersShare > $platformCut) {
+                     \Log::error("Task {$task->id}: Total brokers commission ({$totalBrokersShare}) exceeds platform cut ({$platformCut}). No commissions will be paid.");
+                     continue;
+                }
+                
+                $brokerShare = $currentBrokerShare;
 
                 if ($brokerShare <= 0) {
                     continue;

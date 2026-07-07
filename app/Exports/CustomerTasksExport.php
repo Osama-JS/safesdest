@@ -49,6 +49,9 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
                     case 'task_id':
                         $row[] = $task['id'];
                         break;
+                    case 'customer_name':
+                        $row[] = $task['customer_name'];
+                        break;
                     case 'total_price':
                         $priceSuffix = $showCurrency ? ' ريال' : '';
                         if ($task['total_price'] == 0 && isset($task['original_price']) && $task['original_price'] > 0) {
@@ -56,6 +59,10 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
                         } else {
                             $row[] = number_format($task['total_price'], 2) . $priceSuffix;
                         }
+                        break;
+                    case 'driver_price':
+                        $priceSuffix = $showCurrency ? ' ريال' : '';
+                        $row[] = number_format($task['driver_price'], 2) . $priceSuffix;
                         break;
                     case 'pickup_info':
                         if ($briefData) {
@@ -136,8 +143,14 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
                 case 'task_id':
                     $headings[] = 'رقم المهمة';
                     break;
+                case 'customer_name':
+                    $headings[] = 'اسم العميل';
+                    break;
                 case 'total_price':
                     $headings[] = 'سعر المهمة';
+                    break;
+                case 'driver_price':
+                    $headings[] = 'سعر السائق';
                     break;
                 case 'pickup_info':
                     $headings[] = 'معلومات نقطة الاستلام';

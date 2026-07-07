@@ -440,15 +440,22 @@ $(function () {
       $('#driver-commission-type').val(data.commission_type);
       $('#driver-commission').val(data.commission);
 
-      // Broker fields
-      $('#driver-broker-id')
-        .val(data.broker_id || '')
-        .trigger('change');
-      $('#driver-broker-commission-type').val(data.broker_commission_type || '');
-      $('#driver-broker-commission-value').val(data.broker_commission_value || '');
-      $('#driver-broker-commission-start-date').val(
-        data.broker_commission_start_date ? data.broker_commission_start_date.split('T')[0] : ''
-      );
+      // Load Multiple Brokers
+      $('#driver-brokers-container').empty();
+      driverBrokerIndex = 0;
+      if (data.brokers && data.brokers.length > 0) {
+        data.brokers.forEach(broker => {
+          let $row = $(createDriverBrokerRow(driverBrokerIndex));
+          $row.find('[name="brokers['+driverBrokerIndex+'][broker_id]"]').val(broker.pivot.broker_id);
+          $row.find('[name="brokers['+driverBrokerIndex+'][commission_type]"]').val(broker.pivot.commission_type);
+          $row.find('[name="brokers['+driverBrokerIndex+'][commission_value]"]').val(broker.pivot.commission_value);
+          if (broker.pivot.commission_start_date) {
+            $row.find('[name="brokers['+driverBrokerIndex+'][commission_start_date]"]').val(broker.pivot.commission_start_date.split('T')[0]);
+          }
+          $('#driver-brokers-container').append($row);
+          driverBrokerIndex++;
+        });
+      }
 
       // Load WhatsApp data
       $('#phone-is-whatsapp').prop('checked', data.phone_is_whatsapp == 1 || data.phone_is_whatsapp === true);
@@ -587,10 +594,8 @@ $(function () {
     $('#driver-bank-country').val('SA');
 
     // Reset Broker fields
-    $('#driver-broker-id').val('').trigger('change');
-    $('#driver-broker-commission-type').val('');
-    $('#driver-broker-commission-value').val('');
-    $('#driver-broker-commission-start-date').val('');
+    $('#driver-brokers-container').empty();
+    driverBrokerIndex = 0;
   });
 
   $(document).on('click', '.signature-record', function () {
@@ -609,7 +614,21 @@ $(function () {
 });
 /* ================  Select Vehicles Code   =============== */
 let vehicleIndex = 0;
+let driverBrokerIndex = 0;
 const selectedTypes = new Set();
+
+function createDriverBrokerRow(index) {
+  return $('#driver-broker-row-template').html().replaceAll('{index}', index);
+}
+
+$(document).on('click', '#add-driver-broker-row', function() {
+  const $newRow = $(createDriverBrokerRow(driverBrokerIndex++));
+  $('#driver-brokers-container').append($newRow);
+});
+
+$(document).on('click', '.remove-broker-row', function() {
+  $(this).closest('.broker-row').remove();
+});
 
 function createVehicleRow(index) {
   return $('#vehicle-row-template').html().replaceAll('{index}', index);

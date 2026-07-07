@@ -2146,7 +2146,8 @@ class TasksController extends Controller
                     ->orWhereHas('driver', function ($driverQuery) use ($search) {
                         $driverQuery->where('name', 'LIKE', "%{$search}%")
                             ->orWhere('email', 'LIKE', "%{$search}%")
-                            ->orWhere('username', 'LIKE', "%{$search}%");
+                            ->orWhere('username', 'LIKE', "%{$search}%")
+                            ->orWhereRaw('CAST(additional_data AS TEXT) LIKE ?', ["%{$search}%"]);
                     })
                     ->orWhereHas('pickup', function ($pickupQuery) use ($search) {
                         $pickupQuery->where('address', 'LIKE', "%{$search}%");
@@ -3375,7 +3376,7 @@ class TasksController extends Controller
     public function editBroker($id)
     {
         try {
-            $data = Task::select(['id', 'closed', 'status', 'broker_id', 'broker_commission_type', 'broker_commission_value'])->findOrFail($id);
+            $data = Task::with('brokers')->select(['id', 'closed', 'status'])->findOrFail($id);
             $user = auth()->user();
             if (!$user || !$user->checkTask($data->id)) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
@@ -3394,9 +3395,10 @@ class TasksController extends Controller
     {
         $validator = Validator::make($req->all(), [
             'id' => 'required|exists:tasks,id',
-            'broker_id' => 'nullable|exists:users,id',
-            'broker_commission_type' => 'nullable|in:percentage,fixed',
-            'broker_commission_value' => 'nullable|numeric|min:0'
+            'brokers' => 'nullable|array',
+            'brokers.*.broker_id' => 'required|exists:users,id',
+            'brokers.*.commission_type' => 'required|in:percentage,fixed',
+            'brokers.*.commission_value' => 'required|numeric|min:0'
         ]);
 
         if ($validator->fails()) {
@@ -3425,11 +3427,18 @@ class TasksController extends Controller
             ];
             $find->history()->createMany($history);
 
-            $find->update([
-                'broker_id' => $req->broker_id,
-                'broker_commission_type' => $req->broker_commission_type,
-                'broker_commission_value' => $req->broker_commission_value
-            ]);
+            $syncData = [];
+            if ($req->has('brokers') && is_array($req->brokers)) {
+                foreach ($req->brokers as $broker) {
+                    if (!empty($broker['broker_id'])) {
+                        $syncData[$broker['broker_id']] = [
+                            'commission_type' => $broker['commission_type'],
+                            'commission_value' => $broker['commission_value']
+                        ];
+                    }
+                }
+            }
+            $find->brokers()->sync($syncData);
 
             DB::commit();
             return response()->json(['status' => 1, 'success' => __('Broker updated successfully.')]);

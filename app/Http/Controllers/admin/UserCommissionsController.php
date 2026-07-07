@@ -150,7 +150,9 @@ class UserCommissionsController extends Controller
      */
     public function index()
     {
-        $users = User::where('status', 'active')->get();
+        $users = User::where('status', 'active')->where(function($q) {
+            $q->where('investor', '!=', 1)->orWhereNull('investor');
+        })->get();
         $customers = Customer::where('status', 'active')->get();
 
         $totalCommissions = UserCommission::count();

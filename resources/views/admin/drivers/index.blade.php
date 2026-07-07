@@ -49,6 +49,37 @@
 
           </div>
         </script>
+        <script type="text/template" id="driver-broker-row-template">
+          <div class="row broker-row mb-3 align-items-end" data-index="{index}">
+            <div class="col-md-3">
+              <label class="form-label">Broker</label>
+              <select class="form-select broker-select" name="brokers[{index}][broker_id]" required>
+                <option value="">Select a broker</option>
+                @foreach ($brokers as $broker)
+                      <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->username }})</option>
+                @endforeach
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Commission Type</label>
+              <select class="form-select" name="brokers[{index}][commission_type]" required>
+                <option value="percentage">Percentage</option>
+                <option value="fixed">Fixed</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Commission Value</label>
+              <input type="number" class="form-control" name="brokers[{index}][commission_value]" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Start Date</label>
+              <input type="date" class="form-control" name="brokers[{index}][commission_start_date]">
+            </div>
+            <div class="col-md-1">
+              <button type="button" class="btn btn-sm btn-icon btn-danger remove-broker-row"><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+        </script>
 @endsection
 
 <!-- Page Scripts -->
@@ -458,57 +489,7 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-6">
-                                                        <div class="mb-4">
-                                                            <label class="form-label"
-                                                                for="driver-broker-id">{{ __('Truck Broker') }}</label>
-                                                            <select name="broker_id" id="driver-broker-id"
-                                                                class="form-select">
-                                                                <option value="">{{ __('None') }}</option>
-                                                                @foreach ($brokers as $broker)
-                                                                    <option value="{{ $broker->id }}">{{ $broker->name }}
-                                                                        ({{ $broker->id }})</option>
-                                                                @endforeach
-                                                            </select>
-                                                            <span class="broker_id-error text-danger text-error"></span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-6">
-                                                        <div class="mb-4">
-                                                            <label class="form-label"
-                                                                for="driver-broker-commission-start-date">{{ __('Commission Start Date') }}</label>
-                                                            <input type="date" name="broker_commission_start_date"
-                                                                class="form-control"
-                                                                id="driver-broker-commission-start-date" />
-                                                            <span
-                                                                class="broker_commission_start_date-error text-danger text-error"></span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="col-md-6">
-                                                        <div class="mb-4">
-                                                            <label class="form-label"
-                                                                for="driver-broker-commission-type">{{ __('Broker Commission') }}</label>
-                                                            <div class="input-group">
-                                                                <select name="broker_commission_type"
-                                                                    id="driver-broker-commission-type" class="form-select">
-                                                                    <option value="">{{ __('Select Type') }}</option>
-                                                                    <option value="percentage">{{ __('Percentage (%)') }}
-                                                                    </option>
-                                                                    <option value="fixed">{{ __('Fixed Amount') }}</option>
-                                                                </select>
-                                                                <input type="number" name="broker_commission_value"
-                                                                    class="form-control" step="0.01"
-                                                                    id="driver-broker-commission-value"
-                                                                    placeholder="{{ __('Value') }}" />
-                                                            </div>
-                                                            <span
-                                                                class="broker_commission_type-error text-danger text-error"></span>
-                                                            <span
-                                                                class="broker_commission_value-error text-danger text-error"></span>
-                                                        </div>
-                                                    </div>
+                                                    <div class="col-12"><div id="driver-brokers-container"></div><button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-driver-broker-row"><i class="ti ti-plus me-1"></i> {{ __("Add Broker") }}</button></div>
 
                                                     <!-- Bank Details Section -->
                                                     <div class="col-md-12">

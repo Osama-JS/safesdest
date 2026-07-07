@@ -422,39 +422,38 @@
                     <input type="hidden" name="id" id="broker-task-id">
                     <span class="task-error text-danger text-error"></span>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <div class="mb-4">
-                                <label class="form-label" for="modal-task-broker-id">{{ __('Truck Broker') }}</label>
-                                <select name="broker_id" id="modal-task-broker-id" class="form-select select2"
-                                    data-dropdown-parent="#brokerModal">
-                                    <option value="">{{ __('None') }}</option>
+                    <div id="task-brokers-container"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-task-broker-row">
+                        <i class="ti ti-plus me-1"></i> {{ __('Add Broker') }}
+                    </button>
+
+                    <script type="text/template" id="task-broker-row-template">
+                        <div class="row broker-row mb-3 align-items-end" data-index="{index}">
+                            <div class="col-md-5">
+                                <label class="form-label">{{ __('Truck Broker') }}</label>
+                                <select name="brokers[{index}][broker_id]" class="form-select broker-select" required>
+                                    <option value="">{{ __('Select Broker') }}</option>
                                     @foreach ($brokers as $broker)
                                         <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
                                     @endforeach
                                 </select>
-                                <span class="broker_id-error text-danger text-error"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('Commission Type') }}</label>
+                                <select name="brokers[{index}][commission_type]" class="form-select" required>
+                                    <option value="percentage">{{ __('Percentage (%)') }}</option>
+                                    <option value="fixed">{{ __('Fixed Amount') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ __('Value') }}</label>
+                                <input type="number" name="brokers[{index}][commission_value]" class="form-control" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-sm btn-icon btn-danger remove-task-broker-row"><i class="ti ti-trash"></i></button>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-4">
-                                <label class="form-label"
-                                    for="modal-task-broker-commission-type">{{ __('Broker Commission') }}</label>
-                                <div class="input-group">
-                                    <select name="broker_commission_type" id="modal-task-broker-commission-type"
-                                        class="form-select">
-                                        <option value="">{{ __('Select Type') }}</option>
-                                        <option value="percentage">{{ __('Percentage (%)') }}</option>
-                                        <option value="fixed">{{ __('Fixed Amount') }}</option>
-                                    </select>
-                                    <input type="number" name="broker_commission_value" class="form-control" step="0.01"
-                                        id="modal-task-broker-commission-value" placeholder="{{ __('Value') }}" />
-                                </div>
-                                <span class="broker_commission_type-error text-danger text-error"></span>
-                                <span class="broker_commission_value-error text-danger text-error"></span>
-                            </div>
-                        </div>
-                    </div>
+                    </script>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary"

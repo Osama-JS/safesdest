@@ -42,7 +42,9 @@ class DriversController extends Controller
         $vehicles = Vehicle::all();
         $driver_template = Settings::where('key', 'driver_template')->first();
         $banks = \App\Models\Bank::where('is_active', true)->get();
-        $brokers = \App\Models\User::where('status', 'active')->get();
+        $brokers = \App\Models\User::where('status', 'active')->where(function($q) {
+            $q->where('investor', '!=', 1)->orWhereNull('investor');
+        })->get();
 
         return view('admin.drivers.index', compact('templates', 'teams', 'roles', 'vehicles', 'driver_template', 'banks', 'brokers'));
     }
@@ -229,7 +231,7 @@ class DriversController extends Controller
 
     public function edit($id)
     {
-        $data = Driver::findOrFail($id);
+        $data = Driver::with('brokers')->findOrFail($id);
         $data->img = $data->image ? url($data->image) : null;
         $data->vehicle_type = $data->vehicle_size->vehicle_type_id;
         $data->vehicle = $data->vehicle_size->type->vehicle_id;
@@ -275,10 +277,11 @@ class DriversController extends Controller
             'bank_city' => 'nullable|string|max:255',
             'bank_country' => 'nullable|string|size:2',
             // Broker fields
-            'broker_id' => 'nullable|exists:users,id',
-            'broker_commission_type' => 'nullable|in:percentage,fixed',
-            'broker_commission_value' => 'nullable|numeric|min:0',
-            'broker_commission_start_date' => 'nullable|date',
+            'brokers' => 'nullable|array',
+            'brokers.*.broker_id' => 'required_with:brokers|exists:users,id',
+            'brokers.*.commission_type' => 'required_with:brokers|in:percentage,fixed',
+            'brokers.*.commission_value' => 'required_with:brokers|numeric|min:0',
+            'brokers.*.commission_start_date' => 'nullable|date',
         ];
 
         if ($req->filled('template')) {
@@ -469,10 +472,11 @@ class DriversController extends Controller
                 'bank_address2' => $req->bank_address2,
                 'bank_city' => $req->bank_city,
                 'bank_country' => $req->bank_country ?? 'SA',
-                'broker_id' => $req->broker_id,
-                'broker_commission_type' => $req->broker_commission_type,
-                'broker_commission_value' => $req->broker_commission_value,
-                'broker_commission_start_date' => $req->broker_commission_start_date,
+                // broker fields will be synced later
+                // 'broker_id' => $req->broker_id,
+                // 'broker_commission_type' => $req->broker_commission_type,
+                // 'broker_commission_value' => $req->broker_commission_value,
+                // 'broker_commission_start_date' => $req->broker_commission_start_date,
             ];
 
             // Handle WhatsApp number logic
@@ -642,6 +646,24 @@ class DriversController extends Controller
                 }
 
                 (new WalletsController())->store('driver', $done->id, true);
+            }
+
+            if ($req->has('brokers') && is_array($req->brokers)) {
+                $syncData = [];
+                foreach ($req->brokers as $broker) {
+                    if (!empty($broker['broker_id'])) {
+                        $syncData[$broker['broker_id']] = [
+                            'commission_type' => $broker['commission_type'] ?? 'percentage',
+                            'commission_value' => $broker['commission_value'] ?? 0,
+                            'commission_start_date' => $broker['commission_start_date'] ?? null,
+                        ];
+                    }
+                }
+                
+                $driverInstance = isset($find) ? $find : $done;
+                if ($driverInstance) {
+                    $driverInstance->brokers()->sync($syncData);
+                }
             }
 
             if (!$done) {
@@ -829,3 +851,4 @@ class DriversController extends Controller
         ]);
     }
 }
+

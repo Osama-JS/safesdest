@@ -450,13 +450,36 @@ $(function () {
         return;
       }
       $('#broker-task-id').val(data.data.id);
-      $('#modal-task-broker-id').val(data.data.broker_id).trigger('change');
-      $('#modal-task-broker-commission-type').val(data.data.broker_commission_type);
-      $('#modal-task-broker-commission-value').val(data.data.broker_commission_value);
       
+      $('#task-brokers-container').empty();
+      taskBrokerIndex = 0;
+      if (data.data.brokers && data.data.brokers.length > 0) {
+        data.data.brokers.forEach(broker => {
+          let $row = $(createTaskBrokerRow(taskBrokerIndex));
+          $row.find('[name="brokers['+taskBrokerIndex+'][broker_id]"]').val(broker.pivot.broker_id);
+          $row.find('[name="brokers['+taskBrokerIndex+'][commission_type]"]').val(broker.pivot.commission_type);
+          $row.find('[name="brokers['+taskBrokerIndex+'][commission_value]"]').val(broker.pivot.commission_value);
+          $('#task-brokers-container').append($row);
+          taskBrokerIndex++;
+        });
+      }
       $('#brokerModal').modal('show');
       $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
     });
+  });
+
+  let taskBrokerIndex = 0;
+  function createTaskBrokerRow(index) {
+    return $('#task-broker-row-template').html().replaceAll('{index}', index);
+  }
+
+  $(document).on('click', '#add-task-broker-row', function() {
+    const $newRow = $(createTaskBrokerRow(taskBrokerIndex++));
+    $('#task-brokers-container').append($newRow);
+  });
+
+  $(document).on('click', '.remove-task-broker-row', function() {
+    $(this).closest('.broker-row').remove();
   });
 
   $('#owner-fillter').on('change', function () {

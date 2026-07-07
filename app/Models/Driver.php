@@ -91,6 +91,16 @@ class Driver extends Authenticatable
     {
         return $this->belongsTo(User::class, 'broker_id');
     }
+
+    /**
+     * العلاقة الجديدة لدعم الوسطاء المتعددين
+     */
+    public function brokers()
+    {
+        return $this->belongsToMany(User::class, 'driver_brokers', 'driver_id', 'broker_id')
+                    ->withPivot('commission_type', 'commission_value', 'commission_start_date')
+                    ->withTimestamps();
+    }
     public function tags()
     {
         return $this->hasMany(Tag_Drivers::class, 'driver_id');

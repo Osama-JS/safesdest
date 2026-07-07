@@ -453,6 +453,9 @@ $(function () {
             $row.find('[name="brokers['+driverBrokerIndex+'][commission_start_date]"]').val(broker.pivot.commission_start_date.split('T')[0]);
           }
           $('#driver-brokers-container').append($row);
+          $row.find('.broker-select').select2({
+            dropdownParent: $('#addEditModal')
+          });
           driverBrokerIndex++;
         });
       }
@@ -624,6 +627,9 @@ function createDriverBrokerRow(index) {
 $(document).on('click', '#add-driver-broker-row', function() {
   const $newRow = $(createDriverBrokerRow(driverBrokerIndex++));
   $('#driver-brokers-container').append($newRow);
+  $newRow.find('.broker-select').select2({
+    dropdownParent: $('#addEditModal')
+  });
 });
 
 $(document).on('click', '.remove-broker-row', function() {

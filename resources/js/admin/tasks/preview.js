@@ -1127,8 +1127,10 @@ $(function () {
           $row.find('[name="brokers['+taskBrokerIndex+'][commission_type]"]').val(broker.pivot.commission_type);
           $row.find('[name="brokers['+taskBrokerIndex+'][commission_value]"]').val(broker.pivot.commission_value);
           $('#task-brokers-container').append($row);
-          $row.find('.broker-select').select2({
-            dropdownParent: $('#brokerModal')
+          const $select = $row.find('.broker-select');
+          $select.wrap('<div class="position-relative"></div>').select2({
+            dropdownParent: $select.parent(),
+            width: '100%'
           });
           taskBrokerIndex++;
         });
@@ -1147,8 +1149,10 @@ $(function () {
   $(document).on('click', '#add-task-broker-row', function() {
     const $newRow = $(createTaskBrokerRow(taskBrokerIndex++));
     $('#task-brokers-container').append($newRow);
-    $newRow.find('.broker-select').select2({
-      dropdownParent: $('#brokerModal')
+    const $select = $newRow.find('.broker-select');
+    $select.wrap('<div class="position-relative"></div>').select2({
+      dropdownParent: $select.parent(),
+      width: '100%'
     });
   });
 

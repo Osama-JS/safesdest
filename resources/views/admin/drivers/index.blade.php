@@ -53,7 +53,7 @@
           <div class="row broker-row mb-3 align-items-end" data-index="{index}">
             <div class="col-md-3">
               <label class="form-label">Broker</label>
-              <select class="form-select broker-select" name="brokers[{index}][broker_id]" required>
+              <select class="form-select select2 broker-select" name="brokers[{index}][broker_id]" required>
                 <option value="">Select a broker</option>
                 @foreach ($brokers as $broker)
                       <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->username }})</option>

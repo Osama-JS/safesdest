@@ -944,6 +944,7 @@ $(function () {
       $('#adModal').modal('hide');
       $('#pricingModal').modal('hide');
       $('#addNoteModal').modal('hide');
+      $('#duplicateModal').modal('hide');
       loadTasks();
     }, 2000);
   });
@@ -986,18 +987,63 @@ $(function () {
     const id = $(this).data('id');
     const name = $(this).data('name');
 
-    const fields = `
-        <input type="hidden" name="id" value="${id}">
-        <p> Are you sure you want to duplicate this task? </p>
-              `;
+    $.get(`${baseUrl}admin/tasks/broker/edit/${id}`, function (data) {
+      if (data.status === 2) {
+        showAlert('error', data.error);
+        return;
+      }
 
-    showFormModal({
-      title: `Duplicate Task: ${name}`,
-      icon: 'info',
-      fields: fields,
-      url: `${baseUrl}admin/tasks/duplicate`,
-      method: 'POST'
+      $('#duplicate-task-id').val(id);
+      let brokersHtml = '';
+      if (data.data.brokers && data.data.brokers.length > 0) {
+        brokersHtml += `<div class="alert alert-info py-2 mb-3">
+          ${__('This task has')} <strong>${data.data.brokers.length}</strong> ${__('connected broker(s). You can modify their commissions for the new task, or remove them.')}
+        </div>`;
+        brokersHtml += `<div id="duplicate-brokers-list">`;
+        
+        data.data.brokers.forEach((broker, index) => {
+          brokersHtml += `
+            <div class="row mb-3 border p-2 rounded duplicate-broker-row" data-index="${index}">
+              <div class="col-12 d-flex justify-content-between align-items-center mb-2">
+                <strong class="text-primary"><i class="ti ti-user me-1"></i>${broker.name}</strong>
+                <button type="button" class="btn btn-sm btn-icon btn-danger remove-duplicate-broker"><i class="ti ti-trash"></i></button>
+              </div>
+              <input type="hidden" name="brokers[${index}][broker_id]" value="${broker.pivot.broker_id}">
+              <div class="col-6">
+                <label class="form-label">${__('Commission Type')}</label>
+                <select name="brokers[${index}][commission_type]" class="form-select form-select-sm">
+                  <option value="percentage" ${broker.pivot.commission_type === 'percentage' ? 'selected' : ''}>${__('Percentage')}</option>
+                  <option value="fixed" ${broker.pivot.commission_type === 'fixed' ? 'selected' : ''}>${__('Fixed Amount')}</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label">${__('Value')}</label>
+                <input type="number" name="brokers[${index}][commission_value]" value="${broker.pivot.commission_value}" class="form-control form-control-sm" step="0.01" min="0">
+              </div>
+            </div>
+          `;
+        });
+        brokersHtml += `</div>`;
+        brokersHtml += `
+          <div class="mt-3 form-check">
+            <input class="form-check-input" type="checkbox" name="duplicate_without_brokers" id="duplicateWithoutBrokers">
+            <label class="form-check-label text-danger" for="duplicateWithoutBrokers">
+              ${__('Duplicate WITHOUT brokers (Remove all)')}
+            </label>
+          </div>
+        `;
+      } else {
+        brokersHtml = `<p class="mb-0 text-center">${__('Are you sure you want to duplicate this task?')}</p>`;
+      }
+
+      $('#duplicate-brokers-container').html(brokersHtml);
+      $('#duplicateModalTitle').html(`${__('Duplicate Task')}: <span class="text-primary">#${id}</span>`);
+      $('#duplicateModal').modal('show');
     });
+  });
+
+  $(document).on('click', '.remove-duplicate-broker', function() {
+    $(this).closest('.duplicate-broker-row').remove();
   });
 
   $(document).on('click', '.drop-task', function () {

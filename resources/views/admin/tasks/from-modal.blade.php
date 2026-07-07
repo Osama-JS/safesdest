@@ -905,6 +905,31 @@
     </div>
 </div>
 
+<!-- Duplicate Modal -->
+<div class="modal fade" id="duplicateModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="duplicateModalTitle">{{ __('Duplicate Task') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+            </div>
+            <form class="form_submit" method="POST" action="{{ route('tasks.duplicate') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="duplicate-task-id">
+                    
+                    <div id="duplicate-brokers-container">
+                        <!-- Brokers list will be injected here via JS -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Duplicate') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script type="text/template" id="task-broker-row-template">
     <div class="row broker-row mb-3 align-items-end" data-index="{index}">
         <div class="col-md-5">

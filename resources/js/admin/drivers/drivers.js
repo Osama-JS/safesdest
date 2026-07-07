@@ -11,6 +11,15 @@ $(function () {
     userView = baseUrl + 'admin/drivers/account/';
   console.log(templateId);
 
+  // Initialize Team Select2
+  var $teamSelect = $('#driver-team');
+  if ($teamSelect.length) {
+    $teamSelect.wrap('<div class="position-relative"></div>').select2({
+      dropdownParent: $teamSelect.parent(),
+      width: '100%'
+    });
+  }
+
   // WhatsApp functionality
   function toggleWhatsAppFields() {
     const isPhoneWhatsApp = $('#phone-is-whatsapp').is(':checked');
@@ -580,6 +589,10 @@ $(function () {
     $('#modelTitle').html('Add New Driver');
     $('#additional-form').html('');
     $('#select-template').val(templateId).trigger('change');
+    
+    if ($('#driver-team').length) {
+      $('#driver-team').val('').trigger('change');
+    }
 
     // Reset WhatsApp fields
     $('#phone-is-whatsapp').prop('checked', false);

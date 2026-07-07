@@ -3860,10 +3860,27 @@ class TasksController extends Controller
                 $b2bService = app(\App\Services\B2bTaskService::class);
                 $newTask = $b2bService->duplicateTask($originalTask);
 
+                if (!$request->has('duplicate_without_brokers') && $request->has('brokers') && is_array($request->brokers)) {
+                    $brokerData = [];
+                    foreach ($request->brokers as $broker) {
+                        if (isset($broker['broker_id'])) {
+                            $brokerData[$broker['broker_id']] = [
+                                'commission_type' => $broker['commission_type'] ?? 'percentage',
+                                'commission_value' => $broker['commission_value'] ?? 0,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                    }
+                    if (!empty($brokerData)) {
+                        $newTask->brokers()->attach($brokerData);
+                    }
+                }
+
                 DB::commit();
                 return response()->json([
                     'status' => 1,
-                    'message' => __('Task duplicated successfully (B2B)'),
+                    'success' => __('Task duplicated successfully (B2B)'),
                     'task_id' => $newTask->id,
                     'original_task_id' => $originalTask->id
                 ]);
@@ -3967,6 +3984,23 @@ class TasksController extends Controller
                 $newTask->ad()->create($newAdData);
             }
 
+            if (!$request->has('duplicate_without_brokers') && $request->has('brokers') && is_array($request->brokers)) {
+                $brokerData = [];
+                foreach ($request->brokers as $broker) {
+                    if (isset($broker['broker_id'])) {
+                        $brokerData[$broker['broker_id']] = [
+                            'commission_type' => $broker['commission_type'] ?? 'percentage',
+                            'commission_value' => $broker['commission_value'] ?? 0,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                }
+                if (!empty($brokerData)) {
+                    $newTask->brokers()->attach($brokerData);
+                }
+            }
+
             // إنشاء سجل تاريخي جديد
             Task_History::create([
                 'task_id' => $newTask->id,
@@ -3983,7 +4017,7 @@ class TasksController extends Controller
 
             return response()->json([
                 'status' => 1,
-                'message' => __('Task duplicated successfully'),
+                'success' => __('Task duplicated successfully'),
                 'task_id' => $newTask->id,
                 'original_task_id' => $originalTask->id
             ]);

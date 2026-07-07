@@ -1135,7 +1135,6 @@ $(function () {
       $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
     });
     });
-  });
 
   let taskBrokerIndex = 0;
   function createTaskBrokerRow(index) {

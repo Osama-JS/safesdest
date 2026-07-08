@@ -390,13 +390,3 @@ class CustomerTasksExport implements FromCollection, WithHeadings, WithStyles, W
         ]);
     }
 }
-
-
-        $sheet->getStyle('A' . ($lastRow + 1))->applyFromArray([
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => 'D5E8D4']
-            ]
-        ]);
-    }
-}

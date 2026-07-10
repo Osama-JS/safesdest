@@ -71,13 +71,15 @@ class Driver extends Authenticatable
         'broker_commission_start_date',
         'is_guest',
         'otp_code',
-        'otp_expires_at'
+        'otp_expires_at',
+        'can_edit_profile'
     ];
     protected $casts = [
         'additional_data' => 'array',
         'reset_token_expires_at' => 'datetime',
         'otp_expires_at' => 'datetime',
         'is_guest' => 'boolean',
+        'can_edit_profile' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];
@@ -208,7 +210,7 @@ class Driver extends Authenticatable
 
             return $formFields->contains(function ($field) use ($item) {
                 return $field->label == $item['label'] &&
-                    in_array($field->customer_can, ['read', 'write']);
+                    in_array($field->driver_can, ['read', 'write']);
             });
         })->all();
     }

@@ -40,6 +40,12 @@ trait LogsActivity
 
         $user = auth()->user();
         
+        // Only log actions performed by dashboard admins (App\Models\User)
+        // to avoid foreign key violations when a Driver updates their own record via API.
+        if (!($user instanceof \App\Models\User)) {
+            return;
+        }
+        
         $sensitiveFields = ['password', 'remember_token'];
         
         if ($oldValues) {

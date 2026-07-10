@@ -154,16 +154,33 @@ class DriverRegistrationController extends Controller
           ? null
           : $teamId,
       ]);
-      $cleanPhoneCode = str_replace('+', '', $request->phone_code);
-      $existingGuest = Driver::where('phone', $request->phone)
-                            ->where(function ($query) use ($cleanPhoneCode) {
-                                $query->where('phone_code', $cleanPhoneCode)
-                                      ->orWhere('phone_code', '+' . $cleanPhoneCode);
-                            })
-                            ->where('is_guest', true)
-                            ->first();
+      $driverIdToIgnore = null;
+      $existingDriverToUpdate = null;
 
-      $driverIdToIgnore = $existingGuest ? $existingGuest->id : null;
+      // Check if driver is already authenticated (completing account)
+      $token = $request->bearerToken();
+      if ($token) {
+          $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+          if ($accessToken && $accessToken->tokenable_type === 'App\Models\Driver') {
+              $driverIdToIgnore = $accessToken->tokenable_id;
+              $existingDriverToUpdate = \App\Models\Driver::find($driverIdToIgnore);
+          }
+      }
+
+      // If not authenticated, check if it's an existing guest
+      if (!$driverIdToIgnore) {
+          $cleanPhoneCode = str_replace('+', '', $request->phone_code);
+          $existingGuest = Driver::where('phone', $request->phone)
+                                ->where(function ($query) use ($cleanPhoneCode) {
+                                    $query->where('phone_code', $cleanPhoneCode)
+                                          ->orWhere('phone_code', '+' . $cleanPhoneCode);
+                                })
+                                ->where('is_guest', true)
+                                ->first();
+
+          $driverIdToIgnore = $existingGuest ? $existingGuest->id : null;
+          $existingDriverToUpdate = $existingGuest;
+      }
 
       $baseRules = [
         'name' => 'required|string|max:255',
@@ -256,9 +273,9 @@ class DriverRegistrationController extends Controller
       $driverData['is_guest'] = false; // They are no longer a guest!
       $driverData['email_verified_at'] = now(); // Automatically verify since they used OTP
 
-      if ($existingGuest) {
-          $existingGuest->update($driverData);
-          $driver = $existingGuest;
+      if ($existingDriverToUpdate) {
+          $existingDriverToUpdate->update($driverData);
+          $driver = $existingDriverToUpdate;
       } else {
           $driver = Driver::create($driverData);
       }

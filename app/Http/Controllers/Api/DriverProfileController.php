@@ -128,10 +128,16 @@ class DriverProfileController extends Controller
                 'files' => $request->allFiles(),
             ]);
 
+            if (!$driver->can_edit_profile) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('You are not allowed to edit your profile.')
+                ], 403);
+            }
+
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                // البريد الإلكتروني محذوف لأنه غير قابل للتعديل (يعتبر الهوية الأساسية)
-                'phone' => 'required|string|max:20',
+                'email' => 'required|email|max:255|unique:drivers,email,' . $driver->id,
                 'address' => 'required|string|max:500',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
@@ -150,13 +156,8 @@ class DriverProfileController extends Controller
                 $driver->name = $request->name;
             }
 
-            // Email is not updatable as it's the primary identity for login
-            // if ($request->has('email')) {
-            //     $driver->email = $request->email;
-            // }
-
-            if ($request->has('phone')) {
-                $driver->phone = $request->phone;
+            if ($request->has('email')) {
+                $driver->email = $request->email;
             }
 
             if ($request->has('address')) {

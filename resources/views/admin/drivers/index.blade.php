@@ -445,6 +445,17 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
+                                                        <div class="mb-6">
+                                                            <label class="form-label" for="driver-can-edit-profile">
+                                                                {{ __('Can Edit Profile') }}</label>
+                                                            <select id="driver-can-edit-profile" class="form-select" name="can_edit_profile">
+                                                                <option value="1">{{ __('Yes') }}</option>
+                                                                <option value="0">{{ __('No') }}</option>
+                                                            </select>
+                                                            <span class="can-edit-profile-error text-danger text-error"></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
                                                         <div class="mb-4">
                                                             <label class="form-label" for="driver-address">*
                                                                 {{ __('Home Address') }}</label>

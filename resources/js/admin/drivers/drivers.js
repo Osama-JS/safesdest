@@ -444,6 +444,7 @@ $(function () {
       $('#driver-phone').val(data.phone);
       $('#phone-code').val(data.phone_code);
       $('#driver-role').val(data.role_id);
+      $('#driver-can-edit-profile').val(data.can_edit_profile ? '1' : '0');
       $('#driver-team').val(data.team_id).trigger('change');
       $('#driver-address').val(data.address);
       $('#driver-commission-type').val(data.commission_type);

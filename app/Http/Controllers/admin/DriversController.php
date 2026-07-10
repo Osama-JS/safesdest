@@ -457,6 +457,7 @@ class DriversController extends Controller
                 'username' => $req->username,
                 'address' => $req->address,
                 'vehicle_size_id' => $req->vehicle,
+                'can_edit_profile' => $req->has('can_edit_profile') ? (bool) $req->can_edit_profile : true,
                 'role_id' => $req->role ?? null,
                 'commission_type' => $req->commission_type,
                 'commission' => $req->commission,

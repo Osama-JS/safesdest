@@ -30,10 +30,11 @@ class GeminiApiService
         $fullPrompt = $prompt . "\n\n" .
             "CRITICAL INSTRUCTIONS:\n" .
             "1. You MUST return ONLY a valid JSON object. Do NOT include markdown tags like ```json or any text outside the JSON.\n" .
-            "2. Read ALL digits and characters with extreme precision - pay special attention to digits like 0,1,4,6,8,9 that may look similar.\n" .
-            "3. For numbers and IDs, read character by character and include EVERY digit without skipping any.\n" .
-            "4. If a field value is NOT found or unclear in the document, set it to null - do NOT guess.\n" .
-            "5. Return exact values as they appear in the document, without modification.";
+            "2. If you need to return an error message to the user (as requested in the prompt), you MUST return a JSON object with a single key 'error'. Example: {\"error\": \"Your error message here\"}\n" .
+            "3. Read ALL digits and characters with extreme precision - pay special attention to digits like 0,1,4,6,8,9 that may look similar.\n" .
+            "4. For numbers and IDs, read character by character and include EVERY digit without skipping any.\n" .
+            "5. If a field value is NOT found or unclear in the document, set it to null - do NOT guess.\n" .
+            "6. Return exact values as they appear in the document, without modification.";
 
         $base64Image = base64_encode(file_get_contents($image->getRealPath()));
         $mimeType = $image->getMimeType();

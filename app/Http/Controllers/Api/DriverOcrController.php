@@ -44,6 +44,13 @@ class DriverOcrController extends Controller
             $extractedData = $this->geminiService->extractDataFromImage($image, $field->ocr_prompt);
 
             if ($extractedData !== null) {
+                if (isset($extractedData['error'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $extractedData['error']
+                    ], 422);
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Data extracted successfully',

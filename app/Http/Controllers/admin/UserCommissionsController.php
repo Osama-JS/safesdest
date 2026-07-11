@@ -115,6 +115,7 @@ class UserCommissionsController extends Controller
                 $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $userWallet->id)
                     ->where('task_id', $task->id)
                     ->where('transaction_type', 'credit')
+                    ->where('description', 'LIKE', '%Commission from Task%')
                     ->exists();
 
                 if ($alreadyReceived) {

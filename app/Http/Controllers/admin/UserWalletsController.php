@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\UserWalletTransaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\Task;
 use App\Models\InvestmentContract;
@@ -1126,8 +1127,8 @@ class UserWalletsController extends Controller
             $processedTasksCount = 0;
             $totalCommissionCredited = 0;
 
-            \Log::info("--- Starting calculateTruckBrokerCommissions for Broker ID: {$userId} ---");
-            \Log::info("Total tasks found linked to this broker (direct or via driver): {$totalTasksFound}");
+            Log::info("--- Starting calculateTruckBrokerCommissions for Broker ID: {$userId} ---");
+            Log::info("Total tasks found linked to this broker (direct or via driver): {$totalTasksFound}");
 
             foreach ($allTasks as $task) {
                 if ($task->closed != 1) {
@@ -1183,7 +1184,7 @@ class UserWalletsController extends Controller
                 }
                 
                 if ($totalBrokersShare > $platformCut) {
-                     \Log::error("Task {$task->id}: Total brokers commission ({$totalBrokersShare}) exceeds platform cut ({$platformCut}). No commissions will be paid.");
+                     Log::error("Task {$task->id}: Total brokers commission ({$totalBrokersShare}) exceeds platform cut ({$platformCut}). No commissions will be paid.");
                      continue;
                 }
                 
@@ -1209,20 +1210,20 @@ class UserWalletsController extends Controller
 
             if ($processedTasksCount === 0) {
                 DB::rollBack();
-                \Log::info("Broker ID: {$userId} | Summary: Total: {$totalTasksFound}, Open: {$openTasksCount}, Closed: {$closedTasksCount}, Duplicates: {$duplicateCommissionsCount}, Processed: 0");
+                Log::info("Broker ID: {$userId} | Summary: Total: {$totalTasksFound}, Open: {$openTasksCount}, Closed: {$closedTasksCount}, Duplicates: {$duplicateCommissionsCount}, Processed: 0");
                 return response()->json([
                     'status' => 1,
                     'info' => 'لا توجد مهام جديدة غير محتسبة لاحتساب عمولة وساطة الشاحنات عليها.'
                 ]);
             }
 
-            \Log::info("Broker ID: {$userId} | Summary:");
-            \Log::info("Total Tasks Found: {$totalTasksFound}");
-            \Log::info("Open Tasks (Skipped): {$openTasksCount}");
-            \Log::info("Closed Tasks: {$closedTasksCount}");
-            \Log::info("Duplicate Commissions (Already Paid): {$duplicateCommissionsCount}");
-            \Log::info("Processed Tasks (Newly Paid): {$processedTasksCount}");
-            \Log::info("Total Commission Credited: {$totalCommissionCredited}");
+            Log::info("Broker ID: {$userId} | Summary:");
+            Log::info("Total Tasks Found: {$totalTasksFound}");
+            Log::info("Open Tasks (Skipped): {$openTasksCount}");
+            Log::info("Closed Tasks: {$closedTasksCount}");
+            Log::info("Duplicate Commissions (Already Paid): {$duplicateCommissionsCount}");
+            Log::info("Processed Tasks (Newly Paid): {$processedTasksCount}");
+            Log::info("Total Commission Credited: {$totalCommissionCredited}");
 
             DB::commit();
             return response()->json([

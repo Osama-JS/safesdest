@@ -1091,7 +1091,6 @@ class UserWalletsController extends Controller
             $directTasks = Task::with(['brokers', 'driver.brokers'])->whereHas('brokers', function($q) use ($userId) {
                     $q->where('users.id', $userId);
                 })
-                ->where('closed', 1)
                 ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
                 ->get();
 
@@ -1106,7 +1105,6 @@ class UserWalletsController extends Controller
                 
                 $query = Task::with(['brokers', 'driver.brokers'])->where('driver_id', $driver->id)
                     ->doesntHave('brokers') // No direct brokers
-                    ->where('closed', 1)
                     ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
 
                 if ($driverBrokerPivot->commission_start_date) {
@@ -1121,10 +1119,24 @@ class UserWalletsController extends Controller
 
             $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
 
+            $totalTasksFound = $allTasks->count();
+            $closedTasksCount = 0;
+            $openTasksCount = 0;
+            $duplicateCommissionsCount = 0;
             $processedTasksCount = 0;
             $totalCommissionCredited = 0;
 
+            \Log::info("--- Starting calculateTruckBrokerCommissions for Broker ID: {$userId} ---");
+            \Log::info("Total tasks found linked to this broker (direct or via driver): {$totalTasksFound}");
+
             foreach ($allTasks as $task) {
+                if ($task->closed != 1) {
+                    $openTasksCount++;
+                    continue;
+                }
+                
+                $closedTasksCount++;
+
                 // منع التكرار
                 $exists = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
                     ->where('task_id', $task->id)
@@ -1133,6 +1145,7 @@ class UserWalletsController extends Controller
                     ->exists();
 
                 if ($exists) {
+                    $duplicateCommissionsCount++;
                     continue;
                 }
 
@@ -1196,11 +1209,20 @@ class UserWalletsController extends Controller
 
             if ($processedTasksCount === 0) {
                 DB::rollBack();
+                \Log::info("Broker ID: {$userId} | Summary: Total: {$totalTasksFound}, Open: {$openTasksCount}, Closed: {$closedTasksCount}, Duplicates: {$duplicateCommissionsCount}, Processed: 0");
                 return response()->json([
                     'status' => 1,
                     'info' => 'لا توجد مهام جديدة غير محتسبة لاحتساب عمولة وساطة الشاحنات عليها.'
                 ]);
             }
+
+            \Log::info("Broker ID: {$userId} | Summary:");
+            \Log::info("Total Tasks Found: {$totalTasksFound}");
+            \Log::info("Open Tasks (Skipped): {$openTasksCount}");
+            \Log::info("Closed Tasks: {$closedTasksCount}");
+            \Log::info("Duplicate Commissions (Already Paid): {$duplicateCommissionsCount}");
+            \Log::info("Processed Tasks (Newly Paid): {$processedTasksCount}");
+            \Log::info("Total Commission Credited: {$totalCommissionCredited}");
 
             DB::commit();
             return response()->json([

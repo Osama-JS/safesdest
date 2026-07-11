@@ -1130,6 +1130,12 @@ class UserWalletsController extends Controller
             Log::info("--- Starting calculateTruckBrokerCommissions for Broker ID: {$userId} ---");
             Log::info("Total tasks found linked to this broker (direct or via driver): {$totalTasksFound}");
 
+            // 📝 طباعة تفاصيل كل مهمة لغرض التتبع
+            foreach ($allTasks as $task) {
+                $isClosed = $task->closed == 1 ? 'Yes' : 'No';
+                Log::info("Task ID: {$task->id} | Status: {$task->status} | Closed: {$isClosed}");
+            }
+
             foreach ($allTasks as $task) {
                 if ($task->closed != 1) {
                     $openTasksCount++;

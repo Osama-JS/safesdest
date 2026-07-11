@@ -3136,9 +3136,11 @@ class TasksController extends Controller
             return response()->json(['status' => 1, 'success' => __('Task closed successfully')]);
         } catch (Exception $e) {
             DB::rollBack();
-            // حذف الملف في حالة حدوث خطأ
-            if ($deliveryNotePath) {
-                FileHelper::deleteFileIfExists($deliveryNotePath);
+            // حذف الملفات في حالة حدوث خطأ
+            if (!empty($deliveryNotePaths)) {
+                foreach ($deliveryNotePaths as $path) {
+                    FileHelper::deleteFileIfExists($path);
+                }
             }
             return response()->json(['status' => 2, 'error' => $e->getMessage()]);
         }

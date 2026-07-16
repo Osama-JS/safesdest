@@ -1400,7 +1400,172 @@ class UserWalletsController extends Controller
             }
         }
 
+    }
+
+    private function getAllValidLegacyBrokerTasks()
+    {
+        $validTasks = [];
+        $truckTasks = collect();
+
+        // 1. Direct Tasks
+        $directTasks = Task::with(['ad', 'driver', 'customer', 'broker'])->whereNotNull('broker_id')
+            ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
+            ->get();
+            
+        foreach ($directTasks as $t) {
+            $truckTasks->put($t->id, $t);
+        }
+
+        // 2. Driver Tasks
+        $driverTasks = Task::with(['ad', 'driver.broker', 'customer'])
+            ->whereHas('driver', function($q) {
+                $q->whereNotNull('broker_id');
+            })
+            ->whereNull('broker_id')
+            ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
+            ->get();
+
+        foreach ($driverTasks as $t) {
+            $truckTasks->put($t->id, $t);
+        }
+
+        foreach ($truckTasks as $task) {
+            if ($task->closed != 1 && !in_array($task->status, ['completed', 'delivered', 'done'])) {
+                continue;
+            }
+
+            $broker = null;
+            $cType = null;
+            $cValue = 0;
+
+            if ($task->broker_id) {
+                $broker = $task->broker;
+                $cType = $task->broker_commission_type;
+                $cValue = (float) $task->broker_commission_value;
+            } elseif ($task->driver && $task->driver->broker_id) {
+                $broker = $task->driver->broker;
+                $cType = $task->driver->broker_commission_type;
+                $cValue = (float) $task->driver->broker_commission_value;
+                
+                if ($task->driver->broker_commission_start_date && $task->created_at < $task->driver->broker_commission_start_date) {
+                    continue;
+                }
+            }
+
+            if (!$broker || !$cType || $cValue <= 0) {
+                continue;
+            }
+
+            $platformCut = 0;
+            if ($task->ad) {
+                if ($task->ad->service_commission_type == 1) {
+                    $platformCut = (float) $task->ad->service_commission;
+                } else {
+                    $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                }
+            } else {
+                $platformCut = (float) $task->commission;
+            }
+
+            $brokerShare = 0;
+            if ($cType === 'percentage') {
+                $brokerShare = ($platformCut * $cValue) / 100;
+            } else {
+                $brokerShare = $cValue;
+            }
+
+            if ($brokerShare <= 0) {
+                continue;
+            }
+
+            $validTasks[] = [
+                'task' => $task,
+                'brokerShare' => $brokerShare,
+                'brokerName' => $broker->name ?? 'غير معروف',
+                'brokerEmail' => $broker->email ?? 'لا يوجد'
+            ];
+        }
+        
         return $validTasks;
+    }
+
+    public function previewAllOldTruckBrokerCommissions()
+    {
+        if (auth()->user()->email !== 'osama.samomy@gmail.com') {
+            return response()->json(['status' => 0, 'error' => 'غير مصرح']);
+        }
+
+        $validTasks = $this->getAllValidLegacyBrokerTasks();
+
+        $previewData = [];
+        $totalCommission = 0;
+
+        foreach ($validTasks as $item) {
+            $task = $item['task'];
+            $brokerShare = $item['brokerShare'];
+            $previewData[] = [
+                'task_id' => $task->id,
+                'broker_name' => $item['brokerName'] . ' (' . $item['brokerEmail'] . ')',
+                'total_price' => number_format($task->total_price, 2),
+                'commission' => number_format($brokerShare, 2),
+                'date' => $task->created_at->format('Y-m-d')
+            ];
+            $totalCommission += $brokerShare;
+        }
+
+        return response()->json([
+            'status' => 1,
+            'tasks' => $previewData,
+            'total_commission' => number_format($totalCommission, 2)
+        ]);
+    }
+
+    public function exportAllOldTruckBrokerCommissions()
+    {
+        if (auth()->user()->email !== 'osama.samomy@gmail.com') {
+            abort(403);
+        }
+
+        $validTasks = $this->getAllValidLegacyBrokerTasks();
+
+        $filename = "all_broker_commissions_preview_" . date('Ymd_His') . ".csv";
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use($validTasks) {
+            $file = fopen('php://output', 'w');
+            
+            // إضافة دعم اللغة العربية لملف CSV
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, ['رقم المهمة', 'الوسيط', 'إجمالي السعر (ريال)', 'العمولة المستحقة (ريال)', 'التاريخ']);
+
+            $totalCommission = 0;
+            foreach ($validTasks as $item) {
+                $task = $item['task'];
+                $brokerShare = $item['brokerShare'];
+                fputcsv($file, [
+                    $task->id,
+                    $item['brokerName'] . ' (' . $item['brokerEmail'] . ')',
+                    $task->total_price,
+                    $brokerShare,
+                    $task->created_at->format('Y-m-d')
+                ]);
+                $totalCommission += $brokerShare;
+            }
+
+            fputcsv($file, ['الإجمالي', '', '', $totalCommission, '']);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

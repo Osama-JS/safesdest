@@ -317,6 +317,10 @@
                     <i class="ti ti-history me-0 me-sm-1 ti-xs"></i>
                     <span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>
                 </button>
+                <button class="btn btn-info waves-effect waves-light mt-5 mx-2" id="previewAllOldTruckBrokerBtn">
+                    <i class="ti ti-eye me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> استعراض كافة عمولات النظام القديم </span>
+                </button>
             @endif
         </div>
         <div class="card-datatable table-responsive">
@@ -398,6 +402,63 @@
                     <button type="button" class="btn btn-danger d-none" id="oldBrokerConfirmBtn">
                         <i class="ti ti-calculator me-1"></i> تأكيد واحتساب
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Old Broker Commissions Modal -->
+    <div class="modal fade" id="allOldBrokerCommissionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">استعراض كافة عمولات النظام القديم</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="allOldBrokerLoading" class="text-center my-4">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2">جاري البحث عن جميع المهام المطابقة في النظام...</p>
+                    </div>
+                    
+                    <div id="allOldBrokerContent" class="d-none">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="ti ti-info-circle me-2"></i>
+                            <div>
+                                إجمالي العمولات لجميع المهام: <strong id="allOldBrokerTotalCommission">0.00</strong> ريال
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-bordered table-sm" id="allOldBrokerTasksTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>رقم المهمة</th>
+                                        <th>الوسيط المرتبط</th>
+                                        <th>إجمالي السعر</th>
+                                        <th>العمولة المستحقة</th>
+                                        <th>التاريخ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="allOldBrokerNoData" class="d-none text-center my-4">
+                        <i class="ti ti-alert-triangle text-warning fs-1 mb-2"></i>
+                        <p>لا توجد مهام مطابقة لعمولات النظام القديم.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <a href="{{ route('admin.user-wallets.export-all-old-truck-broker') }}" target="_blank" class="btn btn-info d-none" id="allOldBrokerExportBtn">
+                        <i class="ti ti-download me-1"></i> تصدير Excel
+                    </a>
                 </div>
             </div>
         </div>
@@ -754,6 +815,7 @@
         const calculateTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-truck-broker', $user->id) }}';
         const calculateOldTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-old-truck-broker', $user->id) }}';
         const previewOldTruckBrokerUrl = '{{ route('admin.user-wallets.preview-old-truck-broker', $user->id) }}';
+        const previewAllOldTruckBrokerUrl = '{{ route('admin.user-wallets.preview-all-old-truck-broker') }}';
         const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
         const isInvestor = {{ $isInvestor ? 'true' : 'false' }};
         const withdrawableBalance = {{ $isInvestor ? ($withdrawableBalance ?? 0) : 0 }};

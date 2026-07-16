@@ -801,6 +801,53 @@ $(function () {
     });
   });
 
+  $(document).on('click', '#previewAllOldTruckBrokerBtn', function () {
+    $('#allOldBrokerCommissionModal').modal('show');
+    $('#allOldBrokerLoading').removeClass('d-none');
+    $('#allOldBrokerContent').addClass('d-none');
+    $('#allOldBrokerNoData').addClass('d-none');
+    $('#allOldBrokerExportBtn').addClass('d-none');
+    
+    $.ajax({
+      url: previewAllOldTruckBrokerUrl,
+      type: 'GET',
+      success: function (response) {
+        $('#allOldBrokerLoading').addClass('d-none');
+        
+        if (response.status === 1) {
+          if (response.tasks.length > 0) {
+            $('#allOldBrokerContent').removeClass('d-none');
+            $('#allOldBrokerExportBtn').removeClass('d-none');
+            $('#allOldBrokerTotalCommission').text(response.total_commission);
+            
+            let html = '';
+            response.tasks.forEach(function(item) {
+              html += `
+                <tr>
+                  <td>${item.task_id}</td>
+                  <td>${item.broker_name}</td>
+                  <td>${item.total_price}</td>
+                  <td>${item.commission}</td>
+                  <td>${item.date}</td>
+                </tr>
+              `;
+            });
+            $('#allOldBrokerTasksTable tbody').html(html);
+          } else {
+            $('#allOldBrokerNoData').removeClass('d-none');
+          }
+        } else {
+          $('#allOldBrokerCommissionModal').modal('hide');
+          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+        }
+      },
+      error: function () {
+        $('#allOldBrokerCommissionModal').modal('hide');
+        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء جلب المعاينة.', icon: 'error' });
+      }
+    });
+  });
+
   $(document).on('click', '#oldBrokerConfirmBtn', function () {
     const password = $('#oldBrokerPassword').val();
     if (!password) {

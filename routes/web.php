@@ -460,7 +460,9 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
                 Route::post('/users/{userId}/wallet/calculate-truck-broker', [UserWalletsController::class, 'calculateTruckBrokerCommissions'])->name('admin.user-wallets.calculate-truck-broker');
                 Route::get('/users/{userId}/wallet/preview-old-truck-broker', [UserWalletsController::class, 'previewOldTruckBrokerCommissions'])->name('admin.user-wallets.preview-old-truck-broker');
+                Route::get('/users/wallet/preview-all-old-truck-broker', [UserWalletsController::class, 'previewAllOldTruckBrokerCommissions'])->name('admin.user-wallets.preview-all-old-truck-broker');
                 Route::get('/users/{userId}/wallet/export-old-truck-broker', [UserWalletsController::class, 'exportOldTruckBrokerCommissions'])->name('admin.user-wallets.export-old-truck-broker');
+                Route::get('/users/wallet/export-all-old-truck-broker', [UserWalletsController::class, 'exportAllOldTruckBrokerCommissions'])->name('admin.user-wallets.export-all-old-truck-broker');
                 Route::post('/users/{userId}/wallet/calculate-old-truck-broker', [UserWalletsController::class, 'calculateOldTruckBrokerCommissions'])->name('admin.user-wallets.calculate-old-truck-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
                 Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');

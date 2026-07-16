@@ -778,6 +778,7 @@ $(function () {
               html += `
                 <tr>
                   <td>${item.task_id}</td>
+                  <td>${item.type_name}</td>
                   <td>${item.total_price}</td>
                   <td>${item.commission}</td>
                   <td>${item.date}</td>

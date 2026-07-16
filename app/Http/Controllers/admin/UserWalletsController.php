@@ -1259,16 +1259,22 @@ class UserWalletsController extends Controller
             $brokerWallet = $this->createWallet($userId);
         }
 
+        $validTasks = [];
+        $truckTasks = collect();
+
         // 1. استخراج المهام المرتبطة مباشرة بالوسيط في النظام القديم
-        $directTasks = Task::with(['ad', 'driver'])->where('broker_id', $userId)
+        $directTasks = Task::with(['ad', 'driver', 'customer'])->where('broker_id', $userId)
             ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
             ->get();
+            
+        foreach ($directTasks as $t) {
+            $truckTasks->put($t->id, $t);
+        }
 
         // 2. استخراج المهام للسائقين المرتبطين بالوسيط بالنظام القديم
         $drivers = \App\Models\Driver::where('broker_id', $userId)->get();
-        $driverTaskIds = [];
         foreach ($drivers as $driver) {
-            $query = Task::with(['ad', 'driver'])->where('driver_id', $driver->id)
+            $query = Task::with(['ad', 'driver', 'customer'])->where('driver_id', $driver->id)
                 ->whereNull('broker_id') // تجنب التكرار لو كانت المهمة مرتبطة بوسيط آخر
                 ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
 
@@ -1276,21 +1282,18 @@ class UserWalletsController extends Controller
                 $query->where('created_at', '>=', $driver->broker_commission_start_date);
             }
 
-            $dTasks = $query->get();
-            foreach ($dTasks as $dt) {
-                $driverTaskIds[$dt->id] = $dt;
+            foreach ($query->get() as $t) {
+                $truckTasks->put($t->id, $t);
             }
         }
 
-        $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
-
-        $validTasks = [];
-        foreach ($allTasks as $task) {
-            if ($task->closed != 1) {
+        // معالجة عمولات وسطاء الشاحنات
+        foreach ($truckTasks as $task) {
+            if ($task->closed != 1 && !in_array($task->status, ['completed', 'delivered', 'done'])) {
                 continue;
             }
 
-            // منع التكرار
+            // منع التكرار لعمولة وساطة الشاحنات
             $exists = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
                 ->where('task_id', $task->id)
                 ->where('transaction_type', 'credit')
@@ -1312,7 +1315,6 @@ class UserWalletsController extends Controller
                 $platformCut = (float) $task->commission;
             }
 
-            $brokerShare = 0;
             $cType = null;
             $cValue = 0;
 
@@ -1331,6 +1333,7 @@ class UserWalletsController extends Controller
                 continue;
             }
 
+            $brokerShare = 0;
             if ($cType === 'percentage') {
                 $brokerShare = ($platformCut * $cValue) / 100;
             } else {
@@ -1344,8 +1347,57 @@ class UserWalletsController extends Controller
             $validTasks[] = [
                 'task' => $task,
                 'brokerShare' => $brokerShare,
-                'walletId' => $brokerWallet->id
+                'walletId' => $brokerWallet->id,
+                'type' => 'broker',
+                'type_name' => 'عمولة وساطة شاحنات',
+                'description' => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}"
             ];
+        }
+
+        // 3. استخراج مهام عمولة المستخدمين (العملاء)
+        $userCommissions = \App\Models\UserCommission::where('user_id', $userId)->where('status', true)->get();
+        if ($userCommissions->isNotEmpty()) {
+            foreach ($userCommissions as $userCommission) {
+                $query = Task::with(['customer'])->where('customer_id', $userCommission->customer_id)
+                    ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
+                
+                if ($broker->commission_start_date) {
+                    $query->where('created_at', '>=', \Carbon\Carbon::parse($broker->commission_start_date)->startOfDay());
+                }
+
+                $customerTasks = $query->get();
+
+                foreach ($customerTasks as $task) {
+                    if ($task->closed != 1 && !in_array($task->status, ['completed', 'delivered', 'done'])) {
+                        continue;
+                    }
+
+                    // التحقق من أن المستخدم لم يستلم عمولته لهذه المهمة من قبل
+                    $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
+                        ->where('task_id', $task->id)
+                        ->where('transaction_type', 'credit')
+                        ->where('description', 'LIKE', 'Commission from Task:%')
+                        ->exists();
+
+                    if ($alreadyReceived || $task->commission <= 0) {
+                        continue;
+                    }
+
+                    $calculatedCommission = $userCommission->calculateCommission($task->commission);
+
+                    if ($calculatedCommission > 0) {
+                        $customerName = optional($task->customer)->name ?? 'Customer';
+                        $validTasks[] = [
+                            'task' => $task,
+                            'brokerShare' => $calculatedCommission,
+                            'walletId' => $brokerWallet->id,
+                            'type' => 'user_commission',
+                            'type_name' => 'عمولة مستخدم (عميل)',
+                            'description' => "Commission from Task: #{$task->id} - Customer: {$customerName}"
+                        ];
+                    }
+                }
+            }
         }
 
         return $validTasks;
@@ -1370,6 +1422,7 @@ class UserWalletsController extends Controller
             $brokerShare = $item['brokerShare'];
             $previewData[] = [
                 'task_id' => $task->id,
+                'type_name' => $item['type_name'],
                 'total_price' => number_format($task->total_price, 2),
                 'commission' => number_format($brokerShare, 2),
                 'date' => $task->created_at->format('Y-m-d')
@@ -1411,7 +1464,7 @@ class UserWalletsController extends Controller
             // إضافة دعم اللغة العربية لملف CSV
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            fputcsv($file, ['رقم المهمة', 'إجمالي السعر (ريال)', 'عمولة الوسيط (ريال)', 'التاريخ']);
+            fputcsv($file, ['رقم المهمة', 'نوع العمولة', 'إجمالي السعر (ريال)', 'قيمة العمولة (ريال)', 'التاريخ']);
 
             $totalCommission = 0;
             foreach ($validTasks as $item) {
@@ -1419,6 +1472,7 @@ class UserWalletsController extends Controller
                 $brokerShare = $item['brokerShare'];
                 fputcsv($file, [
                     $task->id,
+                    $item['type_name'],
                     $task->total_price,
                     $brokerShare,
                     $task->created_at->format('Y-m-d')
@@ -1426,7 +1480,7 @@ class UserWalletsController extends Controller
                 $totalCommission += $brokerShare;
             }
 
-            fputcsv($file, ['الإجمالي', '', $totalCommission, '']);
+            fputcsv($file, ['الإجمالي', '', '', $totalCommission, '']);
 
             fclose($file);
         };
@@ -1476,7 +1530,7 @@ class UserWalletsController extends Controller
                     'task_id' => $task->id,
                     'amount' => $brokerShare,
                     'transaction_type' => 'credit',
-                    'description' => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}",
+                    'description' => $item['description'],
                     'created_by' => Auth::id(),
                     'status' => true,
                 ]);

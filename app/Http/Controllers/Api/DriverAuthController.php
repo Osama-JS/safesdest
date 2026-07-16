@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Services\WhatsAppService;
+// use App\Services\WhatsAppService;
 
 class DriverAuthController extends Controller
 {
@@ -176,8 +176,9 @@ class DriverAuthController extends Controller
             'otp_code' => Hash::make($otpCode),
             'otp_expires_at' => now()->addMinutes(5)
         ]);
-
-        $whatsAppService = new WhatsAppService();
+        
+        // Send OTP using the configured WhatsApp service
+        $whatsAppService = app(\App\Services\Interfaces\WhatsAppServiceInterface::class);
         $isSent = $whatsAppService->sendOTP($fullPhone, $otpCode, $lang);
 
         if ($isSent) {

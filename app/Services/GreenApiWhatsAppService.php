@@ -4,8 +4,9 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\Interfaces\WhatsAppServiceInterface;
 
-class WhatsAppService
+class GreenApiWhatsAppService implements WhatsAppServiceInterface
 {
     /**
      * Send an OTP via WhatsApp (Green API)
@@ -66,8 +67,18 @@ class WhatsAppService
                 return false;
             }
         } catch (\Exception $e) {
-            Log::error("WhatsApp OTP Exception: " . $e->getMessage());
+            Log::error('Error sending WhatsApp OTP: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Send a template message. Green API doesn't use Meta templates directly,
+     * so we just log a warning or send a normal message if needed.
+     */
+    public function sendTemplateMessage($phone, $purpose, array $variables = [], $lang = 'ar')
+    {
+        Log::info("Green API: Cannot send Meta templates natively. Purpose: {$purpose}");
+        return false;
     }
 }

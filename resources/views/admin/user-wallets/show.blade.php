@@ -312,6 +312,12 @@
                     <span class="d-none d-sm-inline-block"> احتساب عمولات وسيط الشاحنات </span>
                 </button>
             @endif
+            @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+                <button class="btn btn-secondary waves-effect waves-light mt-5 mx-2" id="calculateOldTruckBrokerBtn">
+                    <i class="ti ti-history me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>
+                </button>
+            @endif
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-transactions table">
@@ -402,6 +408,13 @@
                                                             <i class="ti ti-ban me-1"></i> لا يمكن إتمام التحويل الآلي لعدم اكتمال البيانات البنكية الأساسية (الآيبان، رمز السويفت، أو اسم المستفيد).
                                                         </div>
                                                     @endif
+                                                </div>
+                                                <div class="mt-3">
+                                                    <label class="form-label text-danger fw-bold" for="hyperpay_password_user">
+                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
+                                                    </label>
+                                                    <input type="password" name="password" id="hyperpay_password_user" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
+                                                    <span class="password-error text-danger text-error"></span>
                                                 </div>
                                             </div>
                                         </div>
@@ -673,6 +686,7 @@
         const calculateTasksUrl = '{{ route('admin.user-wallets.calculate-tasks', $user->id) }}';
         const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
         const calculateTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-truck-broker', $user->id) }}';
+        const calculateOldTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-old-truck-broker', $user->id) }}';
         const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
         const isInvestor = {{ $isInvestor ? 'true' : 'false' }};
         const withdrawableBalance = {{ $isInvestor ? ($withdrawableBalance ?? 0) : 0 }};

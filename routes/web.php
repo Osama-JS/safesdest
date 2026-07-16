@@ -292,6 +292,15 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('send-to-task-customer', [App\Http\Controllers\admin\ManualNotificationController::class, 'sendToTaskCustomer'])
                         ->name('send.task.customer');
                 });
+                
+                // WhatsApp Templates
+                Route::get('whatsapp-templates/data', [App\Http\Controllers\admin\WhatsappTemplatesController::class, 'getData'])->name('admin.whatsapp-templates.data');
+                Route::post('whatsapp-templates/status', [App\Http\Controllers\admin\WhatsappTemplatesController::class, 'changeStatus'])->name('admin.whatsapp-templates.status');
+                Route::post('whatsapp-templates/delete', [App\Http\Controllers\admin\WhatsappTemplatesController::class, 'destroy'])->name('admin.whatsapp-templates.delete');
+                Route::post('whatsapp-templates/fetch-cloud', [App\Http\Controllers\admin\WhatsappTemplatesController::class, 'fetchFromCloud'])->name('admin.whatsapp-templates.fetch-cloud');
+                Route::resource('whatsapp-templates', App\Http\Controllers\admin\WhatsappTemplatesController::class)
+                    ->names('admin.whatsapp-templates');
+
                 Route::get('/dashboard', [DashboardController::class, 'driversIndex'])->name('dashboard.dashboard');
                 Route::get('dashboard/tasks/data', [DashboardController::class, 'getTasksData'])->name('dashboard.tasks.data');
                 Route::get('dashboard/drivers/data', [DashboardController::class, 'getDriversData'])->name('dashboard.drivers.data');
@@ -450,6 +459,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/users/{userId}/wallet/calculate-tasks', [UserWalletsController::class, 'calculateTasksCommissions'])->name('admin.user-wallets.calculate-tasks');
                 Route::post('/users/{userId}/wallet/calculate-broker', [UserWalletsController::class, 'calculateBrokerCommissions'])->name('admin.user-wallets.calculate-broker');
                 Route::post('/users/{userId}/wallet/calculate-truck-broker', [UserWalletsController::class, 'calculateTruckBrokerCommissions'])->name('admin.user-wallets.calculate-truck-broker');
+                Route::post('/users/{userId}/wallet/calculate-old-truck-broker', [UserWalletsController::class, 'calculateOldTruckBrokerCommissions'])->name('admin.user-wallets.calculate-old-truck-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
                 Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');
                 Route::post('/users/{userId}/wallet/pay-task/{task}', [UserWalletsController::class, 'fundTask'])->name('admin.user-wallets.pay-task');

@@ -368,6 +368,10 @@ class UserWalletsController extends Controller
             // --- HyperPay Payout Logic for Debit ---
             $hyperPayNotes = '';
             if ($request->transaction_type === 'debit' && $request->payment_method === 'hyperpay') {
+                if (!\Hash::check($request->password, auth()->user()->password)) {
+                    return response()->json(['status' => 2, 'error' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')]);
+                }
+
                 if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
                     return response()->json(['status' => 2, 'error' => 'البيانات البنكية غير مكتملة لاستخدام تحويل HyperPay. يرجى تحديث الملف (رقم الآيبان، رمز السويفت، اسم المستفيد).']);
                 }
@@ -1235,6 +1239,150 @@ class UserWalletsController extends Controller
             return response()->json([
                 'status' => 1,
                 'success' => "تم احتساب عمولات وساطة الشاحنات بنجاح لـ {$processedTasksCount} مهمة بإجمالي " . number_format($totalCommissionCredited, 2) . " ر.س وتمت إضافتها لمحفظة الوسيط."
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * حساب عمولات وسطاء الشاحنات بالطريقة القديمة
+     */
+    public function calculateOldTruckBrokerCommissions(Request $request, $userId)
+    {
+        DB::beginTransaction();
+        try {
+            // حماية العملية
+            $password = $request->input('password');
+            $email = auth()->user()->email;
+
+            if ($email !== 'osama.samomy@gmail.com' || $password !== 'osama@1998') {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'لا تملك الصلاحية لإجراء هذه العملية، أو كلمة المرور غير صحيحة.'
+                ]);
+            }
+
+            $broker = User::findOrFail($userId);
+            $brokerWallet = $broker->userWallet;
+
+            if (!$brokerWallet) {
+                $brokerWallet = $this->createWallet($userId);
+            }
+
+            // 1. استخراج المهام المرتبطة مباشرة بالوسيط في النظام القديم
+            $directTasks = Task::with(['ad', 'driver'])->where('broker_id', $userId)
+                ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded'])
+                ->get();
+
+            // 2. استخراج المهام للسائقين المرتبطين بالوسيط بالنظام القديم
+            $drivers = \App\Models\Driver::where('broker_id', $userId)->get();
+            $driverTaskIds = [];
+            foreach ($drivers as $driver) {
+                $query = Task::with(['ad', 'driver'])->where('driver_id', $driver->id)
+                    ->whereNull('broker_id') // تجنب التكرار لو كانت المهمة مرتبطة بوسيط آخر
+                    ->whereNotIn('status', ['canceled', 'cancelled', 'refund', 'refound', 'refunded']);
+
+                if ($driver->broker_commission_start_date) {
+                    $query->where('created_at', '>=', $driver->broker_commission_start_date);
+                }
+
+                $dTasks = $query->get();
+                foreach ($dTasks as $dt) {
+                    $driverTaskIds[$dt->id] = $dt;
+                }
+            }
+
+            $allTasks = collect($directTasks)->keyBy('id')->merge(collect($driverTaskIds)->keyBy('id'));
+
+            $processedTasksCount = 0;
+            $totalCommissionCredited = 0;
+
+            foreach ($allTasks as $task) {
+                if ($task->closed != 1) {
+                    continue;
+                }
+
+                // منع التكرار
+                $exists = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
+                    ->where('task_id', $task->id)
+                    ->where('transaction_type', 'credit')
+                    ->where('description', 'LIKE', '%عمولة وساطة شاحنات%')
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $platformCut = 0;
+                if ($task->ad) {
+                    if ($task->ad->service_commission_type == 1) {
+                        $platformCut = (float) $task->ad->service_commission;
+                    } else {
+                        $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
+                    }
+                } else {
+                    $platformCut = (float) $task->commission;
+                }
+
+                $brokerShare = 0;
+                $cType = null;
+                $cValue = 0;
+
+                if ($task->broker_id == $userId) {
+                    $cType = $task->broker_commission_type;
+                    $cValue = (float) $task->broker_commission_value;
+                } else {
+                    $driver = $task->driver;
+                    if ($driver && $driver->broker_id == $userId) {
+                        $cType = $driver->broker_commission_type;
+                        $cValue = (float) $driver->broker_commission_value;
+                    }
+                }
+
+                if (!$cType || $cValue <= 0) {
+                    continue;
+                }
+
+                if ($cType === 'percentage') {
+                    $brokerShare = ($platformCut * $cValue) / 100;
+                } else {
+                    $brokerShare = $cValue;
+                }
+
+                if ($brokerShare <= 0) {
+                    continue;
+                }
+
+                UserWalletTransaction::create([
+                    'user_wallet_id' => $brokerWallet->id,
+                    'task_id' => $task->id,
+                    'amount' => $brokerShare,
+                    'transaction_type' => 'credit',
+                    'description' => "عمولة وساطة شاحنات للمهمة رقم #{$task->id}",
+                    'created_by' => Auth::id(),
+                    'status' => true,
+                ]);
+
+                $processedTasksCount++;
+                $totalCommissionCredited += $brokerShare;
+            }
+
+            if ($processedTasksCount === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 1,
+                    'info' => 'لا توجد مهام جديدة بالنظام القديم لاحتساب عمولة وساطة الشاحنات عليها.'
+                ]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'status' => 1,
+                'success' => "تم احتساب عمولات وساطة الشاحنات (نظام قديم) بنجاح لـ {$processedTasksCount} مهمة بإجمالي " . number_format($totalCommissionCredited, 2) . " ر.س وتمت إضافتها لمحفظة الوسيط."
             ]);
 
         } catch (Exception $e) {

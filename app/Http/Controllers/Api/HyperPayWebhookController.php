@@ -248,7 +248,8 @@ class HyperPayWebhookController extends Controller
                         $remainingAmount -= $originalAmount;
 
                         $walletTransaction->update(['status' => 1, 'user_id' => $details['admin_id'] ?? 1]);
-                        $paymentDescription = "دفع مستحقات سائق (كامل) للمعاملة رقم #{$walletTransaction->sequence}";
+                        $bankInfo = "البنك: " . ($payout->driver->bank_name ?? 'غير محدد') . " | الآيبان: " . ($payout->driver->iban_number ?? 'غير محدد') . " | رقم العملية: {$payoutId}";
+                        $paymentDescription = "دفع مستحقات سائق (كامل) للمعاملة رقم #{$walletTransaction->sequence} | {$bankInfo}";
                     } elseif ($remainingAmount > 0) {
                         $paymentAmount = $remainingAmount;
                         $remainingTransactionAmount = $originalAmount - $paymentAmount;
@@ -272,7 +273,8 @@ class HyperPayWebhookController extends Controller
                             'image' => $walletTransaction->image
                         ]);
 
-                        $paymentDescription = "دفع مستحقات سائق (جزئي: {$paymentAmount} من {$originalAmount}) للمعاملة رقم #{$walletTransaction->sequence}";
+                        $bankInfo = "البنك: " . ($payout->driver->bank_name ?? 'غير محدد') . " | الآيبان: " . ($payout->driver->iban_number ?? 'غير محدد') . " | رقم العملية: {$payoutId}";
+                        $paymentDescription = "دفع مستحقات سائق (جزئي: {$paymentAmount} من {$originalAmount}) للمعاملة رقم #{$walletTransaction->sequence} | {$bankInfo}";
                     }
 
                     if ($paymentAmount > 0) {
@@ -300,13 +302,14 @@ class HyperPayWebhookController extends Controller
                     'payment_processed'
                 );
             } elseif ($payout->payout_type === 'MT') {
+                $bankInfo = "البنك: " . ($payout->driver->bank_name ?? 'غير محدد') . " | الآيبان: " . ($payout->driver->iban_number ?? 'غير محدد') . " | رقم العملية: {$payoutId}";
                 // Direct Manual Transaction
                 \App\Models\Wallet_Transaction::create([
                     'wallet_id' => $payout->wallet_id,
                     'user_id' => $details['admin_id'] ?? 1,
                     'amount' => $payout->amount,
                     'transaction_type' => 'debit',
-                    'description' => $details['description'] ?? "سحب مباشر عبر HyperPay",
+                    'description' => ($details['description'] ?? "سحب مباشر عبر HyperPay") . " | {$bankInfo}",
                     'status' => 1,
                     'maturity_time' => $details['maturity'] ?? now(),
                     'image' => $details['image'] ?? null,

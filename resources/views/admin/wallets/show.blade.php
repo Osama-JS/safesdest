@@ -273,10 +273,17 @@
                                                 </div>
                                                 @if (!$data->driver->iban_number || !$data->driver->bic_code || !$data->driver->beneficiary_name)
                                                     <div class="text-danger mt-2 fw-bold">
-                                                        <i
-                                                            class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                                        <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
                                                     </div>
                                                 @endif
+                                                
+                                                <div class="mt-3">
+                                                    <label class="form-label text-danger fw-bold" for="hyperpay_password">
+                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
+                                                    </label>
+                                                    <input type="password" name="password" id="hyperpay_password" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
+                                                    <span class="password-error text-danger text-error"></span>
+                                                </div>
                                             </div>
                                         @endif
 

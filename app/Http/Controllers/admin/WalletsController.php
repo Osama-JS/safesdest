@@ -772,6 +772,18 @@ class WalletsController extends Controller
             if ($req->type === 'credit') {
                 $adjustedBalance += $req->amount;
             } elseif ($req->type === 'debit') {
+                // التحقق من عدم وجود عملية تحويل قيد الانتظار
+                $pendingPayout = \App\Models\HyperpayPayout::where('wallet_id', $wallet->id)
+                    ->where('status', 'pending')
+                    ->exists();
+
+                if ($pendingPayout) {
+                    return response()->json([
+                        'status' => 2,
+                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود عملية تحويل عبر HyperPay قيد الانتظار.')
+                    ]);
+                }
+
                 $adjustedBalance -= $req->amount;
             }
 
@@ -785,6 +797,10 @@ class WalletsController extends Controller
             // --- HyperPay Payout Logic for Manual Debit ---
             $hyperPayNotes = '';
             if ($req->type === 'debit' && $req->payment_method === 'hyperpay') {
+                if (!\Hash::check($req->password, auth()->user()->password)) {
+                    return response()->json(['status' => 2, 'error' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')]);
+                }
+
                 if ($wallet->user_type !== 'driver' || !$wallet->driver) {
                     return response()->json(['status' => 2, 'error' => __('HyperPay Payout is only available for driver wallets')]);
                 }

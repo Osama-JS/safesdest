@@ -23,6 +23,10 @@ Route::post('/hyperpay/webhook/payout', [\App\Http\Controllers\Api\HyperPayWebho
 // Signit Webhook
 Route::post('/signit/webhook', [\App\Http\Controllers\Api\SignitWebhookController::class, 'handleWebhook']);
 
+// WhatsApp Webhook
+Route::get('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify']);
+Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle']);
+
 // Include driver API routes
 require __DIR__.'/api_driver.php';
 require __DIR__.'/api_customer.php';

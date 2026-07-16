@@ -1,271 +1,283 @@
 {
-    "menu":  [
-                 {
-                     "url":  "/",
-                     "icon":  "menu-icon tf-icons ti ti-chart-pie-2",
-                     "name":  "Dashboard",
-                     "slug":  "user.dashboard",
-                     "isactive":  "dashboard-isactive"
-                 },
-                 {
-                     "url":  "admin/tasks",
-                     "name":  "Tasks",
-                     "icon":  "menu-icon tf-icons ti ti-truck-delivery",
-                     "slug":  "tasks.tasks",
-                     "isactive":  "task-isactive",
-                     "permission":  "view_tasks"
-                 },
-                 {
-                     "url":  "admin/task-claims",
-                     "name":  "Claim Requests",
-                     "icon":  "menu-icon tf-icons ti ti-file-certificate",
-                     "slug":  "admin.task-claims.index",
-                     "isactive":  "task-claims-isactive",
-                     "permission":  "view_task_claims"
-                 },
-                 {
-                     "url":  "admin/customs-clearances",
-                     "name":  "Customes Clearances",
-                     "icon":  "menu-icon tf-icons ti ti-clipboard-check",
-                     "slug":  "customes.customes",
-                     "isactive":  "customes-isactive",
-                     "permission":  "view_customs_clearances"
-                 },
-                 {
-                     "url":  "admin/platform-wallet",
-                     "name":  "Platform Wallet",
-                     "icon":  "menu-icon tf-icons ti ti-wallet",
-                     "slug":  "admin.platform-wallet.index",
-                     "isactive":  "platform-wallet-isactive",
-                     "permission":  "view_platform_wallet"
-                 },
-                 {
-                     "url":  "admin/customers",
-                     "name":  "Customers",
-                     "icon":  "menu-icon tf-icons ti ti-user-circle",
-                     "slug":  "customers.customers",
-                     "isactive":  "customers-isactive",
-                     "permission":  "view_customers"
-                 },
-                 {
-                     "name":  "B2B Module",
-                     "icon":  "menu-icon tf-icons ti ti-building-skyscraper",
-                     "slug":  "b2b",
-                     "permission":  "view_customers",
-                     "submenu":  [
-                                     {
-                                         "url":  "admin/b2b/companies",
-                                         "name":  "Companies",
-                                         "icon":  "menu-icon tf-icons ti ti-building",
-                                         "slug":  "b2b.companies",
-                                         "isactive":  "b2b-companies-isactive"
-                                     },
-                                     {
-                                         "url":  "admin/b2b/provinces",
-                                         "name":  "Provinces Management",
-                                         "icon":  "menu-icon tf-icons ti ti-map",
-                                         "slug":  "b2b.provinces",
-                                         "isactive":  "b2b-provinces-isactive"
-                                     },
-                                     {
-                                         "url":  "admin/b2b/warehouses",
-                                         "name":  "Warehouses",
-                                         "icon":  "menu-icon tf-icons ti ti-home-shipping",
-                                         "slug":  "b2b.warehouses",
-                                         "isactive":  "b2b-warehouses-isactive"
-                                     },
-                                     {
-                                         "url":  "admin/b2b/end-clients",
-                                         "name":  "End Clients",
-                                         "icon":  "menu-icon tf-icons ti ti-users",
-                                         "slug":  "b2b.end-clients",
-                                         "isactive":  "b2b-clients-isactive"
-                                     }
-                                 ]
-                 },
-                 {
-                     "url":  "admin/drivers",
-                     "name":  "Drivers",
-                     "icon":  "menu-icon tf-icons ti  ti-steering-wheel",
-                     "slug":  "drivers.drivers",
-                     "isactive":  "drivers-isactive",
-                     "permission":  "view_drivers"
-                 },
-                 {
-                     "url":  "admin/teams",
-                     "name":  "Teams",
-                     "icon":  "menu-icon tf-icons ti ti-users-group",
-                     "slug":  "teams.teams",
-                     "isactive":  "teams-isactive",
-                     "permission":  "view_teams"
-                 },
-                 {
-                     "url":  "admin/wallets",
-                     "name":  "Wallets",
-                     "icon":  "menu-icon tf-icons ti ti-wallet",
-                     "slug":  "wallets.wallets",
-                     "isactive":  "wallets-isactive",
-                     "permission":  "view_wallets"
-                 },
-                 {
-                     "url":  "admin/wallets/withdrawals",
-                     "name":  "Withdrawal Requests",
-                     "icon":  "menu-icon tf-icons ti ti-cash-banknote",
-                     "slug":  "wallets.withdrawals.index",
-                     "isactive":  "withdrawals-isactive",
-                     "permission":  "view_withdrawal_requests"
-                 },
-                 {
-                     "url":  "admin/ads",
-                     "name":  "Tasks Ads",
-                     "icon":  "menu-icon tf-icons ti ti-speakerphone",
-                     "slug":  "ads.ads",
-                     "isactive":  "ad-isactive",
-                     "permission":  "view_ads"
-                 },
-                 {
-                     "name":  "Store",
-                     "icon":  "menu-icon tf-icons ti ti-building-store",
-                     "slug":  "products",
-                     "permission":  "store_management",
-                     "submenu":  [
-                                     {
-                                         "url":  "admin/products",
-                                         "name":  "Products",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "products.products",
-                                         "isactive":  "products-isactive",
-                                         "permission":  "view_products"
-                                     },
-                                     {
-                                         "url":  "admin/sales",
-                                         "name":  "Sales",
-                                         "icon":  "menu-icon tf-icons ti ti-file-invoice",
-                                         "slug":  "sales.index",
-                                         "isactive":  "sales-isactive"
-                                     }
-                                 ]
-                 },
-                 {
-                     "url":  "admin/reports",
-                     "name":  "Platform Reports",
-                     "icon":  "menu-icon tf-icons ti ti-report",
-                     "slug":  "reports.reports",
-                     "isactive":  "reports-isactive"
-                 },
-                 {
-                     "url":  "admin/settings/statistics",
-                     "name":  "System Statistics",
-                     "icon":  "menu-icon tf-icons ti ti-chart-line",
-                     "slug":  "settings.statistics",
-                     "isactive":  "statistics-isactive",
-                     "permission":  "view_statistics"
-                 },
-                 {
-                     "url":  "admin/platform-wallet",
-                     "name":  "Platform Wallet",
-                     "icon":  "menu-icon tf-icons ti ti-cash",
-                     "slug":  "admin.platform-wallet.index",
-                     "isactive":  "statistics-isactive",
-                     "permission":  "view_statistics"
-                 },
-                 {
-                     "name":  "Settings",
-                     "icon":  "menu-icon tf-icons ti ti-adjustments",
-                     "slug":  "settings",
-                     "permission":  "view_setting_list",
-                     "submenu":  [
-                                     {
-                                         "url":  "admin/settings",
-                                         "icon":  "menu-icon tf-icons ti ti-chart-pie-2",
-                                         "name":  "General",
-                                         "slug":  "settings.general",
-                                         "permission":  "general_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/vehicles",
-                                         "name":  "Vehicles",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.vehicles",
-                                         "permission":  "vehicles_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/tags",
-                                         "name":  "Tags",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.tags",
-                                         "permission":  "tags_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/geofences",
-                                         "name":  "Geo-fence",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.geofences",
-                                         "permission":  "geo_fence_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/points",
-                                         "name":  "Points",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.points",
-                                         "permission":  "points_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/blockages",
-                                         "name":  "Blockages",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.blockages",
-                                         "permission":  "blockages_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/pricing",
-                                         "name":  "Pricing Methods",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.pricing",
-                                         "permission":  "pricing_methods_settings"
-                                     },
-                                     {
-                                         "url":  "admin/settings/templates",
-                                         "name":  "Templates",
-                                         "icon":  "menu-icon tf-icons ti ti-3d-cube-sphere",
-                                         "slug":  "settings.templates",
-                                         "isactive":  "templates-isactive",
-                                         "permission":  "templates_settings"
-                                     },
-                                     {
-                                         "url":  "admin/banks",
-                                         "name":  "Banks Management",
-                                         "icon":  "menu-icon tf-icons ti ti-building-bank",
-                                         "slug":  "admin.banks.index"
-                                     }
-                                 ]
-                 },
-                 {
-                     "url":  "admin/investors",
-                     "name":  "Investors",
-                     "icon":  "menu-icon tf-icons ti ti-briefcase",
-                     "slug":  "admin.investors.index",
-                     "permission":  "view_investors"
-                 },
-                 {
-                     "url":  "admin/users",
-                     "name":  "Users",
-                     "icon":  "menu-icon tf-icons ti ti-users",
-                     "slug":  "user.users",
-                     "permission":  "view_admins"
-                 },
-                 {
-                     "url":  "admin/roles",
-                     "name":  "Roles & Permissions",
-                     "icon":  "menu-icon tf-icons ti ti-shield-lock",
-                     "slug":  "role.roles",
-                     "permission":  "view_roles"
-                 },
-                 {
-                     "url":  "admin/activity-logs",
-                     "name":  "Activity Logs",
-                     "icon":  "menu-icon tf-icons ti ti-activity",
-                     "slug":  "admin.activity_logs"
-                 }
-             ]
+    "menu": [
+        {
+            "url": "/",
+            "icon": "menu-icon tf-icons ti ti-chart-pie-2",
+            "name": "Dashboard",
+            "slug": "user.dashboard",
+            "isactive": "dashboard-isactive"
+        },
+        {
+            "url": "admin/tasks",
+            "name": "Tasks",
+            "icon": "menu-icon tf-icons ti ti-truck-delivery",
+            "slug": "tasks.tasks",
+            "isactive": "task-isactive",
+            "permission": "view_tasks"
+        },
+        {
+            "url": "admin/task-claims",
+            "name": "Claim Requests",
+            "icon": "menu-icon tf-icons ti ti-file-certificate",
+            "slug": "admin.task-claims.index",
+            "isactive": "task-claims-isactive",
+            "permission": "view_task_claims"
+        },
+        {
+            "url": "admin/customs-clearances",
+            "name": "Customes Clearances",
+            "icon": "menu-icon tf-icons ti ti-clipboard-check",
+            "slug": "customes.customes",
+            "isactive": "customes-isactive",
+            "permission": "view_customs_clearances"
+        },
+        {
+            "url": "admin/customers",
+            "name": "Customers",
+            "icon": "menu-icon tf-icons ti ti-user-circle",
+            "slug": "customers.customers",
+            "isactive": "customers-isactive",
+            "permission": "view_customers"
+        },
+        {
+            "name": "B2B Module",
+            "icon": "menu-icon tf-icons ti ti-building-skyscraper",
+            "slug": "b2b",
+            "permission": "view_customers",
+            "submenu": [
+                {
+                    "url": "admin/b2b/companies",
+                    "name": "Companies",
+                    "icon": "menu-icon tf-icons ti ti-building",
+                    "slug": "b2b.companies",
+                    "isactive": "b2b-companies-isactive"
+                },
+                {
+                    "url": "admin/b2b/provinces",
+                    "name": "Provinces Management",
+                    "icon": "menu-icon tf-icons ti ti-map",
+                    "slug": "b2b.provinces",
+                    "isactive": "b2b-provinces-isactive"
+                },
+                {
+                    "url": "admin/b2b/warehouses",
+                    "name": "Warehouses",
+                    "icon": "menu-icon tf-icons ti ti-home-shipping",
+                    "slug": "b2b.warehouses",
+                    "isactive": "b2b-warehouses-isactive"
+                },
+                {
+                    "url": "admin/b2b/end-clients",
+                    "name": "End Clients",
+                    "icon": "menu-icon tf-icons ti ti-users",
+                    "slug": "b2b.end-clients",
+                    "isactive": "b2b-clients-isactive"
+                }
+            ]
+        },
+        {
+            "url": "admin/drivers",
+            "name": "Drivers",
+            "icon": "menu-icon tf-icons ti  ti-steering-wheel",
+            "slug": "drivers.drivers",
+            "isactive": "drivers-isactive",
+            "permission": "view_drivers"
+        },
+        {
+            "url": "admin/teams",
+            "name": "Teams",
+            "icon": "menu-icon tf-icons ti ti-users-group",
+            "slug": "teams.teams",
+            "isactive": "teams-isactive",
+            "permission": "view_teams"
+        },
+        {
+            "url": "admin/wallets",
+            "name": "Wallets",
+            "icon": "menu-icon tf-icons ti ti-wallet",
+            "slug": "wallets.wallets",
+            "isactive": "wallets-isactive",
+            "permission": "view_wallets"
+        },
+        {
+            "url": "admin/wallets/withdrawals",
+            "name": "Withdrawal Requests",
+            "icon": "menu-icon tf-icons ti ti-cash-banknote",
+            "slug": "wallets.withdrawals.index",
+            "isactive": "withdrawals-isactive",
+            "permission": "view_withdrawal_requests"
+        },
+        {
+            "url": "admin/ads",
+            "name": "Tasks Ads",
+            "icon": "menu-icon tf-icons ti ti-speakerphone",
+            "slug": "ads.ads",
+            "isactive": "ad-isactive",
+            "permission": "view_ads"
+        },
+        {
+            "name": "Store",
+            "icon": "menu-icon tf-icons ti ti-building-store",
+            "slug": "products",
+            "permission": "store_management",
+            "submenu": [
+                {
+                    "url": "admin/products",
+                    "name": "Products",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "products.products",
+                    "isactive": "products-isactive",
+                    "permission": "view_products"
+                },
+                {
+                    "url": "admin/sales",
+                    "name": "Sales",
+                    "icon": "menu-icon tf-icons ti ti-file-invoice",
+                    "slug": "sales.index",
+                    "isactive": "sales-isactive"
+                }
+            ]
+        },
+        {
+            "url": "admin/reports",
+            "name": "Platform Reports",
+            "icon": "menu-icon tf-icons ti ti-report",
+            "slug": "reports.reports",
+            "isactive": "reports-isactive"
+        },
+        {
+            "url": "admin/settings/statistics",
+            "name": "System Statistics",
+            "icon": "menu-icon tf-icons ti ti-chart-line",
+            "slug": "settings.statistics",
+            "isactive": "statistics-isactive",
+            "permission": "view_statistics"
+        },
+        {
+            "url": "admin/platform-wallet",
+            "name": "Platform Wallet",
+            "icon": "menu-icon tf-icons ti ti-wallet",
+            "slug": "admin.platform-wallet.index",
+            "isactive": "platform-wallet-isactive",
+            "permission": "view_platform_wallet"
+        },
+        {
+            "url": "admin/investors",
+            "name": "Investors",
+            "icon": "menu-icon tf-icons ti ti-briefcase",
+            "slug": "admin.investors.index",
+            "permission": "view_investors"
+        },
+        {
+            "name": "Settings",
+            "icon": "menu-icon tf-icons ti ti-adjustments",
+            "slug": "settings",
+            "permission": "view_setting_list",
+            "submenu": [
+                {
+                    "url": "admin/settings",
+                    "icon": "menu-icon tf-icons ti ti-chart-pie-2",
+                    "name": "General",
+                    "slug": "settings.general",
+                    "permission": "general_settings"
+                },
+                {
+                    "url": "admin/settings/vehicles",
+                    "name": "Vehicles",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.vehicles",
+                    "permission": "vehicles_settings"
+                },
+                {
+                    "url": "admin/settings/tags",
+                    "name": "Tags",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.tags",
+                    "permission": "tags_settings"
+                },
+                {
+                    "url": "admin/settings/geofences",
+                    "name": "Geo-fence",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.geofences",
+                    "permission": "geo_fence_settings"
+                },
+                {
+                    "url": "admin/settings/points",
+                    "name": "Points",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.points",
+                    "permission": "points_settings"
+                },
+                {
+                    "url": "admin/settings/blockages",
+                    "name": "Blockages",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.blockages",
+                    "permission": "blockages_settings"
+                },
+                {
+                    "url": "admin/settings/pricing",
+                    "name": "Pricing Methods",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.pricing",
+                    "permission": "pricing_methods_settings"
+                },
+                {
+                    "url": "admin/settings/templates",
+                    "name": "Templates",
+                    "icon": "menu-icon tf-icons ti ti-3d-cube-sphere",
+                    "slug": "settings.templates",
+                    "isactive": "templates-isactive",
+                    "permission": "templates_settings"
+                },
+                {
+                    "url": "admin/banks",
+                    "name": "Banks Management",
+                    "icon": "menu-icon tf-icons ti ti-building-bank",
+                    "slug": "admin.banks.index"
+                }
+            ]
+        },
+        {
+            "name": "WhatsApp",
+            "icon": "menu-icon tf-icons ti ti-brand-whatsapp",
+            "slug": "whatsapp",
+            "submenu": [
+                {
+                    "url": "admin/whatsapp-templates",
+                    "name": "WhatsApp Templates",
+                    "slug": "admin.whatsapp-templates.index"
+                }
+            ]
+        },
+        {
+            "url": "admin/platform-wallet",
+            "name": "Platform Wallet",
+            "icon": "menu-icon tf-icons ti ti-cash",
+            "slug": "admin.platform-wallet.index",
+            "isactive": "statistics-isactive",
+            "permission": "view_statistics"
+        },
+        {
+            "url": "admin/users",
+            "name": "Users",
+            "icon": "menu-icon tf-icons ti ti-users",
+            "slug": "user.users",
+            "permission": "view_admins"
+        },
+        {
+            "url": "admin/roles",
+            "name": "Roles & Permissions",
+            "icon": "menu-icon tf-icons ti ti-shield-lock",
+            "slug": "role.roles",
+            "permission": "view_roles"
+        },
+        {
+            "url": "admin/activity-logs",
+            "name": "Activity Logs",
+            "icon": "menu-icon tf-icons ti ti-activity",
+            "slug": "admin.activity_logs"
+        }
+    ]
 }

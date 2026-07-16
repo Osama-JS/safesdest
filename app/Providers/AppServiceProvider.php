@@ -29,7 +29,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(\App\Services\Interfaces\WhatsAppServiceInterface::class, function ($app) {
+            $provider = env('WHATSAPP_PROVIDER', 'green');
+            
+            if ($provider === 'cloud') {
+                return new \App\Services\CloudWhatsAppService();
+            }
+            
+            return new \App\Services\GreenApiWhatsAppService();
+        });
     }
 
     /**

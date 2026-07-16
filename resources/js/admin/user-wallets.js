@@ -751,6 +751,52 @@ $(function () {
     });
   });
 
+  $(document).on('click', '#calculateOldTruckBrokerBtn', function () {
+    const btn = $(this);
+    Swal.fire({
+      title: 'احتساب العمولات بالطريقة القديمة',
+      text: 'أدخل كلمة المرور لتأكيد هذه العملية الخاصة:',
+      input: 'password',
+      inputPlaceholder: 'كلمة المرور',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'تأكيد واحتساب',
+      cancelButtonText: 'إلغاء',
+      customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-label-secondary' },
+      buttonsStyling: false,
+      inputValidator: (value) => {
+        if (!value) {
+          return 'يجب إدخال كلمة المرور!'
+        }
+      }
+    }).then(function (result) {
+      if (result.value) {
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الاحتساب...');
+        $.ajax({
+          url: calculateOldTruckBrokerUrl,
+          type: 'POST',
+          data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            password: result.value
+          },
+          success: function (response) {
+            btn.prop('disabled', false).html('<i class="ti ti-history me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>');
+            if (response.status === 1) {
+              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
+                .then(() => location.reload());
+            } else {
+              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+            }
+          },
+          error: function () {
+            btn.prop('disabled', false).html('<i class="ti ti-history me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>');
+            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+          }
+        });
+      }
+    });
+  });
+
   // Ø¥Ø¹Ø§Ø¯Ø© Ø§Ø³ØªØ«Ù…Ø§Ø± Ø§Ù„Ø£Ø±Ø¨Ø§Ø­ (Ù„Ù„Ù…Ø¶Ø§Ø±Ø¨ÙŠÙ†)
   $(document).on('submit', '#reinvestProfitsForm', function (e) {
     e.preventDefault();

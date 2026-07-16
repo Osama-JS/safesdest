@@ -752,47 +752,88 @@ $(function () {
   });
 
   $(document).on('click', '#calculateOldTruckBrokerBtn', function () {
-    const btn = $(this);
-    Swal.fire({
-      title: 'احتساب العمولات بالطريقة القديمة',
-      text: 'أدخل كلمة المرور لتأكيد هذه العملية الخاصة:',
-      input: 'password',
-      inputPlaceholder: 'كلمة المرور',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'تأكيد واحتساب',
-      cancelButtonText: 'إلغاء',
-      customClass: { confirmButton: 'btn btn-danger me-3', cancelButton: 'btn btn-label-secondary' },
-      buttonsStyling: false,
-      inputValidator: (value) => {
-        if (!value) {
-          return 'يجب إدخال كلمة المرور!'
-        }
-      }
-    }).then(function (result) {
-      if (result.value) {
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الاحتساب...');
-        $.ajax({
-          url: calculateOldTruckBrokerUrl,
-          type: 'POST',
-          data: {
-            _token: $('meta[name="csrf-token"]').attr('content'),
-            password: result.value
-          },
-          success: function (response) {
-            btn.prop('disabled', false).html('<i class="ti ti-history me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>');
-            if (response.status === 1) {
-              Swal.fire({ icon: response.info ? 'info' : 'success', title: response.info ? 'تنبيه' : 'نجاح!', text: response.info || response.success, customClass: { confirmButton: 'btn btn-primary' } })
-                .then(() => location.reload());
-            } else {
-              Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
-            }
-          },
-          error: function () {
-            btn.prop('disabled', false).html('<i class="ti ti-history me-0 me-sm-1 ti-xs"></i><span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>');
-            Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
+    $('#oldBrokerCommissionModal').modal('show');
+    $('#oldBrokerLoading').removeClass('d-none');
+    $('#oldBrokerContent').addClass('d-none');
+    $('#oldBrokerNoData').addClass('d-none');
+    $('#oldBrokerExportBtn').addClass('d-none');
+    $('#oldBrokerConfirmBtn').addClass('d-none');
+    $('#oldBrokerPassword').val('');
+    
+    $.ajax({
+      url: previewOldTruckBrokerUrl,
+      type: 'GET',
+      success: function (response) {
+        $('#oldBrokerLoading').addClass('d-none');
+        
+        if (response.status === 1) {
+          if (response.tasks.length > 0) {
+            $('#oldBrokerContent').removeClass('d-none');
+            $('#oldBrokerExportBtn').removeClass('d-none');
+            $('#oldBrokerConfirmBtn').removeClass('d-none');
+            $('#oldBrokerTotalCommission').text(response.total_commission);
+            
+            let html = '';
+            response.tasks.forEach(function(item) {
+              html += `
+                <tr>
+                  <td>${item.task_id}</td>
+                  <td>${item.total_price}</td>
+                  <td>${item.commission}</td>
+                  <td>${item.date}</td>
+                </tr>
+              `;
+            });
+            $('#oldBrokerTasksTable tbody').html(html);
+          } else {
+            $('#oldBrokerNoData').removeClass('d-none');
           }
-        });
+        } else {
+          $('#oldBrokerCommissionModal').modal('hide');
+          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+        }
+      },
+      error: function () {
+        $('#oldBrokerCommissionModal').modal('hide');
+        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء جلب المعاينة.', icon: 'error' });
+      }
+    });
+  });
+
+  $(document).on('click', '#oldBrokerConfirmBtn', function () {
+    const password = $('#oldBrokerPassword').val();
+    if (!password) {
+      Swal.fire({ title: 'تنبيه', text: 'يجب إدخال كلمة المرور لتأكيد العملية', icon: 'warning' });
+      return;
+    }
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> جاري الاحتساب...');
+
+    $.ajax({
+      url: calculateOldTruckBrokerUrl,
+      type: 'POST',
+      data: {
+        _token: $('meta[name="csrf-token"]').attr('content'),
+        password: password
+      },
+      success: function (response) {
+        btn.prop('disabled', false).html('<i class="ti ti-calculator me-1"></i> تأكيد واحتساب');
+        if (response.status === 1) {
+          $('#oldBrokerCommissionModal').modal('hide');
+          Swal.fire({ 
+            icon: response.info ? 'info' : 'success', 
+            title: response.info ? 'تنبيه' : 'نجاح!', 
+            text: response.info || response.success, 
+            customClass: { confirmButton: 'btn btn-primary' } 
+          }).then(() => location.reload());
+        } else {
+          Swal.fire({ title: 'خطأ!', text: response.error, icon: 'error' });
+        }
+      },
+      error: function () {
+        btn.prop('disabled', false).html('<i class="ti ti-calculator me-1"></i> تأكيد واحتساب');
+        Swal.fire({ title: 'خطأ!', text: 'حدث خطأ أثناء عملية الاحتساب.', icon: 'error' });
       }
     });
   });

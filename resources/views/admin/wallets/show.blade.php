@@ -106,6 +106,9 @@
                     <div class="mt-4">
                         <a href="javascript:;" class="btn btn-success me-2" id="payment-request"><i
                                 class="ti ti-receipt me-1"></i>{{ __('Payment Request') }}</a>
+                        <a href="{{ route('wallets.transaction.print-debits', $data->id) }}" target="_blank" class="btn btn-info me-2">
+                            <i class="ti ti-printer me-1"></i>طباعة الدفعات (Debits)
+                        </a>
                         <a href="{{ route('wallets.hyperpay_payouts', $data->id) }}" class="btn btn-primary" id="hyperpay-payouts-btn"><i class="ti ti-brand-mastercard me-1"></i>{{ __('HyperPay Payouts') }}</a>
                     </div>
                 @endif

@@ -337,6 +337,71 @@
         </div>
     </div>
 
+    <!-- Legacy Broker Commission Preview Modal -->
+    <div class="modal fade" id="oldBrokerCommissionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">معاينة عمولات النظام القديم</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="oldBrokerLoading" class="text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2">جاري البحث عن المهام المطابقة...</p>
+                    </div>
+                    
+                    <div id="oldBrokerContent" class="d-none">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="ti ti-info-circle me-2"></i>
+                            <div>
+                                إجمالي العمولات المستحقة: <strong id="oldBrokerTotalCommission">0.00</strong> ريال
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 300px;">
+                            <table class="table table-bordered table-sm" id="oldBrokerTasksTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>رقم المهمة</th>
+                                        <th>إجمالي السعر</th>
+                                        <th>العمولة المستحقة</th>
+                                        <th>التاريخ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label text-danger">كلمة المرور لتأكيد الاحتساب</label>
+                            <input type="password" id="oldBrokerPassword" class="form-control" placeholder="أدخل كلمة المرور لتأكيد العملية" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div id="oldBrokerNoData" class="d-none text-center my-4">
+                        <i class="ti ti-alert-triangle text-warning fs-1 mb-2"></i>
+                        <p>لا توجد مهام مطابقة لعمولات النظام القديم غير محتسبة حتى الآن.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <a href="{{ route('admin.user-wallets.export-old-truck-broker', $user->id) }}" target="_blank" class="btn btn-info d-none" id="oldBrokerExportBtn">
+                        <i class="ti ti-download me-1"></i> تصدير Excel
+                    </a>
+                    <button type="button" class="btn btn-danger d-none" id="oldBrokerConfirmBtn">
+                        <i class="ti ti-calculator me-1"></i> تأكيد واحتساب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Transaction Modal -->
     <div class="modal fade " id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog " role="document">
@@ -687,6 +752,7 @@
         const calculateBrokerUrl = '{{ route('admin.user-wallets.calculate-broker', $user->id) }}';
         const calculateTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-truck-broker', $user->id) }}';
         const calculateOldTruckBrokerUrl = '{{ route('admin.user-wallets.calculate-old-truck-broker', $user->id) }}';
+        const previewOldTruckBrokerUrl = '{{ route('admin.user-wallets.preview-old-truck-broker', $user->id) }}';
         const reinvestProfitsUrl = '{{ route('admin.user-wallets.reinvest-profits', $user->id) }}';
         const isInvestor = {{ $isInvestor ? 'true' : 'false' }};
         const withdrawableBalance = {{ $isInvestor ? ($withdrawableBalance ?? 0) : 0 }};

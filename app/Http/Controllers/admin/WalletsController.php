@@ -1308,6 +1308,29 @@ return response()->json([
     }
 
     /**
+     * Print Debit Transactions for a driver
+     */
+    public function printDebits($walletId)
+    {
+        $wallet = Wallet::with(['driver', 'team'])->findOrFail($walletId);
+        $user = Auth::user();
+
+        // Check permissions
+        if (!$user->checkDriver($wallet->driver_id) && !$user->checkTeam($wallet->team_id)) {
+            abort(403, 'Unauthorized access to this wallet.');
+        }
+
+        $transactions = Wallet_Transaction::where('wallet_id', $wallet->id)
+            ->where('transaction_type', 'debit')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        return view('admin.wallets.print-debits', compact('wallet', 'transactions'));
+    }
+
+
+
+    /**
      * Download credit receipt for a wallet transaction
      */
     public function downloadCreditReceipt($transactionId)

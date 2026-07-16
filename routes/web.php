@@ -301,6 +301,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::resource('whatsapp-templates', App\Http\Controllers\admin\WhatsappTemplatesController::class)
                     ->names('admin.whatsapp-templates');
 
+                // WhatsApp Chat & Logs
+                Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
+                Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');
+                Route::get('whatsapp-logs', [App\Http\Controllers\admin\WhatsappLogController::class, 'index'])->name('admin.whatsapp-logs.index');
+
                 Route::get('/dashboard', [DashboardController::class, 'driversIndex'])->name('dashboard.dashboard');
                 Route::get('dashboard/tasks/data', [DashboardController::class, 'getTasksData'])->name('dashboard.tasks.data');
                 Route::get('dashboard/drivers/data', [DashboardController::class, 'getDriversData'])->name('dashboard.drivers.data');

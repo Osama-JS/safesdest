@@ -95,21 +95,24 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             $payload['template']['components'] = $components;
         }
 
-        $endpoint = "{$url}{$phoneId}/messages";
+        // 1. Find or create conversation
+        $conversation = \App\Models\WhatsappConversation::firstOrCreate(
+            ['phone_number' => $phoneFormatted],
+            ['unread_count' => 0]
+        );
 
-        try {
-            $response = Http::withToken($token)->post($endpoint, $payload);
+        // 2. Create message record
+        $message = \App\Models\WhatsappMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'outbound',
+            'message_type' => 'template',
+            'content' => "Template: {$template->template_name}",
+            'status' => 'pending'
+        ]);
 
-            if ($response->successful()) {
-                Log::info("WhatsApp Cloud message sent successfully to {$phoneFormatted} (Template: {$template->template_name})");
-                return true;
-            } else {
-                Log::error("WhatsApp Cloud Error: " . $response->body());
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Error sending WhatsApp Cloud message: ' . $e->getMessage());
-            return false;
-        }
+        // 3. Dispatch the Job
+        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload);
+
+        return true;
     }
 }

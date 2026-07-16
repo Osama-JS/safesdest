@@ -248,6 +248,16 @@
                     "url": "admin/whatsapp-templates",
                     "name": "WhatsApp Templates",
                     "slug": "admin.whatsapp-templates.index"
+                },
+                {
+                    "url": "admin/whatsapp-chat",
+                    "name": "WhatsApp Chat",
+                    "slug": "admin.whatsapp-chat.index"
+                },
+                {
+                    "url": "admin/whatsapp-logs",
+                    "name": "WhatsApp Logs",
+                    "slug": "admin.whatsapp-logs.index"
                 }
             ]
         },

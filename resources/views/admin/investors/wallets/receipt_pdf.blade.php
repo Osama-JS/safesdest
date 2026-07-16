@@ -253,7 +253,11 @@
 
     {{-- Receipt Title --}}
     <div class="receipt-title">
+        @if($transaction->type === 'credit' || $transaction->type === 1)
         إيصال استلام محفظة المضاربة / Speculator Wallet Receipt
+        @else
+        سند صرف محفظة المضاربة / Speculator Wallet Payment Voucher
+        @endif
     </div>
 
     {{-- Receipt Info --}}
@@ -271,12 +275,20 @@
 
     {{-- Formal Arabic Text --}}
     <div class="formal-text">
+        @if($transaction->type === 'credit' || $transaction->type === 1)
         استلمت من المضارب المحترم/ـة 
+        @else
+        تم الدفع للمضارب المحترم/ـة 
+        @endif
         <span class="highlight">{{ $user->name }}</span>
         مبلغ وقدره 
         <span class="highlight">{{ number_format($transaction->amount, 2) }} ريال سعودي</span>
         <span>({{ $amountInWords }})</span>
+        @if($transaction->type === 'credit' || $transaction->type === 1)
         موردة إلى محفظة المضاربة الخاصة به رقم 
+        @else
+        خصماً من محفظة المضاربة الخاصة به رقم 
+        @endif
         <span class="highlight">#{{ $wallet->id }}</span>
         مقيدة في العملية رقم 
         <span class="highlight">#{{ $transaction->id }}</span>
@@ -286,7 +298,13 @@
 
     {{-- Amount Display --}}
     <div class="amount-box">
-        <div class="amount-label">المبلغ المستلم / Amount Received</div>
+        <div class="amount-label">
+            @if($transaction->type === 'credit' || $transaction->type === 1)
+            المبلغ المستلم / Amount Received
+            @else
+            المبلغ المصروف / Amount Paid
+            @endif
+        </div>
         <div class="amount-value">{{ number_format($transaction->amount, 2) }} ريال</div>
         <div class="amount-words">{{ $amountInWords }}</div>
     </div>

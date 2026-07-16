@@ -227,7 +227,11 @@
 
     {{-- Receipt Title --}}
     <div class="receipt-title">
+        @if($transaction->transaction_type === 'credit')
         إيصال استلام / Payment Receipt
+        @else
+        سند صرف / Payment Voucher
+        @endif
     </div>
 
     {{-- Receipt Info --}}
@@ -246,7 +250,11 @@
     {{-- Formal Arabic Text --}}
     <div class="formal-text">
         <div style="unicode-bidi: bidi-override; direction: rtl;">
+            @if($transaction->transaction_type === 'credit')
             استلمت من
+            @else
+            تم الدفع لـ
+            @endif
             @if($wallet->user_type === 'customer')
                 <span class="highlight">{{ $wallet->customer->name }}</span>
             @else
@@ -256,7 +264,11 @@
             <span class="highlight" style="direction: ltr; unicode-bidi: bidi-override; display: inline-block;">{{ number_format($transaction->amount, 2) }}</span>
             <span class="highlight">ريال سعودي</span>
             <span style="direction: rtl; unicode-bidi: normal;">({{ $amountInWords }})</span>
+            @if($transaction->transaction_type === 'credit')
             موردة إلى محفظته رقم
+            @else
+            خصماً من محفظته رقم
+            @endif
             <span class="highlight" style="direction: ltr; unicode-bidi: bidi-override; display: inline-block;">#{{ $wallet->id }}</span>
             مقيدة في العملية رقم
             <span class="highlight" style="direction: ltr; unicode-bidi: bidi-override; display: inline-block;">#{{ $transaction->sequence }}</span>
@@ -267,7 +279,13 @@
 
     {{-- Amount Display --}}
     <div class="amount-box">
-        <div class="amount-label">المبلغ المستلم / Amount Received</div>
+        <div class="amount-label">
+            @if($transaction->transaction_type === 'credit')
+            المبلغ المستلم / Amount Received
+            @else
+            المبلغ المصروف / Amount Paid
+            @endif
+        </div>
         <div class="amount-value">{{ number_format($transaction->amount, 2) }} ريال</div>
         <div class="amount-words">{{ $amountInWords }}</div>
     </div>

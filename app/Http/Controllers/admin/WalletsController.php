@@ -562,10 +562,11 @@ class WalletsController extends Controller
               'maturity'    => $val->maturity_time ? $val->maturity_time : '',
               'user'        => $val->user ? $val->user->name : 'automatic',
               'task'        => $val->task_id ?? '',
-              'clearance'        => $val->clearance_id ?? '',
-              'image' => $val->image ? (Str::startsWith($val->image, 'storage/') ? $val->image : 'storage/' . $val->image) : '',
+              'clearance'   => $val->clearance_id ?? '',
+              'image'       => $val->image ? (Str::startsWith($val->image, 'storage/') ? $val->image : 'storage/' . $val->image) : '',
               'sequence'    => $val->sequence,
               'status'      => (int) $val->status, // Ensure it's integer
+              'is_payout'   => str_contains($val->description, 'HyperPay Payout ID') || str_contains($val->description, 'رقم العملية:') || str_contains($val->description, 'سحب نقدي - طلب رقم #'),
               'created_at'  => $val->created_at->format('Y-m-d H:i'),
             ];
         }
@@ -709,6 +710,11 @@ class WalletsController extends Controller
         if (!$data) {
             return response()->json(['status' => 2, 'error' => __('Can not find the selected Transaction')]);
         }
+
+        if (str_contains($data->description, 'HyperPay Payout ID') || str_contains($data->description, 'رقم العملية:') || str_contains($data->description, 'سحب نقدي - طلب رقم #')) {
+            return response()->json(['status' => 2, 'error' => __('لا يمكن تعديل الحركات المالية الخاصة بالدفع (Payout).')]);
+        }
+
         return response()->json(['status' => 1, 'data' => $data]);
     }
 
@@ -759,6 +765,13 @@ class WalletsController extends Controller
             // التعديل على معاملة سابقة
             if ($req->filled('id')) {
                 $existingTransaction = Wallet_Transaction::findOrFail($req->id);
+                
+                if (str_contains($existingTransaction->description, 'HyperPay Payout ID') || str_contains($existingTransaction->description, 'رقم العملية:') || str_contains($existingTransaction->description, 'سحب نقدي - طلب رقم #')) {
+                    return response()->json([
+                        'status' => 2,
+                        'error' => __('لا يمكن تعديل الحركات المالية الخاصة بالدفع (Payout).')
+                    ]);
+                }
 
                 // إرجاع المبلغ القديم للحساب
                 if ($existingTransaction->transaction_type === 'credit') {
@@ -1025,6 +1038,14 @@ return response()->json([
                   'error'  => __('You can not delete this transaction')
                 ]);
             }
+            
+            if (str_contains($find->description, 'HyperPay Payout ID') || str_contains($find->description, 'رقم العملية:') || str_contains($find->description, 'سحب نقدي - طلب رقم #')) {
+                return response()->json([
+                    'status' => 2,
+                    'error' => __('لا يمكن حذف الحركات المالية الخاصة بالدفع (Payout).')
+                ]);
+            }
+
             $oldImage = null;
             if ($find->image) {
                 $oldImage = $find->image;
@@ -1339,9 +1360,9 @@ return response()->json([
             $transaction = Wallet_Transaction::with(['wallet.customer', 'wallet.driver', 'task'])
                 ->findOrFail($transactionId);
 
-            // Verify transaction type is credit
-            if ($transaction->transaction_type !== 'credit') {
-                return redirect()->back()->with('error', __('Receipt is only available for credit transactions.'));
+            // Allowed for both credit and debit
+            if (!in_array($transaction->transaction_type, ['credit', 'debit'])) {
+                return redirect()->back()->with('error', __('Receipt is only available for credit or debit transactions.'));
             }
 
             $wallet = $transaction->wallet;

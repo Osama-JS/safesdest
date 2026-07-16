@@ -151,13 +151,15 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
-            // Print Receipt button for credit transactions
+            // Print Receipt button for all transactions (credit/debit)
             const printReceiptBtn =
-              full.type === 'credit'
-                ? `<a href="${baseUrl}admin/wallets/transactions/${full.id}/receipt" target="_blank" class="btn btn-sm btn-icon btn-success" title="Print Receipt">
+                `<a href="${baseUrl}admin/wallets/transactions/${full.id}/receipt" target="_blank" class="btn btn-sm btn-icon btn-success" title="Print Receipt">
                   <i class="ti ti-printer"></i>
-                </a>`
-                : '';
+                </a>`;
+
+            if (full.is_payout) {
+              return `<div class="text-end">${printReceiptBtn}</div>`;
+            }
 
             return `
               <div class="text-end">

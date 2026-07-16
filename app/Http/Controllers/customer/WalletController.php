@@ -28,8 +28,8 @@ class WalletController extends Controller
             abort(403);
         }
 
-        if ($transaction->transaction_type !== 'credit') {
-            return redirect()->back()->with('error', __('Receipt is available only for credit transactions.'));
+        if (!in_array($transaction->transaction_type, ['credit', 'debit'])) {
+            return redirect()->back()->with('error', __('Receipt is available only for credit or debit transactions.'));
         }
 
         $amountInWords = $this->convertNumberToArabicWords($transaction->amount);

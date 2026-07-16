@@ -797,7 +797,7 @@ class WalletsController extends Controller
             // --- HyperPay Payout Logic for Manual Debit ---
             $hyperPayNotes = '';
             if ($req->type === 'debit' && $req->payment_method === 'hyperpay') {
-                if (!\Hash::check($req->password, auth()->user()->password)) {
+                if (!\Illuminate\Support\Facades\Hash::check($req->password, auth()->user()->password)) {
                     return response()->json(['status' => 2, 'error' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')]);
                 }
 

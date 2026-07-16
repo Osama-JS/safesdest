@@ -190,10 +190,6 @@
             style="background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.35); backdrop-filter:blur(8px);">
             <i class="ti ti-cloud-download me-1"></i> {{ __('Sync from Meta') }}
         </button>
-        <button class="btn btn-sm fw-semibold" style="background:white; color:#075E54;"
-            data-bs-toggle="modal" data-bs-target="#submitModal" onclick="openAddModal()">
-            <i class="ti ti-plus me-1"></i> {{ __('Add Manually') }}
-        </button>
     </div>
 </div>
 
@@ -407,7 +403,7 @@
         <div class="modal-content">
             <div class="modal-header" style="background:var(--wa-teal); color:white;">
                 <h5 class="modal-title d-flex align-items-center gap-2" id="modalTitle">
-                    <i class="ti ti-plus"></i> {{ __('Add New Template') }}
+                    <i class="ti ti-edit"></i> {{ __('Edit Template') }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -426,31 +422,19 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold" for="template_name">{{ __('Template Name in Meta') }}</label>
-                                    <input type="text" id="template_name" name="template_name" class="form-control" placeholder="e.g. otp_verification_ar" required>
-                                    <span class="text-danger text-error template_name-error"></span>
+                                    <input type="text" id="template_name" name="template_name" class="form-control bg-light" readonly>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="language">{{ __('Language') }}</label>
-                                    <select id="language" name="language" class="form-select" required>
-                                        <option value="ar">{{ __('Arabic') }} (ar)</option>
-                                        <option value="en">{{ __('English') }} (en)</option>
-                                        <option value="en_US">{{ __('English US') }} (en_US)</option>
-                                    </select>
+                                    <input type="text" id="language" name="language" class="form-control bg-light" readonly>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-semibold" for="category">{{ __('Category') }}</label>
-                                    <select id="category" name="category" class="form-select">
-                                        <option value="">-- {{ __('Select') }}</option>
-                                        <option value="AUTHENTICATION">AUTHENTICATION</option>
-                                        <option value="MARKETING">MARKETING</option>
-                                        <option value="UTILITY">UTILITY</option>
-                                    </select>
+                                    <input type="text" id="category" name="category" class="form-control bg-light" readonly>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-semibold" for="body_text">{{ __('Body Text (Preview)') }}</label>
-                                    <textarea id="body_text" name="body_text" class="form-control" rows="4"
-                                        placeholder="{{ __('Enter template body text...') }}" oninput="updateLivePreview()"></textarea>
-                                    <div class="form-text">{{ __('Use') }} &#123;&#123;1&#125;&#125;, &#123;&#123;2&#125;&#125; {{ __('for variables') }}</div>
+                                    <textarea id="body_text" name="body_text" class="form-control bg-light" rows="4" readonly></textarea>
                                 </div>
                                 <div class="col-12">
                                     <div class="form-check form-switch">
@@ -499,7 +483,7 @@
 <script>
 var templateDataUrl   = '{{ route("admin.whatsapp-templates.data") }}';
 var templateStoreUrl  = '{{ route("admin.whatsapp-templates.store") }}';
-var templateEditUrl   = '{{ url("admin/whatsapp-templates/edit") }}';
+var templateEditBaseUrl = '{{ url("admin/whatsapp-templates") }}';
 var templateDeleteUrl = '{{ route("admin.whatsapp-templates.delete") }}';
 var templateStatusUrl = '{{ route("admin.whatsapp-templates.status") }}';
 var templateSyncUrl   = '{{ route("admin.whatsapp-templates.fetch-cloud") }}';
@@ -758,17 +742,10 @@ window.deleteFromPreview = function () {
     setTimeout(function () { confirmDelete(currentPreviewId); }, 300);
 };
 
-/* ── Add / Edit Modal ────────────────────────────────────── */
-window.openAddModal = function () {
-    $('#submitForm')[0].reset();
-    $('#template_id').val('');
-    $('#modalTitle').html('<i class="ti ti-plus"></i> Add New Template');
-    $('#live-preview-text').text('Preview here...');
-    $('#status').prop('checked', true);
-};
+/* ── Edit Modal ────────────────────────────────────── */
 
 window.loadEditModal = function (id) {
-    $.get(templateEditUrl + '/' + id, function (data) {
+    $.get(templateEditBaseUrl + '/' + id + '/edit', function (data) {
         $('#template_id').val(data.id);
         $('#purpose').val(data.purpose);
         $('#template_name').val(data.template_name);

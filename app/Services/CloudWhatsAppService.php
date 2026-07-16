@@ -111,7 +111,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
         ]);
 
         // 3. Dispatch the Job
-        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload);
+        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload)->onQueue('whatsapp');
 
         return true;
     }

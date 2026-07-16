@@ -37,7 +37,7 @@ class SendWhatsAppMessageJob implements ShouldQueue
     public function handle(): void
     {
         // 1. Dynamic Sleep based on queue size
-        $queueSize = Queue::size();
+        $queueSize = Queue::size('whatsapp');
         if ($queueSize > 50) { // Consider crowded if > 50
             sleep(3);
         } else {

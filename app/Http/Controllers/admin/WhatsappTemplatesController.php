@@ -102,19 +102,14 @@ class WhatsappTemplatesController extends Controller
 
             if ($request->filled('id')) {
                 $template = WhatsappTemplate::findOrFail($request->id);
+                
+                // Allow user to edit purpose and status locally.
                 $template->update([
                     'purpose' => $request->purpose,
-                    'template_name' => $request->template_name,
-                    'language' => $request->language,
                     'status' => $request->status ?? 0,
                 ]);
             } else {
-                WhatsappTemplate::create([
-                    'purpose' => $request->purpose,
-                    'template_name' => $request->template_name,
-                    'language' => $request->language,
-                    'status' => $request->status ?? 0,
-                ]);
+                return response()->json(['status' => 0, 'error' => __('Templates can only be created via Meta sync.')]);
             }
 
             return response()->json(['status' => 1, 'success' => __('Saved successfully')]);

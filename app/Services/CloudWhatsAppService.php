@@ -95,6 +95,16 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             $payload['template']['components'] = $components;
         }
 
+        // Render the body content if variables are provided
+        $renderedBody = $template->body ?? "Template: {$template->template_name}";
+        if (!empty($variables)) {
+            foreach ($variables as $index => $var) {
+                // index is 0-based, placeholders are 1-based (e.g. {{1}})
+                $placeholder = '{{' . ($index + 1) . '}}';
+                $renderedBody = str_replace($placeholder, $var, $renderedBody);
+            }
+        }
+
         // 1. Find or create conversation
         $conversation = \App\Models\WhatsappConversation::firstOrCreate(
             ['phone_number' => $phoneFormatted],
@@ -106,7 +116,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             'conversation_id' => $conversation->id,
             'direction' => 'outbound',
             'message_type' => 'template',
-            'content' => "Template: {$template->template_name}",
+            'content' => $renderedBody,
             'status' => 'pending'
         ]);
 

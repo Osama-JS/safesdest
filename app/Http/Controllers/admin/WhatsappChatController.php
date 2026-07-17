@@ -64,23 +64,44 @@ class WhatsappChatController extends Controller
             ->first();
 
         // Check if last inbound message is within 24 hours
-        $canSendText = false;
-        if ($lastInbound && $lastInbound->created_at->diffInHours(now()) < 24) {
-            $canSendText = true;
+        if (!$lastInbound || $lastInbound->created_at->diffInHours(now()) >= 24) {
+            return response()->json([
+                'status' => 'error',
+                'code' => 'window_closed',
+                'message' => 'عذراً، لقد مرت أكثر من 24 ساعة منذ آخر رسالة من العميل. سياسات واتساب تمنع الرد بنص عادي الآن.'
+            ]);
         }
 
-        if ($canSendText) {
-            // Send normal text message
-            $waService->sendTextMessage($phone, $request->message);
-        } else {
-            // Outside 24h window: send open_chat template instead
-            // We pass the typed message as variable if needed, or just send the template.
-            $waService->sendTemplateMessage($phone, 'open_chat', []);
-        }
+        // Send normal text message
+        $waService->sendTextMessage($phone, $request->message);
 
         return response()->json([
             'status' => 'success',
-            'message' => $canSendText ? 'Text message queued.' : '24h window closed. Open Chat Template sent instead.'
+            'message' => 'تم إرسال الرسالة النصية بنجاح.'
+        ]);
+    }
+
+    public function sendOpenChatTemplate($id, \App\Services\CloudWhatsAppService $waService)
+    {
+        $conversation = \App\Models\WhatsappConversation::findOrFail($id);
+        $phone = $conversation->phone_number;
+
+        $templateExists = \App\Models\WhatsappTemplate::where('purpose', 'open_chat')
+            ->where('status', 1)
+            ->exists();
+
+        if (!$templateExists) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'لم يتم العثور على قالب نشط مخصص لفتح المحادثة (يجب أن يكون الغرض Purpose: open_chat).'
+            ]);
+        }
+
+        $waService->sendTemplateMessage($phone, 'open_chat', []);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم إرسال قالب فتح المحادثة بنجاح.'
         ]);
     }
 }

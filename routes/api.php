@@ -27,6 +27,26 @@ Route::post('/signit/webhook', [\App\Http\Controllers\Api\SignitWebhookControlle
 Route::get('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify']);
 Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle']);
 
+// TEST Webhook
+Route::get('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
+    $verifyToken = env('WHATSAPP_VERIFY_TOKEN');
+    $mode = $request->query('hub_mode');
+    $token = $request->query('hub_verify_token');
+    $challenge = $request->query('hub_challenge');
+    
+    \Illuminate\Support\Facades\Log::info('TEST WEBHOOK GET (Verify):', $request->all());
+
+    if ($mode === 'subscribe' && $token === $verifyToken) {
+        return response($challenge, 200);
+    }
+    return response('Forbidden', 403);
+});
+
+Route::post('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('TEST WEBHOOK POST (Payload):', $request->all());
+    return response('EVENT_RECEIVED', 200);
+});
+
 // Include driver API routes
 require __DIR__.'/api_driver.php';
 require __DIR__.'/api_customer.php';

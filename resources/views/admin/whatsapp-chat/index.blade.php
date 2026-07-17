@@ -345,21 +345,36 @@ $(document).ready(function() {
                 message: message
             },
             success: function(response) {
-                input.val('');
-                btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال');
-                
-                let isTemplate = false;
-                if(response.message && response.message.includes('Open Chat')) {
-                    toastr.info('تم إرسال قالب open_chat لعدم وجود رسالة من العميل خلال 24 ساعة.');
-                    isTemplate = true;
+                if (response.status === 'error' && response.code === 'window_closed') {
+                    btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال');
+                    
+                    Swal.fire({
+                        title: 'عذراً',
+                        text: response.message,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'إرسال قالب open_chat',
+                        cancelButtonText: 'إلغاء',
+                        customClass: {
+                            confirmButton: 'btn btn-primary me-3',
+                            cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                    }).then(function (result) {
+                        if (result.value) {
+                            sendOpenChatTemplate(currentConversationId);
+                        }
+                    });
+                    return;
                 }
 
-                let displayMessage = isTemplate ? 'Template: open_chat' : message;
+                input.val('');
+                btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال');
 
                 let html = `
                     <div class="chat-message outbound">
                         <div class="chat-message-text">
-                            <div class="text-break">${displayMessage.replace(/\n/g, '<br>')}</div>
+                            <div class="text-break">${message.replace(/\n/g, '<br>')}</div>
                             <div class="chat-meta">
                                 <span class="time">الآن</span>
                                 <i class="ti ti-clock"></i>
@@ -377,6 +392,40 @@ $(document).ready(function() {
             }
         });
     });
+
+    function sendOpenChatTemplate(conversationId) {
+        $.ajax({
+            url: "{{ url('admin/whatsapp-chat') }}/" + conversationId + "/send-open-chat",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.status === 'error') {
+                    toastr.error(response.message);
+                } else {
+                    toastr.success(response.message);
+                    let html = `
+                        <div class="chat-message outbound">
+                            <div class="chat-message-text">
+                                <div class="text-break text-muted"><em>Template: open_chat</em></div>
+                                <div class="chat-meta">
+                                    <span class="time">الآن</span>
+                                    <i class="ti ti-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#chat-messages').append(html);
+                    let chatArea = $('#chat-messages');
+                    chatArea.scrollTop(chatArea[0].scrollHeight);
+                }
+            },
+            error: function() {
+                toastr.error('حدث خطأ أثناء إرسال قالب المحادثة.');
+            }
+        });
+    }
 });
 </script>
 @endsection

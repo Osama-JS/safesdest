@@ -305,6 +305,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
                 Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');
                 Route::post('whatsapp-chat/{id}/send', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendMessage'])->name('admin.whatsapp-chat.send');
+                Route::post('whatsapp-chat/{id}/send-open-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendOpenChatTemplate'])->name('admin.whatsapp-chat.send-open-chat');
                 Route::get('whatsapp-logs', [App\Http\Controllers\admin\WhatsappLogController::class, 'index'])->name('admin.whatsapp-logs.index');
                 
                 // WhatsApp Broadcast

@@ -258,6 +258,11 @@
                     "url": "admin/whatsapp-logs",
                     "name": "WhatsApp Logs",
                     "slug": "admin.whatsapp-logs.index"
+                },
+                {
+                    "url": "admin/whatsapp-broadcast",
+                    "name": "Send Message",
+                    "slug": "admin.whatsapp-broadcast.index"
                 }
             ]
         },

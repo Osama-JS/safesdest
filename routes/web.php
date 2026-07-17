@@ -305,6 +305,12 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
                 Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');
                 Route::get('whatsapp-logs', [App\Http\Controllers\admin\WhatsappLogController::class, 'index'])->name('admin.whatsapp-logs.index');
+                
+                // WhatsApp Broadcast
+                Route::get('whatsapp-broadcast', [App\Http\Controllers\admin\WhatsappBroadcastController::class, 'index'])->name('admin.whatsapp-broadcast.index');
+                Route::get('whatsapp-broadcast/search', [App\Http\Controllers\admin\WhatsappBroadcastController::class, 'searchTarget'])->name('admin.whatsapp-broadcast.search');
+                Route::get('whatsapp-broadcast/template/{id}', [App\Http\Controllers\admin\WhatsappBroadcastController::class, 'getTemplate'])->name('admin.whatsapp-broadcast.template');
+                Route::post('whatsapp-broadcast/send', [App\Http\Controllers\admin\WhatsappBroadcastController::class, 'send'])->name('admin.whatsapp-broadcast.send');
 
                 Route::get('/dashboard', [DashboardController::class, 'driversIndex'])->name('dashboard.dashboard');
                 Route::get('dashboard/tasks/data', [DashboardController::class, 'getTasksData'])->name('dashboard.tasks.data');

@@ -47,4 +47,40 @@ class WhatsappChatController extends Controller
             })
         ]);
     }
+
+    public function sendMessage(Request $request, $id, \App\Services\CloudWhatsAppService $waService)
+    {
+        $request->validate([
+            'message' => 'required|string'
+        ]);
+
+        $conversation = \App\Models\WhatsappConversation::findOrFail($id);
+        $phone = $conversation->phone_number;
+        
+        // Find the last inbound message
+        $lastInbound = \App\Models\WhatsappMessage::where('conversation_id', $conversation->id)
+            ->where('direction', 'inbound')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // Check if last inbound message is within 24 hours
+        $canSendText = false;
+        if ($lastInbound && $lastInbound->created_at->diffInHours(now()) < 24) {
+            $canSendText = true;
+        }
+
+        if ($canSendText) {
+            // Send normal text message
+            $waService->sendTextMessage($phone, $request->message);
+        } else {
+            // Outside 24h window: send open_chat template instead
+            // We pass the typed message as variable if needed, or just send the template.
+            $waService->sendTemplateMessage($phone, 'open_chat', []);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $canSendText ? 'Text message queued.' : '24h window closed. Open Chat Template sent instead.'
+        ]);
+    }
 }

@@ -241,6 +241,16 @@
                             <p>يتم عرض الرسائل هنا فور اختيارك لإحدى المحادثات من القائمة</p>
                         </div>
                     </div>
+                    <!-- Chat Input -->
+                    <div class="chat-history-footer p-3 bg-white border-top d-none" id="chat-footer">
+                        <form id="chat-form" class="d-flex align-items-center">
+                            @csrf
+                            <input type="text" class="form-control me-2" id="chat-input" placeholder="اكتب رسالتك هنا..." required autocomplete="off">
+                            <button type="submit" class="btn btn-success d-flex align-items-center" id="send-btn">
+                                <i class="ti ti-send me-1"></i> إرسال
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -307,6 +317,63 @@ $(document).ready(function() {
             },
             error: function() {
                 chatArea.html('<div class="m-auto text-center text-danger"><p class="bg-white p-2 rounded shadow-sm">حدث خطأ أثناء جلب الرسائل</p></div>');
+            }
+        });
+    });
+
+    let currentConversationId = null;
+
+    $('.conversation-item').on('click', function() {
+        currentConversationId = $(this).data('id');
+        $('#chat-footer').removeClass('d-none');
+    });
+
+    $('#chat-form').on('submit', function(e) {
+        e.preventDefault();
+        let input = $('#chat-input');
+        let message = input.val().trim();
+        if (!message || !currentConversationId) return;
+
+        let btn = $(this).find('button');
+        btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i> إرسال');
+
+        $.ajax({
+            url: "{{ url('admin/whatsapp-chat') }}/" + currentConversationId + "/send",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                message: message
+            },
+            success: function(response) {
+                input.val('');
+                btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال');
+                
+                let isTemplate = false;
+                if(response.message && response.message.includes('Open Chat')) {
+                    toastr.info('تم إرسال قالب open_chat لعدم وجود رسالة من العميل خلال 24 ساعة.');
+                    isTemplate = true;
+                }
+
+                let displayMessage = isTemplate ? 'Template: open_chat' : message;
+
+                let html = `
+                    <div class="chat-message outbound">
+                        <div class="chat-message-text">
+                            <div class="text-break">${displayMessage.replace(/\n/g, '<br>')}</div>
+                            <div class="chat-meta">
+                                <span class="time">الآن</span>
+                                <i class="ti ti-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('#chat-messages').append(html);
+                let chatArea = $('#chat-messages');
+                chatArea.scrollTop(chatArea[0].scrollHeight);
+            },
+            error: function() {
+                toastr.error('فشل إرسال الرسالة');
+                btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال');
             }
         });
     });

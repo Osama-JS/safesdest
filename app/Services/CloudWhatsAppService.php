@@ -125,4 +125,55 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
 
         return true;
     }
+
+    /**
+     * Send a normal text message (only allowed within 24hr window)
+     *
+     * @param string $phone
+     * @param string $text
+     * @return bool
+     */
+    public function sendTextMessage($phone, $text)
+    {
+        $url = env('WHATSAPP_CLOUD_URL');
+        $phoneId = env('WHATSAPP_CLOUD_PHONE_ID');
+        $token = env('WHATSAPP_CLOUD_TOKEN');
+
+        if (!$url || !$phoneId || !$token) {
+            Log::warning('WhatsApp Cloud credentials are not set.');
+            return false;
+        }
+
+        $phoneFormatted = ltrim($phone, '+');
+
+        $payload = [
+            'messaging_product' => 'whatsapp',
+            'to' => $phoneFormatted,
+            'type' => 'text',
+            'text' => [
+                'preview_url' => false,
+                'body' => $text
+            ]
+        ];
+
+        // 1. Find or create conversation
+        $conversation = \App\Models\WhatsappConversation::firstOrCreate(
+            ['phone_number' => $phoneFormatted],
+            ['unread_count' => 0]
+        );
+
+        // 2. Create message record
+        $message = \App\Models\WhatsappMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'outbound',
+            'message_type' => 'text',
+            'content' => $text,
+            'status' => 'pending'
+        ]);
+
+        // 3. Dispatch the Job
+        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload)->onQueue('whatsapp');
+
+        return true;
+    }
 }

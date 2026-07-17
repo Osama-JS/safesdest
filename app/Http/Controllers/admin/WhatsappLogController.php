@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 
 class WhatsappLogController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_whatsapp_logs')->only(['index']);
+    }
     public function index(Request $request)
     {
         if ($request->ajax()) {

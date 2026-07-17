@@ -243,26 +243,31 @@
             "name": "WhatsApp",
             "icon": "menu-icon tf-icons ti ti-brand-whatsapp",
             "slug": "whatsapp",
+            "permission": "view_whatsapp_templates",
             "submenu": [
                 {
                     "url": "admin/whatsapp-templates",
                     "name": "WhatsApp Templates",
-                    "slug": "admin.whatsapp-templates.index"
+                    "slug": "admin.whatsapp-templates.index",
+                    "permission": "view_whatsapp_templates"
                 },
                 {
                     "url": "admin/whatsapp-chat",
                     "name": "WhatsApp Chat",
-                    "slug": "admin.whatsapp-chat.index"
+                    "slug": "admin.whatsapp-chat.index",
+                    "permission": "view_whatsapp_logs"
                 },
                 {
                     "url": "admin/whatsapp-logs",
                     "name": "WhatsApp Logs",
-                    "slug": "admin.whatsapp-logs.index"
+                    "slug": "admin.whatsapp-logs.index",
+                    "permission": "view_whatsapp_logs"
                 },
                 {
                     "url": "admin/whatsapp-broadcast",
                     "name": "Send Message",
-                    "slug": "admin.whatsapp-broadcast.index"
+                    "slug": "admin.whatsapp-broadcast.index",
+                    "permission": "view_whatsapp_broadcast"
                 }
             ]
         },

@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\Validator;
 
 class WhatsappBroadcastController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_whatsapp_broadcast')->only(['index', 'searchTarget', 'getTemplate']);
+        $this->middleware('permission:send_whatsapp_broadcast')->only(['send']);
+    }
     public function index()
     {
         $templates = WhatsappTemplate::where('meta_status', 'APPROVED')

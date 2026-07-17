@@ -12,6 +12,13 @@ use Exception;
 
 class WhatsappTemplatesController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_whatsapp_templates')->only(['index', 'getData']);
+        $this->middleware('permission:edit_whatsapp_templates')->only(['store', 'updateStatus', 'edit']);
+        $this->middleware('permission:delete_whatsapp_templates')->only(['destroy']);
+        $this->middleware('permission:sync_whatsapp_templates')->only(['fetchFromCloud']);
+    }
     public function index()
     {
         $templatesCount = WhatsappTemplate::count();

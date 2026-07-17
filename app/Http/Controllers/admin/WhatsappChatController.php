@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 
 class WhatsappChatController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_whatsapp_logs')->only(['index', 'getMessages', 'sendMessage']);
+    }
     public function index()
     {
         $conversations = \App\Models\WhatsappConversation::orderBy('last_message_time', 'desc')->get();

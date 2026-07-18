@@ -3,6 +3,7 @@
 @section('title', 'محادثات الواتساب')
 
 @section('vendor-style')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
 <style>
     .app-chat-sidebar {
         border-right: 1px solid #e0e0e0;
@@ -256,6 +257,10 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('vendor-script')
+@vite(['resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
 @endsection
 
 @section('page-script')

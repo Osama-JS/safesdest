@@ -1400,6 +1400,7 @@ class UserWalletsController extends Controller
             }
         }
 
+        return $validTasks;
     }
 
     private function getAllValidLegacyBrokerTasks()

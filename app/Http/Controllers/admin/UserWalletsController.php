@@ -1716,73 +1716,7 @@ class UserWalletsController extends Controller
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
-    
-    /**
-     * جلب المهام الصالحة لاحتساب عمولة وساطة الشاحنات بالنظام القديم
-     */
-    private function getValidLegacyBrokerTasks($userId)
-    {
-        $broker = User::findOrFail($userId);
-        $walletId = $broker->wallet?->id;
-        
-        if (!$walletId) {
-            return [];
-        }
 
-        $validTasks = [];
-
-        // مهام وساطة المهام المباشرة
-        $directTasks = Task::whereHas('brokers', function($q) use ($userId) {
-            $q->where('users.id', $userId);
-        })->get();
-
-        foreach ($directTasks as $task) {
-            $exists = UserWalletTransaction::where('user_wallet_id', $walletId)
-                ->where('task_id', $task->id)
-                ->where('description', 'like', '%عمولة وساطة%')
-                ->exists();
-
-            if (!$exists) {
-                // افتراض عمولة ثابتة 15 أو 10% إذا لم تكن محددة في الجدول
-                // يمكن تعديل نسبة العمولة بناء على نظام المنصة
-                $brokerShare = 15; 
-                $validTasks[] = [
-                    'task' => $task,
-                    'type_name' => 'وساطة مباشرة للمهمة',
-                    'brokerShare' => $brokerShare,
-                    'walletId' => $walletId,
-                    'description' => "عمولة وساطة مهمة رقم {$task->id}"
-                ];
-            }
-        }
-
-        // مهام وساطة السائق
-        $driverTasks = Task::whereHas('driver.brokers', function($q) use ($userId) {
-            $q->where('users.id', $userId);
-        })->get();
-
-        foreach ($driverTasks as $task) {
-            $exists = UserWalletTransaction::where('user_wallet_id', $walletId)
-                ->where('task_id', $task->id)
-                ->where('description', 'like', '%عمولة وساطة%')
-                ->exists();
-
-            $alreadyIncluded = collect($validTasks)->contains('task.id', $task->id);
-
-            if (!$exists && !$alreadyIncluded) {
-                $brokerShare = 15; 
-                $validTasks[] = [
-                    'task' => $task,
-                    'type_name' => 'وساطة عن طريق السائق',
-                    'brokerShare' => $brokerShare,
-                    'walletId' => $walletId,
-                    'description' => "عمولة وساطة سائق للمهمة رقم {$task->id}"
-                ];
-            }
-        }
-
-        return $validTasks;
-    }
 
     /**
      * عرض المهام المتاحة للدفع لمستثمر معين من لوحة الإدارة

@@ -106,9 +106,7 @@
                     <div class="mt-4">
                         <a href="javascript:;" class="btn btn-success me-2" id="payment-request"><i
                                 class="ti ti-receipt me-1"></i>{{ __('Payment Request') }}</a>
-                        <a href="{{ route('wallets.transaction.print-debits', $data->id) }}" target="_blank" class="btn btn-info me-2">
-                            <i class="ti ti-printer me-1"></i>طباعة الدفعات (Debits)
-                        </a>
+
                         <a href="{{ route('wallets.hyperpay_payouts', $data->id) }}" class="btn btn-primary" id="hyperpay-payouts-btn"><i class="ti ti-brand-mastercard me-1"></i>{{ __('HyperPay Payouts') }}</a>
                     </div>
                 @endif
@@ -201,11 +199,11 @@
                                                 <button type="button" class="btn btn-outline-info w-100 mb-2" id="toggleSettlementPanelBtn">
                                                     <i class="ti ti-settings me-1"></i> {{ __('Investment Settlement Settings') }}
                                                 </button>
-                                                
+
                                                 <div id="settlement-panel" class="border rounded p-3 bg-light" style="display: none;">
                                                     <h6 class="mb-2 text-primary"><i class="ti ti-list-check me-1"></i>{{ __('Unsettled Investor Tasks') }}</h6>
                                                     <p class="small text-muted mb-2">{{ __('Select tasks to settle with this credit amount.') }}</p>
-                                                    
+
                                                     <div class="d-flex justify-content-between mb-2">
                                                         <span class="fw-bold">{{ __('Credit Amount') }}: <span id="settlement-credit-amount" class="text-success">0</span> ريال</span>
                                                         <span class="fw-bold">{{ __('Selected Total') }}: <span id="settlement-selected-total" class="text-primary">0</span> ريال</span>
@@ -279,7 +277,7 @@
                                                         <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
                                                     </div>
                                                 @endif
-                                                
+
                                                 <div class="mt-3">
                                                     <label class="form-label text-danger fw-bold" for="hyperpay_password">
                                                         <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)

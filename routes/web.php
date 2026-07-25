@@ -301,6 +301,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::resource('whatsapp-templates', App\Http\Controllers\admin\WhatsappTemplatesController::class)
                     ->names('admin.whatsapp-templates');
 
+                // WhatsApp OTP Test (Saei)
+                Route::get('whatsapp-otp-test', [App\Http\Controllers\admin\WhatsappOtpTestController::class, 'index'])->name('admin.whatsapp-otp-test.index');
+                Route::post('whatsapp-otp-test/send', [App\Http\Controllers\admin\WhatsappOtpTestController::class, 'send'])->name('admin.whatsapp-otp-test.send');
+                Route::post('whatsapp-otp-test/verify', [App\Http\Controllers\admin\WhatsappOtpTestController::class, 'verify'])->name('admin.whatsapp-otp-test.verify');
+
                 // WhatsApp Chat & Logs
                 Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
                 Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');

@@ -47,6 +47,19 @@ Route::post('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request
     return response('EVENT_RECEIVED', 200);
 });
 
+// ─────────────────────────────────────────────────────────────
+// Saei OTP Service Routes
+// ─────────────────────────────────────────────────────────────
+
+// إرسال رمز OTP عبر واتساب (POST /api/saei/otp/send)
+Route::post('/saei/otp/send', [\App\Http\Controllers\Api\SaeiOtpController::class, 'send']);
+
+// التحقق من رمز OTP (POST /api/saei/otp/verify)
+Route::post('/saei/otp/verify', [\App\Http\Controllers\Api\SaeiOtpController::class, 'verify']);
+
+// استقبال Callback من ساعي بعد التحقق (POST /api/saei/otp/callback)
+Route::post('/saei/otp/callback', [\App\Http\Controllers\Api\SaeiOtpController::class, 'callback']);
+
 // Include driver API routes
 require __DIR__.'/api_driver.php';
 require __DIR__.'/api_customer.php';

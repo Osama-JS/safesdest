@@ -268,6 +268,12 @@
                     "name": "Send Message",
                     "slug": "admin.whatsapp-broadcast.index",
                     "permission": "view_whatsapp_broadcast"
+                },
+                {
+                    "url": "admin/whatsapp-otp-test",
+                    "name": "OTP Test (Saei)",
+                    "slug": "admin.whatsapp-otp-test.index",
+                    "permission": "view_whatsapp_logs"
                 }
             ]
         },

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تقرير منصة أمن (Amnn) — الوساطة المالية الذكية</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #00c6a2; --accent2: #ff6b35; --gold: #f5a623;
+      --dark: #0b1929; --dark2: #0d2137; --dark3: #112844;
+      --glass: rgba(255,255,255,0.05); --glass-b: rgba(255,255,255,0.08);
+      --text: #e8f0fe; --muted: #94a8c4;
+      --success: #00d97e; --danger: #ff4757;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { font-family:'Tajawal',sans-serif; background:var(--dark); color:var(--text); line-height:1.8; overflow-x:hidden; }
+    body::before {
+      content:''; position:fixed; inset:0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(15,76,129,0.4) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 90%, rgba(0,198,162,0.15) 0%, transparent 55%);
+      z-index:0; pointer-events:none;
+    }
+    /* HERO */
+    .hero { position:relative; z-index:1; background:linear-gradient(135deg,#051525,#0b2540,#0f3a60); overflow:hidden; }
+    .hero::before {
+      content:''; position:absolute; top:-50%; left:-20%; width:150%; height:200%;
+      background:radial-gradient(ellipse at center, rgba(0,198,162,.08) 0%, transparent 60%);
+      animation:pulse 8s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:1}}
+    .hero-inner { position:relative; z-index:2; max-width:1200px; margin:0 auto; padding:80px 40px 60px; text-align:center; }
+    .badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background:rgba(0,198,162,.12); border:1px solid rgba(0,198,162,.3);
+      color:var(--accent); padding:8px 22px; border-radius:50px;
+      font-size:14px; font-weight:600; margin-bottom:28px;
+      animation:slideDown .8s ease;
+    }
+    @keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+    .hero h1 {
+      font-size:clamp(2.2rem,5vw,3.8rem); font-weight:900; line-height:1.25;
+      margin-bottom:24px; animation:fadeUp .9s ease .1s both;
+    }
+    .hl {
+      background:linear-gradient(135deg,#00c6a2,#1a6bbf,#00c6a2);
+      background-size:200%; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text; animation:shimmer 4s linear infinite;
+    }
+    @keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    .subtitle { font-size:1.2rem; color:var(--muted); max-width:700px; margin:0 auto 40px; animation:fadeUp 1s ease .2s both; }
+    .pills { display:flex; justify-content:center; flex-wrap:wrap; gap:14px; animation:fadeUp 1s ease .3s both; }
+    .pill { background:var(--glass); border:1px solid var(--glass-b); padding:8px 20px; border-radius:8px; font-size:13px; color:var(--muted); }
+    .pill span { color:var(--accent); font-weight:700; }
+    .wave { width:100%; margin-bottom:-2px; display:block; }
+    /* NAV */
+    .toc { position:relative; z-index:1; background:var(--dark2); border-bottom:1px solid var(--glass-b); padding:0 40px; }
+    .toc-inner { max-width:1200px; margin:0 auto; display:flex; gap:0; overflow-x:auto; }
+    .toc a { display:flex; align-items:center; gap:8px; padding:18px 24px; color:var(--muted); text-decoration:none; font-size:14px; font-weight:500; white-space:nowrap; border-bottom:2px solid transparent; transition:all .3s; }
+    .toc a:hover { color:var(--accent); border-bottom-color:var(--accent); }
+    /* CONTAINER */
+    .box { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:60px 40px; }
+    /* SECTION TITLE */
+    .stitle { display:flex; align-items:center; gap:16px; margin-bottom:40px; }
+    .sicon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .stitle h2 { font-size:1.9rem; font-weight:800; color:#fff; }
+    .stitle p { font-size:14px; color:var(--muted); margin-top:4px; }
+    /* CARDS */
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:24px; margin-bottom:60px; }
+    .card { background:linear-gradient(145deg,var(--dark3),var(--dark2)); border:1px solid var(--glass-b); border-radius:20px; padding:32px 28px; transition:all .4s cubic-bezier(.175,.885,.32,1.275); }
+    .card:hover { transform:translateY(-6px); border-color:rgba(0,198,162,.3); box-shadow:0 20px 60px rgba(0,0,0,.4); }
+    .cicon { width:56px; height:56px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:20px; }
+    .card h3 { font-size:1.15rem; font-weight:700; color:#fff; margin-bottom:12px; }
+    .card p { font-size:.93rem; color:var(--muted); line-height:1.75; }
+    .cg { background:linear-gradient(135deg,rgba(0,198,162,.15),rgba(0,198,162,.05)); border-color:rgba(0,198,162,.2); }
+    .cg .cicon { background:rgba(0,198,162,.15); }
+    .cb { background:linear-gradient(135deg,rgba(26,107,191,.12),rgba(26,107,191,.04)); border-color:rgba(26,107,191,.2); }
+    .cb .cicon { background:rgba(26,107,191,.15); }
+    .co { background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,107,53,.04)); border-color:rgba(255,107,53,.2); }
+    .co .cicon { background:rgba(255,107,53,.15); }
+    .ck { background:linear-gradient(135deg,rgba(245,166,35,.12),rgba(245,166,35,.04)); border-color:rgba(245,166,35,.2); }
+    .ck .cicon { background:rgba(245,166,35,.15); }
+    /* DIVIDER */
+    .sep { border:none; border-top:1px solid var(--glass-b); margin:60px 0; }
+    /* STATS */
+    .srow { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; margin-bottom:60px; }
+    .sbox { background:linear-gradient(145deg,var(--dark3),var(--dark2)); border:1px solid var(--glass-b); border-radius:18px; padding:28px 24px; text-align:center; transition:all .3s; }
+    .sbox:hover { transform:translateY(-5px); box-shadow:0 20px 40px rgba(0,0,0,.3); }
+    .snum { font-size:2.5rem; font-weight:900; background:linear-gradient(135deg,var(--accent),#1a6bbf); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; line-height:1; margin-bottom:8px; }
+    .slbl { font-size:.88rem; color:var(--muted); }
+    /* ALERTS */
+    .al { border-radius:16px; padding:24px 28px; margin-bottom:30px; display:flex; gap:18px; align-items:flex-start; }
+    .ai { font-size:26px; flex-shrink:0; }
+    .al-i { background:rgba(26,107,191,.1); border:1px solid rgba(26,107,191,.25); }
+    .al-s { background:rgba(0,217,126,.08); border:1px solid rgba(0,217,126,.25); }
+    .al-w { background:rgba(245,166,35,.08); border:1px solid rgba(245,166,35,.25); }
+    .al h4 { font-size:1rem; font-weight:700; margin-bottom:8px; color:#fff; }
+    .al p { font-size:.9rem; color:var(--muted); }
+    /* FLOW */
+    .flow { position:relative; margin-bottom:60px; }
+    .flow::before { content:''; position:absolute; right:27px; top:0; bottom:0; width:2px; background:linear-gradient(to bottom,var(--accent),#1a6bbf,transparent); }
+    .fstep { display:flex; gap:28px; align-items:flex-start; margin-bottom:36px; position:relative; }
+    .fnum { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:800; flex-shrink:0; position:relative; z-index:1; background:linear-gradient(135deg,var(--accent),#1a6bbf); color:#fff; box-shadow:0 0 20px rgba(0,198,162,.3); }
+    .fbody { background:var(--dark3); border:1px solid var(--glass-b); border-radius:16px; padding:24px 28px; flex:1; }
+    .fbody h3 { font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .fbadge { background:rgba(0,198,162,.1); border:1px solid rgba(0,198,162,.25); color:var(--accent); padding:2px 12px; border-radius:20px; font-size:11px; font-weight:600; font-family:monospace; }
+    .fbody p { color:var(--muted); font-size:.93rem; }
+    /* STATUS GRID */
+    .sgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; margin-bottom:60px; }
+    .sc { border-radius:14px; padding:18px 20px; border:1px solid transparent; transition:all .3s; }
+    .sc:hover { transform:translateY(-3px); }
+    .scode { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; opacity:.7; font-family:monospace; }
+    .slabel { font-size:.95rem; font-weight:600; color:#fff; }
+    .sdesc { font-size:.8rem; color:var(--muted); margin-top:6px; }
+    /* API TABLE */
+    .atbl { background:var(--dark3); border:1px solid var(--glass-b); border-radius:20px; overflow:hidden; margin-bottom:60px; }
+    .ahead { display:grid; grid-template-columns:110px 1fr 2fr; background:rgba(0,198,162,.08); border-bottom:1px solid var(--glass-b); padding:14px 24px; font-size:12px; font-weight:700; letter-spacing:1px; color:var(--accent); text-transform:uppercase; }
+    .arow { display:grid; grid-template-columns:110px 1fr 2fr; padding:16px 24px; border-bottom:1px solid rgba(255,255,255,.04); align-items:center; transition:background .2s; }
+    .arow:hover { background:rgba(255,255,255,.03); }
+    .arow:last-child { border-bottom:none; }
+    .m { font-size:11px; font-weight:800; padding:4px 10px; border-radius:6px; display:inline-block; }
+    .mget { background:rgba(0,217,126,.15); color:#00d97e; }
+    .mpost { background:rgba(26,107,191,.15); color:#4a9eff; }
+    .mput { background:rgba(245,166,35,.15); color:#f5a623; }
+    .mdel { background:rgba(255,71,87,.15); color:#ff4757; }
+    .aep { font-family:'Courier New',monospace; color:var(--muted); font-size:.82rem; direction:ltr; text-align:left; }
+    .adsc { color:var(--text); font-size:.88rem; }
+    /* COMPARE */
+    .cmp { background:var(--dark3); border:1px solid var(--glass-b); border-radius:20px; overflow:hidden; margin-bottom:60px; }
+    .cmph { display:grid; grid-template-columns:2fr 1fr 1fr; background:linear-gradient(135deg,rgba(0,198,162,.1),rgba(26,107,191,.1)); padding:20px 28px; border-bottom:1px solid var(--glass-b); }
+    .cmph div { font-weight:700; font-size:14px; }
+    .ca { color:var(--accent); text-align:center; }
+    .cx { color:var(--muted); text-align:center; }
+    .cmpr { display:grid; grid-template-columns:2fr 1fr 1fr; padding:16px 28px; border-bottom:1px solid rgba(255,255,255,.04); align-items:center; font-size:.9rem; }
+    .cmpr:last-child { border-bottom:none; }
+    .cmpr:hover { background:rgba(255,255,255,.02); }
+    .chk { text-align:center; font-size:18px; }
+    /* CODE */
+    .code { background:#0a1628; border:1px solid rgba(0,198,162,.15); border-radius:14px; padding:32px 24px 24px; margin-bottom:30px; direction:ltr; position:relative; overflow-x:auto; }
+    .code pre { font-family:'Courier New',monospace; font-size:13px; color:#a8d8f0; line-height:1.8; }
+    .clbl { position:absolute; top:12px; left:16px; font-size:11px; font-weight:700; color:var(--accent); letter-spacing:1px; opacity:.7; }
+    /* FOOTER */
+    footer { background:var(--dark2); border-top:1px solid var(--glass-b); padding:40px; text-align:center; position:relative; z-index:1; }
+    footer p { color:var(--muted); font-size:.9rem; }
+    .flogo { font-size:1.5rem; font-weight:900; color:var(--accent); margin-bottom:12px; display:block; }
+    @media(max-width:768px) {
+      .box { padding:40px 20px; }
+      .hero-inner { padding:60px 20px 40px; }
+      .ahead,.arow { grid-template-columns:80px 1fr; }
+      .adsc { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge">🔒 تقرير تقني شامل — 2026</div>
+    <h1>منصة <span class="hl">أمن (Amnn)</span><br/>الوساطة المالية الذكية للمعاملات الرقمية</h1>
+    <p class="subtitle">دراسة متعمقة في خدمات الضمان (Escrow) وكيف تحل إشكالية الثقة بين أطراف الصفقات التجارية الرقمية في المملكة العربية السعودية</p>
+    <div class="pills">
+      <div class="pill">📅 تاريخ التقرير: <span>يوليو 2026</span></div>
+      <div class="pill">🌐 الموقع: <span>amnn.sa</span></div>
+      <div class="pill">📄 التوثيق: <span>docs.amnn.sa</span></div>
+      <div class="pill">🔧 البيئة: <span>Sandbox + Live API</span></div>
+    </div>
+  </div>
+  <svg class="wave" viewBox="0 0 1440 60" fill="none"><path d="M0,40 C360,80 1080,0 1440,40 L1440,60 L0,60 Z" fill="#0b1929"/></svg>
+</header>
+
+<nav class="toc">
+  <div class="toc-inner">
+    <a href="#what">🔍 ما هي المنصة؟</a>
+    <a href="#how">⚙️ كيف تعمل؟</a>
+    <a href="#flow">🔄 دورة الصفقة</a>
+    <a href="#apis">📡 واجهات API</a>
+    <a href="#benefits">💡 الفوائد</a>
+    <a href="#integration">🔗 الربط مع سيف ديست</a>
+  </div>
+</nav>
+
+<div class="box">
+
+  <!-- S1 -->
+  <section id="what">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(0,198,162,.15)">🔍</div>
+      <div><h2>ما هي منصة أمن؟</h2><p>فهم طبيعة المنصة ومكانتها في السوق</p></div>
+    </div>
+    <div class="al al-i">
+      <div class="ai">ℹ️</div>
+      <div>
+        <h4>تعريف منصة أمن</h4>
+        <p>منصة <strong>أمن (Amnn)</strong> هي خدمة وساطة مالية (Escrow Service) سعودية تعمل كـ"طرف ثالث موثوق" بين البائع والمشتري في أي صفقة تجارية رقمية. المنصة تحتجز مبلغ الصفقة في حساب ضمان آمن حتى يتم تنفيذ الخدمة أو تسليم المنتج بشكل صحيح ثم تحرر الأموال للبائع. تعمل تحت مسمى "متعهد" التجاري وتستهدف منصات التجارة الإلكترونية والخدمات الرقمية ومنصات التوصيل والنقل.</p>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="card cg"><div class="cicon">🏦</div><h3>خدمة الضمان المالي</h3><p>تحتجز المنصة أموال المشتري في حساب مستقل وآمن طوال فترة تنفيذ الصفقة، مما يضمن عدم وصول البائع للمال قبل اكتمال الخدمة.</p></div>
+      <div class="card cb"><div class="cicon">🤝</div><h3>الوسيط الموثوق</h3><p>تعمل كـ"حكم مستقل" بين البائع والمشتري مع نظام نزاعات (Dispute) واضح يحمي حقوق الطرفين في حالة الخلاف.</p></div>
+      <div class="card co"><div class="cicon">⚡</div><h3>ربط برمجي (API-First)</h3><p>تتيح للمنصات الخارجية ربط خدماتها بالكامل عبر API موثقة، مع بيئة Sandbox للاختبار وبيئة Live للإنتاج.</p></div>
+      <div class="card ck"><div class="cicon">🇸🇦</div><h3>مخصصة للسوق السعودي</h3><p>تدعم المدن السعودية والأرقام السعودية وطرق الدفع المحلية (مدى، Apple Pay، Visa) مع تحويل بنكي عبر IBAN.</p></div>
+    </div>
+    <div class="srow">
+      <div class="sbox"><div class="snum">3</div><div class="slbl">أطراف في الصفقة<br/>(مشتري، بائع، وسيط)</div></div>
+      <div class="sbox"><div class="snum">10</div><div class="slbl">حالات لدورة حياة الصفقة<br/>من الإنشاء حتى الإغلاق</div></div>
+      <div class="sbox"><div class="snum">4</div><div class="slbl">طرق دفع مدعومة<br/>(مدى، Apple Pay، Visa، محفظة)</div></div>
+      <div class="sbox"><div class="snum">2</div><div class="slbl">بيئات عمل<br/>(Sandbox + Live)</div></div>
+    </div>
+  </section>
+
+  <hr class="sep"/>
+
+  <!-- S2 -->
+  <section id="how">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(26,107,191,.15)">⚙️</div>
+      <div><h2>كيف تعمل المنصة؟</h2><p>الآلية التقنية والمنطق التشغيلي خطوة بخطوة</p></div>
+    </div>
+    <div class="grid">
+      <div class="card cb"><div class="cicon">👤</div><h3>1. تسجيل الأطراف</h3><p>يتم تسجيل كل من البائع والمشتري كـ"عملاء" (Customers) في نظام أمن عبر الـ API. كل عميل يحصل على رقم فريد مثل IC-0001.</p></div>
+      <div class="card cg"><div class="cicon">📋</div><h3>2. إنشاء العقد</h3><p>تُنشئ المنصة عقداً رقمياً (Deal) يحتوي على تفاصيل الخدمة أو المنتج والسعر والأطراف المشاركة.</p></div>
+      <div class="card co"><div class="cicon">💳</div><h3>3. الدفع الآمن</h3><p>يدفع المشتري عبر HyperPay (مزود الدفع المعتمد). تذهب الأموال لحساب ضمان أمن وليس مباشرة للبائع.</p></div>
+      <div class="card ck"><div class="cicon">✅</div><h3>4. تحرير الأموال</h3><p>بعد تأكيد التسليم تُحرر الأموال للبائع. في حالة النزاع تتدخل المنصة وتُعيد الأموال للمشتري أو تحلّ بالتفاوض.</p></div>
+    </div>
+  </section>
+
+  <hr class="sep"/>
+
+  <!-- S3 -->
+  <section id="flow">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(255,107,53,.15)">🔄</div>
+      <div><h2>دورة حياة الصفقة الكاملة</h2><p>من لحظة إنشاء العقد حتى تسوية الأموال النهائية</p></div>
+    </div>
+    <div class="flow">
+      <div class="fstep">
+        <div class="fnum">1</div>
+        <div class="fbody"><h3>إنشاء الصفقة <span class="fbadge">draft</span></h3><p>يتم إنشاء مسودة الصفقة عبر API مع تحديد نوعها (خدمة أو منتج) وعنوانها ووصفها والسعر الأولي. الصفقة قابلة للتعديل والحذف بالكامل في هذه المرحلة.</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">2</div>
+        <div class="fbody"><h3>إضافة الأطراف <span class="fbadge">draft</span></h3><p>يتم تحديد المشتري (Buyer) والبائع (Seller) من قائمة العملاء المسجلين. يمكن إضافة وسيط (Broker) كطرف ثالث اختياري.</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">3</div>
+        <div class="fbody"><h3>إرسال للموافقة <span class="fbadge">requested</span></h3><p>بعد الانتهاء من التفاصيل يتم إرسال الصفقة (Submit) فتتحول حالتها إلى "مطلوبة" في انتظار موافقة البائع.</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">4</div>
+        <div class="fbody"><h3>موافقة البائع <span class="fbadge">payment_pending</span></h3><p>البائع يوافق (Approve). في الخدمات يمكنه تحديد السعر النهائي هنا. تتحول الصفقة لـ"بانتظار الدفع".</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">5</div>
+        <div class="fbody"><h3>دفع المشتري <span class="fbadge">paid</span></h3><p>المشتري يدفع عبر HyperPay أو المحفظة. الأموال تذهب لحساب الضمان في أمن وتتحول الحالة إلى "مدفوعة".</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">6</div>
+        <div class="fbody"><h3>بدء التنفيذ <span class="fbadge">executing</span></h3><p>يبدأ البائع في تقديم الخدمة أو تسليم المنتج. يعلم البائع أن المبلغ محجوز وسيصل عند الإتمام.</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum">7</div>
+        <div class="fbody"><h3>الاكتمال <span class="fbadge">executed → completed</span></h3><p>بعد تأكيد التسليم تتحول للـ executed ثم completed. يتم تحويل الأموال للبائع عبر transfer-seller-amount API.</p></div>
+      </div>
+      <div class="fstep">
+        <div class="fnum" style="background:linear-gradient(135deg,#ff4757,#ff6b81)">!</div>
+        <div class="fbody" style="border-color:rgba(255,71,87,.2)">
+          <h3>النزاع (اختياري) <span class="fbadge" style="background:rgba(255,71,87,.1);color:#ff4757;border-color:rgba(255,71,87,.3)">disputed</span></h3>
+          <p>إذا لم يكن المشتري راضياً يفتح نزاعاً مع إرفاق أدلة (صور/فيديو حتى 3 مرفقات). فريق أمن يتدخل ويتخذ القرار النهائي.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.1rem;color:#fff;margin-bottom:20px;opacity:.8">📊 جميع حالات الصفقة (Deal Statuses)</h3>
+    <div class="sgrid">
+      <div class="sc" style="background:rgba(100,100,100,.1);border-color:rgba(100,100,100,.2)"><div class="scode" style="color:#888">draft</div><div class="slabel">مسودة</div><div class="sdesc">قيد الإعداد، يمكن التعديل</div></div>
+      <div class="sc" style="background:rgba(26,107,191,.12);border-color:rgba(26,107,191,.25)"><div class="scode" style="color:#4a9eff">requested</div><div class="slabel">مُقدَّمة</div><div class="sdesc">في انتظار موافقة البائع</div></div>
+      <div class="sc" style="background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.25)"><div class="scode" style="color:#f5a623">payment_pending</div><div class="slabel">بانتظار الدفع</div><div class="sdesc">وافق البائع، ينتظر المشتري</div></div>
+      <div class="sc" style="background:rgba(0,198,162,.1);border-color:rgba(0,198,162,.25)"><div class="scode" style="color:#00c6a2">paid</div><div class="slabel">مدفوعة</div><div class="sdesc">الأموال في حساب الضمان</div></div>
+      <div class="sc" style="background:rgba(0,198,162,.08);border-color:rgba(0,198,162,.2)"><div class="scode" style="color:#5be0c8">executing</div><div class="slabel">قيد التنفيذ</div><div class="sdesc">البائع ينفذ الخدمة</div></div>
+      <div class="sc" style="background:rgba(0,217,126,.1);border-color:rgba(0,217,126,.25)"><div class="scode" style="color:#00d97e">executed</div><div class="slabel">منفذة</div><div class="sdesc">تم التنفيذ، بانتظار الإغلاق</div></div>
+      <div class="sc" style="background:rgba(0,217,126,.15);border-color:rgba(0,217,126,.3)"><div class="scode" style="color:#00d97e">completed</div><div class="slabel">مكتملة ✅</div><div class="sdesc">نُقلت الأموال للبائع</div></div>
+      <div class="sc" style="background:rgba(255,71,87,.1);border-color:rgba(255,71,87,.25)"><div class="scode" style="color:#ff4757">disputed</div><div class="slabel">نزاع مفتوح</div><div class="sdesc">فتح المشتري شكوى</div></div>
+      <div class="sc" style="background:rgba(255,107,53,.1);border-color:rgba(255,107,53,.25)"><div class="scode" style="color:#ff6b35">dispute_approved</div><div class="slabel">نزاع محسوم</div><div class="sdesc">قُبلت الشكوى وأُعيد المبلغ</div></div>
+      <div class="sc" style="background:rgba(255,71,87,.08);border-color:rgba(255,71,87,.2)"><div class="scode" style="color:#ff6b81">canceled</div><div class="slabel">ملغاة</div><div class="sdesc">تم إلغاء الصفقة</div></div>
+    </div>
+  </section>
+
+  <hr class="sep"/>
+
+  <!-- S4 -->
+  <section id="apis">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(0,198,162,.15)">📡</div>
+      <div><h2>واجهات الـ API المتاحة</h2><p>قائمة كاملة بجميع نقاط الربط البرمجي</p></div>
+    </div>
+    <div class="al al-i">
+      <div class="ai">🔑</div>
+      <div><h4>المصادقة</h4><p>يتم المصادقة عبر إرسال المفتاح في هيدر كل طلب: <code style="color:var(--accent);font-family:monospace;background:rgba(0,198,162,.1);padding:2px 8px;border-radius:4px">X-API-Token: {API_CODE}</code></p></div>
+    </div>
+    <div class="atbl">
+      <div class="ahead"><div>الطريقة</div><div>المسار (Endpoint)</div><div>الوظيفة</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/cities/</div><div class="adsc">جلب قائمة المدن السعودية</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/categories/</div><div class="adsc">جلب تصنيفات الصفقات</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/dispute-reasons/</div><div class="adsc">جلب أسباب النزاعات</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/cancel-reasons/</div><div class="adsc">جلب أسباب الإلغاء</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/account</div><div class="adsc">جلب بيانات الحساب والرصيد</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/account/bank-accounts/</div><div class="adsc">قائمة الحسابات البنكية</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/account/bank-accounts/</div><div class="adsc">ربط حساب بنكي جديد (IBAN)</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/customers/</div><div class="adsc">قائمة العملاء المسجلين</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/customers/</div><div class="adsc">إنشاء عميل جديد (مشتري أو بائع)</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/customers/{number}</div><div class="adsc">تفاصيل عميل معين</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/</div><div class="adsc">إنشاء صفقة جديدة</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/deals/{deal_number}</div><div class="adsc">تفاصيل صفقة وحالة الدفع</div></div>
+      <div class="arow"><div><span class="m mput">PUT</span></div><div class="aep">/api/v1/deals/{deal_number}</div><div class="adsc">تعديل صفقة مسودة</div></div>
+      <div class="arow"><div><span class="m mdel">DELETE</span></div><div class="aep">/api/v1/deals/{deal_number}</div><div class="adsc">حذف صفقة مسودة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/parties/</div><div class="adsc">تحديد المشتري والبائع</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/submit</div><div class="adsc">إرسال الصفقة للموافقة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/approve</div><div class="adsc">موافقة البائع على الصفقة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/make-payment-online</div><div class="adsc">الدفع الإلكتروني عبر HyperPay</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/make-payment-wallet</div><div class="adsc">الدفع عبر المحفظة الرقمية</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/execution-start</div><div class="adsc">بدء تنفيذ الصفقة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/execution-complete</div><div class="adsc">الإعلان عن اكتمال التنفيذ</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/complete</div><div class="adsc">إغلاق الصفقة نهائياً</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/transfer-seller-amount</div><div class="adsc">تحويل المبلغ للبائع</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/dispute</div><div class="adsc">فتح نزاع مع أدلة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/deals/{deal_number}/action/cancel</div><div class="adsc">إلغاء الصفقة</div></div>
+      <div class="arow"><div><span class="m mget">GET</span></div><div class="aep">/api/v1/webhooks/</div><div class="adsc">قائمة Webhooks المسجلة</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/webhooks/</div><div class="adsc">تسجيل Webhook جديد</div></div>
+      <div class="arow"><div><span class="m mpost">POST</span></div><div class="aep">/api/v1/withdrawals/</div><div class="adsc">طلب سحب رصيد لحساب بنكي</div></div>
+    </div>
+  </section>
+
+  <hr class="sep"/>
+
+  <!-- S5 -->
+  <section id="benefits">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(245,166,35,.15)">💡</div>
+      <div><h2>فوائد المنصة وأهميتها</h2><p>لماذا الاستثمار في ربط منصة الضمان يستحق؟</p></div>
+    </div>
+    <div class="cmp">
+      <div class="cmph">
+        <div>الميزة / المشكلة</div>
+        <div class="ca">مع أمن ✅</div>
+        <div class="cx">بدون أمن ❌</div>
+      </div>
+      <div class="cmpr"><div>حماية أموال المشتري قبل تسليم الخدمة</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>ضمان استلام البائع ماله بعد التسليم</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>نظام نزاعات رسمي ومحايد</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>دعم مدى وApple Pay وVisa</div><div class="chk">✅</div><div class="chk">⚠️</div></div>
+      <div class="cmpr"><div>الامتثال لمتطلبات هيئة التجارة الإلكترونية السعودية</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>الدفع بالمحفظة الرقمية</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>ثقة المستخدمين في المنصة</div><div class="chk">✅</div><div class="chk">⚠️</div></div>
+      <div class="cmpr"><div>سحب الأرباح مباشرة عبر IBAN</div><div class="chk">✅</div><div class="chk">❌</div></div>
+      <div class="cmpr"><div>التتبع الكامل لحالة كل صفقة</div><div class="chk">✅</div><div class="chk">⚠️</div></div>
+    </div>
+    <div class="grid">
+      <div class="card cg"><div class="cicon">🛡️</div><h3>ثقة العملاء</h3><p>عندما يعرف المشتري أن ماله محتجز في حساب ضمان موثوق ولن يصل للبائع إلا بعد تأكيد الاستلام، يزداد استعداده للدفع ويقل التردد.</p></div>
+      <div class="card cb"><div class="cicon">📈</div><h3>رفع معدل إتمام الصفقات</h3><p>الصفقات التي تمر عبر ضمان مالي تُكمَل بنسبة أعلى لأن كلا الطرفين محميان قانونياً ومالياً مما يقلل من الانسحاب في المنتصف.</p></div>
+      <div class="card co"><div class="cicon">⚖️</div><h3>حل النزاعات باحترافية</h3><p>بدلاً من الجدل بين العميل والسائق، تتدخل منصة أمن كجهة محايدة مع إمكانية إرفاق أدلة لحسم النزاع بعدالة.</p></div>
+      <div class="card ck"><div class="cicon">🏗️</div><h3>بنية تحتية جاهزة</h3><p>لا تحتاج لبناء نظام دفع وضمان من الصفر. منصة أمن توفر كل ذلك كخدمة (Escrow-as-a-Service) مع توثيق API كامل.</p></div>
+    </div>
+  </section>
+
+  <hr class="sep"/>
+
+  <!-- S6 -->
+  <section id="integration">
+    <div class="stitle">
+      <div class="sicon" style="background:rgba(0,198,162,.15)">🔗</div>
+      <div><h2>تكامل أمن مع منصة سيف ديست</h2><p>الخطوات التقنية والفرص الفعلية للاستفادة من المنصة</p></div>
+    </div>
+    <div class="al al-s">
+      <div class="ai">✅</div>
+      <div><h4>الخدمة جاهزة مبدئياً</h4><p>تم إنشاء خدمة <code style="color:var(--accent);font-family:monospace">MtahdService.php</code> داخل مجلد <code style="color:var(--accent);font-family:monospace">app/Services/</code> بمنصة سيف ديست تشمل الدوال الأساسية للربط مع API أمن.</p></div>
+    </div>
+    <div class="code">
+      <div class="clbl">app/Services/MtahdService.php</div>
+      <pre>
+// المصادقة: X-API-Token
+$this->apiToken = env('MTAHD_API_TOKEN', 'c2199c8e...');
+$this->baseUrl  = env('MTAHD_BASE_URL', 'https://sandbox-api.amnn.sa/api/v1');
+
+// الدوال المتاحة:
+createCustomer(array $data)        // تسجيل عميل (مشتري أو بائع)
+createDeal(array $data)            // إنشاء صفقة جديدة
+addDealParties($dealNumber, ...)   // ربط المشتري والبائع
+submitDeal($dealNumber)            // إرسال الصفقة للموافقة
+getDealDetails($dealNumber)        // الاستعلام عن حالة الصفقة
+      </pre>
+    </div>
+    <div class="grid">
+      <div class="card cg"><div class="cicon">🚛</div><h3>حماية طلبات الشحن</h3><p>عند إنشاء طلب شحن، يدفع العميل المبلغ لحساب ضمان أمن بدلاً من دفعه مباشرة للسائق. المبلغ يُحرَّر للسائق فقط بعد تأكيد الوصول.</p></div>
+      <div class="card cb"><div class="cicon">🤝</div><h3>حماية عمولات الوسطاء</h3><p>الوسطاء يدخلون كـ Broker في صفقات أمن، مما يضمن استلام عمولاتهم بشفافية بعد اكتمال الصفقة دون الحاجة للتفاوض لاحقاً.</p></div>
+      <div class="card co"><div class="cicon">💼</div><h3>عقود B2B آمنة</h3><p>الشركات التي تستخدم سيف ديست لشحنات ضخمة يمكنها إنشاء عقود ضمان لمبالغ كبيرة مما يرفع مستوى الثقة بشكل كبير.</p></div>
+      <div class="card ck"><div class="cicon">📊</div><h3>لوحة مراقبة مالية</h3><p>يمكن عرض رصيد الـ Escrow والأموال المحتجزة والأموال المتاحة في لوحة الإدارة لمتابعة التدفق المالي فورياً.</p></div>
+    </div>
+    <div class="al al-w">
+      <div class="ai">⚠️</div>
+      <div>
+        <h4>نقاط مهمة قبل التطبيق الفعلي</h4>
+        <p>
+          ١. المفتاح الحالي هو مفتاح <strong>Sandbox</strong> للاختبار فقط — يجب طلب مفتاح Live قبل الإنتاج.<br/>
+          ٢. يجب تسجيل رابط Webhook الخاص بسيف ديست في لوحة تحكم أمن لاستقبال التحديثات التلقائية.<br/>
+          ٣. عمولة منصة أمن على كل صفقة يجب مناقشتها في اتفاقية الشراكة.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <span class="flogo">🔒 أمن × سيف ديست</span>
+  <p>تم إعداد هذا التقرير بناءً على التوثيق الرسمي لمنصة أمن من <strong>docs.amnn.sa</strong></p>
+  <p style="margin-top:8px;font-size:.8rem">جميع البيانات التقنية مستخرجة من ملف OpenAPI الرسمي للمنصة — يوليو 2026</p>
+</footer>
+
+</body>
+</html>

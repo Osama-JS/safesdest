@@ -48,7 +48,7 @@
                                         <div id="customers-wrapper" class="mt-2" style="display: none;">
                                             <label for="task-customer" class="form-label">*
                                                 {{ __('Select Customer') }}</label>
-                                            <select name="customer" id="task-customer" class="form-select">
+                                            <select name="customer" id="task-customer" class="form-select select2">
                                                 <option value="">{{ __('Select Customer') }}</option>
                                                 @foreach ($customers as $val)
                                                     <option value="{{ $val->id }}"
@@ -956,4 +956,19 @@
             <button type="button" class="btn btn-sm btn-icon btn-danger remove-task-broker-row"><i class="ti ti-trash"></i></button>
         </div>
     </div>
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize Select2 on the customer select inside the Add/Edit Task modal
+        // using dropdownParent to ensure the search dropdown doesn't fall behind the modal backdrop
+        $('#submitModal').on('shown.bs.modal', function () {
+            $('#task-customer').select2({
+                dropdownParent: $('#submitModal'),
+                width: '100%',
+                placeholder: "{{ __('Select Customer') }}",
+                allowClear: true
+            });
+        });
+    });
 </script>

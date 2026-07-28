@@ -920,7 +920,7 @@ export function setupMethodSelection(methods) {
         let selectHTML = `
           <div id="params-select-wrapper" class="mt-3">
 
-            <select class="form-select" name="params_select" id="params-select">
+            <select class="form-select select2" name="params_select" id="params-select">
               <option value="">-- Choose the path --</option>`;
 
         selectedMethod.params.forEach((param, index) => {
@@ -942,6 +942,13 @@ export function setupMethodSelection(methods) {
           </div>`;
 
         $('#pricing-method-select').after(selectHTML);
+        
+        // Initialize select2 for the newly added select
+        $('#params-select').select2({
+          dropdownParent: $('#submitModal'),
+          width: '100%'
+        });
+
         $('#params-select').trigger('change');
         $('#delivery-map-section').hide();
         $('#pickup-map-section').hide();

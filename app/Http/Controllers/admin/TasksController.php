@@ -2593,6 +2593,7 @@ class TasksController extends Controller
             'customer',
             'driver',
             'user',
+            'investor',
             'pickup',
             'delivery',
             'points',

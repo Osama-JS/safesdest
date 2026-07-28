@@ -1,4 +1,4 @@
-@extends('layouts/layoutMaster')
+﻿@extends('layouts/layoutMaster')
 
 @section('title', __('Investment Wallet - :name', ['name' => $user->name]))
 
@@ -449,8 +449,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="convertTransactionPassword">{{ __('Password required for conversion') }}</label>
-                        <input type="password" id="convertTransactionPassword" class="form-control"
-                            placeholder="{{ __('Enter password') }}" autocomplete="current-password" required>
+                        <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="convertTransactionPassword" class="form-control"
+                            placeholder="{{ __('Enter password') }}" autocomplete="new-password" required>
                         <div class="form-text text-muted">{{ __('Password required for conversion') }}</div>
                     </div>
                 </div>
@@ -600,8 +600,8 @@
                             <i class="ti ti-lock me-1"></i>
                             كلمة المرور للتأكيد
                         </label>
-                        <input type="password" id="deleteSettlementPassword" class="form-control"
-                            placeholder="أدخل كلمة المرور" autocomplete="current-password">
+                        <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="deleteSettlementPassword" class="form-control"
+                            placeholder="أدخل كلمة المرور" autocomplete="new-password">
                         <div class="form-text text-muted">مطلوبة لحماية العملية من التنفيذ غير المقصود.</div>
                     </div>
                 </div>
@@ -678,7 +678,7 @@
                     <input type="hidden" id="restorePaymentIdInput">
                     <div class="mb-3 text-start">
                         <label class="form-label fw-medium" for="restorePaymentPasswordInput">كلمة المرور</label>
-                        <input type="password" id="restorePaymentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="current-password">
+                        <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="restorePaymentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="new-password">
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">
@@ -704,7 +704,7 @@
                     <input type="hidden" id="cancelInvestmentTransactionIdInput">
                     <div class="mb-3 text-start">
                         <label class="form-label fw-medium" for="cancelInvestmentPasswordInput">كلمة المرور</label>
-                        <input type="password" id="cancelInvestmentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="current-password">
+                        <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="cancelInvestmentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="new-password">
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">

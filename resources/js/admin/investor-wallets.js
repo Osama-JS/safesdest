@@ -107,7 +107,7 @@ $(function () {
           render: function (data, type, full, meta) {
             if (data && data !== '-') {
               return (
-                '<a href="' + baseUrl + 'admin/tasks/show/' + data + '" class="badge bg-label-info">#' + data + '</a>'
+                '<a href="' + baseUrl + 'admin/tasks/list/show/' + data + '" class="badge bg-label-info">#' + data + '</a>'
               );
             }
             return '<span class="text-muted">-</span>';

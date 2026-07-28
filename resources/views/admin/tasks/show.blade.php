@@ -151,6 +151,18 @@
                         <p><strong>{{ __('phone') }}:</strong>
                             {{ $task->owner == 'admin' ? $task->user->phone : $task->customer->phone }}</p>
 
+                        @if ($task->investor)
+                            <div class="alert alert-success mt-3 mb-3 p-3 d-flex align-items-center border-0 shadow-sm">
+                                <i class="ti ti-piggy-bank fs-2 me-3"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1 fw-bold">{{ __('Funded By Investor') }}</h6>
+                                    <p class="mb-0 text-muted">
+                                        <strong>{{ $task->investor->name }}</strong> - <span dir="ltr">{{ $task->investor->phone }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
+
                         @if ($task->conditions)
                             <div class="alert alert-warning">
                                 <i class="fas fa-exclamation-triangle me-1"></i>

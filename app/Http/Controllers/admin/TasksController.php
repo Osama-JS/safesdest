@@ -533,7 +533,9 @@ class TasksController extends Controller
                     'error' => __('This task cannot be modified in its current state'),
                 ]);
             }
-            $drivers = Driver::where('vehicle_size_id', $data->vehicle_size_id)->get();
+            $drivers = Driver::where('vehicle_size_id', $data->vehicle_size_id)
+                ->where('status', 'active')
+                ->get();
             $data->drivers = $drivers;
             return response()->json($data);
         } catch (Exception $ex) {

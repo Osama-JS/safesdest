@@ -462,7 +462,22 @@ class DriverAuthController extends Controller
                     ] : null,
                     'wallet_balance' => $driver->wallet ? $driver->wallet->balance : 0,
                     'app_version' => $driver->app_version,
-                    'last_activity_at' => $driver->last_activity_at
+                    'last_activity_at' => $driver->last_activity_at,
+                    'is_guest' => $driver->is_guest,
+                    'image' => $driver->image,
+                    'driver_code' => $driver->driver_code,
+                    'can_edit_profile' => $driver->can_edit_profile,
+                    'additional_data' => $driver->additional_data,
+                    'signature_image' => $driver->signature_image,
+                    'bank_name' => $driver->bank_name,
+                    'account_number' => $driver->account_number,
+                    'iban_number' => $driver->iban_number,
+                    'bic_code' => $driver->bic_code,
+                    'beneficiary_name' => $driver->beneficiary_name,
+                    'bank_address1' => $driver->bank_address1,
+                    'bank_address2' => $driver->bank_address2,
+                    'bank_city' => $driver->bank_city,
+                    'bank_country' => $driver->bank_country,
                 ]
             ], 200);
 

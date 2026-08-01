@@ -60,6 +60,8 @@ class DriverProfileController extends Controller
                         'driver_code' => $driver->driver_code,
                         'phone' => $driver->phone,
                         'phone_code' => $driver->phone_code,
+                        'is_guest' => $driver->is_guest,
+                        'can_edit_profile' => $driver->can_edit_profile,
                         'address' => $driver->address,
                         'image' => $driver->image,
                         'status' => $driver->status,

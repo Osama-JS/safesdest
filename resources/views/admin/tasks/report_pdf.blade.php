@@ -394,22 +394,24 @@
                               <img src="{{ $imageSrc }}"
                                 style="max-width: 250px; max-height: 250px; border: 1px solid #eee; border-radius: 4px;">
                             </div>
-                                  @elseif(!empty($val) && (
-                                      in_array(($item['type'] ?? ''), ['file', 'image', 'file_expiration_date']) ||
-                                      preg_match('/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)$/i', $val)
-                                  ))
-                                    @php
-                                        $fileUrl = ltrim($val, '/');
-                                        if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
-                                            $fileUrl = 'storage/' . $fileUrl;
-                                        }
-                                    @endphp
-                                    <a href="{{ url($fileUrl) }}" target="_blank" style="color: #3498db; text-decoration: underline;">
-                                      {{ __('Download File') }}
-                                    </a>
-                                  @else
-                                    {{ $item['value'] ?? '-' }}
-                                  @endif
+                          @elseif(
+                              !empty($val) && (
+                                in_array(($item['type'] ?? ''), ['file', 'image', 'file_expiration_date']) ||
+                                preg_match('/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)$/i', $val)
+                              )
+                            )
+                            @php
+                              $fileUrl = ltrim($val, '/');
+                              if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
+                                $fileUrl = 'storage/' . $fileUrl;
+                              }
+                            @endphp
+                            <a href="{{ url($fileUrl) }}" target="_blank" style="color: #3498db; text-decoration: underline;">
+                              {{ __('Download File') }}
+                            </a>
+                          @else
+                            {{ $item['value'] ?? '-' }}
+                          @endif
                   </div>
                   </td>
                 @endforeach
@@ -475,15 +477,17 @@
                       <img src="{{ $imageSrc }}"
                         style="max-width: 250px; max-height: 250px; border: 1px solid #eee; border-radius: 4px;">
                     </div>
-                  @elseif(!empty($val) && (
-                      in_array(($item['type'] ?? ''), ['file', 'image', 'file_expiration_date']) ||
-                      preg_match('/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)$/i', $val)
-                  ))
+                  @elseif(
+                      !empty($val) && (
+                        in_array(($item['type'] ?? ''), ['file', 'image', 'file_expiration_date']) ||
+                        preg_match('/\.(pdf|doc|docx|xls|xlsx|zip|rar|txt)$/i', $val)
+                      )
+                    )
                     @php
-                        $fileUrl = ltrim($val, '/');
-                        if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
-                            $fileUrl = 'storage/' . $fileUrl;
-                        }
+                      $fileUrl = ltrim($val, '/');
+                      if (!str_starts_with($fileUrl, 'storage/') && !str_starts_with($fileUrl, 'http')) {
+                        $fileUrl = 'storage/' . $fileUrl;
+                      }
                     @endphp
                     <a href="{{ url($fileUrl) }}" target="_blank" style="color: #3498db; text-decoration: underline;">
                       {{ __('Download File') }}
@@ -568,8 +572,9 @@
         {{ __('The carrier is obligated to collect the amounts that were stipulated under the terms of the transport contract to be collected from the consignee for the account of the sender upon delivery. If the goods are delivered without collecting those amounts, the carrier is obligated to pay those amounts to the sender without prejudice to his right to recourse against the consignee.') }}
       </li>
       <li>
-        {{ __('The carrier shall be liable for the loss of documents attached to the transport document or contained therein or deposited with him, or for their incorrect use, provided that the compensation to be paid does not exceed considering that the goods are lost.') }}
+        {{ __('In the event that the driver or supplier delays unloading the shipment at the delivery location, refuses to perform the agreed service, or violates the instructions and the agreement stipulating payment within 15 days from the date of cargo delivery, legal action shall be taken against them without any prior notice. They shall bear full legal and financial responsibility for all resulting damages, losses, costs, expenses, and penalties. The Company also reserves its full right to seek compensation and to take any measures it deems appropriate to protect and preserve its rights.') }}
       </li>
+
     </ul>
 
     @if ($task->conditions)

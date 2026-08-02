@@ -791,7 +791,7 @@ $(function () {
       <table>
         <tr><td class="label">اسم البنك</td><td>${data.bankName || 'غير محدد'}</td></tr>
         <tr><td class="label">رقم الحساب</td><td>${data.accountNumber || 'غير محدد'}</td></tr>
-        <tr><td class="label">رقم الآيبان</td><td>${data.ibanNumber || 'غير محدد'}</td></tr>
+        <tr><td class="label">رقم الآيبان</td><td>${(data.ibanNumber || '').replace(/\s+/g, '') || 'غير محدد'}</td></tr>
       </table>
       `
           : data.paymentMethod === 'other'

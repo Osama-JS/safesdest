@@ -96,9 +96,13 @@ class TeamTasksReport {
       const $this = $(this);
       if (!$this.hasClass('select2-hidden-accessible')) {
         $this.select2({
-          theme: 'bootstrap-5',
           placeholder: $this.attr('multiple') ? 'Select one or more...' : 'Select...',
-          allowClear: true
+          allowClear: true,
+          language: {
+            noResults: function () {
+              return 'No results found';
+            }
+          }
         });
       }
     });

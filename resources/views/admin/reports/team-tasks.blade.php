@@ -324,7 +324,7 @@
                                 <!-- Created By -->
                                 <div class="col-md-4 mb-3">
                                     <label for="created_by" class="form-label">{{ __('Created By') }}</label>
-                                    <select class="form-select" id="created_by" name="created_by">
+                                    <select class="form-select filter-select" id="created_by" name="created_by">
                                         <option value="">{{ __('All') }}</option>
                                         <option value="customer">{{ __('Customer') }}</option>
                                         <option value="admin">{{ __('Admin') }}</option>

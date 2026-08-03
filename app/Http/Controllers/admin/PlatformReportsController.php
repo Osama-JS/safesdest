@@ -385,10 +385,8 @@ class PlatformReportsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'tasks' => $reportData['tasks'],
-                    'summary' => $reportData['summary']
-                ]
+                'data' => $reportData['tasks'],
+                'summary' => $reportData['summary']
             ]);
 
         } catch (\Exception $e) {

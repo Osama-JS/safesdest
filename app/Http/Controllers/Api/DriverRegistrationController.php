@@ -229,7 +229,7 @@ class DriverRegistrationController extends Controller
 
       // Custom validation for additional_fields content
       if (!empty($templateId) && $request->has('additional_fields')) {
-        $additionalFieldsValidation = $this->validateAdditionalFieldsContent($request, $templateId);
+        $additionalFieldsValidation = $this->validateAdditionalFieldsContent($request, $templateId, $existingDriverToUpdate);
         if ($additionalFieldsValidation !== true) {
           return $additionalFieldsValidation;
         }
@@ -449,7 +449,7 @@ class DriverRegistrationController extends Controller
   /**
    * Validate additional_fields content after JSON parsing
    */
-  private function validateAdditionalFieldsContent(Request $request, $templateId)
+  private function validateAdditionalFieldsContent(Request $request, $templateId, $existingDriver = null)
   {
     $additionalFieldsJson = $request->input('additional_fields');
     $additionalFieldsData = [];
@@ -473,9 +473,15 @@ class DriverRegistrationController extends Controller
     }
 
     $errors = [];
+    $modifiedData = false;
 
     foreach ($template->fields as $field) {
       $fieldName = $field->name;
+      
+      $existingFieldData = $existingDriver && isset($existingDriver->additional_data[$fieldName]) 
+                            ? $existingDriver->additional_data[$fieldName] 
+                            : null;
+      $alreadyHasFile = $existingFieldData && !empty($existingFieldData['value']);
 
       switch ($field->type) {
         case 'file_expiration_date':
@@ -484,7 +490,7 @@ class DriverRegistrationController extends Controller
           $fileKey3 = "additional_fields_{$fieldName}_file";
           $expKey = "{$fieldName}_expiration";
 
-          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3);
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3) || $alreadyHasFile;
           $expiration = $additionalFieldsData[$expKey] ?? $request->input($expKey);
 
           if ($field->required) {
@@ -495,13 +501,32 @@ class DriverRegistrationController extends Controller
               $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label is required.', ['label' => $field->label])];
             }
           } else {
-            if ($hasFile && empty($expiration)) {
+            if ($hasFile && empty($expiration) && !$alreadyHasFile) {
+              // Only demand expiration if they are actively uploading a file now, or strictly require it anyway
               $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label is required.', ['label' => $field->label])];
             }
           }
 
-          if (!empty($expiration) && !strtotime($expiration)) {
-            $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label must be a valid date.', ['label' => $field->label])];
+          if (!empty($expiration)) {
+              // Clean up AI output artifacts like trailing dots or letters
+              $cleanedExp = preg_replace('/[^\d\-\/\.]/', '', $expiration);
+              $cleanedExp = trim($cleanedExp, " .\t\n\r");
+              $parsedTime = strtotime($cleanedExp);
+              
+              if ($parsedTime === false) {
+                  try {
+                      $parsedTime = \Carbon\Carbon::parse($cleanedExp)->timestamp;
+                  } catch (\Exception $e) {
+                      $parsedTime = false;
+                  }
+              }
+
+              if ($parsedTime === false) {
+                  $errors["additional_fields.{$expKey}"] = [__('The expiration date for :label must be a valid date.', ['label' => $field->label])];
+              } else {
+                  $additionalFieldsData[$expKey] = date('Y-m-d', $parsedTime);
+                  $modifiedData = true;
+              }
           }
           break;
 
@@ -511,7 +536,7 @@ class DriverRegistrationController extends Controller
           $fileKey3 = "additional_fields_{$fieldName}_file";
           $textKey = "{$fieldName}_text";
 
-          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3);
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3) || $alreadyHasFile;
           $text = $additionalFieldsData[$textKey] ?? $request->input($textKey);
 
           if ($field->required) {
@@ -522,7 +547,7 @@ class DriverRegistrationController extends Controller
               $errors["additional_fields.{$textKey}"] = [__('The text field for :label is required.', ['label' => $field->label])];
             }
           } else {
-            if ($hasFile && empty($text)) {
+            if ($hasFile && empty($text) && !$alreadyHasFile) {
               $errors["additional_fields.{$textKey}"] = [__('The text field for :label is required.', ['label' => $field->label])];
             }
           }
@@ -534,7 +559,9 @@ class DriverRegistrationController extends Controller
           $fileKey2 = $fieldName;
           $fileKey3 = "additional_fields_{$fieldName}";
           
-          if ($field->required && !$request->hasFile($fileKey1) && !$request->hasFile($fileKey2) && !$request->hasFile($fileKey3)) {
+          $hasFile = $request->hasFile($fileKey1) || $request->hasFile($fileKey2) || $request->hasFile($fileKey3) || $alreadyHasFile;
+          
+          if ($field->required && !$hasFile) {
             $errors["additional_fields.{$fieldName}"] = [__('The :label file is required.', ['label' => $field->label])];
           }
           break;
@@ -560,6 +587,13 @@ class DriverRegistrationController extends Controller
           }
           break;
       }
+    }
+
+    // Write back modified dates to the request so buildStructuredAdditionalFieldsFromApi uses them
+    if ($modifiedData && is_string($additionalFieldsJson)) {
+        $request->merge(['additional_fields' => json_encode($additionalFieldsData)]);
+    } elseif ($modifiedData && is_array($additionalFieldsJson)) {
+        $request->merge(['additional_fields' => $additionalFieldsData]);
     }
 
     if (!empty($errors)) {

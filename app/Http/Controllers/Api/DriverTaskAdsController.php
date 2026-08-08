@@ -40,9 +40,11 @@ class DriverTaskAdsController extends Controller
             // Count available ads (running status, vehicle size match, no driver offers)
             // Note: Task ads with status 'running' are available for offers
             $availableAds = Task_Ad::where('status', 'running')
-                ->whereHas('task', function ($query) use ($vehicle_size_id) {
-                    $query->where('vehicle_size_id', $vehicle_size_id)
-                          ->whereIn('status', ['advertised']); // Tasks that can have ads
+                ->whereHas('task', function ($query) use ($vehicle_size_id, $driver) {
+                    if (!$driver->is_guest) {
+                        $query->where('vehicle_size_id', $vehicle_size_id);
+                    }
+                    $query->whereIn('status', ['advertised']); // Tasks that can have ads
                 })
                 ->count();
             Log::alert('Driver ID: ' . $driver_id . ', Vehicle Size ID: ' . $vehicle_size_id);
@@ -150,8 +152,10 @@ class DriverTaskAdsController extends Controller
 
             // Build query
             $query = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
-                ->whereHas('task', function ($q) use ($size_id) {
-                    $q->where('vehicle_size_id', $size_id);
+                ->whereHas('task', function ($q) use ($size_id, $driver) {
+                    if (!$driver->is_guest) {
+                        $q->where('vehicle_size_id', $size_id);
+                    }
                 });
 
             // Apply status filter
@@ -281,7 +285,9 @@ class DriverTaskAdsController extends Controller
 
             $ad = Task_Ad::with(['task.customer', 'task.user', 'task.pickup', 'task.delivery'])
                          ->whereHas('task', function($q) use ($driver) {
-                             $q->where('vehicle_size_id', $driver->vehicle_size_id);
+                             if (!$driver->is_guest) {
+                                 $q->where('vehicle_size_id', $driver->vehicle_size_id);
+                             }
                          })
                          ->findOrFail($id);
 
@@ -327,6 +333,14 @@ class DriverTaskAdsController extends Controller
             // Get authenticated driver from Sanctum
             $driver = $request->user();
             $driver_id = $driver->id;
+
+            if ($driver->is_guest) {
+                return response()->json([
+                    'success' => false,
+                    'is_guest' => true,
+                    'message' => 'Please complete your profile first.'
+                ], 403);
+            }
 
             // Validation
             $validator = Validator::make($request->all(), [

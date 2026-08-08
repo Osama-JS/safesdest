@@ -29,8 +29,11 @@ class DriverAvailableTasksController extends Controller
             $query = Task::query()
                 ->with(['customer', 'pickup', 'delivery', 'vehicle_size'])
                 ->where('status', 'in_progress')
-                ->whereNull('driver_id')
-                ->where('vehicle_size_id', $driver->vehicle_size_id);
+                ->whereNull('driver_id');
+            
+            if (!$driver->is_guest) {
+                $query->where('vehicle_size_id', $driver->vehicle_size_id);
+            }
                 // ->where('is_broadcast', true);
 
             // Important: We need to select all tasks columns first
@@ -113,11 +116,15 @@ class DriverAvailableTasksController extends Controller
     {
         try {
             $driver = $request->user();
-            $task = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'formTemplate'])
+            $query = Task::with(['customer', 'pickup', 'delivery', 'vehicle_size', 'formTemplate'])
                 ->where('status', 'in_progress')
-                ->whereNull('driver_id')
-                ->where('vehicle_size_id', $driver->vehicle_size_id)
-                ->findOrFail($id);
+                ->whereNull('driver_id');
+            
+            if (!$driver->is_guest) {
+                $query->where('vehicle_size_id', $driver->vehicle_size_id);
+            }
+                
+            $task = $query->findOrFail($id);
 
             $claim = TaskClaimRequest::where('driver_id', $driver->id)
                 ->where('task_id', $task->id)
@@ -182,6 +189,14 @@ class DriverAvailableTasksController extends Controller
                     'success' => false,
                     'errors' => $validator->errors()
                 ], 422);
+            }
+
+            if ($driver->is_guest) {
+                return response()->json([
+                    'success' => false,
+                    'is_guest' => true,
+                    'message' => 'Please complete your profile first.'
+                ], 403);
             }
 
             $task = Task::where('status', 'in_progress')

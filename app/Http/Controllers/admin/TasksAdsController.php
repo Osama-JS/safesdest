@@ -338,7 +338,7 @@ class TasksAdsController extends Controller
             $done = $find->update([
               'lowest_price' => $req->min_price,
               'highest_price' => $req->max_price,
-              'description' => $req->note_price,
+              'description' => $req->note_price ?? '',
               'included' => $req->included ?? false,
             ]);
 

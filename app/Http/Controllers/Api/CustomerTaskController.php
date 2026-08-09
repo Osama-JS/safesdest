@@ -971,7 +971,7 @@ class CustomerTaskController extends Controller
                 $ad = [
                     'highest_price' => $req->max_price,
                     'lowest_price' => $req->min_price,
-                    'description' => $req->note_price,
+                    'description' => $req->note_price ?? '',
                     'included' => $req->included ?? true,
                     'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
                     'service_commission' => $data['service_tax_commission'] ?? 0,
@@ -1275,7 +1275,7 @@ class CustomerTaskController extends Controller
                 $ad = [
                     'highest_price' => $req->max_price,
                     'lowest_price' => $req->min_price,
-                    'description' => $req->note_price,
+                    'description' => $req->note_price ?? '',
                     'included' => $req->included ?? false,
                     'service_commission_type' => ($data['service_commission_type'] === 'percentage' ? 0 : 1) ?? 0,
                     'service_commission' => $data['service_tax_commission'] ?? 0,

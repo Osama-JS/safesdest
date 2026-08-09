@@ -800,7 +800,7 @@ class TasksController extends Controller
 
 
             if (isset($data['service_commission']) && $data['service_commission'] !== '') {
-                if ($data['service_commission'] > $task['total_price']) {
+                if ($taskData['method'] != 0 && $data['service_commission'] > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
                 }

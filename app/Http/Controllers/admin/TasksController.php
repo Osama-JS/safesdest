@@ -1035,7 +1035,7 @@ class TasksController extends Controller
             }
 
             if (isset($data['service_commission']) && $data['service_commission'] !== '') {
-                if ($data['service_commission'] > $task['total_price']) {
+                if ($taskData['method'] != 0 && $data['service_commission'] > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
                 }
@@ -1047,7 +1047,7 @@ class TasksController extends Controller
 
 
             if ($req->filled('manual_commission')) {
-                if ($req->manual_commission > $task['total_price']) {
+                if ($taskData['method'] != 0 && $req->manual_commission > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
                 }
@@ -1062,7 +1062,7 @@ class TasksController extends Controller
                 $sumDetails = collect($details)->sum(function ($item) {
                     return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
                 });
-                if ($sumDetails > $task['total_price']) {
+                if ($taskData['method'] != 0 && $sumDetails > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
                 }
@@ -1498,7 +1498,7 @@ class TasksController extends Controller
             }
 
             if (isset($data['service_commission']) && $data['service_commission'] !== '') {
-                if ($data['service_commission'] > $task['total_price']) {
+                if ($taskData['method'] != 0 && $data['service_commission'] > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
                 }
@@ -1508,7 +1508,7 @@ class TasksController extends Controller
             }
 
             if ($req->filled('manual_commission')) {
-                if ($req->manual_commission > $task['total_price']) {
+                if ($taskData['method'] != 0 && $req->manual_commission > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Commission cannot be greater than total price')]);
                 }
@@ -1524,7 +1524,7 @@ class TasksController extends Controller
                     ->sum(function ($item) {
                         return is_numeric($item['amount'] ?? null) ? $item['amount'] : 0;
                     });
-                if ($sumDetails > $task['total_price']) {
+                if ($taskData['method'] != 0 && $sumDetails > $task['total_price']) {
                     DB::rollBack();
                     return response()->json(['status' => 2, 'error' => __('Pricing details total cannot be greater than total price')]);
                 }

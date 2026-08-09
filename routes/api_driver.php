@@ -117,6 +117,22 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/task-ads/{id}', [\App\Http\Controllers\Api\DriverTaskAdsController::class, 'show'])
         ->name('api.driver.task-ads.show');
 
+    // Location, status and FCM token routes (allowed for all authenticated drivers including guests)
+    Route::prefix('location')->group(function () {
+        Route::post('/', [\App\Http\Controllers\Api\DriverLocationController::class, 'updateLocation'])
+            ->middleware('throttle:location')
+            ->name('api.driver.location.update');
+
+        Route::get('/status', [\App\Http\Controllers\Api\DriverLocationController::class, 'getCurrentStatus'])
+            ->name('api.driver.location.status');
+    });
+
+    Route::post('/status', [\App\Http\Controllers\Api\DriverLocationController::class, 'updateStatus'])
+        ->name('api.driver.status.update');
+
+    Route::post('/fcm-token', [\App\Http\Controllers\Api\DriverLocationController::class, 'updateFcmToken'])
+        ->name('api.driver.fcm-token');
+
     // Profile completion required for below routes
     Route::middleware('driver.profile.completed')->group(function () {
         
@@ -223,21 +239,7 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::post('/reject-task', [DriverTaskController::class, 'rejectTask'])
         ->name('api.driver.reject-task');
 
-    // Location and status routes
-    Route::prefix('location')->group(function () {
-        Route::post('/', [DriverLocationController::class, 'updateLocation'])
-            ->middleware('throttle:location')
-            ->name('api.driver.location.update');
-
-        Route::get('/status', [DriverLocationController::class, 'getCurrentStatus'])
-            ->name('api.driver.location.status');
-    });
-
-    Route::post('/status', [DriverLocationController::class, 'updateStatus'])
-        ->name('api.driver.status.update');
-
-    Route::post('/fcm-token', [DriverLocationController::class, 'updateFcmToken'])
-        ->name('api.driver.fcm-token');
+    // Location and status routes moved outside middleware to allow guest drivers to go online
 
     // Wallet and financial routes
     Route::prefix('wallet')->group(function () {

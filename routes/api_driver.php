@@ -109,6 +109,14 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/tasks/available/{id}', [\App\Http\Controllers\Api\DriverAvailableTasksController::class, 'show'])
         ->name('api.driver.tasks.available.show');
 
+    // Task Ads can be viewed by anyone including guests
+    Route::get('/task-ads/stats', [\App\Http\Controllers\Api\DriverTaskAdsController::class, 'getStats'])
+        ->name('api.driver.task-ads.stats');
+    Route::get('/task-ads', [\App\Http\Controllers\Api\DriverTaskAdsController::class, 'index'])
+        ->name('api.driver.task-ads.index');
+    Route::get('/task-ads/{id}', [\App\Http\Controllers\Api\DriverTaskAdsController::class, 'show'])
+        ->name('api.driver.task-ads.show');
+
     // Profile completion required for below routes
     Route::middleware('driver.profile.completed')->group(function () {
         
@@ -171,16 +179,9 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
             ->name('api.driver.tasks.cancel');
     });
 
-    // Task Ads routes
+    // Task Ads routes (actions requiring completed profile)
     Route::prefix('task-ads')->group(function () {
-        Route::get('/stats', [DriverTaskAdsController::class, 'getStats'])
-            ->name('api.driver.task-ads.stats');
-
-        Route::get('/', [DriverTaskAdsController::class, 'index'])
-            ->name('api.driver.task-ads.index');
-
-        Route::get('/{id}', [DriverTaskAdsController::class, 'show'])
-            ->name('api.driver.task-ads.show');
+        // stats, index, and show have been moved outside this middleware to allow guest access
 
         Route::get('/{id}/offers', [DriverTaskAdsController::class, 'getAdOffers'])
             ->name('api.driver.task-ads.offers');

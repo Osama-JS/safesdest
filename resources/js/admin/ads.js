@@ -129,7 +129,12 @@ $(function () {
                 <div class="card-body d-flex flex-column">
                   <div class="d-flex align-items-center mb-3">
                     ${avatarHtml}
-                    <h5 class="card-title">${ad.customer.name}</h5>
+                    <h5 class="card-title mb-0">${ad.customer.name}</h5>
+                  </div>
+
+                  <div class="mb-3 d-flex gap-2">
+                    <span class="badge bg-label-primary"><i class="ti ti-hash me-1"></i>Task #${ad.task_id}</span>
+                    <span class="badge bg-label-info"><i class="ti ti-speakerphone me-1"></i>Ad #${ad.id}</span>
                   </div>
 
                   <div class="address-info">

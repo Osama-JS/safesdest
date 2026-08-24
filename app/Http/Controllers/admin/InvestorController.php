@@ -463,6 +463,7 @@ class InvestorController extends Controller
 
       $tasks = Task::whereIn('id', $request->task_ids)->get();
       $totalInvested = 0;
+      $assignedTaskIds = [];
 
       foreach ($tasks as $task) {
         if ($task->investor_id)
@@ -490,6 +491,7 @@ class InvestorController extends Controller
         ]);
 
         $totalInvested += $taskPrice;
+        $assignedTaskIds[] = $task->id;
 
         // 3. إذا كان مضارب مهام، نحتسب عمولته فوراً
         if ($contract->contract_type === 'task_investment') {
@@ -514,6 +516,19 @@ class InvestorController extends Controller
       }
 
       DB::commit();
+
+      // إرسال إشعار للمستثمر بالمهام المسندة إليه
+      if ($totalInvested > 0) {
+        $currentWalletBalance = (float) ($investor->investorWallet?->balance ?? 0);
+        app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
+          $investor,
+          $totalInvested,
+          $assignedTaskIds,
+          $currentWalletBalance,
+          'إسناد مهام استثمارية من قبل الإدارة'
+        );
+      }
+
       return response()->json(['status' => 1, 'success' => __('Tasks linked successfully')]);
     } catch (Exception $e) {
       DB::rollBack();

@@ -931,6 +931,7 @@ class WalletsController extends Controller
                 Wallet_Transaction::create($data);
                 
                 // --- Investment Settlement Engine ---
+                $settledInvestorsData = [];
                 if ($req->type === 'credit' && $req->has('settlement_tasks') && is_array($req->settlement_tasks)) {
                     $creditAmount = clone $req;
                     $remainingCredit = $creditAmount->amount;
@@ -981,6 +982,25 @@ class WalletsController extends Controller
                                     'performed_by' => auth()->id(),
                                     'balance_after' => $newBalance
                                 ]);
+
+                                $investorUserId = $debitTx->task->investor_id;
+                                if (!isset($settledInvestorsData[$investorUserId])) {
+                                    $investorUser = \App\Models\User::find($investorUserId);
+                                    if ($investorUser) {
+                                        $settledInvestorsData[$investorUserId] = [
+                                            'user' => $investorUser,
+                                            'total_amount' => 0,
+                                            'task_ids' => [],
+                                            'new_balance' => $newBalance,
+                                        ];
+                                    }
+                                }
+
+                                if (isset($settledInvestorsData[$investorUserId])) {
+                                    $settledInvestorsData[$investorUserId]['total_amount'] += $amountToRefund;
+                                    $settledInvestorsData[$investorUserId]['task_ids'][] = $debitTx->task->id;
+                                    $settledInvestorsData[$investorUserId]['new_balance'] = $newBalance;
+                                }
                             }
                         }
                     }
@@ -996,6 +1016,19 @@ class WalletsController extends Controller
 
             DB::commit();
 
+            // Send aggregated settlement emails to investors
+            if (!empty($settledInvestorsData)) {
+                foreach ($settledInvestorsData as $settlement) {
+                    app(\App\Services\InvestorNotificationService::class)->notifySettlement(
+                        $settlement['user'],
+                        $settlement['total_amount'],
+                        $settlement['task_ids'],
+                        $settlement['new_balance'],
+                        'customer_payment'
+                    );
+                }
+            }
+
             // Notify Driver if wallet owner is driver
             if ($wallet->user_type === 'driver' && $wallet->driver_id) {
                 $typeText = $req->type === 'credit' ? 'إيداع' : 'خصم';
@@ -1010,10 +1043,10 @@ class WalletsController extends Controller
                     'wallet_adjustment'
                 );
             }
-return response()->json([
-    'status'  => 1,
-    'success' => __('Transaction saved successfully'),
-]);
+            return response()->json([
+                'status'  => 1,
+                'success' => __('Transaction saved successfully'),
+            ]);
 
         } catch (\Exception $ex) {
             DB::rollBack();

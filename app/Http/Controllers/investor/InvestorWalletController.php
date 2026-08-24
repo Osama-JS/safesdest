@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\investor;
 
 use App\Http\Controllers\Controller;
+use App\Models\InvestorCapitalWithdrawal;
 use App\Models\InvestorWalletTransaction;
 use App\Models\UserWalletTransaction;
 use App\Models\Payments;
@@ -39,7 +40,11 @@ class InvestorWalletController extends Controller
                 ->latest()->paginate(20)
             : InvestorWalletTransaction::where('id', 0)->paginate(20);
 
-        return view('investor.investment-wallet.index', compact('investor', 'investorWallet', 'transactions'));
+        $withdrawalRequests = InvestorCapitalWithdrawal::where('user_id', $investor->id)
+            ->latest()
+            ->paginate(10, ['*'], 'withdrawals_page');
+
+        return view('investor.investment-wallet.index', compact('investor', 'investorWallet', 'transactions', 'withdrawalRequests'));
     }
 
     /**
@@ -348,5 +353,51 @@ class InvestorWalletController extends Controller
         $transaction->delete();
 
         return back()->with('success', __('Duplicate commission deleted successfully.'));
+    }
+
+    /**
+     * تقديم طلب سحب من رأس مال محفظة الاستثمار
+     */
+    public function requestCapitalWithdrawal(Request $request)
+    {
+        $investor = auth()->user();
+        $investorWallet = $investor->investorWallet;
+
+        if (!$investorWallet) {
+            return back()->with('error', __('المحفظة غير موجودة.'));
+        }
+
+        $availableBalance = (float) $investorWallet->balance;
+
+        $request->validate([
+            'amount'         => ['required', 'numeric', 'min:1', "max:{$availableBalance}"],
+            'agreed_terms'   => ['required', 'accepted'],
+            'investor_notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'amount.required'     => 'يرجى إدخال المبلغ المراد سحبه من رأس المال.',
+            'amount.numeric'      => 'يجب أن يكون المبلغ قيمة رقمية صحيحة.',
+            'amount.min'          => 'الحد الأدنى لمبلغ السحب هو 1 ريال.',
+            'amount.max'          => 'المبلغ المطلوب يتجاوز الرصيد المتاح حالياً في محفظة الاستثمار (' . number_format($availableBalance, 2) . ' ر.س).',
+            'agreed_terms.required' => 'يجب الإقرار بالموافقة على أن استرجاع رأس المال يتم بعد 3 أشهر من تاريخ الطلب.',
+            'agreed_terms.accepted' => 'يجب الإقرار بالموافقة على أن استرجاع رأس المال يتم بعد 3 أشهر من تاريخ الطلب.',
+        ]);
+
+        try {
+            $withdrawal = InvestorCapitalWithdrawal::create([
+                'user_id'                     => $investor->id,
+                'investor_wallet_id'          => $investorWallet->id,
+                'amount'                      => $request->amount,
+                'status'                      => 'pending',
+                'agreed_terms'                => true,
+                'investor_notes'              => $request->investor_notes,
+                'request_date'                => now(),
+                'scheduled_disbursement_date' => now()->addMonths(3),
+            ]);
+
+            return back()->with('success', 'تم تقديم طلب سحب رأس المال بمبلغ ' . number_format($withdrawal->amount, 2) . ' ر.س بنجاح. سيتم مراجعة الطلب وجدولة موعد صرفه بعد 3 أشهر (' . $withdrawal->scheduled_disbursement_date->format('Y-m-d') . ').');
+        } catch (\Exception $e) {
+            Log::error('Capital Withdrawal Request Error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
+        }
     }
 }

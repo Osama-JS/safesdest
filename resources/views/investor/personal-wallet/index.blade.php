@@ -112,9 +112,10 @@
     @endif
 
     {{-- بطاقات الإحصائيات --}}
+    {{-- بطاقات الإحصائيات --}}
     <div class="row g-4 mb-4">
         {{-- الرصيد القابل للسحب --}}
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card h-100" style="border-top: 3px solid #28a745; box-shadow: 0 4px 18px rgba(40,167,69,0.10);">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
@@ -139,7 +140,7 @@
         </div>
 
         {{-- {{ __('Total Earned Commissions') }} --}}
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-primary h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">
@@ -163,8 +164,26 @@
             </div>
         </div>
 
+        {{-- إجمالي السحوبات --}}
+        <div class="col-sm-6 col-xl-3">
+            <div class="card card-border-shadow-danger h-100" style="border-top: 3px solid #ea5455;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2 pb-1">
+                        <div class="avatar me-2">
+                            <span class="avatar-initial rounded bg-label-danger"><i class="ti ti-arrow-up-right ti-md"></i></span>
+                        </div>
+                        <h4 class="ms-1 mb-0 text-danger">{{ number_format($personalWallet?->debit ?? 0, 2) }}</h4>
+                    </div>
+                    <p class="mb-1 fw-medium">{{ __('Total Withdrawals / Reinvestments') }}</p>
+                    <p class="mb-0 small text-muted">
+                        <span class="text-danger me-1">{{ __('SAR') }}</span> {{ __('Total withdrawn & reinvested') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
         {{-- {{ __('Total operations') }} --}}
-        <div class="col-sm-6 col-xl-4">
+        <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-info h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2 pb-1">

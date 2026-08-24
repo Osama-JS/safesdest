@@ -3252,6 +3252,7 @@ class TasksController extends Controller
             }
 
             // ── 5. المستثمر: تسجيل عمليات خصم/إيداع عكسية للمحفظتين ──────────────
+            $investorRefundData = null;
             if ($task->investor_id) {
                 $investorWallet = \App\Models\InvestorWallet::where('user_id', $task->investor_id)->first();
                 if ($investorWallet) {
@@ -3275,6 +3276,15 @@ class TasksController extends Controller
                             'performed_by' => Auth::id(),
                             'balance_after' => $newBalance
                         ]);
+
+                        if ($investorWallet->user) {
+                            $investorRefundData = [
+                                'user' => $investorWallet->user,
+                                'amount' => (float) $task->total_price,
+                                'task_id' => $task->id,
+                                'new_balance' => $newBalance,
+                            ];
+                        }
                     } else {
                         // الحالة الثانية: العميل كان قد سدد بالفعل ورأس المال رجع للمستثمر مسبقاً
                         // لا يتم عمل أي إجراء على محفظة الاستثمار (الرأس مال يظل مع المستثمر بأمان لأن التسوية تمت)
@@ -3367,6 +3377,17 @@ class TasksController extends Controller
 
 
             DB::commit();
+
+            // إرسال إشعار إرجاع رأس المال للمستثمر
+            if (!empty($investorRefundData)) {
+                app(\App\Services\InvestorNotificationService::class)->notifyRefund(
+                    $investorRefundData['user'],
+                    $investorRefundData['amount'],
+                    $investorRefundData['task_id'],
+                    $investorRefundData['new_balance'],
+                    'إلغاء واسترداد المهمة'
+                );
+            }
 
             return response()->json(['status' => 1, 'success' => __('Task refunded successfully')]);
         } catch (Exception $e) {

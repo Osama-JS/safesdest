@@ -1,4 +1,4 @@
-﻿@extends('layouts/layoutMaster')
+@extends('layouts/layoutMaster')
 
 @section('title', __('Investment Wallet - :name', ['name' => $user->name]))
 
@@ -181,6 +181,191 @@
                     }
                 });
             });
+
+            // Toggle Credit / Debit in Transaction Modal
+            $('input[name="type"]').on('change', function() {
+                if ($(this).val() === 'debit') {
+                    $('#creditAlert').addClass('d-none');
+                    $('#debitAlert').removeClass('d-none');
+                    $('#adminPasswordGroup').removeClass('d-none');
+                    $('#admin_password').prop('required', true);
+                    $('#modalSubmitBtn').removeClass('btn-primary').addClass('btn-danger').text('تأكيد خصم المبلغ');
+                } else {
+                    $('#creditAlert').removeClass('d-none');
+                    $('#debitAlert').addClass('d-none');
+                    $('#adminPasswordGroup').addClass('d-none');
+                    $('#admin_password').prop('required', false).val('');
+                    $('#modalSubmitBtn').removeClass('btn-danger').addClass('btn-primary').text('حفظ المعاملة');
+                }
+            });
+
+            // Capital Withdrawal Actions
+            window.approveCapitalWithdrawal = function(id, amount) {
+                Swal.fire({
+                    title: 'الموافقة على طلب سحب رأس المال',
+                    text: 'هل أنت متأكد من الموافقة على طلب سحب رأس المال بمبلغ ' + amount + ' ر.س؟ سيتم جدولة موعد الصرف بعد 3 أشهر من تاريخ الطلب.',
+                    icon: 'question',
+                    input: 'textarea',
+                    inputPlaceholder: 'ملاحظات إضافية للمستثمر (اختياري)...',
+                    showCancelButton: true,
+                    confirmButtonText: 'نعم، موافقة وجدولة الصرف',
+                    cancelButtonText: 'إلغاء',
+                    customClass: {
+                        confirmButton: 'btn btn-primary me-2',
+                        cancelButton: 'btn btn-label-secondary'
+                    },
+                    buttonsStyling: false,
+                    showLoaderOnConfirm: true,
+                    preConfirm: (notes) => {
+                        return $.ajax({
+                            url: baseUrl + 'admin/investors/invest-wallet/withdraw-request/approve/' + id,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                admin_notes: notes
+                            }
+                        }).then(response => {
+                            if (response.status !== 1) {
+                                throw new Error(response.error || 'حدث خطأ أثناء الموافقة');
+                            }
+                            return response;
+                        }).catch(error => {
+                            Swal.showValidationMessage(error.message || 'حدث خطأ بالاتصال');
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تمت الموافقة بنجاح!',
+                            text: result.value.success,
+                            customClass: { confirmButton: 'btn btn-success' }
+                        }).then(() => location.reload());
+                    }
+                });
+            };
+
+            window.rejectCapitalWithdrawal = function(id) {
+                Swal.fire({
+                    title: 'رفض طلب سحب رأس المال',
+                    text: 'يرجى كتابة سبب الرفض ليتم إرساله للمستثمر:',
+                    icon: 'warning',
+                    input: 'textarea',
+                    inputPlaceholder: 'سبب الرفض (إلزامي)...',
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'سبب الرفض مطلوب!';
+                        }
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'تأكيد الرفض',
+                    cancelButtonText: 'إلغاء',
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-2',
+                        cancelButton: 'btn btn-label-secondary'
+                    },
+                    buttonsStyling: false,
+                    showLoaderOnConfirm: true,
+                    preConfirm: (notes) => {
+                        return $.ajax({
+                            url: baseUrl + 'admin/investors/invest-wallet/withdraw-request/reject/' + id,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                admin_notes: notes
+                            }
+                        }).then(response => {
+                            if (response.status !== 1) {
+                                throw new Error(response.error || 'حدث خطأ أثناء الرفض');
+                            }
+                            return response;
+                        }).catch(error => {
+                            Swal.showValidationMessage(error.message || 'حدث خطأ بالاتصال');
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم الرفض!',
+                            text: result.value.success,
+                            customClass: { confirmButton: 'btn btn-success' }
+                        }).then(() => location.reload());
+                    }
+                });
+            };
+
+            window.executeCapitalWithdrawal = function(id, amount) {
+                Swal.fire({
+                    title: '{{ __("Confirm Capital Return Disbursement") }}',
+                    html: `
+                        <div class="text-start mb-3">
+                            <p class="mb-2">${'{{ __("Are you sure you want to disburse and return :amount SAR to the investor? This amount will be debited immediately from the investment wallet.", ["amount" => "###AMOUNT###"]) }}'.replace('###AMOUNT###', '<strong class="text-danger">' + amount + '</strong>')}</p>
+                        </div>
+                        <div class="mb-3 text-start">
+                            <label class="form-label text-danger fw-bold mb-1" for="swal_admin_password">
+                                <i class="ti ti-lock me-1"></i>{{ __("Admin Password to Confirm Disbursement *") }}
+                            </label>
+                            <input type="password" id="swal_admin_password" class="form-control border-danger" placeholder="{{ __('Enter your password to confirm debit') }}" autocomplete="new-password">
+                        </div>
+                        <div class="mb-2 text-start">
+                            <label class="form-label fw-semibold mb-1" for="swal_admin_notes">
+                                {{ __("Transfer Reference / Notes (Optional)") }}
+                            </label>
+                            <input type="text" id="swal_admin_notes" class="form-control" placeholder="{{ __('Transfer Reference / Notes (Optional)') }}">
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '{{ __("Confirm and Disburse") }}',
+                    cancelButtonText: '{{ __("Cancel") }}',
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-2',
+                        cancelButton: 'btn btn-label-secondary'
+                    },
+                    buttonsStyling: false,
+                    showLoaderOnConfirm: true,
+                    didOpen: () => {
+                        const pwdInput = document.getElementById('swal_admin_password');
+                        if (pwdInput) pwdInput.focus();
+                    },
+                    preConfirm: () => {
+                        const password = document.getElementById('swal_admin_password').value;
+                        const notes = document.getElementById('swal_admin_notes').value;
+
+                        if (!password || !password.trim()) {
+                            Swal.showValidationMessage('{{ __("Admin password is required") }}');
+                            return false;
+                        }
+
+                        return $.ajax({
+                            url: baseUrl + 'admin/investors/invest-wallet/withdraw-request/execute/' + id,
+                            type: 'POST',
+                            data: {
+                                _token: $('meta[name="csrf-token"]').attr('content'),
+                                admin_password: password,
+                                admin_notes: notes
+                            }
+                        }).then(response => {
+                            if (response.status !== 1) {
+                                throw new Error(response.error || '{{ __("Failed to process request") }}');
+                            }
+                            return response;
+                        }).catch(error => {
+                            Swal.showValidationMessage(error.message || '{{ __("Failed to process request") }}');
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("Done!") }}',
+                            text: result.value.success,
+                            customClass: { confirmButton: 'btn btn-success' }
+                        }).then(() => location.reload());
+                    }
+                });
+            };
         }); // end window.load
     </script>
 @endsection
@@ -211,6 +396,58 @@
             </div>
         </div>
     </div>
+
+    {{-- التنبيهات البارزة لمواعيد صرف طلبات سحب رأس المال --}}
+    @if(isset($dueDisbursementRequests) && $dueDisbursementRequests->isNotEmpty())
+        @foreach($dueDisbursementRequests as $dueReq)
+        <div class="alert alert-danger d-flex align-items-center mb-4 shadow-sm border-start border-4 border-danger" role="alert">
+            <span class="alert-icon text-danger me-3 fs-3">
+                <i class="ti ti-bell-ringing"></i>
+            </span>
+            <div class="flex-grow-1">
+                <h5 class="alert-heading fw-bold mb-1 text-danger">
+                    <i class="ti ti-alert-circle me-1"></i>{{ __('Alert: Capital Return Disbursement is Due!') }}
+                </h5>
+                <p class="mb-0">
+                    {{ __('There is a capital withdrawal request of :amount SAR for investor :name, scheduled for disbursement on :date (the 3-month period has ended).', [
+                        'amount' => number_format($dueReq->amount, 2),
+                        'name'   => $user->name,
+                        'date'   => $dueReq->scheduled_disbursement_date->format('Y-m-d')
+                    ]) }}
+                </p>
+            </div>
+            <button type="button" class="btn btn-danger btn-sm shadow ms-3 px-3 py-2" onclick="executeCapitalWithdrawal({{ $dueReq->id }}, '{{ number_format($dueReq->amount, 2) }}')">
+                <i class="ti ti-check me-1"></i>{{ __('Execute Disbursement Now') }}
+            </button>
+        </div>
+        @endforeach
+    @endif
+
+    @if(isset($pendingDisbursementRequests) && $pendingDisbursementRequests->isNotEmpty())
+        @foreach($pendingDisbursementRequests as $pendReq)
+        <div class="alert alert-warning d-flex align-items-center mb-4 shadow-sm border-start border-4 border-warning" role="alert">
+            <span class="alert-icon text-warning me-3 fs-3">
+                <i class="ti ti-calendar-time"></i>
+            </span>
+            <div class="flex-grow-1">
+                <h6 class="alert-heading fw-bold mb-1 text-warning">
+                    <i class="ti ti-clock me-1"></i>{{ __('Approved Capital Withdrawal Request (Scheduled for Disbursement):') }}
+                </h6>
+                <p class="mb-0 small">
+                    {{ __('Capital withdrawal request #:id of :amount SAR has been approved. Scheduled disbursement date: :date (Remaining: :remaining).', [
+                        'id'        => $pendReq->id,
+                        'amount'    => number_format($pendReq->amount, 2),
+                        'date'      => $pendReq->scheduled_disbursement_date->format('Y-m-d'),
+                        'remaining' => $pendReq->remaining_duration_human
+                    ]) }}
+                </p>
+            </div>
+            <button type="button" class="btn btn-outline-warning btn-sm ms-3" onclick="executeCapitalWithdrawal({{ $pendReq->id }}, '{{ number_format($pendReq->amount, 2) }}')">
+                {{ __('Early Disbursement') }}
+            </button>
+        </div>
+        @endforeach
+    @endif
 
     <!-- Filters -->
     <div class="row mb-4">
@@ -357,6 +594,91 @@
         </div>
     </div>
 
+    {{-- قسم طلبات سحب رأس المال من محفظة الاستثمار --}}
+    @if(isset($capitalWithdrawalRequests) && $capitalWithdrawalRequests->isNotEmpty())
+    <div class="card border-0 shadow-sm mt-4 mb-4">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center py-3 bg-label-secondary">
+            <h5 class="card-title mb-0 fw-bold text-heading">
+                <i class="ti ti-arrow-up-right text-danger me-2"></i>{{ __('Capital Withdrawal Requests from Wallet') }}
+            </h5>
+            <span class="badge bg-label-danger fs-6">{{ $capitalWithdrawalRequests->count() }} {{ __('registered requests') }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>{{ __('Requested Amount') }}</th>
+                        <th>{{ __('Request Date') }}</th>
+                        <th>{{ __('Scheduled Disbursement Date (after 3 months)') }}</th>
+                        <th>{{ __('Remaining Duration') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ __('Notes') }}</th>
+                        <th>{{ __('Actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($capitalWithdrawalRequests as $wReq)
+                    <tr>
+                        <td><strong>#{{ $wReq->id }}</strong></td>
+                        <td class="fw-bold text-danger">{{ number_format($wReq->amount, 2) }} {{ __('SAR') }}</td>
+                        <td>{{ $wReq->request_date->format('Y-m-d H:i') }}</td>
+                        <td>
+                            <span class="badge bg-label-info">
+                                <i class="ti ti-calendar me-1"></i>{{ $wReq->scheduled_disbursement_date ? $wReq->scheduled_disbursement_date->format('Y-m-d') : '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($wReq->status === 'completed')
+                                <span class="badge bg-label-success">{{ __('Disbursed') }}</span>
+                            @elseif($wReq->status === 'rejected')
+                                <span class="badge bg-label-danger">{{ __('Rejected') }}</span>
+                            @elseif($wReq->is_due_for_disbursement)
+                                <span class="badge bg-danger animate__animated animate__pulse animate__infinite">{{ __('Due for Disbursement') }}</span>
+                            @else
+                                <span class="text-muted fw-medium">{{ $wReq->remaining_duration_human }}</span>
+                            @endif
+                        </td>
+                        <td>{!! $wReq->status_badge !!}</td>
+                        <td class="small">
+                            @if($wReq->investor_notes)
+                                <div><strong class="text-muted">{{ __('Investor:') }}</strong> {{ $wReq->investor_notes }}</div>
+                            @endif
+                            @if($wReq->admin_notes)
+                                <div><strong class="text-dark">{{ __('Admin:') }}</strong> {{ $wReq->admin_notes }}</div>
+                            @endif
+                            @if(!$wReq->investor_notes && !$wReq->admin_notes)
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                @if($wReq->status === 'pending')
+                                    <button type="button" class="btn btn-sm btn-success" title="{{ __('Approve Request and Schedule Disbursement') }}" onclick="approveCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
+                                        <i class="ti ti-check me-1"></i>{{ __('Approve') }}
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger" title="{{ __('Reject') }}" onclick="rejectCapitalWithdrawal({{ $wReq->id }})">
+                                        <i class="ti ti-x me-1"></i>{{ __('Reject') }}
+                                    </button>
+                                @elseif($wReq->status === 'approved')
+                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" title="{{ __('Execute Disbursement') }}" onclick="executeCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
+                                        <i class="ti ti-cash me-1"></i>{{ __('Execute Disbursement') }}
+                                    </button>
+                                @elseif($wReq->status === 'completed')
+                                    <span class="badge bg-label-success small"><i class="ti ti-check-double me-1"></i>{{ __('Executed') }}</span>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif
+
     <!-- Transaction Modal -->
     <div class="modal fade" id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog" role="document">
@@ -370,43 +692,72 @@
                         <input type="hidden" name="id" id="transaction_id">
                         <input type="hidden" name="user" value="{{ $user->id }}">
 
-                        <div class="alert alert-primary d-flex align-items-center mb-4" role="alert">
+                        <!-- Transaction Type -->
+                        <div class="mb-4">
+                            <label class="form-label d-block fw-bold">* {{ __('Transaction Type') }}</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="type" id="typeCredit" value="credit" checked>
+                                <label class="btn btn-outline-success py-2" for="typeCredit">
+                                    <i class="ti ti-circle-plus me-1"></i> {{ __('Capital Deposit (Credit)') }}
+                                </label>
+
+                                <input type="radio" class="btn-check" name="type" id="typeDebit" value="debit">
+                                <label class="btn btn-outline-danger py-2" for="typeDebit">
+                                    <i class="ti ti-circle-minus me-1"></i> {{ __('Withdrawal / Debit from Capital (Debit)') }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Alerts Dynamic based on Type -->
+                        <div id="creditAlert" class="alert alert-primary d-flex align-items-center mb-4" role="alert">
                             <span class="alert-icon text-primary me-2">
                                 <i class="ti ti-info-circle ti-xs"></i>
                             </span>
                             <span>{{ __('This transaction will increase the investor available balance.') }}</span>
                         </div>
 
-                        <!-- Amount -->
-                        <div class="mb-4">
-                            <label class="form-label" for="amount">* {{ __('Amount') }}</label>
-                            <input type="number" name="amount" class="form-control"
-                                placeholder="{{ __('Enter the amount') }}" step="0.01" min="0.01" required>
+                        <div id="debitAlert" class="alert alert-danger d-none mb-4" role="alert">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="alert-icon text-danger me-2">
+                                    <i class="ti ti-alert-triangle ti-xs"></i>
+                                </span>
+                                <strong class="text-danger">{{ __('Important Security Warning:') }}</strong>
+                            </div>
+                            <span class="small" style="line-height: 1.5;">
+                                {{ __('Debit Capital Warning Notice') }}
+                            </span>
                         </div>
 
-                        <!-- Transaction Type -->
+                        <!-- Amount -->
                         <div class="mb-4">
-                            <label class="form-label d-block">* {{ __('Transaction Type') }}</label>
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="btn btn-success w-100 py-2">
-                                        <i class="ti ti-circle-plus me-1"></i> {{ __('Credit / Charging') }}
-                                    </div>
-                                    <input type="hidden" name="type" value="credit">
-                                </div>
+                            <label class="form-label fw-semibold" for="amount">* {{ __('Amount') }}</label>
+                            <div class="input-group">
+                                <input type="number" name="amount" id="amount" class="form-control"
+                                    placeholder="{{ __('Enter the amount') }}" step="0.01" min="0.01" required>
+                                <span class="input-group-text">{{ __('SAR') }}</span>
                             </div>
                         </div>
 
                         <!-- Description -->
                         <div class="mb-4">
-                            <label class="form-label" for="description">* {{ __('Description / Notes') }}</label>
-                            <textarea name="description" class="form-control" rows="3"
+                            <label class="form-label fw-semibold" for="description">* {{ __('Description / Notes') }}</label>
+                            <textarea name="description" id="description" class="form-control" rows="3"
                                 placeholder="{{ __('Enter transaction details...') }}" required></textarea>
+                        </div>
+
+                        <!-- Admin Password for Debit Confirmation -->
+                        <div id="adminPasswordGroup" class="mb-4 d-none">
+                            <label class="form-label text-danger fw-bold" for="admin_password">
+                                <i class="ti ti-lock me-1"></i>{{ __('* Admin Password to Confirm Debit') }}
+                            </label>
+                            <input type="password" name="admin_password" id="admin_password" class="form-control border-danger"
+                                placeholder="{{ __('Enter your password to confirm debit') }}" autocomplete="new-password">
+                            <div class="form-text text-muted">{{ __('Admin password required note for debit') }}</div>
                         </div>
 
                         <!-- Attachment -->
                         <div class="mb-0">
-                            <label class="form-label" for="attachment">{{ __('Upload Receipt / Attachment') }}</label>
+                            <label class="form-label fw-semibold" for="attachment">{{ __('Upload Receipt / Attachment') }}</label>
                             <input type="file" name="attachment" id="attachment" class="form-control"
                                 accept=".jpg,.jpeg,.png,.pdf">
                             <div class="form-text text-muted mt-1">
@@ -416,7 +767,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                        <button type="submit" class="btn btn-primary btn-submit">
+                        <button type="submit" id="modalSubmitBtn" class="btn btn-primary btn-submit">
                             <span class="spinner-border spinner-border-sm d-none me-1" role="status"
                                 aria-hidden="true"></span>
                             {{ __('Submit Transaction') }}

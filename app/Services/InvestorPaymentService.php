@@ -85,6 +85,15 @@ class InvestorPaymentService
             // ── 8. احتساب عمولة المضارب وإيداعها في المحفظة الشخصية ────────
             $this->creditInvestorCommission($investor, $task, $contract);
         });
+
+        // ── إرسال إشعار للمستثمر بنجاح استثمار المهمة ───────────
+        $currentWalletBalance = (float) ($investor->investorWallet?->balance ?? 0);
+        app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
+            $investor,
+            (float) $task->total_price,
+            [$task->id],
+            $currentWalletBalance
+        );
     }
 
     /**
@@ -99,7 +108,12 @@ class InvestorPaymentService
             return;
         }
 
-        DB::transaction(function () use ($task) {
+        $settled = false;
+        $settledTaskPrice = 0;
+        $settledBalance = 0;
+        $investorUser = null;
+
+        DB::transaction(function () use ($task, &$settled, &$settledTaskPrice, &$settledBalance, &$investorUser) {
             $investorWallet = InvestorWallet::lockForUpdate()->where('user_id', $task->investor_id)->first();
             if (!$investorWallet) {
                 return;
@@ -129,7 +143,22 @@ class InvestorPaymentService
                 'performed_by'       => auth()->id() ?? $task->investor_id,
                 'balance_after'      => $balanceAfterCredit,
             ]);
+
+            $settled = true;
+            $settledTaskPrice = $taskPrice;
+            $settledBalance = $balanceAfterCredit;
+            $investorUser = $investorWallet->user;
         });
+
+        if ($settled && $investorUser) {
+            app(\App\Services\InvestorNotificationService::class)->notifySettlement(
+                $investorUser,
+                $settledTaskPrice,
+                [$task->id],
+                $settledBalance,
+                'online_payment'
+            );
+        }
     }
 
     /**
@@ -531,6 +560,15 @@ class InvestorPaymentService
                 'balance_after'      => $newBalance,
             ]);
         });
+
+        $currentBalance = (float) ($investor->investorWallet?->balance ?? 0);
+        app(\App\Services\InvestorNotificationService::class)->notifyDeposit(
+            $investor,
+            $amount,
+            $currentBalance,
+            'إعادة استثمار أرباح العمولات',
+            $notes
+        );
     }
 
     /**
@@ -563,5 +601,13 @@ class InvestorPaymentService
                 'balance_after'      => $newBalance,
             ]);
         });
+
+        $currentBalance = (float) ($investor->investorWallet?->balance ?? 0);
+        app(\App\Services\InvestorNotificationService::class)->notifyDeposit(
+            $investor,
+            $amount,
+            $currentBalance,
+            $description
+        );
     }
 }

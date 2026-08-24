@@ -35,6 +35,12 @@
                 <i class="ti ti-file-spreadsheet me-2 ti-sm"></i>
                 <span class="fw-bold">{{ __('Export Excel') }}</span>
             </a>
+            @if(($investorWallet?->balance ?? 0) > 0)
+            <button type="button" class="btn btn-label-danger d-flex align-items-center shadow-sm py-2 px-4" data-bs-toggle="modal" data-bs-target="#requestCapitalWithdrawalModal">
+                <i class="ti ti-arrow-up-right me-2 ti-sm"></i>
+                <span class="fw-bold">{{ __('Request Capital Withdrawal') }}</span>
+            </button>
+            @endif
             <button type="button" class="btn btn-primary d-flex align-items-center shadow-sm py-2 px-4" data-bs-toggle="modal" data-bs-target="#depositModal" style="background: linear-gradient(135deg, #7367f0 0%, #a098f5 100%); border: none;">
                 <i class="ti ti-credit-card me-2 ti-sm"></i>
                 <span class="fw-bold">{{ __('Top Up Investment Wallet') }}</span>
@@ -245,6 +251,136 @@
             {{ $transactions->appends(request()->input())->links('investor.partials.pagination') }}
         </div>
         @endif
+    </div>
+
+    {{-- قسم سجل طلبات سحب رأس المال --}}
+    @if(isset($withdrawalRequests) && $withdrawalRequests->count() > 0)
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="ti ti-history me-2 text-danger"></i>{{ __('Capital Withdrawal Requests') }}
+            </h5>
+            <span class="badge bg-label-primary">{{ $withdrawalRequests->total() }} {{ __('registered requests') }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>{{ __('Requested Amount') }}</th>
+                        <th>{{ __('Request Date') }}</th>
+                        <th>{{ __('Scheduled Disbursement Date (after 3 months)') }}</th>
+                        <th>{{ __('Remaining Duration') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ __('Notes') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($withdrawalRequests as $reqItem)
+                    <tr>
+                        <td><strong>#{{ $reqItem->id }}</strong></td>
+                        <td class="fw-bold text-danger">{{ number_format($reqItem->amount, 2) }} {{ __('SAR') }}</td>
+                        <td>{{ $reqItem->request_date->format('Y-m-d H:i') }}</td>
+                        <td>
+                            <span class="badge bg-label-info">
+                                <i class="ti ti-calendar me-1"></i>{{ $reqItem->scheduled_disbursement_date ? $reqItem->scheduled_disbursement_date->format('Y-m-d') : '—' }}
+                            </span>
+                        </td>
+                        <td>
+                            @if($reqItem->status === 'completed')
+                                <span class="badge bg-label-success">{{ __('Disbursed') }}</span>
+                            @elseif($reqItem->status === 'rejected')
+                                <span class="badge bg-label-danger">{{ __('Rejected') }}</span>
+                            @elseif($reqItem->is_due_for_disbursement)
+                                <span class="badge bg-success">{{ __('Due for Disbursement') }}</span>
+                            @else
+                                <span class="text-muted fw-medium">{{ $reqItem->remaining_duration_human }}</span>
+                            @endif
+                        </td>
+                        <td>{!! $reqItem->status_badge !!}</td>
+                        <td class="small text-muted">
+                            {{ $reqItem->investor_notes ?? '—' }}
+                            @if($reqItem->admin_notes)
+                                <br><strong class="text-dark">{{ __('Admin Response:') }}</strong> {{ $reqItem->admin_notes }}
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @if($withdrawalRequests->hasPages())
+        <div class="card-footer px-4">
+            {{ $withdrawalRequests->links('investor.partials.pagination') }}
+        </div>
+        @endif
+    </div>
+    @endif
+
+    {{-- Modal Request Capital Withdrawal --}}
+    <div class="modal fade" id="requestCapitalWithdrawalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold text-danger">
+                        <i class="ti ti-arrow-up-right me-1"></i>{{ __('Request Capital Withdrawal') }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('investor.investment-wallet.withdraw-request') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <!-- Alert Disclaimer -->
+                        <div class="alert alert-warning border-0 shadow-sm mb-4" role="alert">
+                            <h6 class="alert-heading fw-bold mb-1">
+                                <i class="ti ti-alert-triangle me-1"></i>{{ __('Important Notice Regarding Capital Withdrawal') }}
+                            </h6>
+                            <p class="mb-0 small" style="line-height: 1.6;">
+                                {{ __('Capital Withdrawal Policy Notice') }}
+                            </p>
+                        </div>
+
+                        <!-- Available Balance Display -->
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded bg-label-primary mb-3">
+                            <span class="fw-medium">{{ __('Currently Available Balance for Withdrawal:') }}</span>
+                            <span class="fw-bold fs-5 text-primary">{{ number_format($investorWallet?->balance ?? 0, 2) }} {{ __('SAR') }}</span>
+                        </div>
+
+                        <!-- Amount Input -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="withdraw_amount">{{ __('Amount to Withdraw (SAR)') }} <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg border-2 rounded-3">
+                                <input type="number" name="amount" id="withdraw_amount" class="form-control" placeholder="0.00" min="1" max="{{ $investorWallet?->balance ?? 0 }}" step="0.01" required>
+                                <span class="input-group-text">{{ __('SAR') }}</span>
+                            </div>
+                            <div class="form-text text-muted">{{ __('Max available balance note') }} ({{ number_format($investorWallet?->balance ?? 0, 2) }} {{ __('SAR') }}).</div>
+                        </div>
+
+                        <!-- Notes Input -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="investor_notes">{{ __('Notes / Reason for Withdrawal (Optional)') }}</label>
+                            <textarea name="investor_notes" id="investor_notes" class="form-control" rows="2" placeholder="{{ __('Enter any notes you wish to attach with the request...') }}"></textarea>
+                        </div>
+
+                        <!-- Mandatory Checkbox -->
+                        <div class="form-check p-3 rounded bg-label-danger border border-danger mb-2">
+                            <div class="d-flex align-items-start">
+                                <input class="form-check-input ms-0 me-2 mt-1" type="checkbox" name="agreed_terms" id="agreed_terms" value="1" required>
+                                <label class="form-check-label fw-bold text-danger small" for="agreed_terms" style="cursor: pointer; line-height: 1.5;">
+                                    {{ __('I acknowledge and agree that capital return takes place 3 months after the request date') }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pb-4">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-danger px-4 shadow">
+                            <i class="ti ti-send me-1"></i>{{ __('Confirm and Submit Request') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     {{-- Modal Deposit --}}

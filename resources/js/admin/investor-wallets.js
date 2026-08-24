@@ -310,6 +310,7 @@ $(function () {
   $('#transactionModal').on('hidden.bs.modal', function () {
     transactionForm[0].reset();
     $('#transaction_id').val('');
+    $('#typeCredit').prop('checked', true).trigger('change');
     $('#modalTitle').text(__('Add new financial transaction'));
   });
 

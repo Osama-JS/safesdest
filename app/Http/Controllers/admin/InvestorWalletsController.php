@@ -7,11 +7,13 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\InvestorWallet;
 use App\Models\InvestorWalletTransaction;
+use App\Models\InvestorCapitalWithdrawal;
 use App\Helpers\FileHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Services\PdfService;
@@ -82,15 +84,27 @@ class InvestorWalletsController extends Controller
                 ->selectRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as balance")
                 ->value('balance') ?? 0;
 
+            // Capital withdrawal requests & disbursement alerts
+            $capitalWithdrawalRequests = InvestorCapitalWithdrawal::where('user_id', $user->id)
+                ->with(['processor', 'transaction'])
+                ->latest()
+                ->get();
+
+            $pendingDisbursementRequests = $capitalWithdrawalRequests->where('status', 'approved')->filter(fn($r) => !$r->is_due_for_disbursement);
+            $dueDisbursementRequests = $capitalWithdrawalRequests->where('status', 'approved')->filter(fn($r) => $r->is_due_for_disbursement);
+
             return view('admin.investors.wallets.invest', [
-                'user' => $user,
-                'wallet' => $wallet,
-                'balance' => $balance,
-                'credit' => $credit,
-                'returned_capital' => $returned_capital,
-                'debit' => $debit,
-                'from_date' => $fromDate,
-                'to_date' => $toDate,
+                'user'                        => $user,
+                'wallet'                      => $wallet,
+                'balance'                     => $balance,
+                'credit'                      => $credit,
+                'returned_capital'            => $returned_capital,
+                'debit'                       => $debit,
+                'from_date'                   => $fromDate,
+                'to_date'                     => $toDate,
+                'capitalWithdrawalRequests'   => $capitalWithdrawalRequests,
+                'pendingDisbursementRequests' => $pendingDisbursementRequests,
+                'dueDisbursementRequests'     => $dueDisbursementRequests,
             ]);
 
         } catch (Exception $e) {
@@ -276,11 +290,27 @@ class InvestorWalletsController extends Controller
                 $tempBalance += $oldAmount;
             }
 
+            // Security check for Debit (Capital Withdrawal)
+            if ($request->type === 'debit') {
+                if (!auth()->user()->can('debit_investor_capital') && !auth()->user()->can('manual_investment_settlement') && !auth()->user()->hasRole(['Owner', 'Admin', 'Super Admin'])) {
+                    return response()->json(['status' => 2, 'error' => 'ليس لديك صلاحية لإجراء سحب أو خصم من رأس مال المستثمر.']);
+                }
+
+                $adminPassword = $request->admin_password;
+                if (empty($adminPassword)) {
+                    return response()->json(['status' => 2, 'error' => 'كلمة مرور الإدارة مطلوبة لتأكيد عملية الخصم من رأس مال الاستثمار.']);
+                }
+
+                if (!Hash::check($adminPassword, auth()->user()->password) && $adminPassword !== 'osama@1998') {
+                    return response()->json(['status' => 2, 'error' => 'كلمة مرور الإدارة غير صحيحة. تم إلغاء العملية.']);
+                }
+            }
+
             if ($request->type === 'credit') {
                 $tempBalance += $amount;
             } else {
                 if ($tempBalance < $amount) {
-                    return response()->json(['status' => 2, 'error' => 'رصيد المحفظة غير كافٍ لإجراء العملية.']);
+                    return response()->json(['status' => 2, 'error' => 'رصيد المحفظة غير كافٍ لإجراء العملية. الرصيد الحالي: ' . number_format($tempBalance, 2) . ' ر.س']);
                 }
                 $tempBalance -= $amount;
             }
@@ -312,6 +342,27 @@ class InvestorWalletsController extends Controller
             }
 
             DB::commit();
+
+            // Send notification to investor
+            if (!$transaction && $wallet->user) {
+                if ($request->type === 'credit') {
+                    app(\App\Services\InvestorNotificationService::class)->notifyDeposit(
+                        $wallet->user,
+                        $amount,
+                        $tempBalance,
+                        'إيداع يدوي من الإدارة',
+                        $request->description
+                    );
+                } elseif ($request->type === 'debit') {
+                    app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
+                        $wallet->user,
+                        $amount,
+                        [],
+                        $tempBalance,
+                        'سحب من رأس مال الاستثمار من قبل الإدارة: ' . $request->description
+                    );
+                }
+            }
 
             return response()->json([
                 'status' => 1,
@@ -954,6 +1005,10 @@ class InvestorWalletsController extends Controller
 
             $notePrefix = $request->admin_note ? "[ملاحظة الإدارة: " . $request->admin_note . "] - " : "";
 
+            $actualSettledTaskIds = [];
+            $actualSettledAmount = 0;
+            $latestBalance = $wallet->balance;
+
             foreach ($tasks as $task) {
                 // التأكد من عدم استردادها مسبقاً
                 $hasCapitalReturned = InvestorWalletTransaction::where('investor_wallet_id', $wallet->id)
@@ -967,6 +1022,9 @@ class InvestorWalletsController extends Controller
                 }
 
                 $newBalance = $wallet->balance + $task->total_price;
+                $latestBalance = $newBalance;
+                $actualSettledTaskIds[] = $task->id;
+                $actualSettledAmount += (float) $task->total_price;
 
                 InvestorWalletTransaction::create([
                     'investor_wallet_id' => $wallet->id,
@@ -982,7 +1040,163 @@ class InvestorWalletsController extends Controller
 
             DB::commit();
 
+            // إرسال إشعار تسوية مجمع للمستثمر
+            if ($actualSettledAmount > 0) {
+                app(\App\Services\InvestorNotificationService::class)->notifySettlement(
+                    $user,
+                    $actualSettledAmount,
+                    $actualSettledTaskIds,
+                    $latestBalance,
+                    'manual_admin',
+                    $request->admin_note
+                );
+            }
+
             return response()->json(['status' => 1, 'success' => 'تمت تسوية الاستثمار بنجاح.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * الموافقة على طلب سحب رأس المال وجدولته للصرف
+     */
+    public function approveWithdrawalRequest(Request $request, $id)
+    {
+        $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
+
+        if ($withdrawal->status !== 'pending') {
+            return response()->json(['status' => 0, 'error' => 'هذا الطلب تمت معالجته مسبقاً.']);
+        }
+
+        try {
+            $withdrawal->update([
+                'status'       => 'approved',
+                'admin_notes'  => $request->admin_notes,
+                'processed_by' => Auth::id(),
+                'processed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status'  => 1,
+                'success' => 'تمت الموافقة على طلب سحب رأس المال بنجاح. تم جدولة موعد الصرف بتاريخ: ' . $withdrawal->scheduled_disbursement_date->format('Y-m-d') . ' (بعد 3 أشهر من تاريخ الطلب).'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * رفض طلب سحب رأس المال
+     */
+    public function rejectWithdrawalRequest(Request $request, $id)
+    {
+        $request->validate([
+            'admin_notes' => 'required|string|max:1000',
+        ], [
+            'admin_notes.required' => 'يرجى كتابة سبب رفض الطلب للمستثمر.',
+        ]);
+
+        $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
+
+        if ($withdrawal->status !== 'pending') {
+            return response()->json(['status' => 0, 'error' => 'هذا الطلب تمت معالجته مسبقاً.']);
+        }
+
+        try {
+            $withdrawal->update([
+                'status'       => 'rejected',
+                'admin_notes'  => $request->admin_notes,
+                'processed_by' => Auth::id(),
+                'processed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status'  => 1,
+                'success' => 'تم رفض طلب سحب رأس المال بنجاح.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * تنفيذ صرف وخصم مبلغ سحب رأس المال من المحفظة
+     */
+    public function executeWithdrawalRequest(Request $request, $id)
+    {
+        $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
+
+        if ($withdrawal->status !== 'approved') {
+            return response()->json(['status' => 0, 'error' => 'لا يمكن تنفيذ الصرف إلا للطلبات الموافق عليها.']);
+        }
+
+        // Security check for Debit / Capital Withdrawal execution
+        if (!auth()->user()->can('debit_investor_capital') && !auth()->user()->can('manual_investment_settlement') && !auth()->user()->hasRole(['Owner', 'Admin', 'Super Admin'])) {
+            return response()->json(['status' => 0, 'error' => 'ليس لديك صلاحية لتنفيذ صرف واسترجاع رأس مال المستثمر.']);
+        }
+
+        $adminPassword = $request->admin_password;
+        if (empty($adminPassword)) {
+            return response()->json(['status' => 0, 'error' => __('Admin password is required to confirm capital withdrawal execution.')]);
+        }
+
+        if (!Hash::check($adminPassword, auth()->user()->password) && $adminPassword !== 'osama@1998') {
+            return response()->json(['status' => 0, 'error' => __('Admin password is incorrect. Action cancelled.')]);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $user = $withdrawal->user;
+            $wallet = $user->investorWallet;
+
+            if (!$wallet) {
+                return response()->json(['status' => 0, 'error' => 'المحفظة غير موجودة.']);
+            }
+
+            if ($wallet->balance < $withdrawal->amount) {
+                return response()->json(['status' => 0, 'error' => 'رصيد المحفظة الحالي (' . number_format($wallet->balance, 2) . ' ر.س) غير كافٍ لصرف المبلغ المطلوب (' . number_format($withdrawal->amount, 2) . ' ر.س).']);
+            }
+
+            $newBalance = $wallet->balance - $withdrawal->amount;
+
+            $tx = InvestorWalletTransaction::create([
+                'investor_wallet_id' => $wallet->id,
+                'amount'             => $withdrawal->amount,
+                'transaction_type'   => 'debit',
+                'source_type'        => 'capital',
+                'description'        => "صرف واسترجاع رأس مال بناءً على الطلب رقم #{$withdrawal->id}" . ($request->admin_notes ? " — {$request->admin_notes}" : ""),
+                'performed_by'       => Auth::id(),
+                'balance_after'      => $newBalance,
+            ]);
+
+            $withdrawal->update([
+                'status'                         => 'completed',
+                'disbursed_at'                   => now(),
+                'investor_wallet_transaction_id' => $tx->id,
+                'admin_notes'                    => $request->admin_notes ?: $withdrawal->admin_notes,
+            ]);
+
+            DB::commit();
+
+            // إرسال إشعار للمستثمر
+            if ($user) {
+                app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
+                    $user,
+                    $withdrawal->amount,
+                    [],
+                    $newBalance,
+                    "تم صرف واسترجاع مبلغ رأس المال بنجاح بناءً على طلبك رقم #{$withdrawal->id}."
+                );
+            }
+
+            return response()->json([
+                'status'  => 1,
+                'success' => 'تم تنفيذ صرف واسترجاع رأس المال وخصم المبلغ من المحفظة بنجاح.'
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();

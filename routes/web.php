@@ -382,6 +382,12 @@ Route::middleware('rate.limit')->group(function () {
                     // Missing Payments Tool
                     Route::get('/{userId}/invest-wallet/missing-payments', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getMissingPayments'])->name('invest-wallet.missingPayments');
                     Route::post('/invest-wallet/restore-payment', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'restorePayment'])->name('invest-wallet.restorePayment');
+
+                    // Capital Withdrawal Requests
+                    Route::get('/{userId}/invest-wallet/withdraw-requests', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'getWithdrawalRequests'])->name('invest-wallet.withdrawRequests');
+                    Route::post('/invest-wallet/withdraw-request/approve/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'approveWithdrawalRequest'])->name('invest-wallet.approveWithdrawal');
+                    Route::post('/invest-wallet/withdraw-request/reject/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'rejectWithdrawalRequest'])->name('invest-wallet.rejectWithdrawal');
+                    Route::post('/invest-wallet/withdraw-request/execute/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'executeWithdrawalRequest'])->name('invest-wallet.executeWithdrawal');
                 });
 
                 // B2B Module Routes
@@ -946,6 +952,8 @@ Route::middleware(['auth:web', 'investor'])
             ->name('investment-wallet.deposit.initiate');
         Route::get('investment-wallet/deposit/callback', [App\Http\Controllers\investor\InvestorWalletController::class, 'handleDepositCallback'])
             ->name('investment-wallet.deposit.callback');
+        Route::post('investment-wallet/withdraw-request', [App\Http\Controllers\investor\InvestorWalletController::class, 'requestCapitalWithdrawal'])
+            ->name('investment-wallet.withdraw-request');
 
         // المحفظة الشخصية (العمولات)
         Route::get('personal-wallet', [App\Http\Controllers\investor\InvestorWalletController::class, 'personalWallet'])

@@ -489,6 +489,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/users/wallet/export-all-old-truck-broker', [UserWalletsController::class, 'exportAllOldTruckBrokerCommissions'])->name('admin.user-wallets.export-all-old-truck-broker');
                 Route::post('/users/{userId}/wallet/calculate-old-truck-broker', [UserWalletsController::class, 'calculateOldTruckBrokerCommissions'])->name('admin.user-wallets.calculate-old-truck-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
+                Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');
                 Route::post('/users/{userId}/wallet/pay-task/{task}', [UserWalletsController::class, 'fundTask'])->name('admin.user-wallets.pay-task');
 
                 // User Wallet Payment Request Routes

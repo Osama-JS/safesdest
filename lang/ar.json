@@ -559,7 +559,7 @@
     "General investment (periodic cumulative commissions)": "مضاربة عامة (عمولات تراكمية دورية)",
     "General investor": "مضارب عام",
     "General investor commissions": "عمولات المضارب العام",
-    "Generate Payment Request": "إنشاء طلب دفع",
+    "Generate Payment Request": "توليد وطباعة طلب السداد",
     "Geo-Fence saved successfully": "تم حفظ السياج الجغرافي بنجاح",
     "Geo-fence": "السياج الجغرافي",
     "Geo-fence deleted": "تم حذف السياج الجغرافي",
@@ -1694,5 +1694,8 @@
     "Admin Password to Confirm Disbursement *": "كلمة مرور الإدارة لتأكيد الصرف *",
     "Transfer Reference \/ Notes (Optional)": "رقم الحوالة \/ ملاحظات (اختياري)",
     "Confirm and Disburse": "تأكيد الصرف والخصم",
-    "Admin password is required": "كلمة مرور الإدارة مطلوبة!"
+    "Admin password is required": "كلمة مرور الإدارة مطلوبة!",
+    "Payment Request from User Wallet: ": "طلب سداد مالي من محفظة المستخدم: ",
+    "History of printed payment requests for this user": "سجل طلبات السداد المطبوعة لهذا المستخدم",
+    "Payment Request Logs": "سجلات طلبات السداد"
 }

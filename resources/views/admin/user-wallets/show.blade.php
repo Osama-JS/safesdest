@@ -13,6 +13,10 @@
 @endsection
 
 @section('page-script')
+    <script>
+        const walletId = "{{ $wallet->id }}";
+        const currentUserId = "{{ $user->id }}";
+    </script>
     @vite(['resources/js/admin/user-wallets.js'])
 @endsection
 
@@ -249,6 +253,12 @@
                 <i class="tf-icons ti ti-list me-2 fs-3 text-white bg-primary rounded p-1"></i>
                 {{ __('Wallet Transactions') }}
             </h5>
+            @can('generate_user_payment_request')
+                <button type="button" class="btn btn-success waves-effect waves-light mt-5 mx-2" id="user-payment-request">
+                    <i class="ti ti-receipt me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block">{{ __('Payment Request') }}</span>
+                </button>
+            @endcan
             <button class="add-transaction btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
                 data-bs-target="#transactionModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
@@ -923,5 +933,207 @@
             });
         });
     </script>
+
+    @can('generate_user_payment_request')
+        <div class="modal fade" id="userPaymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ __('Payment Request from User Wallet: ') }} <span id="userPaymentRequestWalletId"
+                                class="bg-info text-white rounded p-1 px-2"></span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- User & Wallet Information Section -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0"><i class="ti ti-info-circle me-1"></i>{{ __('Wallet Information') }}</h6>
+                                    </div>
+                                    <div class="card-body pt-3">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Wallet ID') }}:</label>
+                                            <span id="userWalletInfoId" class="text-primary fw-bold"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Current Balance') }}:</label>
+                                            <span id="userWalletInfoAmount" class="text-success fw-bold"></span>
+                                        </div>
+                                        @if($isInvestor)
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Withdrawable Balance') }}:</label>
+                                            <span id="userWalletInfoWithdrawable" class="text-info fw-bold"></span>
+                                        </div>
+                                        @endif
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Wallet Owner') }}:</label>
+                                            <span id="userWalletInfoOwner" class="fw-semibold"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Phone') }}:</label>
+                                            <span id="userWalletInfoOwnerPhone" class="text-muted"></span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">{{ __('Email') }}:</label>
+                                            <span id="userWalletInfoOwnerEmail" class="text-muted"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Request Form Section -->
+                            <div class="col-md-6">
+                                <div class="card h-100 border">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0"><i class="ti ti-file-text me-1"></i>{{ __('Payment Request Form') }}</h6>
+                                    </div>
+                                    <div class="card-body pt-3">
+                                        <form id="userPaymentRequestForm">
+                                            <input type="hidden" id="userPaymentRequestWalletIdInput" name="wallet_id">
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold" for="userRequestedAmount">*
+                                                    {{ __('Requested Amount') }}</label>
+                                                <div class="input-group">
+                                                    <input type="number" step="0.01" class="form-control"
+                                                        id="userRequestedAmount" name="requested_amount" required min="0.01">
+                                                    <span class="input-group-text">{{ __('SAR') }}</span>
+                                                </div>
+                                                <div class="form-text">
+                                                    <small class="text-muted">{{ __('Available balance') }}: <span
+                                                            id="userMaxAmount" class="text-primary fw-bold"></span>
+                                                        ({{ __('You can enter a larger amount') }})</small>
+                                                </div>
+                                                <span class="user_requested_amount-error text-error text-danger"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold" for="userPaymentMethod">*
+                                                    {{ __('Payment Method') }}</label>
+                                                <select name="payment_method" id="userPaymentMethod" class="form-select" required>
+                                                    <option value="">{{ __('Select Payment Method') }}</option>
+                                                    <option value="bank_transfer" selected>{{ __('Bank Transfer') }}</option>
+                                                    <option value="other">{{ __('Other Method') }}</option>
+                                                </select>
+                                                <span class="user_payment_method-error text-error text-danger"></span>
+                                            </div>
+
+                                            <!-- Bank Transfer Fields -->
+                                            <div id="userBankTransferFields">
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="userBankName">{{ __('Bank Name') }}
+                                                        ({{ __('Optional') }})</label>
+                                                    <select name="bank_name" id="userBankName" class="form-select">
+                                                        <option value="">{{ __('Select Bank') }}</option>
+                                                        <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                                        <option value="بنك الراجحي">بنك الراجحي</option>
+                                                        <option value="بنك الرياض">بنك الرياض</option>
+                                                        <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
+                                                        <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
+                                                        <option value="البنك السعودي البريطاني">البنك السعودي البريطاني (ساب)</option>
+                                                        <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                                        <option value="بنك سامبا">بنك سامبا</option>
+                                                        <option value="البنك الأول">البنك الأول</option>
+                                                        <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                        <option value="بنك الإنماء">بنك الإنماء</option>
+                                                        <option value="البنك العربي">البنك العربي</option>
+                                                        <option value="other">{{ __('Other') }}</option>
+                                                    </select>
+                                                    <input type="text" class="form-control mt-2" id="userCustomBankName"
+                                                        name="custom_bank_name" placeholder="{{ __('Enter bank name') }}"
+                                                        style="display: none;">
+                                                    <span class="user_bank_name-error text-danger text-error"></span>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="userAccountNumber">
+                                                        {{ __('Account Number') }} ({{ __('Optional') }})</label>
+                                                    <input type="text" class="form-control" id="userAccountNumber"
+                                                        name="account_number" placeholder="1234567890">
+                                                    <span class="user_account_number-error text-danger text-error"></span>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="userIbanNumber">
+                                                        {{ __('IBAN Number') }} ({{ __('Optional') }})</label>
+                                                    <input type="text" class="form-control font-monospace" id="userIbanNumber"
+                                                        name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
+                                                        maxlength="29">
+                                                    <div class="form-text">
+                                                        <small class="text-muted">{{ __('Format: SA + 22 digits') }}</small>
+                                                    </div>
+                                                    <span class="user_iban_number-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Other Payment Method Field -->
+                                            <div id="userOtherPaymentField" style="display: none;">
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="userOtherPaymentMethod">*
+                                                        {{ __('Payment Method Details') }}</label>
+                                                    <textarea class="form-control" id="userOtherPaymentMethod" name="other_payment_method" rows="3"
+                                                        placeholder="{{ __('مثال: عهدة أو تسليم نقدي أو حوالة عبر جهة محددة') }}"></textarea>
+                                                    <span class="user_other_payment_method-error text-error text-danger"></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label" for="userPaymentNotes">{{ __('Notes') }}</label>
+                                                <textarea class="form-control" id="userPaymentNotes" name="notes" placeholder="{{ __('Optional notes...') }}" maxlength="1000" rows="2"></textarea>
+                                                <span class="user_notes-error text-danger text-error"></span>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary"
+                            data-bs-dismiss="modal">{{ __('Close') }}</button>
+                        <button type="button" class="btn btn-primary"
+                            id="generateUserPaymentRequest"><i class="ti ti-printer me-1"></i>{{ __('Generate Payment Request') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
+
+    @can('view_user_payment_requests_logs')
+        <!-- Payment Request Logs Section -->
+        <div class="card shadow-sm border-0 mt-4" id="user-payment-logs-section">
+            <div class="card-header py-4 px-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">
+                            <i class="ti ti-file-text me-2 text-primary"></i>
+                            {{ __('Payment Request Logs') }}
+                        </h5>
+                        <p class="text-muted mb-0">{{ __('History of printed payment requests for this user') }}</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="loadUserPaymentRefresh">
+                            <i class="ti ti-refresh me-1"></i>
+                            {{ __('Refresh') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Logs Container -->
+                <div id="user-payment-logs-container">
+                    <!-- Loading state -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">{{ __('Loading') }}...</span>
+                        </div>
+                        <p class="text-muted mt-2">{{ __('Loading payment request logs') }}...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endcan
+
     @include('admin.user-wallets.manual-commission-modal')
 @endsection

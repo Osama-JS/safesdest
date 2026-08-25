@@ -44,6 +44,7 @@ class DatabaseSeeder extends Seeder
           TasksPaymentCancellationPermissionSeeder::class,
           InvestorPermissionsSeeder::class,
           DebitInvestorCapitalPermissionSeeder::class,
+          UserPaymentRequestPermissionsSeeder::class,
         ]);
 
         Customer::factory()->count(10)->create();

@@ -489,8 +489,12 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/users/wallet/export-all-old-truck-broker', [UserWalletsController::class, 'exportAllOldTruckBrokerCommissions'])->name('admin.user-wallets.export-all-old-truck-broker');
                 Route::post('/users/{userId}/wallet/calculate-old-truck-broker', [UserWalletsController::class, 'calculateOldTruckBrokerCommissions'])->name('admin.user-wallets.calculate-old-truck-broker');
                 Route::post('/users/{userId}/wallet/reinvest-profits', [UserWalletsController::class, 'reinvestProfits'])->name('admin.user-wallets.reinvest-profits');
-                Route::get('/users/{userId}/wallet/tasks-funding', [UserWalletsController::class, 'tasksForFunding'])->name('admin.user-wallets.tasks-funding');
                 Route::post('/users/{userId}/wallet/pay-task/{task}', [UserWalletsController::class, 'fundTask'])->name('admin.user-wallets.pay-task');
+
+                // User Wallet Payment Request Routes
+                Route::get('/users/{userId}/wallet/payment-request-data', [UserWalletsController::class, 'getPaymentRequestData'])->name('admin.user-wallets.payment-request-data');
+                Route::post('/user-wallets/{walletId}/log-payment-request', [UserWalletsController::class, 'logPaymentRequest'])->name('admin.user-wallets.log-payment-request');
+                Route::get('/user-wallets/{walletId}/payment-request-logs', [UserWalletsController::class, 'getPaymentRequestLogs'])->name('admin.user-wallets.payment-request-logs');
 
 
 

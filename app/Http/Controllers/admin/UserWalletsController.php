@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\UserWalletTransaction;
+use App\Models\UserWalletPaymentRequestLog;
+use App\Helpers\IpHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +37,8 @@ class UserWalletsController extends Controller
                 'reinvestProfits',
             ]
         ]);
+        $this->middleware('permission:generate_user_payment_request', ['only' => ['getPaymentRequestData', 'logPaymentRequest']]);
+        $this->middleware('permission:view_user_payment_requests_logs', ['only' => ['getPaymentRequestLogs']]);
     }
 
     /**
@@ -1789,4 +1793,173 @@ class UserWalletsController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * جلب بيانات المستخدم والمحفظة لطلب السداد
+     */
+    public function getPaymentRequestData($userId)
+    {
+        try {
+            $user = User::with(['userWallet'])->findOrFail($userId);
+            $wallet = $user->userWallet;
+
+            if (!$wallet) {
+                $wallet = $this->createWallet($userId);
+            }
+
+            $isInvestor = (bool) $user->investor;
+            $balance = (float) $wallet->balance;
+            $withdrawableBalance = $isInvestor ? (float) $wallet->withdrawable_balance : $balance;
+
+            $userName = $user->name;
+            $userPhone = $user->phone_code ? $user->phone_code . $user->phone : $user->phone;
+            $userEmail = $user->email ?? '';
+            $userBankName = $user->bank_name ?? '';
+            $userAccountNumber = $user->account_number ?? '';
+            $userIbanNumber = $user->iban_number ?? '';
+
+            return response()->json([
+                'status' => 1,
+                'wallet' => [
+                    'id' => $wallet->id,
+                    'user_id' => $user->id,
+                    'balance' => $balance,
+                    'withdrawable_balance' => $withdrawableBalance,
+                    'user_name' => $userName,
+                    'user_phone' => $userPhone,
+                    'user_email' => $userEmail,
+                    'user_bank_name' => $userBankName,
+                    'user_account_number' => $userAccountNumber,
+                    'user_iban_number' => $userIbanNumber,
+                    'admin_user_id' => Auth::id(),
+                    'admin_user_name' => Auth::user()->name ?? 'الإدارة',
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => __('User not found') . ': ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * تسجيل طلب سداد محفظة المستخدم بعد الطباعة
+     */
+    public function logPaymentRequest(Request $request, $walletId)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:0.01',
+                'payment_request_number' => 'required|string|max:50',
+                'payment_method' => 'required|in:bank_transfer,other',
+                'bank_name' => 'nullable|string|max:255',
+                'account_number' => 'nullable|string|max:50',
+                'iban_number' => 'nullable|string|max:34',
+                'other_payment_method' => 'nullable|string|max:1000',
+                'notes' => 'nullable|string|max:1000',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'بيانات غير صحيحة',
+                    'errors' => $validator->errors()
+                ]);
+            }
+
+            $wallet = UserWallet::with('user')->findOrFail($walletId);
+            $user = $wallet->user;
+
+            if (!$user) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'المستخدم صاحب المحفظة غير موجود'
+                ]);
+            }
+
+            // معالجة طريقة الدفع والملاحظات
+            $finalNotes = $request->notes ?? '';
+
+            if ($request->payment_method === 'other' && $request->other_payment_method) {
+                if (!empty($finalNotes)) {
+                    $finalNotes .= "\n\n";
+                }
+                $finalNotes .= "طريقة الدفع: " . $request->other_payment_method;
+            } elseif ($request->payment_method === 'bank_transfer') {
+                $bankInfo = [];
+                if ($request->bank_name) {
+                    $bankInfo[] = "البنك: " . $request->bank_name;
+                }
+                if ($request->account_number) {
+                    $bankInfo[] = "رقم الحساب: " . $request->account_number;
+                }
+                if ($request->iban_number) {
+                    $bankInfo[] = "الآيبان: " . $request->iban_number;
+                }
+
+                if (!empty($bankInfo)) {
+                    if (!empty($finalNotes)) {
+                        $finalNotes .= "\n\n";
+                    }
+                    $finalNotes .= "معلومات التحويل البنكي:\n" . implode("\n", $bankInfo);
+                }
+            }
+
+            $log = UserWalletPaymentRequestLog::create([
+                'user_wallet_id' => $wallet->id,
+                'user_id' => $user->id,
+                'printed_by' => Auth::id(),
+                'amount' => $request->amount,
+                'payment_request_number' => $request->payment_request_number,
+                'payment_method' => $request->payment_method,
+                'bank_name' => $request->bank_name,
+                'account_number' => $request->account_number,
+                'iban_number' => $request->iban_number,
+                'other_payment_method' => $request->other_payment_method,
+                'notes' => $finalNotes,
+                'ip_address' => IpHelper::getUserIpAddress(),
+                'printed_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'تم تسجيل طلب السداد بنجاح',
+                'log_id' => $log->id
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء تسجيل طلب السداد: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * جلب سجلات طلبات السداد لمحفظة المستخدم
+     */
+    public function getPaymentRequestLogs($walletId)
+    {
+        try {
+            $wallet = UserWallet::findOrFail($walletId);
+
+            $logs = UserWalletPaymentRequestLog::with(['user', 'printedBy'])
+                ->forWallet($walletId)
+                ->latest()
+                ->paginate(10);
+
+            return response()->json([
+                'status' => 1,
+                'logs' => $logs
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => 'حدث خطأ أثناء جلب السجلات: ' . $e->getMessage()
+            ]);
+        }
+    }
 }
+

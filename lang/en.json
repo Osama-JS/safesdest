@@ -1124,5 +1124,10 @@
     "Admin Password to Confirm Disbursement *": "Admin Password to Confirm Disbursement *",
     "Transfer Reference \/ Notes (Optional)": "Transfer Reference \/ Notes (Optional)",
     "Confirm and Disburse": "Confirm and Disburse",
-    "Admin password is required": "Admin password is required!"
+    "Admin password is required": "Admin password is required!",
+    "Payment Request from User Wallet: ": "Payment Request from User Wallet: ",
+    "History of printed payment requests for this user": "History of printed payment requests for this user",
+    "Available balance": "Available balance",
+    "Generate Payment Request": "Generate Payment Request",
+    "Payment Request Logs": "Payment Request Logs"
 }

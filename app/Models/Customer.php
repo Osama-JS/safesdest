@@ -48,6 +48,7 @@ class Customer extends Authenticatable
       'device_id',
       'policy_file_name',
       'signature_image',
+      'amnn_customer_number',
       'task_number_start',
       'task_number_next',
       'is_company',

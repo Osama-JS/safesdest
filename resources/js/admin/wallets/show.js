@@ -656,9 +656,20 @@ $(function () {
     let amount = data.requestedAmount; // المبلغ من قاعدة البيانات أو الـ API
     let requestedAmountInWords = writtenNumber(amount, { lang: 'ar' }) + ' ريال سعودي';
 
+    // استخراج أسماء العملاء الفريدة من المهام المحددة
+    let customerNames = [];
+    if (data.selectedTasks && data.selectedTasks.length > 0) {
+      customerNames = [...new Set(data.selectedTasks.map(t => t.customer_name).filter(Boolean))];
+    }
+    let customerNamesHtml = customerNames.length > 0 ? customerNames.join('، ') : '';
+    let customerLabel = customerNames.length > 1 ? 'العملاء' : 'العميل';
+
     let tasksHtml = data.selectedTasks
-      .map(task => `مهمة #${task.id} - ${task.pickup_address} - ${task.total_price} ريال`)
-      .join(' , ');
+      .map(task => {
+        let cust = task.customer_name ? ` (العميل: ${task.customer_name})` : '';
+        return `مهمة #${task.id}${cust}`;
+      })
+      .join(' ، ');
     console.log(data);
     const printContent = `
   <!DOCTYPE html>
@@ -766,6 +777,14 @@ $(function () {
       <p class="emp-name">
           اسم الموظف طالب السداد : <strong> ${$('meta[name="user-name"]').attr('content') || 'المستخدم الحالي'}</strong>
       </p>
+      ${
+        customerNamesHtml
+          ? `
+      <p class="emp-name">
+          ${customerLabel} : <strong>${customerNamesHtml}</strong>
+      </p>`
+          : ''
+      }
 
       <h3>بيانات السداد</h3>
       <!-- Amount -->
@@ -930,7 +949,7 @@ $(function () {
             return {
               results: data.tasks.map(task => ({
                 id: task.id,
-                text: `مهمة #${task.id}`,
+                text: `مهمة #${task.id}` + (task.customer_name ? ` - ${task.customer_name}` : ''),
                 ...task
               }))
             };
@@ -942,14 +961,20 @@ $(function () {
         if (task.loading) return task.text;
 
         return $(`
-        <div class="task-option">
-          <div class="fw-bold">مهمة #${task.id}</div>
+        <div class="task-option py-1">
+          <div class="fw-bold d-flex justify-content-between align-items-center">
+            <span>مهمة #${task.id}</span>
+            ${task.customer_name ? `<span class="badge bg-label-primary font-small">${task.customer_name}</span>` : ''}
+          </div>
           <div class="text-muted small">${task.pickup_address ?? ''}</div>
           <div class="text-primary small">${task.total_price} ريال - ${task.status}</div>
         </div>
       `);
       },
-      templateSelection: task => task.text
+      templateSelection: task => {
+        if (!task.id) return task.text;
+        return `مهمة #${task.id}` + (task.customer_name ? ` - ${task.customer_name}` : '');
+      }
     });
   }
 

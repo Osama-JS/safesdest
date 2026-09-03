@@ -369,10 +369,171 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mtahd (Amnn) Escrow Settings Card -->
+            <div class="card mt-4 border-0 shadow-sm">
+                <div class="card-header bg-label-primary py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="card-title mb-0 text-primary">
+                                <i class="ti ti-shield-check me-2 fs-3"></i>{{ __('إعدادات وحساب المنصة في متعهد (Amnn / Mtahd Escrow)') }}
+                            </h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input update-setting-checkbox" type="checkbox" id="setting_mtahd_enabled" data-key="mtahd_enabled" {{ ($settings['mtahd_enabled']['value'] ?? '1') != '0' ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold text-dark" for="setting_mtahd_enabled">
+                                    {{ __('تفعيل خدمة متعهد في النظام والتطبيق') }}
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn_test_mtahd_conn">
+                                <i class="ti ti-plug-connected me-1"></i>{{ __('اختبار الاتصال بالـ API') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="alert alert-info border-0 mb-4" role="alert">
+                        <div class="d-flex">
+                            <i class="ti ti-info-circle fs-3 me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1 fw-bold">{{ __('آلية الضمان المالي في متعهد:') }}</h6>
+                                <p class="mb-0 small">
+                                    {{ __('المنصة مسجلة كبائع معتمد في متعهد، ويقوم العميل بسداد قيمة المهمة في حساب الضمان، وعند إتمام التوصيل يتم تحرير كامل المبلغ لحساب المنصة وتغذية محفظة السائق بصافي مستحقاته تلقائياً.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('رقم حساب المنصة كبائع في متعهد (Seller Customer #)') }}</label>
+                                <div class="input-group">
+                                    <input type="text" id="setting_mtahd_seller_num" data-key="mtahd_platform_customer_number"
+                                        value="{{ $settings['mtahd_platform_customer_number']['value'] ?? config('services.mtahd.platform_seller_number') }}"
+                                        class="form-control update-setting-input font-monospace" placeholder="e.g., CUST_123456">
+                                    <button class="btn btn-primary" type="button" id="btn_create_platform_mtahd">
+                                        <i class="ti ti-user-plus me-1"></i>{{ __('إنشاء / توثيق في متعهد') }}
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ __('معرف حساب المنصة المسجل لدى متعهد لتلقي أموال الضمان المالي.') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('رابط الـ API الأساسي (Base URL)') }}</label>
+                                <input type="url" data-key="mtahd_base_url"
+                                    value="{{ $settings['mtahd_base_url']['value'] ?? config('services.mtahd.base_url') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://sandbox-api.amnn.sa/api/v1">
+                                <small class="text-muted">{{ __('بيئة الاختبار: https://sandbox-api.amnn.sa/api/v1 | بيئة الإنتاج: https://api.amnn.sa/api/v1') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('مفتاح الربط (API Token / Secret)') }}</label>
+                                <input type="password" data-key="mtahd_api_token"
+                                    value="{{ $settings['mtahd_api_token']['value'] ?? config('services.mtahd.api_token') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="c2199c8e...">
+                                <small class="text-muted">{{ __('رمز التفويض المعتمد الخاص بحساب منصتكم من شركة متعهد (أمن).') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('مفتاح توقيع الإشعارات (Webhook Secret)') }}</label>
+                                <input type="password" data-key="mtahd_webhook_secret"
+                                    value="{{ $settings['mtahd_webhook_secret']['value'] ?? config('services.mtahd.webhook_secret') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="webhook_secret_key">
+                                <small class="text-muted">{{ __('يستخدم للتحقق المشفر من صحة الإشعارات اللحظية الواردة إلى: ') }} <code>/api/webhooks/mtahd</code></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+</div>
 
-        </div>
-    </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Test Mtahd Connection Button
+        const btnTest = document.getElementById('btn_test_mtahd_conn');
+        if (btnTest) {
+            btnTest.addEventListener('click', function () {
+                Swal.fire({
+                    title: '{{ __("جاري فحص الاتصال...") }}',
+                    text: '{{ __("التحقق من صحة مفتاح الربط والاتصال بمنصة متعهد") }}',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
 
+                fetch("{{ route('settings.mtahd.test-connection') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({ icon: 'success', title: '{{ __("الاتصال سليم") }}', text: data.message });
+                    } else {
+                        Swal.fire({ icon: 'error', title: '{{ __("فشل الاتصال") }}', text: data.message });
+                    }
+                })
+                .catch(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("تعذر الاتصال بالسيرفر") }}' }));
+            });
+        }
+
+        // Create Platform Account in Mtahd Button
+        const btnCreate = document.getElementById('btn_create_platform_mtahd');
+        if (btnCreate) {
+            btnCreate.addEventListener('click', function () {
+                Swal.fire({
+                    title: '{{ __("إنشاء / توثيق حساب المنصة في متعهد") }}',
+                    text: '{{ __("سيتم إرسال بيانات المنصة الرسمية إلى متعهد للحصول على رقم بائع معتمد (Platform Seller Number).") }}',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '{{ __("نعم، أنشئ الحساب") }}',
+                    cancelButtonText: '{{ __("إلغاء") }}',
+                    customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: '{{ __("جاري الإرسال...") }}', didOpen: () => { Swal.showLoading(); } });
+
+                        fetch("{{ route('settings.mtahd.create-account') }}", {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                name: 'منصة سيف ديست للخدمات اللوجستية (SafeDests)',
+                                phone: '+966500000000',
+                                email: 'finance@safedests.com'
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById('setting_mtahd_seller_num').value = data.customer_number;
+                                Swal.fire({ icon: 'success', title: '{{ __("تم بنجاح") }}', text: data.message });
+                            } else {
+                                Swal.fire({ icon: 'error', title: '{{ __("فشل الإنشاء") }}', text: data.message });
+                            }
+                        })
+                        .catch(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("تعذر الاتصال بالسيرفر") }}' }));
+                    }
+                });
+            });
+        }
+    });
+</script>
 @endsection

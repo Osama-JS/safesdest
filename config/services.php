@@ -63,4 +63,11 @@ return [
     'payout_url'  => env('HYPERPAY_PAYOUT_URL', 'https://gateway.sandbox.hyperpay.com/payouts'),
   ],
 
+  'mtahd' => [
+    'base_url'               => env('MTAHD_BASE_URL', 'https://sandbox-api.amnn.sa/api/v1'),
+    'api_token'              => env('MTAHD_API_TOKEN', 'c2199c8e0d00d9fca3f86c14c95050798174ddeb94f8b760cd1b66dcd5bb4922'),
+    'webhook_secret'         => env('MTAHD_WEBHOOK_SECRET', ''),
+    'platform_seller_number' => env('MTAHD_PLATFORM_SELLER_NUMBER', 'CUST_SAFEDESTS_PLATFORM'),
+  ],
+
 ];

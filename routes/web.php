@@ -46,6 +46,7 @@ use App\Http\Controllers\admin\CustomsClearanceOffersController as AdminOffersCo
 use App\Http\Controllers\admin\PlatformReportsController;
 use App\Http\Controllers\admin\ProductController;
 use App\Http\Controllers\admin\CompanyManagementController;
+use App\Http\Controllers\admin\MtahdDealLogsController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
 Route::get('/active-account', function () {
@@ -356,6 +357,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
                     Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
+                    Route::get('/export-all-excel', [\App\Http\Controllers\admin\InvestorController::class, 'exportAllInvestorsExcel'])->name('export-all-excel');
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');
                     Route::post('/reset-password', [\App\Http\Controllers\admin\InvestorController::class, 'resetPass'])->name('reset-password');
                     Route::get('/show/{id}', [\App\Http\Controllers\admin\InvestorController::class, 'show'])->name('show');
@@ -497,6 +499,20 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/user-wallets/{walletId}/log-payment-request', [UserWalletsController::class, 'logPaymentRequest'])->name('admin.user-wallets.log-payment-request');
                 Route::get('/user-wallets/{walletId}/payment-request-logs', [UserWalletsController::class, 'getPaymentRequestLogs'])->name('admin.user-wallets.payment-request-logs');
 
+                // Mtahd (Amnn) Escrow Logs & Operations Routes
+                Route::prefix('mtahd-logs')->name('admin.mtahd.')->group(function () {
+                    Route::get('/', [MtahdDealLogsController::class, 'index'])->name('index');
+                    Route::get('/data', [MtahdDealLogsController::class, 'data'])->name('data');
+                    Route::get('/{id}', [MtahdDealLogsController::class, 'show'])->name('show');
+                });
+
+                Route::prefix('mtahd-deals')->name('admin.mtahd.deals.')->group(function () {
+                    Route::post('/create-for-task/{taskId}', [MtahdDealLogsController::class, 'createDealForTask'])->name('createForTask');
+                    Route::post('/{dealNumber}/release', [MtahdDealLogsController::class, 'releaseDeal'])->name('release');
+                    Route::post('/{dealNumber}/cancel', [MtahdDealLogsController::class, 'cancelDeal'])->name('cancel');
+                    Route::post('/{dealNumber}/check-status', [MtahdDealLogsController::class, 'checkDealStatus'])->name('checkStatus');
+                });
+
 
 
                 Route::get('/roles', [RolesController::class, 'index'])->name('role.roles');
@@ -510,6 +526,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::prefix('settings')->group(function () {
                     Route::get('/', [SettingsController::class, 'index'])->name('settings.general');
                     Route::post('/set-template', [SettingsController::class, 'setTemplate'])->name('settings.setTemplate');
+                    Route::post('/mtahd/create-account', [SettingsController::class, 'createMtahdPlatformAccount'])->name('settings.mtahd.create-account');
+                    Route::post('/mtahd/test-connection', [SettingsController::class, 'testMtahdConnection'])->name('settings.mtahd.test-connection');
 
                     Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
                     Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');
@@ -791,6 +809,9 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/tasks/verify-signature/{id}', [TasksController::class, 'verifySignatureStatus'])->name('tasks.verify_signature');
                 Route::get('tasks/edit/{id}', [TasksController::class, 'edit'])->name('tasks.edit');
                 Route::post('tasks/edit', [TasksController::class, 'update'])->name('tasks.update');
+                Route::get('tasks/force-edit/{id}', [TasksController::class, 'forceEdit'])->name('tasks.force_edit');
+                Route::post('tasks/force-update', [TasksController::class, 'forceUpdate'])->name('tasks.force_update');
+                Route::post('tasks/verify-force-edit-password', [TasksController::class, 'verifyForceEditPassword'])->name('tasks.verify_force_edit_password');
                 Route::post('/tasks/close', [TasksController::class, 'closeTask'])->name('tasks.close');
                 Route::post('/tasks/refund', [TasksController::class, 'refundTask'])->name('tasks.refund');
                 Route::delete('/tasks/delete', [TasksController::class, 'destroy'])->name('tasks.delete');

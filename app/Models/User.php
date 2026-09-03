@@ -167,6 +167,14 @@ class User extends Authenticatable
     }
 
     /**
+     * المهام المستثمرة من قبل هذا المستثمر
+     */
+    public function investorTasks()
+    {
+        return $this->hasMany(Task::class, 'investor_id');
+    }
+
+    /**
      * العلاقة مع عقود الاستثمار
      */
     public function investmentContracts()

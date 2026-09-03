@@ -71,6 +71,18 @@
                                     </div>
                                 </label>
                             </div>
+
+                            <!-- Mtahd Escrow -->
+                            <div class="col-12">
+                                <label class="payment-method-label w-100 h-100">
+                                    <input type="radio" name="payment_method" value="mtahd" class="d-none payment-radio">
+                                    <div class="payment-card text-center p-3 border rounded shadow-sm h-100 bg-label-primary">
+                                        <i class="ti ti-shield-check mb-2 fs-2 text-primary"></i>
+                                        <h6 class="mb-1 text-primary fw-bold">{{ __('متعهد (ضمان مالي معتمد)') }}</h6>
+                                        <small class="text-muted">{{ __('دفع آمن مع تجميد المبلغ حتى استلام الشحنة') }}</small>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

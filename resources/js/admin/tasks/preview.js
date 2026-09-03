@@ -424,6 +424,7 @@ $(function () {
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
                     <li><a href="javascript:;" class="dropdown-item edit-task" data-id="${task.data.id}" data-is-b2b="${task.data.is_b2b ? '1' : ''}"><i class="ti ti-edit me-2"></i>${__('Edit Task')}</a></li>
+                    ${typeof canForceEdit !== 'undefined' && canForceEdit && !['in_progress', 'cancelled', 'cancel', 'canceled', 'refund', 'refunded'].includes(String(task.data.status).toLowerCase()) && !task.data.refunded ? `<li><a href="javascript:;" class="dropdown-item force-edit-task text-warning" data-id="${task.data.id}"><i class="ti ti-edit me-2"></i>${__('Force Edit Task')}</a></li>` : ''}
                     ${task.data.status !== 'advertised' && !task.data.is_b2b ? `<li><a href="javascript:;" class="dropdown-item edit-task-pricing" data-id="${task.data.id}" ><i class="ti ti-moneybag me-2"></i>${__('Edit Task Pricing')}</a></li>` : ``}
                     ${task.data.status === 'advertised' ? `<li><a href="javascript:;" class="dropdown-item edit-task-ad" data-id="${task.data.id}" ><i class="ti ti-edit me-2"></i>${__('Edit Task Ad')}</a></li>` : ``}
                     ${!task.data.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${task.data.id}" target="_blank"  class="dropdown-item "  ><i class="ti ti-map-pin me-2"></i>${__('Tracking Task')}</a></li>` : ``}

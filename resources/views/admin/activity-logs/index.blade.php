@@ -77,6 +77,7 @@
           <option value="إنشاء">إنشاء</option>
           <option value="تحديث">تحديث</option>
           <option value="حذف">حذف</option>
+          <option value="تعديل إجباري">تعديل إجباري</option>
         </select>
       </div>
 

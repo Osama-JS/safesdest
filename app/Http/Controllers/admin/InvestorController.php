@@ -26,7 +26,7 @@ class InvestorController extends Controller
 {
   public function __construct()
   {
-    $this->middleware('permission:view_investors', ['only' => ['index', 'getData', 'show']]);
+    $this->middleware('permission:view_investors', ['only' => ['index', 'getData', 'show', 'exportAllInvestorsExcel']]);
     $this->middleware('permission:save_investors', ['only' => ['store']]);
     $this->middleware('permission:delete_investors', ['only' => ['destroy']]);
   }
@@ -533,6 +533,34 @@ class InvestorController extends Controller
     } catch (Exception $e) {
       DB::rollBack();
       return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+    }
+  }
+
+  /**
+   * تصدير التقرير المالي والإحصائي الشامل لكافة المستثمرين إلى ملف Excel
+   */
+  public function exportAllInvestorsExcel(Request $request)
+  {
+    try {
+      $fromDate = $request->input('from_date');
+      $toDate = $request->input('to_date');
+      $investorIds = $request->input('investor_ids', $request->input('investor_id'));
+
+      if (!empty($investorIds)) {
+        $investorIds = array_values(array_filter((array) $investorIds));
+      } else {
+        $investorIds = null;
+      }
+
+      $fileName = 'investors_comprehensive_report_' . date('Y-m-d_His') . '.xlsx';
+
+      return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\AllInvestorsComprehensiveExport($fromDate, $toDate, $investorIds),
+        $fileName
+      );
+    } catch (Exception $e) {
+      \Illuminate\Support\Facades\Log::error('Investors Export Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+      return redirect()->back()->with('error', 'حدث خطأ أثناء تصدير التقرير: ' . $e->getMessage());
     }
   }
 }

@@ -47,7 +47,7 @@ class PaymentController extends Controller
         $validator = Validator::make($request->all(), [
             'id'             => 'nullable|integer',
             'clearance_id'   => 'nullable|integer',
-            'payment_method' => 'required|in:credit,cash,banking,wallet,hyperpay_visa,hyperpay_mastercard,hyperpay_mada,bank_transfer',
+            'payment_method' => 'required|in:credit,cash,banking,wallet,hyperpay_visa,hyperpay_mastercard,hyperpay_mada,bank_transfer,mtahd,mtahd_escrow',
             'purpose'        => 'nullable|in:task_payment,clearance_payment,wallet_deposit',
             'amount'         => 'nullable|numeric|min:1',
             'receipt_number' => 'nullable|string|max:255',
@@ -85,6 +85,35 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
+            // ── Mtahd Escrow payment ─────────────────────────────────────────
+            if (in_array($method, ['mtahd', 'mtahd_escrow'])) {
+                if (!\App\Services\MtahdService::isServiceEnabled()) {
+                    return response()->json(['success' => false, 'message' => __('خدمة الدفع عبر متعهد معطلة حالياً من قبل الإدارة')], 400);
+                }
+
+                if (!$subject || !($subject instanceof \App\Models\Task)) {
+                    return response()->json(['success' => false, 'message' => __('الدفع عبر متعهد متاح لمهام الشحن فقط')], 422);
+                }
+
+                $escrowService = app(\App\Services\MtahdEscrowTaskService::class);
+                $result = $escrowService->createEscrowDealForTask($subject);
+
+                if (!$result['status']) {
+                    return response()->json(['success' => false, 'message' => $result['error'] ?? __('فشل في إنشاء صفقة متعهد')], 400);
+                }
+
+                DB::commit();
+                return response()->json([
+                    'status'       => 1,
+                    'success'      => true,
+                    'hyperpay'     => true,
+                    'url'          => $result['payment_url'],
+                    'payment_url'  => $result['payment_url'],
+                    'deal_number'  => $result['deal_number'],
+                    'message'      => __('تم إنشاء صفقة الضمان المالي في متعهد، يرجى استكمال السداد عبر الرابط المرفق'),
+                ]);
+            }
+
             // ── Wallet payment ─────────────────────────────────────────────────
             if ($method === 'wallet') {
                 $result = $this->processWalletPayment($owner, $amount, $subject, $purpose);

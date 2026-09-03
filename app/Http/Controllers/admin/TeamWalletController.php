@@ -385,7 +385,7 @@ class TeamWalletController extends Controller
                 // التحقق من أن المهام تنتمي للفريق
                 $tasks = Task::whereIn('id', $request->selected_tasks)
                     ->where('team_id', $team->id)
-                    ->with(['pickup', 'delivery'])
+                    ->with(['pickup', 'delivery', 'customer', 'user'])
                     ->get();
 
                 if ($tasks->count() !== count($request->selected_tasks)) {
@@ -402,8 +402,9 @@ class TeamWalletController extends Controller
 
                 $finalNotes .= "المهام المحددة:\n";
                 foreach ($tasks as $task) {
+                    $customerName = $task->customer ? $task->customer->name : ($task->user ? $task->user->name : 'غير محدد');
                     $pickupAddress = $task->pickup->address ?? 'عنوان غير محدد';
-                    $finalNotes .= "- مهمة #{$task->id}: {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
+                    $finalNotes .= "- مهمة #{$task->id} (العميل: {$customerName}): {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
                 }
             }
 
@@ -781,14 +782,16 @@ class TeamWalletController extends Controller
             // التحقق من صلاحية المستخدم
             $user = Auth::user();
             // جلب المهام المرتبطة بالفريق
-            $tasks = Task::with(['pickup', 'delivery'])
+            $tasks = Task::with(['pickup', 'delivery', 'customer', 'user'])
                 ->where('team_id', $teamId)
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($task) {
+                    $customerName = $task->customer ? $task->customer->name : ($task->user ? $task->user->name : 'غير محدد');
                     return [
                         'id' => $task->id,
-                        'text' => "مهمة #{$task->id} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'text' => "مهمة #{$task->id} - العميل: {$customerName} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'customer_name' => $customerName,
                         'status' => $task->status,
                         'total_price' => $task->total_price - $task->commission,
                         'pickup_address' => $task->pickup->address ?? 'عنوان غير محدد',

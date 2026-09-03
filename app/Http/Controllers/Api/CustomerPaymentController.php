@@ -79,6 +79,18 @@ class CustomerPaymentController extends Controller
                 ],
             ];
 
+            if (\App\Services\MtahdService::isServiceEnabled()) {
+                $paymentMethods[] = [
+                    'id' => 'mtahd',
+                    'name' => 'Mtahd Escrow (متعهد - خدمة الضمان المالي)',
+                    'type' => 'escrow',
+                    'icon' => 'shield-check',
+                    'enabled' => true,
+                    'fees' => 0,
+                    'description' => 'دفع آمن عبر خدمة الضمان المالي المعتمدة (متعهد) - تحرير المبلغ بعد استلام الشحنة',
+                ];
+            }
+
             // Get customer wallet balance
             $customer = $request->user();
             $wallet = Wallet::where('user_type', 'customer')
@@ -115,7 +127,7 @@ class CustomerPaymentController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'amount' => 'required|numeric|min:1',
-                'payment_method' => 'required|string|in:hyperpay_visa,hyperpay_mastercard,hyperpay_mada,wallet,bank_transfer',
+                'payment_method' => 'required|string|in:hyperpay_visa,hyperpay_mastercard,hyperpay_mada,wallet,bank_transfer,mtahd,mtahd_escrow',
                 'purpose' => 'required|string|in:wallet_deposit,task_payment,clearance_payment',
                 'reference_id' => 'nullable|integer',
                 'description' => 'nullable|string|max:255',
@@ -158,6 +170,7 @@ class CustomerPaymentController extends Controller
             $response = match($request->payment_method) {
                 'wallet' => $this->processWalletPayment($payment),
                 'bank_transfer' => $this->processBankTransferPayment($payment),
+                'mtahd', 'mtahd_escrow' => $this->processMtahdPayment($payment),
                 default => $this->processHyperPayPayment($payment)
             };
 
@@ -751,6 +764,38 @@ class CustomerPaymentController extends Controller
                 $clearance->update(['payment_status' => 'paid']);
             }
         }
+    }
+
+    /**
+     * Process Mtahd Escrow Payment
+     */
+    protected function processMtahdPayment(Payment $payment): array
+    {
+        if (!\App\Services\MtahdService::isServiceEnabled()) {
+            throw new Exception('خدمة الدفع عبر متعهد معطلة حالياً من قبل الإدارة');
+        }
+
+        $task = Task::find($payment->reference_id);
+        if (!$task) {
+            throw new Exception('المهمة غير موجودة لتنفيذ دفع متعهد');
+        }
+
+        $escrowService = app(\App\Services\MtahdEscrowTaskService::class);
+        $result = $escrowService->createEscrowDealForTask($task);
+
+        if (!$result['status']) {
+            throw new Exception($result['error'] ?? 'فشل في إنشاء صفقة الضمان المالي في متعهد');
+        }
+
+        return [
+            'payment_url'        => $result['payment_url'],
+            'deal_number'        => $result['deal_number'],
+            'amount'             => $payment->amount,
+            'currency'           => 'SAR',
+            'payment_method'     => 'mtahd',
+            'requires_redirect'  => true,
+            'message'            => 'تم إنشاء صفقة الضمان المالي في متعهد، يرجى استكمال السداد عبر الرابط',
+        ];
     }
 
     /**

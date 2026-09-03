@@ -194,9 +194,21 @@
                                                 <option value="banking">{{ __('Bank transfer') }}</option>
                                                 <option value="wallet" id="wallet-option">{{ __('Use your Wallet') }}
                                                 </option>
+                                                @if(\App\Services\MtahdService::isServiceEnabled())
+                                                    <option value="mtahd">{{ __('Mtahd Escrow (متعهد - ضمان مالي)') }}</option>
+                                                @endif
                                                 <option value="cash">{{ __('Cash On Delivery') }}</option>
                                             </select>
                                             <span class="payment_method-error text-danger text-error"></span>
+                                        </div>
+                                        <div class="mb-4" id="mtahd-section" style="display: none">
+                                            <div class="alert alert-primary d-flex align-items-center mb-0" role="alert">
+                                                <i class="ti ti-shield-check fs-2 me-2"></i>
+                                                <div>
+                                                    <h6 class="alert-heading mb-1 fw-bold">{{ __('خدمة الضمان المالي (متعهد)') }}</h6>
+                                                    <p class="mb-0 small">{{ __('سيتم إنشاء صفقة ضمان مالي للمهمة وتوليد رابط سداد آمن للعميل في متعهد.') }}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="mb-4" id="receipt-section" style="display: none">
                                             <div class="form-group mb-3">
@@ -614,7 +626,8 @@
 
 
 
-    <!-- Investment Conflicts Modal -->
+    @include('admin.tasks.from-modal')
+
     @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
         <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered">

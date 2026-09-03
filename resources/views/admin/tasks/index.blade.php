@@ -84,6 +84,7 @@
         const templateId = {{ $task_template?->value ?? 0 }};
         const canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
         const canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+        const canForceEdit = {{ auth()->user()->can('force_update_tasks') ? 'true' : 'false' }};
     </script>
     <script type="text/template" id="vehicle-row-template">
       <div class="row vehicle-row mb-3 " data-index="{index}">
@@ -134,6 +135,7 @@
     @vite(['resources/js/mapbox-helper.js'])
     @vite(['resources/js/admin/tasks/tasks.js'])
     @vite(['resources/js/admin/tasks/preview.js'])
+    @vite(['resources/js/admin/tasks/force-edit.js'])
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/spical.js'])
     <script>

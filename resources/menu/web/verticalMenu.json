@@ -169,6 +169,14 @@
             "permission": "view_investors"
         },
         {
+            "url": "admin/mtahd-logs",
+            "name": "Mtahd Escrow Logs",
+            "icon": "menu-icon tf-icons ti ti-shield-check",
+            "slug": "admin.mtahd.index",
+            "isactive": "mtahd-logs-isactive",
+            "permission": "view_mtahd_deal_logs"
+        },
+        {
             "name": "Settings",
             "icon": "menu-icon tf-icons ti ti-adjustments",
             "slug": "settings",

@@ -35,10 +35,12 @@ class TaskPricingService
             return ['status' => false, 'errors' => $validator->errors()];
         }
 
-        $sizeCheck = $this->validateVehicleSizes($request->input('vehicles'));
+        if (!$request->boolean('is_force_update')) {
+            $sizeCheck = $this->validateVehicleSizes($request->input('vehicles'));
 
-        if ($sizeCheck !== true) {
-            return ['status' => false, 'errors' => ['vehicles' => $sizeCheck]];
+            if ($sizeCheck !== true) {
+                return ['status' => false, 'errors' => ['vehicles' => $sizeCheck]];
+            }
         }
 
         return ['status' => true];
@@ -84,6 +86,10 @@ class TaskPricingService
             'broker_commission_type' => 'nullable|in:percentage,fixed',
             'broker_commission_value' => 'nullable|numeric|min:0',
         ];
+
+        if ($request->boolean('is_force_update')) {
+            unset($rules['vehicles.*.vehicle'], $rules['vehicles.*.vehicle_type'], $rules['vehicles.*.vehicle_size'], $rules['vehicles.*.quantity']);
+        }
 
         if ($request->filled('params_select')) {
             $rules['params_select'] = 'required|exists:pricing_parametars,id';
@@ -273,11 +279,26 @@ class TaskPricingService
     {
 
         $sizes = collect($request->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
+
+        if ($sizes->isEmpty() && ($request->filled('id') || $request->input('is_force_update') == '1')) {
+            $existingTask = \App\Models\Task::find($request->id);
+            if ($existingTask && $existingTask->vehicle_size_id) {
+                $sizes = collect([$existingTask->vehicle_size_id]);
+            }
+        }
+
         $pricingTemplate = Pricing_Template::availableForCustomer(
             $request->template,
             $request->customer ?? null,
             $sizes
         )->first();
+
+        if (!$pricingTemplate && ($request->filled('id') || $request->input('is_force_update') == '1')) {
+            $existingTask = \App\Models\Task::find($request->id);
+            if ($existingTask && $existingTask->pricing_id) {
+                $pricingTemplate = Pricing_Template::find($existingTask->pricing_id);
+            }
+        }
 
         if (!$pricingTemplate) {
             return ['status' => false, 'errors' => __('There is no Pricing Role match with your selections')];

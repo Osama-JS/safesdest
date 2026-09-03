@@ -437,15 +437,72 @@ $('#select-template')
  * @param {Object} storedData - البيانات المحفوظة مسبقاً (للتعديل)
  */
 export function generateFields(fields, storedData = {}, targetSelector = '#additional-form') {
+  if (!fields || !Array.isArray(fields)) return;
+  $(targetSelector).html('');
+
+  // Normalize storedData
+  if (typeof storedData === 'string') {
+    try {
+      storedData = JSON.parse(storedData);
+    } catch (e) {
+      storedData = {};
+    }
+  }
+  storedData = storedData || {};
+
   fields.forEach(field => {
     var inputField = '';
     var inputSpan = '';
-    const storedValue = storedData[field.name]?.value || ''; // هنا نجلب القيمة المحزنة إذا وجدت
-    console.log(storedData);
+
+    // Robust extraction of storedValue
+    var storedValue = '';
+    var currentFile = '';
+    var currentExpiration = '';
+    var currentFileWithText = '';
+    var currentText = '';
+
+    if (Array.isArray(storedData)) {
+      var found = storedData.find(item => item && (item.name === field.name || item.field_name === field.name || item.id === field.id));
+      if (found) {
+        storedValue = found.value !== undefined ? found.value : (found.val !== undefined ? found.val : '');
+        currentFile = found.file || found.value || '';
+        currentExpiration = found.expiration || found.expiration_date || '';
+        currentFileWithText = found.file || found.value || '';
+        currentText = found.text || '';
+      }
+    } else if (typeof storedData === 'object' && storedData !== null) {
+      var entry = storedData[field.name];
+      if (entry !== undefined && entry !== null) {
+        if (typeof entry === 'object') {
+          storedValue = entry.value !== undefined ? entry.value : '';
+          currentFile = entry.file || entry.value || '';
+          currentExpiration = entry.expiration || entry.expiration_date || '';
+          currentFileWithText = entry.file || entry.value || '';
+          currentText = entry.text !== undefined ? entry.text : '';
+        } else {
+          storedValue = entry;
+          currentFile = entry;
+          currentFileWithText = entry;
+        }
+      }
+      if (!currentExpiration && storedData[`${field.name}_expiration`]) {
+        currentExpiration = storedData[`${field.name}_expiration`];
+      }
+      if (!currentText && storedData[`${field.name}_text`]) {
+        currentText = storedData[`${field.name}_text`];
+      }
+      if (!currentFile && storedData[`${field.name}_file`]) {
+        currentFile = storedData[`${field.name}_file`];
+        currentFileWithText = storedData[`${field.name}_file`];
+      }
+    }
+
+    if (storedValue === null || storedValue === undefined) storedValue = '';
 
     // إنشاء الحقل حسب النوع
     switch (field.type) {
       case 'string':
+      case 'text':
         inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
         break;
       case 'number':
@@ -462,13 +519,11 @@ export function generateFields(fields, storedData = {}, targetSelector = '#addit
         break;
       case 'file':
         inputField = `
-        <a href="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
-        <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+        ${storedValue ? `<div class="mb-1"><a href="${baseUrl + 'storage/' + storedValue}" target="_blank" class="badge bg-label-info"><i class="ti ti-download me-1"></i>${storedValue.split('/').pop()}</a></div>` : ''}
+        <input type="file" name="additional_fields[${field.name}]" class="form-control">`;
         break;
       // حقل ملف مع تاريخ انتهاء صلاحية
       case 'file_expiration_date':
-        const currentFile = storedData[field.name]?.value || '';
-        const currentExpiration = storedData[field.name]?.expiration || '';
         const fileDisplay = currentFile
           ? `<div class="mb-2">
             <small class="text-muted">Current file:</small><br>
@@ -498,8 +553,6 @@ export function generateFields(fields, storedData = {}, targetSelector = '#addit
         break;
       // حقل ملف مع نص
       case 'file_with_text':
-        const currentFileWithText = storedData[field.name]?.value || '';
-        const currentText = storedData[field.name]?.text || '';
         const fileWithTextDisplay = currentFileWithText
           ? `<div class="mb-2">
             <small class="text-muted">Current file:</small><br>
@@ -536,8 +589,8 @@ export function generateFields(fields, storedData = {}, targetSelector = '#addit
       // حقل صورة
       case 'image':
         inputField = `
-        <img src="${baseUrl + 'storage/' + storedValue}">${storedValue}</a>
-        <input type="file" name="additional_fields[${field.name}]"  class="form-control" >`;
+        ${storedValue ? `<div class="mb-1"><a href="${baseUrl + 'storage/' + storedValue}" target="_blank"><img src="${baseUrl + 'storage/' + storedValue}" style="max-height:60px" class="rounded border"></a></div>` : ''}
+        <input type="file" name="additional_fields[${field.name}]" class="form-control" accept="image/*">`;
         break;
 
       // حقل قائمة اختيار
@@ -560,6 +613,9 @@ export function generateFields(fields, storedData = {}, targetSelector = '#addit
             }
           })()}
         </select>`;
+        break;
+      default:
+        inputField = `<input type="text" name="additional_fields[${field.name}]" value="${storedValue}" class="form-control" placeholder="Enter ${field.name}">`;
         break;
     }
 
@@ -588,4 +644,8 @@ export function generateFields(fields, storedData = {}, targetSelector = '#addit
     `);
   });
 }
+
+window.generateFields = generateFields;
+
+
 

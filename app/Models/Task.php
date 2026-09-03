@@ -22,6 +22,11 @@ class Task extends Model
     'payment_paid',
     'payment_pending_amount',
     'payment_id',
+    'amnn_deal_number',
+    'amnn_deal_id',
+    'amnn_payment_url',
+    'amnn_deal_status',
+    'is_escrow',
     'additional_data',
     'distribution_attempts',
     'last_attempt_at',
@@ -284,5 +289,28 @@ class Task extends Model
   public function getIsB2bAttribute(): bool
   {
     return $this->company_warehouse_id !== null;
+  }
+
+  /**
+   * Check if task is paid via Mtahd Escrow
+   */
+  public function isMtahdEscrow(): bool
+  {
+    return $this->is_escrow || !empty($this->amnn_deal_number) || $this->payment_method === 'mtahd';
+  }
+
+  /**
+   * Get Arabic label for Mtahd deal status
+   */
+  public function getMtahdStatusLabelAttribute(): string
+  {
+    return match ($this->amnn_deal_status) {
+      'draft'           => 'مسودة صفقة',
+      'pending_payment' => 'بانتظار سداد العميل في متعهد',
+      'paid'            => 'الضمان محجوز في متعهد (مدفوعة)',
+      'released'        => 'تم تحرير وصرف الضمان للمنصة',
+      'cancelled'       => 'صفقة ملغاة ومستردة',
+      default           => $this->amnn_deal_status ?? 'غير محدد',
+    };
   }
 }

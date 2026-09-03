@@ -60,6 +60,12 @@ Route::post('/saei/otp/verify', [\App\Http\Controllers\Api\SaeiOtpController::cl
 // استقبال Callback من ساعي بعد التحقق (POST /api/saei/otp/callback)
 Route::post('/saei/otp/callback', [\App\Http\Controllers\Api\SaeiOtpController::class, 'callback']);
 
+// ─────────────────────────────────────────────────────────────
+// Mtahd (Amnn) Escrow Webhook Route
+// ─────────────────────────────────────────────────────────────
+Route::post('/webhooks/mtahd', [\App\Http\Controllers\Api\MtahdWebhookController::class, 'handle']);
+
+
 // Include driver API routes
 require __DIR__.'/api_driver.php';
 require __DIR__.'/api_customer.php';

@@ -1233,7 +1233,7 @@ class WalletsController extends Controller
                 // التحقق من أن المهام تنتمي للسائق
                 $tasks = Task::whereIn('id', $request->selected_tasks)
                     ->where('driver_id', $wallet->driver_id)
-                    ->with(['pickup', 'delivery'])
+                    ->with(['pickup', 'delivery', 'customer', 'user'])
                     ->get();
 
                 if ($tasks->count() !== count($request->selected_tasks)) {
@@ -1250,8 +1250,9 @@ class WalletsController extends Controller
 
                 $finalNotes .= "المهام المحددة:\n";
                 foreach ($tasks as $task) {
+                    $customerName = $task->customer ? $task->customer->name : ($task->user ? $task->user->name : 'غير محدد');
                     $pickupAddress = $task->pickup->address ?? 'عنوان غير محدد';
-                    $finalNotes .= "- مهمة #{$task->id}: {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
+                    $finalNotes .= "- مهمة #{$task->id} (العميل: {$customerName}): {$pickupAddress} - {$task->total_price} ريال - {$task->status}\n";
                 }
             }
 
@@ -1323,24 +1324,17 @@ class WalletsController extends Controller
     public function getDriverTasks($driverId)
     {
         try {
-            // التحقق من صلاحية المستخدم
-            // $user = Auth::user();
-            // if (!$user->checkDriver($driverId)) {
-            //     return response()->json([
-            //         'status' => 0,
-            //         'error' => 'غير مصرح لك بالوصول لمهام هذا السائق'
-            //     ]);
-            // }
-
             // جلب المهام المرتبطة بالسائق
-            $tasks = Task::with(['pickup', 'delivery'])
+            $tasks = Task::with(['pickup', 'delivery', 'customer', 'user'])
                 ->where('driver_id', $driverId)
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($task) {
+                    $customerName = $task->customer ? $task->customer->name : ($task->user ? $task->user->name : 'غير محدد');
                     return [
                         'id' => $task->id,
-                        'text' => "مهمة #{$task->id} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'text' => "مهمة #{$task->id} - العميل: {$customerName} - " . ($task->pickup->address ?? 'عنوان غير محدد') . " - {$task->total_price} ريال - {$task->status}",
+                        'customer_name' => $customerName,
                         'status' => $task->status,
                         'total_price' => $task->total_price - $task->commission,
                         'pickup_address' => $task->pickup->address ?? 'عنوان غير محدد',

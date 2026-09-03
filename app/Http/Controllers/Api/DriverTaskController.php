@@ -571,6 +571,15 @@ class DriverTaskController extends Controller
             }
             if ($request->status === 'completed') {
                 $task->completed_at = now();
+
+                // If task is paid via Mtahd Escrow, release funds to platform account
+                if ($task->isMtahdEscrow() && $task->amnn_deal_status === 'paid') {
+                    try {
+                        app(\App\Services\MtahdEscrowTaskService::class)->releaseTaskEscrow($task);
+                    } catch (\Exception $e) {
+                        Log::error("Mtahd auto-release exception on task #{$task->id}: " . $e->getMessage());
+                    }
+                }
             }
             $task->save();
 

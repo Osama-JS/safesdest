@@ -60,6 +60,8 @@ use App\Services\PdfService;
 use App\Services\SignitService;
 use Illuminate\Support\Str;
 use App\Models\TaskClaimRequest;
+use Illuminate\Support\Facades\Hash;
+use App\Models\ActivityLog;
 
 class TasksController extends Controller
 {
@@ -70,6 +72,7 @@ class TasksController extends Controller
         $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
         $this->middleware('permission:create_tasks', ['only' => ['store', 'duplicateTask', 'fixTeamConnection']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:force_update_tasks', ['only' => ['forceEdit', 'forceUpdate', 'verifyForceEditPassword']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
         $this->middleware('permission:status_tasks', ['only' => ['chang_status', 'taskAddNote', 'dropTask']]);
@@ -322,6 +325,15 @@ class TasksController extends Controller
             ];
             if ($req->status === 'completed') {
                 $data['completed_at'] = now();
+
+                // If task is paid via Mtahd Escrow, release funds to platform account
+                if ($find->isMtahdEscrow() && $find->amnn_deal_status === 'paid') {
+                    try {
+                        app(\App\Services\MtahdEscrowTaskService::class)->releaseTaskEscrow($find);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Mtahd auto-release error on admin task completion #{$find->id}: " . $e->getMessage());
+                    }
+                }
             }
 
             $done = $find->update($data);
@@ -1381,6 +1393,437 @@ class TasksController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Verify Password for Force Edit
+     */
+    public function verifyForceEditPassword(Request $req)
+    {
+        $req->validate([
+            'password' => 'required|string',
+            'task_id'  => 'required|exists:tasks,id',
+        ]);
+
+        $user = Auth::user();
+        if (!$user || !Hash::check($req->password, $user->password)) {
+            return response()->json([
+                'status' => 0,
+                'message' => __('كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى.')
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => __('تم التحقق بنجاح.')
+        ]);
+    }
+
+    /**
+     * Force Edit Task (Allowed for ANY status, even if assigned to driver or closed, EXCEPT cancelled or refunded).
+     */
+    public function forceEdit($id)
+    {
+        $data = Task::with(['pickup', 'delivery', 'ad', 'driver', 'vehicle_size.type.vehicle'])->findOrFail($id);
+        $user = auth()->user();
+        if (!$user || !$user->checkTask($data->id)) {
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+        }
+
+        $normalizedStatus = strtolower(trim((string)$data->status));
+        if ($normalizedStatus === 'in_progress') {
+            return response()->json([
+                'status' => 2,
+                'error'  => __('لا يمكن استخدام التعديل الإجباري للمهام التي لا زالت في حالة قيد الانتظار (in_progress)، يرجى استخدام التعديل العادي.'),
+            ]);
+        }
+        if (in_array($normalizedStatus, ['cancelled', 'cancel', 'canceled', 'refund', 'refunded']) || $data->refunded) {
+            return response()->json([
+                'status' => 2,
+                'error'  => __('لا يمكن التعديل الإجباري على مهمة ملغاة أو مستردة (Cannot force update cancelled or refunded task)'),
+            ]);
+        }
+
+        $data->vehicle_type = $data->vehicle_size->vehicle_type_id ?? null;
+        $data->vehicle = $data->vehicle_size->type->vehicle_id ?? null;
+        $data->vehicle_name = $data->vehicle_size->type->vehicle->name ?? '';
+        $data->vehicle_type_name = $data->vehicle_size->type->name ?? '';
+        $data->vehicle_size_name = $data->vehicle_size->name ?? '';
+
+        $templateId = $data->form_template_id;
+        if (!$templateId) {
+            $defaultTpl = Settings::where('key', 'task_template')->first();
+            $templateId = $defaultTpl ? $defaultTpl->value : null;
+        }
+        $fields = $templateId ? Form_Field::where('form_template_id', $templateId)->get() : collect([]);
+        $data->fields = $fields;
+        $data->is_force_update = true;
+
+        return response()->json($data);
+    }
+
+    /**
+     * Force Update Task
+     * Modifies task details (pricing method, points, form fields, customer, dates, notes, broker)
+     * WITHOUT modifying vehicle size to preserve driver assignment integrity.
+     */
+    public function forceUpdate(Request $req, TaskPricingService $pricingService)
+    {
+        $oldTask = Task::with(['pickup', 'delivery'])->findOrFail($req->id);
+        $user = auth()->user();
+        if (!$user || !$user->checkTask($oldTask->id)) {
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+        }
+
+        $normalizedStatus = strtolower(trim((string)$oldTask->status));
+        if ($normalizedStatus === 'in_progress') {
+            return response()->json([
+                'status' => 2,
+                'error'  => __('لا يمكن استخدام التعديل الإجباري للمهام التي لا زالت في حالة قيد الانتظار (in_progress)، يرجى استخدام التعديل العادي.'),
+            ]);
+        }
+        if (in_array($normalizedStatus, ['cancelled', 'cancel', 'canceled', 'refund', 'refunded']) || $oldTask->refunded) {
+            return response()->json([
+                'status' => 2,
+                'error'  => __('لا يمكن التعديل الإجباري على مهمة ملغاة أو مستردة (Cannot force update cancelled or refunded task)'),
+            ]);
+        }
+
+        // التحقق من الطلب
+        $validation = $pricingService->validateRequest($req, "update");
+        if (!$validation['status']) {
+            return response()->json(['status' => 0, 'error' => $validation['errors']]);
+        }
+
+        // حساب السعر والتسعير
+        try {
+            $pricing = $pricingService->calculatePricing($req);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+
+        if (!$pricing['status']) {
+            return response()->json(['status' => 2, 'error' => $pricing['errors']]);
+        }
+
+        DB::beginTransaction();
+        try {
+            $userIp = IpHelper::getUserIpAddress();
+            $data = $pricing['data'];
+            $taskData = $pricing['task'];
+
+            $oldTaskAttributes = $oldTask->getAttributes();
+            $oldPickupAttributes = $oldTask->pickup ? $oldTask->pickup->getAttributes() : [];
+            $oldDeliveryAttributes = $oldTask->delivery ? $oldTask->delivery->getAttributes() : [];
+
+            // Task basic data update - KEEP vehicle_size_id unchanged, but update pricing_id & pricing_history
+            $taskUpdateData = [
+                'total_price'             => $data['total_price'] ?? $oldTask->total_price,
+                'pricing_id'              => $taskData['pricing'] ?? $oldTask->pricing_id,
+                'pricing_history'         => $data,
+                'form_template_id'        => $req->template ?? $oldTask->form_template_id,
+                'conditions'              => $req->conditions ?? $oldTask->conditions,
+                'broker_id'               => $req->broker_id ?? $oldTask->broker_id,
+                'broker_commission_type'  => $req->broker_commission_type ?? $oldTask->broker_commission_type,
+                'broker_commission_value' => $req->broker_commission_value ?? $oldTask->broker_commission_value,
+            ];
+
+            if ($req->filled('manual_total_pricing')) {
+                $taskUpdateData['total_price'] = $req->manual_total_pricing;
+                $taskUpdateData['pricing_type'] = 'manual';
+                $data['manual_pricing'] = $req->manual_total_pricing;
+            }
+
+            if (isset($data['service_commission']) && $data['service_commission'] !== '') {
+                $taskUpdateData['commission_type'] = 'manual';
+                $taskUpdateData['commission'] = $data['service_commission'];
+                $data['manual_commission'] = $data['service_commission'];
+            }
+
+            if ($req->filled('manual_commission')) {
+                $taskUpdateData['commission_type'] = 'manual';
+                $taskUpdateData['commission'] = $req->manual_commission;
+                $data['manual_commission'] = $req->manual_commission;
+            }
+
+            if ($req->filled('pricing_details')) {
+                $taskUpdateData['pricing_details'] = $req->pricing_details ?? [];
+            }
+
+            if ($taskData['method'] == 0) {
+                $taskUpdateData['total_price'] = 0;
+                $taskUpdateData['pricing_type'] = 'manual';
+                $taskUpdateData['status'] = 'advertised';
+
+                $ad = [
+                    'highest_price' => $req->max_price,
+                    'lowest_price' => $req->min_price,
+                    'description' => $req->note_price ?? '',
+                    'included' => $req->included ?? false,
+                    'service_commission_type' => (($data['service_commission_type'] ?? null) === 'percentage' ? 0 : 1),
+                    'service_commission' => $data['service_tax_commission'] ?? 0,
+                    'vat_commission' => $data['vat_commission'] ?? 0,
+                ];
+
+                $taskUpdateData['driver_id'] = null;
+            }
+
+            if ($req->filled('owner') && $req->owner === 'customer') {
+                if (!Auth::user()->can('mange_customers')) {
+                    $ownsCustomer = Auth::user()->customers()->where('id', $req->customer)->exists();
+                    if (!$ownsCustomer) {
+                        return response()->json([
+                            'status' => 2,
+                            'error'  => ['You do not have permission to modify task for this customer']
+                        ]);
+                    }
+                }
+                $taskUpdateData['customer_id'] = $req->customer;
+                $taskUpdateData['owner'] = 'customer';
+            } elseif ($req->filled('owner') && $req->owner === 'admin') {
+                $taskUpdateData['customer_id'] = null;
+                $taskUpdateData['owner'] = 'admin';
+            }
+
+            if ($req->filled('created_at')) {
+                $taskUpdateData['created_at'] = $req->created_at;
+            }
+
+            // Structured form template fields
+            $oldAdditionalData = $oldTask->additional_data ?? [];
+            $structuredFields = [];
+
+            if ($req->filled('template')) {
+                $template = Form_Template::with('fields')->find($req->input('template'));
+                if ($template) {
+                    foreach ($template->fields as $field) {
+                        $fieldName = $field->name;
+                        $fieldType = $field->type;
+
+                        if ($fieldType === 'file_expiration_date') {
+                            $fileFieldName = $fieldName . '_file';
+                            $expirationFieldName = $fieldName . '_expiration';
+
+                            if ($req->hasFile("additional_fields.$fileFieldName")) {
+                                if (isset($oldAdditionalData[$fieldName]['value'])) {
+                                    FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
+                                }
+                                $path = FileHelper::uploadFile($req->file("additional_fields.$fileFieldName"), 'tasks/files');
+                                $structuredFields[$fieldName] = [
+                                    'label'      => $field->label,
+                                    'value'      => $path,
+                                    'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                    'type'       => $fieldType,
+                                ];
+                            } elseif (isset($oldAdditionalData[$fieldName])) {
+                                $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                                if ($req->filled("additional_fields.$expirationFieldName")) {
+                                    $structuredFields[$fieldName]['expiration'] = $req->input("additional_fields.$expirationFieldName");
+                                }
+                            } else {
+                                if ($req->filled("additional_fields.$expirationFieldName")) {
+                                    $structuredFields[$fieldName] = [
+                                        'label'      => $field->label,
+                                        'value'      => null,
+                                        'expiration' => $req->input("additional_fields.$expirationFieldName"),
+                                        'type'       => $fieldType,
+                                    ];
+                                }
+                            }
+                        } elseif (in_array($fieldType, ['file', 'image'])) {
+                            if ($req->hasFile("additional_fields.$fieldName")) {
+                                if (isset($oldAdditionalData[$fieldName]['value'])) {
+                                    FileHelper::deleteFileIfExists($oldAdditionalData[$fieldName]['value']);
+                                }
+                                $path = FileHelper::uploadFile($req->file("additional_fields.$fieldName"), 'tasks/files');
+                                $structuredFields[$fieldName] = [
+                                    'label' => $field->label,
+                                    'value' => $path,
+                                    'type'  => $fieldType,
+                                ];
+                            } elseif (isset($oldAdditionalData[$fieldName])) {
+                                $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                            }
+                        } else {
+                            if ($req->has("additional_fields.$fieldName")) {
+                                $structuredFields[$fieldName] = [
+                                    'label' => $field->label,
+                                    'value' => $req->input("additional_fields.$fieldName"),
+                                    'type'  => $fieldType,
+                                ];
+                            } elseif (isset($oldAdditionalData[$fieldName])) {
+                                $structuredFields[$fieldName] = $oldAdditionalData[$fieldName];
+                            }
+                        }
+                    }
+                    $taskUpdateData['additional_data'] = $structuredFields;
+                }
+            }
+
+            // Pickup point
+            $pickup_point = [
+                'type'           => 'pickup',
+                'sequence'       => 1,
+                'contact_name'   => $req->pickup_name,
+                'contact_phone'  => $req->pickup_phone,
+                'contact_emil'   => $req->pickup_email,
+                'address'        => $req->pickup_address,
+                'latitude'       => $req->pickup_latitude,
+                'longitude'      => $req->pickup_longitude,
+                'scheduled_time' => $req->pickup_before,
+                'note'           => $req->pickup_note,
+            ];
+            if ($req->hasFile('pickup_image')) {
+                if ($oldTask->pickup && $oldTask->pickup->image) {
+                    FileHelper::deleteFileIfExists($oldTask->pickup->image);
+                }
+                $pickup_point['image'] = (new FunctionsController())->convert($req->pickup_image, 'tasks/points');
+            }
+
+            // Delivery point
+            $delivery_point = [
+                'type'           => 'delivery',
+                'sequence'       => 1,
+                'contact_name'   => $req->delivery_name,
+                'contact_phone'  => $req->delivery_phone,
+                'contact_emil'   => $req->delivery_email,
+                'address'        => $req->delivery_address,
+                'latitude'       => $req->delivery_latitude,
+                'longitude'      => $req->delivery_longitude,
+                'scheduled_time' => $req->delivery_before,
+                'note'           => $req->delivery_note,
+            ];
+            if ($req->hasFile('delivery_image')) {
+                if ($oldTask->delivery && $oldTask->delivery->image) {
+                    FileHelper::deleteFileIfExists($oldTask->delivery->image);
+                }
+                $delivery_point['image'] = (new FunctionsController())->convert($req->delivery_image, 'tasks/points');
+            }
+
+            // Update Task model without triggering standard 'تحديث' activity log
+            Task::withoutEvents(function () use ($oldTask, $taskUpdateData) {
+                $oldTask->update($taskUpdateData);
+            });
+
+            if ($oldTask->pickup) {
+                $oldTask->pickup->update($pickup_point);
+            } else {
+                $oldTask->points()->create($pickup_point);
+            }
+
+            if ($oldTask->delivery) {
+                $oldTask->delivery->update($delivery_point);
+            } else {
+                $oldTask->points()->create($delivery_point);
+            }
+
+            // Record in Platform Activity Log with action 'تعديل إجباري'
+            $oldValuesForLog = array_filter([
+                'task_id'          => '#' . $oldTask->id,
+                'conditions'       => $oldTaskAttributes['conditions'] ?? null,
+                'owner'            => $oldTaskAttributes['owner'] ?? null,
+                'customer_id'      => $oldTaskAttributes['customer_id'] ?? null,
+                'broker_id'        => $oldTaskAttributes['broker_id'] ?? null,
+                'pricing_method'   => $oldTask->pricing_history['pricing_method'] ?? null,
+                'total_price'      => $oldTaskAttributes['total_price'] ?? null,
+                'pickup_contact'   => $oldPickupAttributes['contact_name'] ?? null,
+                'pickup_phone'     => $oldPickupAttributes['contact_phone'] ?? null,
+                'pickup_address'   => $oldPickupAttributes['address'] ?? null,
+                'delivery_contact' => $oldDeliveryAttributes['contact_name'] ?? null,
+                'delivery_phone'   => $oldDeliveryAttributes['contact_phone'] ?? null,
+                'delivery_address' => $oldDeliveryAttributes['address'] ?? null,
+            ]);
+
+            $newValuesForLog = array_filter([
+                'task_id'          => '#' . $oldTask->id,
+                'conditions'       => $taskUpdateData['conditions'] ?? null,
+                'owner'            => $taskUpdateData['owner'] ?? null,
+                'customer_id'      => $taskUpdateData['customer_id'] ?? null,
+                'broker_id'        => $taskUpdateData['broker_id'] ?? null,
+                'pricing_method'   => $data['pricing_method'] ?? null,
+                'total_price'      => $taskUpdateData['total_price'] ?? null,
+                'pickup_contact'   => $pickup_point['contact_name'] ?? null,
+                'pickup_phone'     => $pickup_point['contact_phone'] ?? null,
+                'pickup_address'   => $pickup_point['address'] ?? null,
+                'delivery_contact' => $delivery_point['contact_name'] ?? null,
+                'delivery_phone'   => $delivery_point['contact_phone'] ?? null,
+                'delivery_address' => $delivery_point['address'] ?? null,
+            ]);
+
+            ActivityLog::create([
+                'user_id'    => Auth::id(),
+                'action'     => 'تعديل إجباري',
+                'table_name' => 'tasks',
+                'old_values' => $oldValuesForLog,
+                'new_values' => $newValuesForLog,
+                'ip_address' => $userIp,
+            ]);
+
+            // Record in TaskHistory
+            $oldTask->history()->create([
+                'action_type' => 'force_updated',
+                'description' => 'التعديل الإجباري للمهمة بواسطة المسؤول: ' . Auth::user()->name,
+                'ip'          => $userIp,
+                'user_id'     => Auth::id(),
+                'driver_id'   => $oldTask->driver_id,
+            ]);
+
+            DB::commit();
+
+            // Notifications
+            $notiMessages = [
+                'user' => [
+                    'title' => 'تعديل إجباري على المهمة',
+                    'msg'   => "قام المسؤول (" . Auth::user()->name . ") بتحديث إجباري لبيانات المهمة رقم #{$oldTask->id}."
+                ],
+                'customer' => [
+                    'title' => 'تحديث في تفاصيل المهمة',
+                    'msg'   => "تم تعديل تفاصيل المهمة رقم #{$oldTask->id}."
+                ],
+                'driver' => [
+                    'title' => 'تنبيه: تعديل تفاصيل المهمة المسندة إليك',
+                    'msg'   => "تم تحديث بيانات المهمة رقم #{$oldTask->id}. يرجى مراجعة التفاصيل الجديدة."
+                ],
+            ];
+
+            $recipients = [
+                'user'     => $oldTask->user_id,
+                'customer' => $oldTask->customer_id,
+                'driver'   => $oldTask->driver_id,
+            ];
+
+            foreach ($recipients as $type => $recipientId) {
+                if ($recipientId && isset($notiMessages[$type])) {
+                    try {
+                        app(\App\Services\NotificationService::class)->send(
+                            $type,
+                            [$recipientId],
+                            $notiMessages[$type]['title'],
+                            $notiMessages[$type]['msg'],
+                            '/images/admin-icon.png',
+                            '/images/banner.png',
+                            "/tasks/{$oldTask->id}",
+                            'task_update'
+                        );
+                    } catch (\Throwable $e) {
+                        Log::error("Force update notification failed: " . $e->getMessage());
+                    }
+                }
+            }
+
+            return response()->json([
+                'status'  => 1,
+                'success' => __('تم التعديل الإجباري على المهمة بنجاح'),
+                'task_id' => $oldTask->id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 2,
+                'error'  => $e->getMessage()
+            ]);
+        }
+    }
+
     public function update(Request $req, TaskPricingService $pricingService)
     {
 
@@ -1437,6 +1880,7 @@ class TasksController extends Controller
                 'form_template_id' => $req->template,
                 'user_id' => Auth::id(),
                 'pricing_id' => $taskData['pricing'],
+                'pricing_history' => $data,
                 'vehicle_size_id' => $taskData['vehicles'][0],
                 'conditions' => $req->conditions,
                 'broker_id' => $req->broker_id ?? null,
@@ -1793,6 +2237,10 @@ class TasksController extends Controller
             'vehicles.*.quantity' => 'required|integer|min:1',
         ];
 
+        if ($req->boolean('is_force_update')) {
+            unset($rules['vehicles.*.vehicle'], $rules['vehicles.*.vehicle_type'], $rules['vehicles.*.vehicle_size'], $rules['vehicles.*.quantity']);
+        }
+
         if ($req->filled('template')) {
             $fields = Form_Field::where('form_template_id', $req->template)->get();
             foreach ($fields as $field) {
@@ -1959,6 +2407,13 @@ class TasksController extends Controller
 
         $sizes = collect($req->input('vehicles'))->pluck('vehicle_size')->unique()->filter()->values();
 
+        if ($sizes->isEmpty() && ($req->filled('id') || $req->input('is_force_update') == '1')) {
+            $existingTask = Task::find($req->id);
+            if ($existingTask && $existingTask->vehicle_size_id) {
+                $sizes = collect([$existingTask->vehicle_size_id]);
+            }
+        }
+
         if ($sizes->count() > 1) {
             return response()->json([
                 'status' => 2,
@@ -1972,6 +2427,12 @@ class TasksController extends Controller
             $sizes
         )->pluck('id');
 
+        if ($pricingTemplates->count() < 1 && ($req->filled('id') || $req->input('is_force_update') == '1')) {
+            $existingTask = Task::find($req->id);
+            if ($existingTask && $existingTask->pricing_id) {
+                $pricingTemplates = collect([$existingTask->pricing_id]);
+            }
+        }
 
         if ($pricingTemplates->count() < 1) {
             return response()->json([
@@ -2068,10 +2529,19 @@ class TasksController extends Controller
 
     public function indexList()
     {
+        $customers = Auth::user()->customers;
+        if (Auth::user()->can('mange_customers')) {
+            $customers = Customer::where('status', 'active')->get();
+        }
+        $vehicles = Vehicle::all();
+        $templates = Form_Template::all();
         $teams = Teams::all();
+        $task_template = Settings::where('key', 'task_template')->first();
+        $task_from_template = Settings::where('key', 'task_from_port_template')->first();
+        $task_to_template = Settings::where('key', 'task_to_port_template')->first();
         $brokers = User::where('status', 'active')->where('investor', 0)->get();
 
-        return view('admin.tasks.list', compact('teams', 'brokers'));
+        return view('admin.tasks.list', compact('teams', 'brokers', 'customers', 'vehicles', 'templates', 'task_template', 'task_from_template', 'task_to_template'));
     }
 
     public function getListData(Request $request)
@@ -2608,7 +3078,16 @@ class TasksController extends Controller
             'history.driver',
         ])->findOrFail($id);
 
-        return view('admin.tasks.show', compact('task'));
+        $customers = Auth::user()->customers;
+        if (Auth::user()->can('mange_customers')) {
+            $customers = Customer::where('status', 'active')->get();
+        }
+        $vehicles = Vehicle::all();
+        $templates = Form_Template::all();
+        $task_template = Settings::where('key', 'task_template')->first();
+        $brokers = User::where('status', 'active')->where('investor', 0)->get();
+
+        return view('admin.tasks.show', compact('task', 'customers', 'vehicles', 'templates', 'task_template', 'brokers'));
     }
 
 
@@ -3109,14 +3588,17 @@ class TasksController extends Controller
             );
 
             Log::alert('انشاء الحركة في المحفظة');
-            if ($driver->team()->exists()) {
-                Team_Wallet_Transaction::create([
-                    'amount' => $task->total_price - $task->commission,
-                    'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
-                    'transaction_type' => 'credit',
-                    'team_wallet_id' => $driver->team->teamWallet->id,
-                    'task_id' => $task->id,
-                ]);
+            if ($driver->team()->exists() && $driver->team) {
+                $teamWallet = $driver->team->teamWallet ?: Team_Wallet::firstOrCreate(['team_id' => $driver->team->id]);
+                if ($teamWallet) {
+                    Team_Wallet_Transaction::create([
+                        'amount' => $task->total_price - $task->commission,
+                        'description' => 'Delivery Amount for Task #' . $task->id . ($req->delivery_number ? ' - Delivery Number: ' . $req->delivery_number : '') . 'Driver: ' . $driver->name,
+                        'transaction_type' => 'credit',
+                        'team_wallet_id' => $teamWallet->id,
+                        'task_id' => $task->id,
+                    ]);
+                }
             }
 
             Log::alert('تم حفظ الحركة');
@@ -3618,14 +4100,16 @@ class TasksController extends Controller
                 if ($task->closed) {
                     $transaction = Wallet_Transaction::where('task_id', $task->id)->where('transaction_type', 'credit')->first();
                     if ($transaction) {
-                        Team_Wallet_Transaction::create([
-                            'amount' => $transaction->amount,
-                            'description' => $transaction->description . ' Driver: ' . $task->driver->name,
-                            'transaction_type' => 'credit',
-                            'team_wallet_id' => $task->driver->team->teamWallet->id,
-                            'task_id' => $task->id
-
-                        ]);
+                        $teamWallet = $task->driver->team->teamWallet ?: Team_Wallet::firstOrCreate(['team_id' => $task->driver->team_id]);
+                        if ($teamWallet) {
+                            Team_Wallet_Transaction::create([
+                                'amount' => $transaction->amount,
+                                'description' => $transaction->description . ' Driver: ' . $task->driver->name,
+                                'transaction_type' => 'credit',
+                                'team_wallet_id' => $teamWallet->id,
+                                'task_id' => $task->id
+                            ]);
+                        }
                     }
                     $transaction->team_id = $task->driver->team_id;
                     $transaction->save();
@@ -3940,6 +4424,17 @@ class TasksController extends Controller
             $newTaskData['last_attempt_at'] = null;
             $newTaskData['pending_driver_id'] = null;
             $newTaskData['payment_pending_amount'] = null;
+
+            // تصفير بيانات المستثمر (لضمان الدقة المحاسبية وعدم احتساب أرباح دون تمويل فعلي للمهمة الجديدة)
+            $newTaskData['investor_id'] = null;
+            $newTaskData['investor_payment_status'] = null;
+
+            // تصفير بيانات صفقات متعهد (أمن) لتبدأ كصفقة جديدة مستقلة
+            $newTaskData['amnn_deal_number'] = null;
+            $newTaskData['amnn_deal_id'] = null;
+            $newTaskData['amnn_payment_url'] = null;
+            $newTaskData['amnn_deal_status'] = null;
+            $newTaskData['is_escrow'] = false;
 
             // معالجة additional_data وتكرار الملفات
             $newAdditionalData = [];

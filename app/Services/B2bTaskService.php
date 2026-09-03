@@ -371,6 +371,17 @@ class B2bTaskService
             $newTaskData['payment_paid']     = 'pending';
             $newTaskData['order_id']         = null; // كفصل المهمة عن الطلب الأصلي
 
+            // تصفير بيانات المستثمر (لضمان الدقة المحاسبية)
+            $newTaskData['investor_id'] = null;
+            $newTaskData['investor_payment_status'] = null;
+
+            // تصفير بيانات صفقات متعهد (أمن)
+            $newTaskData['amnn_deal_number'] = null;
+            $newTaskData['amnn_deal_id'] = null;
+            $newTaskData['amnn_payment_url'] = null;
+            $newTaskData['amnn_deal_status'] = null;
+            $newTaskData['is_escrow'] = false;
+
             // تكرار الملفات في additional_data
             if (!empty($newTaskData['additional_data'])) {
                 $newTaskData['additional_data'] = $this->duplicateFilesInData($newTaskData['additional_data']);

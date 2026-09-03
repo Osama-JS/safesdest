@@ -15,6 +15,16 @@
                     <div class="row">
                         <div class="col-md-5">
                             <input type="hidden" name="id" id="task-id">
+                            <input type="hidden" name="is_force_update" id="is-force-update" value="0">
+
+                            <div id="force-update-notice" class="alert alert-warning py-2 mb-3" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <i class="ti ti-shield-lock fs-4 me-2"></i>
+                                    <div>
+                                        <strong>{{ __('وضع التعديل الإجباري للمهمة') }}</strong>: {{ __('نوع وحجم المركبة مقفل للحفاظ على سلامة التكليف، ويمكنك تعديل باقي بيانات المهمة.') }}
+                                    </div>
+                                </div>
+                            </div>
 
                             <ul class="nav nav-tabs" id="taskTabs" role="tablist">
                                 <li class="nav-item" role="presentation">

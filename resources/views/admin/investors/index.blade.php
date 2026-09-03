@@ -98,13 +98,18 @@
     </div>
 
     <div class="card">
-        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">{{ __('Investors List') }}</h5>
-            @can('save_investors')
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#investorModal" id="btn-add-investor">
-                    <i class="ti ti-plus me-1"></i> {{ __('Add New Investor') }}
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportInvestorsModal" id="btn-export-investors">
+                    <i class="ti ti-file-spreadsheet me-1"></i> {{ __('Comprehensive Excel Report') }}
                 </button>
-            @endcan
+                @can('save_investors')
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#investorModal" id="btn-add-investor">
+                        <i class="ti ti-plus me-1"></i> {{ __('Add New Investor') }}
+                    </button>
+                @endcan
+            </div>
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-investors table border-top">
@@ -548,6 +553,80 @@
                         <button type="button" class="btn btn-primary me-sm-3 me-1" id="btnLinkTasks">{{ __('Link Selected Tasks') }}</button>
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal لتصدير تقرير المستثمرين الشامل إلى ملف Excel --}}
+    <div class="modal fade" id="exportInvestorsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-sm-5 pb-5">
+                    <div class="text-center mb-4">
+                        <div class="avatar avatar-lg bg-label-success mx-auto mb-3">
+                            <span class="avatar-initial rounded-circle"><i class="ti ti-file-spreadsheet fs-2"></i></span>
+                        </div>
+                        <h3 class="mb-2">{{ __('Comprehensive Investors Report') }}</h3>
+                        <p class="text-muted">{{ __('Export all investment wallets, commission wallets, and statistics into a single Excel file.') }}</p>
+                    </div>
+
+                    <form id="exportInvestorsForm" method="GET" action="{{ route('admin.investors.export-all-excel') }}">
+                        <div class="row g-3">
+                            {{-- تحديد المستثمرين (متعدد أو الكل) --}}
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label mb-0" for="export_investor_ids">{{ __('Investors') }}</label>
+                                    <button type="button" class="btn btn-xs btn-label-primary" id="btn-toggle-all-investors">
+                                        <i class="ti ti-checks me-1"></i>{{ __('Select All / Clear') }}
+                                    </button>
+                                </div>
+                                <select name="investor_ids[]" id="export_investor_ids" class="form-select select2" multiple="multiple">
+                                    @php
+                                        $allInvestors = \App\Models\User::where('investor', true)->where('status', '!=', 'deleted')->orderBy('name')->get();
+                                    @endphp
+                                    @foreach ($allInvestors as $inv)
+                                        <option value="{{ $inv->id }}">{{ $inv->name }} ({{ $inv->phone ?? $inv->email }})</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted d-block mt-1">{{ __('Leave empty to export for all investors, or select multiple investors.') }}</small>
+                            </div>
+
+                            {{-- تاريخ البداية --}}
+                            <div class="col-md-6">
+                                <label class="form-label" for="export_from_date">{{ __('From Date') }}</label>
+                                <input type="date" name="from_date" id="export_from_date" class="form-control">
+                            </div>
+
+                            {{-- تاريخ النهاية --}}
+                            <div class="col-md-6">
+                                <label class="form-label" for="export_to_date">{{ __('To Date') }}</label>
+                                <input type="date" name="to_date" id="export_to_date" class="form-control">
+                            </div>
+
+                            {{-- اختصارات الفترات السريعة --}}
+                            <div class="col-12">
+                                <label class="form-label text-muted small d-block mb-2">{{ __('Quick Date Presets') }}</label>
+                                <div class="btn-group btn-group-sm w-100 flex-wrap" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-preset-date" data-preset="all">{{ __('All Periods') }}</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-preset-date" data-preset="today">{{ __('Today') }}</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-preset-date" data-preset="this_month">{{ __('This Month') }}</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-preset-date" data-preset="last_month">{{ __('Last Month') }}</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-preset-date" data-preset="this_year">{{ __('This Year') }}</button>
+                                </div>
+                            </div>
+
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit" class="btn btn-success me-sm-3 me-1" id="btnSubmitExport">
+                                    <i class="ti ti-download me-1"></i> {{ __('Download Excel Report') }}
+                                </button>
+                                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

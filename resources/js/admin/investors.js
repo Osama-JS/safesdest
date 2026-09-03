@@ -581,4 +581,78 @@ $(function () {
       }
     });
   });
+
+  // Handle quick date presets for Export Modal
+  $(document).on('click', '.btn-preset-date', function () {
+    const preset = $(this).data('preset');
+    const today = new Date();
+    const formatDate = d => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    let fromDate = '';
+    let toDate = '';
+
+    if (preset === 'today') {
+      fromDate = formatDate(today);
+      toDate = formatDate(today);
+    } else if (preset === 'this_month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      fromDate = formatDate(firstDay);
+      toDate = formatDate(lastDay);
+    } else if (preset === 'last_month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+      fromDate = formatDate(firstDay);
+      toDate = formatDate(lastDay);
+    } else if (preset === 'this_year') {
+      const firstDay = new Date(today.getFullYear(), 0, 1);
+      const lastDay = new Date(today.getFullYear(), 11, 31);
+      fromDate = formatDate(firstDay);
+      toDate = formatDate(lastDay);
+    } else if (preset === 'all') {
+      fromDate = '';
+      toDate = '';
+    }
+
+    $('#export_from_date').val(fromDate);
+    $('#export_to_date').val(toDate);
+
+    $('.btn-preset-date').removeClass('btn-secondary').addClass('btn-outline-secondary');
+    $(this).removeClass('btn-outline-secondary').addClass('btn-secondary');
+  });
+
+  // Init select2 for export modal on shown
+  $('#exportInvestorsModal').on('shown.bs.modal', function () {
+    $('#export_investor_ids').select2({
+      dropdownParent: $('#exportInvestorsModal'),
+      placeholder: __('All Investors (Default)'),
+      allowClear: true,
+      width: '100%'
+    });
+  });
+
+  // Toggle select all / clear investors in export modal
+  $(document).on('click', '#btn-toggle-all-investors', function () {
+    const $select = $('#export_investor_ids');
+    const allValues = $select.find('option').map(function () { return $(this).val(); }).get();
+    const currentValues = $select.val() || [];
+
+    if (currentValues.length === allValues.length) {
+      $select.val([]).trigger('change');
+    } else {
+      $select.val(allValues).trigger('change');
+    }
+  });
+
+  // Auto hide modal on form submit
+  $('#exportInvestorsForm').on('submit', function () {
+    setTimeout(function () {
+      $('#exportInvestorsModal').modal('hide');
+    }, 600);
+  });
 });

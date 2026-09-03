@@ -92,13 +92,130 @@
     </style>
 @endsection
 @section('page-script')
+    @vite(['resources/js/admin/tasks/force-edit.js', 'resources/js/ajax.js'])
     <script>
+        const canForceEdit = {{ auth()->user()->can('force_update_tasks') ? 'true' : 'false' }};
+        const templateId = {{ $task->form_template_id ?? 0 }};
+
         function openReport() {
             const reportWindow = window.open('{{ route('tasks.report', $task->id) }}', '_blank');
         }
 
         function openCustomPolicy() {
             window.open('{{ route('tasks.policy_custom', $task->id) }}', '_blank');
+        }
+
+        function createMtahdDealForTask(taskId) {
+            Swal.fire({
+                title: '{{ __("إنشاء صفقة ضمان مالي") }}',
+                text: '{{ __("هل ترغب في إنشاء صفقة ضمان مالي في منصة متعهد وتوليد رابط سداد العميل؟") }}',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '{{ __("نعم، أنشئ الصفقة") }}',
+                cancelButtonText: '{{ __("إلغاء") }}',
+                customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: '{{ __("جاري إنشاء الصفقة...") }}',
+                        text: '{{ __("يتم الاتصال بمنصة متعهد") }}',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    $.post(`{{ url('admin/mtahd-deals/create-for-task') }}/${taskId}`, { _token: '{{ csrf_token() }}' }, function(res) {
+                        if (res.status) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '{{ __("تم إنشاء الصفقة بنجاح!") }}',
+                                html: `
+                                    <p class="mb-2">{{ __("رقم الصفقة:") }} <b>${res.deal_number}</b></p>
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control form-control-sm" id="deal-payment-url-input" value="${res.payment_url}" readonly>
+                                        <button class="btn btn-sm btn-outline-primary" type="button" onclick="navigator.clipboard.writeText('${res.payment_url}'); Swal.fire({icon: 'success', title: '{{ __('تم نسخ الرابط بنجاح') }}', timer: 1500, showConfirmButton: false});">
+                                            <i class="ti ti-copy"></i>
+                                        </button>
+                                    </div>
+                                `,
+                                customClass: { confirmButton: 'btn btn-primary' }
+                            }).then(() => location.reload());
+                        } else {
+                            Swal.fire({ icon: 'error', title: '{{ __("فشل إنشاء الصفقة") }}', text: res.error || '{{ __("حدث خطأ أثناء الاتصال بمتعهد") }}' });
+                        }
+                    }).fail(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("فشل الاتصال بالسيرفر") }}' }));
+                }
+            });
+        }
+
+        function syncMtahdDeal(dealNumber) {
+            Swal.fire({
+                title: '{{ __("جاري الاستعلام...") }}',
+                text: `{{ __("الاستعلام عن الصفقة") }} ${dealNumber}`,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            $.post(`{{ url('admin/mtahd-deals') }}/${dealNumber}/check-status`, { _token: '{{ csrf_token() }}' }, function(res) {
+                if (res.status) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '{{ __("نتيجة الاستعلام") }}',
+                        text: '{{ __("تمت المزامنة بنجاح") }}',
+                        customClass: { confirmButton: 'btn btn-primary' }
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: '{{ __("فشل الاستعلام") }}', text: res.error || '{{ __("تعذر جلب البيانات") }}' });
+                }
+            }).fail(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("فشل الاتصال") }}' }));
+        }
+
+        function releaseMtahdDeal(dealNumber) {
+            Swal.fire({
+                title: '{{ __("تحرير الضمان المالي") }}',
+                text: `{{ __("هل أنت متأكد من تحرير وصرف الضمان المالي للصفقة") }} ${dealNumber}؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '{{ __("نعم، حرر الضمان") }}',
+                cancelButtonText: '{{ __("إلغاء") }}',
+                customClass: { confirmButton: 'btn btn-success me-2', cancelButton: 'btn btn-label-secondary' },
+                buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: '{{ __("جاري التنفيذ...") }}', didOpen: () => { Swal.showLoading(); } });
+                    $.post(`{{ url('admin/mtahd-deals') }}/${dealNumber}/release`, { _token: '{{ csrf_token() }}', task_id: '{{ $task->id }}' }, function(res) {
+                        if (res.status) {
+                            Swal.fire({ icon: 'success', title: '{{ __("نجاح") }}', text: res.message }).then(() => location.reload());
+                        } else {
+                            Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: res.error });
+                        }
+                    }).fail(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("فشل الاتصال") }}' }));
+                }
+            });
+        }
+
+        function cancelMtahdDeal(dealNumber) {
+            Swal.fire({
+                title: '{{ __("إلغاء الصفقة واسترداد الضمان") }}',
+                text: `{{ __("أدخل سبب إلغاء الصفقة") }} ${dealNumber}:`,
+                input: 'textarea',
+                inputPlaceholder: '{{ __("سبب الإلغاء...") }}',
+                showCancelButton: true,
+                confirmButtonText: '{{ __("تأكيد الإلغاء") }}',
+                cancelButtonText: '{{ __("تراجع") }}',
+                customClass: { confirmButton: 'btn btn-danger me-2', cancelButton: 'btn btn-label-secondary' },
+                buttonsStyling: false,
+                inputValidator: (v) => { if (!v) return '{{ __("يرجى كتابة سبب الإلغاء") }}'; }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: '{{ __("جاري الإلغاء...") }}', didOpen: () => { Swal.showLoading(); } });
+                    $.post(`{{ url('admin/mtahd-deals') }}/${dealNumber}/cancel`, { _token: '{{ csrf_token() }}', task_id: '{{ $task->id }}', reason: result.value }, function(res) {
+                        if (res.status) {
+                            Swal.fire({ icon: 'success', title: '{{ __("نجاح") }}', text: res.message }).then(() => location.reload());
+                        } else {
+                            Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: res.error });
+                        }
+                    }).fail(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("فشل الاتصال") }}' }));
+                }
+            });
         }
     </script>
 @endsection
@@ -135,6 +252,15 @@
                                 <i class="fas fa-file-invoice me-1"></i>
                                 {{ __('Download Invoice') }}
                             </a>
+
+                            @can('force_update_tasks')
+                                @if(!in_array(strtolower($task->status), ['in_progress', 'cancelled', 'cancel', 'canceled', 'refund', 'refunded']) && !$task->refunded)
+                                    <button type="button" class="btn btn-sm btn-warning force-edit-task" data-id="{{ $task->id }}">
+                                        <i class="fas fa-edit me-1"></i>
+                                        {{ __('تعديل إجباري') }}
+                                    </button>
+                                @endif
+                            @endcan
 
                             <a href="{{ route('tasks.list') }}" class="btn btn-sm btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>
@@ -672,8 +798,84 @@
 
             </div>
 
-            <!-- سجل الأحداث -->
-            <div class="col-lg-4 col-md-12">
+                <!-- بطاقة الضمان المالي في متعهد -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-header bg-label-primary d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0 text-primary">
+                            <i class="ti ti-shield-check me-2"></i>{{ __('ضمان مالي (متعهد / Escrow)') }}
+                        </h5>
+                        @if ($task->amnn_deal_number)
+                            <span class="badge bg-primary">{{ $task->mtahd_status_label }}</span>
+                        @else
+                            <span class="badge bg-label-secondary">{{ __('غير منشأ') }}</span>
+                        @endif
+                    </div>
+                    <div class="card-body pt-3">
+                        @if ($task->amnn_deal_number)
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span class="text-muted">{{ __('رقم الصفقة:') }}</span>
+                                <span class="fw-bold font-monospace text-dark">{{ $task->amnn_deal_number }}</span>
+                            </div>
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span class="text-muted">{{ __('مبلغ الضمان:') }}</span>
+                                <span class="fw-bold text-success">{{ number_format($task->total_price, 2) }} SAR</span>
+                            </div>
+                            <div class="mb-3 d-flex justify-content-between">
+                                <span class="text-muted">{{ __('حالة الضمان:') }}</span>
+                                <span class="badge bg-label-info">{{ $task->mtahd_status_label }}</span>
+                            </div>
+
+                            @if($task->amnn_payment_url)
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small mb-1">{{ __('رابط سداد العميل في متعهد:') }}</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control font-monospace" id="amnn_payment_link_val" value="{{ $task->amnn_payment_url }}" readonly>
+                                        <button class="btn btn-outline-primary" type="button" onclick="navigator.clipboard.writeText('{{ $task->amnn_payment_url }}'); Swal.fire({icon: 'success', title: '{{ __('تم نسخ الرابط بنجاح') }}', timer: 1500, showConfirmButton: false});">
+                                            <i class="ti ti-copy"></i>
+                                        </button>
+                                        <a href="{{ $task->amnn_payment_url }}" target="_blank" class="btn btn-primary" title="{{ __('فتح صفحة السداد') }}">
+                                            <i class="ti ti-external-link"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="d-flex gap-1 justify-content-between mt-3 pt-2 border-top flex-wrap">
+                                <button type="button" class="btn btn-xs btn-outline-info" onclick="syncMtahdDeal('{{ $task->amnn_deal_number }}')">
+                                    <i class="ti ti-refresh me-1"></i>{{ __('مزامنة') }}
+                                </button>
+                                @if($task->amnn_deal_status === 'paid')
+                                    <button type="button" class="btn btn-xs btn-outline-success" onclick="releaseMtahdDeal('{{ $task->amnn_deal_number }}')">
+                                        <i class="ti ti-cash me-1"></i>{{ __('تحرير') }}
+                                    </button>
+                                @endif
+                                @if(!in_array($task->amnn_deal_status, ['released', 'cancelled']))
+                                    <button type="button" class="btn btn-xs btn-outline-danger" onclick="cancelMtahdDeal('{{ $task->amnn_deal_number }}')">
+                                        <i class="ti ti-ban me-1"></i>{{ __('إلغاء') }}
+                                    </button>
+                                @endif
+                            </div>
+                        @else
+                            <p class="text-muted small mb-3">
+                                {{ __('يمكنك إنشاء صفقة ضمان مالي في منصة متعهد لهذه المهمة بقيمة') }} <b class="text-dark">{{ number_format($task->total_price, 2) }} SAR</b> {{ __('وتوليد رابط سداد آمن لمشاركته مع العميل.') }}
+                            </p>
+                            @if (!\App\Services\MtahdService::isServiceEnabled())
+                                <div class="alert alert-warning py-2 mb-0 small text-center">
+                                    <i class="ti ti-alert-triangle me-1"></i>{{ __('خدمة متعهد معطلة حالياً في إعدادات النظام') }}
+                                </div>
+                            @elseif ($task->payment_status !== 'completed' && $task->payment_status !== 'paid')
+                                <button type="button" class="btn btn-sm btn-primary w-100" onclick="createMtahdDealForTask({{ $task->id }})">
+                                    <i class="ti ti-shield-plus me-1"></i>{{ __('إنشاء صفقة متعهد وتوليد رابط السداد') }}
+                                </button>
+                            @else
+                                <div class="alert alert-success py-2 mb-0 small text-center">
+                                    <i class="ti ti-circle-check me-1"></i>{{ __('المهمة مدفوعة بالكامل مسبقاً') }}
+                                </div>
+                            @endif
+                        @endif
+                    </div>
+                </div>
+
                 <div class="card info-card">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="mb-0 text-dark">
@@ -710,4 +912,9 @@
             </div>
         </div>
     </div>
+    @include('admin.tasks.from-modal', [
+        'customers' => \App\Models\Customer::where('status', 'active')->get(),
+        'vehicles' => \App\Models\Vehicle::all(),
+        'templates' => \App\Models\Form_Template::all()
+    ])
 @endsection

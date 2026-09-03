@@ -26,8 +26,12 @@
                             <span class="badge bg-label-success"><i class="ti ti-plus me-1"></i> {{ $log->action }}</span>
                         @elseif($log->action == 'تحديث')
                             <span class="badge bg-label-warning"><i class="ti ti-edit me-1"></i> {{ $log->action }}</span>
-                        @else
+                        @elseif($log->action == 'تعديل إجباري')
+                            <span class="badge bg-danger text-white"><i class="ti ti-shield-lock me-1"></i> {{ $log->action }}</span>
+                        @elseif($log->action == 'حذف')
                             <span class="badge bg-label-danger"><i class="ti ti-trash me-1"></i> {{ $log->action }}</span>
+                        @else
+                            <span class="badge bg-label-primary"><i class="ti ti-activity me-1"></i> {{ $log->action }}</span>
                         @endif
                     </div>
                     <div class="col-md-6">
@@ -52,10 +56,10 @@
                         <thead class="table-light">
                             <tr>
                                 <th>اسم الحقل (Field)</th>
-                                @if($log->action == 'تحديث' || $log->action == 'حذف')
+                                @if(in_array($log->action, ['تحديث', 'حذف', 'تعديل إجباري']))
                                     <th class="text-danger">القيمة القديمة</th>
                                 @endif
-                                @if($log->action == 'تحديث' || $log->action == 'إنشاء')
+                                @if(in_array($log->action, ['تحديث', 'إنشاء', 'تعديل إجباري']))
                                     <th class="text-success">القيمة الجديدة</th>
                                 @endif
                             </tr>
@@ -76,7 +80,7 @@
                                 <tr>
                                     <td class="fw-medium"><code>{{ $key }}</code></td>
                                     
-                                    @if($log->action == 'تحديث' || $log->action == 'حذف')
+                                    @if(in_array($log->action, ['تحديث', 'حذف', 'تعديل إجباري']))
                                         <td>
                                             @if(isset($log->old_values[$key]))
                                                 @if(is_array($log->old_values[$key]))
@@ -90,7 +94,7 @@
                                         </td>
                                     @endif
 
-                                    @if($log->action == 'تحديث' || $log->action == 'إنشاء')
+                                    @if(in_array($log->action, ['تحديث', 'إنشاء', 'تعديل إجباري']))
                                         <td>
                                             @if(isset($log->new_values[$key]))
                                                 @if(is_array($log->new_values[$key]))

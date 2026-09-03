@@ -97,6 +97,8 @@ class ActivityLogController extends Controller
                 $actionBadge = '<span class="badge bg-label-warning">' . $log->action . '</span>';
             } elseif ($log->action == 'حذف') {
                 $actionBadge = '<span class="badge bg-label-danger">' . $log->action . '</span>';
+            } elseif ($log->action == 'تعديل إجباري') {
+                $actionBadge = '<span class="badge bg-label-danger border border-danger fw-bold"><i class="ti ti-alert-triangle me-1"></i>' . $log->action . '</span>';
             } else {
                 $actionBadge = '<span class="badge bg-label-primary">' . $log->action . '</span>';
             }

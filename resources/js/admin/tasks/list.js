@@ -319,6 +319,11 @@ $(function () {
               full.payment !== 'pending' &&
               !full.closed;
 
+            const canForceEdit =
+              (typeof canForceUpdateTasks === 'undefined' || canForceUpdateTasks) &&
+              !['cancelled', 'cancel', 'canceled', 'refund', 'refunded'].includes((full.status || '').toLowerCase()) &&
+              !full.refunded;
+
             return `
               <div class="d-flex align-items-center gap-2">
 
@@ -428,13 +433,14 @@ $(function () {
     $('.form_submit').trigger('reset');
 
     setTimeout(() => {
+      $('#submitModal').modal('hide');
       $('#paymentModal').modal('hide');
       $('#closedModal').modal('hide');
       $('#checkPaymentModal').modal('hide');
       $('#brokerModal').modal('hide');
       $('#assignTitle').html('');
       $('#refundModal').html('');
-    }, 2000);
+    }, 1500);
 
     if (dt_data) {
       dt_data.draw();
@@ -733,20 +739,21 @@ $(function () {
 
   $(document).on('change', '#task-payment-method', function () {
     const method = $(this).val();
-    if (method === 'credit') {
-      $('#receipt-section').hide();
+    $('#receipt-section').hide();
+    $('#mtahd-section').hide();
 
+    if (method === 'credit' || method === 'hyperpay_mada') {
       $('#pay-price').text($('#task-payment-total').val() + ' SAR');
+    } else if (method === 'mtahd') {
+      $('#mtahd-section').show();
+      $('#pay-price').text($('#task-payment-total').val() + ' SAR (' + __('Mtahd Escrow') + ')');
     } else if (method === 'cash') {
-      $('#receipt-section').hide();
-
-      $('#pay-price').text('You need to Bay :' + $('#task-payment-commission').val() + ' SAR by credit card');
+      $('#pay-price').text('You need to Pay :' + $('#task-payment-commission').val() + ' SAR by credit card');
     } else if (method === 'wallet') {
-      $('#receipt-section').hide();
       $('#pay-price').html(
-        'You need to Bay' +
+        'You need to Pay ' +
           $('#task-payment-total').val() +
-          ' SAR From your wallet </br> <h6 class="alert alert-info">Check if your wallet and have the enough balance</h6>'
+          ' SAR From your wallet </br> <h6 class="alert alert-info">Check if your wallet has enough balance</h6>'
       );
     } else {
       $('#receipt-section').show();
@@ -845,15 +852,42 @@ $(function () {
                 handleErrors(data.error);
                 showBlockAlert('warning', 'حدث خطأ أثناء الإرسال!');
               } else if (data.status === 1) {
-                showBlockAlert('success', data.success, 1700);
-                showAlert('success', data.success, 5000, true);
-                if (data.hyperpay) {
+                $('#paymentModal').modal('hide');
+                $('.payment_submit').trigger('reset');
+                if (typeof dt_data !== 'undefined' && dt_data) {
+                  dt_data.draw();
+                }
+
+                // إذا كانت العملية متعهد: عرض رابط السداد ورقم الصفقة
+                if (data.deal_number || data.payment_url) {
+                  Swal.fire({
+                    icon: 'success',
+                    title: __('تم إنشاء صفقة الضمان المالي في متعهد'),
+                    html: `
+                      <p class="mb-2">${__('رقم الصفقة')}: <b class="font-monospace">${data.deal_number || '-'}</b></p>
+                      <div class="input-group mb-3">
+                        <input type="text" class="form-control form-control-sm font-monospace" id="mtahd_pay_url_val" value="${data.payment_url || data.url}" readonly>
+                        <button class="btn btn-sm btn-outline-primary" type="button" onclick="navigator.clipboard.writeText('${data.payment_url || data.url}'); Swal.fire({icon: 'success', title: 'تم نسخ الرابط بنجاح', timer: 1500, showConfirmButton: false});">
+                          <i class="ti ti-copy"></i>
+                        </button>
+                        <a href="${data.payment_url || data.url}" target="_blank" class="btn btn-sm btn-primary">
+                          <i class="ti ti-external-link"></i>
+                        </a>
+                      </div>
+                      <small class="text-muted">${__('يمكنك مشاركة الرابط أعلاه مع العميل لسداد قيمة المهمة.')}</small>
+                    `,
+                    customClass: { confirmButton: 'btn btn-primary' },
+                    buttonsStyling: false
+                  });
+                } else if (data.hyperpay && data.url) {
+                  showBlockAlert('success', data.message || data.success, 1700);
+                  showAlert('success', data.message || data.success, 5000, true);
                   setTimeout(function () {
                     window.location.href = data.url;
                   }, 2000);
                 } else {
-                  dt_data.draw();
-                  $('.payment_submit').trigger('reset');
+                  showBlockAlert('success', data.message || data.success, 1700);
+                  showAlert('success', data.message || data.success, 5000, true);
                 }
               } else if (data.status === 2) {
                 showAlert('error', data.error, 10000, true);

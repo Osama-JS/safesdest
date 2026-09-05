@@ -817,11 +817,11 @@
                     <span>إنشاء مهمة داخلية</span>
                 </button>
 
-                @if ($task_to_template?->value !== null)
+                @if (($task_to_template->value ?? null) !== null)
                     <!-- زر تصدير عبر الميناء -->
                     <button
                         class="task_type_template btn btn-outline-success d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill"
-                        data-template="{{ $task_from_template?->value }}">
+                        data-template="{{ $task_to_template?->value }}">
                         <i class="fas fa-ship"></i>
                         <span>إنشاء مهمة تصدير عبر الميناء</span>
                     </button>
@@ -829,11 +829,11 @@
 
 
 
-                @if ($task_from_template?->value !== null)
+                @if (($task_from_template->value ?? null) !== null)
                     <!-- زر استيراد من الميناء -->
                     <button
                         class="task_type_template btn btn-outline-warning d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill text-dark"
-                        data-template="{{ $task_to_template?->value }}">
+                        data-template="{{ $task_from_template?->value }}">
                         <i class="fas fa-dolly-flatbed"></i>
                         <span>إنشاء مهمة استيراد من الميناء</span>
                     </button>

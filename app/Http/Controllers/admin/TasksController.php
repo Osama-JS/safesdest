@@ -3085,9 +3085,11 @@ class TasksController extends Controller
         $vehicles = Vehicle::all();
         $templates = Form_Template::all();
         $task_template = Settings::where('key', 'task_template')->first();
+        $task_from_template = Settings::where('key', 'task_from_port_template')->first();
+        $task_to_template = Settings::where('key', 'task_to_port_template')->first();
         $brokers = User::where('status', 'active')->where('investor', 0)->get();
 
-        return view('admin.tasks.show', compact('task', 'customers', 'vehicles', 'templates', 'task_template', 'brokers'));
+        return view('admin.tasks.show', compact('task', 'customers', 'vehicles', 'templates', 'task_template', 'task_from_template', 'task_to_template', 'brokers'));
     }
 
 
@@ -4405,8 +4407,15 @@ class TasksController extends Controller
                 $newTaskData['created_at'],
                 $newTaskData['updated_at'],
                 $newTaskData['points'],
-                $newTaskData['ad']
+                $newTaskData['ad'],
+                $newTaskData['owner'],        // appended attribute - not a DB column
+                $newTaskData['b2b_detail'],   // relation - not a DB column
+                $newTaskData['b2bDetail']     // relation camelCase variant
             );
+
+            // تصفية الحقول لتبقى فقط تلك الموجودة في fillable
+            $allowedColumns = (new Task)->getFillable();
+            $newTaskData = array_intersect_key($newTaskData, array_flip($allowedColumns));
 
             // تعيين القيم الجديدة للحقول المطلوبة
             $newTaskData['driver_id'] = null;
@@ -4426,8 +4435,9 @@ class TasksController extends Controller
             $newTaskData['payment_pending_amount'] = null;
 
             // تصفير بيانات المستثمر (لضمان الدقة المحاسبية وعدم احتساب أرباح دون تمويل فعلي للمهمة الجديدة)
+            // ملاحظة: investor_payment_status هو NOT NULL enum بقيمة افتراضية 'none'
             $newTaskData['investor_id'] = null;
-            $newTaskData['investor_payment_status'] = null;
+            $newTaskData['investor_payment_status'] = 'none';
 
             // تصفير بيانات صفقات متعهد (أمن) لتبدأ كصفقة جديدة مستقلة
             $newTaskData['amnn_deal_number'] = null;
@@ -4548,8 +4558,8 @@ class TasksController extends Controller
             Log::error("Error duplicating task #{$request->id}: " . $e->getMessage());
 
             return response()->json([
-                'status' => 2,
-                'message' => __('Error duplicating task: ') . $e->getMessage()
+                'status'  => 2,
+                'error'   => __('Error duplicating task: ') . $e->getMessage()
             ]);
         }
     }

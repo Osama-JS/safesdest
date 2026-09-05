@@ -699,7 +699,7 @@
                     <span>إنشاء مهمة داخلية</span>
                 </button>
 
-                @if (optional($task_to_template)->value !== null)
+                @if (($task_to_template->value ?? null) !== null)
                     <!-- زر تصدير عبر الميناء -->
                     <button
                         class="task_type_template btn btn-outline-success d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill"
@@ -711,7 +711,7 @@
 
 
 
-                @if (optional($task_from_template)->value !== null)
+                @if (($task_from_template->value ?? null) !== null)
                     <!-- زر استيراد من الميناء -->
                     <button
                         class="task_type_template btn btn-outline-warning d-flex align-items-center justify-content-center gap-2 px-4 py-2 rounded-pill text-dark"

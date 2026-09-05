@@ -798,6 +798,8 @@
 
             </div>
 
+            <!-- الشريط الجانبي -->
+            <div class="col-lg-4 col-md-12">
                 <!-- بطاقة الضمان المالي في متعهد -->
                 <div class="card mb-4 border-0 shadow-sm">
                     <div class="card-header bg-label-primary d-flex justify-content-between align-items-center py-3">
@@ -913,8 +915,11 @@
         </div>
     </div>
     @include('admin.tasks.from-modal', [
-        'customers' => \App\Models\Customer::where('status', 'active')->get(),
-        'vehicles' => \App\Models\Vehicle::all(),
-        'templates' => \App\Models\Form_Template::all()
+        'customers' => $customers ?? \App\Models\Customer::where('status', 'active')->get(),
+        'vehicles' => $vehicles ?? \App\Models\Vehicle::all(),
+        'templates' => $templates ?? \App\Models\Form_Template::all(),
+        'task_template' => $task_template ?? null,
+        'task_from_template' => $task_from_template ?? null,
+        'task_to_template' => $task_to_template ?? null,
     ])
 @endsection

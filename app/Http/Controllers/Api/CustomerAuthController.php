@@ -132,7 +132,7 @@ class CustomerAuthController extends Controller
 
         // ─── خيار WhatsApp Cloud/Green API (الافتراضي) ───────────────
         $isSimulation = env('WHATSAPP_SIMULATION', false);
-        $otpCode = $isSimulation ? '1234' : (string) rand(1000, 9999);
+        $otpCode = $isSimulation ? '123456' : (string) rand(100000, 999999);
 
         $customer->update([
             'otp_code'       => Hash::make($otpCode),

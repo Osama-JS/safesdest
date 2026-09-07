@@ -82,11 +82,11 @@ class SystemStatisticsController extends Controller
       ->count();
 
     $cancelledTasks = (clone $tasksQuery)
-      ->where('status', 'canceled')
+      ->whereIn('status', ['canceled', 'refunded'])
       ->count();
 
     $inProgressTasks = (clone $tasksQuery)
-      ->whereNotIn('status', ['completed', 'canceled'])
+      ->whereNotIn('status', ['completed', 'canceled', 'refunded'])
       ->count();
 
     $closedTasks = (clone $tasksQuery)
@@ -125,40 +125,35 @@ class SystemStatisticsController extends Controller
    */
   private function getFinancialStatistics($dateFrom, $dateTo)
   {
-    // Total revenue from completed tasks
-    $totalRevenue = Task::whereBetween('created_at', [$dateFrom, $dateTo])
-      ->where('status', 'completed')->where('closed', true)
-      ->sum('total_price');
-
-    // Total commission from completed tasks
-    $totalCommission = Task::whereBetween('created_at', [$dateFrom, $dateTo])
-      ->where('status', 'completed')->where('closed', true)
-      ->sum('commission');
-
-    // Platform income (total_price - commission)
-    $platformIncome = $totalRevenue - $totalCommission;
-
-    // Average task price
-    $averageTaskPrice = Task::whereBetween('created_at', [$dateFrom, $dateTo])
+    // Closed & completed tasks base query
+    $closedTasksQuery = Task::whereBetween('created_at', [$dateFrom, $dateTo])
       ->where('status', 'completed')
-      ->avg('total_price') ?: 0;
+      ->where('closed', true);
 
-    // Average commission
-    $averageCommission = Task::whereBetween('created_at', [$dateFrom, $dateTo])
-      ->where('status', 'completed')
-      ->avg('commission') ?: 0;
+    // Total revenue from closed completed tasks
+    $totalRevenue = (clone $closedTasksQuery)->sum('total_price');
+
+    // Total commission from closed completed tasks
+    $totalCommission = (clone $closedTasksQuery)->sum('commission');
+
+    // Driver payouts (total_price - commission)
+    $driverPayouts = $totalRevenue - $totalCommission;
+
+    // Average task price for closed tasks
+    $averageTaskPrice = (clone $closedTasksQuery)->avg('total_price') ?: 0;
+
+    // Average commission for closed tasks
+    $averageCommission = (clone $closedTasksQuery)->avg('commission') ?: 0;
 
     // Revenue by payment method
-    $revenueByPaymentMethod = Task::whereBetween('created_at', [$dateFrom, $dateTo])
-      ->where('status', 'completed')
+    $revenueByPaymentMethod = (clone $closedTasksQuery)
       ->select('payment_method', DB::raw('sum(total_price) as total'))
       ->groupBy('payment_method')
       ->pluck('total', 'payment_method')
       ->toArray();
 
     // Commission by commission type
-    $commissionByType = Task::whereBetween('created_at', [$dateFrom, $dateTo])
-      ->where('status', 'completed')
+    $commissionByType = (clone $closedTasksQuery)
       ->select('commission_type', DB::raw('sum(commission) as total'))
       ->groupBy('commission_type')
       ->pluck('total', 'commission_type')
@@ -167,7 +162,8 @@ class SystemStatisticsController extends Controller
     return [
       'total_revenue' => round($totalRevenue, 2),
       'total_commission' => round($totalCommission, 2),
-      'platform_income' => round($platformIncome, 2),
+      'driver_payouts' => round($driverPayouts, 2),
+      'platform_income' => round($driverPayouts, 2), // Keep for backward compatibility
       'average_task_price' => round($averageTaskPrice, 2),
       'average_commission' => round($averageCommission, 2),
       'revenue_by_payment_method' => $revenueByPaymentMethod,
@@ -189,9 +185,10 @@ class SystemStatisticsController extends Controller
       ->pluck('count', 'date')
       ->toArray();
 
-    // Daily revenue
+    // Daily revenue (consistent with closed & completed)
     $dailyRevenue = Task::whereBetween('created_at', [$dateFrom, $dateTo])
       ->where('status', 'completed')
+      ->where('closed', true)
       ->select(DB::raw('DATE(created_at) as date'), DB::raw('sum(total_price) as revenue'))
       ->groupBy(DB::raw('DATE(created_at)'))
       ->orderBy('date')
@@ -199,9 +196,10 @@ class SystemStatisticsController extends Controller
       ->pluck('revenue', 'date')
       ->toArray();
 
-    // Daily commission
+    // Daily commission (consistent with closed & completed)
     $dailyCommission = Task::whereBetween('created_at', [$dateFrom, $dateTo])
       ->where('status', 'completed')
+      ->where('closed', true)
       ->select(DB::raw('DATE(created_at) as date'), DB::raw('sum(commission) as commission'))
       ->groupBy(DB::raw('DATE(created_at)'))
       ->orderBy('date')
@@ -266,7 +264,8 @@ class SystemStatisticsController extends Controller
       'accepted' => __('Accepted'),
       'start' => __('Started'),
       'completed' => __('Completed'),
-      'canceled' => __('Canceled')
+      'canceled' => __('Canceled'),
+      'refunded' => __('Refunded')
     ];
 
     return $labels[$status] ?? $status;

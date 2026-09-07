@@ -116,7 +116,7 @@ $(function () {
 
     $('#inProgressTasks').text(data.tasks.in_progress_tasks || 0);
     $('#cancelledTasks').text(data.tasks.cancelled_tasks || 0);
-    $('#platformIncome').text(formatCurrency(data.financial.platform_income || 0));
+    $('#platformIncome').text(formatCurrency(data.financial.driver_payouts !== undefined ? data.financial.driver_payouts : (data.financial.platform_income || 0)));
     $('#averageTaskPrice').text(formatCurrency(data.financial.average_task_price || 0));
     $('#completionRate').text((data.tasks.completion_rate || 0) + '%');
     $('#closedTasks').text(data.tasks.closed_tasks || 0);

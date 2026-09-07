@@ -113,7 +113,7 @@
                             <div class="card border">
                                 <div class="card-body text-center">
                                     <h4 class="text-info" id="platformIncome">0 SAR</h4>
-                                    <small class="text-muted">Platform Income{{ __('') }}</small>
+                                    <small class="text-muted">{{ __('Driver Payouts') }}</small>
                                 </div>
                             </div>
                         </div>

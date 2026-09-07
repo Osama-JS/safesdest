@@ -52,6 +52,7 @@ class CustomerProfileController extends Controller
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
+                        'is_guest' => (bool) $customer->is_guest,
                         'created_at' => $customer->created_at,
                     ],
                     'form_template' => $formTemplate ? [

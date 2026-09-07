@@ -64,6 +64,14 @@ Route::prefix('customer')->group(function () {
         ->middleware(['throttle:5,1'])
         ->name('api.customer.login');
 
+    Route::post('/auth/request-otp', [CustomerAuthController::class, 'requestOtp'])
+        ->middleware(['throttle:5,1'])
+        ->name('api.customer.request-otp');
+
+    Route::post('/auth/verify-otp', [CustomerAuthController::class, 'verifyOtp'])
+        ->middleware(['throttle:5,1'])
+        ->name('api.customer.verify-otp');
+
 
     Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
         ->middleware(['throttle:3,1'])
@@ -123,7 +131,7 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/delete-account', [CustomerProfileController::class, 'deleteAccount'])
         ->name('api.customer.delete-account');
 
-    // Tasks management routes
+    // Tasks management routes (Allowed for guests to view)
     Route::get('/inti-tasks', [CustomerTaskController::class, 'getInitData'])
        ->name('api.init.tasks');
 
@@ -133,154 +141,38 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/tasks/data', [CustomerTaskController::class, 'getTasks'])
     ->name('api.customer.tasks.data');
 
-    // Task creation and validation routes
-    Route::post('/tasks/validate-step1', [CustomerTaskController::class, 'validateStep1'])
-        ->name('api.customer.tasks.validate-step1');
+    Route::get('/tasks/{id}', [CustomerTaskController::class, 'show'])
+        ->name('api.customer.tasks.show');
 
-    Route::post('/tasks/validate-step2', [CustomerTaskController::class, 'validateStep2'])
-        ->name('api.customer.tasks.validate-step2');
+    Route::get('/tasks/{id}/payment-status', [CustomerTaskController::class, 'getPaymentStatus'])
+        ->name('api.customer.tasks.payment-status');
 
-    Route::post('/tasks', [CustomerTaskController::class, 'store'])
-        ->name('api.customer.tasks.store');
-
-    Route::get('/tasks/{id}/edit', [CustomerTaskController::class, 'edit'])
-        ->name('api.customer.tasks.edit');
-
-    Route::post('/tasks/update', [CustomerTaskController::class, 'update'])
-        ->name('api.customer.tasks.update');
-
-
-    Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])->name('api.customer.payment.initiate');
-
-
-
-
-    // Wallet management routes
+    // Wallet view routes (Allowed for guests to view)
     Route::post('/wallet', [CustomerWalletController::class, 'show'])
     ->name('api.customer.wallet');
 
     Route::post('/wallet/transactions', [CustomerWalletController::class, 'getTransactions'])
     ->name('api.customer.wallet-transactions');
 
-    Route::post('/wallet/recharge/initiate', [CustomerWalletController::class, 'initiateRecharge'])
-    ->name('api.customer.wallet-recharge-initiate');
-    
     Route::get('/wallet/recharge/{id}/status', [CustomerWalletController::class, 'checkRechargeStatus'])
     ->name('api.customer.wallet-recharge-status');
 
-    // // Dashboard routes
-    // Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
-    //     ->name('api.customer.dashboard');
-
-    // Route::get('/dashboard/stats', [CustomerDashboardController::class, 'getStats'])
-    //     ->name('api.customer.dashboard.stats');
-
-    // Route::get('/dashboard/recent-activities', [CustomerDashboardController::class, 'getRecentActivities'])
-    //     ->name('api.customer.dashboard.activities');
-
-    // Route::get('/dashboard/notifications', [CustomerDashboardController::class, 'getNotifications'])
-    //     ->name('api.customer.dashboard.notifications');
-
-    // // Task management routes
-    // Route::get('/tasks', [CustomerTaskController::class, 'index'])
-    //     ->name('api.customer.tasks');
-
-    // Route::post('/tasks', [CustomerTaskController::class, 'store'])
-    //     ->name('api.customer.tasks.store');
-
-
-    Route::get('/tasks/{id}', [CustomerTaskController::class, 'show'])
-        ->name('api.customer.tasks.show');
-
-
-
-    Route::post('/tasks/{id}/cancel', [CustomerTaskController::class, 'customerCancelTask'])
-        ->name('api.customer.tasks.cancel');
-
-    Route::post('/tasks/{id}/undo-cancel', [CustomerTaskController::class, 'undoCustomerCancelTask'])
-        ->name('api.customer.tasks.undo-cancel');
-
-    Route::get('/tasks/{id}/payment-status', [CustomerTaskController::class, 'getPaymentStatus'])
-        ->name('api.customer.tasks.payment-status');
-
-
-    // Route::put('/tasks/{id}', [CustomerTaskController::class, 'update'])
-    //     ->name('api.customer.tasks.update');
-
-    // Route::post('/tasks/{id}/cancel', [CustomerTaskController::class, 'cancel'])
-    //     ->name('api.customer.tasks.cancel');
-
-    // Route::get('/tasks/{id}/track', [CustomerTaskController::class, 'track'])
-    //     ->name('api.customer.tasks.track');
-
-    // Route::get('/tasks/{id}/history', [CustomerTaskController::class, 'getHistory'])
-    //     ->name('api.customer.tasks.history');
-
-    // Route::post('/tasks/{id}/rate', [CustomerTaskController::class, 'rate'])
-    //     ->name('api.customer.tasks.rate');
-
-    // // Task pricing and validation
-    // Route::post('/tasks/validate', [CustomerTaskController::class, 'validateTask'])
-    //     ->name('api.customer.tasks.validate');
-
-    // Route::post('/tasks/calculate-pricing', [CustomerTaskController::class, 'calculatePricing'])
-    //     ->name('api.customer.tasks.pricing');
-
-    // // Map and location routes
-    // Route::get('/tasks/map-data', [CustomerTaskController::class, 'getMapData'])
-    //     ->name('api.customer.tasks.map-data');
-
-    // Route::get('/drivers/locations', [CustomerTaskController::class, 'getDriverLocations'])
-    //     ->name('api.customer.drivers.locations');
-
-    // // Wallet management routes
-    // Route::get('/wallet', [CustomerWalletController::class, 'show'])
-    //     ->name('api.customer.wallet');
-
-    // Route::get('/wallet/transactions', [CustomerWalletController::class, 'getTransactions'])
-    //     ->name('api.customer.wallet.transactions');
-
-    // Route::post('/wallet/deposit', [CustomerWalletController::class, 'deposit'])
-    //     ->name('api.customer.wallet.deposit');
-
-    // Route::post('/wallet/withdraw', [CustomerWalletController::class, 'withdraw'])
-    //     ->name('api.customer.wallet.withdraw');
-
-    // Route::post('/wallet/transfer', [CustomerWalletController::class, 'transfer'])
-    //     ->name('api.customer.wallet.transfer');
-
-    // Route::get('/wallet/statements', [CustomerWalletController::class, 'getStatements'])
-    //     ->name('api.customer.wallet.statements');
-
-    // Customs clearance routes
+    // Customs clearance & ads view routes (Allowed for guests to view)
     Route::get('/customs-clearances/template', [CustomerCustomsClearanceController::class, 'getTemplate'])
         ->name('api.customer.customs-clearances.template');
 
     Route::post('/customs-clearances/data', [CustomerCustomsClearanceController::class, 'index'])
         ->name('api.customer.customs-clearances.index');
 
-    Route::post('/customs-clearances', [CustomerCustomsClearanceController::class, 'store'])
-        ->name('api.customer.customs-clearances.store');
-
     Route::post('/customs-clearances/{id}', [CustomerCustomsClearanceController::class, 'show'])
         ->name('api.customer.customs-clearances.show');
-
-    Route::post('/customs-clearances/{id}/documents', [CustomerCustomsClearanceController::class, 'uploadDocuments'])
-        ->name('api.customer.customs-clearances.documents');
 
     Route::post('/customs-clearances/{id}/status', [CustomerCustomsClearanceController::class, 'getStatus'])
         ->name('api.customer.customs-clearances.status');
 
-    Route::post('/customs-clearances/{id}/update', [CustomerCustomsClearanceController::class, 'update'])
-        ->name('api.customer.customs-clearances.update');
-
     Route::post('/customs-clearances/{id}/offers', [CustomerCustomsClearanceController::class, 'offers'])
         ->name('api.customer.customs-clearances.offers');
 
-    Route::post('/customs-clearances/offers/{id}/accept', [CustomerCustomsClearanceController::class, 'acceptOffer'])
-        ->name('api.customer.customs-clearances.accept-offer');
-
-    // Task ads and bidding routes
     Route::post('/ads/data', [CustomerAdsController::class, 'getData'])
         ->name('api.customer.ads.data');
 
@@ -290,11 +182,57 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/ads/{id}/offers', [CustomerAdsController::class, 'getOffers'])
         ->name('api.customer.ads.offers');
 
-    Route::post('/ads/offers/{id}/accept', [CustomerAdsController::class, 'acceptOffer'])
-        ->name('api.customer.ads.accept-offer');
+    // Routes requiring complete customer profile (Blocked for guests)
+    Route::middleware('customer.profile.completed')->group(function () {
+        // Task creation, editing and cancellation
+        Route::post('/tasks/validate-step1', [CustomerTaskController::class, 'validateStep1'])
+            ->name('api.customer.tasks.validate-step1');
 
-    Route::post('/ads/offers/{id}/retract', [CustomerAdsController::class, 'retractOffer'])
-        ->name('api.customer.ads.retract-offer');
+        Route::post('/tasks/validate-step2', [CustomerTaskController::class, 'validateStep2'])
+            ->name('api.customer.tasks.validate-step2');
+
+        Route::post('/tasks', [CustomerTaskController::class, 'store'])
+            ->name('api.customer.tasks.store');
+
+        Route::get('/tasks/{id}/edit', [CustomerTaskController::class, 'edit'])
+            ->name('api.customer.tasks.edit');
+
+        Route::post('/tasks/update', [CustomerTaskController::class, 'update'])
+            ->name('api.customer.tasks.update');
+
+        Route::post('/tasks/{id}/cancel', [CustomerTaskController::class, 'customerCancelTask'])
+            ->name('api.customer.tasks.cancel');
+
+        Route::post('/tasks/{id}/undo-cancel', [CustomerTaskController::class, 'undoCustomerCancelTask'])
+            ->name('api.customer.tasks.undo-cancel');
+
+        Route::post('/initiate-payment', [PaymentController::class, 'initiatePayment'])
+            ->name('api.customer.payment.initiate');
+
+        // Wallet transactions
+        Route::post('/wallet/recharge/initiate', [CustomerWalletController::class, 'initiateRecharge'])
+            ->name('api.customer.wallet-recharge-initiate');
+
+        // Customs clearance actions
+        Route::post('/customs-clearances', [CustomerCustomsClearanceController::class, 'store'])
+            ->name('api.customer.customs-clearances.store');
+
+        Route::post('/customs-clearances/{id}/documents', [CustomerCustomsClearanceController::class, 'uploadDocuments'])
+            ->name('api.customer.customs-clearances.documents');
+
+        Route::post('/customs-clearances/{id}/update', [CustomerCustomsClearanceController::class, 'update'])
+            ->name('api.customer.customs-clearances.update');
+
+        Route::post('/customs-clearances/offers/{id}/accept', [CustomerCustomsClearanceController::class, 'acceptOffer'])
+            ->name('api.customer.customs-clearances.accept-offer');
+
+        // Ads offers
+        Route::post('/ads/offers/{id}/accept', [CustomerAdsController::class, 'acceptOffer'])
+            ->name('api.customer.ads.accept-offer');
+
+        Route::post('/ads/offers/{id}/retract', [CustomerAdsController::class, 'retractOffer'])
+            ->name('api.customer.ads.retract-offer');
+    });
 
     // // Payment routes
     // Route::get('/payments/methods', [CustomerPaymentController::class, 'getPaymentMethods'])

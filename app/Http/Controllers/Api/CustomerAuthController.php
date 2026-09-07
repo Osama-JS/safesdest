@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Email_Verification_Resends;
 use App\Http\Controllers\admin\WalletsController;
 use App\Models\Settings;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Cache;
+use App\Services\SaeiOtpService;
+use App\Services\Interfaces\WhatsAppServiceInterface;
 
 class CustomerAuthController extends Controller
 {
@@ -50,6 +54,226 @@ class CustomerAuthController extends Controller
             'template_exists' => true,
             'customer_template' => $customerTemplate,
         ]);
+    }
+
+    /**
+     * Request OTP for customer login / guest registration
+     * Supports Saei and WhatsApp (Cloud / Green API)
+     */
+    public function requestOtp(Request $request)
+    {
+        $request->validate([
+            'phone'      => 'required|string',
+            'phone_code' => 'required|string',
+        ]);
+
+        $phone     = $request->phone;
+        $phoneCode = $request->phone_code;
+        $cleanPhone = ltrim($phone, '0');
+        $fullPhone = str_replace('+', '', $phoneCode) . $cleanPhone;
+        $e164Phone = '+' . $fullPhone;
+        $lang      = $request->input('language', 'ar');
+
+        // Rate limiting: طلب واحد كل دقيقة لنفس الرقم
+        $minuteKey = 'otp_minute_customer_' . $phone;
+        if (RateLimiter::tooManyAttempts($minuteKey, 1)) {
+            return response()->json([
+                'status'  => 429,
+                'success' => false,
+                'message' => __('Please wait a minute before requesting another OTP.'),
+            ], 429);
+        }
+
+        // إنشاء عميل زائر إن لم يكن موجوداً
+        $customer = Customer::where('phone', $phone)
+            ->orWhere('phone', $cleanPhone)
+            ->orWhere('phone', $fullPhone)
+            ->first();
+
+        if (!$customer) {
+            $customer = Customer::create([
+                'name'       => 'عميل زائر - ' . $phone,
+                'email'      => 'guest_' . Str::random(8) . '@safedest.app',
+                'phone'      => $phone,
+                'phone_code' => $phoneCode,
+                'password'   => Hash::make(Str::random(16)),
+                'status'     => 'active',
+                'is_guest'   => true,
+            ]);
+        }
+
+        // ─── خيار ساعي ─────────────────────────────────────────
+        if (env('SAEI_OTP_ENABLED', false)) {
+            $saei   = app(SaeiOtpService::class);
+            $result = $saei->sendOtp($e164Phone);
+
+            if (!$result['success']) {
+                Log::warning('[Customer][OTP][Saei] Failed to send OTP', [
+                    'phone'   => $e164Phone,
+                    'message' => $result['message'],
+                ]);
+                return response()->json([
+                    'status'  => 500,
+                    'success' => false,
+                    'message' => __('Failed to send OTP. Please check the number and try again.'),
+                ], 500);
+            }
+
+            Cache::put('saei_otp_vid_customer_' . $phone, $result['verification_id'], now()->addMinutes(5));
+            RateLimiter::hit($minuteKey, 60);
+
+            return response()->json([
+                'status'      => 200,
+                'success'     => true,
+                'message'     => __('OTP sent successfully'),
+                'is_new_user' => (bool) $customer->is_guest,
+            ]);
+        }
+
+        // ─── خيار WhatsApp Cloud/Green API (الافتراضي) ───────────────
+        $isSimulation = env('WHATSAPP_SIMULATION', false);
+        $otpCode = $isSimulation ? '1234' : (string) rand(1000, 9999);
+
+        $customer->update([
+            'otp_code'       => Hash::make($otpCode),
+            'otp_expires_at' => now()->addMinutes(5),
+        ]);
+
+        $whatsAppService = app(\App\Services\Interfaces\WhatsAppServiceInterface::class);
+        $isSent = $whatsAppService->sendOTP($fullPhone, $otpCode, $lang);
+
+        if ($isSent || $isSimulation) {
+            RateLimiter::hit($minuteKey, 60);
+            return response()->json([
+                'status'      => 200,
+                'success'     => true,
+                'message'     => __('OTP sent successfully'),
+                'is_new_user' => (bool) $customer->is_guest,
+            ]);
+        }
+
+        return response()->json([
+            'status'  => 500,
+            'success' => false,
+            'message' => __('Failed to send OTP. Please check the number and try again.'),
+        ], 500);
+    }
+
+    /**
+     * Verify OTP and login customer
+     */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'phone'       => 'required|string',
+            'otp_code'    => 'required|string',
+            'device_name' => 'nullable|string|max:255',
+            'device_id'   => 'nullable|string|max:255',
+            'fcm_token'   => 'nullable|string',
+            'app_version' => 'nullable|string|max:50',
+        ]);
+
+        $cleanPhone = ltrim($request->phone, '0');
+        $customer = Customer::where('phone', $request->phone)
+            ->orWhere('phone', $cleanPhone)
+            ->first();
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 404,
+                'success' => false,
+                'message' => __('Customer not found'),
+            ], 404);
+        }
+
+        // ─── خيار ساعي ─────────────────────────────────────────
+        if (env('SAEI_OTP_ENABLED', false)) {
+            $verificationId = Cache::get('saei_otp_vid_customer_' . $request->phone);
+            if (!$verificationId) {
+                return response()->json([
+                    'status'  => 401,
+                    'success' => false,
+                    'message' => __('OTP expired or not requested. Please request a new code.'),
+                ], 401);
+            }
+
+            $saei   = app(SaeiOtpService::class);
+            $result = $saei->verifyOtp((int) $verificationId, $request->otp_code);
+
+            if (!$result['success'] || $result['status'] !== 'approved') {
+                return response()->json([
+                    'status'  => 401,
+                    'success' => false,
+                    'message' => __('Invalid OTP or expired'),
+                ], 401);
+            }
+
+            Cache::forget('saei_otp_vid_customer_' . $request->phone);
+        } else {
+            // ─── خيار WhatsApp ─────────────────────────────────
+            $isSimulation = env('WHATSAPP_SIMULATION', false) && $request->otp_code === '1234';
+
+            if (!$isSimulation) {
+                if (!$customer->otp_code || !$customer->otp_expires_at || $customer->otp_expires_at->isPast()) {
+                    return response()->json([
+                        'status'  => 401,
+                        'success' => false,
+                        'message' => __('OTP expired or invalid'),
+                    ], 401);
+                }
+
+                if (!Hash::check($request->otp_code, $customer->otp_code)) {
+                    return response()->json([
+                        'status'  => 401,
+                        'success' => false,
+                        'message' => __('Invalid OTP'),
+                    ], 401);
+                }
+            }
+        }
+
+        // مسح الـ OTP وتحديث بيانات الدخول
+        $customer->update([
+            'otp_code'         => null,
+            'otp_expires_at'   => null,
+            'last_login_at'    => now(),
+            'fcm_token'        => $request->fcm_token,
+            'device_id'        => $request->device_id,
+            'app_version'      => $request->app_version,
+            'status'           => 'active',
+        ]);
+
+        if ($request->device_name) {
+            $customer->tokens()->where('name', $request->device_name)->delete();
+        }
+
+        $token = $customer->createToken($request->device_name ?? 'customer-device', ['customer'])->plainTextToken;
+
+        return response()->json([
+            'status'  => 200,
+            'success' => true,
+            'message' => __('Login successful'),
+            'data'    => [
+                'token'      => $token,
+                'token_type' => 'Bearer',
+                'customer'   => [
+                    'id'                         => $customer->id,
+                    'name'                       => $customer->name,
+                    'email'                      => $customer->email,
+                    'phone'                      => $customer->phone,
+                    'phone_code'                 => $customer->phone_code,
+                    'image'                      => $customer->image ? url($customer->image) : null,
+                    'signature_image'            => $customer->signature_image ? url($customer->signature_image) : null,
+                    'company_name'               => $customer->company_name,
+                    'company_address'            => $customer->company_address,
+                    'status'                     => $customer->status,
+                    'is_guest'                   => (bool) $customer->is_guest,
+                    'is_customs_clearance_agent' => (bool) $customer->is_customs_clearance_agent,
+                    'email_verified_at'          => $customer->email_verified_at,
+                    'created_at'                 => $customer->created_at,
+                ],
+            ],
+        ], 200);
     }
 
     public function createVerificationToken($user)
@@ -570,11 +794,24 @@ class CustomerAuthController extends Controller
         DB::beginTransaction();
 
         try {
-            // 🔹 تحقق إن كان العميل موجود بالفعل
-            $existingCustomer = Customer::where('email', $req->email)->first();
+            // فحص ما إذا كان هناك عميل زائر يستكمل ملفه الشخصي
+            $guestCustomer = $req->user();
+            if (!$guestCustomer && $req->filled('phone')) {
+                $cleanPhone = ltrim($req->phone, '0');
+                $guestCustomer = Customer::where('is_guest', true)
+                    ->where(function ($q) use ($req, $cleanPhone) {
+                        $q->where('phone', $req->phone)
+                          ->orWhere('phone', $cleanPhone);
+                    })->first();
+            }
+
+            // 🔹 تحقق إن كان الإيميل مستخدم من عميل آخر
+            $existingCustomer = Customer::where('email', $req->email)
+                ->when($guestCustomer, fn($q) => $q->where('id', '!=', $guestCustomer->id))
+                ->first();
 
             if ($existingCustomer) {
-                // إذا الإيميل موجود → أرسل كود التحقق فقط
+                // إذا الإيميل موجود لمستخدم آخر مسجل مسبقاً
                 $this->sendVerificationEmail($existingCustomer, 'customer');
 
                 return response()->json([
@@ -674,6 +911,43 @@ class CustomerAuthController extends Controller
                 }
 
                 $data['additional_data'] = $structuredFields;
+            }
+
+            if ($guestCustomer) {
+                $data['is_guest'] = false;
+                $data['status'] = 'active';
+                $data['email_verified_at'] = now();
+                $guestCustomer->update($data);
+                $customer = $guestCustomer;
+                $token = $customer->createToken($req->device_name ?? 'customer-device', ['customer'])->plainTextToken;
+
+                DB::commit();
+
+                return response()->json([
+                    'status'  => 200,
+                    'success' => true,
+                    'message' => __('Your account profile has been completed successfully.'),
+                    'data'    => [
+                        'token'      => $token,
+                        'token_type' => 'Bearer',
+                        'customer'   => [
+                            'id'                         => $customer->id,
+                            'name'                       => $customer->name,
+                            'email'                      => $customer->email,
+                            'phone'                      => $customer->phone,
+                            'phone_code'                 => $customer->phone_code,
+                            'image'                      => $customer->image ? url($customer->image) : null,
+                            'signature_image'            => $customer->signature_image ? url($customer->signature_image) : null,
+                            'company_name'               => $customer->company_name,
+                            'company_address'            => $customer->company_address,
+                            'status'                     => $customer->status,
+                            'is_guest'                   => false,
+                            'is_customs_clearance_agent' => (bool) $customer->is_customs_clearance_agent,
+                            'email_verified_at'          => $customer->email_verified_at,
+                            'created_at'                 => $customer->created_at,
+                        ],
+                    ],
+                ]);
             }
 
             // 🔹 إنشاء العميل الجديد
@@ -803,6 +1077,7 @@ class CustomerAuthController extends Controller
                         'company_name' => $customer->company_name,
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
+                        'is_guest' => (bool) $customer->is_guest,
                         'is_customs_clearance_agent' => $customer->is_customs_clearance_agent,
                         'email_verified_at' => $customer->email_verified_at,
                         'created_at' => $customer->created_at,
@@ -855,11 +1130,11 @@ class CustomerAuthController extends Controller
                         'company_address' => $customer->company_address,
                         'status' => $customer->status,
                         'is_customs_clearance_agent' => $customer->is_customs_clearance_agent,
+                        'is_guest' => (bool) $customer->is_guest,
                         'email_verified_at' => $customer->email_verified_at,
                         'created_at' => $customer->created_at,
                     ],
                     'token_type' => 'Bearer',
-                    'token_type' => 'Bearer'
                 ]
             ]);
 

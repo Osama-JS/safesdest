@@ -37,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'rate.limit' => \App\Http\Middleware\GlobalRateLimit::class,
         'driver.guard' => \App\Http\Middleware\DriverGuard::class,
         'driver.profile.completed' => \App\Http\Middleware\DriverProfileCompleted::class,
+        'customer.profile.completed' => \App\Http\Middleware\CustomerProfileCompleted::class,
         'api.route' => \App\Http\Middleware\ApiMiddleware::class,
         'recaptcha' => \App\Http\Middleware\RecaptchaMiddleware::class,
         'investor'       => \App\Http\Middleware\InvestorMiddleware::class,

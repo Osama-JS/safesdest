@@ -30,7 +30,7 @@ class MtahdEscrowTaskService
     {
         $configuredNumber = config('services.mtahd.platform_seller_number', env('MTAHD_PLATFORM_SELLER_NUMBER'));
 
-        if (!empty($configuredNumber) && $configuredNumber !== 'CUST_SAFEDESTS_PLATFORM') {
+        if (!empty($configuredNumber) && !in_array($configuredNumber, ['CUST_SAFEDESTS_PLATFORM', 'CUST_SAFEDESTS_MAIN'])) {
             return $configuredNumber;
         }
 
@@ -41,27 +41,13 @@ class MtahdEscrowTaskService
             return $platformCustomerNumber;
         }
 
-        // إنشاء حساب المنصة في أمن لأول مرة
-        $platformData = [
-            'name'         => 'منصة سيف ديست للخدمات اللوجستية (SafeDests)',
-            'phone_number' => '+966500000000',
-            'email'        => 'finance@safedests.com',
-            'type'         => 'company',
-        ];
-
-        $res = $this->mtahdService->createCustomer($platformData);
-
-        if ($res['status'] && isset($res['data']['customer_number'])) {
-            $sellerNumber = $res['data']['customer_number'];
-            Settings::updateOrCreate(
-                ['key' => 'mtahd_platform_customer_number'],
-                ['value' => $sellerNumber]
-            );
-            return $sellerNumber;
-        }
-
-        // Fallback default identifier
-        return $configuredNumber ?: 'CUST_SAFEDESTS_MAIN';
+        // حساب وسيط سيف ديست المعتمد في بيئة أمن (IC-000000009)
+        $defaultBrokerNumber = 'IC-000000009';
+        Settings::updateOrCreate(
+            ['key' => 'mtahd_platform_customer_number'],
+            ['value' => $defaultBrokerNumber]
+        );
+        return $defaultBrokerNumber;
     }
 
     /**
@@ -73,11 +59,7 @@ class MtahdEscrowTaskService
             return $customer->amnn_customer_number;
         }
 
-        // معالجة رقم الجوال للتأكد من الصيغة الدولية
         $phone = $customer->phone ?? ($customer->phone_number ?? '');
-        if (!str_starts_with($phone, '+')) {
-            $phone = '+966' . ltrim($phone, '0');
-        }
 
         $customerData = [
             'name'         => $customer->name ?: 'عميل سيف ديست',
@@ -88,20 +70,18 @@ class MtahdEscrowTaskService
 
         $res = $this->mtahdService->createCustomer($customerData);
 
-        if ($res['status'] && isset($res['data']['customer_number'])) {
-            $customerNumber = $res['data']['customer_number'];
+        // منصة أمن ترجع الرقم تحت المفتاح number (مثل: IC-000000107) أو customer_number
+        $customerNumber = $res['data']['number'] 
+                       ?? ($res['data']['customer_number'] 
+                       ?? ($res['details']['number'] 
+                       ?? ($res['details']['customer_number'] ?? null)));
+
+        if ($customerNumber) {
             $customer->update(['amnn_customer_number' => $customerNumber]);
             return $customerNumber;
         }
 
-        // في حال تم إنشاؤه مسبقاً برقم الهاتف وأرجع الـ API الرقم الموجود
-        if (isset($res['details']['customer_number'])) {
-            $customerNumber = $res['details']['customer_number'];
-            $customer->update(['amnn_customer_number' => $customerNumber]);
-            return $customerNumber;
-        }
-
-        // إذا تعذر إنشاء رقم رسمي، نستخدم معرف العميل الداخلي
+        // إذا تعذر إنشاء رقم رسمي في المنصة، نستخدم معرف العميل الداخلي لتفادي تعطيل العملية
         $fallback = 'CUST_' . $customer->id . '_' . time();
         $customer->update(['amnn_customer_number' => $fallback]);
         return $fallback;

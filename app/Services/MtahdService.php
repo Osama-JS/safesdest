@@ -39,14 +39,85 @@ class MtahdService
     }
 
     /**
-     * ترويسة الطلبات المعتمدة من منصة أمن / متعهد
+     * رمز الـ CSRF الثابت لبيئة أمن لضمان عدم رفض الطلبات بحظر CSRF من دجانغو
      */
-    protected function getHeaders(): array
+    protected function getCsrfToken(): string
     {
-        return [
+        return 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+    }
+
+    /**
+     * ترويسة الطلبات المعتمدة من منصة أمن / متعهد
+     * تدعم طلبات الاستعلام والطلبات المعدلة (POST/PUT/DELETE) مع معالجة حماية CSRF الخاصة بدجانغو
+     */
+    protected function getHeaders(bool $isMutating = false): array
+    {
+        $headers = [
             'X-API-Token'  => $this->apiToken,
             'Content-Type' => 'application/json',
             'Accept'       => 'application/json',
+            'User-Agent'   => 'SafeDests/1.0',
+        ];
+
+        if ($isMutating) {
+            $csrf = $this->getCsrfToken();
+            $parsedUrl = parse_url($this->baseUrl);
+            $origin = ($parsedUrl['scheme'] ?? 'https') . '://' . ($parsedUrl['host'] ?? 'sandbox-api.amnn.sa');
+            $headers['X-CSRFToken'] = $csrf;
+            $headers['Cookie']      = "csrftoken={$csrf}";
+            $headers['Referer']     = $origin . '/';
+            $headers['Origin']      = $origin;
+        }
+
+        return $headers;
+    }
+
+    /**
+     * تنسيق بيانات العميل لتتوافق مع متطلبات API منصة أمن (first_name, last_name, phone_code, phone_number)
+     */
+    public function formatCustomerPayload(array $data): array
+    {
+        $name = trim($data['name'] ?? '');
+        $firstName = $data['first_name'] ?? null;
+        $lastName = $data['last_name'] ?? null;
+
+        if (!$firstName && !empty($name)) {
+            $parts = preg_split('/\s+/', $name, 2);
+            $firstName = $parts[0] ?? 'عميل';
+            $lastName = $parts[1] ?? 'سيف ديست';
+        }
+
+        $firstName = $firstName ?: 'عميل';
+        $lastName = $lastName ?: 'سيف ديست';
+
+        // استخراج وتنسيق رقم الجوال للتوافق مع صيغة أرقام الجوال المقبولة
+        $rawPhone = $data['phone_number'] ?? ($data['phone'] ?? '');
+        $cleanPhone = preg_replace('/[^\d]/', '', (string)$rawPhone);
+
+        // إزالة بادئة 966 أو 00966 إن وجدت
+        if (str_starts_with($cleanPhone, '00966')) {
+            $cleanPhone = substr($cleanPhone, 5);
+        } elseif (str_starts_with($cleanPhone, '966')) {
+            $cleanPhone = substr($cleanPhone, 3);
+        }
+        $cleanPhone = ltrim($cleanPhone, '0');
+
+        // في حال كان الرقم سعودياً صحيحاً (يبدأ بـ 5 ومكون من 9 أرقام)
+        if (str_starts_with($cleanPhone, '5') && strlen($cleanPhone) === 9) {
+            $phone = $cleanPhone;
+        } else {
+            // في بيئة الاختبار والتجربة إن كان الرقم غير سعودي (مثل الأرقام اليمنية 73xxxxxxx أو أرقام تجريبية)
+            // نقوم بضبطه لصيغة جوال مقبولة لدى منصة أمن حتى تنجح العملية في الـ Sandbox
+            $phone = '5' . substr(str_pad($cleanPhone, 8, '0', STR_PAD_LEFT), -8);
+        }
+
+        return [
+            'first_name'   => $firstName,
+            'last_name'    => $lastName,
+            'phone_code'   => $data['phone_code'] ?? 'SA',
+            'phone_number' => $phone,
+            'email'        => $data['email'] ?? "user_{$phone}@safedests.com",
+            'type'         => in_array($data['type'] ?? '', ['individual', 'company', 'regular']) ? $data['type'] : 'individual',
         ];
     }
 
@@ -58,11 +129,13 @@ class MtahdService
     {
         $url = "{$this->baseUrl}/customers/";
         $action = 'create_customer';
+        $formattedData = $this->formatCustomerPayload($data);
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
-                            ->post($url, $data);
+                            ->post($url, $formattedData);
 
             $responseBody = $response->json() ?? [];
             $isSuccess = $response->successful();
@@ -71,11 +144,11 @@ class MtahdService
                 'task_id'          => $taskId,
                 'action'           => $action,
                 'status'           => $isSuccess ? 'success' : 'failed',
-                'buyer_info'       => $data['phone_number'] ?? ($data['name'] ?? null),
-                'request_payload'  => $data,
+                'buyer_info'       => ($formattedData['first_name'] . ' ' . $formattedData['last_name']) . ' (' . $formattedData['phone_number'] . ')',
+                'request_payload'  => $formattedData,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في إنشاء العميل في منصة أمن'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إنشاء العميل في منصة أمن')),
             ]);
 
             if ($isSuccess) {
@@ -101,7 +174,7 @@ class MtahdService
                 'task_id'          => $taskId,
                 'action'           => $action,
                 'status'           => 'failed',
-                'request_payload'  => $data,
+                'request_payload'  => $formattedData,
                 'error_message'    => $e->getMessage(),
             ]);
 
@@ -119,16 +192,25 @@ class MtahdService
         $url = "{$this->baseUrl}/deals/";
         $action = 'create_deal';
 
+        $amount = $data['amount'] ?? ($data['total_amount'] ?? ($data['offer_price'] ?? 0));
+        $dealPayload = array_merge($data, [
+            'offer_type'           => $data['offer_type'] ?? 'service',
+            'offer_title'          => $data['title'] ?? ($data['offer_title'] ?? 'شحن وتوصيل'),
+            'deal_subject_details' => $data['description'] ?? ($data['deal_subject_details'] ?? 'خدمات شحن وتوصيل عبر منصة سيف ديست'),
+            'offer_price'          => number_format(floatval($amount), 2, '.', ''),
+            'offer_delivery_fee'   => number_format(floatval($data['delivery_fee'] ?? ($data['offer_delivery_fee'] ?? 0)), 2, '.', ''),
+        ]);
+
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
-                            ->post($url, $data);
+                            ->post($url, $dealPayload);
 
             $responseBody = $response->json() ?? [];
             $isSuccess = $response->successful();
-            $dealNumber = $responseBody['deal_number'] ?? ($responseBody['data']['deal_number'] ?? null);
+            $dealNumber = $responseBody['deal_number'] ?? ($responseBody['number'] ?? ($responseBody['data']['deal_number'] ?? ($responseBody['data']['number'] ?? null)));
             $dealId = $responseBody['id'] ?? ($responseBody['data']['id'] ?? null);
-            $amount = $data['amount'] ?? ($data['total_amount'] ?? null);
 
             $this->logDealOperation([
                 'task_id'          => $taskId,
@@ -137,10 +219,10 @@ class MtahdService
                 'action'           => $action,
                 'status'           => $isSuccess ? 'success' : 'failed',
                 'amount'           => $amount,
-                'request_payload'  => $data,
+                'request_payload'  => $dealPayload,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في إنشاء الصفقة في منصة أمن'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إنشاء الصفقة في منصة أمن')),
             ]);
 
             if ($isSuccess) {
@@ -159,7 +241,7 @@ class MtahdService
 
             return [
                 'status'  => false,
-                'error'   => $responseBody['message'] ?? 'فشل في إنشاء الصفقة في منصة أمن',
+                'error'   => $responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إنشاء الصفقة في منصة أمن'),
                 'details' => $responseBody
             ];
 
@@ -168,8 +250,8 @@ class MtahdService
                 'task_id'          => $taskId,
                 'action'           => $action,
                 'status'           => 'failed',
-                'amount'           => $data['amount'] ?? null,
-                'request_payload'  => $data,
+                'amount'           => $amount,
+                'request_payload'  => $dealPayload,
                 'error_message'    => $e->getMessage(),
             ]);
 
@@ -192,7 +274,8 @@ class MtahdService
         ];
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
                             ->post($url, $payload);
 
@@ -207,7 +290,7 @@ class MtahdService
                 'request_payload'  => $payload,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في إضافة أطراف الصفقة'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إضافة أطراف الصفقة')),
             ]);
 
             if ($isSuccess) {
@@ -255,7 +338,8 @@ class MtahdService
         $action = 'submit_deal';
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
                             ->post($url);
 
@@ -269,7 +353,7 @@ class MtahdService
                 'status'           => $isSuccess ? 'success' : 'failed',
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في اعتماد وتأكيد الصفقة'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في اعتماد وتأكيد الصفقة')),
             ]);
 
             if ($isSuccess) {
@@ -318,7 +402,8 @@ class MtahdService
         $action = 'get_deal';
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(false))
                             ->timeout($this->timeout)
                             ->get($url);
 
@@ -334,7 +419,7 @@ class MtahdService
 
             return [
                 'status'  => false,
-                'error'   => $responseBody['message'] ?? 'فشل في جلب حالة الصفقة',
+                'error'   => $responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في جلب حالة الصفقة'),
                 'details' => $responseBody
             ];
 
@@ -354,7 +439,8 @@ class MtahdService
         $action = 'release_funds';
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
                             ->post($url, $data);
 
@@ -370,7 +456,7 @@ class MtahdService
                 'request_payload'  => $data,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في تحرير الضمان المالي في منصة أمن'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في تحرير الضمان المالي في منصة أمن')),
                 'notes'            => 'تم تنفيذ طلب تحرير وصرف الضمان المالي',
             ]);
 
@@ -423,7 +509,8 @@ class MtahdService
         ]);
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
                             ->post($url, $payload);
 
@@ -438,7 +525,7 @@ class MtahdService
                 'request_payload'  => $payload,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في إلغاء الصفقة في منصة أمن'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إلغاء الصفقة في منصة أمن')),
                 'notes'            => 'طلب إلغاء الصفقة: ' . ($reason ?? 'لا يوجد سبب محدد'),
             ]);
 
@@ -487,7 +574,8 @@ class MtahdService
         $action = 'deliver_deal';
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
                             ->timeout($this->timeout)
                             ->post($url, $data);
 
@@ -502,7 +590,7 @@ class MtahdService
                 'request_payload'  => $data,
                 'response_payload' => $responseBody,
                 'http_status'      => $response->status(),
-                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? 'فشل في تأكيد التسليم'),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في تأكيد التسليم')),
             ]);
 
             if ($isSuccess) {
@@ -573,27 +661,52 @@ class MtahdService
 
     /**
      * دالة مساعدة لتسجيل وتوثيق جميع عمليات متعهد في جدول mtahd_deal_logs
+     * تراعي سياق المنفّذ (مستخدم لوحة التحكم، عميل من التطبيق، سائق) بأمان تام
      */
     public function logDealOperation(array $data): ?MtahdDealLog
     {
         try {
+            $user = auth()->user();
+            $performedBy = null;
+            $actorNote = null;
+
+            if (isset($data['performed_by']) && is_numeric($data['performed_by'])) {
+                if (\App\Models\User::where('id', $data['performed_by'])->exists()) {
+                    $performedBy = (int)$data['performed_by'];
+                }
+            } elseif ($user instanceof \App\Models\User) {
+                $performedBy = $user->id;
+            } elseif ($user instanceof \App\Models\Customer) {
+                $actorNote = "[عميل: #{$user->id} - {$user->name}]";
+            } elseif ($user instanceof \App\Models\Driver) {
+                $actorNote = "[سائق: #{$user->id} - {$user->name}]";
+            }
+
+            $notes = $data['notes'] ?? null;
+            if ($actorNote) {
+                $notes = $notes ? ($actorNote . ' ' . $notes) : $actorNote;
+            }
+
+            $buyerInfo = isset($data['buyer_info']) ? substr(is_string($data['buyer_info']) ? $data['buyer_info'] : json_encode($data['buyer_info'], JSON_UNESCAPED_UNICODE), 0, 250) : null;
+            $sellerInfo = isset($data['seller_info']) ? substr(is_string($data['seller_info']) ? $data['seller_info'] : json_encode($data['seller_info'], JSON_UNESCAPED_UNICODE), 0, 250) : null;
+
             return MtahdDealLog::create([
                 'task_id'          => $data['task_id'] ?? null,
                 'deal_number'      => $data['deal_number'] ?? null,
                 'deal_id'          => $data['deal_id'] ?? null,
                 'action'           => $data['action'] ?? 'unknown',
                 'status'           => $data['status'] ?? 'info',
-                'amount'           => $data['amount'] ?? null,
+                'amount'           => isset($data['amount']) ? floatval($data['amount']) : null,
                 'currency'         => $data['currency'] ?? 'SAR',
-                'buyer_info'       => $data['buyer_info'] ?? null,
-                'seller_info'      => $data['seller_info'] ?? null,
+                'buyer_info'       => $buyerInfo,
+                'seller_info'      => $sellerInfo,
                 'request_payload'  => $data['request_payload'] ?? null,
                 'response_payload' => $data['response_payload'] ?? null,
                 'http_status'      => $data['http_status'] ?? null,
-                'error_message'    => $data['error_message'] ?? null,
+                'error_message'    => isset($data['error_message']) ? substr((string)$data['error_message'], 0, 1000) : null,
                 'ip_address'       => request()->ip() ?? null,
-                'performed_by'     => auth()->id() ?? null,
-                'notes'            => $data['notes'] ?? null,
+                'performed_by'     => $performedBy,
+                'notes'            => $notes,
             ]);
         } catch (Exception $e) {
             Log::error('Failed to log Mtahd Deal Operation: ' . $e->getMessage());

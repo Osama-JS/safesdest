@@ -102,14 +102,53 @@ class PaymentController extends Controller
                     return response()->json(['success' => false, 'message' => $result['error'] ?? __('فشل في إنشاء صفقة متعهد')], 400);
                 }
 
+                $paymentToken = Str::random(48);
+
+                // Create payment record in database so it is tracked and has an ID
+                $payment = Payments::create([
+                    'customer_id'           => ($owner instanceof \App\Models\Customer) ? $owner->id : null,
+                    'owner_type'            => ($owner instanceof \App\Models\Customer) ? 'customer' : 'user',
+                    'owner_id'              => $owner->id,
+                    'amount'                => $amount,
+                    'payment_method'        => 'mtahd',
+                    'purpose'               => $purpose,
+                    'payment_paid'          => $this->resolvePaid('mtahd', $subject),
+                    'reference_id'          => $subject?->id,
+                    'task_id'               => ($purpose === 'task_payment') ? $subject?->id : null,
+                    'status'                => 'pending',
+                    'payment_token'         => $paymentToken,
+                    'transaction_reference' => $result['checkout_id'] ?? $result['deal_number'],
+                    'gateway_name'          => 'mtahd',
+                    'gateway_response'      => json_encode([
+                        'deal_id'     => $result['deal_id'] ?? null,
+                        'deal_number' => $result['deal_number'] ?? null,
+                        'checkout_id' => $result['checkout_id'] ?? null,
+                    ]),
+                    'expires_at'            => Carbon::now()->addHours(24),
+                ]);
+
+                $paymentUrl = route('payment.page', ['token' => $paymentToken]);
+
+                // Update task payment info
+                $subject->update([
+                    'payment_method'   => 'mtahd',
+                    'payment_status'   => 'pending',
+                    'payment_id'       => $payment->id,
+                    'payment_paid'     => 'all',
+                    'amnn_payment_url' => $paymentUrl,
+                ]);
+
                 DB::commit();
+
                 return response()->json([
                     'status'       => 1,
                     'success'      => true,
                     'hyperpay'     => true,
-                    'url'          => $result['payment_url'],
-                    'payment_url'  => $result['payment_url'],
+                    'url'          => $paymentUrl,
+                    'payment_url'  => $paymentUrl,
+                    'payment_id'   => $payment->id,
                     'deal_number'  => $result['deal_number'],
+                    'checkout_id'  => $result['checkout_id'] ?? null,
                     'message'      => __('تم إنشاء صفقة الضمان المالي في متعهد، يرجى استكمال السداد عبر الرابط المرفق'),
                 ]);
             }
@@ -278,6 +317,25 @@ class PaymentController extends Controller
         $description = data_get($result, 'result.description', '');
         $status      = HyperpayService::codeToStatus($code);
 
+        // For Mtahd: also check status with Amnn API
+        if (in_array($payment->payment_method, ['mtahd', 'mtahd_escrow'])) {
+            try {
+                $gatewayResponse = json_decode($payment->gateway_response, true) ?? [];
+                $dealNumber = $gatewayResponse['deal_number'] ?? null;
+                if ($dealNumber) {
+                    $mtahdService = app(\App\Services\MtahdService::class);
+                    $dealResult = $mtahdService->getDealDetails($dealNumber, true, $payment->task_id);
+                    $dealStatus = $dealResult['data']['status'] ?? null;
+                    if (in_array($dealStatus, ['paid', 'executing', 'executed', 'completed'])) {
+                        $status = 'paid';
+                        $code   = $code ?: $dealStatus;
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Error checking Mtahd deal in handleCallback: ' . $e->getMessage());
+            }
+        }
+
         Log::info('Payment Callback', ['token' => $token, 'code' => $code, 'status' => $status]);
 
         DB::transaction(function () use ($payment, $status, $code, $description, $result) {
@@ -373,6 +431,31 @@ class PaymentController extends Controller
             }
         }
 
+        // For pending Mtahd: check status with Mtahd API
+        if ($payment->status === 'pending' && in_array($payment->payment_method, ['mtahd', 'mtahd_escrow']) && !empty($payment->transaction_reference)) {
+            try {
+                $mtahdService = app(\App\Services\MtahdService::class);
+                $dealResult = $mtahdService->getDealDetails($payment->transaction_reference, true, $payment->task_id);
+                if (!empty($dealResult['status']) && isset($dealResult['data']['status'])) {
+                    $dealStatus = $dealResult['data']['status'];
+                    if (in_array($dealStatus, ['paid', 'active', 'completed', 'delivery_pending'])) {
+                        DB::transaction(function () use ($payment, $dealStatus) {
+                            $payment->update([
+                                'status'       => 'paid',
+                                'gateway_code' => $dealStatus,
+                                'processed_at' => now(),
+                                'completed_at' => now(),
+                            ]);
+                            $this->fulfillPayment($payment);
+                        });
+                        $payment->refresh();
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error checking Mtahd deal status in getStatus: ' . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data'    => [
@@ -455,6 +538,7 @@ class PaymentController extends Controller
         return match ($method) {
             'hyperpay_mada'        => 'MADA',
             'hyperpay_mastercard'  => 'MASTER',
+            'mtahd', 'mtahd_escrow'=> 'MADA',
             default                => 'VISA MASTER',
         };
     }

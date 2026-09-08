@@ -165,26 +165,19 @@ class MtahdEscrowTaskService
             $payRes = $this->mtahdService->makePaymentOnline($dealNumber, 'mada', $task->id);
             $checkoutId = $payRes['checkout_id'] ?? null;
 
-            // استخراج رابط الدفع المباشر
-            $paymentUrl = "https://checkout.amnn.sa/pay/{$dealNumber}";
-            if ($checkoutId) {
-                $paymentUrl .= "?checkout_id={$checkoutId}";
-            }
-
             // 7. حفظ البيانات في المهمة
             $task->update([
                 'payment_method'   => 'mtahd',
                 'is_escrow'        => true,
                 'amnn_deal_number' => $dealNumber,
                 'amnn_deal_id'     => $dealId ? (string)$dealId : null,
-                'amnn_payment_url' => $paymentUrl,
                 'amnn_deal_status' => 'pending_payment',
             ]);
 
             return [
                 'status'       => true,
                 'deal_number'  => $dealNumber,
-                'payment_url'  => $paymentUrl,
+                'deal_id'      => $dealId,
                 'checkout_id'  => $checkoutId,
                 'amount'       => $amount,
                 'message'      => 'تم إنشاء صفقة الضمان المالي في متعهد بنجاح'

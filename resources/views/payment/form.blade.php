@@ -204,9 +204,21 @@
             <div class="logo-icon">
                 <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm-1 12H5a1 1 0 010-2h14a1 1 0 010 2zm0-4H5a1 1 0 010-2h14a1 1 0 010 2zm0-4H5a1 1 0 010-2h14a1 1 0 010 2z"/></svg>
             </div>
-            <span class="logo-name">SafeDest Pay</span>
+            <span class="logo-name">
+                @if(in_array($payment->payment_method ?? '', ['mtahd', 'mtahd_escrow']))
+                    SafeDest · متعهد (ضمان مالي)
+                @else
+                    SafeDest Pay
+                @endif
+            </span>
         </div>
-        <p>{{ __('Complete your payment securely') }}</p>
+        <p>
+            @if(in_array($payment->payment_method ?? '', ['mtahd', 'mtahd_escrow']))
+                {{ __('تجميد وحفظ المبلغ كضمان مالي حتى اكتمال التوصيل') }}
+            @else
+                {{ __('Complete your payment securely') }}
+            @endif
+        </p>
     </header>
 
     <!-- Card -->
@@ -228,7 +240,7 @@
         <!-- Payment form -->
         <div class="pay-body">
             <div class="field-label">{{ __('Card Information') }}</div>
-            <form action="" class="paymentWidgets" data-brands="{{ $brandsCss }}"></form>
+            <form action="{{ $callbackUrl }}" class="paymentWidgets" data-brands="{{ $brandsCss }}"></form>
 
             <!-- Trust badges -->
             <div class="trust-row">

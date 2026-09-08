@@ -193,13 +193,18 @@ class MtahdService
         $action = 'create_deal';
 
         $amount = $data['amount'] ?? ($data['total_amount'] ?? ($data['offer_price'] ?? 0));
-        $dealPayload = array_merge($data, [
-            'offer_type'           => $data['offer_type'] ?? 'service',
-            'offer_title'          => $data['title'] ?? ($data['offer_title'] ?? 'شحن وتوصيل'),
-            'deal_subject_details' => $data['description'] ?? ($data['deal_subject_details'] ?? 'خدمات شحن وتوصيل عبر منصة سيف ديست'),
-            'offer_price'          => number_format(floatval($amount), 2, '.', ''),
-            'offer_delivery_fee'   => number_format(floatval($data['delivery_fee'] ?? ($data['offer_delivery_fee'] ?? 0)), 2, '.', ''),
-        ]);
+        $title = $data['title'] ?? ($data['offer_title'] ?? 'خدمة توصيل شحنة');
+        $description = $data['description'] ?? ($data['offer_description'] ?? 'خدمات نقل وشحن عبر منصة سيف ديست');
+        $subjectDetails = $data['deal_subject_details'] ?? ($description ?: 'توصيل الشحنة بحالة سليمة للمستلم');
+        $category = is_numeric($data['offer_category'] ?? null) ? (int)$data['offer_category'] : (is_numeric($data['category'] ?? null) ? (int)$data['category'] : 1);
+
+        $dealPayload = [
+            'offer_type'           => 'service',
+            'offer_category'       => $category,
+            'offer_title'          => $title,
+            'offer_description'    => $description,
+            'deal_subject_details' => $subjectDetails,
+        ];
 
         try {
             $response = Http::withoutVerifying()
@@ -329,8 +334,8 @@ class MtahdService
     }
 
     /**
-     * 4. اعتماد الصفقة وطلب السداد (Submit Deal)
-     * نقل حالة الصفقة من مسودة (Draft) إلى بانتظار الدفع (Payment Pending) وتوليد رابط السداد
+     * 4. إرسال الصفقة للاعتماد (Submit Deal)
+     * نقل حالة الصفقة من مسودة (Draft) إلى بانتظار الموافقة (Requested)
      */
     public function submitDeal(string $dealNumber, ?int $taskId = null): array
     {
@@ -385,6 +390,130 @@ class MtahdService
             ]);
 
             Log::error('Mtahd API Exception [SubmitDeal]: ' . $e->getMessage());
+
+            return ['status' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * 4.1. موافقة البائع على الصفقة وتحديد السعر النهائي (Approve Deal)
+     * تنقل حالة الصفقة من requested إلى payment_pending
+     */
+    public function approveDeal(string $dealNumber, float $price, ?int $taskId = null): array
+    {
+        $url = "{$this->baseUrl}/deals/{$dealNumber}/action/approve";
+        $action = 'approve_deal';
+        $payload = [
+            'price' => number_format($price, 2, '.', ''),
+        ];
+
+        try {
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
+                            ->timeout($this->timeout)
+                            ->post($url, $payload);
+
+            $responseBody = $response->json() ?? [];
+            $isSuccess = $response->successful();
+
+            $this->logDealOperation([
+                'task_id'          => $taskId,
+                'deal_number'      => $dealNumber,
+                'action'           => $action,
+                'status'           => $isSuccess ? 'success' : 'failed',
+                'amount'           => $price,
+                'request_payload'  => $payload,
+                'response_payload' => $responseBody,
+                'http_status'      => $response->status(),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في اعتماد سعر الصفقة')),
+            ]);
+
+            if ($isSuccess) {
+                return [
+                    'status' => true,
+                    'data'   => $responseBody
+                ];
+            }
+
+            return [
+                'status'  => false,
+                'error'   => $responseBody['message'] ?? 'فشل في اعتماد سعر الصفقة',
+                'details' => $responseBody
+            ];
+        } catch (Exception $e) {
+            $this->logDealOperation([
+                'task_id'          => $taskId,
+                'deal_number'      => $dealNumber,
+                'action'           => $action,
+                'status'           => 'failed',
+                'amount'           => $price,
+                'request_payload'  => $payload,
+                'error_message'    => $e->getMessage(),
+            ]);
+
+            Log::error('Mtahd API Exception [ApproveDeal]: ' . $e->getMessage());
+
+            return ['status' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * 4.2. إنشاء طلب الدفع الإلكتروني للصفقة (Make Online Payment)
+     * يرجع بيانات Checkout و checkout_id من HyperPay
+     */
+    public function makePaymentOnline(string $dealNumber, string $paymentMethod = 'mada', ?int $taskId = null): array
+    {
+        $url = "{$this->baseUrl}/deals/{$dealNumber}/action/make-payment-online";
+        $action = 'make_payment_online';
+        $payload = [
+            'payment_method' => in_array($paymentMethod, ['mada', 'applepay', 'visa_master']) ? $paymentMethod : 'mada',
+        ];
+
+        try {
+            $response = Http::withoutVerifying()
+                            ->withHeaders($this->getHeaders(true))
+                            ->timeout($this->timeout)
+                            ->post($url, $payload);
+
+            $responseBody = $response->json() ?? [];
+            $isSuccess = $response->successful();
+
+            $this->logDealOperation([
+                'task_id'          => $taskId,
+                'deal_number'      => $dealNumber,
+                'action'           => $action,
+                'status'           => $isSuccess ? 'success' : 'failed',
+                'request_payload'  => $payload,
+                'response_payload' => $responseBody,
+                'http_status'      => $response->status(),
+                'error_message'    => $isSuccess ? null : ($responseBody['message'] ?? (isset($responseBody['error']) ? json_encode($responseBody['error'], JSON_UNESCAPED_UNICODE) : 'فشل في إنشاء جلسة الدفع الإلكتروني')),
+            ]);
+
+            if ($isSuccess) {
+                return [
+                    'status'      => true,
+                    'checkout_id' => $responseBody['hyperpay']['checkout_id'] ?? null,
+                    'provider'    => $responseBody['provider'] ?? 'hyperpay',
+                    'data'        => $responseBody
+                ];
+            }
+
+            return [
+                'status'  => false,
+                'error'   => $responseBody['message'] ?? 'فشل في إنشاء جلسة الدفع الإلكتروني',
+                'details' => $responseBody
+            ];
+        } catch (Exception $e) {
+            $this->logDealOperation([
+                'task_id'          => $taskId,
+                'deal_number'      => $dealNumber,
+                'action'           => $action,
+                'status'           => 'failed',
+                'request_payload'  => $payload,
+                'error_message'    => $e->getMessage(),
+            ]);
+
+            Log::error('Mtahd API Exception [MakePaymentOnline]: ' . $e->getMessage());
 
             return ['status' => false, 'error' => $e->getMessage()];
         }

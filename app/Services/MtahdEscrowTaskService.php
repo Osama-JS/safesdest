@@ -30,24 +30,37 @@ class MtahdEscrowTaskService
     {
         $configuredNumber = config('services.mtahd.platform_seller_number', env('MTAHD_PLATFORM_SELLER_NUMBER'));
 
-        if (!empty($configuredNumber) && !in_array($configuredNumber, ['CUST_SAFEDESTS_PLATFORM', 'CUST_SAFEDESTS_MAIN'])) {
+        if (!empty($configuredNumber) && !in_array($configuredNumber, ['CUST_SAFEDESTS_PLATFORM', 'CUST_SAFEDESTS_MAIN', 'IC-000000009'])) {
             return $configuredNumber;
         }
 
-        // في حال عدم وجود رقم مسبق أو في بيئة التجربة، نتأكد من وجود حساب المنصة كعميل بائع
         $platformCustomerNumber = Settings::where('key', 'mtahd_platform_customer_number')->value('value');
 
-        if ($platformCustomerNumber) {
+        if ($platformCustomerNumber && $platformCustomerNumber !== 'IC-000000009') {
             return $platformCustomerNumber;
         }
 
-        // حساب وسيط سيف ديست المعتمد في بيئة أمن (IC-000000009)
-        $defaultBrokerNumber = 'IC-000000009';
-        Settings::updateOrCreate(
-            ['key' => 'mtahd_platform_customer_number'],
-            ['value' => $defaultBrokerNumber]
-        );
-        return $defaultBrokerNumber;
+        // إنشاء أو جلب حساب العميل الممثل للمنصة كبائع معتمد في منصة أمن
+        $res = $this->mtahdService->createCustomer([
+            'first_name'   => 'سيف ديست',
+            'last_name'    => 'للخدمات اللوجستية',
+            'phone_code'   => 'SA',
+            'phone_number' => '500000001',
+            'email'        => 'finance@safedests.com',
+            'type'         => 'company',
+        ]);
+
+        $sellerNumber = $res['data']['number'] ?? ($res['data']['customer_number'] ?? ($res['details']['number'] ?? null));
+
+        if ($sellerNumber) {
+            Settings::updateOrCreate(
+                ['key' => 'mtahd_platform_customer_number'],
+                ['value' => $sellerNumber]
+            );
+            return $sellerNumber;
+        }
+
+        return 'IC-000000115';
     }
 
     /**
@@ -88,7 +101,7 @@ class MtahdEscrowTaskService
     }
 
     /**
-     * إنشاء صفقة ضمان مالي كاملة لمهمة (Create, Add Parties, Submit & Get Payment URL)
+     * إنشاء صفقة ضمان مالي كاملة لمهمة (Create, Add Parties, Submit, Approve & Online Payment)
      */
     public function createEscrowDealForTask(Task $task): array
     {
@@ -109,12 +122,13 @@ class MtahdEscrowTaskService
 
             // 2. إنشاء مسودة الصفقة (Deal)
             $dealPayload = [
-                'title'       => "ضمان مالي لمهمة توصيل #{$task->id}",
-                'description' => "خدمات نقل وشحن عبر منصة سيف ديست للمهمة رقم {$task->id}" . ($task->customer_task_number ? " (رقم الشحنة: {$task->customer_task_number})" : ""),
-                'amount'      => $amount,
-                'currency'    => 'SAR',
-                'category'    => 'logistics_services',
-                'custom_id'   => "TASK_{$task->id}",
+                'title'                => "ضمان مالي لمهمة توصيل #{$task->id}",
+                'description'          => "خدمات نقل وشحن عبر منصة سيف ديست للمهمة رقم {$task->id}" . ($task->customer_task_number ? " (رقم الشحنة: {$task->customer_task_number})" : ""),
+                'amount'               => $amount,
+                'currency'             => 'SAR',
+                'offer_category'       => 1, // Category 1 = Service
+                'offer_type'           => 'service',
+                'deal_subject_details' => "خدمات نقل وشحن وتوصيل الشحنة للمهمة رقم {$task->id} بحالة سليمة",
             ];
 
             $dealRes = $this->mtahdService->createDeal($dealPayload, $task->id);
@@ -135,18 +149,29 @@ class MtahdEscrowTaskService
                 Log::warning("Mtahd addDealParties warning for task #{$task->id}: " . ($partiesRes['error'] ?? ''));
             }
 
-            // 4. اعتماد الصفقة وطلب السداد (Submit Deal)
+            // 4. إرسال الصفقة للاعتماد (Submit Deal -> requested)
             $submitRes = $this->mtahdService->submitDeal($dealNumber, $task->id);
             if (!$submitRes['status']) {
                 Log::warning("Mtahd submitDeal warning for task #{$task->id}: " . ($submitRes['error'] ?? ''));
             }
 
-            // استخراج رابط الدفع المباشر
-            $paymentUrl = $submitRes['data']['payment_url'] 
-                       ?? ($submitRes['data']['checkout_url'] 
-                       ?? "https://checkout.amnn.sa/pay/{$dealNumber}");
+            // 5. موافقة البائع وتحديد السعر النهائي (Approve Deal -> payment_pending)
+            $approveRes = $this->mtahdService->approveDeal($dealNumber, $amount, $task->id);
+            if (!$approveRes['status']) {
+                Log::warning("Mtahd approveDeal warning for task #{$task->id}: " . ($approveRes['error'] ?? ''));
+            }
 
-            // 5. حفظ البيانات في المهمة
+            // 6. إنشاء جلسة الدفع الإلكتروني عبر HyperPay
+            $payRes = $this->mtahdService->makePaymentOnline($dealNumber, 'mada', $task->id);
+            $checkoutId = $payRes['checkout_id'] ?? null;
+
+            // استخراج رابط الدفع المباشر
+            $paymentUrl = "https://checkout.amnn.sa/pay/{$dealNumber}";
+            if ($checkoutId) {
+                $paymentUrl .= "?checkout_id={$checkoutId}";
+            }
+
+            // 7. حفظ البيانات في المهمة
             $task->update([
                 'payment_method'   => 'mtahd',
                 'is_escrow'        => true,
@@ -160,6 +185,7 @@ class MtahdEscrowTaskService
                 'status'       => true,
                 'deal_number'  => $dealNumber,
                 'payment_url'  => $paymentUrl,
+                'checkout_id'  => $checkoutId,
                 'amount'       => $amount,
                 'message'      => 'تم إنشاء صفقة الضمان المالي في متعهد بنجاح'
             ];

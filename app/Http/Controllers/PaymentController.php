@@ -268,11 +268,20 @@ class PaymentController extends Controller
             return redirect()->route('payment.result', ['status' => $status, 'token' => $token]);
         }
 
-        $brand       = $this->methodToBrand($payment->payment_method);
-        $scriptUrl   = $this->hyperpay->getScriptUrl() . '?checkoutId=' . $payment->transaction_reference;
-        $brandsCss   = $this->brandsToBrandCss($brand);
-        $isApp       = $request->query('is_app') ? 1 : 0;
-        $callbackUrl = route('payment.callback', ['token' => $token, 'is_app' => $isApp]);
+        $brand        = $this->methodToBrand($payment->payment_method);
+        $checkoutId   = $payment->transaction_reference;
+
+        // Dynamically select the correct script URL based on whether the checkoutId is Sandbox (UAT) or Production
+        if (str_contains($checkoutId, 'uat') || str_contains($checkoutId, 'test') || (in_array($payment->payment_method, ['mtahd', 'mtahd_escrow']) && str_contains(config('services.mtahd.base_url', ''), 'sandbox'))) {
+            $scriptBase = 'https://test.oppwa.com/v1/paymentWidgets.js';
+        } else {
+            $scriptBase = $this->hyperpay->getScriptUrl();
+        }
+
+        $scriptUrl    = $scriptBase . '?checkoutId=' . $checkoutId;
+        $brandsCss    = $this->brandsToBrandCss($brand);
+        $isApp        = $request->query('is_app') ? 1 : 0;
+        $callbackUrl  = route('payment.callback', ['token' => $token, 'is_app' => $isApp]);
 
         return view('payment.form', compact('payment', 'scriptUrl', 'brandsCss', 'callbackUrl', 'token'));
     }

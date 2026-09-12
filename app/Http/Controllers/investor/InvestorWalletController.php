@@ -4,6 +4,7 @@ namespace App\Http\Controllers\investor;
 
 use App\Http\Controllers\Controller;
 use App\Models\InvestorCapitalWithdrawal;
+use App\Models\InvestorCommissionWithdrawal;
 use App\Models\InvestorWalletTransaction;
 use App\Models\UserWalletTransaction;
 use App\Models\Payments;
@@ -399,5 +400,72 @@ class InvestorWalletController extends Controller
             Log::error('Capital Withdrawal Request Error', ['error' => $e->getMessage()]);
             return back()->with('error', 'حدث خطأ أثناء معالجة الطلب: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * تقديم طلب سحب من رصيد محفظة العمولات المتاح
+     */
+    public function requestCommissionWithdrawal(Request $request)
+    {
+        $investor = auth()->user();
+        $personalWallet = $investor->userWallet;
+
+        if (!$personalWallet) {
+            return back()->with('error', __('Wallet not found'));
+        }
+
+        $availableBalance = (float) $personalWallet->withdrawable_balance;
+
+        $request->validate([
+            'amount'         => ['required', 'numeric', 'min:1', "max:{$availableBalance}"],
+            'bank_name'      => ['nullable', 'string', 'max:100'],
+            'account_number' => ['nullable', 'string', 'max:50'],
+            'iban_number'    => ['nullable', 'string', 'max:50'],
+            'account_holder' => ['nullable', 'string', 'max:100'],
+            'investor_notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'amount.required' => 'يرجى إدخال المبلغ المراد سحبه من العمولات.',
+            'amount.numeric'  => 'يجب أن يكون المبلغ قيمة رقمية.',
+            'amount.min'      => 'الحد الأدنى لمبلغ السحب هو 1 ريال.',
+            'amount.max'      => 'المبلغ المطلوب يتجاوز رصيد العمولات المتاح للسحب حالياً (' . number_format($availableBalance, 2) . ' ر.س).',
+        ]);
+
+        try {
+            $withdrawal = InvestorCommissionWithdrawal::create([
+                'user_id'        => $investor->id,
+                'user_wallet_id' => $personalWallet->id,
+                'amount'         => $request->amount,
+                'status'         => 'pending',
+                'bank_name'      => $request->bank_name ?: $investor->bank_name,
+                'account_number' => $request->account_number ?: $investor->account_number,
+                'iban_number'    => $request->iban_number ?: $investor->iban_number,
+                'account_holder' => $request->account_holder ?: $investor->name,
+                'investor_notes' => $request->investor_notes,
+            ]);
+
+            return redirect()
+                ->route('investor.commission-withdrawals')
+                ->with('success', 'تم تقديم طلب سحب العمولات بمبلغ ' . number_format($withdrawal->amount, 2) . ' ر.س بنجاح. سيتم مراجعة الطلب من قبل الإدارة.');
+        } catch (\Exception $e) {
+            Log::error('Commission Withdrawal Request Error', ['error' => $e->getMessage()]);
+            return back()->with('error', 'حدث خطأ أثناء تقديم الطلب: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * صفحة سجل طلبات سحب العمولات الخاصة بالمستثمر
+     */
+    public function commissionWithdrawals(Request $request)
+    {
+        $investor = auth()->user();
+        $personalWallet = $investor->userWallet;
+
+        $withdrawals = InvestorCommissionWithdrawal::where('user_id', $investor->id)
+            ->with(['transaction', 'processor'])
+            ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->latest()
+            ->paginate(15);
+
+        return view('investor.personal-wallet.withdrawals', compact('investor', 'personalWallet', 'withdrawals'));
     }
 }

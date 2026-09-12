@@ -1,0 +1,285 @@
+<?php $__env->startSection('title', __('DashBoard')); ?>
+
+<!-- Vendor Styles -->
+<?php $__env->startSection('vendor-style'); ?>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css"
+        rel="stylesheet" />
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.scss'); ?>
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css']); ?>
+    <style>
+        .tab-content,
+        .nav-tabs {
+
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* Internet Explorer 10+ */
+        }
+
+        .tab-content::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari */
+        }
+
+        .custom-pickup-marker {
+            background-color: #0d6efd;
+            /* لون الإبرة */
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            border: 2px solid white;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+        }
+
+        .mapboxgl-popup {
+            max-width: 250px;
+        }
+
+        .mapboxgl-popup-content {
+            background: rgba(0, 0, 0, 0.85);
+            /* خلفية سوداء شفافة */
+            color: white;
+            /* نص أبيض */
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: none;
+            border: none;
+            /* إزالة أي حدود بيضاء */
+        }
+
+        .mapboxgl-popup-tip {
+            border-top-color: rgba(0, 0, 0, 0.85) !important;
+            /* مثلث السهم نفس لون الخلفية */
+        }
+
+        .overdue-task {
+            border: 2px solid red !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            transition: all 0.3s ease;
+            transform: scale(1.02);
+        }
+    </style>
+
+<?php $__env->stopSection(); ?>
+
+<!-- Vendor Scripts -->
+<?php $__env->startSection('vendor-script'); ?>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')('resources/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js'); ?>
+
+
+
+
+<?php $__env->stopSection(); ?>
+
+<!-- Page Scripts -->
+<?php $__env->startSection('page-script'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/mapbox-helper.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/tasks-dashboard.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/ajax.js']); ?>
+    <script>
+        const navContent = document.querySelector('#navbar-custom-nav-container');
+        const mobileContainer = document.querySelector('#mobile-custom-nav');
+        const originalContent = navContent?.innerHTML;
+
+        function moveCustomNav() {
+            if (window.innerWidth < 1000) {
+                // شاشة صغيرة، انقل المحتوى إلى الأسفل
+                if (originalContent && mobileContainer && mobileContainer.innerHTML.trim() === '') {
+                    mobileContainer.innerHTML = originalContent;
+                    navContent.innerHTML = '';
+                }
+            } else {
+                // شاشة كبيرة، أعد المحتوى إلى مكانه الأصلي
+                if (originalContent && navContent && navContent.innerHTML.trim() === '') {
+                    navContent.innerHTML = originalContent;
+                    mobileContainer.innerHTML = '';
+                }
+            }
+        }
+
+        moveCustomNav(); // تنفيذ أولي
+        window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
+    </script>
+<?php $__env->stopSection(); ?>
+<?php $__env->startSection('navbar-custom-nav'); ?>
+    <div class="btn-group col" role="group" aria-label="Map and Table toggle">
+        <a href="<?php echo e(route('user.dashboard')); ?>" class="btn btn-secondary" title="<?php echo e(__('View Tasks')); ?>">
+            <i class="tf-icons ti ti-truck-delivery mx-1"></i> <?php echo e(__('Tasks')); ?>
+
+        </a>
+        <a href="<?php echo e(route('dashboard.dashboard')); ?>" class="btn btn-outline-secondary" title="<?php echo e(__('view Drivers')); ?>">
+            <i class="tf-icons ti  ti-steering-wheel mx-1"></i> <?php echo e(__('Drivers')); ?>
+
+        </a>
+    </div>
+
+
+<?php $__env->stopSection(); ?>
+<?php $__env->startSection('content'); ?>
+    <div id="mobile-custom-nav" class="d-lg-none overflow-auto z-1 card shadow mb-3 p-2" style="white-space: nowrap;">
+    </div>
+    <div class="row body-container-block">
+
+        <div id="task-details-container" class="col-md-4 mb-3" style="display: none;"></div>
+
+        <div class=" col-md-4   overflow-auto " style="z-index: 1000">
+            <div class="card mb-2">
+                <div class="card-header py-2 sticky-top bg-white" style="top: 0; z-index: 1020;">
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text" id="basic-addon-search31"><i class="ti ti-search"></i></span>
+                        <input type="text" id="task-search" class="form-control" placeholder="<?php echo e(__('Search by ID, Customer or Admin...')); ?>" aria-label="Search..." aria-describedby="basic-addon-search31">
+                    </div>
+                </div>
+                <div class="nav-align-top overflow-auto" style="min-height: 75vh">
+                    <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top" style="top: 0; z-index: 1030;"
+                        role="tablist">
+                        <li class="nav-item">
+                            <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#tab-running" aria-controls="tab-running" aria-selected="true">
+                                <span class="d-none d-sm-block">
+                                    <?php echo e(__('Running')); ?>
+
+                                    <span
+                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-success ms-1_5 pt-50 count-running">0</span>
+                                </span>
+                                <i class="ti ti-loader ti-sm d-sm-none"></i>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#tab-complete" aria-controls="tab-complete" aria-selected="false">
+                                <span class="d-none d-sm-block">
+                                    <?php echo e(__('Completed (Unclosed)')); ?>
+
+                                    <span
+                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-info ms-1_5 pt-50 count-complete">0</span>
+                                </span>
+                                <i class="ti ti-check ti-sm d-sm-none"></i>
+                            </button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                data-bs-target="#tab-overdue" aria-controls="tab-overdue" aria-selected="false">
+                                <span class="d-none d-sm-block">
+                                    <?php echo e(__('Overdue')); ?>
+
+                                    <span
+                                        class="badge rounded-pill badge-center h-px-20 w-px-20 bg-label-danger ms-1_5 pt-50 count-overdue">0</span>
+                                </span>
+                                <i class="ti ti-check ti-sm d-sm-none"></i>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" style="max-height: calc(75vh - 60px); overflow-y: auto;">
+                        <div class="tab-pane fade show active" id="tab-running" role="tabpanel">
+                            <div id="task-running-container"></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-complete" role="tabpanel">
+                            <div id="task-complete-container"></div>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-overdue" role="tabpanel">
+                            <div id="task-overdue-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="task-details-view"
+                    class="position-absolute top-0 start-0 w-100 h-100 bg-white shadow-lg p-0 overflow-auto"
+                    style="display: none; z-index: 1050;">
+                    <div class="d-flex justify-content-between p-3" id="taskDetailsControl">
+
+                    </div>
+
+                    <div class="nav-align-top  overflow-auto p-0 " style="min-height: 75vh">
+                        <ul class="nav nav-tabs nav-fill bg-white border-bottom sticky-top" style="top: 0; z-index: 1030;"
+                            role="tablist">
+                            <li class="nav-item">
+                                <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                    data-bs-target="#navs-justified-details" aria-controls="navs-justified-home"
+                                    aria-selected="true"><span class="d-none d-sm-block"> <?php echo e(__('details')); ?></span><i
+                                        class="ti ti-home ti-sm d-sm-none"></i></button>
+                            </li>
+                            <li class="nav-item">
+                                <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                    data-bs-target="#navs-justified-owner" aria-controls="navs-justified-profile"
+                                    aria-selected="false"><span class="d-none d-sm-block"> <?php echo e(__('owner')); ?></span><i
+                                        class="ti ti-user ti-sm d-sm-none"></i></button>
+                            </li>
+                            <li class="nav-item">
+                                <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                    data-bs-target="#navs-justified-history" aria-controls="navs-justified-messages"
+                                    aria-selected="false"><span class="d-none d-sm-block"> <?php echo e(__('history')); ?></span><i
+                                        class="ti ti-message-dots ti-sm d-sm-none"></i></button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content p-0 m-0" style="max-height: calc(75vh - 60px); overflow-y: auto;">
+                            <div class="tab-pane fade show active" id="navs-justified-details" role="tabpanel">
+
+                                <div id="task-details-content">
+                                    <!-- تفاصيل المهمة ستُحقن هنا -->
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade p-0" id="navs-justified-owner" role="tabpanel">
+
+                                <div id="task-owner-content">
+                                    <!-- تفاصيل المهمة ستُحقن هنا -->
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade " id="navs-justified-history" role="tabpanel">
+
+                                <div id="task-history-content">
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+
+        </div>
+
+        <!-- الخريطة -->
+        <div class=" col-md-8 p-0">
+            <div id="taskMap" class="w-100" style="height: 80vh; ">
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts/layoutMaster', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/admin/index.blade.php ENDPATH**/ ?>

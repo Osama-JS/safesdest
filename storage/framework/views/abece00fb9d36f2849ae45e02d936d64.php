@@ -1,0 +1,519 @@
+<?php $__env->startSection('title', __('Users')); ?>
+
+<!-- Vendor Styles -->
+<?php $__env->startSection('vendor-style'); ?>
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss', 'resources/assets/vendor/libs/select2/select2.scss']); ?>
+
+<?php $__env->stopSection(); ?>
+
+<!-- Vendor Scripts -->
+<?php $__env->startSection('vendor-script'); ?>
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/select2/select2.js']); ?>
+    <script>
+        const templateId = <?php echo e($user_template->value ?? 0); ?>
+
+    </script>
+<?php $__env->stopSection(); ?>
+
+<!-- Page Scripts -->
+<?php $__env->startSection('page-script'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/users.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/ajax.js']); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/model.js']); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('content'); ?>
+
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Users')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total">0</h4>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ti ti-user ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Active Users')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total-active">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
+                            </div>
+
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-user-check ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Inactive Users')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total-inactive">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
+
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-users ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Pending Users')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2" id="total-pending">0</h4>
+                                <p class="text-success mb-0">(0.0%)</p>
+
+                                </p>
+                            </div>
+
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-user-search ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Users List Table -->
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0"><?php echo e(__('Users')); ?></h5>
+            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('save_admins')): ?>
+                <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
+                    data-bs-target="#submitModal">
+                    <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> <?php echo e(__('Add New User')); ?></span>
+                </button>
+
+                <button class="btn btn-outline-warning waves-effect waves-light mt-5 mx-4" id="generate-commissions">
+                    <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> <?php echo e(__('Generate Old Commissions')); ?></span>
+                </button>
+            <?php endif; ?>
+
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="datatables-users table">
+                <thead class="border-top">
+                    <tr>
+                        <th></th>
+                        <th><?php echo e(__('#')); ?></th>
+                        <th><?php echo e(__('User')); ?></th>
+                        <th><?php echo e(__('Email')); ?></th>
+                        <th><?php echo e(__('Phone')); ?></th>
+                        <th><?php echo e(__('Balance')); ?></th>
+                        <th><?php echo e(__('Role')); ?></th>
+                        <th><?php echo e(__('Status')); ?></th>
+                        <th><?php echo e(__('Reset Password')); ?></th>
+                        <th><?php echo e(__('Actions')); ?></th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+
+    </div>
+
+    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('save_admins')): ?>
+        <div class="modal fade " id="submitModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modelTitle"><?php echo e(__('Add new User')); ?></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="<?php echo e(__('Close')); ?>"></button>
+                    </div>
+                    <form class="add-new-user pt-0 form_submit" method="POST" action="<?php echo e(route('user.create')); ?>">
+                        <div class="modal-body">
+                            <div class="col-xl-12">
+
+                                <div class="nav-align-top  mb-6">
+                                    <ul class="nav nav-tabs " role="tablist">
+                                        <li class="nav-item">
+                                            <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                                data-bs-target="#navs-justified-home" aria-controls="navs-justified-home"
+                                                aria-selected="true"><span class="d-none d-sm-block"><i
+                                                        class="tf-icons ti ti-grid-dots ti-sm me-1_5"></i> <?php echo e(__('Main')); ?>
+
+                                            </button>
+                                        </li>
+                                        <li class="nav-item">
+                                            <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                                data-bs-target="#navs-justified-profile"
+                                                aria-controls="navs-justified-profile" aria-selected="false"><span
+                                                    class="d-none d-sm-block"><i
+                                                        class="tf-icons ti ti-file-plus ti-sm me-1_5"></i>
+                                                    <?php echo e(__('Additional')); ?></span></button>
+                                        </li>
+                                    </ul>
+                                    <div class="tab-content">
+                                        <div class="tab-pane fade show active" id="navs-justified-home" role="tabpanel">
+                                            <input type="hidden" name="id" id="user_id">
+                                            <div class="mb-6">
+                                                <label class="form-label" for="add-user-fullname">*
+                                                    <?php echo e(__('Full Name')); ?></label>
+                                                <input type="text" class="form-control" id="user-fullname"
+                                                    placeholder="<?php echo e(__('Full Name')); ?>" name="name"
+                                                    aria-label="<?php echo e(__('Full Name')); ?>" />
+                                                <span class="name-error text-danger text-error"></span>
+
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="add-user-email">*
+                                                            <?php echo e(__('Email')); ?></label>
+                                                        <input type="text" id="user-email" class="form-control"
+                                                            placeholder="<?php echo e(__('example@example.com')); ?>"
+                                                            aria-label="<?php echo e(__('example@example.com')); ?>" name="email" />
+                                                        <span class="email-error text-danger text-error"></span>
+
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="user-phone">*
+                                                            <?php echo e(__('Phone')); ?></label>
+                                                        <div class="input-group">
+                                                            <select id="phone-code" name="phone_code" class="form-select"
+                                                                required style="max-width: 120px;">
+                                                                <option value="+966">🇸🇦 +966</option>
+                                                                <option value="+971">🇦🇪 +971</option>
+                                                                <option value="+20">🇪🇬 +20</option>
+                                                                <option value="+1">🇺🇸 +1</option>
+                                                            </select>
+                                                            <input type="tel" id="user-phone" class="form-control"
+                                                                placeholder="<?php echo e(__('Enter phone number')); ?>"
+                                                                name="phone" />
+                                                        </div>
+                                                        <span class="phone-error text-danger text-error"></span>
+                                                        <span class="phone_code-error text-danger text-error"></span>
+
+                                                    </div>
+
+
+
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="add-user-password">*
+                                                            <?php echo e(__('Password')); ?></label>
+                                                        <input type="password" id="add-user-password" class="form-control"
+                                                            name="password" />
+                                                        <span class="password-error text-danger text-error"></span>
+
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="add-user-password">*
+                                                            <?php echo e(__('Confirm Password')); ?></label>
+                                                        <input type="password" id="add-user-password" class="form-control"
+                                                            name="confirm-password" />
+                                                        <span class="confirm-password-error text-danger text-error"></span>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="user-role">*
+                                                            <?php echo e(__('User Role')); ?></label>
+                                                        <select id="user-role" class="form-select" name="role">
+                                                            <?php $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                                <option value="<?php echo e($key->id); ?>"><?php echo e($key->name); ?>
+
+                                                                </option>
+                                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                        </select>
+                                                        <span class="role-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="  mb-6">
+                                                        <label class="form-label"
+                                                            for="user-teams"><?php echo e(__('Teams')); ?></label>
+                                                        <select name="teams[]" id="user-teams"
+                                                            class="select-teams form-select" multiple>
+                                                            <option value=""></option>
+                                                            <?php $__currentLoopData = $teams; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                                <option value="<?php echo e($key->id); ?>"><?php echo e($key->name); ?>
+
+                                                                </option>
+                                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                        </select>
+                                                        <span class="teams-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-6">
+                                                        <label class="form-label" for="commission-start-date">
+                                                            <?php echo e(__('Commission Calculation Start Date')); ?>
+
+                                                        </label>
+                                                        <input type="date" id="commission-start-date" class="form-control" name="commission_start_date" />
+                                                        <span class="commission_start_date-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="  mb-6">
+                                                        <label class="form-label"
+                                                            for="user-customers"><?php echo e(__('Customers')); ?></label>
+                                                        <select name="customers[]" id="user-customers"
+                                                            class="select-customers form-select" multiple>
+                                                            <option value=""></option>
+                                                            <?php $__currentLoopData = $customers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                                <option value="<?php echo e($key->id); ?>"><?php echo e($key->name); ?>
+
+                                                                    (<?php echo e($key->users->count()); ?>)
+                                                                </option>
+                                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                        </select>
+                                                        <span class="customers-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Bank Details Section -->
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    <div class="divider text-start">
+                                                        <div class="divider-text">
+                                                            <strong><i
+                                                                    class="ti ti-building-bank me-2"></i><?php echo e(__('Bank Details')); ?></strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-name"><?php echo e(__('Bank Name')); ?></label>
+                                                        <select name="bank_name" id="user-bank-name" class="form-select">
+                                                            <option value=""><?php echo e(__('Select Bank')); ?></option>
+                                                            <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                                            <option value="بنك الراجحي">بنك الراجحي</option>
+                                                            <option value="بنك الرياض">بنك الرياض</option>
+                                                            <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار
+                                                            </option>
+                                                            <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي
+                                                            </option>
+                                                            <option value="البنك السعودي البريطاني">البنك السعودي البريطاني
+                                                                (ساب)</option>
+                                                            <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                                            <option value="بنك سامبا">بنك سامبا</option>
+                                                            <option value="البنك الأول">البنك الأول</option>
+                                                            <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                            <option value="بنك الإنماء">بنك الإنماء</option>
+                                                            <option value="البنك العربي">البنك العربي</option>
+                                                            <option value="other"><?php echo e(__('Other')); ?></option>
+                                                        </select>
+                                                        <span class="bank_name-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4" id="user-custom-bank-field" style="display: none;">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-custom-bank-name"><?php echo e(__('Custom Bank Name')); ?></label>
+                                                        <input type="text" name="custom_bank_name"
+                                                            id="user-custom-bank-name" class="form-control"
+                                                            placeholder="<?php echo e(__('Enter bank name')); ?>">
+                                                        <span class="custom_bank_name-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-account-number"><?php echo e(__('Account Number')); ?></label>
+                                                        <input type="text" name="account_number" id="user-account-number"
+                                                            class="form-control" placeholder="1234567890"
+                                                            pattern="[0-9]{8,20}" minlength="8" maxlength="20">
+                                                        <div class="form-text">
+                                                            <small
+                                                                class="text-muted"><?php echo e(__('Numbers only, 8-20 digits')); ?></small>
+                                                        </div>
+                                                        <span class="account_number-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-iban-number"><?php echo e(__('IBAN Number')); ?></label>
+                                                        <input type="text" name="iban_number" id="user-iban-number"
+                                                            class="form-control" placeholder="SA12 3456 7890 1234 5678 90"
+                                                            maxlength="29" pattern="SA(?:[0-9]{2}\s?){11}">
+                                                        <div class="form-text">
+                                                            <small
+                                                                class="text-muted"><?php echo e(__('Format: SA + 22 digits')); ?></small>
+                                                        </div>
+                                                        <span class="iban_number-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bic-code"><?php echo e(__('BIC Code (Bank Identifier)')); ?></label>
+                                                        <input type="text" name="bic_code" id="user-bic-code"
+                                                            class="form-control" placeholder="NCBKSAJE"
+                                                            maxlength="20">
+                                                        <div class="form-text">
+                                                            <small
+                                                                class="text-muted"><?php echo e(__('e.g., NCBKSAJE for SNB')); ?></small>
+                                                        </div>
+                                                        <span class="bic_code-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-8">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-beneficiary-name"><?php echo e(__('Beneficiary Name (Official)')); ?></label>
+                                                        <input type="text" name="beneficiary_name"
+                                                            id="user-beneficiary-name" class="form-control"
+                                                            placeholder="<?php echo e(__('Full name as per bank records')); ?>">
+                                                        <span
+                                                            class="beneficiary_name-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-address1"><?php echo e(__('Bank Address 1')); ?></label>
+                                                        <input type="text" name="bank_address1"
+                                                            id="user-bank-address1" class="form-control"
+                                                            placeholder="<?php echo e(__('Street address')); ?>">
+                                                        <span
+                                                            class="bank_address1-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-address2"><?php echo e(__('Bank Address 2')); ?></label>
+                                                        <input type="text" name="bank_address2"
+                                                            id="user-bank-address2" class="form-control"
+                                                            placeholder="<?php echo e(__('Additional details')); ?>">
+                                                        <span
+                                                            class="bank_address2-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-city"><?php echo e(__('Bank City')); ?></label>
+                                                        <input type="text" name="bank_city" id="user-bank-city"
+                                                            class="form-control" placeholder="<?php echo e(__('City')); ?>">
+                                                        <span class="bank_city-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="mb-4">
+                                                        <label class="form-label"
+                                                            for="user-bank-country"><?php echo e(__('Bank Country')); ?></label>
+                                                        <select name="bank_country" id="user-bank-country"
+                                                            class="form-select">
+                                                            <option value="SA" selected>Saudi Arabia (SA)</option>
+                                                            <option value="AE">United Arab Emirates (AE)</option>
+                                                            <option value="EG">Egypt (EG)</option>
+                                                        </select>
+                                                        <span
+                                                            class="bank_country-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                        </div>
+                                        <div class="tab-pane fade" id="navs-justified-profile" role="tabpanel">
+                                            <div class="form-group">
+                                                <label for="select-template"><?php echo e(__('Select Template')); ?></label>
+                                                <select name="template" id="select-template" class="form-select w-auto">
+                                                    <option value=""><?php echo e(__('-- Select Template')); ?></option>
+                                                    <?php $__currentLoopData = $templates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                        <option value="<?php echo e($key->id); ?>"><?php echo e($key->name); ?></option>
+                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                </select>
+                                            </div>
+                                            <div id="additional-form" class="row mt-4">
+
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-label-secondary"
+                                data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
+                            <button type="submit" class="btn btn-primary me-3 data-submit"><?php echo e(__('Submit')); ?></button>
+
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    
+    <?php echo $__env->make('admin.partials.signature-modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts/layoutMaster', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/admin/users/index.blade.php ENDPATH**/ ?>

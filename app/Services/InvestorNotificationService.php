@@ -182,6 +182,76 @@ class InvestorNotificationService
     }
 
     /**
+     * إرسال إشعار للمستثمر عند الموافقة على طلب سحب العمولات
+     *
+     * @param User $investor
+     * @param \App\Models\InvestorCommissionWithdrawal $withdrawal
+     * @param float $newBalance
+     */
+    public function notifyCommissionWithdrawalApproved(
+        User $investor,
+        \App\Models\InvestorCommissionWithdrawal $withdrawal,
+        float $newBalance
+    ): void {
+        if (empty($investor->email)) {
+            return;
+        }
+
+        $mailData = [
+            'subject'          => "الموافقة على طلب سحب عمولات بقيمة " . number_format($withdrawal->amount, 2) . " ر.س",
+            'investor_name'    => $investor->name,
+            'intro_message'    => "نود إعلامك بأنه تمت الموافقة على طلب سحب العمولات رقم #{$withdrawal->id} بمبلغ " . number_format($withdrawal->amount, 2) . " ر.س وتوثيق صرف المبلغ وخصمه من محفظة العمولات الخاصة بك.",
+            'badge_title'      => 'سحب عمولات معتمد',
+            'amount'           => $withdrawal->amount,
+            'transaction_type' => 'debit',
+            'new_balance'      => $newBalance,
+            'operation_title'  => "صرف وسحب عمولات (طلب رقم #{$withdrawal->id})",
+            'tasks_count'      => 0,
+            'task_ids'         => [],
+            'note'             => $withdrawal->admin_notes,
+            'date_time'        => now()->format('Y-m-d H:i'),
+            'action_url'       => url('/investor/commission-withdrawals'),
+        ];
+
+        $this->sendEmail($investor->email, $mailData);
+    }
+
+    /**
+     * إرسال إشعار للمستثمر عند رفض طلب سحب العمولات مع بيان السبب
+     *
+     * @param User $investor
+     * @param \App\Models\InvestorCommissionWithdrawal $withdrawal
+     * @param string $rejectionReason
+     */
+    public function notifyCommissionWithdrawalRejected(
+        User $investor,
+        \App\Models\InvestorCommissionWithdrawal $withdrawal,
+        string $rejectionReason
+    ): void {
+        if (empty($investor->email)) {
+            return;
+        }
+
+        $mailData = [
+            'subject'          => "تحديث بشأن طلب سحب العمولات رقم #{$withdrawal->id}",
+            'investor_name'    => $investor->name,
+            'intro_message'    => "نود إعلامك بأنه تعذر قبول طلب سحب العمولات رقم #{$withdrawal->id} بمبلغ " . number_format($withdrawal->amount, 2) . " ر.س، ورصيد محفظتك لم يتأثر.",
+            'badge_title'      => 'طلب سحب مرفوض',
+            'amount'           => $withdrawal->amount,
+            'transaction_type' => 'info',
+            'new_balance'      => $withdrawal->wallet?->withdrawable_balance ?? 0,
+            'operation_title'  => "رفض طلب سحب عمولات (طلب رقم #{$withdrawal->id})",
+            'tasks_count'      => 0,
+            'task_ids'         => [],
+            'note'             => "سبب الرفض: " . $rejectionReason,
+            'date_time'        => now()->format('Y-m-d H:i'),
+            'action_url'       => url('/investor/commission-withdrawals'),
+        ];
+
+        $this->sendEmail($investor->email, $mailData);
+    }
+
+    /**
      * إرسال البريد الإلكتروني مع معالجة الأخطاء لضمان عدم تعطل المعاملات المالية
      *
      * @param string $recipientEmail

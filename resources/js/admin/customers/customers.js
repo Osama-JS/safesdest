@@ -161,6 +161,7 @@ $(function () {
             }
 
             var broker = full.broker ? '<span class=" badge bg-label-primary ">Customs Clearance Agent</span>' : '';
+            var investmentBadge = full.allow_investment ? '<span class="badge bg-label-success ms-1"><i class="ti ti-chart-arrows me-1"></i>متاح للاستثمار</span>' : '';
             return `
               <div class="d-flex align-items-center">
                 <div class="avatar-wrapper me-3">
@@ -168,8 +169,7 @@ $(function () {
                 </div>
                 <div class="d-flex flex-column">
                   <span class="fw-medium">${$name}</span>
-                  <span class="fw-medium">${broker}</span>
-
+                  <div class="d-flex flex-wrap gap-1 mt-1">${broker} ${investmentBadge}</div>
                 </div>
               </div>`;
           }
@@ -255,6 +255,7 @@ $(function () {
                     ${!full.can_commission ? '' : `<li><a href="javascript:;" class="dropdown-item manage-commissions" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-percentage me-2"></i>${__('Manage Commissions')}</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-broker-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.broker}"><i class="ti ti-switch-horizontal me-2"></i> ${__('Change Broker Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-investment-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.allow_investment}"><i class="ti ti-chart-arrows me-2"></i> ${__('Change Investment Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" ><i class="ti ti-wallet me-2"></i>${__('Create Wallet')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item signature-record" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-signature me-2"></i>${__('Manage Signature')}</a></li>
                   </ul>
@@ -378,6 +379,7 @@ $(function () {
       $('#customer-policy-file').val(data.policy_file_name);
       $('#customer-tags').val(data.tagsIds).trigger('change');
       $('#customer-is-company').prop('checked', data.is_company == 1);
+      $('#customer-allow-investment').prop('checked', data.allow_investment == 1 || data.allow_investment === true);
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }
@@ -459,6 +461,29 @@ $(function () {
       url: `${baseUrl}admin/customers/broker/status`,
       method: 'POST',
       dataTable: dt_data // إعادة تحميل الجدول إذا موجود
+    });
+  });
+
+  $(document).on('click', '.status-investment-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
+
+    const fields = `
+      <input type="hidden" name="id" value="${id}">
+      <select class="form-select" name="status">
+        <option value="1" ${status ? 'selected' : ''}>متاح للاستثمار (تظهر مهامه للمستثمرين)</option>
+        <option value="0" ${!status ? 'selected' : ''}>غير متاح للاستثمار (محظورة من صفحات الاستثمار)</option>
+      </select>
+    `;
+
+    showFormModal({
+      title: `حالة إتاحة مهام العميل للاستثمار: ${name}`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/customers/investment/status`,
+      method: 'POST',
+      dataTable: dt_data
     });
   });
 

@@ -169,6 +169,13 @@
             "permission": "view_investors"
         },
         {
+            "url": "admin/investors/commission-withdrawals",
+            "name": "Commission Withdrawals",
+            "icon": "menu-icon tf-icons ti ti-cash-banknote",
+            "slug": "admin.investors.commission-withdrawals.index",
+            "permission": "view_investor_withdrawals"
+        },
+        {
             "url": "admin/mtahd-logs",
             "name": "Mtahd Escrow Logs",
             "icon": "menu-icon tf-icons ti ti-shield-check",

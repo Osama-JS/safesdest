@@ -1,0 +1,1160 @@
+<?php $__env->startSection('title', __('User Wallet') . ' - ' . $user->name); ?>
+
+<?php $__env->startSection('vendor-style'); ?>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss']); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('vendor-script'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js']); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('page-script'); ?>
+    <script>
+        const walletId = "<?php echo e($wallet->id); ?>";
+        const currentUserId = "<?php echo e($user->id); ?>";
+    </script>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/user-wallets.js']); ?>
+<?php $__env->stopSection(); ?>
+
+<?php $__env->startSection('content'); ?>
+    <!-- User Info -->
+    <div class="row g-6 mb-6">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-lg me-4">
+                            <span class="avatar-initial rounded bg-label-primary">
+                                <i class="ti ti-user ti-lg"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="mb-1"><?php echo e($user->name); ?></h4>
+                            <p class="mb-0 text-muted"><?php echo e($user->email); ?></p>
+                            <small class="text-muted"><?php echo e(__('User ID')); ?>: #<?php echo e($user->id); ?></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form action="<?php echo e(route('admin.user-wallets.show', $user->id)); ?>" method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="from_date" class="form-label">من تاريخ</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" value="<?php echo e(request('from_date')); ?>">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="to_date" class="form-label">إلى تاريخ</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" value="<?php echo e(request('to_date')); ?>">
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ti ti-filter me-1"></i> تصفية
+                            </button>
+                            <a href="<?php echo e(route('admin.user-wallets.show', $user->id)); ?>" class="btn btn-outline-secondary">
+                                إعادة ضبط
+                            </a>
+                            <a href="<?php echo e(route('admin.user-wallets.export', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')])); ?>" class="btn btn-success ms-auto">
+                                <i class="ti ti-file-spreadsheet me-1"></i> تصدير Excel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Statistics -->
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Current Balance')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2"><?php echo e(number_format($balance, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-<?php echo e($balance >= 0 ? 'success' : 'danger'); ?>">
+                                <i class="ti ti-wallet ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Total Credit')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2"><?php echo e(number_format($credit, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-trending-up ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Total Debit')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2"><?php echo e(number_format($debit, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-trending-down ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading"><?php echo e(__('Debt Ceiling')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2"><?php echo e(number_format($wallet->debt_ceiling, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-shield-check ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php if($isInvestor): ?>
+    <!-- Investor-specific wallet stats -->
+    <div class="row g-6 mb-6">
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border border-success">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium"><?php echo e(__('Withdrawable Balance')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-success" id="withdrawableBalanceDisplay"><?php echo e(number_format($withdrawableBalance ?? 0, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                            <small class="text-muted">
+                                <?php if($activeContract && $activeContract->contract_type === 'task_investment'): ?>
+                                    <?php echo e(__('Settled task commissions + manual deposits − withdrawals and reinvestment')); ?>
+
+                                <?php elseif($activeContract && $activeContract->contract_type === 'general_investment'): ?>
+                                    <?php echo e(__('Total profits available for withdrawal or reinvestment')); ?>
+
+                                <?php else: ?>
+                                    <?php echo e(__('Profits available for withdrawal or reinvestment')); ?>
+
+                                <?php endif; ?>
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-cash ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card border border-warning">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium"><?php echo e(__('Investment Wallet Balance')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-warning" id="investmentWalletBalanceDisplay"><?php echo e(number_format($investmentWalletBalance, 2)); ?></h4>
+                                <small class="text-muted"><?php echo e(__('SAR')); ?></small>
+                            </div>
+                            <small class="text-muted">
+                                <?php if($hasInvestmentWallet): ?>
+                                    <a href="<?php echo e(route('admin.investors.invest-wallet', $user->id)); ?>" class="text-primary"><?php echo e(__('View Investment Wallet')); ?></a>
+                                <?php else: ?>
+                                    <span class="text-danger"><?php echo e(__('Investment wallet not created yet')); ?></span>
+                                <?php endif; ?>
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-wallet ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php if($activeContract): ?>
+        <div class="col-sm-6 col-xl-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium"><?php echo e(__('Investment Contract Type')); ?></span>
+                            <div class="d-flex align-items-center my-1">
+                                <h5 class="mb-0 me-2">
+                                    <?php echo e($activeContract->contract_type === 'task_investment' ? __('Task-based investment') : __('General investment')); ?>
+
+                                </h5>
+                            </div>
+                            <small class="text-muted">
+                                <?php echo e(__('Commission')); ?>: <?php echo e($activeContract->commission_value); ?><?php echo e($activeContract->commission_type === 'percentage' ? '%' : ' ' . __('SAR')); ?>
+
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-file-invoice ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Wallet Transactions -->
+    <div class="card">
+        <div class="card-header border-bottom">
+            <h5 class="card-title mb-0">
+                <i class="tf-icons ti ti-list me-2 fs-3 text-white bg-primary rounded p-1"></i>
+                <?php echo e(__('Wallet Transactions')); ?>
+
+            </h5>
+            <?php if(!$isInvestor): ?>
+                <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('generate_user_payment_request')): ?>
+                    <button type="button" class="btn btn-success waves-effect waves-light mt-5 mx-2" id="user-payment-request">
+                        <i class="ti ti-receipt me-0 me-sm-1 ti-xs"></i>
+                        <span class="d-none d-sm-inline-block"><?php echo e(__('Payment Request')); ?></span>
+                    </button>
+                <?php endif; ?>
+            <?php endif; ?>
+            <button class="add-transaction btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                data-bs-target="#transactionModal">
+                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> <?php echo e(__('Add Transaction')); ?></span>
+            </button>
+            <button class="clear-wallet btn btn-danger waves-effect waves-light mt-5 mx-2" id="clearWalletBtn">
+                <i class="ti ti-trash me-0 me-sm-1 ti-xs"></i>
+                <span class="d-none d-sm-inline-block"> <?php echo e(__('Clear Wallet')); ?></span>
+            </button>
+            <?php if($isInvestor): ?>
+                <button class="btn btn-info waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                    data-bs-target="#manualCommissionModal">
+                    <i class="ti ti-settings me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> <?php echo e(__('Manual Calculation')); ?></span>
+                </button>
+                <?php if($activeContract && $activeContract->contract_type === 'general_investment'): ?>
+                <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateGeneralBtn">
+                    <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> <?php echo e(__('Calculate General Commissions')); ?></span>
+                </button>
+                <?php elseif($activeContract && $activeContract->contract_type === 'task_investment'): ?>
+                <button class="btn btn-success waves-effect waves-light mt-5 mx-2" id="calculateTasksBtn">
+                    <i class="ti ti-calculator me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات المهام الممولة</span>
+                </button>
+                <?php endif; ?>
+                <?php if(($withdrawableBalance ?? 0) > 0): ?>
+                <button class="btn btn-primary waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal"
+                    data-bs-target="#reinvestProfitsModal">
+                    <i class="ti ti-refresh me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> <?php echo e(__('Reinvest Investor Profits')); ?></span>
+                </button>
+                <?php endif; ?>
+                <?php if($activeContract): ?>
+                <a href="<?php echo e(route('admin.user-wallets.tasks-funding', $user->id)); ?>" class="btn btn-secondary waves-effect waves-light mt-5 mx-2">
+                    <i class="ti ti-cash me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> تمويل المهام (للمستثمر)</span>
+                </a>
+                <?php endif; ?>
+                <?php if((isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty()) || (isset($negativeCommissions) && $negativeCommissions->isNotEmpty())): ?>
+                    <button class="btn btn-danger waves-effect waves-light mt-5 mx-2" data-bs-toggle="modal" data-bs-target="#checkErrorsModal">
+                        <i class="ti ti-alert-triangle me-0 me-sm-1 ti-xs"></i>
+                        <span class="d-none d-sm-inline-block"> <?php echo e(__('Check for Errors')); ?></span>
+                    </button>
+                <?php else: ?>
+                    <button class="btn btn-outline-danger waves-effect waves-light mt-5 mx-2" onclick="Swal.fire('<?php echo e(__('No Errors')); ?>', 'لا توجد عمولات مكررة أو أخطاء في الخصم العكسي.', 'success')">
+                        <i class="ti ti-shield-check me-0 me-sm-1 ti-xs"></i>
+                        <span class="d-none d-sm-inline-block"> <?php echo e(__('Check for Errors')); ?></span>
+                    </button>
+                <?php endif; ?>
+            <?php endif; ?>
+            <?php if($isBroker): ?>
+                <button class="btn btn-warning waves-effect waves-light mt-5 mx-2" id="calculateBrokerBtn">
+                    <i class="ti ti-user-check me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات الوسيط (مضارب) </span>
+                </button>
+            <?php endif; ?>
+            <?php if(!$isInvestor): ?>
+                <button class="btn btn-dark waves-effect waves-light mt-5 mx-2" id="calculateTruckBrokerBtn">
+                    <i class="ti ti-truck me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> احتساب عمولات وسيط الشاحنات </span>
+                </button>
+            <?php endif; ?>
+            <?php if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com'): ?>
+                <button class="btn btn-secondary waves-effect waves-light mt-5 mx-2" id="calculateOldTruckBrokerBtn">
+                    <i class="ti ti-history me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> عمولات النظام القديم (للمدير) </span>
+                </button>
+                <button class="btn btn-info waves-effect waves-light mt-5 mx-2" id="previewAllOldTruckBrokerBtn">
+                    <i class="ti ti-eye me-0 me-sm-1 ti-xs"></i>
+                    <span class="d-none d-sm-inline-block"> استعراض كافة عمولات النظام القديم </span>
+                </button>
+            <?php endif; ?>
+        </div>
+        <div class="card-datatable table-responsive">
+            <table class="datatables-transactions table">
+                <thead class="border-top">
+                    <tr>
+                        <th></th>
+                        <th><?php echo e(__('#')); ?></th>
+                        <th><?php echo e(__('amount')); ?></th>
+                        <th><?php echo e(__('description')); ?></th>
+                        <th><?php echo e(__('task id')); ?></th>
+                        <th><?php echo e(__('user')); ?></th>
+                        <th><?php echo e(__('created at')); ?></th>
+                        <th><?php echo e(__('action')); ?></th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <!-- Legacy Broker Commission Preview Modal -->
+    <div class="modal fade" id="oldBrokerCommissionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">معاينة عمولات النظام القديم</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="oldBrokerLoading" class="text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2">جاري البحث عن المهام المطابقة...</p>
+                    </div>
+                    
+                    <div id="oldBrokerContent" class="d-none">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="ti ti-info-circle me-2"></i>
+                            <div>
+                                إجمالي العمولات المستحقة: <strong id="oldBrokerTotalCommission">0.00</strong> ريال
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 300px;">
+                            <table class="table table-bordered table-sm" id="oldBrokerTasksTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>رقم المهمة</th>
+                                        <th>نوع العمولة</th>
+                                        <th>إجمالي السعر</th>
+                                        <th>العمولة المستحقة</th>
+                                        <th>التاريخ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label text-danger">كلمة المرور لتأكيد الاحتساب</label>
+                            <input type="password" id="oldBrokerPassword" class="form-control" placeholder="أدخل كلمة المرور لتأكيد العملية" autocomplete="off">
+                        </div>
+                    </div>
+
+                    <div id="oldBrokerNoData" class="d-none text-center my-4">
+                        <i class="ti ti-alert-triangle text-warning fs-1 mb-2"></i>
+                        <p>لا توجد مهام مطابقة لعمولات النظام القديم غير محتسبة حتى الآن.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <a href="<?php echo e(route('admin.user-wallets.export-old-truck-broker', $user->id)); ?>" target="_blank" class="btn btn-info d-none" id="oldBrokerExportBtn">
+                        <i class="ti ti-download me-1"></i> تصدير Excel
+                    </a>
+                    <button type="button" class="btn btn-danger d-none" id="oldBrokerConfirmBtn">
+                        <i class="ti ti-calculator me-1"></i> تأكيد واحتساب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Old Broker Commissions Modal -->
+    <div class="modal fade" id="allOldBrokerCommissionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">استعراض كافة عمولات النظام القديم</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="allOldBrokerLoading" class="text-center my-4">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">جاري التحميل...</span>
+                        </div>
+                        <p class="mt-2">جاري البحث عن جميع المهام المطابقة في النظام...</p>
+                    </div>
+                    
+                    <div id="allOldBrokerContent" class="d-none">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="ti ti-info-circle me-2"></i>
+                            <div>
+                                إجمالي العمولات لجميع المهام: <strong id="allOldBrokerTotalCommission">0.00</strong> ريال
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-bordered table-sm" id="allOldBrokerTasksTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>رقم المهمة</th>
+                                        <th>الوسيط المرتبط</th>
+                                        <th>إجمالي السعر</th>
+                                        <th>العمولة المستحقة</th>
+                                        <th>التاريخ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="allOldBrokerNoData" class="d-none text-center my-4">
+                        <i class="ti ti-alert-triangle text-warning fs-1 mb-2"></i>
+                        <p>لا توجد مهام مطابقة لعمولات النظام القديم.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <a href="<?php echo e(route('admin.user-wallets.export-all-old-truck-broker')); ?>" target="_blank" class="btn btn-info d-none" id="allOldBrokerExportBtn">
+                        <i class="ti ti-download me-1"></i> تصدير Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Modal -->
+    <div class="modal fade " id="transactionModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modelTitle"><?php echo e(__('Add New Transaction')); ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="<?php echo e(__('Close')); ?>"></button>
+                </div>
+                <form class="add-new-transaction pt-0 form_submit" method="POST"
+                    action="<?php echo e(route('admin.user-wallets.addTransaction')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <div class="modal-body">
+                        <div class="col-xl-12">
+                            <div class="nav-align-top mb-6">
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active">
+                                        <!-- Hidden wallet_id -->
+                                        <input type="hidden" name="user" id="wallet_id" value="<?php echo e($user->id); ?>">
+                                        <span class="user-error text-danger text-error"></span>
+
+                                        <input type="hidden" name="id" id="trans_id">
+
+                                        <!-- Amount -->
+                                        <div class="mb-4">
+                                            <label class="form-label" for="amount">* <?php echo e(__('Amount')); ?></label>
+                                            <input type="number" name="amount" class="form-control" id="trans_amount"
+                                                placeholder="<?php echo e(__('Enter the amount')); ?>" step="0.01"
+                                                min="0">
+                                            <span class="amount-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Transaction Type -->
+                                        <div class="mb-4">
+                                            <label class="form-label d-block">* <?php echo e(__('Transaction Type')); ?></label>
+                                            <div class="row">
+
+                                                <div class="col-12">
+                                                    <input type="radio" class="btn-check" name="type"
+                                                        id="debit" value="debit" autocomplete="off" required
+                                                        readonly checked>
+                                                    <label class="btn btn-warning w-100 py-2 btn-debit" for="debit">
+                                                        <i class="ti ti-circle-minus me-1"></i> <?php echo e(__('Debit')); ?>
+
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <span class="type-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Payment Method -->
+                                        <div class="mb-4" id="paymentMethodSection">
+                                            <label class="form-label" for="payment_method">* <?php echo e(__('Payment Method')); ?></label>
+                                            <select name="payment_method" id="payment_method" class="form-select">
+                                                <option value="manual">يدوي (تسوية خارج النظام)</option>
+                                                <option value="hyperpay">تحويل بنكي آلي (HyperPay Payout)</option>
+                                            </select>
+                                            <div class="form-text mt-2 text-warning d-none" id="hyperPayWarning">
+                                                <i class="ti ti-alert-triangle me-1"></i> سيتم تحويل المبلغ بشكل فوري إلى الحساب البنكي الخاص بهذا المستخدم باستخدام بوابة HyperPay.
+                                                <div class="mt-3 p-3 bg-light border rounded text-dark">
+                                                    <strong>البيانات البنكية المسجلة للمضارب:</strong>
+                                                    <ul class="list-unstyled mt-2 mb-0">
+                                                        <li><strong>اسم البنك:</strong> <?php echo e($user->bank_name ?? 'غير محدد'); ?></li>
+                                                        <li><strong>رقم الآيبان:</strong> <span dir="ltr"><?php echo e($user->iban_number ?? 'غير محدد'); ?></span></li>
+                                                        <li><strong>رمز السويفت:</strong> <?php echo e($user->bic_code ?? 'غير محدد'); ?></li>
+                                                        <li><strong>اسم المستفيد:</strong> <?php echo e($user->beneficiary_name ?? 'غير محدد'); ?></li>
+                                                    </ul>
+                                                    <?php if(!$user->iban_number || !$user->bic_code || !$user->beneficiary_name): ?>
+                                                        <div class="alert alert-danger mt-2 mb-0 py-2">
+                                                            <i class="ti ti-ban me-1"></i> لا يمكن إتمام التحويل الآلي لعدم اكتمال البيانات البنكية الأساسية (الآيبان، رمز السويفت، أو اسم المستفيد).
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <label class="form-label text-danger fw-bold" for="hyperpay_password_user">
+                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
+                                                    </label>
+                                                    <input type="password" name="password" id="hyperpay_password_user" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
+                                                    <span class="password-error text-danger text-error"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+
+                                        <!-- Maturity Time (Hidden by default) -->
+                                        <div class="mb-4" id="maturity-time-group" style="display: none;">
+                                            <label class="form-label" for="maturity"><?php echo e(__('Maturity Time')); ?></label>
+                                            <input type="datetime-local" name="maturity" class="form-control"
+                                                id="trans_maturity">
+                                            <span class="maturity-error text-danger text-error"></span>
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="mb-4">
+                                            <label class="form-label" for="description">* <?php echo e(__('Description')); ?></label>
+                                            <textarea name="description" class="form-control" id="trans_description" rows="3"
+                                                placeholder="<?php echo e(__('Optional notes...')); ?>"></textarea>
+                                            <span class="description-error text-danger text-error"></span>
+                                        </div>
+                                        <div class="mb-6">
+
+                                            <div class="form-group mb-3">
+                                                <label for="image" class="form-label">
+                                                    <i class="fas fa-file-upload me-1"></i>
+                                                    <?php echo e(__('Upload File')); ?>
+
+                                                </label>
+                                                <input type="file" name="image" class="form-control" id="image"
+                                                    accept=".jpeg,.jpg,.png,.webp,.pdf,.doc,.docx,.txt,.csv">
+                                                <div class="form-text text-muted mt-1">
+                                                    <small>
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        <?php echo e(__('Supported formats: Images (JPEG, PNG, WebP), Documents (PDF). Max size: 10MB')); ?>
+
+                                                    </small>
+                                                </div>
+                                                <span class="image-error text-danger text-error"></span>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
+                        <button type="submit" class="btn btn-primary me-3 data-submit"><?php echo e(__('Submit')); ?></button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <?php if($isInvestor && ($withdrawableBalance ?? 0) > 0): ?>
+    <div class="modal fade" id="reinvestProfitsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ti ti-refresh text-primary me-2"></i>
+                        <?php echo e(__('Reinvest Investor Profits')); ?>
+
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="reinvestProfitsForm">
+                    <?php echo csrf_field(); ?>
+                    <div class="modal-body">
+                        <div class="alert alert-info small">
+                            <i class="ti ti-info-circle me-1"></i>
+                            <?php echo e(__('Amount will be deducted from withdrawable balance in commission wallet and added to investment wallet as new capital.')); ?>
+
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="reinvest_amount"><?php echo e(__('Top up amount (SAR)')); ?></label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="reinvest_amount" name="amount"
+                                    step="0.01" min="0.01"
+                                    max="<?php echo e(number_format($withdrawableBalance, 2, '.', '')); ?>"
+                                    value="<?php echo e(number_format($withdrawableBalance, 2, '.', '')); ?>" required>
+                                <button type="button" class="btn btn-label-secondary" id="reinvestMaxBtn"><?php echo e(__('Maximum')); ?></button>
+                            </div>
+                            <small class="text-muted"><?php echo e(__('Withdrawable balance')); ?>: <?php echo e(number_format($withdrawableBalance, 2)); ?> <?php echo e(__('SAR')); ?></small>
+                            <div class="text-danger small mt-1 d-none" id="reinvest_amount_error"></div>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-medium" for="reinvest_notes"><?php echo e(__('Notes (optional)')); ?></label>
+                            <textarea class="form-control" id="reinvest_notes" name="notes" rows="2"
+                                maxlength="255" placeholder="<?php echo e(__('Reason or reference for this operation...')); ?>"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
+                        <button type="submit" class="btn btn-primary" id="reinvestSubmitBtn">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                            <?php echo e(__('Confirm Reinvestment Admin')); ?>
+
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div>
+    <?php endif; ?>
+
+    
+    <?php if((isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty()) || (isset($negativeCommissions) && $negativeCommissions->isNotEmpty())): ?>
+    <div class="modal fade" id="checkErrorsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title d-flex align-items-center text-danger">
+                        <i class="ti ti-alert-triangle me-2 ti-md"></i>
+                        <?php echo e(__('Commission Errors Found')); ?>
+
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    
+                    <?php if(isset($duplicateCommissions) && $duplicateCommissions->isNotEmpty()): ?>
+                    <h6 class="text-danger fw-bold mb-2">العمولات المكررة (Duplicate Commissions)</h6>
+                    <div class="alert alert-warning mb-4">
+                        <i class="ti ti-info-circle me-2"></i>
+                        <?php echo e(__('The following tasks have multiple commissions recorded in your wallet. Please review and delete the duplicates. You can only keep one commission per task.')); ?>
+
+                    </div>
+
+                    <div class="table-responsive mb-4">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><?php echo e(__('Task #')); ?></th>
+                                    <th><?php echo e(__('Amount')); ?></th>
+                                    <th><?php echo e(__('Date')); ?></th>
+                                    <th><?php echo e(__('Action')); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $__currentLoopData = $duplicateCommissions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $taskId => $transactionsGroup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php $__currentLoopData = $transactionsGroup; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $transaction): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <tr class="duplicate-row" data-task-id="<?php echo e($taskId); ?>">
+                                            <td class="align-middle text-center fw-bold text-primary">
+                                                #<?php echo e($taskId); ?>
+
+                                                <?php if($transaction->task): ?>
+                                                    <?php if($transaction->task->investor_id == $user->id): ?>
+                                                        <br><span class="badge bg-label-info mt-1" style="font-size: 0.7rem;">ممولة منه</span>
+                                                    <?php else: ?>
+                                                        <br><span class="badge bg-label-secondary mt-1" style="font-size: 0.7rem;">مستثمر عام</span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?php echo e(number_format($transaction->amount, 2)); ?> <?php echo e(__('SAR')); ?></td>
+                                            <td><?php echo e($transaction->created_at->format('Y-m-d H:i')); ?></td>
+                                            <td>
+                                                <form action="<?php echo e(route('admin.user-wallets.destroyDuplicateCommission', $transaction->id)); ?>" method="POST" class="d-inline delete-duplicate-form" data-task-id="<?php echo e($taskId); ?>">
+                                                    <?php echo csrf_field(); ?>
+                                                    <?php echo method_field('DELETE'); ?>
+                                                    <button type="button" class="btn btn-sm btn-danger delete-duplicate-btn">
+                                                        <i class="ti ti-trash"></i> <?php echo e(__('Delete')); ?>
+
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if(isset($negativeCommissions) && $negativeCommissions->isNotEmpty()): ?>
+                    <h6 class="text-danger fw-bold mb-2 mt-4">أخطاء الخصم العكسي (Negative / Mismatched Commissions)</h6>
+                    <div class="alert alert-danger mb-4">
+                        <i class="ti ti-info-circle me-2"></i>
+                        يوجد خلل في المهام التالية حيث أن إجمالي الخصم (Debit) يفوق الإيداع (Credit) مما سبب خللاً في الرصيد. يرجى مراجعتها وحذف الخصم الزائد لتصحيح الرصيد.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><?php echo e(__('Task #')); ?></th>
+                                    <th><?php echo e(__('Amount')); ?></th>
+                                    <th>النوع</th>
+                                    <th><?php echo e(__('Date')); ?></th>
+                                    <th><?php echo e(__('Action')); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $__currentLoopData = $negativeCommissions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $taskId => $transactionsGroup): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php $__currentLoopData = $transactionsGroup; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $transaction): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <tr class="duplicate-row" data-task-id="<?php echo e($taskId); ?>">
+                                            <td class="align-middle text-center fw-bold text-primary">
+                                                #<?php echo e($taskId); ?>
+
+                                                <?php if($transaction->task): ?>
+                                                    <?php if($transaction->task->investor_id == $user->id): ?>
+                                                        <br><span class="badge bg-label-info mt-1" style="font-size: 0.7rem;">ممولة منه</span>
+                                                    <?php else: ?>
+                                                        <br><span class="badge bg-label-secondary mt-1" style="font-size: 0.7rem;">مستثمر عام</span>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="<?php echo e($transaction->transaction_type == 'credit' ? 'text-success' : 'text-danger'); ?> fw-bold">
+                                                <?php echo e($transaction->transaction_type == 'credit' ? '+' : '-'); ?><?php echo e(number_format($transaction->amount, 2)); ?> <?php echo e(__('SAR')); ?>
+
+                                            </td>
+                                            <td>
+                                                <span class="badge <?php echo e($transaction->transaction_type == 'credit' ? 'bg-label-success' : 'bg-label-danger'); ?>">
+                                                    <?php echo e($transaction->transaction_type == 'credit' ? 'إيداع' : 'خصم'); ?>
+
+                                                </span>
+                                            </td>
+                                            <td><?php echo e($transaction->created_at->format('Y-m-d H:i')); ?></td>
+                                            <td>
+                                                <?php if($transaction->transaction_type == 'debit'): ?>
+                                                <form action="<?php echo e(route('admin.user-wallets.destroyDuplicateCommission', $transaction->id)); ?>" method="POST" class="d-inline delete-duplicate-form" data-task-id="<?php echo e($taskId); ?>">
+                                                    <?php echo csrf_field(); ?>
+                                                    <?php echo method_field('DELETE'); ?>
+                                                    <button type="button" class="btn btn-sm btn-danger delete-duplicate-btn">
+                                                        <i class="ti ti-trash"></i> <?php echo e(__('Delete')); ?>
+
+                                                    </button>
+                                                </form>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <?php endif; ?>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel"><?php echo e(__('View the File')); ?></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="<?php echo e(__('close')); ?>"></button>
+                </div>
+                <div class="modal-body text-center" id="modalContent">
+                    <img id="modalImage" src="" class="img-fluid rounded shadow" alt="<?php echo e(__('image')); ?>" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const baseUrl = '<?php echo e(url('/')); ?>/';
+        const userId = <?php echo e($user->id); ?>;
+        const transactionsDataUrl = '<?php echo route('admin.user-wallets.getTransactions', ['userId' => $user->id, 'from_date' => request('from_date'), 'to_date' => request('to_date')]); ?>';
+        const addTransactionUrl = '<?php echo e(route('admin.user-wallets.addTransaction')); ?>';
+        const withdrawalUrl = '<?php echo e(route('admin.user-wallets.withdrawal')); ?>';
+        const clearWalletUrl = '<?php echo e(route('admin.user-wallets.clear', $user->id)); ?>';
+        const searchTaskUrl = '<?php echo e(route('admin.user-wallets.search-task', $user->id)); ?>';
+        const calculateManualUrl = '<?php echo e(route('admin.user-wallets.calculate-manual', $user->id)); ?>';
+        const calculateGeneralUrl = '<?php echo e(route('admin.user-wallets.calculate-general', $user->id)); ?>';
+        const calculateTasksUrl = '<?php echo e(route('admin.user-wallets.calculate-tasks', $user->id)); ?>';
+        const calculateBrokerUrl = '<?php echo e(route('admin.user-wallets.calculate-broker', $user->id)); ?>';
+        const calculateTruckBrokerUrl = '<?php echo e(route('admin.user-wallets.calculate-truck-broker', $user->id)); ?>';
+        const calculateOldTruckBrokerUrl = '<?php echo e(route('admin.user-wallets.calculate-old-truck-broker', $user->id)); ?>';
+        const previewOldTruckBrokerUrl = '<?php echo e(route('admin.user-wallets.preview-old-truck-broker', $user->id)); ?>';
+        const previewAllOldTruckBrokerUrl = '<?php echo e(route('admin.user-wallets.preview-all-old-truck-broker')); ?>';
+        const reinvestProfitsUrl = '<?php echo e(route('admin.user-wallets.reinvest-profits', $user->id)); ?>';
+        const isInvestor = <?php echo e($isInvestor ? 'true' : 'false'); ?>;
+        const withdrawableBalance = <?php echo e($isInvestor ? ($withdrawableBalance ?? 0) : 0); ?>;
+        const currentBalance = <?php echo e($wallet->balance); ?>;
+        const debtCeiling = <?php echo e($wallet->debt_ceiling); ?>;
+        const maxWithdrawal = <?php echo e($wallet->balance + $wallet->debt_ceiling); ?>;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentMethod = document.getElementById('payment_method');
+            const hyperPayWarning = document.getElementById('hyperPayWarning');
+
+            if (paymentMethod) {
+                paymentMethod.addEventListener('change', function() {
+                    if (this.value === 'hyperpay') {
+                        hyperPayWarning.classList.remove('d-none');
+                    } else {
+                        hyperPayWarning.classList.add('d-none');
+                    }
+                });
+            }
+
+            // AJAX Delete for Duplicate Commissions
+            const deleteDuplicateBtns = document.querySelectorAll('.delete-duplicate-btn');
+            deleteDuplicateBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const formElement = this.closest('form');
+                    const actionUrl = formElement.getAttribute('action');
+                    const taskId = formElement.getAttribute('data-task-id');
+                    const tr = formElement.closest('tr');
+
+                    Swal.fire({
+                        title: '<?php echo e(__("Are you sure?")); ?>',
+                        text: '<?php echo e(__("You will not be able to revert this!")); ?>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: '<?php echo e(__("Yes, delete it!")); ?>',
+                        cancelButtonText: '<?php echo e(__("Cancel")); ?>',
+                        customClass: {
+                            confirmButton: 'btn btn-primary me-1',
+                            cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                url: actionUrl,
+                                type: 'DELETE',
+                                data: {
+                                    _token: '<?php echo e(csrf_token()); ?>'
+                                },
+                                success: function(response) {
+                                    if (response.status === 1) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: '<?php echo e(__("Deleted!")); ?>',
+                                            text: response.success,
+                                            customClass: {
+                                                confirmButton: 'btn btn-success'
+                                            }
+                                        }).then(() => {
+                                            // Remove the row from the table
+                                            tr.remove();
+
+                                            // Check remaining rows for this task
+                                            const remainingRows = document.querySelectorAll('.duplicate-row[data-task-id="' + taskId + '"]');
+                                            if (remainingRows.length === 1) {
+                                                // If only 1 remains, it is no longer a duplicate
+                                                remainingRows[0].remove();
+                                            }
+
+                                            // If no duplicates left in the table, close modal and reload to refresh UI
+                                            if (document.querySelectorAll('.duplicate-row').length === 0) {
+                                                $('#checkErrorsModal').modal('hide');
+                                                location.reload();
+                                            }
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            title: '<?php echo e(__("Error!")); ?>',
+                                            text: response.error,
+                                            icon: 'error',
+                                            customClass: {
+                                                confirmButton: 'btn btn-primary'
+                                            }
+                                        });
+                                    }
+                                },
+                                error: function(xhr) {
+                                    Swal.fire({
+                                        title: '<?php echo e(__("Error!")); ?>',
+                                        text: '<?php echo e(__("An error occurred while deleting the duplicate commission.")); ?>',
+                                        icon: 'error',
+                                        customClass: {
+                                            confirmButton: 'btn btn-primary'
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+
+    <?php if(!$isInvestor): ?>
+        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('generate_user_payment_request')): ?>
+            <div class="modal fade" id="userPaymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><?php echo e(__('Payment Request from User Wallet: ')); ?> <span id="userPaymentRequestWalletId"
+                                    class="bg-info text-white rounded p-1 px-2"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo e(__('Close')); ?>"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <!-- User & Wallet Information Section -->
+                                <div class="col-md-6">
+                                    <div class="card h-100 border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="card-title mb-0"><i class="ti ti-info-circle me-1"></i><?php echo e(__('Wallet Information')); ?></h6>
+                                        </div>
+                                        <div class="card-body pt-3">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold"><?php echo e(__('Wallet ID')); ?>:</label>
+                                                <span id="userWalletInfoId" class="text-primary fw-bold"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold"><?php echo e(__('Current Balance')); ?>:</label>
+                                                <span id="userWalletInfoAmount" class="text-success fw-bold"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold"><?php echo e(__('Wallet Owner')); ?>:</label>
+                                                <span id="userWalletInfoOwner" class="fw-semibold"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold"><?php echo e(__('Phone')); ?>:</label>
+                                                <span id="userWalletInfoOwnerPhone" class="text-muted"></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold"><?php echo e(__('Email')); ?>:</label>
+                                                <span id="userWalletInfoOwnerEmail" class="text-muted"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Payment Request Form Section -->
+                                <div class="col-md-6">
+                                    <div class="card h-100 border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="card-title mb-0"><i class="ti ti-file-text me-1"></i><?php echo e(__('Payment Request Form')); ?></h6>
+                                        </div>
+                                        <div class="card-body pt-3">
+                                            <form id="userPaymentRequestForm">
+                                                <input type="hidden" id="userPaymentRequestWalletIdInput" name="wallet_id">
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold" for="userRequestedAmount">*
+                                                        <?php echo e(__('Requested Amount')); ?></label>
+                                                    <div class="input-group">
+                                                        <input type="number" step="0.01" class="form-control"
+                                                            id="userRequestedAmount" name="requested_amount" required min="0.01">
+                                                        <span class="input-group-text"><?php echo e(__('SAR')); ?></span>
+                                                    </div>
+                                                    <div class="form-text">
+                                                        <small class="text-muted"><?php echo e(__('Available balance')); ?>: <span
+                                                                id="userMaxAmount" class="text-primary fw-bold"></span>
+                                                            (<?php echo e(__('You can enter a larger amount')); ?>)</small>
+                                                    </div>
+                                                    <span class="user_requested_amount-error text-error text-danger"></span>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold" for="userPaymentMethod">*
+                                                        <?php echo e(__('Payment Method')); ?></label>
+                                                    <select name="payment_method" id="userPaymentMethod" class="form-select" required>
+                                                        <option value=""><?php echo e(__('Select Payment Method')); ?></option>
+                                                        <option value="bank_transfer" selected><?php echo e(__('Bank Transfer')); ?></option>
+                                                        <option value="other"><?php echo e(__('Other Method')); ?></option>
+                                                    </select>
+                                                    <span class="user_payment_method-error text-error text-danger"></span>
+                                                </div>
+
+                                                <!-- Bank Transfer Fields -->
+                                                <div id="userBankTransferFields">
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="userBankName"><?php echo e(__('Bank Name')); ?>
+
+                                                            (<?php echo e(__('Optional')); ?>)</label>
+                                                        <select name="bank_name" id="userBankName" class="form-select">
+                                                            <option value=""><?php echo e(__('Select Bank')); ?></option>
+                                                            <option value="البنك الأهلي السعودي">البنك الأهلي السعودي</option>
+                                                            <option value="بنك الراجحي">بنك الراجحي</option>
+                                                            <option value="بنك الرياض">بنك الرياض</option>
+                                                            <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار</option>
+                                                            <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي</option>
+                                                            <option value="البنك السعودي البريطاني">البنك السعودي البريطاني (ساب)</option>
+                                                            <option value="بنك العربي الوطني">بنك العربي الوطني</option>
+                                                            <option value="بنك سامبا">بنك سامبا</option>
+                                                            <option value="البنك الأول">البنك الأول</option>
+                                                            <option value="بنك الجزيرة">بنك الجزيرة</option>
+                                                            <option value="بنك الإنماء">بنك الإنماء</option>
+                                                            <option value="البنك العربي">البنك العربي</option>
+                                                            <option value="other"><?php echo e(__('Other')); ?></option>
+                                                        </select>
+                                                        <input type="text" class="form-control mt-2" id="userCustomBankName"
+                                                            name="custom_bank_name" placeholder="<?php echo e(__('Enter bank name')); ?>"
+                                                            style="display: none;">
+                                                        <span class="user_bank_name-error text-danger text-error"></span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="userAccountNumber">
+                                                            <?php echo e(__('Account Number')); ?> (<?php echo e(__('Optional')); ?>)</label>
+                                                        <input type="text" class="form-control" id="userAccountNumber"
+                                                            name="account_number" placeholder="1234567890">
+                                                        <span class="user_account_number-error text-danger text-error"></span>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="userIbanNumber">
+                                                            <?php echo e(__('IBAN Number')); ?> (<?php echo e(__('Optional')); ?>)</label>
+                                                        <input type="text" class="form-control font-monospace" id="userIbanNumber"
+                                                            name="iban_number" placeholder="SA12 3456 7890 1234 5678 90"
+                                                            maxlength="29">
+                                                        <div class="form-text">
+                                                            <small class="text-muted"><?php echo e(__('Format: SA + 22 digits')); ?></small>
+                                                        </div>
+                                                        <span class="user_iban_number-error text-danger text-error"></span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Other Payment Method Field -->
+                                                <div id="userOtherPaymentField" style="display: none;">
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="userOtherPaymentMethod">*
+                                                            <?php echo e(__('Payment Method Details')); ?></label>
+                                                        <textarea class="form-control" id="userOtherPaymentMethod" name="other_payment_method" rows="3"
+                                                            placeholder="<?php echo e(__('مثال: عهدة أو تسليم نقدي أو حوالة عبر جهة محددة')); ?>"></textarea>
+                                                        <span class="user_other_payment_method-error text-error text-danger"></span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="userPaymentNotes"><?php echo e(__('Notes')); ?></label>
+                                                    <textarea class="form-control" id="userPaymentNotes" name="notes" placeholder="<?php echo e(__('Optional notes...')); ?>" maxlength="1000" rows="2"></textarea>
+                                                    <span class="user_notes-error text-danger text-error"></span>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-label-secondary"
+                                data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
+                            <button type="button" class="btn btn-primary"
+                                id="generateUserPaymentRequest"><i class="ti ti-printer me-1"></i><?php echo e(__('Generate Payment Request')); ?></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('view_user_payment_requests_logs')): ?>
+            <!-- Payment Request Logs Section -->
+            <div class="card shadow-sm border-0 mt-4" id="user-payment-logs-section">
+                <div class="card-header py-4 px-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="ti ti-file-text me-2 text-primary"></i>
+                                <?php echo e(__('Payment Request Logs')); ?>
+
+                            </h5>
+                            <p class="text-muted mb-0"><?php echo e(__('History of printed payment requests for this user')); ?></p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="loadUserPaymentRefresh">
+                                <i class="ti ti-refresh me-1"></i>
+                                <?php echo e(__('Refresh')); ?>
+
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Logs Container -->
+                    <div id="user-payment-logs-container">
+                        <!-- Loading state -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden"><?php echo e(__('Loading')); ?>...</span>
+                            </div>
+                            <p class="text-muted mt-2"><?php echo e(__('Loading payment request logs')); ?>...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php echo $__env->make('admin.user-wallets.manual-commission-modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts/layoutMaster', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/admin/user-wallets/show.blade.php ENDPATH**/ ?>

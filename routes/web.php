@@ -390,6 +390,11 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/invest-wallet/withdraw-request/approve/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'approveWithdrawalRequest'])->name('invest-wallet.approveWithdrawal');
                     Route::post('/invest-wallet/withdraw-request/reject/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'rejectWithdrawalRequest'])->name('invest-wallet.rejectWithdrawal');
                     Route::post('/invest-wallet/withdraw-request/execute/{id}', [\App\Http\Controllers\admin\InvestorWalletsController::class, 'executeWithdrawalRequest'])->name('invest-wallet.executeWithdrawal');
+
+                    // Commission Withdrawal Requests (إدارة طلبات سحب العمولات للمستثمرين)
+                    Route::get('/commission-withdrawals', [\App\Http\Controllers\admin\AdminInvestorCommissionWithdrawalsController::class, 'index'])->name('commission-withdrawals.index');
+                    Route::post('/commission-withdrawals/{id}/approve', [\App\Http\Controllers\admin\AdminInvestorCommissionWithdrawalsController::class, 'approve'])->name('commission-withdrawals.approve');
+                    Route::post('/commission-withdrawals/{id}/reject', [\App\Http\Controllers\admin\AdminInvestorCommissionWithdrawalsController::class, 'reject'])->name('commission-withdrawals.reject');
                 });
 
                 // B2B Module Routes
@@ -660,6 +665,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/customers/data', [CustomersController::class, 'getData'])->name('customers.data');
                 Route::post('/customers/status', [CustomersController::class, 'chang_status'])->name('customers.status');
                 Route::post('/customers/broker/status', [CustomersController::class, 'chang_broker_status'])->name('customers.broker.status');
+                Route::post('/customers/investment/status', [CustomersController::class, 'chang_investment_status'])->name('customers.investment.status');
                 Route::get('/customers/edit/{id}', [CustomersController::class, 'edit'])->name('customers.show');
                 Route::delete('/customers/delete/{id}', [CustomersController::class, 'destroy'])->name('customers.delete');
                 Route::post('/customers/wallet/create', [CustomersController::class, 'createWallet'])->name('customers.wallet.create');
@@ -986,6 +992,10 @@ Route::middleware(['auth:web', 'investor'])
             ->name('personal-wallet');
         Route::get('personal-wallet/export', [App\Http\Controllers\investor\InvestorWalletController::class, 'exportPersonalWallet'])
             ->name('personal-wallet.export');
+        Route::post('personal-wallet/request-withdrawal', [App\Http\Controllers\investor\InvestorWalletController::class, 'requestCommissionWithdrawal'])
+            ->name('personal-wallet.request-withdrawal');
+        Route::get('commission-withdrawals', [App\Http\Controllers\investor\InvestorWalletController::class, 'commissionWithdrawals'])
+            ->name('commission-withdrawals');
 
         // احتساب عمولات المستثمر العام (زر الاحتساب)
         Route::post('personal-wallet/calculate-commissions', [App\Http\Controllers\investor\InvestorWalletController::class, 'calculateGeneralCommissions'])

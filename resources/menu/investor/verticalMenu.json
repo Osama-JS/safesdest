@@ -22,6 +22,12 @@
       "slug": "investor.personal-wallet"
     },
     {
+      "url": "investor/commission-withdrawals",
+      "name": "Commission Withdrawals",
+      "icon": "menu-icon tf-icons ti ti-cash-banknote",
+      "slug": "investor.commission-withdrawals"
+    },
+    {
       "menuHeader": "Operations and Tasks"
     },
     {

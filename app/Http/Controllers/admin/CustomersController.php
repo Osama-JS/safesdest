@@ -26,7 +26,7 @@ class CustomersController extends Controller
     {
         $this->middleware('permission:view_customers', ['only' => ['index', 'getData', 'edit']]);
         $this->middleware('permission:save_customers', ['only' => ['store']]);
-        $this->middleware('permission:status_customers', ['only' => ['chang_status', 'chang_broker_status']]);
+        $this->middleware('permission:status_customers', ['only' => ['chang_status', 'chang_broker_status', 'chang_investment_status']]);
         $this->middleware('permission:delete_customers', ['only' => ['destroy']]);
         $this->middleware('permission:profile_customers', ['only' => ['show', 'getCustomerTasks']]);
         $this->middleware('permission:wallet_customers', ['only' => ['']]);
@@ -107,6 +107,7 @@ class CustomersController extends Controller
               'name'       => $customer->name,
               'email'      => $customer->email,
               'broker'     => $customer->is_customs_clearance_agent,
+              'allow_investment' => (bool)$customer->allow_investment,
               'phone'      => $customer->phone_code . $customer->phone,
               'image'      => $customer->image ? url($customer->image) : null,
               'tags'       => $customer->tags->pluck('tag.name')->implode(', '),
@@ -189,6 +190,37 @@ class CustomersController extends Controller
                 return response()->json(['status' =>  2, 'type' => 'error', 'message' => __('Error to Change Customer Status')]);
             }
             return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Customer Status changed')]);
+        } catch (Exception $ex) {
+            return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
+        }
+    }
+
+    public function chang_investment_status(Request $req)
+    {
+        $validator = Validator::make($req->all(), [
+          'id' => 'required|exists:customers,id',
+          'status' => 'required',
+        ], [
+          'id.required' => __('The customer id is required.'),
+          'id.exists' => __('The selected customer does not exist.'),
+          'status.required' => __('The investment status field is required.'),
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => 0, 'type' => 'error', 'message' => $validator->errors()]);
+        }
+
+        try {
+            $user = auth()->user();
+            if (!$user || !$user->checkCustomer($req->id)) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
+            }
+            $allow = filter_var($req->status, FILTER_VALIDATE_BOOLEAN);
+            $done = Customer::find($req->id)->update(['allow_investment' => $allow]);
+
+            if (!$done) {
+                return response()->json(['status' => 2, 'type' => 'error', 'message' => __('Error to Change Customer Investment Status')]);
+            }
+            return response()->json(['status' => 1, 'type' => 'success', 'message' => __('Customer investment status updated successfully')]);
         } catch (Exception $ex) {
             return response()->json(['status' => 2, 'type' => 'error', 'message' => $ex->getMessage()]);
         }
@@ -453,6 +485,7 @@ class CustomersController extends Controller
               'account_number' => $req->account_number,
               'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
               'is_company' => $req->has('is_company') ? 1 : 0,
+              'allow_investment' => $req->has('allow_investment') ? (bool) $req->allow_investment : false,
               // Task numbering
               'task_number_start' => $req->task_number_start ? (int) $req->task_number_start : null,
               'general_task_notes' => $req->general_task_notes,

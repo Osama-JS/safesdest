@@ -26,21 +26,158 @@ class UserCommissionsController extends Controller
 
     public function generateOldCommissions()
     {
+        @ini_set('max_execution_time', 300);
+        set_time_limit(300);
+
         try {
-            $tasks = Task::where('status', 'completed')
-              ->where('closed', 1)
-              ->where('commission', '>', 0)
-              ->get();
+            // 1. جلب كافة إعدادات العمولات النشطة مع المستخدم ومحفظته مسبقاً
+            $activeCommissions = UserCommission::where('status', true)
+                ->with(['user.userWallet'])
+                ->get();
 
-            foreach ($tasks as $task) {
-                $this->calculateAndDistributeUserCommissions($task);
+            if ($activeCommissions->isEmpty()) {
+                return response()->json([
+                    'status' => 1,
+                    'success' => __('No active user commissions found to generate.'),
+                    'count' => 0,
+                    'created_count' => 0,
+                    'total_amount' => 0,
+                ]);
             }
-            return response()->json(['status' => 1,
-             'success' => __('Old commissions generated successfully'),
-             'count' => count($tasks)
 
+            // تجميع العمولات النشطة حسب معرف العميل customer_id
+            $commissionsByCustomer = $activeCommissions->groupBy('customer_id');
+            $eligibleCustomerIds = $commissionsByCustomer->keys()->filter()->all();
+
+            if (empty($eligibleCustomerIds)) {
+                return response()->json([
+                    'status' => 1,
+                    'success' => __('No eligible customers found with active commissions.'),
+                    'count' => 0,
+                    'created_count' => 0,
+                    'total_amount' => 0,
+                ]);
+            }
+
+            // 2. ضمان وجود محافظ لجميع المستخدمين المعنيين بالعمولات قبل بدء المعالجة
+            $userWalletController = new UserWalletsController();
+            foreach ($activeCommissions as $commission) {
+                if ($commission->user && !$commission->user->userWallet) {
+                    $wallet = $userWalletController->createWallet($commission->user->id, true);
+                    $commission->user->setRelation('userWallet', $wallet);
+                }
+            }
+
+            // 3. بناء استعلام المهام مع تصفية حصرية للمهام التابعة لهؤلاء العملاء فقط
+            $tasksQuery = Task::whereIn('customer_id', $eligibleCustomerIds)
+                ->where('status', 'completed')
+                ->where('closed', 1)
+                ->where('commission', '>', 0)
+                ->with(['customer:id,name']);
+
+            $totalTasksExamined = 0;
+            $totalCommissionsCreated = 0;
+            $totalAmountDistributed = 0.0;
+            $authUserId = Auth::id() ?? 1;
+
+            // 4. معالجة المهام بدفعات مجزأة لتفادي استهلاك الذاكرة
+            $tasksQuery->chunkById(200, function ($tasks) use (
+                $commissionsByCustomer,
+                $authUserId,
+                &$totalTasksExamined,
+                &$totalCommissionsCreated,
+                &$totalAmountDistributed
+            ) {
+                $taskIds = $tasks->pluck('id')->all();
+
+                // فحص الحركات المسجلة مسبقاً لهذه الدفعة دفعة واحدة في استعلام فردي سريع
+                $existingMap = UserWalletTransaction::whereIn('task_id', $taskIds)
+                    ->where('transaction_type', 'credit')
+                    ->where('description', 'LIKE', '%Commission from Task%')
+                    ->get(['id', 'user_wallet_id', 'task_id'])
+                    ->groupBy(fn($item) => "{$item->user_wallet_id}_{$item->task_id}");
+
+                foreach ($tasks as $task) {
+                    $totalTasksExamined++;
+                    $userCommissions = $commissionsByCustomer->get($task->customer_id);
+
+                    if (!$userCommissions || $userCommissions->isEmpty()) {
+                        continue;
+                    }
+
+                    $totalCalculatedCommissions = 0;
+                    $commissionsToDistribute = [];
+
+                    foreach ($userCommissions as $userCommission) {
+                        $calculatedCommission = $userCommission->calculateCommission($task->commission);
+                        $totalCalculatedCommissions += $calculatedCommission;
+                        $commissionsToDistribute[] = [
+                            'user_commission' => $userCommission,
+                            'amount' => $calculatedCommission,
+                        ];
+                    }
+
+                    if ($totalCalculatedCommissions > $task->commission) {
+                        Log::warning("User commissions total ({$totalCalculatedCommissions}) exceeds task commission ({$task->commission}) for task #{$task->id}");
+                        continue;
+                    }
+
+                    $customerName = $task->customer?->name ?? 'Unknown';
+
+                    foreach ($commissionsToDistribute as $commissionData) {
+                        $userCommission = $commissionData['user_commission'];
+                        $amount = $commissionData['amount'];
+                        $user = $userCommission->user;
+
+                        if (!$user || $amount <= 0) {
+                            continue;
+                        }
+
+                        // التحقق من تاريخ بدء احتساب العمولات
+                        if ($user->commission_start_date && $task->created_at && $task->created_at->startOfDay() < \Carbon\Carbon::parse($user->commission_start_date)->startOfDay()) {
+                            continue;
+                        }
+
+                        $userWallet = $user->userWallet;
+                        if (!$userWallet) {
+                            continue;
+                        }
+
+                        $cacheKey = "{$userWallet->id}_{$task->id}";
+                        if (isset($existingMap[$cacheKey])) {
+                            continue;
+                        }
+
+                        // إنشاء حركة العمولة
+                        UserWalletTransaction::create([
+                            'user_wallet_id'   => $userWallet->id,
+                            'amount'           => $amount,
+                            'description'      => "Commission from Task: #{$task->id} - Customer: {$customerName}",
+                            'transaction_type' => 'credit',
+                            'task_id'          => $task->id,
+                            'user_id'          => $authUserId,
+                            'status'           => true,
+                            'maturity_time'    => now(),
+                        ]);
+
+                        // حفظ المفتاح في الخريطة لمنع التكرار في نفس الدورة
+                        $existingMap->put($cacheKey, collect([true]));
+
+                        $totalCommissionsCreated++;
+                        $totalAmountDistributed += $amount;
+                    }
+                }
+            });
+
+            return response()->json([
+                'status' => 1,
+                'success' => __('Old commissions generated successfully'),
+                'count' => $totalTasksExamined,
+                'created_count' => $totalCommissionsCreated,
+                'total_amount' => round($totalAmountDistributed, 2),
             ]);
         } catch (Exception $e) {
+            Log::error('Generate Old Commissions Error: ' . $e->getMessage());
             return response()->json(['status' => 2, 'error' => $e->getMessage()]);
         }
     }

@@ -559,7 +559,10 @@ $(function () {
             Swal.close();
 
             if (response.status === 1) {
-              showAlert('success', response.success, 10000, true);
+              const details = response.created_count !== undefined
+                ? ` (${response.created_count} ${response.created_count === 1 ? 'commission' : 'commissions'}, ${response.total_amount || 0} SAR)`
+                : '';
+              showAlert('success', response.success + details, 10000, true);
               showAlert('tasks', response.count, 10000, true);
               document.dispatchEvent(new CustomEvent('deletedSuccess'));
             } else {

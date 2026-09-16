@@ -1111,7 +1111,7 @@ $(function () {
   });
 
   function fetchUnsettledTasks() {
-    $('#settlement-tasks-tbody').html('<tr><td colspan="4" class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...</td></tr>');
+    $('#settlement-tasks-tbody').html('<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...</td></tr>');
     
     $.get(baseUrl + 'admin/wallets/' + walletId + '/fetch-unsettled-tasks', function(response) {
       if (response.status === 1) {
@@ -1119,7 +1119,7 @@ $(function () {
         renderSettlementTasks();
         autoSelectSettlementTasks();
       } else {
-        $('#settlement-tasks-tbody').html('<tr><td colspan="4" class="text-center text-danger">حدث خطأ أثناء جلب المهام</td></tr>');
+        $('#settlement-tasks-tbody').html('<tr><td colspan="5" class="text-center text-danger">حدث خطأ أثناء جلب المهام</td></tr>');
       }
     });
   }
@@ -1129,19 +1129,37 @@ $(function () {
     tbody.empty();
     
     if (unsettledTasks.length === 0) {
-      tbody.html('<tr><td colspan="4" class="text-center text-muted">لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
+      tbody.html('<tr><td colspan="5" class="text-center text-muted">لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
       return;
     }
     
     unsettledTasks.forEach(function(task, index) {
+      const isSettledByAdmin = task.is_settled_by_admin;
+      const statusBadge = isSettledByAdmin 
+        ? `<span class="badge bg-label-success fw-bold" title="تمت تسوية رأس مال هذه المهمة للمستثمر مسبقاً من قبل الإدارة، ولن يتم تكرار الصرف للمستثمر">
+             <i class="ti ti-shield-check me-1"></i>تمت التسوية من الإدارة
+           </span>
+           <small class="d-block text-success mt-1" style="font-size: 0.72rem;">
+             (لن يتم تكرار الصرف في محفظة الاستثمار)
+           </small>`
+        : `<span class="badge bg-label-secondary" title="سيتم إرجاع رأس المال للمستثمر تلقائياً عند إتمام هذه التسوية">
+             <i class="ti ti-clock me-1"></i>بانتظار التسوية
+           </span>
+           <small class="d-block text-muted mt-1" style="font-size: 0.72rem;">
+             (سيُعاد للمستثمر تلقائياً)
+           </small>`;
+
       const tr = `
-        <tr>
+        <tr class="${isSettledByAdmin ? 'table-success bg-opacity-10' : ''}">
           <td>
             <input type="checkbox" class="form-check-input settlement-task-checkbox" data-id="${task.transaction_id}" data-amount="${task.unpaid_amount}" value="${task.transaction_id}">
           </td>
-          <td>${task.task_id}</td>
-          <td>${task.unpaid_amount}</td>
+          <td>
+            <span class="fw-bold">#${task.task_id}</span>
+          </td>
+          <td class="fw-semibold">${parseFloat(task.unpaid_amount).toFixed(2)}</td>
           <td>${task.investor_name}</td>
+          <td>${statusBadge}</td>
         </tr>
       `;
       tbody.append(tr);

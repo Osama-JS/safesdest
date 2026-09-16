@@ -1516,17 +1516,35 @@ class WalletsController extends Controller
                     $q->whereNotNull('investor_id');
                 })
                 ->orderBy('created_at', 'asc') // FIFO
-                ->get()
-                ->map(function ($transaction) {
-                    return [
-                        'transaction_id' => $transaction->id,
-                        'task_id' => $transaction->task_id,
-                        'unpaid_amount' => $transaction->amount - $transaction->settled_amount,
-                        'investor_name' => $transaction->task->investor->name ?? 'غير معروف',
-                    ];
-                });
+                ->get();
 
-            return response()->json(['status' => 1, 'data' => $unsettledDebits]);
+            $taskIds = $unsettledDebits->pluck('task_id')->filter()->unique();
+
+            // فحص هل تم استرداد رأس مال هذه المهام للمستثمر مسبقاً (تسوية يدوية من الإدارة أو استرداد)
+            $settledInvestorAmounts = \App\Models\InvestorWalletTransaction::whereIn('task_id', $taskIds)
+                ->where('transaction_type', 'credit')
+                ->whereIn('source_type', ['refund', 'capital_return'])
+                ->selectRaw('task_id, SUM(amount) as total_settled, MAX(description) as note')
+                ->groupBy('task_id')
+                ->get()
+                ->keyBy('task_id');
+
+            $data = $unsettledDebits->map(function ($transaction) use ($settledInvestorAmounts) {
+                $settledInfo = $settledInvestorAmounts->get($transaction->task_id);
+                $isSettledByAdmin = $settledInfo && $settledInfo->total_settled > 0;
+
+                return [
+                    'transaction_id' => $transaction->id,
+                    'task_id' => $transaction->task_id,
+                    'unpaid_amount' => $transaction->amount - $transaction->settled_amount,
+                    'investor_name' => $transaction->task->investor->name ?? 'غير معروف',
+                    'is_settled_by_admin' => $isSettledByAdmin,
+                    'admin_settled_amount' => $settledInfo ? (float) $settledInfo->total_settled : 0,
+                    'admin_settled_note' => $settledInfo ? $settledInfo->note : null,
+                ];
+            });
+
+            return response()->json(['status' => 1, 'data' => $data]);
         } catch (\Exception $e) {
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }

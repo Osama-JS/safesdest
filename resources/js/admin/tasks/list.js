@@ -263,7 +263,7 @@ $(function () {
                 colorClass = 'badge bg-light text-dark'; // افتراضي
             }
 
-            return `<span class="w-100 text-center ${colorClass}">${full.status.replace('_', ' ')}</span>`;
+            return `<span class="w-100 text-center ${colorClass} status-record" style="cursor: pointer;" data-id="${full.id}" data-name="${full.id}" data-status="${full.status}" title="${__('Change Status')}">${full.status.replace('_', ' ')}</span>`;
           }
         },
         {
@@ -334,7 +334,8 @@ $(function () {
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>${__('Payment Task')}</a></li>
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">${__('Connect')}</a></li>` : ''}
-                    <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
+                    <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item" data-id="${full.id}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.id}" data-status="${full.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
                     ${full.closed ? '' : `<li><a href="javascript:;" class="dropdown-item closed-record" data-id="${full.id}" ><i class="ti ti-lock me-2"></i>${__('Close Task')}</a></li>`}
                     ${full.status === 'in_progress' && full.driver === '-' ? `<li><a href="javascript:;" class="dropdown-item share-task-whatsapp" data-id="${full.id}" data-price="${full.driver_price}" data-pickup="${full.pickup_address}" data-delivery="${full.delivery_address}" data-truck-name="${full.vehicle_info ? full.vehicle_info.truck_name : '-'}" data-vehicle-type="${full.vehicle_info ? full.vehicle_info.type : '-'}" data-vehicle-size="${full.vehicle_info ? full.vehicle_info.size : '-'}" data-customer="${full.customer_task_number}"><i class="ti ti-brand-whatsapp me-2"></i>${__('Share on WhatsApp')}</a></li>` : ''}
                     ${full.order ? `<li><a href="javascript:;" class="dropdown-item share-order-whatsapp" data-order-id="${full.order}" data-task-id="${full.id}"><i class="ti ti-brand-whatsapp me-2"></i>${__('Share Order on WhatsApp')}</a></li>` : ''}
@@ -442,6 +443,43 @@ $(function () {
       $('#refundModal').html('');
     }, 1500);
 
+    if (dt_data) {
+      dt_data.draw();
+    }
+  });
+
+  $(document).on('click', '.status-record', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    const status = $(this).data('status');
+
+    const fields = `
+        <input type="hidden" name="id" value="${id}">
+        <select class="form-select" name="status">
+          <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>in progress</option>
+          <option value="started" ${status === 'started' ? 'selected' : ''}>started</option>
+          <option value="in pickup point" ${status === 'in pickup point' ? 'selected' : ''}>in pickup point</option>
+          <option value="loading" ${status === 'loading' ? 'selected' : ''}>loading</option>
+          <option value="in the way" ${status === 'in the way' ? 'selected' : ''}>in the way</option>
+          <option value="in delivery point" ${status === 'in delivery point' ? 'selected' : ''}>in delivery point</option>
+          <option value="unloading" ${status === 'unloading' ? 'selected' : ''}>unloading</option>
+          <option value="completed" ${status === 'completed' ? 'selected' : ''}>completed</option>
+          <option value="invoiced" ${status === 'invoiced' ? 'selected' : ''}>Invoiced</option>
+          <option value="canceled" ${status === 'canceled' ? 'selected' : ''}>canceled</option>
+        </select>
+      `;
+
+    showFormModal({
+      title: `Change Task: ${name} Status`,
+      icon: 'info',
+      fields: fields,
+      url: `${baseUrl}admin/tasks/status`,
+      method: 'POST',
+      dataTable: dt_data
+    });
+  });
+
+  document.addEventListener('statusChange', function (event) {
     if (dt_data) {
       dt_data.draw();
     }

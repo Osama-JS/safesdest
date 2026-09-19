@@ -254,7 +254,7 @@ class UsersController extends Controller
           // Bank details validation rules
           'bank_name'               => 'nullable|string|max:255',
           'custom_bank_name'        => 'nullable|string|max:255',
-          'account_number'          => 'nullable|string|min:8|max:20|regex:/^[0-9]+$/',
+          'account_number'          => 'nullable|string|min:8|max:30|regex:/^[0-9]+$/',
           'iban_number'             => 'nullable|string|size:24|regex:/^SA[0-9]{22}$/',
           'bic_code'                => 'nullable|string|max:20',
           'beneficiary_name'        => 'nullable|string|max:255',

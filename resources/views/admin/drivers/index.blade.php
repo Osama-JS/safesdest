@@ -547,11 +547,11 @@
                                                                 for="driver-account-number">{{ __('Account Number') }}</label>
                                                             <input type="text" name="account_number"
                                                                 id="driver-account-number" class="form-control"
-                                                                placeholder="1234567890" pattern="[0-9]{8,20}" minlength="8"
-                                                                maxlength="20">
+                                                                placeholder="1234567890" pattern="[0-9]{8,30}" minlength="8"
+                                                                maxlength="30">
                                                             <div class="form-text">
                                                                 <small
-                                                                    class="text-muted">{{ __('Numbers only, 8-20 digits') }}</small>
+                                                                    class="text-muted">{{ __('Numbers only, 8-30 digits') }}</small>
                                                             </div>
                                                             <span
                                                                 class="account_number-error text-danger text-error"></span>

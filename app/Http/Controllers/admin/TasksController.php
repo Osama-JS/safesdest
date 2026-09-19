@@ -2572,7 +2572,7 @@ class TasksController extends Controller
         $search = $request->input('search.value'); // البحث من DataTables
         $statusFilter = $request->input('status_filter'); // فلتر الحالة
 
-        $query = Task::with(['order', 'customer', 'user', 'driver', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle', 'investor']);
+        $query = Task::with(['order', 'customer', 'user', 'driver.brokers', 'team', 'pickup', 'delivery', 'vehicle_size.type.vehicle', 'investor', 'brokers']);
 
         // ✅ فلترة بالتاريخ إذا كانت القيم موجودة
         try {
@@ -2646,8 +2646,20 @@ class TasksController extends Controller
 
         $data = [];
         foreach ($tasks as $task) {
+            $brokersCount = 0;
+            if ($task->brokers && $task->brokers->count() > 0) {
+                $brokersCount = $task->brokers->count();
+            } elseif ($task->driver && $task->driver->brokers && $task->driver->brokers->count() > 0) {
+                $brokersCount = $task->driver->brokers->filter(function ($b) use ($task) {
+                    return empty($b->pivot->commission_start_date) || $task->created_at >= $b->pivot->commission_start_date;
+                })->count();
+            } elseif (!empty($task->broker_id)) {
+                $brokersCount = 1;
+            }
+
             $data[] = [
                 'id' => $task->id,
+                'brokers_count' => $brokersCount,
                 'customer_task_number' => $task->customer_task_number,
                 'order' => $task->order_id,
                 'order_id' => $task->order_id,
@@ -3955,6 +3967,166 @@ class TasksController extends Controller
         } catch (\Exception $ex) {
             DB::rollBack();
             return response()->json(['status' => 2, 'error' => $ex->getMessage()]);
+        }
+    }
+
+    public function getBrokersBreakdown($id)
+    {
+        try {
+            $task = Task::with([
+                'brokers.userWallet',
+                'driver.brokers.userWallet',
+                'driver.team',
+                'customer',
+                'ad',
+                'broker.userWallet'
+            ])->findOrFail($id);
+
+            $user = auth()->user();
+            if ($user && !$user->checkTask($task->id)) {
+                return response()->json([
+                    'status' => 2,
+                    'error' => __('You do not have permission to view this record')
+                ]);
+            }
+
+            $totalPrice = (float) $task->total_price;
+            $taskCommission = (float) $task->commission;
+
+            // Platform gross cut:
+            $platformCut = 0;
+            if ($task->ad) {
+                if ($task->ad->service_commission_type == 1) {
+                    $platformCut = (float) $task->ad->service_commission;
+                } else {
+                    $platformCut = ($totalPrice * (float) $task->ad->service_commission) / 100;
+                }
+            } else {
+                $platformCut = $taskCommission;
+            }
+
+            // Driver price:
+            $driverPrice = max(0, $totalPrice - $taskCommission);
+
+            $brokersList = [];
+            $totalBrokersShare = 0;
+
+            if ($task->brokers->count() > 0) {
+                foreach ($task->brokers as $b) {
+                    $cType = $b->pivot->commission_type ?? 'percentage';
+                    $cValue = (float) ($b->pivot->commission_value ?? 0);
+                    $share = $cType === 'percentage' ? (($platformCut * $cValue) / 100) : $cValue;
+
+                    $isPaid = false;
+                    if ($b->userWallet) {
+                        $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
+                            ->where('task_id', $task->id)
+                            ->where('transaction_type', 'credit')
+                            ->exists();
+                    }
+
+                    $totalBrokersShare += $share;
+                    $brokersList[] = [
+                        'id' => $b->id,
+                        'name' => $b->name,
+                        'phone' => $b->phone ?? '-',
+                        'email' => $b->email ?? '-',
+                        'source' => 'مباشر على المهمة',
+                        'source_type' => 'direct',
+                        'commission_type' => $cType,
+                        'commission_value' => $cValue,
+                        'commission_text' => $cType === 'percentage' ? "{$cValue}%" : number_format($cValue, 2) . ' ر.س',
+                        'share' => round($share, 2),
+                        'is_paid' => $isPaid,
+                    ];
+                }
+            } elseif ($task->driver && $task->driver->brokers->count() > 0) {
+                foreach ($task->driver->brokers as $b) {
+                    if (!empty($b->pivot->commission_start_date) && $task->created_at < $b->pivot->commission_start_date) {
+                        continue;
+                    }
+                    $cType = $b->pivot->commission_type ?? 'percentage';
+                    $cValue = (float) ($b->pivot->commission_value ?? 0);
+                    $share = $cType === 'percentage' ? (($platformCut * $cValue) / 100) : $cValue;
+
+                    $isPaid = false;
+                    if ($b->userWallet) {
+                        $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
+                            ->where('task_id', $task->id)
+                            ->where('transaction_type', 'credit')
+                            ->exists();
+                    }
+
+                    $totalBrokersShare += $share;
+                    $brokersList[] = [
+                        'id' => $b->id,
+                        'name' => $b->name,
+                        'phone' => $b->phone ?? '-',
+                        'email' => $b->email ?? '-',
+                        'source' => 'مورث عن السائق (' . ($task->driver->name ?? '') . ')',
+                        'source_type' => 'driver',
+                        'commission_type' => $cType,
+                        'commission_value' => $cValue,
+                        'commission_text' => $cType === 'percentage' ? "{$cValue}%" : number_format($cValue, 2) . ' ر.س',
+                        'share' => round($share, 2),
+                        'is_paid' => $isPaid,
+                    ];
+                }
+            } elseif (!empty($task->broker_id) && $task->broker) {
+                $b = $task->broker;
+                $cType = $task->broker_commission_type ?? 'percentage';
+                $cValue = (float) ($task->broker_commission_value ?? 0);
+                $share = $cType === 'percentage' ? (($platformCut * $cValue) / 100) : $cValue;
+
+                $isPaid = false;
+                if ($b->userWallet) {
+                    $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
+                        ->where('task_id', $task->id)
+                        ->where('transaction_type', 'credit')
+                        ->exists();
+                }
+
+                $totalBrokersShare += $share;
+                $brokersList[] = [
+                    'id' => $b->id,
+                    'name' => $b->name,
+                    'phone' => $b->phone ?? '-',
+                    'email' => $b->email ?? '-',
+                    'source' => 'وسيط فردي مباشر',
+                    'source_type' => 'legacy',
+                    'commission_type' => $cType,
+                    'commission_value' => $cValue,
+                    'commission_text' => $cType === 'percentage' ? "{$cValue}%" : number_format($cValue, 2) . ' ر.س',
+                    'share' => round($share, 2),
+                    'is_paid' => $isPaid,
+                ];
+            }
+
+            $platformRemaining = max(0, $platformCut - $totalBrokersShare);
+
+            return response()->json([
+                'status' => 1,
+                'data' => [
+                    'task_id'             => $task->id,
+                    'status'              => $task->status,
+                    'closed'              => (bool) $task->closed,
+                    'total_price'         => round($totalPrice, 2),
+                    'driver'              => [
+                        'id'              => $task->driver->id ?? null,
+                        'name'            => $task->driver->name ?? 'غير معين',
+                        'phone'           => $task->driver->phone ?? '-',
+                        'team'            => $task->team->name ?? ($task->driver->team->name ?? '-'),
+                        'driver_price'    => round($driverPrice, 2),
+                    ],
+                    'platform_gross'      => round($platformCut, 2),
+                    'total_brokers_share' => round($totalBrokersShare, 2),
+                    'platform_remaining'  => round($platformRemaining, 2),
+                    'brokers_count'       => count($brokersList),
+                    'brokers'             => $brokersList,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 2, 'error' => $e->getMessage()]);
         }
     }
 

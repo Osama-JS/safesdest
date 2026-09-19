@@ -835,6 +835,7 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::get('tasks/broker/edit/{id}', [TasksController::class, 'editBroker'])->name('admin.tasks.broker.edit');
                 Route::post('tasks/broker/update', [TasksController::class, 'updateBroker'])->name('admin.tasks.broker.update');
+                Route::get('tasks/brokers-breakdown/{id}', [TasksController::class, 'getBrokersBreakdown'])->name('admin.tasks.brokers_breakdown');
 
 
                 Route::get('tasks/payment/{id}', [TasksController::class, 'paymentInfo'])->name('tasks.payment.info');

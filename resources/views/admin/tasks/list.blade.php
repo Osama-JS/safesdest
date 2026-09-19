@@ -57,8 +57,123 @@
             }
         }
 
-        moveCustomNav(); // ØªÙ†ÙÙŠØ° Ø£ÙˆÙ„ÙŠ
-        window.addEventListener('resize', moveCustomNav); // ØªÙ†ÙÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
+        moveCustomNav(); // ØªÙ†Ù ÙŠØ° Ø£ÙˆÙ„ÙŠ
+        window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
+
+        // Handler for View Brokers Breakdown Modal
+        $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+            e.preventDefault();
+            const taskId = $(this).data('id');
+            if (!taskId) return;
+
+            const modalEl = document.getElementById('viewBrokersBreakdownModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            $('#vbb-task-id-badge').text('#' + taskId);
+            $('#vbb-loading').show();
+            $('#vbb-content').hide();
+
+            const apiBase = typeof baseUrl !== 'undefined' ? baseUrl : '/';
+
+            $.ajax({
+                url: `${apiBase}admin/tasks/brokers-breakdown/${taskId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function (res) {
+                    if (res.status !== 1) {
+                        modal.hide();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطأ',
+                            text: res.error || 'تعذر تحميل بيانات الوسطاء'
+                        });
+                        return;
+                    }
+
+                    const d = res.data;
+                    $('#vbb-loading').hide();
+                    $('#vbb-content').show();
+
+                    // Subtitle info
+                    const statusText = d.closed ? 'مغلقة' : d.status;
+                    $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver.name}`);
+
+                    // 1. Stat cards
+                    $('#vbb-total-price').text(parseFloat(d.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-driver-price').text(parseFloat(d.driver.driver_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-driver-name').text(d.driver.name + (d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
+                    
+                    $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
+
+                    $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross).toFixed(2)} ر.س`);
+
+                    // 2. Progress Split Bar
+                    const total = parseFloat(d.total_price) || 1;
+                    const driverPct = Math.min(100, (parseFloat(d.driver.driver_price) / total) * 100);
+                    const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share) / total) * 100);
+                    const platformPct = Math.max(0, 100 - driverPct - brokersPct);
+
+                    $('#vbb-bar-driver').css('width', driverPct + '%').attr('title', `السائق: ${driverPct.toFixed(1)}%`);
+                    $('#vbb-bar-brokers').css('width', brokersPct + '%').attr('title', `الوسطاء: ${brokersPct.toFixed(1)}%`);
+                    $('#vbb-bar-platform').css('width', platformPct + '%').attr('title', `المنصة: ${platformPct.toFixed(1)}%`);
+
+                    // 3. Populate Table
+                    const $tbody = $('#vbb-brokers-table-body');
+                    $tbody.empty();
+
+                    if (d.brokers && d.brokers.length > 0) {
+                        $('#vbb-no-brokers').hide();
+                        d.brokers.forEach((b, idx) => {
+                            const paidBadge = b.is_paid
+                                ? '<span class="badge bg-label-success"><i class="ti ti-check me-1"></i>تم الإيداع بالمحفظة</span>'
+                                : '<span class="badge bg-label-warning"><i class="ti ti-clock me-1"></i>بانتظار الصرف</span>';
+
+                            const sourceBadge = b.source_type === 'direct'
+                                ? '<span class="badge bg-label-primary">مباشر على المهمة</span>'
+                                : '<span class="badge bg-label-info">' + b.source + '</span>';
+
+                            const row = `
+                                <tr>
+                                    <td class="fw-bold">${idx + 1}</td>
+                                    <td>
+                                        <div class="fw-bold text-dark">${b.name}</div>
+                                        <small class="text-muted"><i class="ti ti-phone me-1"></i>${b.phone}</small>
+                                    </td>
+                                    <td>${sourceBadge}</td>
+                                    <td>
+                                        <span class="badge bg-label-secondary font-monospace">${b.commission_text}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success fs-6">${parseFloat(b.share).toLocaleString('en-US', {minimumFractionDigits: 2})} ر.س</span>
+                                    </td>
+                                    <td>${paidBadge}</td>
+                                </tr>
+                            `;
+                            $tbody.append(row);
+                        });
+                    } else {
+                        $('#vbb-no-brokers').show();
+                    }
+
+                    // Quick Connect Button handler
+                    $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
+                        modal.hide();
+                        $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
+                    });
+                },
+                error: function () {
+                    modal.hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء'
+                    });
+                }
+            });
+        });
     </script>
 @endsection
 @section('task-isactive')
@@ -473,6 +588,149 @@
                         <button type="submit" class="btn btn-primary">{{ __('Save changes') }}</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Brokers Breakdown Modal -->
+    <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-label-primary py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar avatar-sm bg-primary text-white rounded p-1 d-flex align-items-center justify-content-center">
+                            <i class="ti ti-users fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0 fw-bold">
+                                {{ __('وسطاء المهمة وتوزيع الحصص المالية') }} 
+                                <span id="vbb-task-id-badge" class="badge bg-primary text-white ms-1 font-monospace"></span>
+                            </h5>
+                            <small class="text-muted" id="vbb-task-subtitle"></small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Loading Spinner -->
+                    <div id="vbb-loading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="text-muted mt-2 fw-semibold">{{ __('جاري جلب تفاصيل الوسطاء والحصص المالية...') }}</div>
+                    </div>
+
+                    <!-- Content Container -->
+                    <div id="vbb-content" style="display: none;">
+                        <!-- Summary Cards -->
+                        <div class="row g-3 mb-4">
+                            <!-- Total Price -->
+                            <div class="col-6 col-md-3">
+                                <div class="card bg-label-dark border border-secondary shadow-none h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <span class="text-muted d-block small mb-1">{{ __('إجمالي السعر') }}</span>
+                                        <h5 class="mb-0 fw-bold text-dark" id="vbb-total-price">0.00 ر.س</h5>
+                                        <small class="text-muted" id="vbb-pricing-type"></small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Driver Share -->
+                            <div class="col-6 col-md-3">
+                                <div class="card bg-label-success border border-success shadow-none h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <span class="text-muted d-block small mb-1">{{ __('مستحقات السائق') }}</span>
+                                        <h5 class="mb-0 fw-bold text-success" id="vbb-driver-price">0.00 ر.س</h5>
+                                        <small class="text-muted text-truncate d-block" id="vbb-driver-name">-</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Total Brokers Share -->
+                            <div class="col-6 col-md-3">
+                                <div class="card bg-label-info border border-info shadow-none h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <span class="text-muted d-block small mb-1">{{ __('عمولات الوسطاء') }}</span>
+                                        <h5 class="mb-0 fw-bold text-info" id="vbb-brokers-share">0.00 ر.س</h5>
+                                        <small class="text-info fw-semibold" id="vbb-brokers-count-text">0 وسطاء</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Platform Remaining -->
+                            <div class="col-6 col-md-3">
+                                <div class="card bg-label-primary border border-primary shadow-none h-100">
+                                    <div class="card-body p-3 text-center">
+                                        <span class="text-muted d-block small mb-1">{{ __('صافي المنصة المتبقي') }}</span>
+                                        <h5 class="mb-0 fw-bold text-primary" id="vbb-platform-remaining">0.00 ر.س</h5>
+                                        <small class="text-muted" id="vbb-platform-gross-text"></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Split Breakdown Bar -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-semibold small text-muted">{{ __('توزيع قيمة المهمة:') }}</span>
+                                <div class="d-flex gap-3 small">
+                                    <span class="text-success"><i class="ti ti-circle-filled fs-6"></i> {{ __('السائق') }}</span>
+                                    <span class="text-info"><i class="ti ti-circle-filled fs-6"></i> {{ __('الوسطاء') }}</span>
+                                    <span class="text-primary"><i class="ti ti-circle-filled fs-6"></i> {{ __('المنصة') }}</span>
+                                </div>
+                            </div>
+                            <div class="progress" style="height: 12px;" id="vbb-progress-bar">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="vbb-bar-driver" title="السائق"></div>
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 0%" id="vbb-bar-brokers" title="الوسطاء"></div>
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: 0%" id="vbb-bar-platform" title="المنصة"></div>
+                            </div>
+                        </div>
+
+                        <!-- Brokers Table Header & Action -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-1">
+                                <i class="ti ti-users-group text-primary"></i>
+                                {{ __('قائمة الوسطاء المرتبطين بالمهمة') }}
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="vbb-connect-more-btn">
+                                <i class="ti ti-edit me-1"></i> {{ __('تعديل / ربط وسطاء') }}
+                            </button>
+                        </div>
+
+                        <!-- Brokers Table -->
+                        <div class="table-responsive border rounded mb-3">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>{{ __('الوسيط') }}</th>
+                                        <th>{{ __('مصدر الارتباط') }}</th>
+                                        <th>{{ __('صيغة العمولة') }}</th>
+                                        <th>{{ __('المبلغ المستحق') }}</th>
+                                        <th>{{ __('حالة الإيداع') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vbb-brokers-table-body">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State for No Brokers -->
+                        <div id="vbb-no-brokers" class="alert alert-warning border border-warning d-flex align-items-center justify-content-between p-3" style="display: none;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="ti ti-info-circle fs-3 text-warning"></i>
+                                <div>
+                                    <div class="fw-bold">{{ __('لا يوجد وسطاء مرتبطين بهذه المهمة حالياً') }}</div>
+                                    <small class="text-muted">{{ __('كامل عمولة المهمة تؤول للمنصة مباشرة دون استقطاع لوسطاء.') }}</small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" id="vbb-empty-connect-btn">
+                                <i class="ti ti-plus me-1"></i> {{ __('ربط وسيط الآن') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top py-2">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('إغلاق') }}</button>
+                </div>
             </div>
         </div>
     </div>

@@ -324,14 +324,21 @@ $(function () {
               !['cancelled', 'cancel', 'canceled', 'refund', 'refunded'].includes((full.status || '').toLowerCase()) &&
               !full.refunded;
 
+            const brokersCount = full.brokers_count ?? 0;
+
             return `
-              <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-1">
+                <button type="button" class="btn btn-xs btn-outline-info view-task-brokers-breakdown-btn d-inline-flex align-items-center gap-1 px-2 py-1" data-id="${full.id}" data-bs-toggle="tooltip" title="${__('عرض الوسطاء')}">
+                  <i class="ti ti-users"></i>
+                  <span class="badge ${brokersCount > 0 ? 'bg-info text-white' : 'bg-label-secondary'} rounded-pill ms-1" style="font-size: 11px;">${brokersCount}</span>
+                </button>
 
                 <div class="dropdown">
-                  <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                  <button class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a href="javascript:;" class="dropdown-item view-task-brokers-breakdown-btn" data-id="${full.id}"><i class="ti ti-users me-2"></i>${__('عرض الوسطاء')} (${brokersCount})</a></li>
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>${__('Payment Task')}</a></li>
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">${__('Connect')}</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item" data-id="${full.id}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
@@ -514,6 +521,115 @@ $(function () {
       }
       $('#brokerModal').modal('show');
       $('#brokerTitle').html(`${__('Connect Broker')}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+    });
+  });
+
+  // Handler for View Brokers Breakdown Modal
+  $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+    e.preventDefault();
+    const taskId = $(this).data('id');
+    if (!taskId) return;
+
+    const modalEl = document.getElementById('viewBrokersBreakdownModal');
+    if (!modalEl) return;
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    $('#vbb-task-id-badge').text('#' + taskId);
+    $('#vbb-loading').show();
+    $('#vbb-content').hide();
+
+    $.ajax({
+      url: `${baseUrl}admin/tasks/brokers-breakdown/${taskId}`,
+      type: 'GET',
+      dataType: 'json',
+      success: function (res) {
+        if (res.status !== 1) {
+          modal.hide();
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: res.error || 'تعذر تحميل بيانات الوسطاء'
+          });
+          return;
+        }
+
+        const d = res.data;
+        $('#vbb-loading').hide();
+        $('#vbb-content').show();
+
+        const statusText = d.closed ? 'مغلقة' : d.status;
+        $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver.name}`);
+
+        $('#vbb-total-price').text(parseFloat(d.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-driver-price').text(parseFloat(d.driver.driver_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-driver-name').text(d.driver.name + (d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
+        
+        $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
+
+        $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross).toFixed(2)} ر.س`);
+
+        const total = parseFloat(d.total_price) || 1;
+        const driverPct = Math.min(100, (parseFloat(d.driver.driver_price) / total) * 100);
+        const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share) / total) * 100);
+        const platformPct = Math.max(0, 100 - driverPct - brokersPct);
+
+        $('#vbb-bar-driver').css('width', driverPct + '%').attr('title', `السائق: ${driverPct.toFixed(1)}%`);
+        $('#vbb-bar-brokers').css('width', brokersPct + '%').attr('title', `الوسطاء: ${brokersPct.toFixed(1)}%`);
+        $('#vbb-bar-platform').css('width', platformPct + '%').attr('title', `المنصة: ${platformPct.toFixed(1)}%`);
+
+        const $tbody = $('#vbb-brokers-table-body');
+        $tbody.empty();
+
+        if (d.brokers && d.brokers.length > 0) {
+          $('#vbb-no-brokers').hide();
+          d.brokers.forEach((b, idx) => {
+            const paidBadge = b.is_paid
+              ? '<span class="badge bg-label-success"><i class="ti ti-check me-1"></i>تم الإيداع بالمحفظة</span>'
+              : '<span class="badge bg-label-warning"><i class="ti ti-clock me-1"></i>بانتظار الصرف</span>';
+
+            const sourceBadge = b.source_type === 'direct'
+              ? '<span class="badge bg-label-primary">مباشر على المهمة</span>'
+              : '<span class="badge bg-label-info">' + b.source + '</span>';
+
+            const row = `
+              <tr>
+                <td class="fw-bold">${idx + 1}</td>
+                <td>
+                  <div class="fw-bold text-dark">${b.name}</div>
+                  <small class="text-muted"><i class="ti ti-phone me-1"></i>${b.phone}</small>
+                </td>
+                <td>${sourceBadge}</td>
+                <td>
+                  <span class="badge bg-label-secondary font-monospace">${b.commission_text}</span>
+                </td>
+                <td>
+                  <span class="fw-bold text-success fs-6">${parseFloat(b.share).toLocaleString('en-US', {minimumFractionDigits: 2})} ر.س</span>
+                </td>
+                <td>${paidBadge}</td>
+              </tr>
+            `;
+            $tbody.append(row);
+          });
+        } else {
+          $('#vbb-no-brokers').show();
+        }
+
+        $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
+          modal.hide();
+          $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
+        });
+      },
+      error: function () {
+        modal.hide();
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ',
+          text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء'
+        });
+      }
     });
   });
 

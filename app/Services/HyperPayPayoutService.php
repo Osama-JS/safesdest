@@ -16,7 +16,12 @@ class HyperPayPayoutService
 
     public function __construct()
     {
-        $this->baseUrl = config('services.hyperpay.payout_url', 'https://gateway.sandbox.hyperpay.com/payouts');
+        $rawUrl = config('services.hyperpay.payout_url', 'https://gateway.sandbox.hyperpay.com/payouts');
+        $rawUrl = rtrim($rawUrl, '/');
+        if (!str_ends_with($rawUrl, '/payouts') && !str_ends_with($rawUrl, '/payout')) {
+            $rawUrl .= '/payouts';
+        }
+        $this->baseUrl = $rawUrl;
         $this->username = config('services.hyperpay.username');
         $this->password = config('services.hyperpay.password');
         $this->merchantId = config('services.hyperpay.merchant_id');
@@ -133,9 +138,7 @@ class HyperPayPayoutService
     public function checkPayoutStatus($referenceId, $payoutId = null)
     {
         try {
-            $url = config('services.hyperpay.payout_url', 'https://gateway.sandbox.hyperpay.com/payouts');
-            // The doc says endpoint is `/payout` for GET. If `payout_url` ends with `/payouts`, we need to change to `/payout`
-            $url = str_replace('/payouts', '/payout', $url);
+            $url = str_replace('/payouts', '/payout', $this->baseUrl);
             
             $payload = [
                 'merchantId'       => $this->merchantId,

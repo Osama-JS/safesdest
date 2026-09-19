@@ -303,6 +303,18 @@
                                                     </div>
                                                 </div>
 
+                                                <!-- Beneficiary Name in English for HyperPay -->
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold text-dark d-flex justify-content-between" for="beneficiary_name_input">
+                                                        <span><i class="ti ti-user me-1 text-primary"></i>{{ __('اسم المستفيد بالإنجليزية (Beneficiary Name)') }} <span class="text-danger">*</span></span>
+                                                        <small class="text-muted">مطلوب بحروف إنجليزية</small>
+                                                    </label>
+                                                    <input type="text" name="beneficiary_name" id="beneficiary_name_input" class="form-control bg-white text-dark border-primary"
+                                                        value="{{ \App\Services\HyperPayPayoutService::formatBeneficiaryName($data->driver->beneficiary_name ?? '') }}"
+                                                        placeholder="e.g. Amal Salman Al Faifi" required>
+                                                    <small class="text-muted d-block mt-1">يجب أن يكون بالإنجليزية كما هو مسجل لدى البنك (تم تحويله تلقائياً ويمكنك تعديله)</small>
+                                                </div>
+
                                                 <!-- Purpose Code Selection -->
                                                 <div class="mb-3 payout-purpose-group">
                                                     <label class="form-label fw-bold text-dark d-flex justify-content-between" for="payout_purpose">

@@ -56,16 +56,69 @@ class HyperPayPayoutService
     }
 
     /**
+     * Convert/sanitize beneficiary name to valid Latin alphanumeric format for banking APIs
+     */
+    public static function formatBeneficiaryName($name)
+    {
+        $name = trim($name ?? '');
+        if (empty($name)) {
+            return 'Beneficiary';
+        }
+
+        // If name contains Arabic characters, transliterate to Latin
+        if (preg_match('/[\x{0600}-\x{06FF}]/u', $name)) {
+            if (function_exists('transliterator_transliterate')) {
+                $latin = transliterator_transliterate('Any-Latin; Latin-ASCII;', $name);
+            } else {
+                $customMap = [
+                    'عبد الله' => 'Abdullah', 'عبدالله' => 'Abdullah',
+                    'عبد الرحمن' => 'Abdulrahman', 'عبدالرحمن' => 'Abdulrahman',
+                    'عبد العزيز' => 'Abdulaziz', 'عبدالعزيز' => 'Abdulaziz',
+                    'أ' => 'A', 'إ' => 'E', 'آ' => 'A', 'ا' => 'A',
+                    'ب' => 'B', 'ت' => 'T', 'ث' => 'Th', 'ج' => 'J',
+                    'ح' => 'H', 'خ' => 'Kh', 'د' => 'D', 'ذ' => 'Dh',
+                    'ر' => 'R', 'ز' => 'Z', 'س' => 'S', 'ش' => 'Sh',
+                    'ص' => 'S', 'ض' => 'Dh', 'ط' => 'T', 'ظ' => 'Dh',
+                    'ع' => 'A', 'غ' => 'Gh', 'ف' => 'F', 'ق' => 'Q',
+                    'ك' => 'K', 'ل' => 'L', 'م' => 'M', 'ن' => 'N',
+                    'ه' => 'H', 'ة' => 'H', 'و' => 'W', 'ي' => 'Y',
+                    'ى' => 'A', 'ئ' => 'Y', 'ء' => '', 'ؤ' => 'O'
+                ];
+                $latin = str_replace(array_keys($customMap), array_values($customMap), $name);
+            }
+
+            $cleaned = preg_replace('/[^a-zA-Z0-9\s\.\,\'-]/', '', $latin);
+            $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned));
+
+            if (!empty($cleaned)) {
+                $name = ucwords(strtolower($cleaned));
+            }
+        }
+
+        // Strictly keep valid characters: Letters, numbers, space, dot, hyphen
+        $name = preg_replace('/[^a-zA-Z0-9\s\.\'-]/', '', $name);
+        $name = trim(preg_replace('/\s+/', ' ', $name));
+
+        if (empty($name) || strlen($name) < 2) {
+            $name = 'Beneficiary Account';
+        }
+
+        return substr($name, 0, 70);
+    }
+
+    /**
      * Send a payout request
      */
     public function sendPayout(array $data)
     {
         try {
+            $beneficiaryName = self::formatBeneficiaryName($data['beneficiary_name'] ?? '');
+
             // Sanitize description: Max 35 chars, Alphanumeric only
             $cleanDesc = trim(preg_replace('/[^A-Za-z0-9 ]/', '', $data['description'] ?? ''));
             $cleanDesc = preg_replace('/\s+/', ' ', $cleanDesc);
-            if (empty($cleanDesc) || strlen($cleanDesc) < 3) {
-                $cleanDesc = 'Driver Payout ' . ($data['externalId'] ?? '');
+            if (empty($cleanDesc) || strlen($cleanDesc) < 4 || in_array(strtolower($cleanDesc), ['manual payout for', 'payout for', 'wallet payment for'])) {
+                $cleanDesc = 'Payout ' . ($data['externalId'] ?? 'Driver');
             }
             $description = substr($cleanDesc, 0, 35);
 
@@ -94,7 +147,7 @@ class HyperPayPayoutService
                         'purpose'         => (string) $purpose,
                         'description'     => $description,
                         'beneficiary'     => [
-                            'name'     => $data['beneficiary_name'],
+                            'name'     => $beneficiaryName,
                             'address1' => $address1,
                             'address2' => $address2,
                             'country'  => $data['country'] ?? 'SA',

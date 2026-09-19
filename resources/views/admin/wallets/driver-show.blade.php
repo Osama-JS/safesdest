@@ -461,9 +461,13 @@
                                                 box.style.display = 'none';
                                             }
                                         ">
-                                            <optgroup label="الرموز الرقمية المعتمدة (HyperSplits / IPS)">
-                                                <option value="11" selected>11 - تسوية ومستحقات (Settlement / Payout)</option>
-                                                <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
+                                            <optgroup label="رموز البنك الأهلي السعودي المعتمدة (SNB Purpose Codes - الموصى بها)">
+                                                <option value="BA" selected>BA - رواتب ومستحقات عاملين (Payroll - المعتمد للرواتب)</option>
+                                                <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
+                                                <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
+                                                <option value="BB">BB - شراء بضائع وخدمات (Buying Goods)</option>
+                                                <option value="BF">BF - تسوية مطالبات (Claims)</option>
+                                                <option value="BE">BE - توزيع أرباح (Dividends)</option>
                                             </optgroup>
                                             <optgroup label="رموز مؤسسة النقد القياسية (SAMA / ISO 20022)">
                                                 <option value="SALA">SALA - رواتب ومسيرات (Salary / Payroll)</option>
@@ -475,18 +479,14 @@
                                                 <option value="DIVI">DIVI - توزيعات أرباح (Dividends)</option>
                                                 <option value="INVS">INVS - عوائد استثمارية (Investment)</option>
                                             </optgroup>
-                                            <optgroup label="رموز البنك الأهلي السعودي (SNB Purpose Codes)">
-                                                <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
-                                                <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
-                                                <option value="BA">BA - رواتب منشآت (Payroll)</option>
-                                                <option value="BB">BB - شراء بضائع (Buying Goods)</option>
-                                                <option value="BF">BF - تسوية مطالبات (Claims)</option>
-                                                <option value="BE">BE - توزيع أرباح (Dividends)</option>
+                                            <optgroup label="الرموز الرقمية (HyperSplits Sandbox)">
+                                                <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
+                                                <option value="11">11 - تسوية عامة (Settlement / Payout)</option>
                                             </optgroup>
                                             <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
                                         </select>
                                         <div class="custom-purpose-box mt-2" style="display: none;">
-                                            <input type="text" id="driver_custom_purpose" class="form-control custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: SALA أو 11)">
+                                            <input type="text" id="driver_custom_purpose" class="form-control custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: BA أو SALA أو BC)">
                                         </div>
                                         <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي الخاصة بحسابكم (الافتراضي: 11 أو SALA أو 10)</small>
                                     </div>

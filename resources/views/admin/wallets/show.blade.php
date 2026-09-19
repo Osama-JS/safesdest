@@ -175,7 +175,12 @@
                                             <div class="row">
                                                 <div class="col-6">
                                                     <input type="radio" class="btn-check" name="type" id="credit"
-                                                        value="credit" autocomplete="off" required checked>
+                                                        value="credit" autocomplete="off" required checked
+                                                        onchange="
+                                                            var mg = document.getElementById('maturity-time-group'); if (mg) mg.style.display = 'none';
+                                                            var pmg = document.getElementById('payment-method-group'); if (pmg) pmg.style.display = 'none';
+                                                            var hd = document.getElementById('manual-hyperpay-bank-details'); if (hd) hd.style.display = 'none';
+                                                        ">
                                                     <label class="btn btn-outline-success w-100 py-2 btn-credit"
                                                         for="credit">
                                                         <i class="ti ti-circle-plus me-1"></i> {{ __('Credit') }}
@@ -183,7 +188,14 @@
                                                 </div>
                                                 <div class="col-6">
                                                     <input type="radio" class="btn-check" name="type" id="debit"
-                                                        value="debit" autocomplete="off" required>
+                                                        value="debit" autocomplete="off" required
+                                                        onchange="
+                                                            var mg = document.getElementById('maturity-time-group'); if (mg) mg.style.display = 'block';
+                                                            var pmg = document.getElementById('payment-method-group'); if (pmg) pmg.style.display = 'block';
+                                                            var pm = document.getElementById('trans_payment_method');
+                                                            var hd = document.getElementById('manual-hyperpay-bank-details');
+                                                            if (hd && pm && pm.value === 'hyperpay') hd.style.display = 'block';
+                                                        ">
                                                     <label class="btn btn-outline-danger w-100 py-2 btn-debit"
                                                         for="debit">
                                                         <i class="ti ti-circle-minus me-1"></i> {{ __('Debit') }}
@@ -242,46 +254,60 @@
 
                                         <!-- Payment Method (Visible only if Debit is selected) -->
                                         <div class="mb-4" id="payment-method-group" style="display: none;">
-                                            <label class="form-label" for="payment_method">{{ __('Payment Method') }}</label>
-                                            <select name="payment_method" class="form-select" id="trans_payment_method">
+                                            <label class="form-label fw-bold" for="trans_payment_method">{{ __('Payment Method') }}</label>
+                                            <select name="payment_method" class="form-select border-primary" id="trans_payment_method" onchange="
+                                                var el = document.getElementById('manual-hyperpay-bank-details');
+                                                if (el) el.style.display = (this.value === 'hyperpay') ? 'block' : 'none';
+                                            ">
                                                 <option value="manual" selected>{{ __('Manual (Cash / Bank Transfer)') }}</option>
                                                 @if ($data->user_type === 'driver')
-                                                    <option value="hyperpay">{{ __('HyperPay Payout') }}</option>
+                                                    <option value="hyperpay">⚡ {{ __('HyperPay Payout (تحويل بنكي فوري)') }}</option>
                                                 @endif
                                             </select>
                                             <span class="payment_method-error text-danger text-error"></span>
                                         </div>
 
-                                        <!-- Bank Details (Shown only for HyperPay) -->
+                                        <!-- Bank Details & Payout Settings (Shown only for HyperPay) -->
                                         @if ($data->user_type === 'driver')
-                                            <div id="manual-hyperpay-bank-details" class="alert alert-info mt-3"
+                                            <div id="manual-hyperpay-bank-details" class="p-3 mb-4 rounded border border-primary bg-light shadow-sm"
                                                 style="display: none;">
-                                                <h6 class="alert-heading fw-bold mb-2"><i
-                                                        class="ti ti-building-bank me-1"></i>{{ __('Driver Bank Details') }}
+                                                <h6 class="fw-bold text-primary mb-3">
+                                                    <i class="ti ti-brand-stripe me-1"></i>{{ __('تفاصيل التحويل البنكي الفوري (HyperPay Payout)') }}
                                                 </h6>
-                                                <div class="row small">
-                                                    <div class="col-md-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong>
-                                                        <span>{{ $data->driver->beneficiary_name ?? 'N/A' }}</span>
-                                                    </div>
-                                                    <div class="col-md-6 mb-1"><strong>{{ __('Bank') }}:</strong>
-                                                        <span>{{ $data->driver->bank_name ?? 'N/A' }}</span>
-                                                    </div>
-                                                    <div class="col-md-12 mb-1"><strong>{{ __('IBAN') }}:</strong> <span
-                                                            class="font-monospace">{{ $data->driver->iban_number ?? 'N/A' }}</span>
-                                                    </div>
-                                                    <div class="col-md-6"><strong>{{ __('BIC/SWIFT') }}:</strong>
-                                                        <span>{{ $data->driver->bic_code ?? 'N/A' }}</span>
+
+                                                <!-- Driver Bank Details Card -->
+                                                <div class="card bg-white border mb-3">
+                                                    <div class="card-body p-3">
+                                                        <h6 class="card-title text-dark fw-bold mb-2">
+                                                            <i class="ti ti-building-bank me-1 text-primary"></i>{{ __('Driver Bank Details') }}
+                                                        </h6>
+                                                        <div class="row small">
+                                                            <div class="col-md-6 mb-1"><strong>{{ __('Beneficiary') }}:</strong>
+                                                                <span class="text-dark fw-bold">{{ $data->driver->beneficiary_name ?? 'N/A' }}</span>
+                                                            </div>
+                                                            <div class="col-md-6 mb-1"><strong>{{ __('Bank') }}:</strong>
+                                                                <span>{{ $data->driver->bank_name ?? 'N/A' }}</span>
+                                                            </div>
+                                                            <div class="col-md-12 mb-1"><strong>{{ __('IBAN') }}:</strong>
+                                                                <span class="font-monospace text-primary fw-bold">{{ $data->driver->iban_number ?? 'N/A' }}</span>
+                                                            </div>
+                                                            <div class="col-md-6"><strong>{{ __('BIC/SWIFT') }}:</strong>
+                                                                <span class="font-monospace">{{ $data->driver->bic_code ?? 'N/A' }}</span>
+                                                            </div>
+                                                        </div>
+                                                        @if (!$data->driver->iban_number || !$data->driver->bic_code || !$data->driver->beneficiary_name)
+                                                            <div class="text-danger mt-2 fw-bold small">
+                                                                <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
-                                                @if (!$data->driver->iban_number || !$data->driver->bic_code || !$data->driver->beneficiary_name)
-                                                    <div class="text-danger mt-2 fw-bold">
-                                                        <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
-                                                    </div>
-                                                @endif
 
-                                                <div class="mt-3 payout-purpose-group">
-                                                    <label class="form-label fw-bold text-dark" for="payout_purpose">
-                                                        <i class="ti ti-category me-1"></i>{{ __('الغرض من التحويل (Purpose Code)') }}
+                                                <!-- Purpose Code Selection -->
+                                                <div class="mb-3 payout-purpose-group">
+                                                    <label class="form-label fw-bold text-dark d-flex justify-content-between" for="payout_purpose">
+                                                        <span><i class="ti ti-category me-1 text-primary"></i>{{ __('الغرض من التحويل (Purpose Code)') }} <span class="text-danger">*</span></span>
+                                                        <small class="text-muted">مطلوب من البنك</small>
                                                     </label>
                                                     <select name="purpose" id="payout_purpose" class="form-select bg-white text-dark border-primary payout-purpose-select" onchange="
                                                         var box = this.closest('.payout-purpose-group').querySelector('.custom-purpose-box');
@@ -297,9 +323,13 @@
                                                             input.name = '';
                                                         }
                                                     ">
-                                                        <optgroup label="الرموز الرقمية المعتمدة (HyperSplits / IPS)">
-                                                            <option value="11" selected>11 - تسوية ومستحقات (Settlement / Payout)</option>
-                                                            <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
+                                                        <optgroup label="رموز البنك الأهلي السعودي المعتمدة (SNB Purpose Codes - الموصى بها)">
+                                                            <option value="BA" selected>BA - رواتب ومستحقات عاملين (Payroll - المعتمد للرواتب)</option>
+                                                            <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
+                                                            <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
+                                                            <option value="BB">BB - شراء بضائع وخدمات (Buying Goods)</option>
+                                                            <option value="BF">BF - تسوية مطالبات (Claims)</option>
+                                                            <option value="BE">BE - توزيع أرباح (Dividends)</option>
                                                         </optgroup>
                                                         <optgroup label="رموز مؤسسة النقد القياسية (SAMA / ISO 20022)">
                                                             <option value="SALA">SALA - رواتب ومسيرات (Salary / Payroll)</option>
@@ -311,25 +341,22 @@
                                                             <option value="DIVI">DIVI - توزيعات أرباح (Dividends)</option>
                                                             <option value="INVS">INVS - عوائد استثمارية (Investment)</option>
                                                         </optgroup>
-                                                        <optgroup label="رموز البنك الأهلي السعودي (SNB Purpose Codes)">
-                                                            <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
-                                                            <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
-                                                            <option value="BA">BA - رواتب منشآت (Payroll)</option>
-                                                            <option value="BB">BB - شراء بضائع (Buying Goods)</option>
-                                                            <option value="BF">BF - تسوية مطالبات (Claims)</option>
-                                                            <option value="BE">BE - توزيع أرباح (Dividends)</option>
+                                                        <optgroup label="الرموز الرقمية (HyperSplits Sandbox)">
+                                                            <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
+                                                            <option value="11">11 - تسوية عامة (Settlement / Payout)</option>
                                                         </optgroup>
                                                         <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
                                                     </select>
                                                     <div class="custom-purpose-box mt-2" style="display: none;">
-                                                        <input type="text" class="form-control bg-white custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: SALA أو 11)">
+                                                        <input type="text" class="form-control bg-white custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: BA أو SALA أو BC)">
                                                     </div>
-                                                    <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي الخاصة بحسابكم (الافتراضي: 11 أو SALA أو 10)</small>
+                                                    <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي (الافتراضي: BA أو SALA)</small>
                                                 </div>
 
-                                                <div class="mt-3">
+                                                <!-- Admin Password -->
+                                                <div class="mb-2">
                                                     <label class="form-label text-danger fw-bold" for="hyperpay_password">
-                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
+                                                        <i class="ti ti-lock me-1"></i>{{ __('كلمة مرور المشرف (مطلوبة لتأكيد التحويل)') }} <span class="text-danger">*</span>
                                                     </label>
                                                     <input type="password" name="password" id="hyperpay_password" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
                                                     <span class="password-error text-danger text-error"></span>

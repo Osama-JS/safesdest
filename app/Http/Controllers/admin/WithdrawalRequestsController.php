@@ -174,7 +174,7 @@ class WithdrawalRequestsController extends Controller
                         'country' => $driver->bank_country ?? 'SA',
                         'iban' => str_replace(' ', '', $driver->iban_number),
                         'bic' => $driver->bic_code,
-                        'purpose' => $request->purpose ?: '11',
+                        'purpose' => $request->purpose ?: 'BA',
                         'description' => "Payout for Driver #{$driver->id} - Withdrawal #{$withdrawal->id}"
                     ]);
 

@@ -27,7 +27,7 @@ class HyperPayPayoutService
         $this->password = config('services.hyperpay.password');
         $this->merchantId = config('services.hyperpay.merchant_id');
         $this->sourceId = config('services.hyperpay.source_id');
-        $this->defaultPurpose = config('services.hyperpay.purpose', '11');
+        $this->defaultPurpose = config('services.hyperpay.purpose', 'BA');
     }
 
     /**
@@ -62,8 +62,12 @@ class HyperPayPayoutService
     {
         try {
             // Sanitize description: Max 35 chars, Alphanumeric only
-            $description = preg_replace('/[^A-Za-z0-9 ]/', '', $data['description'] ?? 'Driver Payout');
-            $description = substr($description, 0, 35);
+            $cleanDesc = trim(preg_replace('/[^A-Za-z0-9 ]/', '', $data['description'] ?? ''));
+            $cleanDesc = preg_replace('/\s+/', ' ', $cleanDesc);
+            if (empty($cleanDesc) || strlen($cleanDesc) < 3) {
+                $cleanDesc = 'Driver Payout ' . ($data['externalId'] ?? '');
+            }
+            $description = substr($cleanDesc, 0, 35);
 
             // Sanitize Addresses: Alphanumeric only
             $address1 = preg_replace('/[^A-Za-z0-9 ]/', '', $data['address1'] ?? 'Riyadh');
@@ -72,10 +76,10 @@ class HyperPayPayoutService
             $address2 = preg_replace('/[^A-Za-z0-9 ]/', '', $data['address2'] ?? '.');
             if (empty(trim($address2))) $address2 = 'Street';
 
-            // Purpose code for IPS / Sarie Instant in HyperSplits
-            $purpose = $data['purpose'] ?? $this->defaultPurpose;
-            if ($purpose === 'BA' || empty($purpose)) {
-                $purpose = '11';
+            // Purpose code for bank transfer (Default to BA / SALA)
+            $purpose = !empty($data['purpose']) ? trim($data['purpose']) : $this->defaultPurpose;
+            if (empty($purpose)) {
+                $purpose = 'BA';
             }
 
             $payload = [

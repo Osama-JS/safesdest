@@ -201,7 +201,7 @@ class TeamWalletController extends Controller
                     'country' => $team->bank_country ?? 'SA',
                     'iban' => str_replace(' ', '', $team->iban_number),
                     'bic' => $team->bic_code,
-                    'purpose' => $req->purpose ?: '11',
+                    'purpose' => $req->purpose ?: 'BA',
                     'description' => "Manual Payout for Team #{$team->id} ({$team->name})"
                 ]);
 

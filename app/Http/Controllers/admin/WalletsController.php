@@ -611,13 +611,15 @@ class WalletsController extends Controller
             // '00000' = Success, '63000' = Rejected/Failed, '77000' = Cancelled
             if ($payout->status === 'pending') {
                 if ($statusCode === '00000' || in_array($statusCode, ['63000', '77000'])) {
-                    // Spoof webhook payload
+                    // Spoof webhook payload with full HyperPay response details
+                    $payoutIdVal = $response['data']['payoutId'] ?? ($response['data']['payouts'][0]['payoutId'] ?? $payout->payout_id);
                     $webhookPayload = [
                         'payoutReference' => $payout->reference_id,
-                        'responseCode' => $statusCode,
-                        'payoutId' => $response['data']['payoutId'] ?? $payout->payout_id,
-                        'amount' => $payout->amount,
-                        'responseMessage' => $hyperpayStatus
+                        'responseCode'    => $statusCode,
+                        'payoutId'        => $payoutIdVal,
+                        'amount'          => $payout->amount,
+                        'responseMessage' => $hyperpayStatus,
+                        'hyperpayDetails' => $response['data'] ?? []
                     ];
                     $webhookRequest = new \Illuminate\Http\Request();
                     $webhookRequest->replace($webhookPayload);

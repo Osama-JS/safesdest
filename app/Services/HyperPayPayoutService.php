@@ -144,6 +144,7 @@ class HyperPayPayoutService
                         'amount'          => number_format($data['amount'], 2, '.', ''),
                         'currency'        => $data['currency'] ?? 'SAR',
                         'transferMode'    => 'INSTANT',
+                        'channel'         => $data['channel'] ?? 'IPS',
                         'purpose'         => (string) $purpose,
                         'description'     => $description,
                         'beneficiary'     => [

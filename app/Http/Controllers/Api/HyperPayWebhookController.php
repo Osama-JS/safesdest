@@ -49,21 +49,21 @@ class HyperPayWebhookController extends Controller
         try {
             switch ($prefix) {
                 case 'WD': // WithdrawalRequest
-                    $this->handleWithdrawalRequest($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference);
+                    $this->handleWithdrawalRequest($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload);
                     break;
                 case 'INV': // InvestorWallet
-                    $this->handleInvestorPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount);
+                    $this->handleInvestorPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $payload);
                     break;
                 case 'UWP': // User Wallet (Commissions)
-                    $this->handleUserWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount);
+                    $this->handleUserWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $payload);
                     break;
                 case 'MT': // Manual Transaction (Driver)
                 case 'WP': // Wallet Payment (Driver)
-                    $this->handleDriverWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference);
+                    $this->handleDriverWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload);
                     break;
                 case 'TWM': // Team Wallet Manual
                 case 'TWP': // Team Wallet Payment
-                    $this->handleTeamWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount);
+                    $this->handleTeamWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $payload);
                     break;
                 default:
                     Log::warning("Unknown HyperPay Payout Prefix: {$prefix} for Reference: {$reference}");
@@ -77,7 +77,7 @@ class HyperPayWebhookController extends Controller
         return response()->json(['message' => 'Webhook processed successfully'], 200);
     }
 
-    protected function handleWithdrawalRequest($id, $isSuccess, $payoutId, $failureReason, $amount, $reference)
+    protected function handleWithdrawalRequest($id, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload = [])
     {
         $payout = \App\Models\HyperpayPayout::where('reference_id', $reference)->first();
         if (!$payout) {
@@ -103,7 +103,10 @@ class HyperPayWebhookController extends Controller
         }
 
         if ($isSuccess) {
-            $payout->update(['status' => 'completed']);
+            $payout->update([
+                'status' => 'completed',
+                'webhook_payload' => !empty($payload) ? $payload : null
+            ]);
             
             // 1. Create Wallet Transaction Debit ONLY NOW
             $transaction = Wallet_Transaction::create([
@@ -139,7 +142,8 @@ class HyperPayWebhookController extends Controller
         } else {
             $payout->update([
                 'status' => 'failed',
-                'failure_reason' => $failureReason
+                'failure_reason' => $failureReason,
+                'webhook_payload' => !empty($payload) ? $payload : null
             ]);
 
             $withdrawal->update([
@@ -151,7 +155,7 @@ class HyperPayWebhookController extends Controller
         }
     }
 
-    protected function handleInvestorPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount)
+    protected function handleInvestorPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $payload = [])
     {
         $wallet = InvestorWallet::find($walletId);
         if (!$wallet) {
@@ -174,7 +178,7 @@ class HyperPayWebhookController extends Controller
         }
     }
 
-    protected function handleUserWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount)
+    protected function handleUserWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $payload = [])
     {
         $wallet = UserWallet::find($walletId);
         if (!$wallet) {
@@ -201,7 +205,7 @@ class HyperPayWebhookController extends Controller
         }
     }
 
-    protected function handleDriverWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $reference)
+    protected function handleDriverWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload = [])
     {
         $payout = \App\Models\HyperpayPayout::where('reference_id', $reference)->first();
         if (!$payout) {
@@ -217,7 +221,7 @@ class HyperPayWebhookController extends Controller
         if ($isSuccess) {
             $payout->update([
                 'status' => 'completed',
-                'webhook_payload' => request()->all()
+                'webhook_payload' => !empty($payload) ? $payload : null
             ]);
             Log::info("Driver Payout for reference {$reference} confirmed by Webhook. PayoutId: " . $payoutId);
             
@@ -331,13 +335,13 @@ class HyperPayWebhookController extends Controller
             $payout->update([
                 'status' => 'failed',
                 'failure_reason' => $failureReason,
-                'webhook_payload' => request()->all()
+                'webhook_payload' => !empty($payload) ? $payload : null
             ]);
             Log::error("Driver Payout for reference {$reference} failed via Webhook. Reason: " . $failureReason);
         }
     }
 
-    protected function handleTeamWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount)
+    protected function handleTeamWalletPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $payload = [])
     {
         $wallet = Team_Wallet::find($walletId);
         if (!$wallet) {

@@ -469,6 +469,9 @@ $(document).ready(function () {
         transactions: transactionData,
         notes: notes,
         payment_method: $('#paymentMethod').val(),
+        purpose: $('#paymentMethod').val() === 'hyperpay' 
+          ? ($('#driver_payout_purpose').val() === 'custom' ? $('#driver_custom_purpose').val() : $('#driver_payout_purpose').val()) 
+          : null,
         _token: $('meta[name="csrf-token"]').attr('content')
       },
       success: function (response) {

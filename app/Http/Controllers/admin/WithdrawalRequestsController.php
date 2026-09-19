@@ -131,6 +131,7 @@ class WithdrawalRequestsController extends Controller
             'payment_method' => 'required_if:action,approve|string',
             'admin_notes' => 'nullable|string|max:1000',
             'receipt' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'purpose' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -173,7 +174,7 @@ class WithdrawalRequestsController extends Controller
                         'country' => $driver->bank_country ?? 'SA',
                         'iban' => str_replace(' ', '', $driver->iban_number),
                         'bic' => $driver->bic_code,
-                        'purpose' => '11',
+                        'purpose' => $request->purpose ?: '11',
                         'description' => "Payout for Driver #{$driver->id} - Withdrawal #{$withdrawal->id}"
                     ]);
 

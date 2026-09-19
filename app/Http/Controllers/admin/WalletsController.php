@@ -291,7 +291,8 @@ class WalletsController extends Controller
           'transactions.*.id' => 'required|exists:wallet_transactions,id',
           'transactions.*.payment_amount' => 'required|numeric|min:0',
           'notes' => 'nullable|string|max:500',
-          'payment_method' => 'nullable|string|in:manual,hyperpay'
+          'payment_method' => 'nullable|string|in:manual,hyperpay',
+          'purpose' => 'nullable|string|max:20'
         ]);
 
         DB::beginTransaction();
@@ -319,7 +320,7 @@ class WalletsController extends Controller
                     'country' => $driver->bank_country ?? 'SA',
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'purpose' => '11',
+                    'purpose' => $request->purpose ?: '11',
                     'description' => "Wallet Payment for {$driver->beneficiary_name}"
                 ]);
 
@@ -848,7 +849,7 @@ class WalletsController extends Controller
                     'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'purpose' => '11',
+                    'purpose' => $req->purpose ?: '11',
                     'description' => "Manual Payout for {$driver->beneficiary_name}"
                 ]);
 

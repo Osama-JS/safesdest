@@ -120,9 +120,11 @@ $(function () {
     if ($(this).val() === 'hyperpay') {
       $('#receipt_field_container').hide();
       $('#driver_bank_info').slideDown();
+      $('#hyperpay_purpose_container').slideDown();
     } else {
       $('#receipt_field_container').show();
       $('#driver_bank_info').slideUp();
+      $('#hyperpay_purpose_container').slideUp();
     }
   });
 

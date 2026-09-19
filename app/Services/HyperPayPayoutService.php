@@ -102,6 +102,14 @@ class HyperPayPayoutService
                 ]
             ];
 
+            // Log outgoing payload for clear audit & debugging
+            Log::info('HyperPay Payout Sending Request:', [
+                'url'         => $this->baseUrl,
+                'merchant_id' => $this->merchantId,
+                'source_id'   => $this->sourceId,
+                'payload'     => $payload
+            ]);
+
             $response = Http::withBasicAuth($this->username, $this->password)
                 ->withHeaders([
                     'X-Merchant-Id' => $this->merchantId,

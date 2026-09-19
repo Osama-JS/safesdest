@@ -394,6 +394,54 @@
                                                 <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
                                             </div>
                                             @endif
+
+                                            <div class="mt-3 payout-purpose-group">
+                                                <label class="form-label fw-bold" for="team_payout_purpose">
+                                                    <i class="ti ti-category me-1"></i>{{ __('الغرض من التحويل (Purpose Code)') }}
+                                                </label>
+                                                <select name="purpose" id="team_payout_purpose" class="form-select payout-purpose-select" onchange="
+                                                    var box = this.closest('.payout-purpose-group').querySelector('.custom-purpose-box');
+                                                    var input = box.querySelector('.custom-purpose-text');
+                                                    if (this.value === 'custom') {
+                                                        box.style.display = 'block';
+                                                        this.name = '';
+                                                        input.name = 'purpose';
+                                                        input.focus();
+                                                    } else {
+                                                        box.style.display = 'none';
+                                                        this.name = 'purpose';
+                                                        input.name = '';
+                                                    }
+                                                ">
+                                                    <optgroup label="الرموز الرقمية المعتمدة (HyperSplits / IPS)">
+                                                        <option value="11" selected>11 - تسوية ومستحقات (Settlement / Payout)</option>
+                                                        <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
+                                                    </optgroup>
+                                                    <optgroup label="رموز مؤسسة النقد القياسية (SAMA / ISO 20022)">
+                                                        <option value="SALA">SALA - رواتب ومسيرات (Salary / Payroll)</option>
+                                                        <option value="COMM">COMM - عمولات وأتعاب (Commission)</option>
+                                                        <option value="OTHR">OTHR - مدفوعات أخرى (Other Payments)</option>
+                                                        <option value="GDSV">GDSV - سلع وخدمات (Goods & Services)</option>
+                                                        <option value="SUPP">SUPP - مستحقات موردين وشركاء (Supplier Payment)</option>
+                                                        <option value="BONU">BONU - مكافآت وبدلات (Bonus)</option>
+                                                        <option value="DIVI">DIVI - توزيعات أرباح (Dividends)</option>
+                                                        <option value="INVS">INVS - عوائد استثمارية (Investment)</option>
+                                                    </optgroup>
+                                                    <optgroup label="رموز البنك الأهلي السعودي (SNB Purpose Codes)">
+                                                        <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
+                                                        <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
+                                                        <option value="BA">BA - رواتب منشآت (Payroll)</option>
+                                                        <option value="BB">BB - شراء بضائع (Buying Goods)</option>
+                                                        <option value="BF">BF - تسوية مطالبات (Claims)</option>
+                                                        <option value="BE">BE - توزيع أرباح (Dividends)</option>
+                                                    </optgroup>
+                                                    <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
+                                                </select>
+                                                <div class="custom-purpose-box mt-2" style="display: none;">
+                                                    <input type="text" class="form-control custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: SALA أو 11)">
+                                                </div>
+                                                <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي الخاصة بحسابكم (الافتراضي: 11 أو SALA أو 10)</small>
+                                            </div>
                                         </div>
 
                                         <!-- Description -->

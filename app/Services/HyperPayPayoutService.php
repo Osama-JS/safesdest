@@ -13,6 +13,7 @@ class HyperPayPayoutService
     protected $password;
     protected $merchantId;
     protected $sourceId;
+    protected $defaultPurpose;
 
     public function __construct()
     {
@@ -26,6 +27,7 @@ class HyperPayPayoutService
         $this->password = config('services.hyperpay.password');
         $this->merchantId = config('services.hyperpay.merchant_id');
         $this->sourceId = config('services.hyperpay.source_id');
+        $this->defaultPurpose = config('services.hyperpay.purpose', '11');
     }
 
     /**
@@ -43,6 +45,7 @@ class HyperPayPayoutService
             '13004' => 'البيانات المطلوبة غير موجودة',
             '13005' => 'القناة المستخدمة غير صحيحة',
             '13006' => 'المرجع (Reference) مستخدم مسبقاً',
+            '13008' => 'رمز الغرض من التحويل (Purpose Code) غير صالح',
             '63000' => 'تم رفض العملية من قبل النظام',
             '90000' => 'العملية بانتظار تأكيد البنك',
             '88888' => 'خطأ تقني في نظام HyperPay',
@@ -69,6 +72,12 @@ class HyperPayPayoutService
             $address2 = preg_replace('/[^A-Za-z0-9 ]/', '', $data['address2'] ?? '.');
             if (empty(trim($address2))) $address2 = 'Street';
 
+            // Purpose code for IPS / Sarie Instant in HyperSplits
+            $purpose = $data['purpose'] ?? $this->defaultPurpose;
+            if ($purpose === 'BA' || empty($purpose)) {
+                $purpose = '11';
+            }
+
             $payload = [
                 'merchantReference' => 'REF-' . time(),
                 'sourceId'          => trim($this->sourceId),
@@ -78,7 +87,7 @@ class HyperPayPayoutService
                         'amount'          => number_format($data['amount'], 2, '.', ''),
                         'currency'        => $data['currency'] ?? 'SAR',
                         'transferMode'    => 'INSTANT',
-                        'purpose'         => $data['purpose'] ?? 'BA',
+                        'purpose'         => (string) $purpose,
                         'description'     => $description,
                         'beneficiary'     => [
                             'name'     => $data['beneficiary_name'],

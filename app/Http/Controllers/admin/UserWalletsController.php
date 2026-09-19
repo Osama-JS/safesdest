@@ -404,6 +404,7 @@ class UserWalletsController extends Controller
                     'country' => $countryCode,
                     'iban' => str_replace(' ', '', $user->iban_number),
                     'bic' => $user->bic_code,
+                    'purpose' => '11',
                     'description' => "Payout for User #{$user->id}"
                 ]);
 

@@ -279,19 +279,11 @@
                                                     </div>
                                                 @endif
 
-                                                <div class="mt-3">
-                                                    <label class="form-label text-danger fw-bold" for="hyperpay_password">
-                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
-                                                    </label>
-                                                    <input type="password" name="password" id="hyperpay_password" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
-                                                    <span class="password-error text-danger text-error"></span>
-                                                </div>
-
                                                 <div class="mt-3 payout-purpose-group">
-                                                    <label class="form-label fw-bold" for="payout_purpose">
+                                                    <label class="form-label fw-bold text-dark" for="payout_purpose">
                                                         <i class="ti ti-category me-1"></i>{{ __('الغرض من التحويل (Purpose Code)') }}
                                                     </label>
-                                                    <select name="purpose" id="payout_purpose" class="form-select payout-purpose-select" onchange="
+                                                    <select name="purpose" id="payout_purpose" class="form-select bg-white text-dark border-primary payout-purpose-select" onchange="
                                                         var box = this.closest('.payout-purpose-group').querySelector('.custom-purpose-box');
                                                         var input = box.querySelector('.custom-purpose-text');
                                                         if (this.value === 'custom') {
@@ -330,9 +322,17 @@
                                                         <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
                                                     </select>
                                                     <div class="custom-purpose-box mt-2" style="display: none;">
-                                                        <input type="text" class="form-control custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: SALA أو 11)">
+                                                        <input type="text" class="form-control bg-white custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: SALA أو 11)">
                                                     </div>
                                                     <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي الخاصة بحسابكم (الافتراضي: 11 أو SALA أو 10)</small>
+                                                </div>
+
+                                                <div class="mt-3">
+                                                    <label class="form-label text-danger fw-bold" for="hyperpay_password">
+                                                        <i class="ti ti-lock me-1"></i>كلمة مرور المشرف (مطلوبة لتأكيد التحويل)
+                                                    </label>
+                                                    <input type="password" name="password" id="hyperpay_password" class="form-control border-danger" placeholder="أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع">
+                                                    <span class="password-error text-danger text-error"></span>
                                                 </div>
                                             </div>
                                         @endif

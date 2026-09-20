@@ -32,10 +32,23 @@
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/admin/tasks/list.js'])
     @vite(['resources/js/spical.js'])
+    @php
+        $authUser = auth()->user();
+        $canViewCommissions = $authUser && (
+            $authUser->can('view_task_commissions') 
+            || $authUser->hasRole(['Owner', 'Admin', 'Super Admin']) 
+            || (isset($authUser->role) && in_array(strtolower($authUser->role->name), ['owner', 'admin', 'super admin']))
+        );
+        $canViewTotalPrice = $authUser && (
+            $authUser->can('view_task_total_price') 
+            || $authUser->hasRole(['Owner', 'Admin', 'Super Admin']) 
+            || (isset($authUser->role) && in_array(strtolower($authUser->role->name), ['owner', 'admin', 'super admin']))
+        );
+    @endphp
     <script>
-        window.canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
+        window.canViewCommissions = {{ $canViewCommissions ? 'true' : 'false' }};
         const canViewCommissions = window.canViewCommissions;
-        window.canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+        window.canViewTotalPrice = {{ $canViewTotalPrice ? 'true' : 'false' }};
         const canViewTotalPrice = window.canViewTotalPrice;
     </script>
     <script>
@@ -45,13 +58,13 @@
 
         function moveCustomNav() {
             if (window.innerWidth < 1124) {
-                // Ø´Ø§Ø´Ø© ØµØºÙŠØ±Ø©ØŒ Ø§Ù†Ù‚Ù„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ø§Ù„Ø£Ø³ÙÙ„
+                // شاشة صغيرة، انقل المحتوى إلى الأسفل
                 if (originalContent && mobileContainer && mobileContainer.innerHTML.trim() === '') {
                     mobileContainer.innerHTML = originalContent;
                     navContent.innerHTML = '';
                 }
             } else {
-                // Ø´Ø§Ø´Ø© ÙƒØ¨ÙŠØ±Ø©ØŒ Ø£Ø¹Ø¯ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ù…ÙƒØ§Ù†Ù‡ Ø§Ù„Ø£ØµÙ„ÙŠ
+                // شاشة كبيرة، أعد المحتوى إلى مكانه الأصلي
                 if (originalContent && navContent && navContent.innerHTML.trim() === '') {
                     navContent.innerHTML = originalContent;
                     mobileContainer.innerHTML = '';
@@ -59,10 +72,10 @@
             }
         }
 
-        moveCustomNav(); // ØªÙ†Ù ÙŠØ° Ø£ÙˆÙ„ÙŠ
-        window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
+        moveCustomNav(); // تنفيذ أولي
+        window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
 
-        @can('view_task_commissions')
+        @if($canViewCommissions)
         // Handler for View Brokers Breakdown Modal
         $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
@@ -70,8 +83,12 @@
             if (!taskId) return;
 
             const modalEl = document.getElementById('viewBrokersBreakdownModal');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            if (!modalEl) return;
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
+                $(modalEl).modal('show');
+            }
 
             $('#vbb-task-id-badge').text('#' + taskId);
             $('#vbb-loading').show();
@@ -177,7 +194,7 @@
                 }
             });
         });
-        @endcan
+        @endif
     </script>
 @endsection
 @section('task-isactive')
@@ -596,7 +613,7 @@
         </div>
     </div>
 
-    @can('view_task_commissions')
+    @if($canViewCommissions)
     <!-- View Brokers Breakdown Modal -->
     <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -739,7 +756,7 @@
             </div>
         </div>
     </div>
-    @endcan
+    @endif
 
     <!-- Payment Request Modal -->
     <div class="modal fade" id="paymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">

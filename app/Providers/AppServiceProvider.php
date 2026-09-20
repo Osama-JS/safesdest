@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use App\Models\Task;
@@ -45,6 +46,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Implicitly grant 'Owner' and 'Super Admin' all permissions
+        Gate::before(function ($user, $ability) {
+            if ($user && method_exists($user, 'hasRole')) {
+                if ($user->hasRole(['Owner', 'Admin', 'Super Admin']) || (isset($user->role) && in_array(strtolower($user->role->name), ['owner', 'admin', 'super admin']))) {
+                    return true;
+                }
+            }
+            return null;
+        });
+
         // Define rate limiters for API endpoints
         $this->configureRateLimiters();
 

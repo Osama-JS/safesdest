@@ -537,8 +537,20 @@ $(function () {
 
     const modalEl = document.getElementById('viewBrokersBreakdownModal');
     if (!modalEl) return;
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
+
+    const hideModal = () => {
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+      } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
+        $(modalEl).modal('hide');
+      }
+    };
+
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
+      $(modalEl).modal('show');
+    }
 
     $('#vbb-task-id-badge').text('#' + taskId);
     $('#vbb-loading').show();
@@ -550,7 +562,7 @@ $(function () {
       dataType: 'json',
       success: function (res) {
         if (res.status !== 1) {
-          modal.hide();
+          hideModal();
           Swal.fire({
             icon: 'error',
             title: 'خطأ',
@@ -568,15 +580,11 @@ $(function () {
 
         $('#vbb-total-price').text(parseFloat(d.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
         $('#vbb-driver-price').text(parseFloat(d.driver.driver_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-driver-name').text(d.driver.name + (d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
-        
         $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
-
         $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross).toFixed(2)} ر.س`);
 
-        const total = parseFloat(d.total_price) || 1;
+        // Update progress bar
+        const total = Math.max(0.01, parseFloat(d.total_price));
         const driverPct = Math.min(100, (parseFloat(d.driver.driver_price) / total) * 100);
         const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share) / total) * 100);
         const platformPct = Math.max(0, 100 - driverPct - brokersPct);
@@ -585,34 +593,34 @@ $(function () {
         $('#vbb-bar-brokers').css('width', brokersPct + '%').attr('title', `الوسطاء: ${brokersPct.toFixed(1)}%`);
         $('#vbb-bar-platform').css('width', platformPct + '%').attr('title', `المنصة: ${platformPct.toFixed(1)}%`);
 
+        // Update brokers count text
+        $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
+
+        // Populate table
         const $tbody = $('#vbb-brokers-table-body');
         $tbody.empty();
 
         if (d.brokers && d.brokers.length > 0) {
           $('#vbb-no-brokers').hide();
           d.brokers.forEach((b, idx) => {
-            const paidBadge = b.is_paid
-              ? '<span class="badge bg-label-success"><i class="ti ti-check me-1"></i>تم الإيداع بالمحفظة</span>'
-              : '<span class="badge bg-label-warning"><i class="ti ti-clock me-1"></i>بانتظار الصرف</span>';
+            const paidBadge = b.is_paid 
+              ? `<span class="badge bg-label-success"><i class="ti ti-check me-1"></i>تم الإيداع #${b.transaction_id || ''}</span>`
+              : `<span class="badge bg-label-secondary">بانتظار الإيداع</span>`;
 
-            const sourceBadge = b.source_type === 'direct'
-              ? '<span class="badge bg-label-primary">مباشر على المهمة</span>'
-              : '<span class="badge bg-label-info">' + b.source + '</span>';
+            const sourceBadge = b.source === 'task'
+              ? `<span class="badge bg-label-primary">مباشر بالمهمة</span>`
+              : `<span class="badge bg-label-info">موروث من السائق</span>`;
 
             const row = `
               <tr>
-                <td class="fw-bold">${idx + 1}</td>
+                <td>${idx + 1}</td>
                 <td>
                   <div class="fw-bold text-dark">${b.name}</div>
-                  <small class="text-muted"><i class="ti ti-phone me-1"></i>${b.phone}</small>
+                  <small class="text-muted">${b.phone || '-'}</small>
                 </td>
                 <td>${sourceBadge}</td>
-                <td>
-                  <span class="badge bg-label-secondary font-monospace">${b.commission_text}</span>
-                </td>
-                <td>
-                  <span class="fw-bold text-success fs-6">${parseFloat(b.share).toLocaleString('en-US', {minimumFractionDigits: 2})} ر.س</span>
-                </td>
+                <td><span class="badge bg-label-warning">${b.formula}</span></td>
+                <td class="fw-bold text-info">${parseFloat(b.share_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ر.س</td>
                 <td>${paidBadge}</td>
               </tr>
             `;
@@ -623,7 +631,7 @@ $(function () {
         }
 
         $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
-          modal.hide();
+          hideModal();
           $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
         });
       },

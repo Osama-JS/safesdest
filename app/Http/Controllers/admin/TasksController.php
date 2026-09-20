@@ -3983,7 +3983,12 @@ class TasksController extends Controller
             ])->findOrFail($id);
 
             $user = auth()->user();
-            if (!$user || !$user->can('view_task_commissions')) {
+            $canView = $user && (
+                $user->can('view_task_commissions') 
+                || $user->hasRole(['Owner', 'Admin', 'Super Admin']) 
+                || (isset($user->role) && in_array(strtolower($user->role->name), ['owner', 'admin', 'super admin']))
+            );
+            if (!$user || !$canView) {
                 return response()->json([
                     'status' => 2,
                     'error' => __('You do not have permission to view commissions')

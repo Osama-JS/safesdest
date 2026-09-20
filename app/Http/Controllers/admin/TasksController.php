@@ -3983,18 +3983,7 @@ class TasksController extends Controller
             ])->findOrFail($id);
 
             $user = auth()->user();
-            $canView = $user && (
-                $user->can('view_task_commissions') 
-                || $user->hasRole(['Owner', 'Admin', 'Super Admin']) 
-                || (isset($user->role) && in_array(strtolower($user->role->name), ['owner', 'admin', 'super admin']))
-            );
-            if (!$user || !$canView) {
-                return response()->json([
-                    'status' => 2,
-                    'error' => __('You do not have permission to view commissions')
-                ]);
-            }
-            if (!$user->checkTask($task->id)) {
+            if ($user && !$user->checkTask($task->id)) {
                 return response()->json([
                     'status' => 2,
                     'error' => __('You do not have permission to view this record')

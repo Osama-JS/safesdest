@@ -582,7 +582,7 @@ $(function () {
       url: targetUrl,
       type: 'GET',
       dataType: 'json',
-      success: function (res, statusText, xhr) {
+      success: function (res, _status, xhr) {
         console.log('%c6. AJAX Response (HTTP ' + xhr.status + '):', 'color: green; font-weight: bold;', res);
 
         if (res.status !== 1) {
@@ -603,8 +603,8 @@ $(function () {
         $('#vbb-loading').hide();
         $('#vbb-content').show();
 
-        const statusText = d.closed ? 'مغلقة' : d.status;
-        $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver ? d.driver.name : '-'}`);
+        const taskStatus = d.closed ? 'مغلقة' : d.status;
+        $('#vbb-task-subtitle').text(`حالة المهمة: ${taskStatus} | السائق: ${d.driver ? d.driver.name : '-'}`);
 
         $('#vbb-total-price').text(parseFloat(d.total_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
         $('#vbb-driver-price').text(parseFloat(d.driver ? d.driver.driver_price : 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');

@@ -145,7 +145,7 @@
                 beforeSend: function (xhr) {
                     console.log('6. AJAX beforeSend: Request dispatched to server...');
                 },
-                success: function (res, statusText, xhr) {
+                success: function (res, _status, xhr) {
                     console.log('%c7. AJAX Success! HTTP Status: ' + xhr.status, 'color: green; font-weight: bold;', res);
 
                     if (res.status !== 1) {
@@ -176,8 +176,8 @@
                     $('#vbb-content').show();
 
                     // Subtitle info
-                    const statusText = d.closed ? 'مغلقة' : d.status;
-                    $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver ? d.driver.name : '-'}`);
+                    const taskStatus = d.closed ? 'مغلقة' : d.status;
+                    $('#vbb-task-subtitle').text(`حالة المهمة: ${taskStatus} | السائق: ${d.driver ? d.driver.name : '-'}`);
 
                     // 1. Stat cards
                     $('#vbb-total-price').text(parseFloat(d.total_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');

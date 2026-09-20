@@ -76,17 +76,19 @@
         window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
 
         // Handler for View Brokers Breakdown Modal
-        $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+        $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
             const taskId = $(this).data('id');
             if (!taskId) return;
 
-            const modalEl = document.getElementById('viewBrokersBreakdownModal');
-            if (!modalEl) return;
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
-                $(modalEl).modal('show');
+            if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                $('#viewBrokersBreakdownModal').modal('show');
+            } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modalEl = document.getElementById('viewBrokersBreakdownModal');
+                if (modalEl) {
+                    const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: true });
+                    inst.show();
+                }
             }
 
             $('#vbb-task-id-badge').text('#' + taskId);
@@ -101,7 +103,9 @@
                 dataType: 'json',
                 success: function (res) {
                     if (res.status !== 1) {
-                        modal.hide();
+                        if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                            $('#viewBrokersBreakdownModal').modal('hide');
+                        }
                         Swal.fire({
                             icon: 'error',
                             title: 'خطأ',
@@ -612,7 +616,7 @@
     </div>
 
     <!-- View Brokers Breakdown Modal -->
-    <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-label-primary py-3">

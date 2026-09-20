@@ -332,7 +332,7 @@ $(function () {
             return `
               <div class="d-flex align-items-center gap-1">
                 ${canSeeBrokers ? `
-                  <button type="button" class="btn btn-xs btn-outline-info view-task-brokers-breakdown-btn d-inline-flex align-items-center gap-1 px-2 py-1" data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#viewBrokersBreakdownModal" title="${__('عرض الوسطاء')}">
+                  <button type="button" class="btn btn-xs btn-outline-info view-task-brokers-breakdown-btn d-inline-flex align-items-center gap-1 px-2 py-1" data-id="${full.id}" title="${__('عرض الوسطاء')}">
                     <i class="ti ti-users"></i>
                     <span class="badge ${brokersCount > 0 ? 'bg-info text-white' : 'bg-label-secondary'} rounded-pill ms-1" style="font-size: 11px;">${brokersCount}</span>
                   </button>
@@ -343,7 +343,7 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    ${canSeeBrokers ? `<li><a href="javascript:;" class="dropdown-item view-task-brokers-breakdown-btn" data-id="${full.id}" data-bs-toggle="modal" data-bs-target="#viewBrokersBreakdownModal"><i class="ti ti-users me-2"></i>${__('عرض الوسطاء')} (${brokersCount})</a></li>` : ''}
+                    ${canSeeBrokers ? `<li><a href="javascript:;" class="dropdown-item view-task-brokers-breakdown-btn" data-id="${full.id}"><i class="ti ti-users me-2"></i>${__('عرض الوسطاء')} (${brokersCount})</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>${__('Payment Task')}</a></li>
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">${__('Connect')}</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item" data-id="${full.id}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
@@ -530,7 +530,7 @@ $(function () {
   });
 
   // Handler for View Brokers Breakdown Modal
-  $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+  $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
     e.preventDefault();
     const taskId = $(this).data('id');
     if (!taskId) return;
@@ -539,17 +539,19 @@ $(function () {
     if (!modalEl) return;
 
     const hideModal = () => {
-      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-      } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
-        $(modalEl).modal('hide');
+      if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+        $('#viewBrokersBreakdownModal').modal('hide');
+      } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
       }
     };
 
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      bootstrap.Modal.getOrCreateInstance(modalEl).show();
-    } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
-      $(modalEl).modal('show');
+    if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+      $('#viewBrokersBreakdownModal').modal('show');
+    } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const inst = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, { backdrop: true });
+      inst.show();
     }
 
     $('#vbb-task-id-badge').text('#' + taskId);

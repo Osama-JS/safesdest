@@ -330,6 +330,38 @@ class HyperPayWebhookController extends Controller
                     "/wallet",
                     'wallet_adjustment'
                 );
+            } elseif ($payout->payout_type === 'WD') {
+                $withdrawal = \App\Models\WithdrawalRequest::find($payout->source_withdrawal_id);
+                if ($withdrawal && $withdrawal->status === 'processing') {
+                    $bankInfo = "البنك: " . ($payout->driver->bank_name ?? 'غير محدد') . " | الآيبان: " . ($payout->driver->iban_number ?? 'غير محدد') . " | رقم العملية: {$payoutId}";
+                    
+                    $transaction = \App\Models\Wallet_Transaction::create([
+                        'wallet_id' => $withdrawal->wallet_id,
+                        'user_id' => $details['admin_id'] ?? 1,
+                        'amount' => $payout->amount,
+                        'transaction_type' => 'debit',
+                        'description' => "سحب نقدي عبر HyperPay - طلب رقم #{$withdrawal->id} | {$bankInfo}",
+                        'status' => 1,
+                        'image' => $details['receipt_image'] ?? null,
+                        'maturity_time' => now(),
+                    ]);
+
+                    $withdrawal->update([
+                        'status' => 'completed',
+                        'wallet_transaction_id' => $transaction->id,
+                    ]);
+
+                    app(\App\Services\NotificationService::class)->send(
+                        'driver',
+                        [$withdrawal->driver_id],
+                        '✅ تمت معالجة طلب السحب عبر HyperPay بنجاح',
+                        "تم تحويل مبلغ {$payout->amount} ريال إلى حسابك البنكي لطلب السحب رقم #{$withdrawal->id}.",
+                        '/images/admin-icon.png',
+                        null,
+                        "/wallet",
+                        'withdrawal_approved'
+                    );
+                }
             }
         } else {
             $payout->update([
@@ -337,6 +369,15 @@ class HyperPayWebhookController extends Controller
                 'failure_reason' => $failureReason,
                 'webhook_payload' => !empty($payload) ? $payload : null
             ]);
+            if ($payout->payout_type === 'WD' && $payout->source_withdrawal_id) {
+                $withdrawal = \App\Models\WithdrawalRequest::find($payout->source_withdrawal_id);
+                if ($withdrawal && $withdrawal->status === 'processing') {
+                    $withdrawal->update([
+                        'status' => 'pending',
+                        'admin_notes' => ($withdrawal->admin_notes ? $withdrawal->admin_notes . ' | ' : '') . "فشل التحويل عبر HyperPay: " . $failureReason,
+                    ]);
+                }
+            }
             Log::error("Driver Payout for reference {$reference} failed via Webhook. Reason: " . $failureReason);
         }
     }

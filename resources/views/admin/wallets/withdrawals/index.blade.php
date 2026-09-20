@@ -196,6 +196,9 @@
                                             <div class="col-6"><strong>{{ __('City') }}:</strong> <span id="info_city"></span></div>
                                             <div class="col-6"><strong>{{ __('Country') }}:</strong> <span id="info_country"></span></div>
                                         </div>
+                                        <div id="driver_bank_warning" class="text-danger mt-2 fw-bold small" style="display: none;">
+                                            <i class="ti ti-alert-triangle me-1"></i>{{ __('Incomplete bank details! Payout may fail.') }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -209,52 +212,24 @@
                                 </select>
                             </div>
 
-                            <div class="col-12 approve-fields payout-purpose-group" id="hyperpay_purpose_container" style="display: none;">
-                                <label class="form-label fw-bold">
-                                    <i class="ti ti-category me-1"></i>{{ __('الغرض من التحويل (Purpose Code)') }}
+                            <!-- Beneficiary Name in English for HyperPay -->
+                            <div class="col-12 approve-fields hyperpay-fields" id="hyperpay_beneficiary_container" style="display: none;">
+                                <label class="form-label fw-bold text-dark d-flex justify-content-between" for="beneficiary_name_input">
+                                    <span><i class="ti ti-user me-1 text-primary"></i>{{ __('اسم المستفيد بالإنجليزية (Beneficiary Name)') }} <span class="text-danger">*</span></span>
+                                    <small class="text-muted">{{ __('مطلوب بحروف إنجليزية') }}</small>
                                 </label>
-                                <select name="purpose" id="withdrawal_payout_purpose" class="form-select payout-purpose-select" onchange="
-                                    var box = this.closest('.payout-purpose-group').querySelector('.custom-purpose-box');
-                                    var input = box.querySelector('.custom-purpose-text');
-                                    if (this.value === 'custom') {
-                                        box.style.display = 'block';
-                                        this.name = '';
-                                        input.name = 'purpose';
-                                        input.focus();
-                                    } else {
-                                        box.style.display = 'none';
-                                        this.name = 'purpose';
-                                        input.name = '';
-                                    }
-                                ">
-                                    <optgroup label="رموز البنك الأهلي السعودي المعتمدة (SNB Purpose Codes - الموصى بها)">
-                                        <option value="BA" selected>BA - رواتب ومستحقات عاملين (Payroll - المعتمد للرواتب)</option>
-                                        <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
-                                        <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
-                                        <option value="BB">BB - شراء بضائع وخدمات (Buying Goods)</option>
-                                        <option value="BF">BF - تسوية مطالبات (Claims)</option>
-                                        <option value="BE">BE - توزيع أرباح (Dividends)</option>
-                                    </optgroup>
-                                    <optgroup label="رموز مؤسسة النقد القياسية (SAMA / ISO 20022)">
-                                        <option value="SALA">SALA - رواتب ومسيرات (Salary / Payroll)</option>
-                                        <option value="COMM">COMM - عمولات وأتعاب (Commission)</option>
-                                        <option value="OTHR">OTHR - مدفوعات أخرى (Other Payments)</option>
-                                        <option value="GDSV">GDSV - سلع وخدمات (Goods & Services)</option>
-                                        <option value="SUPP">SUPP - مستحقات موردين وشركاء (Supplier Payment)</option>
-                                        <option value="BONU">BONU - مكافآت وبدلات (Bonus)</option>
-                                        <option value="DIVI">DIVI - توزيعات أرباح (Dividends)</option>
-                                        <option value="INVS">INVS - عوائد استثمارية (Investment)</option>
-                                    </optgroup>
-                                    <optgroup label="الرموز الرقمية (HyperSplits Sandbox)">
-                                        <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
-                                        <option value="11">11 - تسوية عامة (Settlement / Payout)</option>
-                                    </optgroup>
-                                    <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
-                                </select>
-                                <div class="custom-purpose-box mt-2" style="display: none;">
-                                    <input type="text" class="form-control custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: BA أو SALA أو BC)">
-                                </div>
-                                <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي الخاصة بحسابكم (الافتراضي: 11 أو SALA أو 10)</small>
+                                <input type="text" name="beneficiary_name" id="beneficiary_name_input" class="form-control"
+                                    placeholder="e.g. Amal Salman Al Faifi">
+                                <small class="text-muted d-block mt-1">{{ __('يجب أن يكون بالإنجليزية كما هو مسجل لدى البنك (تم تحويله تلقائياً ويمكنك تعديله)') }}</small>
+                            </div>
+
+                            <!-- Admin Password for HyperPay -->
+                            <div class="col-12 approve-fields hyperpay-fields" id="hyperpay_password_container" style="display: none;">
+                                <label class="form-label text-danger fw-bold" for="hyperpay_password">
+                                    <i class="ti ti-lock me-1"></i>{{ __('كلمة مرور المشرف (مطلوبة لتأكيد التحويل)') }} <span class="text-danger">*</span>
+                                </label>
+                                <input type="password" name="password" id="hyperpay_password" class="form-control border-danger" placeholder="{{ __('أدخل كلمة المرور الخاصة بك لتأكيد عملية الدفع') }}">
+                                <small class="text-muted d-block mt-1">{{ __('مطلوبة للتحقق من هوية المشرف قبل إرسال أمر الصرف') }}</small>
                             </div>
 
                             <div class="col-12 approve-fields" id="receipt_field_container">

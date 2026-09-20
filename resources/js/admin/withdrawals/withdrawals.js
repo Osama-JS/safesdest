@@ -107,10 +107,11 @@ $(function () {
     if ($(this).val() === 'reject') {
       $('.approve-fields').hide();
       $('#amount_paid').prop('required', false);
+      $('#hyperpay_password').prop('required', false);
     } else {
       $('.approve-fields').show();
       $('#amount_paid').prop('required', true);
-      // Trigger payment method change to handle receipt visibility
+      // Trigger payment method change to handle receipt & hyperpay visibility
       $('#payment_method').trigger('change');
     }
   });
@@ -120,11 +121,13 @@ $(function () {
     if ($(this).val() === 'hyperpay') {
       $('#receipt_field_container').hide();
       $('#driver_bank_info').slideDown();
-      $('#hyperpay_purpose_container').slideDown();
+      $('.hyperpay-fields').slideDown();
+      $('#hyperpay_password').prop('required', true);
     } else {
       $('#receipt_field_container').show();
       $('#driver_bank_info').slideUp();
-      $('#hyperpay_purpose_container').slideUp();
+      $('.hyperpay-fields').slideUp();
+      $('#hyperpay_password').prop('required', false).val('');
     }
   });
 
@@ -148,6 +151,20 @@ $(function () {
     $('#info_address').text(data.bank_details.address1);
     $('#info_city').text(data.bank_details.city);
     $('#info_country').text(data.bank_details.country);
+
+    // Populate formatted English beneficiary name & reset password
+    var formattedBeneficiary = data.bank_details.formatted_beneficiary || data.bank_details.beneficiary || '';
+    $('#beneficiary_name_input').val(formattedBeneficiary);
+    $('#hyperpay_password').val('');
+
+    // Check bank details completeness
+    if (!data.bank_details.iban || data.bank_details.iban === 'N/A' ||
+        !data.bank_details.bic || data.bank_details.bic === 'N/A' ||
+        !data.bank_details.beneficiary || data.bank_details.beneficiary === 'N/A') {
+      $('#driver_bank_warning').show();
+    } else {
+      $('#driver_bank_warning').hide();
+    }
 
     // Reset to Approve view
     $('#withdrawal_action').val('approve').trigger('change');

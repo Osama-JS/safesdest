@@ -85,6 +85,7 @@ class WithdrawalRequestsController extends Controller
                 'bank_details' => [
                     'iban' => $driver->iban_number ?? 'N/A',
                     'beneficiary' => $driver->beneficiary_name ?? 'N/A',
+                    'formatted_beneficiary' => \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name ?? ''),
                     'bic' => $driver->bic_code ?? 'N/A',
                     'bank_name' => $driver->bank_name ?? 'N/A',
                     'address1' => $driver->bank_address1 ?? $driver->address ?? 'N/A',
@@ -131,7 +132,8 @@ class WithdrawalRequestsController extends Controller
             'payment_method' => 'required_if:action,approve|string',
             'admin_notes' => 'nullable|string|max:1000',
             'receipt' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'purpose' => 'nullable|string|max:20',
+            'password' => 'required_if:payment_method,hyperpay|string',
+            'beneficiary_name' => 'nullable|string|max:150',
         ]);
 
         if ($validator->fails()) {
@@ -157,24 +159,45 @@ class WithdrawalRequestsController extends Controller
 
                 // --- HyperPay Payout Logic ---
                 if ($request->payment_method === 'hyperpay') {
+                    if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')
+                        ], 422);
+                    }
+
                     // Validate Driver Bank Details
                     if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
                         throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
                     }
 
+                    $countryMapping = [
+                        'السعودية' => 'SA',
+                        'الإمارات' => 'AE',
+                        'الكويت' => 'KW',
+                        'عمان' => 'OM',
+                        'البحرين' => 'BH',
+                        'قطر' => 'QA',
+                        'مصر' => 'EG',
+                        'الأردن' => 'JO',
+                    ];
+                    $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
+
+                    $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
                     $externalId = 'WD-' . $withdrawal->id . '-' . time();
+
                     $payoutResponse = $payoutService->sendPayout([
                         'amount' => $amountPaid,
                         'currency' => 'SAR',
                         'externalId' => $externalId,
-                        'beneficiary_name' => $driver->beneficiary_name,
+                        'beneficiary_name' => $beneficiaryName,
                         'address1' => $driver->bank_address1 ?? $driver->address,
                         'address2' => $driver->bank_address2 ?? '.',
                         'city' => $driver->bank_city ?? 'Riyadh',
-                        'country' => $driver->bank_country ?? 'SA',
+                        'country' => $countryCode,
                         'iban' => str_replace(' ', '', $driver->iban_number),
                         'bic' => $driver->bic_code,
-                        'purpose' => $request->purpose ?: 'BA',
+                        'purpose' => 'BA',
                         'description' => "Payout for Driver #{$driver->id} - Withdrawal #{$withdrawal->id}"
                     ]);
 
@@ -198,6 +221,7 @@ class WithdrawalRequestsController extends Controller
                             'amount_paid' => $amountPaid,
                             'admin_notes' => $request->admin_notes,
                             'receipt_image' => $receiptPath,
+                            'admin_id' => auth()->id(),
                         ],
                         'status' => 'pending'
                     ]);
@@ -213,7 +237,10 @@ class WithdrawalRequestsController extends Controller
                     ]);
 
                     DB::commit();
-                    return response()->json(['success' => true, 'message' => __('Payout initiated. Awaiting bank confirmation.')]);
+                    return response()->json([
+                        'success' => true,
+                        'message' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.')
+                    ]);
                 }
                 // --- End HyperPay Logic ---
 

@@ -3983,11 +3983,17 @@ class TasksController extends Controller
             ])->findOrFail($id);
 
             $user = auth()->user();
-            if ($user && !$user->checkTask($task->id)) {
+            if (!$user || !$user->can('view_task_commissions')) {
+                return response()->json([
+                    'status' => 2,
+                    'error' => __('You do not have permission to view commissions')
+                ], 403);
+            }
+            if (!$user->checkTask($task->id)) {
                 return response()->json([
                     'status' => 2,
                     'error' => __('You do not have permission to view this record')
-                ]);
+                ], 403);
             }
 
             $totalPrice = (float) $task->total_price;

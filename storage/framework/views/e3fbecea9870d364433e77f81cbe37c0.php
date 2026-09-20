@@ -90,6 +90,17 @@
                 return;
             }
 
+            if (typeof canViewCommissions !== 'undefined' && !canViewCommissions) {
+                console.warn('[Brokers Breakdown] Permission Denied: view_task_commissions is required!');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'غير مصرح',
+                    text: 'ليس لديك صلاحية لعرض عمولات وتفاصيل الوسطاء.'
+                });
+                console.groupEnd();
+                return;
+            }
+
             const modalEl = document.getElementById('viewBrokersBreakdownModal');
             console.log('3. Modal Element in DOM (#viewBrokersBreakdownModal):', modalEl);
 
@@ -767,6 +778,7 @@
         </div>
     </div>
 
+    <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('view_task_commissions')): ?>
     <!-- View Brokers Breakdown Modal -->
     <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -912,6 +924,7 @@
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <!-- Payment Request Modal -->
     <div class="modal fade" id="paymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">

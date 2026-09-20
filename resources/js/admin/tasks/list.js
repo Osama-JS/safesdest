@@ -325,20 +325,23 @@ $(function () {
               !full.refunded;
 
             const brokersCount = full.brokers_count ?? 0;
+            const canSeeBrokers = typeof canViewCommissions !== 'undefined' && canViewCommissions;
 
             return `
               <div class="d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-xs btn-outline-info view-task-brokers-breakdown-btn d-inline-flex align-items-center gap-1 px-2 py-1" data-id="${full.id}" data-bs-toggle="tooltip" title="${__('عرض الوسطاء')}">
-                  <i class="ti ti-users"></i>
-                  <span class="badge ${brokersCount > 0 ? 'bg-info text-white' : 'bg-label-secondary'} rounded-pill ms-1" style="font-size: 11px;">${brokersCount}</span>
-                </button>
+                ${canSeeBrokers ? `
+                  <button type="button" class="btn btn-xs btn-outline-info view-task-brokers-breakdown-btn d-inline-flex align-items-center gap-1 px-2 py-1" data-id="${full.id}" data-bs-toggle="tooltip" title="${__('عرض الوسطاء')}">
+                    <i class="ti ti-users"></i>
+                    <span class="badge ${brokersCount > 0 ? 'bg-info text-white' : 'bg-label-secondary'} rounded-pill ms-1" style="font-size: 11px;">${brokersCount}</span>
+                  </button>
+                ` : ''}
 
                 <div class="dropdown">
                   <button class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href="javascript:;" class="dropdown-item view-task-brokers-breakdown-btn" data-id="${full.id}"><i class="ti ti-users me-2"></i>${__('عرض الوسطاء')} (${brokersCount})</a></li>
+                    ${canSeeBrokers ? `<li><a href="javascript:;" class="dropdown-item view-task-brokers-breakdown-btn" data-id="${full.id}"><i class="ti ti-users me-2"></i>${__('عرض الوسطاء')} (${brokersCount})</a></li>` : ''}
                     <li><a href="javascript:;" class="dropdown-item payment-task"  data-id="${full.id}"><i class="ti ti-credit-card me-2"></i>${__('Payment Task')}</a></li>
                     ${1 == 1 ? `<li><a href="javascript:;" class="dropdown-item connect-task"  data-id="${full.id}">${__('Connect')}</a></li>` : ''}
                     <li><a href="${baseUrl}admin/tasks/list/show/${full.id}" class="dropdown-item" data-id="${full.id}"><i class="ti ti-eye me-2"></i>${__('View Details')}</a></li>
@@ -536,6 +539,17 @@ $(function () {
 
     if (!taskId) {
       console.error('[Brokers Breakdown] Error: No task ID found!');
+      console.groupEnd();
+      return;
+    }
+
+    if (typeof canViewCommissions !== 'undefined' && !canViewCommissions) {
+      console.warn('[Brokers Breakdown] Permission Denied: view_task_commissions is required!');
+      Swal.fire({
+        icon: 'error',
+        title: 'غير مصرح',
+        text: 'ليس لديك صلاحية لعرض عمولات وتفاصيل الوسطاء.'
+      });
       console.groupEnd();
       return;
     }

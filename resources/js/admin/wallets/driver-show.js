@@ -456,6 +456,16 @@ $(document).ready(function () {
       }
     });
 
+    const paymentMethod = $('#paymentMethod').val();
+    const hyperpayPassword = $('#driver_hyperpay_password').val();
+    const beneficiaryName = $('#driver_beneficiary_name_input').val();
+
+    if (paymentMethod === 'hyperpay' && (!hyperpayPassword || hyperpayPassword.trim() === '')) {
+      showAlert('error', 'يرجى إدخال كلمة مرور المشرف لتأكيد عملية التحويل عبر HyperPay', 5000);
+      $('#driver_hyperpay_password').focus();
+      return;
+    }
+
     // Show loading state
     $('#confirmPayment').prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>معالجة...');
 
@@ -468,10 +478,9 @@ $(document).ready(function () {
         total_amount: totalAmount,
         transactions: transactionData,
         notes: notes,
-        payment_method: $('#paymentMethod').val(),
-        purpose: $('#paymentMethod').val() === 'hyperpay' 
-          ? ($('#driver_payout_purpose').val() === 'custom' ? $('#driver_custom_purpose').val() : $('#driver_payout_purpose').val()) 
-          : null,
+        payment_method: paymentMethod,
+        password: hyperpayPassword,
+        beneficiary_name: beneficiaryName,
         _token: $('meta[name="csrf-token"]').attr('content')
       },
       success: function (response) {

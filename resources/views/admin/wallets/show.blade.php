@@ -315,56 +315,6 @@
                                                     <small class="text-muted d-block mt-1">يجب أن يكون بالإنجليزية كما هو مسجل لدى البنك (تم تحويله تلقائياً ويمكنك تعديله)</small>
                                                 </div>
 
-                                                <!-- Purpose Code Selection -->
-                                                <div class="mb-3 payout-purpose-group">
-                                                    <label class="form-label fw-bold text-dark d-flex justify-content-between" for="payout_purpose">
-                                                        <span><i class="ti ti-category me-1 text-primary"></i>{{ __('الغرض من التحويل (Purpose Code)') }} <span class="text-danger">*</span></span>
-                                                        <small class="text-muted">مطلوب من البنك</small>
-                                                    </label>
-                                                    <select name="purpose" id="payout_purpose" class="form-select bg-white text-dark border-primary payout-purpose-select" onchange="
-                                                        var box = this.closest('.payout-purpose-group').querySelector('.custom-purpose-box');
-                                                        var input = box.querySelector('.custom-purpose-text');
-                                                        if (this.value === 'custom') {
-                                                            box.style.display = 'block';
-                                                            this.name = '';
-                                                            input.name = 'purpose';
-                                                            input.focus();
-                                                        } else {
-                                                            box.style.display = 'none';
-                                                            this.name = 'purpose';
-                                                            input.name = '';
-                                                        }
-                                                    ">
-                                                        <optgroup label="رموز البنك الأهلي السعودي المعتمدة (SNB Purpose Codes - الموصى بها)">
-                                                            <option value="BA" selected>BA - رواتب ومستحقات عاملين (Payroll - المعتمد للرواتب)</option>
-                                                            <option value="BC">BC - مصاريف تشغيلية (Operating Expenses)</option>
-                                                            <option value="BD">BD - حوافز وبدلات (Incentives and Allowances)</option>
-                                                            <option value="BB">BB - شراء بضائع وخدمات (Buying Goods)</option>
-                                                            <option value="BF">BF - تسوية مطالبات (Claims)</option>
-                                                            <option value="BE">BE - توزيع أرباح (Dividends)</option>
-                                                        </optgroup>
-                                                        <optgroup label="رموز مؤسسة النقد القياسية (SAMA / ISO 20022)">
-                                                            <option value="SALA">SALA - رواتب ومسيرات (Salary / Payroll)</option>
-                                                            <option value="COMM">COMM - عمولات وأتعاب (Commission)</option>
-                                                            <option value="OTHR">OTHR - مدفوعات أخرى (Other Payments)</option>
-                                                            <option value="GDSV">GDSV - سلع وخدمات (Goods & Services)</option>
-                                                            <option value="SUPP">SUPP - مستحقات موردين وشركاء (Supplier Payment)</option>
-                                                            <option value="BONU">BONU - مكافآت وبدلات (Bonus)</option>
-                                                            <option value="DIVI">DIVI - توزيعات أرباح (Dividends)</option>
-                                                            <option value="INVS">INVS - عوائد استثمارية (Investment)</option>
-                                                        </optgroup>
-                                                        <optgroup label="الرموز الرقمية (HyperSplits Sandbox)">
-                                                            <option value="10">10 - تحويل رواتب ومستحقات (Salary Transfer)</option>
-                                                            <option value="11">11 - تسوية عامة (Settlement / Payout)</option>
-                                                        </optgroup>
-                                                        <option value="custom">✏️ إدخال رمز مخصص يدوي (Custom Code)...</option>
-                                                    </select>
-                                                    <div class="custom-purpose-box mt-2" style="display: none;">
-                                                        <input type="text" class="form-control bg-white custom-purpose-text" placeholder="اكتب رمز الغرض المطلوب من البنك (مثال: BA أو SALA أو BC)">
-                                                    </div>
-                                                    <small class="text-muted d-block mt-1">اختر الرمز المعتمد في بوابة هايبرباي (الافتراضي: BA أو SALA)</small>
-                                                </div>
-
                                                 <!-- Admin Password -->
                                                 <div class="mb-2">
                                                     <label class="form-label text-danger fw-bold" for="hyperpay_password">

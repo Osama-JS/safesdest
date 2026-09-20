@@ -205,7 +205,7 @@
 
                             <div class="col-12 approve-fields">
                                 <label class="form-label">{{ __('Payment Method') }}</label>
-                                <select name="payment_method" id="payment_method" class="form-select select2">
+                                <select name="payment_method" id="payment_method" class="form-select select2" onchange="toggleWithdrawalPaymentMethod(this.value)">
                                     <option value="bank_transfer">{{ __('Bank Transfer') }}</option>
                                     <option value="cash">{{ __('Cash Handover') }}</option>
                                     <option value="hyperpay">{{ __('HyperPay HyperSplits (Auto)') }}</option>
@@ -347,4 +347,32 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleWithdrawalPaymentMethod(val) {
+            var isHyperPay = (val === 'hyperpay');
+            var receiptContainer = document.getElementById('receipt_field_container');
+            var bankInfo = document.getElementById('driver_bank_info');
+            var beneficiaryContainer = document.getElementById('hyperpay_beneficiary_container');
+            var passwordContainer = document.getElementById('hyperpay_password_container');
+            var passwordInput = document.getElementById('hyperpay_password');
+
+            if (receiptContainer) receiptContainer.style.display = isHyperPay ? 'none' : 'block';
+            if (bankInfo) bankInfo.style.display = isHyperPay ? 'block' : 'none';
+            if (beneficiaryContainer) beneficiaryContainer.style.display = isHyperPay ? 'block' : 'none';
+            if (passwordContainer) passwordContainer.style.display = isHyperPay ? 'block' : 'none';
+            if (passwordInput) {
+                passwordInput.required = isHyperPay;
+                if (!isHyperPay) passwordInput.value = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ !== 'undefined') {
+                $(document).on('change select2:select', '#payment_method', function () {
+                    toggleWithdrawalPaymentMethod($(this).val());
+                });
+            }
+        });
+    </script>
 @endsection

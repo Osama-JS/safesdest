@@ -292,7 +292,8 @@ class WalletsController extends Controller
           'transactions.*.payment_amount' => 'required|numeric|min:0',
           'notes' => 'nullable|string|max:500',
           'payment_method' => 'nullable|string|in:manual,hyperpay',
-          'purpose' => 'nullable|string|max:20'
+          'password' => 'required_if:payment_method,hyperpay|string',
+          'beneficiary_name' => 'nullable|string|max:150',
         ]);
 
         DB::beginTransaction();
@@ -303,9 +304,29 @@ class WalletsController extends Controller
             // --- HyperPay Payout Logic ---
             $hyperPayNotes = '';
             if ($request->payment_method === 'hyperpay') {
+                if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')
+                    ], 422);
+                }
+
                 if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
                     throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
                 }
+
+                $countryMapping = [
+                    'السعودية' => 'SA',
+                    'الإمارات' => 'AE',
+                    'الكويت' => 'KW',
+                    'عمان' => 'OM',
+                    'البحرين' => 'BH',
+                    'قطر' => 'QA',
+                    'مصر' => 'EG',
+                    'الأردن' => 'JO',
+                ];
+                $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
+                $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
 
                 $externalId = 'WP-' . $wallet->id . '-' . time();
                 $payoutService = app(HyperPayPayoutService::class);
@@ -313,14 +334,14 @@ class WalletsController extends Controller
                     'amount' => $request->total_amount,
                     'currency' => 'SAR',
                     'externalId' => $externalId,
-                    'beneficiary_name' => $request->beneficiary_name ?: $driver->beneficiary_name,
+                    'beneficiary_name' => $beneficiaryName,
                     'address1' => $driver->bank_address1 ?? $driver->address,
                     'address2' => $driver->bank_address2 ?? '.',
                     'city' => $driver->bank_city ?? 'Riyadh',
-                    'country' => $driver->bank_country ?? 'SA',
+                    'country' => $countryCode,
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
-                    'purpose' => $request->purpose ?: 'BA',
+                    'purpose' => 'BA',
                     'description' => "Wallet Payment for {$driver->beneficiary_name}"
                 ]);
 

@@ -117,17 +117,22 @@ $(function () {
   });
 
   // Handle Payment Method Change
-  $('#payment_method').on('change', function () {
-    if ($(this).val() === 'hyperpay') {
-      $('#receipt_field_container').hide();
-      $('#driver_bank_info').slideDown();
-      $('.hyperpay-fields').slideDown();
-      $('#hyperpay_password').prop('required', true);
+  $('#payment_method').on('change select2:select', function () {
+    var val = $(this).val();
+    if (typeof window.toggleWithdrawalPaymentMethod === 'function') {
+      window.toggleWithdrawalPaymentMethod(val);
     } else {
-      $('#receipt_field_container').show();
-      $('#driver_bank_info').slideUp();
-      $('.hyperpay-fields').slideUp();
-      $('#hyperpay_password').prop('required', false).val('');
+      if (val === 'hyperpay') {
+        $('#receipt_field_container').hide();
+        $('#driver_bank_info').slideDown();
+        $('.hyperpay-fields').slideDown();
+        $('#hyperpay_password').prop('required', true);
+      } else {
+        $('#receipt_field_container').show();
+        $('#driver_bank_info').slideUp();
+        $('.hyperpay-fields').slideUp();
+        $('#hyperpay_password').prop('required', false).val('');
+      }
     }
   });
 
@@ -169,6 +174,9 @@ $(function () {
     // Reset to Approve view
     $('#withdrawal_action').val('approve').trigger('change');
     $('#payment_method').val('bank_transfer').trigger('change');
+    if (typeof window.toggleWithdrawalPaymentMethod === 'function') {
+      window.toggleWithdrawalPaymentMethod('bank_transfer');
+    }
 
     $('#processWithdrawalModal').modal('show');
   });

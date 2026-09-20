@@ -60,20 +60,57 @@
         moveCustomNav(); // ØªÙ†Ù ÙŠØ° Ø£ÙˆÙ„ÙŠ
         window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
 
-        // Handler for View Brokers Breakdown Modal
+        // =========================================================================
+        // Diagnostic Logging & Handlers for Brokers Modal
+        // =========================================================================
+        $(function () {
+            console.log('%c[Brokers System] Script Initialized in Page', 'background: #6f42c1; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;');
+            console.log('[Brokers System] DOM Check:', {
+                '#viewBrokersBreakdownModal exists': $('#viewBrokersBreakdownModal').length > 0,
+                '#brokerModal exists': $('#brokerModal').length > 0,
+                '#task-broker-row-template exists': $('#task-broker-row-template').length > 0,
+                'jQuery version': typeof $ !== 'undefined' ? $.fn.jquery : 'Not Loaded',
+                'jQuery modal plugin': typeof $ !== 'undefined' && typeof $.fn.modal === 'function',
+                'bootstrap global': typeof bootstrap !== 'undefined' ? bootstrap : 'Not Global',
+                'baseUrl': typeof baseUrl !== 'undefined' ? baseUrl : (typeof window.baseUrl !== 'undefined' ? window.baseUrl : 'Not Defined')
+            });
+        });
+
+        // Handler for View Brokers Breakdown Modal (عرض تفاصيل وحصص الوسطاء)
         $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
-            const taskId = $(this).data('id');
-            if (!taskId) return;
+            const $btn = $(this);
+            const taskId = $btn.data('id');
+
+            console.group('%c[Brokers Breakdown] Button Clicked! Task ID: ' + taskId, 'background: #0d6efd; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold;');
+            console.log('1. Click Event Target:', this);
+            console.log('2. Task ID extracted:', taskId);
+
+            if (!taskId) {
+                console.error('[Brokers Breakdown] Error: No data-id found on clicked button!');
+                console.groupEnd();
+                return;
+            }
 
             const modalEl = document.getElementById('viewBrokersBreakdownModal');
-            if (!modalEl) return;
+            console.log('3. Modal Element in DOM (#viewBrokersBreakdownModal):', modalEl);
+
+            if (!modalEl) {
+                console.error('[Brokers Breakdown] CRITICAL: Modal element #viewBrokersBreakdownModal NOT FOUND in DOM!');
+                alert('خطأ: عنصر المودال #viewBrokersBreakdownModal غير موجود في الصفحة!');
+                console.groupEnd();
+                return;
+            }
 
             const showModal = () => {
                 if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                    console.log('4. Showing modal using jQuery plugin: $(\'#viewBrokersBreakdownModal\').modal(\'show\')');
                     $('#viewBrokersBreakdownModal').modal('show');
                 } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    console.log('4. Showing modal using Bootstrap 5 Native: bootstrap.Modal.getOrCreateInstance');
                     bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                } else {
+                    console.error('4. Neither jQuery modal nor Bootstrap.Modal is available!');
                 }
             };
 
@@ -91,46 +128,72 @@
             $('#vbb-loading').show();
             $('#vbb-content').hide();
 
-            const apiBase = typeof baseUrl !== 'undefined' ? baseUrl : '/';
+            const apiBase = typeof baseUrl !== 'undefined' ? baseUrl : (typeof window.baseUrl !== 'undefined' ? window.baseUrl : '/');
+            const targetUrl = `${apiBase}admin/tasks/brokers-breakdown/${taskId}`;
+
+            console.log('5. Sending AJAX Request:', {
+                'Method': 'GET',
+                'URL': targetUrl,
+                'apiBase': apiBase,
+                'taskId': taskId
+            });
 
             $.ajax({
-                url: `${apiBase}admin/tasks/brokers-breakdown/${taskId}`,
+                url: targetUrl,
                 type: 'GET',
                 dataType: 'json',
-                success: function (res) {
+                beforeSend: function (xhr) {
+                    console.log('6. AJAX beforeSend: Request dispatched to server...');
+                },
+                success: function (res, statusText, xhr) {
+                    console.log('%c7. AJAX Success! HTTP Status: ' + xhr.status, 'color: green; font-weight: bold;', res);
+
                     if (res.status !== 1) {
+                        console.warn('[Brokers Breakdown] Server returned non-success status:', res);
                         hideModal();
                         Swal.fire({
                             icon: 'error',
                             title: 'خطأ',
                             text: res.error || 'تعذر تحميل بيانات الوسطاء'
                         });
+                        console.groupEnd();
                         return;
                     }
 
                     const d = res.data;
+                    console.log('8. Parsed Breakdown Data:', {
+                        'Total Price': d.total_price,
+                        'Driver Price': d.driver ? d.driver.driver_price : null,
+                        'Driver Name': d.driver ? d.driver.name : null,
+                        'Brokers Count': d.brokers_count,
+                        'Total Brokers Share': d.total_brokers_share,
+                        'Platform Gross': d.platform_gross,
+                        'Platform Remaining': d.platform_remaining,
+                        'Brokers List': d.brokers
+                    });
+
                     $('#vbb-loading').hide();
                     $('#vbb-content').show();
 
                     // Subtitle info
                     const statusText = d.closed ? 'مغلقة' : d.status;
-                    $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver.name}`);
+                    $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver ? d.driver.name : '-'}`);
 
                     // 1. Stat cards
-                    $('#vbb-total-price').text(parseFloat(d.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-                    $('#vbb-driver-price').text(parseFloat(d.driver.driver_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-                    $('#vbb-driver-name').text(d.driver.name + (d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
+                    $('#vbb-total-price').text(parseFloat(d.total_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-driver-price').text(parseFloat(d.driver ? d.driver.driver_price : 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-driver-name').text((d.driver ? d.driver.name : '-') + (d.driver && d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
                     
-                    $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
                     $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
 
-                    $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-                    $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross).toFixed(2)} ر.س`);
+                    $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+                    $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross || 0).toFixed(2)} ر.س`);
 
                     // 2. Progress Split Bar
                     const total = parseFloat(d.total_price) || 1;
-                    const driverPct = Math.min(100, (parseFloat(d.driver.driver_price) / total) * 100);
-                    const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share) / total) * 100);
+                    const driverPct = Math.min(100, (parseFloat(d.driver ? d.driver.driver_price : 0) / total) * 100);
+                    const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share || 0) / total) * 100);
                     const platformPct = Math.max(0, 100 - driverPct - brokersPct);
 
                     $('#vbb-bar-driver').css('width', driverPct + '%').attr('title', `السائق: ${driverPct.toFixed(1)}%`);
@@ -171,24 +234,102 @@
                             `;
                             $tbody.append(row);
                         });
+                        console.log('9. Rendered ' + d.brokers.length + ' broker rows into table.');
                     } else {
                         $('#vbb-no-brokers').show();
+                        console.log('9. No brokers linked to this task. Showing empty state.');
                     }
 
                     // Quick Connect Button handler
                     $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
                         hideModal();
+                        console.log('[Brokers Breakdown] Triggering Connect Broker for Task #' + taskId);
                         $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
                     });
+
+                    console.groupEnd();
                 },
-                error: function () {
+                error: function (xhr, status, error) {
+                    console.error('%c[Brokers Breakdown] AJAX Request FAILED!', 'background: red; color: white; font-weight: bold;', {
+                        'Status': xhr.status,
+                        'StatusText': xhr.statusText,
+                        'ResponseText': xhr.responseText,
+                        'Error': error
+                    });
                     hideModal();
                     Swal.fire({
                         icon: 'error',
-                        title: 'خطأ',
-                        text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء'
+                        title: 'خطأ (' + xhr.status + ')',
+                        text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء: ' + (xhr.responseJSON?.message || error || 'خطأ غير معروف')
+                    });
+                    console.groupEnd();
+                }
+            });
+        });
+
+        // Handler for Connect Broker (ربط وسيط)
+        $(document).off('click', '.edit-task-broker').on('click', '.edit-task-broker', function (e) {
+            const id = $(this).data('id');
+            console.group('%c[Connect Broker] Clicked! Task ID: ' + id, 'background: #198754; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold;');
+            console.log('Task ID:', id);
+
+            const apiBase = typeof baseUrl !== 'undefined' ? baseUrl : (typeof window.baseUrl !== 'undefined' ? window.baseUrl : '/');
+            const targetUrl = `${apiBase}admin/tasks/broker/edit/${id}`;
+            console.log('Request URL:', targetUrl);
+
+            $.get(targetUrl, function (data) {
+                console.log('Connect Broker response:', data);
+                if (data.status === 2) {
+                    console.warn('Connect Broker status 2 error:', data.error);
+                    if (typeof showAlert === 'function') {
+                        showAlert('error', data.error);
+                    } else {
+                        alert(data.error);
+                    }
+                    console.groupEnd();
+                    return;
+                }
+                $('#broker-task-id').val(data.data.id);
+                $('#task-brokers-container').empty();
+
+                if (typeof taskBrokerIndex !== 'undefined') {
+                    taskBrokerIndex = 0;
+                }
+
+                if (data.data.brokers && data.data.brokers.length > 0) {
+                    data.data.brokers.forEach(broker => {
+                        if (typeof createTaskBrokerRow === 'function') {
+                            const idx = typeof taskBrokerIndex !== 'undefined' ? taskBrokerIndex : 0;
+                            let $row = $(createTaskBrokerRow(idx));
+                            $row.find('[name="brokers['+idx+'][broker_id]"]').val(broker.pivot.broker_id);
+                            $row.find('[name="brokers['+idx+'][commission_type]"]').val(broker.pivot.commission_type);
+                            $row.find('[name="brokers['+idx+'][commission_value]"]').val(broker.pivot.commission_value);
+                            $('#task-brokers-container').append($row);
+                            const $select = $row.find('.broker-select');
+                            $select.wrap('<div class="position-relative"></div>').select2({
+                                dropdownParent: $select.parent(),
+                                width: '100%'
+                            });
+                            if (typeof taskBrokerIndex !== 'undefined') taskBrokerIndex++;
+                        }
                     });
                 }
+
+                if (typeof $ !== 'undefined' && typeof $('#brokerModal').modal === 'function') {
+                    console.log('Opening #brokerModal via jQuery');
+                    $('#brokerModal').modal('show');
+                } else {
+                    const bEl = document.getElementById('brokerModal');
+                    if (bEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        console.log('Opening #brokerModal via bootstrap.Modal');
+                        bootstrap.Modal.getOrCreateInstance(bEl).show();
+                    }
+                }
+                $('#brokerTitle').html(`{{ __('Connect Broker') }}: <span class="bg-info text-white px-2 rounded">#${id}</span>`);
+                console.groupEnd();
+            }).fail(function (xhr, status, error) {
+                console.error('Connect Broker AJAX FAILED:', xhr.status, xhr.responseText);
+                console.groupEnd();
             });
         });
     </script>

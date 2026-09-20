@@ -527,16 +527,34 @@ $(function () {
   // Handler for View Brokers Breakdown Modal
   $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
     e.preventDefault();
-    const taskId = $(this).data('id');
-    if (!taskId) return;
+    const $btn = $(this);
+    const taskId = $btn.data('id');
+
+    console.group('%c[Brokers Breakdown - list.js] Clicked! Task ID: ' + taskId, 'background: #0d6efd; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold;');
+    console.log('1. Click Target:', this);
+    console.log('2. Task ID:', taskId);
+
+    if (!taskId) {
+      console.error('[Brokers Breakdown] Error: No task ID found!');
+      console.groupEnd();
+      return;
+    }
 
     const modalEl = document.getElementById('viewBrokersBreakdownModal');
-    if (!modalEl) return;
+    console.log('3. Modal Element (#viewBrokersBreakdownModal):', modalEl);
+
+    if (!modalEl) {
+      console.error('[Brokers Breakdown] Modal element #viewBrokersBreakdownModal NOT in DOM!');
+      console.groupEnd();
+      return;
+    }
 
     const showModal = () => {
       if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+        console.log('4. Opening modal via jQuery: $(\'#viewBrokersBreakdownModal\').modal(\'show\')');
         $('#viewBrokersBreakdownModal').modal('show');
       } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        console.log('4. Opening modal via bootstrap.Modal');
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
       }
     };
@@ -555,41 +573,52 @@ $(function () {
     $('#vbb-loading').show();
     $('#vbb-content').hide();
 
+    const apiBase = typeof baseUrl !== 'undefined' ? baseUrl : (typeof window.baseUrl !== 'undefined' ? window.baseUrl : '/');
+    const targetUrl = `${apiBase}admin/tasks/brokers-breakdown/${taskId}`;
+
+    console.log('5. Sending AJAX:', targetUrl);
+
     $.ajax({
-      url: `${baseUrl}admin/tasks/brokers-breakdown/${taskId}`,
+      url: targetUrl,
       type: 'GET',
       dataType: 'json',
-      success: function (res) {
+      success: function (res, statusText, xhr) {
+        console.log('%c6. AJAX Response (HTTP ' + xhr.status + '):', 'color: green; font-weight: bold;', res);
+
         if (res.status !== 1) {
+          console.warn('[Brokers Breakdown] Non-success response:', res);
           hideModal();
           Swal.fire({
             icon: 'error',
             title: 'خطأ',
             text: res.error || 'تعذر تحميل بيانات الوسطاء'
           });
+          console.groupEnd();
           return;
         }
 
         const d = res.data;
+        console.log('7. Loaded Data for Breakdown:', d);
+
         $('#vbb-loading').hide();
         $('#vbb-content').show();
 
         const statusText = d.closed ? 'مغلقة' : d.status;
-        $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver.name}`);
+        $('#vbb-task-subtitle').text(`حالة المهمة: ${statusText} | السائق: ${d.driver ? d.driver.name : '-'}`);
 
-        $('#vbb-total-price').text(parseFloat(d.total_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-driver-price').text(parseFloat(d.driver.driver_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-driver-name').text(d.driver.name + (d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
+        $('#vbb-total-price').text(parseFloat(d.total_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-driver-price').text(parseFloat(d.driver ? d.driver.driver_price : 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-driver-name').text((d.driver ? d.driver.name : '-') + (d.driver && d.driver.team && d.driver.team !== '-' ? ` (${d.driver.team})` : ''));
         
-        $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-brokers-share').text(parseFloat(d.total_brokers_share || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
         $('#vbb-brokers-count-text').text(`${d.brokers_count} ${d.brokers_count === 1 ? 'وسيط' : 'وسطاء'}`);
 
-        $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
-        $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross).toFixed(2)} ر.س`);
+        $('#vbb-platform-remaining').text(parseFloat(d.platform_remaining || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ر.س');
+        $('#vbb-platform-gross-text').text(`إجمالي العمولة: ${parseFloat(d.platform_gross || 0).toFixed(2)} ر.س`);
 
         const total = parseFloat(d.total_price) || 1;
-        const driverPct = Math.min(100, (parseFloat(d.driver.driver_price) / total) * 100);
-        const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share) / total) * 100);
+        const driverPct = Math.min(100, (parseFloat(d.driver ? d.driver.driver_price : 0) / total) * 100);
+        const brokersPct = Math.min(100, (parseFloat(d.total_brokers_share || 0) / total) * 100);
         const platformPct = Math.max(0, 100 - driverPct - brokersPct);
 
         $('#vbb-bar-driver').css('width', driverPct + '%').attr('title', `السائق: ${driverPct.toFixed(1)}%`);
@@ -637,14 +666,23 @@ $(function () {
           hideModal();
           $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
         });
+
+        console.groupEnd();
       },
-      error: function () {
+      error: function (xhr, status, error) {
+        console.error('%c[Brokers Breakdown] Request FAILED:', 'background: red; color: white;', {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          responseText: xhr.responseText,
+          error: error
+        });
         hideModal();
         Swal.fire({
           icon: 'error',
-          title: 'خطأ',
-          text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء'
+          title: 'خطأ (' + xhr.status + ')',
+          text: 'فشل الاتصال بالخادم لجلب بيانات الوسطاء: ' + (xhr.responseJSON?.message || error || 'خطأ غير معروف')
         });
+        console.groupEnd();
       }
     });
   });

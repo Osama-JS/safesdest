@@ -905,6 +905,38 @@
                     <i class="ti ti-plus me-1"></i> {{ __('Add Broker') }}
                 </button>
 
+                @if(!isset($hasTaskBrokerTemplate))
+                <script type="text/template" id="task-broker-row-template">
+                    <div class="row broker-row mb-3 align-items-end" data-index="{index}">
+                        <div class="col-md-5">
+                            <label class="form-label">{{ __('Truck Broker') }}</label>
+                            <select name="brokers[{index}][broker_id]" class="form-select broker-select" required>
+                                <option value="">{{ __('Select Broker') }}</option>
+                                @if(isset($brokers))
+                                    @foreach ($brokers as $broker)
+                                        <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->id }})</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ __('Commission Type') }}</label>
+                            <select name="brokers[{index}][commission_type]" class="form-select" required>
+                                <option value="percentage">{{ __('Percentage (%)') }}</option>
+                                <option value="fixed">{{ __('Fixed Amount') }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ __('Value') }}</label>
+                            <input type="number" name="brokers[{index}][commission_value]" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-sm btn-icon btn-danger remove-task-broker-row"><i class="ti ti-trash"></i></button>
+                        </div>
+                    </div>
+                </script>
+                @endif
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary"
                         data-bs-dismiss="modal">{{ __('Close') }}</button>

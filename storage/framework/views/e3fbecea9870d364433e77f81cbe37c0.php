@@ -30,24 +30,9 @@
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/ajax.js']); ?>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/tasks/list.js']); ?>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/spical.js']); ?>
-    <?php
-        $authUser = auth()->user();
-        $canViewCommissions = $authUser && (
-            $authUser->can('view_task_commissions') 
-            || $authUser->hasRole(['Owner', 'Admin', 'Super Admin']) 
-            || (isset($authUser->role) && in_array(strtolower($authUser->role->name), ['owner', 'admin', 'super admin']))
-        );
-        $canViewTotalPrice = $authUser && (
-            $authUser->can('view_task_total_price') 
-            || $authUser->hasRole(['Owner', 'Admin', 'Super Admin']) 
-            || (isset($authUser->role) && in_array(strtolower($authUser->role->name), ['owner', 'admin', 'super admin']))
-        );
-    ?>
     <script>
-        window.canViewCommissions = <?php echo e($canViewCommissions ? 'true' : 'false'); ?>;
-        const canViewCommissions = window.canViewCommissions;
-        window.canViewTotalPrice = <?php echo e($canViewTotalPrice ? 'true' : 'false'); ?>;
-        const canViewTotalPrice = window.canViewTotalPrice;
+        const canViewCommissions = <?php echo e(auth()->user()->can('view_task_commissions') ? 'true' : 'false'); ?>;
+        const canViewTotalPrice = <?php echo e(auth()->user()->can('view_task_total_price') ? 'true' : 'false'); ?>;
     </script>
     <script>
         const navContent = document.querySelector('#navbar-custom-nav-container');
@@ -56,13 +41,13 @@
 
         function moveCustomNav() {
             if (window.innerWidth < 1124) {
-                // شاشة صغيرة، انقل المحتوى إلى الأسفل
+                // Ø´Ø§Ø´Ø© ØµØºÙŠØ±Ø©ØŒ Ø§Ù†Ù‚Ù„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ø§Ù„Ø£Ø³ÙÙ„
                 if (originalContent && mobileContainer && mobileContainer.innerHTML.trim() === '') {
                     mobileContainer.innerHTML = originalContent;
                     navContent.innerHTML = '';
                 }
             } else {
-                // شاشة كبيرة، أعد المحتوى إلى مكانه الأصلي
+                // Ø´Ø§Ø´Ø© ÙƒØ¨ÙŠØ±Ø©ØŒ Ø£Ø¹Ø¯ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¥Ù„Ù‰ Ù…ÙƒØ§Ù†Ù‡ Ø§Ù„Ø£ØµÙ„ÙŠ
                 if (originalContent && navContent && navContent.innerHTML.trim() === '') {
                     navContent.innerHTML = originalContent;
                     mobileContainer.innerHTML = '';
@@ -70,22 +55,35 @@
             }
         }
 
-        moveCustomNav(); // تنفيذ أولي
-        window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
+        moveCustomNav(); // ØªÙ†Ù ÙŠØ° Ø£ÙˆÙ„ÙŠ
+        window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
 
         // Handler for View Brokers Breakdown Modal
-        $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+        $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
             const taskId = $(this).data('id');
             if (!taskId) return;
 
             const modalEl = document.getElementById('viewBrokersBreakdownModal');
             if (!modalEl) return;
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                bootstrap.Modal.getOrCreateInstance(modalEl).show();
-            } else if (typeof $ !== 'undefined' && typeof $(modalEl).modal === 'function') {
-                $(modalEl).modal('show');
-            }
+
+            const showModal = () => {
+                if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                    $('#viewBrokersBreakdownModal').modal('show');
+                } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            };
+
+            const hideModal = () => {
+                if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                    $('#viewBrokersBreakdownModal').modal('hide');
+                } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                }
+            };
+
+            showModal();
 
             $('#vbb-task-id-badge').text('#' + taskId);
             $('#vbb-loading').show();
@@ -99,7 +97,7 @@
                 dataType: 'json',
                 success: function (res) {
                     if (res.status !== 1) {
-                        modal.hide();
+                        hideModal();
                         Swal.fire({
                             icon: 'error',
                             title: 'خطأ',
@@ -177,12 +175,12 @@
 
                     // Quick Connect Button handler
                     $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
-                        modal.hide();
+                        hideModal();
                         $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
                     });
                 },
                 error: function () {
-                    modal.hide();
+                    hideModal();
                     Swal.fire({
                         icon: 'error',
                         title: 'خطأ',
@@ -923,7 +921,7 @@
 
 
 
-    <?php echo $__env->make('admin.tasks.from-modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+    <?php echo $__env->make('admin.tasks.from-modal', ['hasTaskBrokerTemplate' => true], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
     <?php if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com'): ?>
         <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">

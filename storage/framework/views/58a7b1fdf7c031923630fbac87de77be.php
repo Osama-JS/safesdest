@@ -896,6 +896,38 @@
 
                 </button>
 
+                <?php if(!isset($hasTaskBrokerTemplate)): ?>
+                <script type="text/template" id="task-broker-row-template">
+                    <div class="row broker-row mb-3 align-items-end" data-index="{index}">
+                        <div class="col-md-5">
+                            <label class="form-label"><?php echo e(__('Truck Broker')); ?></label>
+                            <select name="brokers[{index}][broker_id]" class="form-select broker-select" required>
+                                <option value=""><?php echo e(__('Select Broker')); ?></option>
+                                <?php if(isset($brokers)): ?>
+                                    <?php $__currentLoopData = $brokers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $broker): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($broker->id); ?>"><?php echo e($broker->name); ?> (<?php echo e($broker->id); ?>)</option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><?php echo e(__('Commission Type')); ?></label>
+                            <select name="brokers[{index}][commission_type]" class="form-select" required>
+                                <option value="percentage"><?php echo e(__('Percentage (%)')); ?></option>
+                                <option value="fixed"><?php echo e(__('Fixed Amount')); ?></option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label"><?php echo e(__('Value')); ?></label>
+                            <input type="number" name="brokers[{index}][commission_value]" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-sm btn-icon btn-danger remove-task-broker-row"><i class="ti ti-trash"></i></button>
+                        </div>
+                    </div>
+                </script>
+                <?php endif; ?>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-label-secondary"
                         data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>

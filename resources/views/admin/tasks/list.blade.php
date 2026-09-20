@@ -61,14 +61,31 @@
         window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
 
         // Handler for View Brokers Breakdown Modal
-        $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
+        $(document).off('click', '.view-task-brokers-breakdown-btn').on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
             const taskId = $(this).data('id');
             if (!taskId) return;
 
             const modalEl = document.getElementById('viewBrokersBreakdownModal');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            if (!modalEl) return;
+
+            const showModal = () => {
+                if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                    $('#viewBrokersBreakdownModal').modal('show');
+                } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            };
+
+            const hideModal = () => {
+                if (typeof $ !== 'undefined' && typeof $('#viewBrokersBreakdownModal').modal === 'function') {
+                    $('#viewBrokersBreakdownModal').modal('hide');
+                } else if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                }
+            };
+
+            showModal();
 
             $('#vbb-task-id-badge').text('#' + taskId);
             $('#vbb-loading').show();
@@ -82,7 +99,7 @@
                 dataType: 'json',
                 success: function (res) {
                     if (res.status !== 1) {
-                        modal.hide();
+                        hideModal();
                         Swal.fire({
                             icon: 'error',
                             title: 'خطأ',
@@ -160,12 +177,12 @@
 
                     // Quick Connect Button handler
                     $('#vbb-connect-more-btn, #vbb-empty-connect-btn').off('click').on('click', function () {
-                        modal.hide();
+                        hideModal();
                         $(`.edit-task-broker[data-id="${taskId}"]`).first().trigger('click');
                     });
                 },
                 error: function () {
-                    modal.hide();
+                    hideModal();
                     Swal.fire({
                         icon: 'error',
                         title: 'خطأ',
@@ -884,7 +901,7 @@
 
 
 
-    @include('admin.tasks.from-modal')
+    @include('admin.tasks.from-modal', ['hasTaskBrokerTemplate' => true])
 
     @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
         <div class="modal fade" id="investmentConflictsModal" tabindex="-1" aria-hidden="true">

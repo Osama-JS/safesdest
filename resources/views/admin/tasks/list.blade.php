@@ -75,7 +75,6 @@
         moveCustomNav(); // تنفيذ أولي
         window.addEventListener('resize', moveCustomNav); // تنفيذ عند تغيير حجم الشاشة
 
-        @if($canViewCommissions)
         // Handler for View Brokers Breakdown Modal
         $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
@@ -194,7 +193,6 @@
                 }
             });
         });
-        @endif
     </script>
 @endsection
 @section('task-isactive')
@@ -613,7 +611,6 @@
         </div>
     </div>
 
-    @if($canViewCommissions)
     <!-- View Brokers Breakdown Modal -->
     <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -756,7 +753,6 @@
             </div>
         </div>
     </div>
-    @endif
 
     <!-- Payment Request Modal -->
     <div class="modal fade" id="paymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">

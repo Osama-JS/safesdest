@@ -33,8 +33,10 @@
     @vite(['resources/js/admin/tasks/list.js'])
     @vite(['resources/js/spical.js'])
     <script>
-        const canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
-        const canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+        window.canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
+        const canViewCommissions = window.canViewCommissions;
+        window.canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+        const canViewTotalPrice = window.canViewTotalPrice;
     </script>
     <script>
         const navContent = document.querySelector('#navbar-custom-nav-container');
@@ -60,6 +62,7 @@
         moveCustomNav(); // ØªÙ†Ù ÙŠØ° Ø£ÙˆÙ„ÙŠ
         window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
 
+        @can('view_task_commissions')
         // Handler for View Brokers Breakdown Modal
         $(document).on('click', '.view-task-brokers-breakdown-btn', function (e) {
             e.preventDefault();
@@ -174,6 +177,7 @@
                 }
             });
         });
+        @endcan
     </script>
 @endsection
 @section('task-isactive')
@@ -592,6 +596,7 @@
         </div>
     </div>
 
+    @can('view_task_commissions')
     <!-- View Brokers Breakdown Modal -->
     <div class="modal fade" id="viewBrokersBreakdownModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -734,6 +739,7 @@
             </div>
         </div>
     </div>
+    @endcan
 
     <!-- Payment Request Modal -->
     <div class="modal fade" id="paymentRequestModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">

@@ -198,7 +198,7 @@ class WithdrawalRequestsController extends Controller
                         'iban' => str_replace(' ', '', $driver->iban_number),
                         'bic' => $driver->bic_code,
                         'purpose' => 'BA',
-                        'description' => "Payout for Driver #{$driver->id} - Withdrawal #{$withdrawal->id}"
+                        'description' => "Payout {$beneficiaryName}"
                     ]);
 
                     if (!$payoutResponse['status']) {

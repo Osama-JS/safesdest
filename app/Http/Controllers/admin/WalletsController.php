@@ -858,6 +858,7 @@ class WalletsController extends Controller
                     'الأردن' => 'JO',
                 ];
                 $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
+                $beneficiaryName = $req->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
 
                 $payoutService = app(HyperPayPayoutService::class);
                 $externalId = 'MT-' . $wallet->id . '-' . time();
@@ -865,7 +866,7 @@ class WalletsController extends Controller
                     'amount' => $req->amount,
                     'currency' => 'SAR',
                     'externalId' => $externalId,
-                    'beneficiary_name' => $req->beneficiary_name ?: $driver->beneficiary_name,
+                    'beneficiary_name' => $beneficiaryName,
                     'address1' => $driver->bank_address1 ?? $driver->address,
                     'address2' => $driver->bank_address2 ?? '.',
                     'city' => $driver->bank_city ?? 'Riyadh',
@@ -873,7 +874,7 @@ class WalletsController extends Controller
                     'iban' => str_replace(' ', '', $driver->iban_number),
                     'bic' => $driver->bic_code,
                     'purpose' => $req->purpose ?: 'BA',
-                    'description' => "Manual Payout for {$driver->beneficiary_name}"
+                    'description' => "Payout {$beneficiaryName}"
                 ]);
 
                 if (!$payoutResponse['status']) {

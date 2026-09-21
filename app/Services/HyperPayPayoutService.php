@@ -114,20 +114,29 @@ class HyperPayPayoutService
         try {
             $beneficiaryName = self::formatBeneficiaryName($data['beneficiary_name'] ?? '');
 
-            // Sanitize description: Max 35 chars, Alphanumeric only
-            $cleanDesc = trim(preg_replace('/[^A-Za-z0-9 ]/', '', $data['description'] ?? ''));
+            // Sanitize description: Max 35 chars, Alphanumeric and spaces only (NO dashes or special characters)
+            $cleanDesc = trim(preg_replace('/[^A-Za-z0-9 ]/', ' ', $data['description'] ?? ''));
             $cleanDesc = preg_replace('/\s+/', ' ', $cleanDesc);
             if (empty($cleanDesc) || strlen($cleanDesc) < 4 || in_array(strtolower($cleanDesc), ['manual payout for', 'payout for', 'wallet payment for'])) {
-                $cleanDesc = 'Payout ' . ($data['externalId'] ?? 'Driver');
+                $cleanExtId = preg_replace('/[^A-Za-z0-9]/', '', $data['externalId'] ?? '');
+                $cleanDesc = 'Payout ' . ($beneficiaryName ?: $cleanExtId);
+            }
+            // Strict sanitization: ensure ONLY A-Za-z0-9 and space, max 35 chars
+            $cleanDesc = trim(preg_replace('/[^A-Za-z0-9 ]/', '', $cleanDesc));
+            $cleanDesc = preg_replace('/\s+/', ' ', $cleanDesc);
+            if (empty($cleanDesc)) {
+                $cleanDesc = 'Payout Driver';
             }
             $description = substr($cleanDesc, 0, 35);
 
-            // Sanitize Addresses: Alphanumeric only
-            $address1 = preg_replace('/[^A-Za-z0-9 ]/', '', $data['address1'] ?? 'Riyadh');
-            if (empty(trim($address1))) $address1 = 'Riyadh';
+            // Sanitize Addresses: Alphanumeric and spaces only
+            $address1 = trim(preg_replace('/[^A-Za-z0-9 ]/', ' ', $data['address1'] ?? 'Riyadh'));
+            $address1 = preg_replace('/\s+/', ' ', $address1);
+            if (empty($address1)) $address1 = 'Riyadh';
             
-            $address2 = preg_replace('/[^A-Za-z0-9 ]/', '', $data['address2'] ?? '.');
-            if (empty(trim($address2))) $address2 = 'Street';
+            $address2 = trim(preg_replace('/[^A-Za-z0-9 ]/', ' ', $data['address2'] ?? 'Street'));
+            $address2 = preg_replace('/\s+/', ' ', $address2);
+            if (empty($address2)) $address2 = 'Street';
 
             // Purpose code for bank transfer (Default to BA / SALA)
             $purpose = !empty($data['purpose']) ? trim($data['purpose']) : $this->defaultPurpose;
@@ -181,12 +190,19 @@ class HyperPayPayoutService
             // Log full response for debugging
             Log::info('HyperPay Payout Response:', ['result' => $result]);
 
-            $responseCode = $result['responseCode'] ?? 'ERROR';
+            $rootResult = $result['result'] ?? $result;
+            $responseCode = $rootResult['responseCode'] ?? ($result['responseCode'] ?? 'ERROR');
             
             // Note: HyperSplits 2.0 returns payout details in an array
-            $payoutDetails = $result['payouts'][0] ?? $result;
+            $payoutDetails = $rootResult['payouts'][0] ?? ($result['payouts'][0] ?? $rootResult);
             $finalResponseCode = $payoutDetails['responseCode'] ?? $responseCode;
-            $finalMessage = $payoutDetails['responseMessage'] ?? ($result['responseMessage'] ?? 'Unknown Error');
+            $finalMessage = $payoutDetails['responseMessage'] ?? ($rootResult['responseMessage'] ?? ($result['responseMessage'] ?? 'Unknown Error'));
+
+            $errors = $rootResult['errors'] ?? ($result['errors'] ?? null);
+            if (!empty($errors) && is_array($errors)) {
+                $errorText = collect($errors)->flatten()->implode(' | ');
+                $finalMessage .= ': ' . $errorText;
+            }
 
             // Specific success codes for HyperSplits 2.0
             $isSuccessCode = in_array($finalResponseCode, ['00000', '00001', '33000', '33333']);

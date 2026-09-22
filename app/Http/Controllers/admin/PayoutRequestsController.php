@@ -105,12 +105,10 @@ class PayoutRequestsController extends Controller
 
             $driverHtml = '—';
             if ($payout->driver) {
-                $driverName = e($payout->driver->name);
+                $driverName = e($payout->driver->name ?? '—');
                 $driverMobile = e($payout->driver->mobile_number ?? $payout->driver->phone ?? '—');
-                $driverUrl = route('drivers.show', [
-                    'id'   => $payout->driver->id,
-                    'name' => $payout->driver->name ?: 'driver'
-                ]);
+                $driverSlug = urlencode($payout->driver->name ?? 'driver');
+                $driverUrl = url("admin/drivers/account/{$payout->driver->id}/{$driverSlug}");
                 $driverHtml = "<div><a href='{$driverUrl}' class='fw-bold text-primary'>{$driverName}</a><br><small class='text-muted' dir='ltr'>{$driverMobile}</small></div>";
             }
 

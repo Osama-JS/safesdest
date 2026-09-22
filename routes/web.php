@@ -709,7 +709,7 @@ Route::middleware('rate.limit')->group(function () {
 
 
                 Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
-                Route::get('/drivers/account/{id}/{name}', [DriversController::class, 'show'])->name('drivers.show');
+                Route::get('/drivers/account/{id}/{name?}', [DriversController::class, 'show'])->name('drivers.show');
                 Route::get('/drivers/tasks/', [DriversController::class, 'getCustomerTasks'])->name('drivers.tasks');
                 Route::post('/drivers', [DriversController::class, 'store'])->name('drivers.create');
                 Route::get('/drivers/data', [DriversController::class, 'getData'])->name('drivers.data');

@@ -145,8 +145,8 @@
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">{{ __('تصفية حسب الحالة') }}</label>
                     <select id="filter_status" class="form-select">
-                        <option value="">{{ __('جميع الحالات') }}</option>
-                        <option value="pending_approval" selected>{{ __('بانتظار المصادقة (تحتاج قرار)') }}</option>
+                        <option value="" selected>{{ __('جميع الحالات') }}</option>
+                        <option value="pending_approval">{{ __('بانتظار المصادقة (تحتاج قرار)') }}</option>
                         <option value="processing">{{ __('قيد المعالجة بالبنك') }}</option>
                         <option value="completed">{{ __('مكتمل بنجاح') }}</option>
                         <option value="rejected">{{ __('مرفوض') }}</option>

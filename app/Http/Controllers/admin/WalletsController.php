@@ -301,7 +301,7 @@ class WalletsController extends Controller
             $wallet = Wallet::where('user_type', 'driver')->with('driver')->findOrFail($request->wallet_id);
             $driver = $wallet->driver;
 
-            // --- HyperPay Payout Logic ---
+            // --- HyperPay Payout Logic (Step 1: Staging for Approval) ---
             $hyperPayNotes = '';
             if ($request->payment_method === 'hyperpay') {
                 if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password)) {
@@ -312,7 +312,24 @@ class WalletsController extends Controller
                 }
 
                 if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
-                    throw new \Exception(__('Driver bank details are incomplete for HyperPay Payout. Please update driver profile.'));
+                    throw new \Exception(__('بيانات الحساب البنكي للسائق غير مكتملة لتحويل HyperPay Payout. يرجى تحديث ملف السائق أولاً.'));
+                }
+
+                // Check if any requested transactions are already pending approval in another payout
+                $requestedTxIds = collect($request->transactions)->pluck('id')->toArray();
+                $existingPendingPayouts = \App\Models\HyperpayPayout::where('wallet_id', $wallet->id)
+                    ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                    ->get();
+
+                foreach ($existingPendingPayouts as $ep) {
+                    $epTxIds = collect($ep->transaction_details['transactions'] ?? [])->pluck('id')->toArray();
+                    $intersect = array_intersect($requestedTxIds, $epTxIds);
+                    if (!empty($intersect)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => __('بعض الحركات المحددة مسجلة بالفعل ضمن طلب دفع Payout آخر قيد الانتظار أو بانتظار المصادقة.')
+                        ], 422);
+                    }
                 }
 
                 $countryMapping = [
@@ -329,50 +346,37 @@ class WalletsController extends Controller
                 $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
 
                 $externalId = 'WP-' . $wallet->id . '-' . time();
-                $payoutService = app(HyperPayPayoutService::class);
-                $payoutResponse = $payoutService->sendPayout([
-                    'amount' => $request->total_amount,
-                    'currency' => 'SAR',
-                    'externalId' => $externalId,
-                    'beneficiary_name' => $beneficiaryName,
-                    'address1' => $driver->bank_address1 ?? $driver->address,
-                    'address2' => $driver->bank_address2 ?? '.',
-                    'city' => $driver->bank_city ?? 'Riyadh',
-                    'country' => $countryCode,
-                    'iban' => str_replace(' ', '', $driver->iban_number),
-                    'bic' => $driver->bic_code,
-                    'purpose' => 'BA',
-                    'description' => "Wallet Payment for {$driver->beneficiary_name}"
-                ]);
-
-                if (!$payoutResponse['status']) {
-                    throw new \Exception(__('HyperPay Error: ') . $payoutResponse['message']);
-                }
-
-                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
-                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
                 
                 \App\Models\HyperpayPayout::create([
                     'reference_id' => $externalId,
-                    'payout_id' => $payoutId,
-                    'bulk_id' => $bulkId,
                     'wallet_id' => $wallet->id,
                     'driver_id' => $driver->id,
                     'amount' => $request->total_amount,
                     'payout_type' => 'WP',
-                    'transaction_details' => array_merge($request->all(), ['admin_id' => auth()->id()]),
-                    'status' => 'pending'
+                    'created_by' => auth()->id(),
+                    'transaction_details' => array_merge($request->all(), [
+                        'admin_id' => auth()->id(),
+                        'beneficiary_name' => $beneficiaryName,
+                        'iban' => str_replace(' ', '', $driver->iban_number),
+                        'bic' => $driver->bic_code,
+                        'bank_name' => $driver->bank_name,
+                        'country' => $countryCode,
+                        'address1' => $driver->bank_address1 ?? $driver->address,
+                        'address2' => $driver->bank_address2 ?? '.',
+                        'city' => $driver->bank_city ?? 'Riyadh',
+                    ]),
+                    'status' => 'pending_approval'
                 ]);
 
                 DB::commit();
 
                 return response()->json([
                   'success' => true,
-                  'message' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.'),
+                  'message' => __('تم تسجيل طلب تسوية المستحقات بنجاح، وتم تحويله إلى صفحة "طلبات الدفع عبر الـ Payout" بانتظار مراجعة ومصادقة المدير.'),
                   'data' => [
                     'processed_transactions' => [],
                     'total_amount' => $request->total_amount,
-                    'transactions_count' => 0
+                    'transactions_count' => count($request->transactions ?? [])
                   ]
                 ]);
             }
@@ -628,9 +632,9 @@ class WalletsController extends Controller
             $hyperpayStatus = $response['message'] ?? 'Unknown';
             $statusCode = $response['code'] ?? '';
             
-            // If the status has changed from 'pending' to final, we trigger the webhook logic
+            // If the status has changed from 'pending'/'processing' to final, we trigger the webhook logic
             // '00000' = Success, '63000' = Rejected/Failed, '77000' = Cancelled
-            if ($payout->status === 'pending') {
+            if (in_array($payout->status, ['pending', 'processing'])) {
                 if ($statusCode === '00000' || in_array($statusCode, ['63000', '77000'])) {
                     // Spoof webhook payload with full HyperPay response details
                     $payoutIdVal = $response['data']['payoutId'] ?? ($response['data']['payouts'][0]['payoutId'] ?? $payout->payout_id);
@@ -809,15 +813,15 @@ class WalletsController extends Controller
             if ($req->type === 'credit') {
                 $adjustedBalance += $req->amount;
             } elseif ($req->type === 'debit') {
-                // التحقق من عدم وجود عملية تحويل قيد الانتظار
+                // التحقق من عدم وجود عملية تحويل قيد الانتظار أو بانتظار المصادقة
                 $pendingPayout = \App\Models\HyperpayPayout::where('wallet_id', $wallet->id)
-                    ->where('status', 'pending')
+                    ->whereIn('status', ['pending', 'processing', 'pending_approval'])
                     ->exists();
 
                 if ($pendingPayout) {
                     return response()->json([
                         'status' => 2,
-                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود عملية تحويل عبر HyperPay قيد الانتظار.')
+                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود عملية تحويل عبر HyperPay قيد الانتظار أو بانتظار المصادقة.')
                     ]);
                 }
 
@@ -831,7 +835,7 @@ class WalletsController extends Controller
                 ]);
             }
             
-            // --- HyperPay Payout Logic for Manual Debit ---
+            // --- HyperPay Payout Logic for Manual Debit (Step 1: Staging for Approval) ---
             $hyperPayNotes = '';
             if ($req->type === 'debit' && $req->payment_method === 'hyperpay') {
                 if (!\Illuminate\Support\Facades\Hash::check($req->password, auth()->user()->password)) {
@@ -860,29 +864,7 @@ class WalletsController extends Controller
                 $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
                 $beneficiaryName = $req->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
 
-                $payoutService = app(HyperPayPayoutService::class);
                 $externalId = 'MT-' . $wallet->id . '-' . time();
-                $payoutResponse = $payoutService->sendPayout([
-                    'amount' => $req->amount,
-                    'currency' => 'SAR',
-                    'externalId' => $externalId,
-                    'beneficiary_name' => $beneficiaryName,
-                    'address1' => $driver->bank_address1 ?? $driver->address,
-                    'address2' => $driver->bank_address2 ?? '.',
-                    'city' => $driver->bank_city ?? 'Riyadh',
-                    'country' => $countryCode,
-                    'iban' => str_replace(' ', '', $driver->iban_number),
-                    'bic' => $driver->bic_code,
-                    'purpose' => $req->purpose ?: 'BA',
-                    'description' => "Payout {$beneficiaryName}"
-                ]);
-
-                if (!$payoutResponse['status']) {
-                    return response()->json(['status' => 2, 'error' => __('HyperPay Error: ') . $payoutResponse['message']]);
-                }
-
-                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
-                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
                 
                 $imagePath = null;
                 if ($req->hasFile('image')) {
@@ -891,27 +873,35 @@ class WalletsController extends Controller
 
                 \App\Models\HyperpayPayout::create([
                     'reference_id' => $externalId,
-                    'payout_id' => $payoutId,
-                    'bulk_id' => $bulkId,
                     'wallet_id' => $wallet->id,
                     'driver_id' => $driver->id,
                     'amount' => $req->amount,
                     'payout_type' => 'MT',
+                    'created_by' => auth()->id(),
                     'transaction_details' => [
                         'amount' => $req->amount,
+                        'beneficiary_name' => $beneficiaryName,
                         'description' => $req->description,
                         'maturity' => $req->maturity,
                         'task_id' => $req->task_id,
                         'image' => $imagePath,
                         'settlement_tasks' => $req->settlement_tasks ?? [],
-                        'admin_id' => auth()->id()
+                        'admin_id' => auth()->id(),
+                        'iban' => str_replace(' ', '', $driver->iban_number),
+                        'bic' => $driver->bic_code,
+                        'bank_name' => $driver->bank_name,
+                        'address1' => $driver->bank_address1 ?? $driver->address,
+                        'address2' => $driver->bank_address2 ?? '.',
+                        'city' => $driver->bank_city ?? 'Riyadh',
+                        'country' => $countryCode,
+                        'purpose' => $req->purpose ?: 'BA',
                     ],
-                    'status' => 'pending'
+                    'status' => 'pending_approval'
                 ]);
 
                 return response()->json([
                     'status'  => 1,
-                    'success' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.'),
+                    'success' => __('تم تسجيل حركة الدفع بنجاح. تم تحويل الطلب إلى صفحة "طلبات الدفع عبر الـ Payout" بانتظار مصادقة المدير.'),
                 ]);
             }
             // --- End HyperPay Logic ---

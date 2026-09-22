@@ -698,6 +698,13 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/withdrawals/data', [App\Http\Controllers\admin\WithdrawalRequestsController::class, 'getData'])->name('wallets.withdrawals.data');
                 Route::post('/wallets/withdrawals/{id}/process', [App\Http\Controllers\admin\WithdrawalRequestsController::class, 'process'])->name('wallets.withdrawals.process');
 
+                // Payout Requests Routes
+                Route::get('/wallets/payout-requests', [App\Http\Controllers\admin\PayoutRequestsController::class, 'index'])->name('wallets.payout-requests.index');
+                Route::get('/wallets/payout-requests/data', [App\Http\Controllers\admin\PayoutRequestsController::class, 'getData'])->name('wallets.payout-requests.data');
+                Route::get('/wallets/payout-requests/{id}', [App\Http\Controllers\admin\PayoutRequestsController::class, 'show'])->name('wallets.payout-requests.show');
+                Route::post('/wallets/payout-requests/{id}/approve', [App\Http\Controllers\admin\PayoutRequestsController::class, 'approve'])->name('wallets.payout-requests.approve');
+                Route::post('/wallets/payout-requests/{id}/reject', [App\Http\Controllers\admin\PayoutRequestsController::class, 'reject'])->name('wallets.payout-requests.reject');
+
                 Route::get('/wallets/payment/request/{id}', [WalletsController::class, 'paymentRequest'])->name('wallets.payment_request');
 
 

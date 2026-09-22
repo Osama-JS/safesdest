@@ -92,7 +92,7 @@ class HyperPayWebhookController extends Controller
 
         $withdrawal = WithdrawalRequest::find($id);
 
-        if ($payout && $payout->status !== 'pending') {
+        if ($payout && !in_array($payout->status, ['pending', 'processing'])) {
             Log::info("Withdrawal Payout for reference {$reference} is already processed. Skipping to prevent duplication.");
             return;
         }
@@ -213,7 +213,7 @@ class HyperPayWebhookController extends Controller
             return;
         }
 
-        if ($payout->status !== 'pending') {
+        if (!in_array($payout->status, ['pending', 'processing'])) {
             Log::info("Driver Payout for reference {$reference} is already processed (Status: {$payout->status}). Skipping to prevent duplication.");
             return;
         }

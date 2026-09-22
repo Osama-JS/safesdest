@@ -183,54 +183,51 @@ class WithdrawalRequestsController extends Controller
                     ];
                     $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
 
+                    // Check if already pending payout
+                    $existingPayout = \App\Models\HyperpayPayout::where('source_withdrawal_id', $withdrawal->id)
+                        ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                        ->exists();
+
+                    if ($existingPayout) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => __('يوجد طلب دفع عبر HyperPay قيد الانتظار أو بانتظار المصادقة بالفعل لهذا الطلب.')
+                        ], 422);
+                    }
+
                     $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
                     $externalId = 'WD-' . $withdrawal->id . '-' . time();
 
-                    $payoutResponse = $payoutService->sendPayout([
-                        'amount' => $amountPaid,
-                        'currency' => 'SAR',
-                        'externalId' => $externalId,
-                        'beneficiary_name' => $beneficiaryName,
-                        'address1' => $driver->bank_address1 ?? $driver->address,
-                        'address2' => $driver->bank_address2 ?? '.',
-                        'city' => $driver->bank_city ?? 'Riyadh',
-                        'country' => $countryCode,
-                        'iban' => str_replace(' ', '', $driver->iban_number),
-                        'bic' => $driver->bic_code,
-                        'purpose' => 'BA',
-                        'description' => "Payout {$beneficiaryName}"
-                    ]);
-
-                    if (!$payoutResponse['status']) {
-                        throw new \Exception(__('HyperPay Error: ') . $payoutResponse['message']);
-                    }
-
-                    $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
-                    $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                    
                     \App\Models\HyperpayPayout::create([
                         'reference_id' => $externalId,
-                        'payout_id' => $payoutId,
-                        'bulk_id' => $bulkId,
                         'wallet_id' => $wallet->id,
                         'driver_id' => $driver->id,
                         'amount' => $amountPaid,
                         'payout_type' => 'WD',
                         'source_withdrawal_id' => $withdrawal->id,
+                        'created_by' => auth()->id(),
                         'transaction_details' => [
                             'amount_paid' => $amountPaid,
                             'admin_notes' => $request->admin_notes,
                             'receipt_image' => $receiptPath,
                             'admin_id' => auth()->id(),
+                            'beneficiary_name' => $beneficiaryName,
+                            'iban' => str_replace(' ', '', $driver->iban_number),
+                            'bic' => $driver->bic_code,
+                            'bank_name' => $driver->bank_name,
+                            'country' => $countryCode,
+                            'address1' => $driver->bank_address1 ?? $driver->address,
+                            'address2' => $driver->bank_address2 ?? '.',
+                            'city' => $driver->bank_city ?? 'Riyadh',
                         ],
-                        'status' => 'pending'
+                        'status' => 'pending_approval'
                     ]);
 
                     $withdrawal->update([
                         'status' => 'processing',
                         'amount_paid' => $amountPaid,
                         'payment_method' => 'hyperpay',
-                        'admin_notes' => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . "HyperPay Initiated",
+                        'admin_notes' => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . "بانتظار مصادقة المدير على التحويل عبر الـ Payout",
                         'receipt_image' => $receiptPath,
                         'processed_by' => auth()->id(),
                         'processed_at' => now(),
@@ -239,7 +236,7 @@ class WithdrawalRequestsController extends Controller
                     DB::commit();
                     return response()->json([
                         'success' => true,
-                        'message' => __('Payout initiated. Awaiting bank confirmation before deducting from wallet.')
+                        'message' => __('تم اعتماد طلب السحب بنجاح وتم تحويله إلى صفحة "طلبات الدفع عبر الـ Payout" بانتظار مصادقة المدير.')
                     ]);
                 }
                 // --- End HyperPay Logic ---

@@ -108,6 +108,14 @@
             "permission": "view_withdrawal_requests"
         },
         {
+            "url": "admin/wallets/payout-requests",
+            "name": "Payout Requests",
+            "icon": "menu-icon tf-icons ti ti-send",
+            "slug": "wallets.payout-requests.index",
+            "isactive": "payout-requests-isactive",
+            "permission": "view_payout_requests"
+        },
+        {
             "url": "admin/ads",
             "name": "Tasks Ads",
             "icon": "menu-icon tf-icons ti ti-speakerphone",

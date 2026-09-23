@@ -174,7 +174,7 @@
                             <div class="col-12 approve-fields">
                                 <label class="form-label">{{ __('Amount to Pay') }}</label>
                                 <div class="input-group">
-                                    <input type="number" step="0.01" name="amount_paid" id="amount_paid" class="form-control" required>
+                                    <input type="number" step="0.01" name="amount_paid" id="amount_paid" class="form-control">
                                     <span class="input-group-text">{{ __('SAR') }}</span>
                                 </div>
                                 <small class="text-muted">{{ __('Requested:') }} <span id="requested_amount_display">0</span></small>
@@ -350,14 +350,17 @@
 
     <script>
         function toggleWithdrawalPaymentMethod(val) {
-            var isHyperPay = (val === 'hyperpay');
+            var actionElem = document.getElementById('withdrawal_action');
+            var isReject = (actionElem && actionElem.value === 'reject');
+            var isHyperPay = (val === 'hyperpay' && !isReject);
+
             var receiptContainer = document.getElementById('receipt_field_container');
             var bankInfo = document.getElementById('driver_bank_info');
             var beneficiaryContainer = document.getElementById('hyperpay_beneficiary_container');
             var passwordContainer = document.getElementById('hyperpay_password_container');
             var passwordInput = document.getElementById('hyperpay_password');
 
-            if (receiptContainer) receiptContainer.style.display = isHyperPay ? 'none' : 'block';
+            if (receiptContainer) receiptContainer.style.display = isHyperPay ? 'none' : (isReject ? 'none' : 'block');
             if (bankInfo) bankInfo.style.display = isHyperPay ? 'block' : 'none';
             if (beneficiaryContainer) beneficiaryContainer.style.display = isHyperPay ? 'block' : 'none';
             if (passwordContainer) passwordContainer.style.display = isHyperPay ? 'block' : 'none';

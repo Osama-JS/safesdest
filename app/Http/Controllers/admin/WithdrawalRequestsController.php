@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Driver;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class WithdrawalRequestsController extends Controller
 {
@@ -132,7 +133,13 @@ class WithdrawalRequestsController extends Controller
             'payment_method' => 'required_if:action,approve|string',
             'admin_notes' => 'nullable|string|max:1000',
             'receipt' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
-            'password' => 'required_if:payment_method,hyperpay|string',
+            'password' => [
+                'nullable',
+                'string',
+                Rule::requiredIf(function () use ($request) {
+                    return $request->action === 'approve' && $request->payment_method === 'hyperpay';
+                }),
+            ],
             'beneficiary_name' => 'nullable|string|max:150',
         ]);
 
@@ -301,9 +308,13 @@ class WithdrawalRequestsController extends Controller
 
             DB::commit();
             
-            $msg = ($request->payment_method === 'hyperpay' && $request->action === 'approve') 
-                ? __('Payout initiated successfully. Current status: Processing. It will be finalized automatically via HyperPay.')
-                : __('Processed successfully');
+            if ($request->action === 'reject') {
+                $msg = __('تم رفض طلب السحب بنجاح.');
+            } else {
+                $msg = ($request->payment_method === 'hyperpay') 
+                    ? __('تم اعتماد طلب السحب بنجاح وتم تحويله إلى صفحة "طلبات الدفع عبر الـ Payout" بانتظار مصادقة المدير.')
+                    : __('تمت الموافقة وصرف طلب السحب بنجاح.');
+            }
 
             return response()->json(['success' => true, 'message' => $msg]);
 

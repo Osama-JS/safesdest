@@ -104,6 +104,13 @@ $(function () {
           $('#modal-driver-name').text(d.driver.name);
           $('#modal-driver-mobile').text(d.driver.mobile);
 
+          // Driver Wallet button
+          if (d.driver && d.driver.wallet_url) {
+            $('#modal-driver-wallet-btn').attr('href', d.driver.wallet_url).show();
+          } else {
+            $('#modal-driver-wallet-btn').hide();
+          }
+
           $('#modal-beneficiary-name').text(d.bank_details.beneficiary_name);
           $('#modal-bank-name').text(d.bank_details.bank_name);
           $('#modal-iban').text(d.bank_details.iban);
@@ -146,13 +153,33 @@ $(function () {
           // Notes
           $('#modal-notes').text(d.notes || '—');
 
-          // Image
-          if (d.image_url) {
-            $('#modal-image-preview').attr('src', d.image_url);
-            $('#modal-image-link').attr('href', d.image_url);
-            $('#modal-image-container').show();
+          // Attachment handling (Image / PDF / File)
+          if (d.attachment && d.attachment.has_file && d.attachment.file_url) {
+            $('#modal-no-attachment').hide();
+            if (d.attachment.is_image) {
+              $('#modal-attachment-img').attr('src', d.attachment.file_url).data('url', d.attachment.file_url).data('filename', d.attachment.file_name);
+              $('#modal-attachment-img-download-btn').attr('href', d.attachment.file_url);
+              $('#modal-image-wrapper').show();
+              $('#modal-doc-wrapper').hide();
+            } else {
+              $('#modal-attachment-filename').text(d.attachment.file_name || 'مستند مرفق');
+              $('#modal-attachment-ext-badge').text((d.attachment.extension || 'FILE').toUpperCase());
+              $('#modal-attachment-doc-view-btn').attr('href', d.attachment.file_url);
+              $('#modal-attachment-doc-download-btn').attr('href', d.attachment.file_url);
+              $('#modal-doc-wrapper').show();
+              $('#modal-image-wrapper').hide();
+            }
+          } else if (d.image_url) {
+            // Fallback for simple image_url
+            $('#modal-no-attachment').hide();
+            $('#modal-attachment-img').attr('src', d.image_url).data('url', d.image_url).data('filename', '');
+            $('#modal-attachment-img-download-btn').attr('href', d.image_url);
+            $('#modal-image-wrapper').show();
+            $('#modal-doc-wrapper').hide();
           } else {
-            $('#modal-image-container').hide();
+            $('#modal-no-attachment').show();
+            $('#modal-image-wrapper').hide();
+            $('#modal-doc-wrapper').hide();
           }
 
           $('#payout-details-loading').hide();
@@ -334,5 +361,60 @@ $(function () {
         });
       }
     });
+  });
+
+  // -------------------------------------------------------------
+  // Dedicated Image Lightbox Preview Modal
+  // -------------------------------------------------------------
+  let returnToDetailsModal = false;
+
+  $(document).on('click', '.btn-open-image-lightbox', function (e) {
+    e.preventDefault();
+    const imgEl = $('#modal-attachment-img');
+    const imgSrc = imgEl.data('url') || imgEl.attr('src');
+    const filename = imgEl.data('filename') || '';
+
+    if (!imgSrc || imgSrc === '#') return;
+
+    $('#lightbox-modal-image').attr('src', imgSrc).css({ 'max-height': '78vh', 'cursor': 'zoom-in' });
+    $('#lightbox-modal-download-btn').attr('href', imgSrc);
+    $('#lightbox-modal-filename').text(filename);
+    $('#lightbox-zoom-toggle').html('<i class="ti ti-arrows-maximize me-1"></i> <span class="d-none d-sm-inline">الحجم الطبيعي</span>');
+
+    if ($('#viewPayoutModal').hasClass('show')) {
+      returnToDetailsModal = true;
+      $('#viewPayoutModal').modal('hide');
+      $('#viewPayoutModal').one('hidden.bs.modal', function () {
+        $('#payoutImagePreviewModal').modal('show');
+      });
+    } else {
+      returnToDetailsModal = false;
+      $('#payoutImagePreviewModal').modal('show');
+    }
+  });
+
+  // Toggle natural size / fit-screen zoom inside the lightbox
+  $(document).on('click', '#lightbox-zoom-toggle, #lightbox-modal-image', function () {
+    const $img = $('#lightbox-modal-image');
+    const $toggleBtn = $('#lightbox-zoom-toggle');
+    if ($img.css('max-height') === 'none') {
+      $img.css({ 'max-height': '78vh', 'cursor': 'zoom-in' });
+      $toggleBtn.html('<i class="ti ti-arrows-maximize me-1"></i> <span class="d-none d-sm-inline">الحجم الطبيعي</span>');
+    } else {
+      $img.css({ 'max-height': 'none', 'cursor': 'zoom-out' });
+      $toggleBtn.html('<i class="ti ti-arrows-maximize me-1"></i> <span class="d-none d-sm-inline">ملاءمة الشاشة</span>');
+    }
+  });
+
+  // Smoothly return to details modal when image lightbox closes
+  $('#payoutImagePreviewModal').on('hidden.bs.modal', function () {
+    $('#lightbox-modal-image').css({ 'max-height': '78vh', 'cursor': 'zoom-in' });
+
+    if (returnToDetailsModal) {
+      returnToDetailsModal = false;
+      setTimeout(function () {
+        $('#viewPayoutModal').modal('show');
+      }, 100);
+    }
   });
 });

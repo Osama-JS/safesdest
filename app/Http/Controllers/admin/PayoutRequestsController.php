@@ -104,12 +104,21 @@ class PayoutRequestsController extends Controller
             $bankName = $details['bank_name'] ?? ($payout->driver?->bank_name ?? '—');
 
             $driverHtml = '—';
+            $walletUrl = null;
             if ($payout->driver) {
                 $driverName = e($payout->driver->name ?? '—');
                 $driverMobile = e($payout->driver->mobile_number ?? $payout->driver->phone ?? '—');
                 $driverSlug = urlencode($payout->driver->name ?? 'driver');
                 $driverUrl = url("admin/drivers/account/{$payout->driver->id}/{$driverSlug}");
-                $driverHtml = "<div><a href='{$driverUrl}' class='fw-bold text-primary'>{$driverName}</a><br><small class='text-muted' dir='ltr'>{$driverMobile}</small></div>";
+
+                $walletId = $payout->wallet_id ?? ($payout->driver->wallet->id ?? \App\Models\Wallet::where('user_type', 'driver')->where('driver_id', $payout->driver->id)->value('id'));
+                $walletBtn = '';
+                if ($walletId) {
+                    $walletUrl = url("admin/wallets/transaction/show/{$walletId}/{$driverSlug}");
+                    $walletBtn = '<a href="' . $walletUrl . '" target="_blank" class="badge bg-label-success text-decoration-none ms-1 py-1 px-2" title="' . __('فتح محفظة السائق') . '"><i class="ti ti-wallet me-1"></i>' . __('المحفظة') . '</a>';
+                }
+
+                $driverHtml = "<div><div class='d-flex align-items-center flex-wrap gap-1'><a href='{$driverUrl}' target='_blank' class='fw-bold text-primary'>{$driverName}</a>{$walletBtn}</div><small class='text-muted' dir='ltr'>{$driverMobile}</small></div>";
             }
 
             $creatorName = $payout->creator ? e($payout->creator->name) : '—';
@@ -130,9 +139,14 @@ class PayoutRequestsController extends Controller
             // View details button
             $actions .= '<button type="button" class="btn btn-sm btn-icon btn-label-info btn-view-payout" data-id="' . $payout->id . '" title="' . __('عرض التفاصيل') . '"><i class="ti ti-eye"></i></button>';
 
+            // Open driver wallet button
+            if ($walletUrl) {
+                $actions .= '<a href="' . $walletUrl . '" target="_blank" class="btn btn-sm btn-icon btn-label-success" title="' . __('فتح محفظة السائق') . '"><i class="ti ti-wallet"></i></a>';
+            }
+
             // Approve and Reject buttons (Only if pending_approval and user has permission)
             if ($payout->status === 'pending_approval' && $canApprove) {
-                $actions .= '<button type="button" class="btn btn-sm btn-icon btn-label-success btn-approve-payout" data-id="' . $payout->id . '" data-ref="' . e($payout->reference_id) . '" data-amount="' . number_format($payout->amount, 2) . '" data-beneficiary="' . e($beneficiaryName) . '" title="' . __('مصادقة وتحويل') . '"><i class="ti ti-check"></i></button>';
+                $actions .= '<button type="button" class="btn btn-sm btn-icon btn-label-primary btn-approve-payout" data-id="' . $payout->id . '" data-ref="' . e($payout->reference_id) . '" data-amount="' . number_format($payout->amount, 2) . '" data-beneficiary="' . e($beneficiaryName) . '" title="' . __('مصادقة وتحويل') . '"><i class="ti ti-check"></i></button>';
                 $actions .= '<button type="button" class="btn btn-sm btn-icon btn-label-danger btn-reject-payout" data-id="' . $payout->id . '" data-ref="' . e($payout->reference_id) . '" title="' . __('رفض الطلب') . '"><i class="ti ti-x"></i></button>';
             }
 
@@ -166,10 +180,50 @@ class PayoutRequestsController extends Controller
      */
     public function show($id)
     {
-        $payout = HyperpayPayout::with(['driver', 'wallet', 'creator', 'approver', 'rejector', 'withdrawal'])
+        $payout = HyperpayPayout::with(['driver.wallet', 'wallet', 'creator', 'approver', 'rejector', 'withdrawal'])
             ->findOrFail($id);
 
         $details = $payout->transaction_details ?? [];
+
+        // Driver Wallet URL
+        $walletUrl = null;
+        if ($payout->driver) {
+            $walletId = $payout->wallet_id ?? ($payout->driver->wallet->id ?? \App\Models\Wallet::where('user_type', 'driver')->where('driver_id', $payout->driver->id)->value('id'));
+            if ($walletId) {
+                $driverSlug = urlencode($payout->driver->name ?? 'driver');
+                $walletUrl = url("admin/wallets/transaction/show/{$walletId}/{$driverSlug}");
+            }
+        }
+
+        // Resolve Attachment (Image / PDF / Document)
+        $rawFilePath = $details['image'] 
+            ?? ($details['receipt_image'] 
+            ?? ($details['receipt'] 
+            ?? ($payout->withdrawal?->receipt_image ?? null)));
+
+        $attachment = null;
+        if (!empty($rawFilePath)) {
+            $extension = strtolower(pathinfo($rawFilePath, PATHINFO_EXTENSION));
+            $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']);
+            $isPdf = ($extension === 'pdf');
+
+            if (str_starts_with($rawFilePath, 'http://') || str_starts_with($rawFilePath, 'https://')) {
+                $fileUrl = $rawFilePath;
+            } else {
+                $cleanPath = ltrim(str_replace('storage/', '', $rawFilePath), '/');
+                $fileUrl = url('storage/' . $cleanPath);
+            }
+
+            $attachment = [
+                'has_file'  => true,
+                'path'      => $rawFilePath,
+                'file_name' => basename($rawFilePath),
+                'file_url'  => $fileUrl,
+                'extension' => $extension,
+                'is_image'  => $isImage,
+                'is_pdf'    => $isPdf,
+            ];
+        }
 
         return response()->json([
             'success' => true,
@@ -195,6 +249,7 @@ class PayoutRequestsController extends Controller
                     'id'            => $payout->driver?->id,
                     'name'          => $payout->driver?->name ?? '—',
                     'mobile'        => $payout->driver?->mobile_number ?? $payout->driver?->phone ?? '—',
+                    'wallet_url'    => $walletUrl,
                 ],
                 'bank_details'     => [
                     'beneficiary_name' => $details['beneficiary_name'] ?? ($payout->driver?->beneficiary_name ?? '—'),
@@ -206,7 +261,8 @@ class PayoutRequestsController extends Controller
                     'address'          => $details['address1'] ?? ($payout->driver?->bank_address1 ?? '—'),
                 ],
                 'notes'            => $details['description'] ?? ($details['admin_notes'] ?? '—'),
-                'image_url'        => !empty($details['image']) ? asset('storage/' . $details['image']) : (!empty($details['receipt_image']) ? asset('storage/' . $details['receipt_image']) : null),
+                'image_url'        => $attachment && $attachment['is_image'] ? $attachment['file_url'] : null,
+                'attachment'       => $attachment,
                 'details'          => $details,
             ]
         ]);

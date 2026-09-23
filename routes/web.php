@@ -677,7 +677,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/{wallet}/fetch-unsettled-tasks', [WalletsController::class, 'fetchUnsettledTasks'])->name('wallets.fetch-unsettled-tasks');
                 Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
                 Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');
-                Route::get('/wallets/transaction/show/{id}/{name}', [WalletsController::class, 'show'])->name('wallets.transaction');
+                Route::get('/wallets/transaction/show/{id}/{name?}', [WalletsController::class, 'show'])->name('wallets.transaction');
                 Route::get('/wallets/driver/show/{id}', [WalletsController::class, 'driverShow'])->name('wallets.driver.show');
                 Route::post('/wallets/driver/payment', [WalletsController::class, 'processDriverPayment'])->name('wallets.driver.payment');
                 Route::post('/wallets/{wallet}/log-payment-request', [WalletsController::class, 'logPaymentRequest'])->name('wallets.log-payment-request');

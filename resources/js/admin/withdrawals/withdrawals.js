@@ -104,13 +104,24 @@ $(function () {
 
   // Handle Action Change (Approve/Reject)
   $('#withdrawal_action').on('change', function () {
-    if ($(this).val() === 'reject') {
+    var isReject = ($(this).val() === 'reject');
+    if (isReject) {
       $('.approve-fields').hide();
+      $('.approve-fields input, .approve-fields select, .approve-fields textarea').prop('disabled', true);
       $('#amount_paid').prop('required', false);
-      $('#hyperpay_password').prop('required', false);
+      $('#hyperpay_password').prop('required', false).val('');
+      $('#submitProcessBtn')
+        .removeClass('btn-primary')
+        .addClass('btn-danger')
+        .html('<i class="ti ti-x me-1"></i> ' + ($('#withdrawal_action option[value="reject"]').text() || 'رفض الطلب'));
     } else {
       $('.approve-fields').show();
+      $('.approve-fields input, .approve-fields select, .approve-fields textarea').prop('disabled', false);
       $('#amount_paid').prop('required', true);
+      $('#submitProcessBtn')
+        .removeClass('btn-danger')
+        .addClass('btn-primary')
+        .html('<i class="ti ti-check me-1"></i> ' + ($('#withdrawal_action option[value="approve"]').text() || 'اعتماد وصرف'));
       // Trigger payment method change to handle receipt & hyperpay visibility
       $('#payment_method').trigger('change');
     }
@@ -122,7 +133,7 @@ $(function () {
     if (typeof window.toggleWithdrawalPaymentMethod === 'function') {
       window.toggleWithdrawalPaymentMethod(val);
     } else {
-      if (val === 'hyperpay') {
+      if (val === 'hyperpay' && $('#withdrawal_action').val() !== 'reject') {
         $('#receipt_field_container').hide();
         $('#driver_bank_info').slideDown();
         $('.hyperpay-fields').slideDown();
@@ -186,13 +197,23 @@ $(function () {
     e.preventDefault();
 
     var id = $('#withdrawal_id').val();
+    var action = $('#withdrawal_action').val();
     var url = processWithdrawalUrl.replace(':id', id);
     var formData = new FormData(this);
+
+    // If rejecting, ensure approve fields are not included in formData
+    if (action === 'reject') {
+      formData.delete('amount_paid');
+      formData.delete('payment_method');
+      formData.delete('password');
+      formData.delete('beneficiary_name');
+      formData.delete('receipt');
+    }
 
     var btn = $('#submitProcessBtn');
     btn
       .prop('disabled', true)
-      .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+      .html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ' + (action === 'reject' ? 'جاري الرفض...' : 'جاري المعالجة...'));
 
     $.ajax({
       url: url,
@@ -207,28 +228,27 @@ $(function () {
         $('#processWithdrawalModal').modal('hide');
         Swal.fire({
           icon: 'success',
-          title: 'Success',
+          title: action === 'reject' ? 'تم الرفض' : 'تم الاعتماد',
           text: response.message,
           customClass: {
             confirmButton: 'btn btn-success'
           }
         });
         dt_withdrawals.draw();
-        btn.prop('disabled', false).text('Process Request');
+        btn.prop('disabled', false).html(action === 'reject' ? '<i class="ti ti-x me-1"></i> رفض الطلب' : '<i class="ti ti-check me-1"></i> اعتماد وصرف');
       },
       error: function (xhr) {
-        btn.prop('disabled', false).text('Process Request');
-        var message = 'Something went wrong';
+        btn.prop('disabled', false).html(action === 'reject' ? '<i class="ti ti-x me-1"></i> رفض الطلب' : '<i class="ti ti-check me-1"></i> اعتماد وصرف');
+        var message = 'حدث خطأ ما أثناء معالجة الطلب.';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           message = xhr.responseJSON.message;
         } else if (xhr.status === 422 && xhr.responseJSON.errors) {
-          // Handle Laravel validation errors specifically if needed
           message = Object.values(xhr.responseJSON.errors).flat().join('<br>');
         }
         Swal.fire({
           icon: 'error',
-          title: 'Error',
-          text: message,
+          title: 'خطأ',
+          html: message,
           customClass: {
             confirmButton: 'btn btn-primary'
           }

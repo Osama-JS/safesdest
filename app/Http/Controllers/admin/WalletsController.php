@@ -257,7 +257,7 @@ class WalletsController extends Controller
         }
     }
 
-    public function show($id, $name)
+    public function show($id, $name = null)
     {
         $data = Wallet::findOrFail($id);
 

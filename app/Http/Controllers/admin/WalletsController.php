@@ -345,6 +345,14 @@ class WalletsController extends Controller
                 $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
                 $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
 
+                $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($driver->iban_number);
+                if (!$ibanCheck['valid']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $ibanCheck['message']
+                    ], 422);
+                }
+
                 $externalId = 'WP-' . $wallet->id . '-' . time();
                 
                 \App\Models\HyperpayPayout::create([
@@ -849,6 +857,11 @@ class WalletsController extends Controller
                 $driver = $wallet->driver;
                 if (!$driver->iban_number || !$driver->bic_code || !$driver->beneficiary_name) {
                     return response()->json(['status' => 2, 'error' => __('Driver bank details are incomplete for HyperPay Payout')]);
+                }
+
+                $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($driver->iban_number);
+                if (!$ibanCheck['valid']) {
+                    return response()->json(['status' => 2, 'error' => $ibanCheck['message']]);
                 }
 
                 $countryMapping = [

@@ -318,6 +318,19 @@ class PayoutRequestsController extends Controller
             ], 422);
         }
 
+        // التحقق من صحة رقم الآيبان ومعيار Checksum قبل الإرسال
+        $ibanCheck = HyperPayPayoutService::validateIbanChecksum($iban);
+        if (!$ibanCheck['valid']) {
+            $payout->update([
+                'failure_reason' => $ibanCheck['message']
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $ibanCheck['message']
+            ], 422);
+        }
+
         // 2. Dispatch to HyperPay Payout API
         $payoutService = app(HyperPayPayoutService::class);
         $payoutResponse = $payoutService->sendPayout([
@@ -342,7 +355,7 @@ class PayoutRequestsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => __('فشل إرسال التحويل إلى بوابة HyperPay: ') . $payoutResponse['message']
+                'message' => $payoutResponse['message']
             ], 422);
         }
 

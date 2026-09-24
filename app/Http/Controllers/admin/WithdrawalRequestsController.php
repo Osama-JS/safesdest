@@ -202,6 +202,14 @@ class WithdrawalRequestsController extends Controller
                         ], 422);
                     }
 
+                    $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($driver->iban_number);
+                    if (!$ibanCheck['valid']) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $ibanCheck['message']
+                        ], 422);
+                    }
+
                     $beneficiaryName = $request->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($driver->beneficiary_name);
                     $externalId = 'WD-' . $withdrawal->id . '-' . time();
 

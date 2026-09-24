@@ -40,7 +40,7 @@ class HyperPayPayoutService
             '00001' => 'تم استلام الطلب بنجاح',
             '33000' => 'تم جدولة عملية الدفع',
             '33333' => 'جاري معالجة العملية حالياً',
-            '13000' => 'خطأ في التحقق من البيانات (تأكد من الحقول)',
+            '13000' => 'خطأ في التحقق من البيانات',
             '13001' => 'رقم حساب المصدر (Source ID) غير صحيح',
             '13004' => 'البيانات المطلوبة غير موجودة',
             '13005' => 'القناة المستخدمة غير صحيحة',
@@ -52,7 +52,187 @@ class HyperPayPayoutService
             '77000' => 'تم إلغاء العملية بنجاح',
         ];
 
+        if (!empty($default) && $default !== 'خطأ غير معروف' && $default !== 'Unknown Error') {
+            return $default;
+        }
+
         return $codes[$code] ?? $default;
+    }
+
+    /**
+     * Validate IBAN format and MOD-97 Checksum (ISO 7064 / ISO 13616)
+     */
+    public static function validateIbanChecksum(?string $iban): array
+    {
+        $cleanIban = strtoupper(str_replace([' ', '-', '.'], '', trim($iban ?? '')));
+
+        if (empty($cleanIban)) {
+            return [
+                'valid'   => false,
+                'message' => 'رقم الآيبان فارغ. يرجى إدخال رقم الآيبان البنكي للسائق.',
+            ];
+        }
+
+        // Saudi IBAN must start with SA and be exactly 24 characters
+        if (str_starts_with($cleanIban, 'SA')) {
+            if (strlen($cleanIban) !== 24) {
+                return [
+                    'valid'   => false,
+                    'message' => "طول رقم الآيبان السعودي غير صحيح (" . strlen($cleanIban) . " حرف). يجب أن يتكون من 24 خانة ويبدأ بـ SA.",
+                ];
+            }
+
+            if (!preg_match('/^SA[0-9]{2}[0-9A-Z]{20}$/', $cleanIban)) {
+                return [
+                    'valid'   => false,
+                    'message' => 'صيغة الآيبان السعودي غير صالحة. يجب أن يبدأ بـ SA متبوعاً برقمي التحقق ثم باقي رقم الحساب.',
+                ];
+            }
+        } elseif (strlen($cleanIban) < 15 || strlen($cleanIban) > 34) {
+            return [
+                'valid'   => false,
+                'message' => "طول رقم الآيبان الدولي غير صحيح (" . strlen($cleanIban) . " خانة).",
+            ];
+        }
+
+        // Standard MOD-97 checksum calculation
+        // Move the first 4 characters to the end
+        $rearranged = substr($cleanIban, 4) . substr($cleanIban, 0, 4);
+
+        // Replace letters with their numeric equivalents (A=10, B=11, ..., Z=35)
+        $numericString = '';
+        foreach (str_split($rearranged) as $char) {
+            if (ctype_alpha($char)) {
+                $numericString .= (ord($char) - 55);
+            } else {
+                $numericString .= $char;
+            }
+        }
+
+        // Perform modulo 97 on large numeric string using 7-digit chunks
+        $remainder = 0;
+        $chunkSize = 7;
+        for ($i = 0; $i < strlen($numericString); $i += $chunkSize) {
+            $chunk = $remainder . substr($numericString, $i, $chunkSize);
+            $remainder = intval($chunk) % 97;
+        }
+
+        if ($remainder !== 1) {
+            return [
+                'valid'   => false,
+                'message' => "رقم الآيبان ({$cleanIban}) غير صحيح رياضياً أو به خطأ في أحد الأرقام (فشل في فحص التحقق للآيبان IBAN Checksum). يرجى مراجعة وتعديل رقم الآيبان في ملف السائق من خلال تطبيق البنك.",
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'clean' => $cleanIban,
+        ];
+    }
+
+    /**
+     * Parse and translate HyperPay API errors into human-readable Arabic & English details
+     */
+    public static function parseErrors($result, $finalResponseCode = null, $defaultMessage = null): string
+    {
+        $rootResult = $result['result'] ?? $result;
+        $errors = $rootResult['errors'] ?? ($result['errors'] ?? null);
+
+        // Also check if errors exist in payouts[0]
+        if (empty($errors) && !empty($rootResult['payouts'][0]['errors'])) {
+            $errors = $rootResult['payouts'][0]['errors'];
+        }
+
+        $fieldNames = [
+            'payouts.0.beneficiary.iban'     => 'الآيبان البنكي (IBAN)',
+            'beneficiary.iban'               => 'الآيبان البنكي (IBAN)',
+            'iban'                           => 'الآيبان البنكي (IBAN)',
+            'payouts.0.beneficiary.bicCode'  => 'كود السويفت/BIC للبنك',
+            'beneficiary.bicCode'            => 'كود السويفت/BIC للبنك',
+            'bicCode'                        => 'كود السويفت/BIC للبنك',
+            'bic'                            => 'كود السويفت/BIC للبنك',
+            'payouts.0.beneficiary.name'     => 'اسم المستفيد',
+            'beneficiary.name'               => 'اسم المستفيد',
+            'name'                           => 'اسم المستفيد',
+            'payouts.0.beneficiary.address1' => 'عنوان المستفيد',
+            'payouts.0.beneficiary.country'  => 'دولة المستفيد',
+            'payouts.0.beneficiary.city'     => 'مدينة المستفيد',
+            'payouts.0.description'          => 'وصف التحويل (Description)',
+            'description'                    => 'وصف التحويل (Description)',
+            'payouts.0.amount'               => 'مبلغ التحويل',
+            'amount'                         => 'مبلغ التحويل',
+            'payouts.0.purpose'              => 'رمز الغرض من التحويل (Purpose Code)',
+            'purpose'                        => 'رمز الغرض من التحويل (Purpose Code)',
+            'merchantReference'              => 'رقم مرجع التاجر (Reference)',
+            'sourceId'                       => 'رقم حساب المصدر (Source ID)',
+        ];
+
+        $translatedList = [];
+
+        if (!empty($errors) && is_array($errors)) {
+            foreach ($errors as $field => $fieldErrors) {
+                $friendlyField = $fieldNames[$field] ?? $field;
+                $messages = is_array($fieldErrors) ? $fieldErrors : [$fieldErrors];
+
+                foreach ($messages as $msg) {
+                    $arabicExplanation = self::translateErrorMessage($msg);
+                    $translatedList[] = "• {$friendlyField}: {$arabicExplanation}\n  (تفاصيل الخطأ: {$msg})";
+                }
+            }
+        }
+
+        if (!empty($translatedList)) {
+            return "خطأ في بيانات التحويل من بوابة HyperPay:\n" . implode("\n", $translatedList);
+        }
+
+        // If no detailed errors array, return friendly code description + responseMessage
+        $codeMap = [
+            '13000' => 'خطأ في التحقق من صحة البيانات المدخلة',
+            '13001' => 'رقم حساب المصدر (Source ID) غير صحيح',
+            '13004' => 'البيانات المطلوبة غير موجودة في الطلب',
+            '13005' => 'القناة المستخدمة غير صحيحة',
+            '13006' => 'المرجع (Reference) مستخدم مسبقاً',
+            '13008' => 'رمز الغرض من التحويل (Purpose Code) غير صالح',
+            '63000' => 'تم رفض العملية من قبل النظام البنكي',
+            '90000' => 'العملية بانتظار تأكيد البنك',
+            '88888' => 'خطأ تقني في نظام بوابة الدفع HyperPay',
+            '77000' => 'تم إلغاء العملية بنجاح',
+        ];
+
+        $codeText = $codeMap[$finalResponseCode] ?? null;
+        $rawMessage = $rootResult['responseMessage'] ?? ($defaultMessage ?: 'خطأ غير محدد من بوابة الدفع');
+
+        if ($codeText) {
+            return "{$codeText} [كود: {$finalResponseCode}]: {$rawMessage}";
+        }
+
+        return $rawMessage;
+    }
+
+    protected static function translateErrorMessage(string $msg): string
+    {
+        $lower = strtolower($msg);
+
+        if (str_contains($lower, 'checksum')) {
+            return 'رقم الآيبان غير صحيح أو به خطأ في أحد الأرقام (لم يجتز فحص التحقق الرياضي للآيبان IBAN Checksum). يرجى مراجعة وتصحيح رقم الآيبان في ملف السائق.';
+        }
+        if (str_contains($lower, 'field format is invalid')) {
+            return 'صيغة الحقل غير مقبولة لدى بوابة الدفع (تأكد من عدم وجود رموز خاصة أو أحرف غير مدعومة).';
+        }
+        if (str_contains($lower, 'field is required')) {
+            return 'هذا الحقل إلزامي ومطلوب.';
+        }
+        if (str_contains($lower, 'already been used')) {
+            return 'رقم المرجع مستخدم مسبقاً في عملية سابقة.';
+        }
+        if (str_contains($lower, 'insufficient')) {
+            return 'رصيد الحساب المصدر غير كافٍ لإتمام التحويل.';
+        }
+        if (str_contains($lower, 'invalid request')) {
+            return 'الطلب غير صالح.';
+        }
+
+        return $msg;
     }
 
     /**
@@ -112,6 +292,23 @@ class HyperPayPayoutService
     public function sendPayout(array $data)
     {
         try {
+            // 1. Pre-validate IBAN Checksum locally before making external HTTP call
+            $rawIban = str_replace(' ', '', $data['iban'] ?? '');
+            $ibanCheck = self::validateIbanChecksum($rawIban);
+            if (!$ibanCheck['valid']) {
+                Log::warning('HyperPay Payout Pre-validation Failed:', [
+                    'iban'    => $rawIban,
+                    'message' => $ibanCheck['message']
+                ]);
+                return [
+                    'status'  => false,
+                    'code'    => '13000',
+                    'message' => $ibanCheck['message'],
+                    'data'    => null
+                ];
+            }
+            $cleanIban = $ibanCheck['clean'];
+
             $beneficiaryName = self::formatBeneficiaryName($data['beneficiary_name'] ?? '');
 
             // Sanitize description: Max 35 chars, Alphanumeric and spaces only (NO dashes or special characters)
@@ -162,7 +359,7 @@ class HyperPayPayoutService
                             'address2' => $address2,
                             'country'  => $data['country'] ?? 'SA',
                             'city'     => $data['city'] ?? 'Riyadh',
-                            'iban'     => str_replace(' ', '', $data['iban']),
+                            'iban'     => $cleanIban,
                             'bicCode'  => $data['bic'],
                         ],
                     ]
@@ -198,19 +395,19 @@ class HyperPayPayoutService
             $finalResponseCode = $payoutDetails['responseCode'] ?? $responseCode;
             $finalMessage = $payoutDetails['responseMessage'] ?? ($rootResult['responseMessage'] ?? ($result['responseMessage'] ?? 'Unknown Error'));
 
-            $errors = $rootResult['errors'] ?? ($result['errors'] ?? null);
-            if (!empty($errors) && is_array($errors)) {
-                $errorText = collect($errors)->flatten()->implode(' | ');
-                $finalMessage .= ': ' . $errorText;
-            }
-
             // Specific success codes for HyperSplits 2.0
             $isSuccessCode = in_array($finalResponseCode, ['00000', '00001', '33000', '33333']);
+
+            if (!$isSuccessCode) {
+                $finalMessage = self::parseErrors($result, $finalResponseCode, $finalMessage);
+            } else {
+                $finalMessage = $this->getResponseMessage($finalResponseCode, $finalMessage);
+            }
 
             return [
                 'status'  => $isSuccessCode,
                 'code'    => $finalResponseCode,
-                'message' => $this->getResponseMessage($finalResponseCode, $finalMessage),
+                'message' => $finalMessage,
                 'data'    => $payoutDetails
             ];
 

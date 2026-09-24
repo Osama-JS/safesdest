@@ -261,7 +261,10 @@ $(function () {
           Swal.fire({
             icon: 'error',
             title: 'فشل المصادقة',
-            text: res.message
+            html: '<div class="text-start" style="direction: rtl; text-align: right; white-space: pre-line; line-height: 1.6; font-size: 0.95rem;">' + $('<div>').text(res.message).html() + '</div>',
+            customClass: {
+              confirmButton: 'btn btn-primary'
+            }
           });
         }
       },
@@ -271,12 +274,17 @@ $(function () {
         let msg = 'حدث خطأ أثناء تنفيذ المصادقة.';
         if (xhr.responseJSON && xhr.responseJSON.message) {
           msg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON && xhr.responseJSON.error) {
+          msg = xhr.responseJSON.error;
         }
 
         Swal.fire({
           icon: 'error',
-          title: 'خطأ',
-          text: msg
+          title: 'خطأ في معالجة الطلب',
+          html: '<div class="text-start" style="direction: rtl; text-align: right; white-space: pre-line; line-height: 1.6; font-size: 0.95rem;">' + $('<div>').text(msg).html() + '</div>',
+          customClass: {
+            confirmButton: 'btn btn-primary'
+          }
         });
       }
     });

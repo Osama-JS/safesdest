@@ -85,7 +85,7 @@ $(function () {
         {
           targets: 1,
           searchable: false,
-          orderable: false,
+          orderable: true,
           render: function (data, type, full, meta) {
             return `<span>${full.sequence}</span>`;
           }
@@ -188,7 +188,7 @@ $(function () {
           $(row).addClass('table-success');
         }
       },
-      order: [[1, 'asc']],
+      order: [[1, 'desc']],
       dom:
         '<"row"' +
         '<"col-md-2"l>' +

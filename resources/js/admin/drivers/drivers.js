@@ -48,14 +48,22 @@ $(function () {
     const bankName = $(this).val();
     const bicField = $('#driver-bic-code');
 
-    // Auto-fill BIC Code from data-code attribute
-    const selectedOption = $(this).find('option:selected');
-    const bicCode = selectedOption.data('code');
-
-    if (bicCode) {
-      bicField.val(bicCode).prop('readonly', true);
-    } else {
+    if (bankName === 'other') {
+      $('#driver-custom-bank-field').slideDown(200);
       bicField.val('').prop('readonly', false);
+    } else {
+      $('#driver-custom-bank-field').slideUp(200);
+      $('#driver-custom-bank-name').val('');
+
+      // Auto-fill BIC Code from data-code attribute
+      const selectedOption = $(this).find('option:selected');
+      const bicCode = selectedOption.data('code');
+
+      if (bicCode) {
+        bicField.val(bicCode).prop('readonly', true);
+      } else {
+        bicField.val('').prop('readonly', false);
+      }
     }
   });
 
@@ -314,7 +322,7 @@ $(function () {
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a href=${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
+                    <li><a href="${userView}${full.id}/${full.name}" class="dropdown-item">View</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}">Change Status</a></li>
                     <li> <a href="${baseUrl + 'admin/wallets/transaction/show/' + full.wallet + '/' + full.name}" class="dropdown-item" data-id="${full.wallet}"  data-name="${full.name}">
                             View Wallet
@@ -481,7 +489,29 @@ $(function () {
       toggleWhatsAppFields();
 
       // Load bank details
-      $('#driver-bank-name').val(data.bank_name || '');
+      if (data.bank_name) {
+        let bankFound = false;
+        $('#driver-bank-name option').each(function () {
+          if ($(this).val() === data.bank_name && $(this).val() !== 'other') {
+            bankFound = true;
+          }
+        });
+
+        if (bankFound) {
+          $('#driver-bank-name').val(data.bank_name);
+          $('#driver-custom-bank-field').hide();
+          $('#driver-custom-bank-name').val('');
+        } else {
+          $('#driver-bank-name').val('other');
+          $('#driver-custom-bank-field').show();
+          $('#driver-custom-bank-name').val(data.bank_name);
+        }
+      } else {
+        $('#driver-bank-name').val('');
+        $('#driver-custom-bank-field').hide();
+        $('#driver-custom-bank-name').val('');
+      }
+
       $('#driver-account-number').val(data.account_number || '');
       $('#driver-iban-number').val(data.iban_number || '');
       $('#driver-bic-code').val(data.bic_code || '');
@@ -490,8 +520,6 @@ $(function () {
       $('#driver-bank-address2').val(data.bank_address2 || '');
       $('#driver-bank-city').val(data.bank_city || '');
       $('#driver-bank-country').val(data.bank_country || 'SA');
-
-      $('#driver-bank-name').trigger('change');
 
       $('.vehicle-select').val(data.vehicle).trigger('change');
 
@@ -603,9 +631,11 @@ $(function () {
 
     // Reset bank details
     $('#driver-bank-name').val('');
+    $('#driver-custom-bank-name').val('');
+    $('#driver-custom-bank-field').hide();
     $('#driver-account-number').val('');
     $('#driver-iban-number').val('');
-    $('#driver-bic-code').val('');
+    $('#driver-bic-code').val('').prop('readonly', false);
     $('#driver-beneficiary-name').val('');
     $('#driver-bank-address1').val('');
     $('#driver-bank-address2').val('');

@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', __('Drives'))
+@section('title', __('Drivers'))
 
 <!-- Vendor Styles -->
 @section('vendor-style')
@@ -19,11 +19,11 @@
         const templateId = {{ $driver_template?->value ?? 0 }}
     </script>
     <script type="text/template" id="vehicle-row-template">
-          <div class="row vehicle-row mb-3 " data-index="{index}">
+          <div class="row vehicle-row mb-3" data-index="{index}">
             <div class="col-md-4">
-              <label class="form-label">* Vehicle</label>
+              <label class="form-label">* {{ __('Vehicle') }}</label>
               <select class="form-select vehicle-select" name="vehicles[{index}][vehicle]">
-                <option value="">Select a vehicle</option>
+                <option value="">{{ __('Select a vehicle') }}</option>
                 @foreach ($vehicles as $vehicle)
                       <option value="{{ $vehicle->id }}">{{ $vehicle->name }}</option>
                 @endforeach
@@ -31,16 +31,16 @@
 
             </div>
             <div class="col-md-4">
-              <label class="form-label">* Vehicle Type</label>
+              <label class="form-label">* {{ __('Vehicle Type') }}</label>
               <select class="form-select vehicle-type-select" name="vehicles[{index}][vehicle_type]" disabled>
-                <option value="">Select a vehicle type</option>
+                <option value="">{{ __('Select a vehicle type') }}</option>
               </select>
 
             </div>
             <div class="col-md-4">
-              <label class="form-label">* Vehicle Size</label>
+              <label class="form-label">* {{ __('Vehicle Size') }}</label>
               <select class="form-select vehicle-size-select" name="vehicle" disabled>
-                <option value="">Select a vehicle size</option>
+                <option value="">{{ __('Select a vehicle size') }}</option>
               </select>
               <span class="vehicle-error text-danger text-error"></span>
 
@@ -52,27 +52,27 @@
         <script type="text/template" id="driver-broker-row-template">
           <div class="row broker-row mb-3 align-items-end" data-index="{index}">
             <div class="col-md-3">
-              <label class="form-label">Broker</label>
+              <label class="form-label">{{ __('Broker') }}</label>
               <select class="form-select select2 broker-select" name="brokers[{index}][broker_id]" required>
-                <option value="">Select a broker</option>
+                <option value="">{{ __('Select a broker') }}</option>
                 @foreach ($brokers as $broker)
                       <option value="{{ $broker->id }}">{{ $broker->name }} ({{ $broker->username }})</option>
                 @endforeach
               </select>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Commission Type</label>
+              <label class="form-label">{{ __('Commission Type') }}</label>
               <select class="form-select" name="brokers[{index}][commission_type]" required>
-                <option value="percentage">Percentage</option>
-                <option value="fixed">Fixed</option>
+                <option value="percentage">{{ __('Percentage') }}</option>
+                <option value="fixed">{{ __('Fixed') }}</option>
               </select>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Commission Value</label>
+              <label class="form-label">{{ __('Commission Value') }}</label>
               <input type="number" class="form-control" name="brokers[{index}][commission_value]" step="0.01" min="0" required>
             </div>
             <div class="col-md-2">
-              <label class="form-label">Start Date</label>
+              <label class="form-label">{{ __('Start Date') }}</label>
               <input type="date" class="form-control" name="brokers[{index}][commission_start_date]">
             </div>
             <div class="col-md-1">
@@ -81,6 +81,7 @@
           </div>
         </script>
 @endsection
+
 
 <!-- Page Scripts -->
 @section('page-script')
@@ -122,10 +123,7 @@
                             <span class="text-heading">{{ __('Active Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2" id="total-active"></h4>
-                                <p class="text-success mb-0">
-                                </p>
                             </div>
-
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-success">
@@ -145,12 +143,7 @@
                             <span class="text-heading">{{ __('Pending Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2" id="total-pending"></h4>
-                                <p class="text-success mb-0">
-                                </p>
-
-                                </p>
                             </div>
-
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-warning">
@@ -169,12 +162,7 @@
                             <span class="text-heading">{{ __('Blocked Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2" id="total-blocked"></h4>
-                                <p class="text-success mb-0">
-                                </p>
-
-                                </p>
                             </div>
-
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-danger">
@@ -193,12 +181,7 @@
                             <span class="text-heading">{{ __('Unverified Drivers') }}</span>
                             <div class="d-flex align-items-center my-1">
                                 <h4 class="mb-0 me-2" id="total-verified"></h4>
-                                <p class="text-success mb-0">
-                                </p>
-
-                                </p>
                             </div>
-
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-secondary">
@@ -212,12 +195,12 @@
     </div>
     <!-- Users List Table -->
     <div class="card">
-        <div class="card-header border-bottom">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">
                 <i class="tf-icons ti ti-steering-wheel me-2 fs-3 text-white bg-primary rounded p-1"></i>
                 {{ __('Drivers') }}
             </h5>
-            <button class="add-new btn btn-primary waves-effect waves-light mt-5 mx-4" data-bs-toggle="modal"
+            <button class="add-new btn btn-primary waves-effect waves-light" data-bs-toggle="modal"
                 data-bs-target="#submitModal">
                 <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
                 <span class="d-none d-sm-inline-block"> {{ __('Add New Driver') }}</span>
@@ -258,25 +241,28 @@
                 </div>
                 <form class="add-new-user pt-0 form_submit" method="POST" action="{{ route('drivers.create') }}">
                     <div class="modal-body">
-                        <div class="col-xl-12">
-                            <div class="nav-align-top  mb-6">
-                                <ul class="nav nav-tabs " role="tablist">
-                                    <li class="nav-item">
-                                        <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
-                                            data-bs-target="#navs-justified-home" aria-controls="navs-justified-home"
-                                            aria-selected="true"><span class="d-none d-sm-block"><i
-                                                    class="tf-icons ti ti-grid-dots ti-sm me-1_5"></i> {{ __('Main') }}
-                                        </button>
-                                    </li>
-                                    <li class="nav-item">
-                                        <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
-                                            data-bs-target="#navs-justified-profile" aria-controls="navs-justified-profile"
-                                            aria-selected="false"><span class="d-none d-sm-block"><i
-                                                    class="tf-icons ti ti-file-plus ti-sm me-1_5"></i>
-                                                {{ __('Additional ') }}</span></button>
-                                    </li>
-                                </ul>
-                                <div class="tab-content">
+                        <div class="nav-align-top mb-4">
+                            <ul class="nav nav-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-home" aria-controls="navs-justified-home"
+                                        aria-selected="true">
+                                        <span class="d-none d-sm-block">
+                                            <i class="tf-icons ti ti-grid-dots ti-sm me-1_5"></i> {{ __('Main') }}
+                                        </span>
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab"
+                                        data-bs-target="#navs-justified-profile" aria-controls="navs-justified-profile"
+                                        aria-selected="false">
+                                        <span class="d-none d-sm-block">
+                                            <i class="tf-icons ti ti-file-plus ti-sm me-1_5"></i> {{ __('Additional') }}
+                                        </span>
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="tab-content">
                                     <div class="tab-pane fade show active" id="navs-justified-home" role="tabpanel">
                                         <input type="hidden" name="id" id="driver_id">
                                         <div class="row">
@@ -328,11 +314,11 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-6">
-                                                        <div class="mb-6">
-                                                            <label class="form-label" for="driver-phone">*
+                                                        <div class="mb-4">
+                                                            <label class="form-label" for="phone-code">*
                                                                 {{ __('Phone') }}</label>
                                                             <div class="input-group">
-                                                                <select id="country-code" name="phone_code"
+                                                                <select id="phone-code" name="phone_code"
                                                                     class="form-select" required style="max-width: 120px;">
                                                                     <option value="+966">🇸🇦 +966</option>
                                                                     <option value="+971">🇦🇪 +971</option>
@@ -344,8 +330,7 @@
                                                                     name="phone" />
                                                             </div>
                                                             <span class="phone-error text-danger text-error"></span>
-                                                            <span
-                                                                class="phone_code_code-error text-danger text-error"></span>
+                                                            <span class="phone_code-error text-danger text-error"></span>
                                                         </div>
                                                     </div>
 
@@ -368,8 +353,8 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-6" id="whatsapp-fields">
-                                                        <div class="mb-6">
+                                                    <div class="col-md-12" id="whatsapp-fields">
+                                                        <div class="mb-4">
                                                             <label class="form-label" for="whatsapp-number">
                                                                 <i class="ti ti-brand-whatsapp me-1 text-success"></i>
                                                                 {{ __('WhatsApp Number') }}
@@ -475,7 +460,7 @@
                                                                     <option value="">
                                                                         {{ __('Select Commission Type') }}
                                                                     </option>
-                                                                    <option value="rate">{{ __('ٌRate') }}</option>
+                                                                    <option value="rate">{{ __('Rate') }}</option>
                                                                     <option value="fixed">{{ __('Fixed Amount') }}
                                                                     </option>
                                                                     <option value="subscription">
@@ -523,6 +508,7 @@
                                                                     <option value="{{ $bank->name }}"
                                                                         data-code="{{ $bank->code }}">{{ $bank->name }}</option>
                                                                 @endforeach
+                                                                <option value="other">{{ __('Other Bank (Specify below)') }}</option>
                                                             </select>
                                                             <span class="bank_name-error text-danger text-error"></span>
                                                         </div>
@@ -681,7 +667,6 @@
 
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>

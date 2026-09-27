@@ -17,20 +17,55 @@
 @endsection
 
 @section('content')
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb breadcrumb-style1 mb-0">
+            <li class="breadcrumb-item">
+                <a href="{{ url('admin') }}"><i class="ti ti-home-2 me-1"></i>{{ __('الرئيسية') }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="javascript:void(0);">{{ __('الإعدادات') }}</a>
+            </li>
+            <li class="breadcrumb-item active">{{ __('الوسوم') }}</li>
+        </ol>
+    </nav>
 
-    <div class="card">
-        <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">
-                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+    <!-- Hero Header Banner -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.02) 100%);">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-xl bg-primary text-white rounded-3 shadow-sm d-flex align-items-center justify-content-center p-2">
+                        <i class="ti ti-tags fs-1"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h4 class="fw-bold mb-0 text-heading">{{ __('إدارة الوسوم والتصنيفات') }}</h4>
+                            <span class="badge bg-label-primary rounded-pill px-3 py-1 fs-tiny fw-semibold">
+                                <i class="ti ti-tag me-1"></i> {{ __('تصنيف الشركاء') }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-0">
+                            {{ __('إنشاء وتنظيم وسوم تصنيف السائقين والعملاء لتسهيل التوزيع وتخصيص الحملات والمهام.') }}
+                        </p>
+                    </div>
+                </div>
+                <div>
+                    <button class="add-new btn btn-primary waves-effect waves-light shadow-sm" data-bs-toggle="modal"
+                        data-bs-target="#submitModal">
+                        <i class="ti ti-plus me-1"></i>
+                        <span>{{ __('إضافة وسم جديد') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                {{ __('Settings') }} | {{ __('Tags') }}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header border-bottom py-3">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="ti ti-list-details text-primary me-2"></i>{{ __('قائمة الوسوم المسجلة بالنظام') }}
             </h5>
-            {{-- <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p> --}}
-            <button class="add-new btn btn-primary waves-effect waves-light mb-5 mx-4" data-bs-toggle="modal"
-                data-bs-target="#submitModal">
-                <i class="ti ti-plus me-0 me-sm-1 ti-xs"></i>
-                <span class="d-none d-sm-inline-block"> {{ __('Add New Tag') }}</span>
-            </button>
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-users table">

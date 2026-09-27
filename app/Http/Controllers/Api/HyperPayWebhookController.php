@@ -363,6 +363,21 @@ class HyperPayWebhookController extends Controller
                     );
                 }
             }
+
+            // إشعار الإدارة باكتمال التحويل البنكي
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'payout_status_updated',
+                title: "✅ اكتمال تحويل Payout بنكي #{$payout->reference_id}",
+                message: "تم تأكيد تحويل مبلغ " . number_format($payout->amount, 2) . " ر.س بنجاح عبر بوابة HyperPay لحساب السائق.",
+                actionUrl: url('/admin/wallets/payout-requests'),
+                priority: 'normal',
+                extraData: [
+                    'payout_id'    => $payout->id,
+                    'reference_id' => $payout->reference_id,
+                    'amount'       => $payout->amount,
+                    'status'       => 'completed',
+                ]
+            );
         } else {
             $payout->update([
                 'status' => 'failed',
@@ -379,6 +394,22 @@ class HyperPayWebhookController extends Controller
                 }
             }
             Log::error("Driver Payout for reference {$reference} failed via Webhook. Reason: " . $failureReason);
+
+            // إشعار الإدارة بفشل التحويل البنكي
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'payout_status_updated',
+                title: "❌ فشل تحويل Payout بنكي #{$payout->reference_id}",
+                message: "فشل التحويل البنكي للمبلغ " . number_format($payout->amount, 2) . " ر.س. السبب: {$failureReason}",
+                actionUrl: url('/admin/wallets/payout-requests'),
+                priority: 'high',
+                extraData: [
+                    'payout_id'      => $payout->id,
+                    'reference_id'   => $payout->reference_id,
+                    'amount'         => $payout->amount,
+                    'status'         => 'failed',
+                    'failure_reason' => $failureReason,
+                ]
+            );
         }
     }
 

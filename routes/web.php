@@ -265,8 +265,16 @@ Route::middleware('rate.limit')->group(function () {
                 Route::middleware(['can:view_notifications'])->group(function () {
                     Route::get('/system-notifications', [App\Http\Controllers\admin\NotificationController::class, 'index'])->name('system.notifications.index');
                     Route::get('/system-notifications/unread-count', [App\Http\Controllers\admin\NotificationController::class, 'unreadCount'])->name('system.notifications.unread-count');
+                    Route::get('/system-notifications/latest-unshown', [App\Http\Controllers\admin\NotificationController::class, 'latestUnshown'])->name('system.notifications.latest-unshown');
                     Route::post('/system-notifications/{id}/read', [App\Http\Controllers\admin\NotificationController::class, 'markAsRead'])->name('system.notifications.read');
                     Route::post('/system-notifications/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('system.notifications.mark-all-read');
+                });
+
+                // Admin Notification Settings
+                Route::prefix('settings/notifications')->name('admin.settings.notifications.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\admin\settings\NotificationSettingsController::class, 'index'])->name('index');
+                    Route::post('/{id}/toggle', [App\Http\Controllers\admin\settings\NotificationSettingsController::class, 'toggleChannel'])->name('toggle');
+                    Route::post('/{id}/update', [App\Http\Controllers\admin\settings\NotificationSettingsController::class, 'update'])->name('update');
                 });
 
                 // Signature Management Routes
@@ -533,6 +541,8 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/set-template', [SettingsController::class, 'setTemplate'])->name('settings.setTemplate');
                     Route::post('/mtahd/create-account', [SettingsController::class, 'createMtahdPlatformAccount'])->name('settings.mtahd.create-account');
                     Route::post('/mtahd/test-connection', [SettingsController::class, 'testMtahdConnection'])->name('settings.mtahd.test-connection');
+                    Route::post('/mail/update', [SettingsController::class, 'updateMailSettings'])->name('settings.mail.update');
+                    Route::post('/mail/test-connection', [SettingsController::class, 'testMailConnection'])->name('settings.mail.test-connection');
 
                     Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
                     Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');

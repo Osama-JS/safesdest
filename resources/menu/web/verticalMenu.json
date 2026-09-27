@@ -259,6 +259,13 @@
                     "name": "Banks Management",
                     "icon": "menu-icon tf-icons ti ti-building-bank",
                     "slug": "admin.banks.index"
+                },
+                {
+                    "url": "admin/settings/notifications",
+                    "name": "Notification Settings",
+                    "icon": "menu-icon tf-icons ti ti-bell-ringing",
+                    "slug": "admin.settings.notifications.index",
+                    "permission": "general_settings"
                 }
             ]
         },

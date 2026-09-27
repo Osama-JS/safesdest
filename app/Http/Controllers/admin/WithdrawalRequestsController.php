@@ -248,6 +248,22 @@ class WithdrawalRequestsController extends Controller
                         'processed_at' => now(),
                     ]);
 
+                    // إشعار المدير بالمصادقة على طلب الدفع
+                    \App\Services\AdminNotificationDispatcher::dispatch(
+                        eventKey: 'payout_approval_required',
+                        title: "طلب مصادقة Payout جديد #{$externalId}",
+                        message: "تم تجهيز حوالة Payout بنكية لسحب السائق {$driver->name} بمبلغ " . number_format($amountPaid, 2) . " ر.س وبانتظار مصادقة المدير.",
+                        actionUrl: url('/admin/wallets/payout-requests'),
+                        priority: 'high',
+                        extraData: [
+                            'reference_id'  => $externalId,
+                            'driver_id'     => $driver->id,
+                            'driver_name'   => $driver->name,
+                            'amount'        => $amountPaid,
+                            'withdrawal_id' => $withdrawal->id,
+                        ]
+                    );
+
                     DB::commit();
                     return response()->json([
                         'success' => true,

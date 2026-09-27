@@ -140,6 +140,21 @@ class DriverWalletController extends Controller
                 'payment_method' => 'cash', // Default or from request
             ]);
 
+            // Notify Admin of new withdrawal request
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'driver_withdrawal_requested',
+                title: "طلب سحب رصيد جديد #WD-{$withdrawal->id}",
+                message: "قام السائق {$driver->name} (" . ($driver->driver_code ?? "ID: {$driver->id}") . ") بطلب سحب مبلغ " . number_format($request->amount, 2) . " ر.س من محفظته.",
+                actionUrl: url('/admin/wallets/withdrawals'),
+                priority: 'high',
+                extraData: [
+                    'withdrawal_id'    => $withdrawal->id,
+                    'driver_id'        => $driver->id,
+                    'driver_name'      => $driver->name,
+                    'amount_requested' => $request->amount,
+                ]
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Withdrawal request submitted successfully',

@@ -376,6 +376,22 @@ class WalletsController extends Controller
                     'status' => 'pending_approval'
                 ]);
 
+                // إشعار المدير بالمصادقة على طلب تسوية المستحقات
+                \App\Services\AdminNotificationDispatcher::dispatch(
+                    eventKey: 'payout_approval_required',
+                    title: "طلب مصادقة تسوية مستحقات #{$externalId}",
+                    message: "تم تسجيل طلب تسوية مستحقات للسائق {$driver->name} بمبلغ " . number_format($request->total_amount, 2) . " ر.س وبانتظار مصادقة المدير.",
+                    actionUrl: url('/admin/wallets/payout-requests'),
+                    priority: 'high',
+                    extraData: [
+                        'reference_id' => $externalId,
+                        'driver_id'    => $driver->id,
+                        'driver_name'  => $driver->name,
+                        'amount'       => $request->total_amount,
+                        'payout_type'  => 'WP',
+                    ]
+                );
+
                 DB::commit();
 
                 return response()->json([
@@ -911,6 +927,22 @@ class WalletsController extends Controller
                     ],
                     'status' => 'pending_approval'
                 ]);
+
+                // إشعار المدير بالمصادقة على دفعة السحب اليدوي
+                \App\Services\AdminNotificationDispatcher::dispatch(
+                    eventKey: 'payout_approval_required',
+                    title: "طلب مصادقة دفعة Payout جديدة #{$externalId}",
+                    message: "تم تسجيل حركة دفع يدوية للسائق {$driver->name} بمبلغ " . number_format($req->amount, 2) . " ر.س وبانتظار مصادقة المدير.",
+                    actionUrl: url('/admin/wallets/payout-requests'),
+                    priority: 'high',
+                    extraData: [
+                        'reference_id' => $externalId,
+                        'driver_id'    => $driver->id,
+                        'driver_name'  => $driver->name,
+                        'amount'       => $req->amount,
+                        'payout_type'  => 'MT',
+                    ]
+                );
 
                 return response()->json([
                     'status'  => 1,

@@ -12,7 +12,7 @@ class SettingsController extends Controller
 
   public function __construct()
   {
-    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate']]);
+    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection']]);
   }
 
   public function index()
@@ -98,6 +98,107 @@ class SettingsController extends Controller
   }
 
   /**
+   * تحديث وحفظ إعدادات خادم البريد (SMTP)
+   */
+  public function updateMailSettings(Request $request)
+  {
+    $validated = $request->validate([
+      'mail_mailer' => 'required|string|in:smtp,sendmail,log',
+      'mail_host' => 'nullable|string',
+      'mail_port' => 'nullable|numeric',
+      'mail_username' => 'nullable|string',
+      'mail_password' => 'nullable|string',
+      'mail_encryption' => 'nullable|string',
+      'mail_from_address' => 'required|email',
+      'mail_from_name' => 'required|string|max:100',
+    ]);
+
+    foreach ($validated as $key => $value) {
+      Settings::updateOrCreate(
+        ['key' => $key],
+        [
+          'value' => $value,
+          'category' => 'mail',
+          'name' => 'إعدادات البريد - ' . $key,
+        ]
+      );
+    }
+
+    // Re-apply runtime config immediately
+    \App\Services\MailConfigService::apply();
+
+    return response()->json([
+      'success' => true,
+      'message' => 'تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!'
+    ]);
+  }
+
+  /**
+   * اختبار اتصال خادم البريد وإرسال بريد تجريبي
+   */
+  public function testMailConnection(Request $request)
+  {
+    $request->validate([
+      'test_email' => 'required|email'
+    ]);
+
+    try {
+      // If custom parameters were submitted, apply them temporarily for the test
+      if ($request->filled('mail_host')) {
+        \App\Services\MailConfigService::applyCustom([
+          'mail_mailer' => $request->input('mail_mailer', 'smtp'),
+          'mail_host' => $request->input('mail_host'),
+          'mail_port' => $request->input('mail_port'),
+          'mail_username' => $request->input('mail_username'),
+          'mail_password' => $request->input('mail_password'),
+          'mail_encryption' => $request->input('mail_encryption'),
+          'mail_from_address' => $request->input('mail_from_address'),
+          'mail_from_name' => $request->input('mail_from_name'),
+        ]);
+      } else {
+        \App\Services\MailConfigService::apply();
+      }
+
+      $recipient = $request->input('test_email');
+      $now = now()->toDateTimeString();
+      $host = config('mail.mailers.smtp.host');
+      $port = config('mail.mailers.smtp.port');
+      $from = config('mail.from.address');
+      $name = config('mail.from.name');
+
+      \Illuminate\Support\Facades\Mail::raw(
+        "مرحباً بك،\n\n" .
+        "هذه رسالة اختبارية لتأكيد صحة إعدادات خادم البريد الإلكتروني (SMTP) في منصة سيف ديست (SafeDest).\n\n" .
+        "بيانات الاتصال المستخدمة في هذا الاختبار:\n" .
+        "- خادم البريد (Host): {$host}:{$port}\n" .
+        "- البريد المرسل منه (From): {$from} ({$name})\n" .
+        "- توقيت الإرسال: {$now}\n\n" .
+        "وصول هذا البريد إليك يؤكد أن بيانات الاتصال دقيقة وتعمل بنجاح تام وبدون أي مشاكل.",
+        function ($message) use ($recipient) {
+          $message->to($recipient)
+                  ->subject('اختبار اتصال خادم البريد الإلكتروني (SMTP) - SafeDest');
+        }
+      );
+
+      // Restore saved database settings
+      \App\Services\MailConfigService::apply();
+
+      return response()->json([
+        'success' => true,
+        'message' => "تم إرسال البريد التجريبي بنجاح إلى: {$recipient}، يرجى التحقق من صندوق الوارد."
+      ]);
+    } catch (\Throwable $e) {
+      // Restore saved database settings in case of failure
+      \App\Services\MailConfigService::apply();
+
+      return response()->json([
+        'success' => false,
+        'message' => 'فشل إرسال البريد: ' . $e->getMessage()
+      ], 400);
+    }
+  }
+
+  /**
    * اختبار الاتصال بـ API متعهد
    */
   public function testMtahdConnection(Request $request)
@@ -106,7 +207,6 @@ class SettingsController extends Controller
       $mtahdService = app(\App\Services\MtahdService::class);
       $res = $mtahdService->getDealDetails('NON_EXISTENT_TEST_DEAL');
 
-      // إذا وصلنا كود 404 أو استجابة سليمة من الـ API (يعني التوكن والاتصال صحيحان)
       return response()->json([
         'success' => true,
         'message' => 'تم الاتصال بـ API منصة متعهد بنجاح والتوكن يعمل بصورة ممتازة!'

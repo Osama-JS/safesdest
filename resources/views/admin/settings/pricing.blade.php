@@ -19,16 +19,48 @@
 @endsection
 
 @section('content')
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb breadcrumb-style1 mb-0">
+            <li class="breadcrumb-item">
+                <a href="{{ url('admin') }}"><i class="ti ti-home-2 me-1"></i>{{ __('الرئيسية') }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="javascript:void(0);">{{ __('الإعدادات') }}</a>
+            </li>
+            <li class="breadcrumb-item active">{{ __('طرق التسعير') }}</li>
+        </ol>
+    </nav>
 
-    <div class="card">
-        <div class="card-header border-bottom">
-            <h5 class="card-title mb-2">
-                <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+    <!-- Hero Header Banner -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.02) 100%);">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-xl bg-primary text-white rounded-3 shadow-sm d-flex align-items-center justify-content-center p-2">
+                        <i class="ti ti-calculator fs-1"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h4 class="fw-bold mb-0 text-heading">{{ __('طرق وسياسات التسعير') }}</h4>
+                            <span class="badge bg-label-primary rounded-pill px-3 py-1 fs-tiny fw-semibold">
+                                <i class="ti ti-coin me-1"></i> {{ __('تسعير الرحلات والمهام') }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-0">
+                            {{ __('تحديد واحتساب تكاليف الرحلات والخدمات (حسب المسافة، الوزن، المناطق، أو التسعير الثابت) وإدارتها.') }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                {{ __('Settings') }} | {{ __('Pricing Methods') }}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header border-bottom py-3">
+            <h5 class="card-title mb-0 fw-bold">
+                <i class="ti ti-list-details text-primary me-2"></i>{{ __('طرق التسعير المتاحة بالنظام') }}
             </h5>
-            {{-- <p>{{ __('Add new roles with customized permissions as per your requirement') }}. </p> --}}
-
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-users table">

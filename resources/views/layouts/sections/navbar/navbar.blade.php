@@ -236,8 +236,12 @@
                         <div class="d-flex align-items-center h6 mb-0">
                             <span class="badge bg-label-primary me-2">0 New</span>
                             <a href="javascript:void(0)"
+                                class="btn btn-text-secondary rounded-pill btn-icon dropdown-notifications-sound-toggle me-1"
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="{{ __('كتم / تشغيل صوت التنبيه') }}"><i
+                                    class="ti ti-volume text-heading sound-icon"></i></a>
+                            <a href="javascript:void(0)"
                                 class="btn btn-text-secondary rounded-pill btn-icon dropdown-notifications-all"
-                                data-bs-toggle="tooltip" data-bs-placement="top" title="Mark all as read"><i
+                                data-bs-toggle="tooltip" data-bs-placement="top" title="{{ __('تحديد الكل كمقروء') }}"><i
                                     class="ti ti-mail-opened text-heading"></i></a>
                         </div>
                     </div>
@@ -261,6 +265,32 @@
                 </li> --}}
             </ul>
         </li>
+
+        <!-- In-App Notification Modal Alert -->
+        <div class="modal fade" id="inAppNotificationModal" tabindex="-1" aria-hidden="true" style="z-index: 1090;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0">
+                    <div class="modal-header border-bottom py-3 bg-label-primary">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-sm me-2">
+                                <span class="avatar-initial rounded-circle bg-primary text-white">
+                                    <i class="ti ti-bell-ringing"></i>
+                                </span>
+                            </div>
+                            <h5 class="modal-title fw-bold text-primary mb-0">{{ __('تنبيه جديد') }}</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-3" id="inAppModalNotificationsList">
+                        <!-- Items injected dynamically via notifications.js -->
+                    </div>
+                    <div class="modal-footer border-top py-2 d-flex justify-content-between">
+                        <small class="text-muted"><i class="ti ti-clock me-1"></i>{{ __('إشعار لحظي من النظام') }}</small>
+                        <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">{{ __('إغلاق') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         @endcan
         <!--/ Notification -->
 

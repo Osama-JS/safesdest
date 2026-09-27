@@ -45,6 +45,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Apply dynamic mail configuration from database if available
+        \App\Services\MailConfigService::apply();
+
         // Define rate limiters for API endpoints
         $this->configureRateLimiters();
 

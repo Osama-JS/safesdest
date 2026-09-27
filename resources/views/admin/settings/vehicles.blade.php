@@ -319,21 +319,38 @@
 @endsection
 
 @section('content')
-    <!-- Enhanced Header -->
-    <div class="card vehicle-header-card mb-4">
-        <div class="card-header border-0">
-            <div class="d-flex align-items-center">
-                <div class="vehicle-icon me-3">
-                    <i class="tf-icons ti ti-adjustments me-2 fs-3 text-white bg-primary rounded p-1"></i>
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb breadcrumb-style1 mb-0">
+            <li class="breadcrumb-item">
+                <a href="{{ url('admin') }}"><i class="ti ti-home-2 me-1"></i>{{ __('الرئيسية') }}</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="javascript:void(0);">{{ __('الإعدادات') }}</a>
+            </li>
+            <li class="breadcrumb-item active">{{ __('المركبات') }}</li>
+        </ol>
+    </nav>
 
-                </div>
-                <div>
-                    <h4 class="card-title mb-1">
-                        {{ __('Settings') }} | {{ __('Vehicles Management') }}
-                    </h4>
-                    <p class="mb-0">
-                        {{ __('Managing the types of vehicles and trucks that will provide delivery services on the platform') }}
-                    </p>
+    <!-- Hero Header Banner -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(115, 103, 240, 0.08) 0%, rgba(115, 103, 240, 0.02) 100%);">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-xl bg-primary text-white rounded-3 shadow-sm d-flex align-items-center justify-content-center p-2">
+                        <i class="ti ti-truck fs-1"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                            <h4 class="fw-bold mb-0 text-heading">{{ __('إدارة أسطول المركبات والشاحنات') }}</h4>
+                            <span class="badge bg-label-primary rounded-pill px-3 py-1 fs-tiny fw-semibold">
+                                <i class="ti ti-steering-wheel me-1"></i> {{ __('فئات الشاحنات والنقل') }}
+                            </span>
+                        </div>
+                        <p class="text-muted mb-0">
+                            {{ __('إدارة وتصنيف أنواع المركبات والشاحنات المعتمدة لتقديم خدمات النقل والتوصيل وتحديد مواصفاتها وأسعارها.') }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

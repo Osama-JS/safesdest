@@ -15,6 +15,14 @@ class Notification_Users extends Model
     'notification_id',
     'user_id',
     'status',
+    'is_shown',
+    'shown_at',
+  ];
+
+  protected $casts = [
+    'status'   => 'boolean',
+    'is_shown' => 'boolean',
+    'shown_at' => 'datetime',
   ];
 
   public function notification()

@@ -169,6 +169,7 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         $query = Notification_Users::where('user_id', $user->id)
+            ->whereHas('notification')
             ->with('notification');
 
         // Filter: Status (all, unread, read)
@@ -198,19 +199,21 @@ class NotificationController extends Controller
 
         // Search: Keyword
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->whereHas('notification', function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('message', 'like', "%{$search}%");
             });
         }
 
-        $notifications = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        $notifications = $query->orderBy('created_at', 'desc')->paginate(12)->withQueryString();
 
-        // Statistics
-        $totalCount = Notification_Users::where('user_id', $user->id)->count();
-        $unreadCount = Notification_Users::where('user_id', $user->id)->where('status', false)->count();
+        // Statistics strictly for current user
+        $totalCount = Notification_Users::where('user_id', $user->id)->whereHas('notification')->count();
+        $unreadCount = Notification_Users::where('user_id', $user->id)->whereHas('notification')->where('status', false)->count();
+        $readCount = Notification_Users::where('user_id', $user->id)->whereHas('notification')->where('status', true)->count();
         $todayCount = Notification_Users::where('user_id', $user->id)
+            ->whereHas('notification')
             ->whereDate('created_at', today())
             ->count();
         $financialCount = Notification_Users::where('user_id', $user->id)
@@ -221,6 +224,7 @@ class NotificationController extends Controller
             'notifications',
             'totalCount',
             'unreadCount',
+            'readCount',
             'todayCount',
             'financialCount'
         ));

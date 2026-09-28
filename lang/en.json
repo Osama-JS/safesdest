@@ -1341,5 +1341,10 @@
     "Delete All Read": "Delete All Read",
     "Mark all as read": "Mark all as read",
     "عرض الجميع": "View All",
-    "View All": "View All"
+    "View All": "View All",
+    "إشعاراتي": "My Notifications",
+    "My Notifications": "My Notifications",
+    "صندوق إشعاراتي": "My Notifications Inbox",
+    "إجمالي إشعاراتي": "Total Notifications",
+    "حذف المقروءة": "Delete Read"
 }

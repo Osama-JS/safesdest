@@ -13,40 +13,72 @@ $(function () {
   const inAppModal = $('#inAppNotificationModal');
   const inAppModalList = $('#inAppModalNotificationsList');
 
-  // Ensure modal element is always attached directly to <body> to avoid stacking context / backdrop clipping
-  if (inAppModal.length > 0 && !inAppModal.parent().is('body')) {
-    inAppModal.appendTo('body');
+  function getModalEl() {
+    let el = document.getElementById('inAppNotificationModal');
+    if (el && el.parentElement !== document.body) {
+      document.body.appendChild(el);
+    }
+    return el;
   }
 
+  // Pre-check on page load
+  getModalEl();
+
   function showInAppModal() {
-    if (inAppModal.length === 0) return;
-    if (inAppModal.hasClass('show')) return;
-    if (!inAppModal.parent().is('body')) {
-      inAppModal.appendTo('body');
-    }
+    const modalEl = getModalEl();
+    if (!modalEl) return;
+    if (modalEl.classList.contains('show')) return;
+
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modalInstance = bootstrap.Modal.getOrCreateInstance(inAppModal[0]);
+      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
+        backdrop: true,
+        keyboard: true
+      });
       modalInstance.show();
-    } else if (typeof inAppModal.modal === 'function') {
-      inAppModal.modal('show');
+    } else if (typeof $(modalEl).modal === 'function') {
+      $(modalEl).modal('show');
     }
+
+    // Force z-index check right after show to ensure backdrop is strictly below modal dialog
+    setTimeout(function () {
+      $('.modal-backdrop').css('z-index', '109990');
+      $(modalEl).css({
+        'z-index': '109999',
+        'display': 'block'
+      });
+      $(modalEl).find('.modal-dialog').css({
+        'z-index': '110000',
+        'position': 'relative'
+      });
+    }, 50);
   }
 
   function hideInAppModal() {
-    if (inAppModal.length === 0) return;
+    const modalEl = getModalEl();
+    if (!modalEl) return;
+
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modalInstance = bootstrap.Modal.getInstance(inAppModal[0]);
+      const modalInstance = bootstrap.Modal.getInstance(modalEl);
       if (modalInstance) {
         modalInstance.hide();
-      } else {
-        inAppModal.removeClass('show').css('display', 'none');
-        $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
-        $('.modal-backdrop').remove();
       }
-    } else if (typeof inAppModal.modal === 'function') {
-      inAppModal.modal('hide');
+    } else if (typeof $(modalEl).modal === 'function') {
+      $(modalEl).modal('hide');
     }
+
+    setTimeout(function () {
+      if (!modalEl.classList.contains('show')) {
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
+      }
+    }, 350);
   }
+
+  // Always clean up lingering backdrops when notification modal closes
+  $(document).on('hidden.bs.modal', '#inAppNotificationModal', function () {
+    $('.modal-backdrop').remove();
+    $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
+  });
 
   // Base URL for API
   const apiBase = (typeof baseUrl !== 'undefined' ? baseUrl : '/') + 'admin/system-notifications';
@@ -285,7 +317,14 @@ $(function () {
             notificationList.prepend(notificationTemplate(item));
           });
 
-          inAppModalList.html(modalHtml);
+          let listContainer = $('#inAppModalNotificationsList');
+          if (listContainer.length === 0) {
+            const m = getModalEl();
+            if (m) listContainer = $(m).find('#inAppModalNotificationsList');
+          }
+          if (listContainer.length > 0) {
+            listContainer.html(modalHtml);
+          }
 
           // 4. Show Modal if not already open
           showInAppModal();
@@ -323,7 +362,7 @@ $(function () {
         if (res.success) {
           card.fadeOut(300, function () {
             $(this).remove();
-            if (inAppModalList.children().length === 0) {
+            if ($('#inAppModalNotificationsList').children().length === 0) {
               hideInAppModal();
             }
           });

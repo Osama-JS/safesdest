@@ -1,6 +1,24 @@
 <!-- In-App Notification Modal Alert -->
-<div class="modal fade" id="inAppNotificationModal" tabindex="-1" aria-labelledby="inAppNotificationModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<style>
+/* Guarantee In-App Notification Modal is ALWAYS above the backdrop and navbar */
+#inAppNotificationModal {
+    z-index: 109999 !important;
+}
+#inAppNotificationModal.show {
+    display: block !important;
+}
+#inAppNotificationModal .modal-dialog {
+    z-index: 110000 !important;
+    position: relative !important;
+}
+.modal-backdrop.in-app-backdrop,
+body.modal-open .modal-backdrop {
+    z-index: 109990 !important;
+}
+</style>
+
+<div class="modal fade" id="inAppNotificationModal" tabindex="-1" aria-labelledby="inAppNotificationModalTitle" aria-hidden="true" style="z-index: 109999 !important;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="z-index: 110000 !important; position: relative;">
         <div class="modal-content shadow-lg border-0">
             <div class="modal-header border-bottom py-3 bg-label-primary">
                 <div class="d-flex align-items-center">

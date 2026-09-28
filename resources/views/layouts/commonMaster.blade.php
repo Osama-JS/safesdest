@@ -76,9 +76,9 @@
     @yield('layoutContent')
     <!--/ Layout Content -->
 
-    @can('view_notifications')
+    @if(auth()->check())
         @include('layouts.sections.notifications.modal')
-    @endcan
+    @endif
 
     <!-- Include Scripts -->
     <!-- $isFront is used to append the front layout scripts only on the front layout otherwise the variable will be blank -->

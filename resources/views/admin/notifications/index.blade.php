@@ -57,12 +57,12 @@
                 <!-- Quick Action Buttons -->
                 <div class="d-flex gap-2 flex-wrap">
                     @if($unreadCount > 0)
-                        <button type="button" class="btn btn-primary shadow-sm" id="btnMarkAllRead">
+                        <button type="button" class="btn btn-primary shadow-sm" id="btnMarkAllRead" data-url="{{ route('system.notifications.mark-all-read') }}">
                             <i class="ti ti-mail-opened me-1"></i> {{ __('تحديد الكل كمقروء') }}
                         </button>
                     @endif
                     @if($readCount > 0)
-                        <button type="button" class="btn btn-label-danger shadow-sm" id="btnDeleteAllRead">
+                        <button type="button" class="btn btn-label-danger shadow-sm" id="btnDeleteAllRead" data-url="{{ route('system.notifications.delete-all-read') }}">
                             <i class="ti ti-trash me-1"></i> {{ __('حذف المقروءة') }}
                         </button>
                     @endif
@@ -241,7 +241,7 @@
                 <span class="badge bg-label-primary rounded-pill">{{ $notifications->total() }}</span>
             </div>
             <div class="d-none d-sm-block text-muted small">
-                <i class="ti ti-info-circle me-1"></i>{{ __('انقر على الإشعار لتمييزه أو عرض تفاصيله') }}
+                <i class="ti ti-info-circle me-1"></i>{{ __('انقر على أزرار الإجراء لتمييز الإشعار أو حذفه') }}
             </div>
         </div>
 
@@ -351,7 +351,7 @@
                                         <div class="d-flex justify-content-between align-items-center pt-2 border-top border-light">
                                             <div>
                                                 @if($notif?->action_url)
-                                                    <a href="{{ $notif->action_url }}" class="btn btn-xs btn-primary btn-action-go shadow-xs me-2" data-id="{{ $item->id }}">
+                                                    <a href="{{ $notif->action_url }}" class="btn btn-xs btn-primary btn-action-go shadow-xs me-2" data-id="{{ $item->id }}" data-url="{{ route('system.notifications.read', $item->id) }}">
                                                         <i class="ti ti-arrow-left me-1"></i> {{ __('عرض التفاصيل') }}
                                                     </a>
                                                 @endif
@@ -362,6 +362,7 @@
                                                 <button type="button" 
                                                         class="btn btn-xs {{ $isRead ? 'btn-label-secondary' : 'btn-label-primary' }} btn-toggle-read" 
                                                         data-id="{{ $item->id }}" 
+                                                        data-url="{{ route('system.notifications.toggle-read', $item->id) }}"
                                                         title="{{ $isRead ? __('تحديد كغير مقروء') : __('تحديد كمقروء') }}">
                                                     <i class="ti {{ $isRead ? 'ti-mail' : 'ti-mail-opened' }} me-1"></i>
                                                     <span class="toggle-text">{{ $isRead ? __('تحديد كغير مقروء') : __('تحديد كمقروء') }}</span>
@@ -371,6 +372,7 @@
                                                 <button type="button" 
                                                         class="btn btn-xs btn-label-danger btn-delete-notif" 
                                                         data-id="{{ $item->id }}" 
+                                                        data-url="{{ route('system.notifications.delete', $item->id) }}"
                                                         title="{{ __('حذف الإشعار') }}">
                                                     <i class="ti ti-trash"></i>
                                                 </button>
@@ -431,160 +433,268 @@
     100% { transform: scale(1); }
 }
 </style>
-@endsection
 
-@section('page-script')
 <script>
-$(function () {
-    const csrfToken = $('meta[name="csrf-token"]').attr('content');
-    const apiBase = "{{ url('admin/system-notifications') }}";
+(function () {
+    const csrfToken = '{{ csrf_token() }}';
 
-    // 1. Mark All As Read
-    $('#btnMarkAllRead').on('click', function () {
-        Swal.fire({
-            title: "{{ __('تحديد الكل كمقروء') }}",
-            text: "{{ __('هل أنت متأكد من رغبتك في تحديد جميع إشعاراتك كمقروءة؟') }}",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: "{{ __('نعم، حدد الكل') }}",
-            cancelButtonText: "{{ __('إلغاء') }}",
-            customClass: {
-                confirmButton: 'btn btn-primary me-2',
-                cancelButton: 'btn btn-label-secondary'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `${apiBase}/mark-all-read`,
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
-                    success: function (res) {
-                        if (res.success) {
-                            window.location.reload();
-                        }
-                    }
-                });
+    function showConfirm(title, text, confirmText, isDanger, onConfirm) {
+        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: isDanger ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: confirmText,
+                cancelButtonText: '{{ __("إلغاء") }}',
+                customClass: {
+                    confirmButton: isDanger ? 'btn btn-danger me-2' : 'btn btn-primary me-2',
+                    cancelButton: 'btn btn-label-secondary'
+                },
+                buttonsStyling: false
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    onConfirm();
+                }
+            });
+        } else {
+            if (window.confirm(text || title)) {
+                onConfirm();
             }
-        });
-    });
+        }
+    }
 
-    // 2. Delete All Read
-    $('#btnDeleteAllRead').on('click', function () {
-        Swal.fire({
-            title: "{{ __('حذف الإشعارات المقروءة') }}",
-            text: "{{ __('هل تريد حذف جميع الإشعارات التي قمت بقراءتها من صندوقك؟') }}",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: "{{ __('نعم، احذف المقروء') }}",
-            cancelButtonText: "{{ __('إلغاء') }}",
-            customClass: {
-                confirmButton: 'btn btn-danger me-2',
-                cancelButton: 'btn btn-label-secondary'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `${apiBase}/delete-all-read`,
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
-                    success: function (res) {
-                        if (res.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: res.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
+    function showFeedback(icon, message, callback) {
+        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+            Swal.fire({
+                icon: icon,
+                title: message,
+                timer: 1500,
+                showConfirmButton: false
+            }).then(function () {
+                if (callback) callback();
+            });
+        } else {
+            if (callback) callback();
+        }
+    }
+
+    // Event delegation on document (Zero dependency on jQuery load order!)
+    document.addEventListener('click', function (e) {
+        // 1. Mark All As Read
+        const markAllBtn = e.target.closest('#btnMarkAllRead');
+        if (markAllBtn) {
+            e.preventDefault();
+            const url = markAllBtn.getAttribute('data-url');
+            showConfirm(
+                '{{ __("تحديد الكل كمقروء") }}',
+                '{{ __("هل أنت متأكد من رغبتك في تحديد جميع إشعاراتك كمقروءة؟") }}',
+                '{{ __("نعم، حدد الكل") }}',
+                false,
+                function () {
+                    markAllBtn.disabled = true;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ _token: csrfToken })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback('success', data.message || '{{ __("تم تحديد الكل كمقروء") }}', function () {
                                 window.location.reload();
                             });
+                        } else {
+                            alert(data.message || 'Error');
+                            markAllBtn.disabled = false;
                         }
-                    }
-                });
-            }
-        });
-    });
-
-    // 3. Toggle Single Read / Unread
-    $(document).on('click', '.btn-toggle-read', function () {
-        const btn = $(this);
-        const id = btn.data('id');
-        const row = $(`#notif-row-${id}`);
-        const card = row.find('.notif-card');
-
-        $.ajax({
-            url: `${apiBase}/${id}/toggle-read`,
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken },
-            success: function (res) {
-                if (res.success) {
-                    if (res.is_read) {
-                        card.removeClass('border-primary border-start border-3 bg-label-primary bg-opacity-10 shadow-sm')
-                            .addClass('border-light shadow-none bg-body');
-                        card.find('.unread-pill').remove();
-                        btn.removeClass('btn-label-primary').addClass('btn-label-secondary');
-                        btn.find('i').removeClass('ti-mail-opened').addClass('ti-mail');
-                        btn.find('.toggle-text').text("{{ __('تحديد كغير مقروء') }}");
-                    } else {
-                        card.removeClass('border-light shadow-none bg-body')
-                            .addClass('border-primary border-start border-3 bg-label-primary bg-opacity-10 shadow-sm');
-                        btn.removeClass('btn-label-secondary').addClass('btn-label-primary');
-                        btn.find('i').removeClass('ti-mail').addClass('ti-mail-opened');
-                        btn.find('.toggle-text').text("{{ __('تحديد كمقروء') }}");
-                    }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        markAllBtn.disabled = false;
+                        alert('حدث خطأ في الاتصال بالخادم');
+                    });
                 }
-            }
-        });
-    });
+            );
+            return;
+        }
 
-    // 4. Delete Single Notification
-    $(document).on('click', '.btn-delete-notif', function () {
-        const btn = $(this);
-        const id = btn.data('id');
-        const row = $(`#notif-row-${id}`);
-
-        Swal.fire({
-            title: "{{ __('حذف الإشعار') }}",
-            text: "{{ __('هل أنت متأكد من حذف هذا الإشعار من صندوقك؟') }}",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: "{{ __('نعم، احذف') }}",
-            cancelButtonText: "{{ __('إلغاء') }}",
-            customClass: {
-                confirmButton: 'btn btn-danger me-2',
-                cancelButton: 'btn btn-label-secondary'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: `${apiBase}/${id}/delete`,
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken },
-                    success: function (res) {
-                        if (res.success) {
-                            row.fadeOut(300, function () {
-                                $(this).remove();
+        // 2. Delete All Read
+        const deleteAllReadBtn = e.target.closest('#btnDeleteAllRead');
+        if (deleteAllReadBtn) {
+            e.preventDefault();
+            const url = deleteAllReadBtn.getAttribute('data-url');
+            showConfirm(
+                '{{ __("حذف الإشعارات المقروءة") }}',
+                '{{ __("هل تريد حذف جميع الإشعارات التي قمت بقراءتها من صندوقك؟") }}',
+                '{{ __("نعم، احذف المقروء") }}',
+                true,
+                function () {
+                    deleteAllReadBtn.disabled = true;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ _token: csrfToken })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback('success', data.message || '{{ __("تم حذف جميع الإشعارات المقروءة بنجاح") }}', function () {
+                                window.location.reload();
                             });
+                        } else {
+                            alert(data.message || 'Error');
+                            deleteAllReadBtn.disabled = false;
                         }
-                    }
-                });
-            }
-        });
-    });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        deleteAllReadBtn.disabled = false;
+                        alert('حدث خطأ في الاتصال بالخادم');
+                    });
+                }
+            );
+            return;
+        }
 
-    // 5. Click Action Button (mark read before redirect)
-    $(document).on('click', '.btn-action-go', function () {
-        const id = $(this).data('id');
-        if (id) {
-            $.ajax({
-                url: `${apiBase}/${id}/read`,
+        // 3. Toggle Single Read / Unread
+        const toggleBtn = e.target.closest('.btn-toggle-read');
+        if (toggleBtn) {
+            e.preventDefault();
+            const url = toggleBtn.getAttribute('data-url');
+            const id = toggleBtn.getAttribute('data-id');
+            const row = document.getElementById('notif-row-' + id);
+            const card = row ? row.querySelector('.notif-card') : null;
+            const originalHtml = toggleBtn.innerHTML;
+
+            toggleBtn.disabled = true;
+            toggleBtn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width: 12px; height: 12px;"></span>';
+
+            fetch(url, {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': csrfToken }
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ _token: csrfToken })
+            })
+            .then(res => res.json())
+            .then(data => {
+                toggleBtn.disabled = false;
+                if (data.success) {
+                    if (data.is_read) {
+                        if (card) {
+                            card.classList.remove('border-primary', 'border-start', 'border-3', 'bg-label-primary', 'bg-opacity-10', 'shadow-sm');
+                            card.classList.add('border-light', 'shadow-none', 'bg-body');
+                            const unreadPill = card.querySelector('.unread-pill');
+                            if (unreadPill) unreadPill.remove();
+                        }
+                        toggleBtn.className = 'btn btn-xs btn-label-secondary btn-toggle-read';
+                        toggleBtn.title = '{{ __("تحديد كغير مقروء") }}';
+                        toggleBtn.innerHTML = '<i class="ti ti-mail me-1"></i><span class="toggle-text">{{ __("تحديد كغير مقروء") }}</span>';
+                    } else {
+                        if (card) {
+                            card.classList.remove('border-light', 'shadow-none', 'bg-body');
+                            card.classList.add('border-primary', 'border-start', 'border-3', 'bg-label-primary', 'bg-opacity-10', 'shadow-sm');
+                        }
+                        toggleBtn.className = 'btn btn-xs btn-label-primary btn-toggle-read';
+                        toggleBtn.title = '{{ __("تحديد كمقروء") }}';
+                        toggleBtn.innerHTML = '<i class="ti ti-mail-opened me-1"></i><span class="toggle-text">{{ __("تحديد كمقروء") }}</span>';
+                    }
+                } else {
+                    toggleBtn.innerHTML = originalHtml;
+                    alert(data.message || 'Error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                toggleBtn.disabled = false;
+                toggleBtn.innerHTML = originalHtml;
+                alert('حدث خطأ في تحديث حالة الإشعار');
             });
+            return;
+        }
+
+        // 4. Delete Single Notification
+        const deleteBtn = e.target.closest('.btn-delete-notif');
+        if (deleteBtn) {
+            e.preventDefault();
+            const url = deleteBtn.getAttribute('data-url');
+            const id = deleteBtn.getAttribute('data-id');
+            const row = document.getElementById('notif-row-' + id);
+
+            showConfirm(
+                '{{ __("حذف الإشعار") }}',
+                '{{ __("هل أنت متأكد من حذف هذا الإشعار من صندوقك؟") }}',
+                '{{ __("نعم، احذف") }}',
+                true,
+                function () {
+                    deleteBtn.disabled = true;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ _token: csrfToken, _method: 'DELETE' })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (row) {
+                                row.style.transition = 'all 0.3s ease';
+                                row.style.opacity = '0';
+                                row.style.transform = 'scale(0.95)';
+                                setTimeout(function () {
+                                    row.remove();
+                                    const list = document.getElementById('notificationsListGroup');
+                                    if (list && list.children.length === 0) {
+                                        window.location.reload();
+                                    }
+                                }, 300);
+                            }
+                        } else {
+                            deleteBtn.disabled = false;
+                            alert(data.message || 'Error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        deleteBtn.disabled = false;
+                        alert('حدث خطأ أثناء محاولة حذف الإشعار');
+                    });
+                }
+            );
+            return;
+        }
+
+        // 5. Action Go Button (mark read and let link proceed)
+        const actionGoBtn = e.target.closest('.btn-action-go');
+        if (actionGoBtn) {
+            const url = actionGoBtn.getAttribute('data-url');
+            if (url) {
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ _token: csrfToken })
+                }).catch(() => {});
+            }
         }
     });
-});
+})();
 </script>
 @endsection

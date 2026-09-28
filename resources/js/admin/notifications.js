@@ -38,19 +38,6 @@ $(function () {
     } else if (typeof $(modalEl).modal === 'function') {
       $(modalEl).modal('show');
     }
-
-    // Force z-index check right after show to ensure backdrop is strictly below modal dialog
-    setTimeout(function () {
-      $('.modal-backdrop').css('z-index', '109990');
-      $(modalEl).css({
-        'z-index': '109999',
-        'display': 'block'
-      });
-      $(modalEl).find('.modal-dialog').css({
-        'z-index': '110000',
-        'position': 'relative'
-      });
-    }, 50);
   }
 
   function hideInAppModal() {
@@ -65,19 +52,14 @@ $(function () {
     } else if (typeof $(modalEl).modal === 'function') {
       $(modalEl).modal('hide');
     }
-
-    setTimeout(function () {
-      if (!modalEl.classList.contains('show')) {
-        $('.modal-backdrop').remove();
-        $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
-      }
-    }, 350);
   }
 
-  // Always clean up lingering backdrops when notification modal closes
+  // Ensure clean state if inAppNotificationModal is closed and no other modal is open
   $(document).on('hidden.bs.modal', '#inAppNotificationModal', function () {
-    $('.modal-backdrop').remove();
-    $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
+    if (!$('.modal.show').length) {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
+    }
   });
 
   // Base URL for API

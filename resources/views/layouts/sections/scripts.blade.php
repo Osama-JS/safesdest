@@ -22,9 +22,9 @@
 @yield('page-script')
 <!-- END: Page JS-->
 
-@can('view_notifications')
+@if(auth()->check())
     @vite(['resources/js/admin/notifications.js'])
-@endcan
+@endif
 
 <script>
     async function subscribeForPush() {

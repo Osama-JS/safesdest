@@ -261,17 +261,17 @@ Route::middleware('rate.limit')->group(function () {
                 // Wallet Credit Receipt Download
                 Route::get('/wallets/transactions/{id}/receipt', [WalletsController::class, 'downloadCreditReceipt'])->name('wallets.transaction.receipt');
 
-                // Admin System Notifications
-                Route::middleware(['can:view_notifications'])->group(function () {
-                    Route::get('/system-notifications', [App\Http\Controllers\admin\NotificationController::class, 'index'])->name('system.notifications.index');
-                    Route::get('/system-notifications/all', [App\Http\Controllers\admin\NotificationController::class, 'allNotificationsView'])->name('system.notifications.all');
-                    Route::get('/system-notifications/unread-count', [App\Http\Controllers\admin\NotificationController::class, 'unreadCount'])->name('system.notifications.unread-count');
-                    Route::get('/system-notifications/latest-unshown', [App\Http\Controllers\admin\NotificationController::class, 'latestUnshown'])->name('system.notifications.latest-unshown');
-                    Route::post('/system-notifications/{id}/read', [App\Http\Controllers\admin\NotificationController::class, 'markAsRead'])->name('system.notifications.read');
-                    Route::post('/system-notifications/{id}/toggle-read', [App\Http\Controllers\admin\NotificationController::class, 'toggleRead'])->name('system.notifications.toggle-read');
-                    Route::delete('/system-notifications/{id}/delete', [App\Http\Controllers\admin\NotificationController::class, 'destroy'])->name('system.notifications.delete');
-                    Route::post('/system-notifications/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('system.notifications.mark-all-read');
-                    Route::post('/system-notifications/delete-all-read', [App\Http\Controllers\admin\NotificationController::class, 'deleteAllRead'])->name('system.notifications.delete-all-read');
+                // Admin System Notifications (Personal Inbox)
+                Route::prefix('system-notifications')->name('system.notifications.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\admin\NotificationController::class, 'index'])->name('index');
+                    Route::get('/all', [App\Http\Controllers\admin\NotificationController::class, 'allNotificationsView'])->name('all');
+                    Route::get('/unread-count', [App\Http\Controllers\admin\NotificationController::class, 'unreadCount'])->name('unread-count');
+                    Route::get('/latest-unshown', [App\Http\Controllers\admin\NotificationController::class, 'latestUnshown'])->name('latest-unshown');
+                    Route::post('/{id}/read', [App\Http\Controllers\admin\NotificationController::class, 'markAsRead'])->name('read');
+                    Route::post('/{id}/toggle-read', [App\Http\Controllers\admin\NotificationController::class, 'toggleRead'])->name('toggle-read');
+                    Route::match(['POST', 'DELETE'], '/{id}/delete', [App\Http\Controllers\admin\NotificationController::class, 'destroy'])->name('delete');
+                    Route::post('/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+                    Route::post('/delete-all-read', [App\Http\Controllers\admin\NotificationController::class, 'deleteAllRead'])->name('delete-all-read');
                 });
 
                 // Admin Notification Settings

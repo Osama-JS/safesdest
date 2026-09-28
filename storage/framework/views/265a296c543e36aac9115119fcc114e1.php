@@ -9,7 +9,7 @@
                             <i class="ti ti-bell-ringing"></i>
                         </span>
                     </div>
-                    <h5 class="modal-title fw-bold text-primary mb-0" id="inAppNotificationModalTitle">{{ __('تنبيه جديد') }}</h5>
+                    <h5 class="modal-title fw-bold text-primary mb-0" id="inAppNotificationModalTitle"><?php echo e(__('تنبيه جديد')); ?></h5>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -17,9 +17,10 @@
                 <!-- Items injected dynamically via notifications.js -->
             </div>
             <div class="modal-footer border-top py-2 d-flex justify-content-between">
-                <small class="text-muted"><i class="ti ti-clock me-1"></i>{{ __('إشعار لحظي من النظام') }}</small>
-                <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">{{ __('إغلاق') }}</button>
+                <small class="text-muted"><i class="ti ti-clock me-1"></i><?php echo e(__('إشعار لحظي من النظام')); ?></small>
+                <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal"><?php echo e(__('إغلاق')); ?></button>
             </div>
         </div>
     </div>
 </div>
+<?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/layouts/sections/notifications/modal.blade.php ENDPATH**/ ?>

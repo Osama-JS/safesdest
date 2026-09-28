@@ -40,6 +40,7 @@ class DatabaseSeeder extends Seeder
           VehiclesSeeder::class,
 
           NotificationsPermissionsSeeder::class,
+          AdminNotificationSettingsSeeder::class,
           PaymentRequestPermissionsSeeder::class,
           TasksPaymentCancellationPermissionSeeder::class,
           InvestorPermissionsSeeder::class,

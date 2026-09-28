@@ -30,24 +30,37 @@ $(document)
     const imgElement = document.querySelector('.reset_image');
 
     // إذا كان هناك محتوى CKEditor، احصل على البيانات
-    if (contentElement && CKEDITOR.instances['content']) {
+    if (contentElement && typeof CKEDITOR !== 'undefined' && CKEDITOR.instances['content']) {
       const sec = CKEDITOR.instances['content'].getData();
       $('#content').val(sec);
     }
 
     // عرض رسالة "جاري المعالجة..."
-    $this.block({
-      message:
-        '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
-      css: {
-        backgroundColor: 'transparent',
-        color: '#fff',
-        border: '0'
-      },
-      overlayCSS: {
-        opacity: 0.5
+    if ($.fn.block) {
+      $this.block({
+        message:
+          '<div class="d-flex justify-content-center"><p class="mb-0">Please wait...</p> <div class="sk-wave m-0"><div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div> <div class="sk-rect sk-wave-rect"></div></div> </div>',
+        css: {
+          backgroundColor: 'transparent',
+          color: '#fff',
+          border: '0'
+        },
+        overlayCSS: {
+          opacity: 0.5
+        }
+      });
+    }
+
+    const releaseSubmitting = function (callback) {
+      $this.removeClass('submitting');
+      if ($.fn.unblock) {
+        $this.unblock({
+          onUnblock: callback
+        });
+      } else if (typeof callback === 'function') {
+        callback();
       }
-    });
+    };
 
     // إرسال الطلب Ajax
     $.ajax({
@@ -61,33 +74,27 @@ $(document)
         console.log(data);
         $('span.text-error').text(''); // إعادة تعيين الأخطاء
 
-        $this.unblock({
-          onUnblock: function () {
-            $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
-
-            if (data.status === 0) {
-              console.log(data.error);
-              handleErrors(data.error);
-              showBlockAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة');
-            } else if (data.status === 1) {
-              resetCKEditor(contentElement, contentResetElement);
-              resetImage(imgElement);
-              document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
-              showBlockAlert('success', data.success, 1700);
-              showAlert('success', data.success, 5000, true);
-            } else if (data.status === 2) {
-              showAlert('error', data.error, 10000, true);
-            }
+        releaseSubmitting(function () {
+          if (data.status === 0) {
+            console.log(data.error);
+            handleErrors(data.error);
+            showBlockAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة');
+            showAlert('warning', 'يجب عليك التأكد من جميع البيانات المدخلة', 5000, true);
+          } else if (data.status === 1) {
+            resetCKEditor(contentElement, contentResetElement);
+            resetImage(imgElement);
+            document.dispatchEvent(new CustomEvent('formSubmitted', { detail: data }));
+            showBlockAlert('success', data.success, 1700);
+            showAlert('success', data.success, 5000, true);
+          } else if (data.status === 2) {
+            showAlert('error', data.error, 10000, true);
           }
         });
       },
       error: function (jqXHR, textStatus, errorThrown) {
-        $this.unblock({
-          onUnblock: function () {
-            $this.removeClass('submitting'); // إتاحة الإرسال مرة أخرى
-            console.log(errorThrown);
-            showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
-          }
+        releaseSubmitting(function () {
+          console.log(errorThrown);
+          showAlert('error', `فشل الطلب: ${textStatus}, ${errorThrown}`);
         });
       }
     });
@@ -265,24 +272,28 @@ export function showFormModal(options) {
  * @param {number} timer - مدة العرض بالميلي ثانية
  */
 export function showBlockAlert(type, message, timer = 700) {
-  let bgColor = type === 'success' ? 'bg-success' : 'warning' ? 'bg-warning' : 'bg-danger';
+  let bgColor = type === 'success' ? 'bg-success' : type === 'warning' ? 'bg-warning' : 'bg-danger';
 
-  $('.form_submit').block({
-    message: `<div class="p-3 text-white ${bgColor}" style="border-radius: 5px;">${message}</div>`,
-    timeout: timer,
-    css: {
-      backgroundColor: 'transparent',
-      border: '0'
-    },
-    overlayCSS: {
-      opacity: 0.5
-    }
-  });
+  if ($.fn.block) {
+    $('.form_submit').block({
+      message: `<div class="p-3 text-white ${bgColor}" style="border-radius: 5px;">${message}</div>`,
+      timeout: timer,
+      css: {
+        backgroundColor: 'transparent',
+        border: '0'
+      },
+      overlayCSS: {
+        opacity: 0.5
+      }
+    });
 
-  // فك الحظر بعد 2 ثانية للسماح للمستخدم برؤية الرسالة
-  setTimeout(() => {
-    $('.form_submit').unblock();
-  }, 2000);
+    // فك الحظر بعد 2 ثانية للسماح للمستخدم برؤية الرسالة
+    setTimeout(() => {
+      if ($.fn.unblock) {
+        $('.form_submit').unblock();
+      }
+    }, 2000);
+  }
 }
 
 /**

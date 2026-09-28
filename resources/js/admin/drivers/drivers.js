@@ -410,18 +410,21 @@ $(function () {
   $('.dataTables_filter').hide();
 
   document.addEventListener('formSubmitted', function (event) {
-    let id = $('#driver_id').val();
     $('.form_submit').trigger('reset');
     $('.preview-image').attr('src', baseUrl + 'assets/img/person.png');
     $('#additional-form').html('');
     $('#select-template').val('');
-    if (id) {
-      setTimeout(() => {
-        $('#submitModal').modal('hide');
-      }, 2000);
-    }
+    setTimeout(() => {
+      $('#submitModal').modal('hide');
+    }, 1500);
     if (dt_data) {
       dt_data.draw();
+    }
+  });
+
+  $('#submitModal').on('hide.bs.modal', function () {
+    if (document.activeElement && $(this).has(document.activeElement).length) {
+      document.activeElement.blur();
     }
   });
 

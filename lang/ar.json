@@ -1904,5 +1904,13 @@
     "إرسال البريد التجريبي إلى:": "إرسال البريد التجريبي إلى:",
     "Send test email to:": "إرسال البريد التجريبي إلى:",
     "تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!": "تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!",
-    "Mail server settings saved and updated successfully!": "تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!"
+    "Mail server settings saved and updated successfully!": "تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!",
+    "Notifications": "الإشعارات",
+    "System Notifications": "إشعارات النظام",
+    "View All Notifications": "عرض جميع الإشعارات",
+    "All Notifications": "جميع الإشعارات",
+    "Delete All Read": "حذف جميع المقروءة",
+    "Mark all as read": "تحديد الكل كمقروء",
+    "عرض الجميع": "عرض الجميع",
+    "View All": "عرض الجميع"
 }

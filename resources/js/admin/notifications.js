@@ -13,6 +13,41 @@ $(function () {
   const inAppModal = $('#inAppNotificationModal');
   const inAppModalList = $('#inAppModalNotificationsList');
 
+  // Ensure modal element is always attached directly to <body> to avoid stacking context / backdrop clipping
+  if (inAppModal.length > 0 && !inAppModal.parent().is('body')) {
+    inAppModal.appendTo('body');
+  }
+
+  function showInAppModal() {
+    if (inAppModal.length === 0) return;
+    if (inAppModal.hasClass('show')) return;
+    if (!inAppModal.parent().is('body')) {
+      inAppModal.appendTo('body');
+    }
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modalInstance = bootstrap.Modal.getOrCreateInstance(inAppModal[0]);
+      modalInstance.show();
+    } else if (typeof inAppModal.modal === 'function') {
+      inAppModal.modal('show');
+    }
+  }
+
+  function hideInAppModal() {
+    if (inAppModal.length === 0) return;
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+      const modalInstance = bootstrap.Modal.getInstance(inAppModal[0]);
+      if (modalInstance) {
+        modalInstance.hide();
+      } else {
+        inAppModal.removeClass('show').css('display', 'none');
+        $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
+        $('.modal-backdrop').remove();
+      }
+    } else if (typeof inAppModal.modal === 'function') {
+      inAppModal.modal('hide');
+    }
+  }
+
   // Base URL for API
   const apiBase = (typeof baseUrl !== 'undefined' ? baseUrl : '/') + 'admin/system-notifications';
 
@@ -253,9 +288,7 @@ $(function () {
           inAppModalList.html(modalHtml);
 
           // 4. Show Modal if not already open
-          if (inAppModal.length > 0 && !inAppModal.hasClass('show')) {
-            inAppModal.modal('show');
-          }
+          showInAppModal();
 
           // 5. Update unread count
           updateUnreadCount();
@@ -291,7 +324,7 @@ $(function () {
           card.fadeOut(300, function () {
             $(this).remove();
             if (inAppModalList.children().length === 0) {
-              inAppModal.modal('hide');
+              hideInAppModal();
             }
           });
           // Update navbar item as read

@@ -264,10 +264,14 @@ Route::middleware('rate.limit')->group(function () {
                 // Admin System Notifications
                 Route::middleware(['can:view_notifications'])->group(function () {
                     Route::get('/system-notifications', [App\Http\Controllers\admin\NotificationController::class, 'index'])->name('system.notifications.index');
+                    Route::get('/system-notifications/all', [App\Http\Controllers\admin\NotificationController::class, 'allNotificationsView'])->name('system.notifications.all');
                     Route::get('/system-notifications/unread-count', [App\Http\Controllers\admin\NotificationController::class, 'unreadCount'])->name('system.notifications.unread-count');
                     Route::get('/system-notifications/latest-unshown', [App\Http\Controllers\admin\NotificationController::class, 'latestUnshown'])->name('system.notifications.latest-unshown');
                     Route::post('/system-notifications/{id}/read', [App\Http\Controllers\admin\NotificationController::class, 'markAsRead'])->name('system.notifications.read');
+                    Route::post('/system-notifications/{id}/toggle-read', [App\Http\Controllers\admin\NotificationController::class, 'toggleRead'])->name('system.notifications.toggle-read');
+                    Route::delete('/system-notifications/{id}/delete', [App\Http\Controllers\admin\NotificationController::class, 'destroy'])->name('system.notifications.delete');
                     Route::post('/system-notifications/mark-all-read', [App\Http\Controllers\admin\NotificationController::class, 'markAllAsRead'])->name('system.notifications.mark-all-read');
+                    Route::post('/system-notifications/delete-all-read', [App\Http\Controllers\admin\NotificationController::class, 'deleteAllRead'])->name('system.notifications.delete-all-read');
                 });
 
                 // Admin Notification Settings

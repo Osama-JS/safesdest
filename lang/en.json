@@ -1333,5 +1333,13 @@
     "إرسال البريد التجريبي إلى:": "Send test email to:",
     "Send test email to:": "Send test email to:",
     "تم حفظ وتحديث إعدادات خادم البريد الإلكتروني بنجاح!": "Mail server settings saved and updated successfully!",
-    "Mail server settings saved and updated successfully!": "Mail server settings saved and updated successfully!"
+    "Mail server settings saved and updated successfully!": "Mail server settings saved and updated successfully!",
+    "Notifications": "Notifications",
+    "System Notifications": "System Notifications",
+    "View All Notifications": "View All Notifications",
+    "All Notifications": "All Notifications",
+    "Delete All Read": "Delete All Read",
+    "Mark all as read": "Mark all as read",
+    "عرض الجميع": "View All",
+    "View All": "View All"
 }

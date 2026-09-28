@@ -256,41 +256,16 @@
                         </li>
                     </ul>
                 </li>
-                {{-- <li class="border-top">
-                    <div class="d-grid p-4">
-                        <a class="btn btn-primary btn-sm d-flex" href="javascript:void(0);">
-                            <small class="align-middle">View all notifications</small>
+                <li class="border-top">
+                    <div class="d-grid p-2">
+                        <a class="btn btn-primary btn-sm d-flex justify-content-center align-items-center" href="{{ route('system.notifications.all') }}">
+                            <i class="ti ti-bell-ringing me-1"></i>
+                            <small class="align-middle fw-semibold">{{ __('عرض الجميع') }}</small>
                         </a>
                     </div>
-                </li> --}}
+                </li>
             </ul>
         </li>
-
-        <!-- In-App Notification Modal Alert -->
-        <div class="modal fade" id="inAppNotificationModal" tabindex="-1" aria-hidden="true" style="z-index: 1090;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content shadow-lg border-0">
-                    <div class="modal-header border-bottom py-3 bg-label-primary">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar avatar-sm me-2">
-                                <span class="avatar-initial rounded-circle bg-primary text-white">
-                                    <i class="ti ti-bell-ringing"></i>
-                                </span>
-                            </div>
-                            <h5 class="modal-title fw-bold text-primary mb-0">{{ __('تنبيه جديد') }}</h5>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-3" id="inAppModalNotificationsList">
-                        <!-- Items injected dynamically via notifications.js -->
-                    </div>
-                    <div class="modal-footer border-top py-2 d-flex justify-content-between">
-                        <small class="text-muted"><i class="ti ti-clock me-1"></i>{{ __('إشعار لحظي من النظام') }}</small>
-                        <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">{{ __('إغلاق') }}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         @endcan
         <!--/ Notification -->
 

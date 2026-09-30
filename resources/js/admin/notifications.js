@@ -10,60 +10,17 @@ $(function () {
   const notificationList = $('.dropdown-notifications-list .list-group');
   const badge = $('.badge-notifications');
   const headerBadge = $('.dropdown-header .badge');
-  const inAppModal = $('#inAppNotificationModal');
-  const inAppModalList = $('#inAppModalNotificationsList');
-
-  function getModalEl() {
-    let el = document.getElementById('inAppNotificationModal');
-    if (el && el.parentElement !== document.body) {
-      document.body.appendChild(el);
-    }
-    return el;
-  }
-
-  // Pre-check on page load
-  getModalEl();
-
-  function showInAppModal() {
-    const modalEl = getModalEl();
-    if (!modalEl) return;
-    if (modalEl.classList.contains('show')) return;
-
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, {
-        backdrop: true,
-        keyboard: true
-      });
-      modalInstance.show();
-    } else if (typeof $(modalEl).modal === 'function') {
-      $(modalEl).modal('show');
-    }
-  }
-
-  function hideInAppModal() {
-    const modalEl = getModalEl();
-    if (!modalEl) return;
-
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-      const modalInstance = bootstrap.Modal.getInstance(modalEl);
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    } else if (typeof $(modalEl).modal === 'function') {
-      $(modalEl).modal('hide');
-    }
-  }
-
-  // Ensure clean state if inAppNotificationModal is closed and no other modal is open
-  $(document).on('hidden.bs.modal', '#inAppNotificationModal', function () {
-    if (!$('.modal.show').length) {
-      $('.modal-backdrop').remove();
-      $('body').removeClass('modal-open').css({ overflow: '', paddingRight: '' });
-    }
-  });
-
-  // Base URL for API
   const apiBase = (typeof baseUrl !== 'undefined' ? baseUrl : '/') + 'admin/system-notifications';
+
+  // Helper to detect Arabic / RTL direction
+  function isRtl() {
+    return (
+      document.documentElement.dir === 'rtl' ||
+      document.dir === 'rtl' ||
+      $('html').attr('dir') === 'rtl' ||
+      (document.documentElement.lang && document.documentElement.lang.startsWith('ar'))
+    );
+  }
 
   // --------------------------------------------------------------------------
   // 1. Audio Chime System (Web Audio API)
@@ -239,8 +196,136 @@ $(function () {
   }
 
   // --------------------------------------------------------------------------
-  // 3. In-App Real-Time Modal Alert & Unshown Polling
+  // 3. In-App Real-Time Toast Alerts (Bottom-Left for AR, Bottom-Right for EN)
   // --------------------------------------------------------------------------
+  function getToastContainer() {
+    let container = document.getElementById('adminToastContainer');
+    const rtl = isRtl();
+
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'adminToastContainer';
+      container.className = 'admin-toast-container';
+      document.body.appendChild(container);
+    }
+
+    if (rtl) {
+      container.style.setProperty('left', '24px', 'important');
+      container.style.setProperty('right', 'auto', 'important');
+    } else {
+      container.style.setProperty('right', '24px', 'important');
+      container.style.setProperty('left', 'auto', 'important');
+    }
+    container.style.setProperty('bottom', '24px', 'important');
+
+    return container;
+  }
+
+  function showNotificationToast(item) {
+    const rtl = isRtl();
+    const container = getToastContainer();
+
+    const toastId = 'toast-notif-' + item.id + '-' + Math.random().toString(36).substring(2, 7);
+    const actionText = rtl ? 'عرض التفاصيل' : 'View Details';
+    const markReadText = rtl ? 'تم' : 'Done';
+    const arrowIcon = rtl ? 'ti-arrow-left' : 'ti-arrow-right';
+
+    const toastHtml = `
+      <div class="app-notification-toast" id="${toastId}" data-id="${item.id}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="p-3">
+          <div class="d-flex align-items-start gap-2 mb-2">
+            <div class="avatar avatar-sm flex-shrink-0">
+              <span class="avatar-initial rounded-circle bg-label-primary shadow-sm">
+                <i class="ti ${item.icon || 'ti-bell'} fs-5"></i>
+              </span>
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-heading fs-6 text-truncate" title="${item.title}">${item.title}</h6>
+                <button type="button" class="btn-close toast-close-btn p-1 ms-2" aria-label="Close"></button>
+              </div>
+              <small class="text-muted"><i class="ti ti-clock me-1"></i>${item.created_at}</small>
+            </div>
+          </div>
+          <p class="mb-2 text-body small" style="white-space: pre-line; line-height: 1.45; max-height: 90px; overflow-y: auto;">${item.message}</p>
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+            ${
+              item.action_url
+                ? `<a href="${item.action_url}" class="btn btn-xs btn-primary btn-toast-action" data-id="${item.id}">
+                     <i class="ti ${arrowIcon} me-1"></i> ${actionText}
+                   </a>`
+                : ''
+            }
+            <button type="button" class="btn btn-xs btn-label-secondary btn-toast-mark-read" data-id="${item.id}">
+              <i class="ti ti-check me-1"></i> ${markReadText}
+            </button>
+          </div>
+        </div>
+        <div class="toast-progress"></div>
+      </div>
+    `;
+
+    const $toast = $(toastHtml);
+    $(container).append($toast);
+
+    // Smooth entrance animation
+    requestAnimationFrame(() => {
+      $toast.addClass('toast-show');
+    });
+
+    let remainingTime = 6000;
+    let startTime = Date.now();
+    let dismissTimer = null;
+    let isPaused = false;
+
+    function startTimer(duration) {
+      startTime = Date.now();
+      remainingTime = duration;
+      dismissTimer = setTimeout(() => {
+        dismissToast($toast);
+      }, duration);
+    }
+
+    function pauseTimer() {
+      if (!isPaused) {
+        isPaused = true;
+        clearTimeout(dismissTimer);
+        const elapsed = Date.now() - startTime;
+        remainingTime = Math.max(800, remainingTime - elapsed);
+        $toast.find('.toast-progress').css('animation-play-state', 'paused');
+      }
+    }
+
+    function resumeTimer() {
+      if (isPaused) {
+        isPaused = false;
+        $toast.find('.toast-progress').css('animation-play-state', 'running');
+        startTimer(remainingTime);
+      }
+    }
+
+    // 6-second timer
+    startTimer(6000);
+
+    // Pause on hover, resume on leave
+    $toast.on('mouseenter', pauseTimer);
+    $toast.on('mouseleave', resumeTimer);
+
+    // Close button
+    $toast.find('.toast-close-btn').on('click', function (e) {
+      e.stopPropagation();
+      dismissToast($toast);
+    });
+  }
+
+  function dismissToast($toast) {
+    if (!$toast || !$toast.length || $toast.hasClass('toast-hide')) return;
+    $toast.removeClass('toast-show').addClass('toast-hide');
+    setTimeout(() => {
+      $toast.remove();
+    }, 350);
+  }
+
   function checkLatestUnshown() {
     $.ajax({
       url: apiBase + '/latest-unshown',
@@ -256,41 +341,11 @@ $(function () {
             $('.dropdown-notifications .ti-bell').removeClass('animate__animated animate__tada');
           }, 1500);
 
-          // 3. Render Modal Content
-          let modalHtml = '';
-          res.data.forEach(item => {
-            modalHtml += `
-              <div class="card border mb-3 shadow-none bg-label-secondary" data-id="${item.id}">
-                <div class="card-body p-3">
-                  <div class="d-flex align-items-start">
-                    <div class="avatar avatar-sm me-3 flex-shrink-0">
-                      <span class="avatar-initial rounded-circle bg-white shadow-sm">
-                        <i class="ti ${item.icon || 'ti-bell'} fs-5"></i>
-                      </span>
-                    </div>
-                    <div class="flex-grow-1">
-                      <h6 class="fw-bold mb-1 text-heading">${item.title}</h6>
-                      <p class="mb-2 text-body small" style="white-space: pre-line; line-height: 1.5;">${item.message}</p>
-                      <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                        <small class="text-muted"><i class="ti ti-clock me-1"></i>${item.created_at}</small>
-                        <div>
-                          ${
-                            item.action_url
-                              ? `<a href="${item.action_url}" class="btn btn-xs btn-primary btn-modal-action me-1" data-id="${item.id}">
-                                   <i class="ti ti-arrow-left me-1"></i> عرض التفاصيل
-                                 </a>`
-                              : ''
-                          }
-                          <button type="button" class="btn btn-xs btn-label-secondary btn-modal-mark-read" data-id="${item.id}">
-                            <i class="ti ti-check me-1"></i> تم
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `;
+          // 3. Show Toaster for each incoming notification
+          res.data.forEach((item, index) => {
+            setTimeout(() => {
+              showNotificationToast(item);
+            }, index * 250);
 
             // Also prepend directly to navbar dropdown list
             if (notificationList.find('.text-muted').length > 0) {
@@ -299,27 +354,15 @@ $(function () {
             notificationList.prepend(notificationTemplate(item));
           });
 
-          let listContainer = $('#inAppModalNotificationsList');
-          if (listContainer.length === 0) {
-            const m = getModalEl();
-            if (m) listContainer = $(m).find('#inAppModalNotificationsList');
-          }
-          if (listContainer.length > 0) {
-            listContainer.html(modalHtml);
-          }
-
-          // 4. Show Modal if not already open
-          showInAppModal();
-
-          // 5. Update unread count
+          // 4. Update unread count
           updateUnreadCount();
         }
       }
     });
   }
 
-  // Handle Action Button in Modal (mark read and let browser navigate)
-  $(document).on('click', '.btn-modal-action', function () {
+  // Handle Action Button in Toast (mark as read and navigate)
+  $(document).on('click', '.btn-toast-action, .btn-modal-action', function () {
     const id = $(this).data('id');
     if (id) {
       $.post(`${apiBase}/${id}/read`, {
@@ -328,36 +371,37 @@ $(function () {
     }
   });
 
-  // Handle Mark Read Button in Modal
-  $(document).on('click', '.btn-modal-mark-read', function () {
+  // Handle Mark Read Button in Toast
+  $(document).on('click', '.btn-toast-mark-read, .btn-modal-mark-read', function (e) {
+    e.stopPropagation();
     const btn = $(this);
     const id = btn.data('id');
-    const card = btn.closest('.card');
+    const toast = btn.closest('.app-notification-toast');
 
-    $.ajax({
-      url: `${apiBase}/${id}/read`,
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-      },
-      success: function (res) {
-        if (res.success) {
-          card.fadeOut(300, function () {
-            $(this).remove();
-            if ($('#inAppModalNotificationsList').children().length === 0) {
-              hideInAppModal();
+    if (id) {
+      $.ajax({
+        url: `${apiBase}/${id}/read`,
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (res) {
+          if (res.success) {
+            // Update navbar item as read
+            const navItem = notificationList.find(`[data-id="${id}"]`);
+            if (navItem.length) {
+              navItem.addClass('marked-as-read');
+              navItem.find('.dropdown-notifications-read').remove();
             }
-          });
-          // Update navbar item as read
-          const navItem = notificationList.find(`[data-id="${id}"]`);
-          if (navItem.length) {
-            navItem.addClass('marked-as-read');
-            navItem.find('.dropdown-notifications-read').remove();
+            updateUnreadCount();
           }
-          updateUnreadCount();
         }
-      }
-    });
+      });
+    }
+
+    if (toast.length) {
+      dismissToast(toast);
+    }
   });
 
   // --------------------------------------------------------------------------

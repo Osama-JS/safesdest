@@ -16,6 +16,7 @@
 @section('page-script')
     <script>
         const walletId = "{{ $data->id }}";
+        const walletUserType = "{{ $data->user_type }}";
     </script>
     @vite(['resources/js/admin/wallets/show.js'])
     @vite(['resources/js/ajax.js'])
@@ -112,30 +113,128 @@
                 @endif
             @endcan
 
+            @if ($data->user_type === 'customer')
+                <div class="mt-4 d-flex gap-2 flex-wrap">
+                    @can('create_customer_invoices')
+                        <button type="button" class="btn btn-primary" id="btnOpenCreateInvoiceModal">
+                            <i class="ti ti-file-invoice me-1"></i> {{ __('Create Accounting Invoice') }}
+                        </button>
+                    @endcan
+                </div>
+            @endif
 
         </div>
 
-        <!-- Table -->
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 datatables-users">
-                    <thead class="table-light">
-                        <tr>
-                            <th></th>
-                            <th>#</th>
-                            <th>{{ __('Amount') }}</th>
-                            <th>{{ __('Description') }}</th>
-                            <th>{{ __('Maturity') }}</th>
-                            <th>{{ __('Task / Clearance') }}</th>
-                            <th>{{ __('User') }}</th>
-                            <th>{{ __('Created At') }}</th>
-                            <th class="text-end">{{ __('Actions') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        @if ($data->user_type === 'customer')
+            <!-- Tabs for Customer Wallets -->
+            <div class="card-header border-bottom py-2 px-3 bg-light">
+                <ul class="nav nav-pills" role="tablist">
+                    <li class="nav-item">
+                        <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#navs-transactions" aria-controls="navs-transactions" aria-selected="true">
+                            <i class="ti ti-arrows-left-right me-1"></i> {{ __('Financial Transactions') }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" class="nav-link" id="nav-tab-invoices" role="tab" data-bs-toggle="tab" data-bs-target="#navs-invoices" aria-controls="navs-invoices" aria-selected="false">
+                            <i class="ti ti-file-invoice me-1"></i> {{ __('Accounting Invoices') }}
+                        </button>
+                    </li>
+                </ul>
             </div>
-        </div>
+
+            <div class="tab-content p-0 border-0">
+                <!-- Transactions Tab -->
+                <div class="tab-pane fade show active" id="navs-transactions" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 datatables-users w-100">
+                            <thead class="table-light">
+                                <tr>
+                                    <th></th>
+                                    <th>#</th>
+                                    <th>{{ __('Amount') }}</th>
+                                    <th>{{ __('Description') }}</th>
+                                    <th>{{ __('Maturity') }}</th>
+                                    <th>{{ __('Task / Clearance') }}</th>
+                                    <th>{{ __('User') }}</th>
+                                    <th>{{ __('Created At') }}</th>
+                                    <th class="text-end">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Customer Invoices Tab -->
+                <div class="tab-pane fade" id="navs-invoices" role="tabpanel">
+                    <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light bg-opacity-25">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="form-label mb-0 fw-semibold text-muted">{{ __('Filter by Status') }}:</label>
+                            <select class="form-select form-select-sm" id="filter-invoice-status" style="width: 170px;">
+                                <option value="all">{{ __('All Statuses') }}</option>
+                                <option value="unpaid">{{ __('Unpaid') }}</option>
+                                <option value="paid">{{ __('Paid') }}</option>
+                                <option value="approved">{{ __('Approved') }}</option>
+                                <option value="cancelled">{{ __('Cancelled') }}</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshInvoices">
+                                <i class="ti ti-refresh me-1"></i> {{ __('Refresh') }}
+                            </button>
+                            @can('create_customer_invoices')
+                                <button type="button" class="btn btn-sm btn-primary" id="btnToolbarCreateInvoice">
+                                    <i class="ti ti-plus me-1"></i> {{ __('New Accounting Invoice') }}
+                                </button>
+                            @endcan
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 datatables-customer-invoices w-100" id="invoicesTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>{{ __('Invoice Number') }}</th>
+                                    <th>{{ __('Accounting Ref') }}</th>
+                                    <th>{{ __('Total Amount') }}</th>
+                                    <th>{{ __('Paid Amount') }}</th>
+                                    <th>{{ __('Remaining') }}</th>
+                                    <th>{{ __('Due Date') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th>{{ __('Attachment') }}</th>
+                                    <th>{{ __('Created By') }}</th>
+                                    <th class="text-end">{{ __('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @else
+            <!-- Table for non-customer wallets -->
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatables-users w-100">
+                        <thead class="table-light">
+                            <tr>
+                                <th></th>
+                                <th>#</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Description') }}</th>
+                                <th>{{ __('Maturity') }}</th>
+                                <th>{{ __('Task / Clearance') }}</th>
+                                <th>{{ __('User') }}</th>
+                                <th>{{ __('Created At') }}</th>
+                                <th class="text-end">{{ __('Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
     </div>
 
 
@@ -604,5 +703,340 @@
     @endcan
 
 
+
+    @if ($data->user_type === 'customer')
+        <!-- Modal: Create Customer Accounting Invoice -->
+        <div class="modal fade" id="createCustomerInvoiceModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-light py-3">
+                        <h5 class="modal-title fw-bold text-primary">
+                            <i class="ti ti-file-invoice me-2"></i> {{ __('Create Accounting Invoice') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <form id="formCreateCustomerInvoice" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="wallet_id" value="{{ $data->id }}">
+
+                        <div class="modal-body py-3">
+                            <!-- Invoice Meta Fields -->
+                            <div class="card mb-4 border">
+                                <div class="card-header bg-light py-2">
+                                    <h6 class="mb-0 fw-semibold text-secondary">
+                                        <i class="ti ti-info-circle me-1"></i> {{ __('Invoice Details') }}
+                                    </h6>
+                                </div>
+                                <div class="card-body pt-3 pb-2">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">{{ __('Invoice Number Serial') }}</label>
+                                            <input type="text" class="form-control bg-light" value="{{ __('Auto-generated (INV-YYYY-XXXX)') }}" readonly>
+                                            <small class="text-muted">{{ __('Generated automatically upon saving') }}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="accounting_reference_no">{{ __('Accounting Reference Number') }}</label>
+                                            <input type="text" class="form-control" id="accounting_reference_no" name="accounting_reference_no" placeholder="مثال: REF-10928">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label" for="issue_date">{{ __('Issue Date') }}</label>
+                                            <input type="date" class="form-control" id="issue_date" name="issue_date" value="{{ date('Y-m-d') }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label text-danger fw-bold" for="due_date">* {{ __('Due Date (Maturity)') }}</label>
+                                            <input type="date" class="form-control border-primary" id="due_date" name="due_date" required min="{{ date('Y-m-d') }}">
+                                            <small class="text-primary d-block mt-1">{{ __('Will update maturity on all linked transactions') }}</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="attachment">{{ __('Invoice Attachment File (PDF or Image)') }}</label>
+                                            <input type="file" class="form-control" id="attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                            <small class="text-muted">{{ __('Supported: PDF, JPG, PNG, WEBP (Max: 10MB)') }}</small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label" for="notes">{{ __('Notes / Remarks') }}</label>
+                                            <textarea class="form-control" id="notes" name="notes" rows="1" placeholder="{{ __('Optional notes on this invoice') }}"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transactions Selection Box -->
+                            <div class="card border">
+                                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <h6 class="mb-0 fw-semibold text-secondary">
+                                        <i class="ti ti-list-check me-1"></i> {{ __('Select Uninvoiced Debit Transactions') }}
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="text" class="form-control form-control-sm" id="uninvoiced-search" placeholder="{{ __('Search transactions...') }}" style="width: 220px;">
+                                        <button type="button" class="btn btn-xs btn-outline-primary" id="btnReloadUninvoiced">
+                                            <i class="ti ti-refresh"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                                        <table class="table table-hover table-sm align-middle mb-0" id="uninvoicedTransactionsTable">
+                                            <thead class="table-light sticky-top">
+                                                <tr>
+                                                    <th style="width: 40px;" class="text-center">
+                                                        <input type="checkbox" class="form-check-input" id="checkAllUninvoiced">
+                                                    </th>
+                                                    <th style="width: 130px;">{{ __('Sequence / ID') }}</th>
+                                                    <th style="width: 130px;">{{ __('Task #') }}</th>
+                                                    <th>{{ __('Description') }}</th>
+                                                    <th style="width: 130px;">{{ __('Current Maturity') }}</th>
+                                                    <th style="width: 140px;" class="text-end">{{ __('Amount (SAR)') }}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="uninvoiced-transactions-table-body">
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-4 text-muted">
+                                                        <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
+                                                        {{ __('Loading uninvoiced transactions...') }}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <span class="fw-semibold text-muted">{{ __('Selected Transactions') }}:</span>
+                                            <span class="badge bg-primary fs-6 px-2 py-1 ms-1" id="create-invoice-selected-count">0</span>
+                                        </div>
+                                        <div>
+                                            <span class="fw-semibold text-muted">{{ __('Total Invoice Amount') }}:</span>
+                                            <span class="badge bg-danger fs-5 px-3 py-1 ms-1" id="create-invoice-selected-total">0.00</span>
+                                            <span class="fw-bold text-dark">ر.س</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer bg-light py-2">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-primary" id="btnSubmitCreateInvoice">
+                                <i class="ti ti-check me-1"></i> {{ __('Save & Create Invoice') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: View Customer Invoice Details -->
+        <div class="modal fade" id="viewCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-light py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="modal-title fw-bold text-primary mb-0" id="viewInvoiceTitle">
+                                <i class="ti ti-file-invoice me-1"></i> {{ __('Invoice Details') }}
+                            </h5>
+                            <span id="viewInvoiceStatusBadge"></span>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <!-- Invoice Info Grid -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 col-6">
+                                <small class="text-muted d-block">{{ __('Invoice Number') }}</small>
+                                <span class="fw-bold fs-6 text-dark" id="viewInvoiceNumber">-</span>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <small class="text-muted d-block">{{ __('Accounting Ref') }}</small>
+                                <span class="fw-bold fs-6 text-dark" id="viewInvoiceRef">-</span>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <small class="text-muted d-block">{{ __('Issue Date') }}</small>
+                                <span class="fw-bold fs-6 text-dark" id="viewInvoiceIssueDate">-</span>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <small class="text-muted d-block">{{ __('Due Date') }}</small>
+                                <span class="fw-bold fs-6" id="viewInvoiceDueDate">-</span>
+                            </div>
+                            <div class="col-md-4 col-4">
+                                <div class="p-2 border rounded bg-light text-center">
+                                    <small class="text-muted d-block">{{ __('Total Amount') }}</small>
+                                    <span class="fw-bold text-dark fs-5" id="viewInvoiceTotal">0.00</span> <small>ر.س</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-4">
+                                <div class="p-2 border rounded bg-light text-center">
+                                    <small class="text-muted d-block">{{ __('Paid Amount') }}</small>
+                                    <span class="fw-bold text-success fs-5" id="viewInvoicePaid">0.00</span> <small>ر.س</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-4">
+                                <div class="p-2 border rounded bg-light text-center">
+                                    <small class="text-muted d-block">{{ __('Remaining Amount') }}</small>
+                                    <span class="fw-bold text-danger fs-5" id="viewInvoiceRemaining">0.00</span> <small>ر.س</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes & Attachment -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8" id="viewInvoiceNotesBox" style="display: none;">
+                                <div class="p-2 border rounded bg-light">
+                                    <small class="text-muted fw-bold d-block">{{ __('Notes') }}:</small>
+                                    <span id="viewInvoiceNotes" class="text-secondary" style="white-space: pre-line;"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="viewInvoiceAttachmentBox" style="display: none;">
+                                <div class="p-2 border rounded bg-light text-center">
+                                    <small class="text-muted fw-bold d-block mb-1">{{ __('Attachment File') }}:</small>
+                                    <a href="#" target="_blank" class="btn btn-xs btn-outline-primary" id="viewInvoiceAttachmentLink">
+                                        <i class="ti ti-download me-1"></i> {{ __('View Attachment') }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items Table -->
+                        <h6 class="fw-bold text-secondary mb-2">
+                            <i class="ti ti-list me-1"></i> {{ __('Linked Debit Transactions') }}
+                        </h6>
+                        <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>{{ __('Sequence') }}</th>
+                                        <th>{{ __('Task #') }}</th>
+                                        <th>{{ __('Description') }}</th>
+                                        <th class="text-end">{{ __('Amount (SAR)') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="viewInvoiceItemsBody"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Audit Info -->
+                        <div class="d-flex justify-content-between mt-3 text-muted small">
+                            <div>{{ __('Created By') }}: <span id="viewInvoiceCreator">-</span> (<span id="viewInvoiceCreatedAt">-</span>)</div>
+                            <div id="viewInvoiceApproverBox" style="display: none;">{{ __('Approved By') }}: <span id="viewInvoiceApprover">-</span></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light py-2">
+                        <button type="button" class="btn btn-outline-primary" id="btnModalPrintInvoice">
+                            <i class="ti ti-printer me-1"></i> {{ __('Print Invoice') }}
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Pay Invoice -->
+        <div class="modal fade" id="payCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-md" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-light py-3">
+                        <h5 class="modal-title fw-bold text-success">
+                            <i class="ti ti-cash me-1"></i> {{ __('Register Invoice Payment') }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <form id="formPayCustomerInvoice">
+                        @csrf
+                        <input type="hidden" id="pay_invoice_id">
+
+                        <div class="modal-body py-3">
+                            <div class="p-3 rounded bg-light border mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">{{ __('Invoice Number') }}:</span>
+                                    <span class="fw-bold" id="payInvoiceNumber">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">{{ __('Total Amount') }}:</span>
+                                    <span class="fw-bold" id="payInvoiceTotal">0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">{{ __('Remaining Balance') }}:</span>
+                                    <span class="fw-bold text-danger fs-6" id="payInvoiceRemaining">0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-success" for="pay_amount">* {{ __('Payment Amount (SAR)') }}</label>
+                                <input type="number" step="0.01" min="0.01" class="form-control" id="pay_amount" name="amount" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="pay_date">{{ __('Payment Date') }}</label>
+                                <input type="date" class="form-control" id="pay_date" name="payment_date" value="{{ date('Y-m-d') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="pay_notes">{{ __('Payment Notes') }}</label>
+                                <textarea class="form-control" id="pay_notes" name="notes" rows="2" placeholder="{{ __('e.g. Bank transfer, receipt number...') }}"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light py-2">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-success" id="btnSubmitPayment">
+                                <i class="ti ti-check me-1"></i> {{ __('Confirm Payment') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Edit Invoice -->
+        <div class="modal fade" id="editCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-light py-3">
+                        <h5 class="modal-title fw-bold text-primary">
+                            <i class="ti ti-edit me-1"></i> {{ __('Edit Invoice Details') }} - <span id="editInvoiceNumberTitle"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                    </div>
+                    <form id="formEditCustomerInvoice" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" id="edit_invoice_id">
+
+                        <div class="modal-body py-3">
+                            <div class="alert alert-info py-2 mb-3">
+                                <i class="ti ti-info-circle me-1"></i>
+                                {{ __('Note: Updating the due date will automatically propagate to all linked wallet transactions.') }}
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" for="edit_accounting_reference_no">{{ __('Accounting Reference Number') }}</label>
+                                    <input type="text" class="form-control" id="edit_accounting_reference_no" name="accounting_reference_no">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-danger fw-bold" for="edit_due_date">* {{ __('Due Date (Maturity)') }}</label>
+                                    <input type="date" class="form-control border-primary" id="edit_due_date" name="due_date" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="edit_issue_date">{{ __('Issue Date') }}</label>
+                                    <input type="date" class="form-control" id="edit_issue_date" name="issue_date">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="edit_attachment">{{ __('Replace Invoice Attachment File') }}</label>
+                                    <input type="file" class="form-control" id="edit_attachment" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                    <div id="editCurrentAttachmentPreview" class="mt-1 small"></div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label" for="edit_notes">{{ __('Notes') }}</label>
+                                    <textarea class="form-control" id="edit_notes" name="notes" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light py-2">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-primary" id="btnSubmitEditInvoice">
+                                <i class="ti ti-check me-1"></i> {{ __('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 
 @endsection

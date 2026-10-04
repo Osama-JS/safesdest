@@ -45,12 +45,18 @@
             </h4>
             <p class="text-muted mb-0">{{ __('مراجعة ومصادقة التحويلات البنكية المباشرة للسائقين (نظام الرقابة والمصادقة الثنائية)') }}</p>
         </div>
-        <div>
-            <a href="{{ route('wallets.withdrawals.index') }}" class="btn btn-label-secondary me-2">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('wallets.withdrawals.index') }}" class="btn btn-label-secondary">
                 <i class="ti ti-cash-banknote me-1"></i> {{ __('طلبات السحب') }}
             </a>
             <a href="{{ route('wallets.wallets') }}" class="btn btn-label-primary">
                 <i class="ti ti-wallet me-1"></i> {{ __('المحافظ') }}
+            </a>
+            <a href="{{ route('teams.payout-requests.index') }}" class="btn btn-label-success">
+                <i class="ti ti-building-bank me-1"></i> {{ __('طلبات دفع الفرق') }}
+            </a>
+            <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
+                <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين') }}
             </a>
         </div>
     </div>

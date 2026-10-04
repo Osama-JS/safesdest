@@ -20,6 +20,8 @@ use Illuminate\Support\Str;
 use App\Models\Task;
 use App\Models\InvestmentContract;
 use App\Models\InvestorWallet;
+use App\Models\HyperpayPayout;
+use App\Services\HyperPayPayoutService;
 use App\Services\InvestorPaymentService;
 
 
@@ -56,7 +58,12 @@ class UserWalletsController extends Controller
             }
 
             // التحقق مما إذا كان المستخدم وسيطاً نشطاً لعقد استثماري
-            $isBroker = InvestmentContract::where('broker_id', $userId)
+            $isBroker = InvestmentContract::where(function($q) use ($userId) {
+                    $q->where('broker_id', $userId)
+                      ->orWhereHas('brokers', function($bq) use ($userId) {
+                          $bq->where('broker_id', $userId);
+                      });
+                })
                 ->where('status', 'active')
                 ->exists();
 
@@ -369,15 +376,19 @@ class UserWalletsController extends Controller
                 ]);
             }
 
-            // --- HyperPay Payout Logic for Debit ---
+            // --- HyperPay Payout Integration for User / Investor Commission Wallet Debit ---
             $hyperPayNotes = '';
-            if ($request->transaction_type === 'debit' && $request->payment_method === 'hyperpay') {
-                if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password)) {
-                    return response()->json(['status' => 2, 'error' => __('كلمة المرور الخاصة بالمشرف غير صحيحة.')]);
+            if ($request->transaction_type === 'debit' && $request->payment_method === 'hyperpay' && !$existingTransaction) {
+                if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
+                    return response()->json([
+                        'status' => 2,
+                        'error' => __('البيانات البنكية للمستثمر/المستخدم غير مكتملة (اسم المستفيد أو الآيبان أو كود BIC). يرجى تحديث بيانات الحساب البنكي أولاً.')
+                    ]);
                 }
 
-                if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
-                    return response()->json(['status' => 2, 'error' => 'البيانات البنكية غير مكتملة لاستخدام تحويل HyperPay. يرجى تحديث الملف (رقم الآيبان، رمز السويفت، اسم المستفيد).']);
+                $ibanCheck = HyperPayPayoutService::validateIbanChecksum($user->iban_number, 'المستثمر');
+                if (!$ibanCheck['valid']) {
+                    return response()->json(['status' => 2, 'error' => $ibanCheck['message']]);
                 }
 
                 $countryMapping = [
@@ -391,30 +402,63 @@ class UserWalletsController extends Controller
                     'الأردن' => 'JO',
                 ];
                 $countryCode = $countryMapping[$user->bank_country] ?? ($user->bank_country ?: 'SA');
+                $beneficiaryName = $request->beneficiary_name ?: HyperPayPayoutService::formatBeneficiaryName($user->beneficiary_name);
 
-                $payoutService = app(\App\Services\HyperPayPayoutService::class);
-                $payoutResponse = $payoutService->sendPayout([
-                    'amount' => $request->amount,
-                    'currency' => 'SAR',
-                    'externalId' => 'UWP-' . $wallet->id . '-' . time(),
-                    'beneficiary_name' => $user->beneficiary_name,
-                    'address1' => $user->bank_address1 ?? $user->address ?? '.',
-                    'address2' => $user->bank_address2 ?? '.',
-                    'city' => $user->bank_city ?? 'Riyadh',
-                    'country' => $countryCode,
-                    'iban' => str_replace(' ', '', $user->iban_number),
-                    'bic' => $user->bic_code,
-                    'purpose' => $request->purpose ?: 'BA',
-                    'description' => "Payout for User #{$user->id}"
-                ]);
-
-                if (!$payoutResponse['status']) {
-                    return response()->json(['status' => 2, 'error' => 'خطأ من HyperPay: ' . $payoutResponse['message']]);
+                $imagePath = null;
+                if ($request->hasFile('image')) {
+                    $imagePath = FileHelper::uploadFile($request->file("image"), 'user-wallets/transactions');
                 }
 
-                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
-                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+                $externalId = 'IPW-' . $wallet->id . '-' . time();
+
+                HyperpayPayout::create([
+                    'reference_id'        => $externalId,
+                    'user_id'             => $user->id,
+                    'user_wallet_id'      => $wallet->id,
+                    'amount'              => $request->amount,
+                    'payout_type'         => 'IPW',
+                    'created_by'          => auth()->id(),
+                    'transaction_details' => [
+                        'amount'           => $request->amount,
+                        'beneficiary_name' => $beneficiaryName,
+                        'description'      => $request->description,
+                        'maturity'         => $request->maturity,
+                        'task_id'          => $request->task_id,
+                        'image'            => $imagePath,
+                        'admin_id'         => auth()->id(),
+                        'iban'             => str_replace(' ', '', $user->iban_number),
+                        'bic'              => $user->bic_code,
+                        'bank_name'        => $user->bank_name,
+                        'address1'         => $user->bank_address1 ?? $user->address ?? '.',
+                        'address2'         => $user->bank_address2 ?? '.',
+                        'city'             => $user->bank_city ?? 'Riyadh',
+                        'country'          => $countryCode,
+                        'purpose'          => $request->purpose ?: 'BA',
+                    ],
+                    'status'              => 'pending_approval'
+                ]);
+
+                // إشعار المدير بالمصادقة على دفعة Payout جديدة للمستثمر
+                \App\Services\AdminNotificationDispatcher::dispatch(
+                    eventKey: 'payout_approval_required',
+                    title: "طلب مصادقة دفعة Payout جديدة لمستثمر #{$externalId}",
+                    message: "تم تسجيل حركة دفع Payout للمستثمر {$user->name} بمبلغ " . number_format($request->amount, 2) . " ر.س وبانتظار مصادقة المدير.",
+                    actionUrl: url('/admin/investors/payout-requests'),
+                    priority: 'high',
+                    extraData: [
+                        'reference_id'   => $externalId,
+                        'user_id'        => $user->id,
+                        'user_name'      => $user->name,
+                        'user_wallet_id' => $wallet->id,
+                        'amount'         => $request->amount,
+                        'payout_type'    => 'IPW',
+                    ]
+                );
+
+                return response()->json([
+                    'status'  => 1,
+                    'success' => __('تم تسجيل حركة الدفع بنجاح. تم تحويل الطلب إلى صفحة "طلبات الدفع عبر الـ Payout للمستثمرين" بانتظار مصادقة المدير.'),
+                ]);
             }
             // --- End HyperPay Logic ---
 
@@ -422,7 +466,7 @@ class UserWalletsController extends Controller
             $data = [
                 'user_wallet_id' => $wallet->id,
                 'amount' => $request->amount,
-                'description' => $request->description . $hyperPayNotes,
+                'description' => $request->description . ($hyperPayNotes ?? ''),
 
                 'transaction_type' => $request->transaction_type,
                 'task_id' => $request->task_id,
@@ -953,7 +997,13 @@ class UserWalletsController extends Controller
             }
 
             // جلب عقود المضاربة النشطة المرتبطة بالوسيط
-            $contracts = InvestmentContract::where('broker_id', $userId)
+            $contracts = InvestmentContract::with('brokers')
+                ->where(function($q) use ($userId) {
+                    $q->where('broker_id', $userId)
+                      ->orWhereHas('brokers', function($bq) use ($userId) {
+                          $bq->where('broker_id', $userId);
+                      });
+                })
                 ->where('status', 'active')
                 ->get();
 
@@ -1016,25 +1066,30 @@ class UserWalletsController extends Controller
                         continue;
                     }
 
-                    // احتساب عمولة الوسيط الرياضية بناءً على خيارات العقد
+                    // احتساب عمولة الوسيط الرياضية بناءً على خيارات العقد أو الوسيط في العقد
+                    $brokerPivot = $contract->brokers->firstWhere('id', $userId)?->pivot;
+                    $brokerSource = $brokerPivot ? $brokerPivot->broker_commission_source : $contract->broker_commission_source;
+                    $brokerType = $brokerPivot ? $brokerPivot->broker_commission_type : $contract->broker_commission_type;
+                    $brokerValue = $brokerPivot ? (float)$brokerPivot->broker_commission_value : (float)$contract->broker_commission_value;
+
                     $brokerShare = 0;
 
-                    if ($contract->broker_commission_source === 'investor_commission') {
+                    if ($brokerSource === 'investor_commission') {
                         // من حصة المضارب
                         $investorCommission = $contract->calculateCommission($platformCut);
-                        if ($contract->broker_commission_type === 'percentage') {
-                            $brokerShare = ($investorCommission * $contract->broker_commission_value) / 100;
+                        if ($brokerType === 'percentage') {
+                            $brokerShare = ($investorCommission * $brokerValue) / 100;
                         } else {
-                            $brokerShare = (float) $contract->broker_commission_value;
+                            $brokerShare = $brokerValue;
                         }
                         // حماية ألا تزيد حصة الوسيط عن عمولة المضارب نفسها
                         $brokerShare = min($brokerShare, $investorCommission);
                     } else {
                         // من عمولة المهمة (المنصة)
-                        if ($contract->broker_commission_type === 'percentage') {
-                            $brokerShare = ($platformCut * $contract->broker_commission_value) / 100;
+                        if ($brokerType === 'percentage') {
+                            $brokerShare = ($platformCut * $brokerValue) / 100;
                         } else {
-                            $brokerShare = (float) $contract->broker_commission_value;
+                            $brokerShare = $brokerValue;
                         }
                         // حماية المنصة: يجب ألا يتجاوز مجموع حصة المضارب وحصة الوسيط عمولة المنصة
                         $investorCommission = $contract->calculateCommission($platformCut);

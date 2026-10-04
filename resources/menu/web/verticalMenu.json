@@ -116,6 +116,22 @@
             "permission": "view_payout_requests"
         },
         {
+            "url": "admin/teams/payout-requests",
+            "name": "Team Payout Requests",
+            "icon": "menu-icon tf-icons ti ti-building-bank",
+            "slug": "teams.payout-requests.index",
+            "isactive": "teams-payout-requests-isactive",
+            "permission": "view_payout_requests"
+        },
+        {
+            "url": "admin/investors/payout-requests",
+            "name": "Investor Payout Requests",
+            "icon": "menu-icon tf-icons ti ti-cash",
+            "slug": "investors.payout-requests.index",
+            "isactive": "investors-payout-requests-isactive",
+            "permission": "view_payout_requests"
+        },
+        {
             "url": "admin/ads",
             "name": "Tasks Ads",
             "icon": "menu-icon tf-icons ti ti-speakerphone",

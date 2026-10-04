@@ -78,6 +78,53 @@ $(function () {
     toggleCustomBankField();
   });
 
+  // Multi-Brokers Management for Investor Contracts
+  let investorBrokerIndex = 0;
+
+  function createInvestorBrokerRow(index) {
+    const template = $('#investor-broker-row-template').html();
+    return template
+      .replace(/{index}/g, index)
+      .replace(/{number}/g, index + 1);
+  }
+
+  function addInvestorBrokerRow(brokerData = null) {
+    const $row = $(createInvestorBrokerRow(investorBrokerIndex));
+    $('#investor-brokers-container').append($row);
+
+    const $select = $row.find('.broker-select');
+    $select.wrap('<div class="position-relative"></div>').select2({
+      placeholder: __('Select Broker'),
+      dropdownParent: $select.parent(),
+      width: '100%'
+    });
+
+    if (brokerData) {
+      const brokerId = brokerData.pivot ? brokerData.pivot.broker_id : (brokerData.broker_id || brokerData.id);
+      const commSource = brokerData.pivot ? brokerData.pivot.broker_commission_source : (brokerData.broker_commission_source || 'investor_commission');
+      const commType = brokerData.pivot ? brokerData.pivot.broker_commission_type : (brokerData.broker_commission_type || 'percentage');
+      const commVal = brokerData.pivot ? brokerData.pivot.broker_commission_value : (brokerData.broker_commission_value || '0.00');
+
+      $row.find(`[name="brokers[${investorBrokerIndex}][broker_id]"]`).val(brokerId).trigger('change');
+      $row.find(`[name="brokers[${investorBrokerIndex}][broker_commission_source]"]`).val(commSource);
+      $row.find(`[name="brokers[${investorBrokerIndex}][broker_commission_type]"]`).val(commType);
+      $row.find(`[name="brokers[${investorBrokerIndex}][broker_commission_value]"]`).val(commVal);
+    }
+
+    investorBrokerIndex++;
+  }
+
+  $(document).on('click', '#btn-add-contract-broker', function () {
+    addInvestorBrokerRow();
+  });
+
+  $(document).on('click', '.remove-broker-row', function () {
+    $(this).closest('.broker-row').remove();
+    $('#investor-brokers-container .broker-row').each(function(idx) {
+      $(this).find('.badge').html('<i class="ti ti-user-check me-1"></i>' + __('Broker') + ' #' + (idx + 1));
+    });
+  });
+
   // Format account number (numbers only)
   $(document).on('input', '#user-account-number', function () {
     this.value = this.value.replace(/[^0-9]/g, '');
@@ -390,15 +437,23 @@ $(function () {
             $('#customer_ids').val([]).trigger('change');
         }
 
-        $('#broker_id').val(c.broker_id || '').trigger('change');
-        $('select[name="broker_commission_source"]').val(c.broker_commission_source || 'investor_commission');
-        $('select[name="broker_commission_type"]').val(c.broker_commission_type || 'percentage');
-        $('input[name="broker_commission_value"]').val(c.broker_commission_value || '0.00');
+        $('#investor-brokers-container').empty();
+        investorBrokerIndex = 0;
+        if (c.brokers && c.brokers.length > 0) {
+          c.brokers.forEach(broker => {
+            addInvestorBrokerRow(broker);
+          });
+        } else if (c.broker_id) {
+          addInvestorBrokerRow({
+            broker_id: c.broker_id,
+            broker_commission_source: c.broker_commission_source,
+            broker_commission_type: c.broker_commission_type,
+            broker_commission_value: c.broker_commission_value
+          });
+        }
       } else {
-        $('#broker_id').val('').trigger('change');
-        $('select[name="broker_commission_source"]').val('investor_commission');
-        $('select[name="broker_commission_type"]').val('percentage');
-        $('input[name="broker_commission_value"]').val('0.00');
+        $('#investor-brokers-container').empty();
+        investorBrokerIndex = 0;
       }
     });
   });
@@ -421,10 +476,8 @@ $(function () {
     userForm[0].reset();
     $('#investor_id').val('');
     $('#customer_ids').val([]).trigger('change');
-    $('#broker_id').val('').trigger('change');
-    $('select[name="broker_commission_source"]').val('investor_commission');
-    $('select[name="broker_commission_type"]').val('percentage');
-    $('input[name="broker_commission_value"]').val('0.00');
+    $('#investor-brokers-container').empty();
+    investorBrokerIndex = 0;
   });
 
   // Handle Form Submit Success

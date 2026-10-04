@@ -109,8 +109,14 @@ $(function () {
               `;
             }
 
+            let invoiceBadge = '';
+            if (full.invoice_number) {
+              invoiceBadge = ` <span class="badge bg-label-info fs-tiny" title="فاتورة محاسبية"><i class="ti ti-file-invoice me-1"></i>${full.invoice_number}</span>`;
+            }
+
             return `
               <span>${full.description}</span>
+              ${invoiceBadge}
               ${imageBtn}
             `;
           }
@@ -119,7 +125,11 @@ $(function () {
         {
           targets: 4,
           render: function (data, type, full, meta) {
-            return `<span>${full.maturity}</span>`;
+            let maturityHtml = `<span>${full.maturity}</span>`;
+            if (full.invoice_number) {
+              maturityHtml += `<br><small class="text-primary fw-semibold"><i class="ti ti-file-invoice me-1"></i>${full.invoice_number}</small>`;
+            }
+            return maturityHtml;
           }
         },
         {
@@ -1255,5 +1265,662 @@ $(function () {
       });
     }
   });
+
+  // ==========================================
+  // CUSTOMER ACCOUNTING INVOICES MODULE
+  // ==========================================
+  if (typeof walletUserType !== 'undefined' && walletUserType === 'customer') {
+    let dt_invoices_table = $('#invoicesTable');
+    let dt_invoices = null;
+
+    if (dt_invoices_table.length) {
+      dt_invoices = dt_invoices_table.DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+          url: baseUrl + 'admin/customer-invoices/wallet/' + walletId + '/data',
+          data: function (d) {
+            d.status = $('#filter-invoice-status').val();
+          }
+        },
+        columns: [
+          { data: 'id' },
+          { data: 'invoice_number' },
+          { data: 'accounting_reference_no' },
+          { data: 'total_amount' },
+          { data: 'paid_amount' },
+          { data: 'remaining_amount' },
+          { data: 'due_date' },
+          { data: 'status' },
+          { data: 'attachment_url' },
+          { data: 'created_by_name' },
+          { data: null }
+        ],
+        columnDefs: [
+          {
+            targets: 0,
+            searchable: false,
+            orderable: false,
+            render: function (data, type, full, meta) {
+              return meta.row + 1 + meta.settings._iDisplayStart;
+            }
+          },
+          {
+            targets: 1,
+            render: function (data, type, full) {
+              return `<a href="javascript:void(0);" class="fw-bold text-primary btn-view-invoice" data-id="${full.id}"><i class="ti ti-file-invoice me-1"></i>${full.invoice_number}</a>`;
+            }
+          },
+          {
+            targets: 2,
+            render: function (data, type, full) {
+              return full.accounting_reference_no && full.accounting_reference_no !== '-' ? `<span class="badge bg-label-secondary">${full.accounting_reference_no}</span>` : '-';
+            }
+          },
+          {
+            targets: 3,
+            render: function (data, type, full) {
+              return `<span class="fw-bold">${parseFloat(full.total_amount).toFixed(2)}</span> <small class="text-muted">ر.س</small>`;
+            }
+          },
+          {
+            targets: 4,
+            render: function (data, type, full) {
+              return `<span class="fw-semibold text-success">${parseFloat(full.paid_amount).toFixed(2)}</span> <small class="text-muted">ر.س</small>`;
+            }
+          },
+          {
+            targets: 5,
+            render: function (data, type, full) {
+              const rem = parseFloat(full.remaining_amount);
+              const color = rem > 0 ? 'text-danger' : 'text-muted';
+              return `<span class="fw-bold ${color}">${rem.toFixed(2)}</span> <small class="text-muted">ر.س</small>`;
+            }
+          },
+          {
+            targets: 6,
+            render: function (data, type, full) {
+              let html = `<span>${full.due_date}</span>`;
+              if (full.is_overdue) {
+                html += ` <span class="badge bg-danger fs-tiny">متأخرة</span>`;
+              }
+              return html;
+            }
+          },
+          {
+            targets: 7,
+            render: function (data, type, full) {
+              const badges = {
+                unpaid: '<span class="badge bg-label-warning">مستحقة للدفع</span>',
+                paid: '<span class="badge bg-label-success">مدفوعة</span>',
+                approved: '<span class="badge bg-label-primary">معتمدة نهائياً</span>',
+                cancelled: '<span class="badge bg-label-secondary">ملغاة</span>'
+              };
+              return badges[full.status] || full.status;
+            }
+          },
+          {
+            targets: 8,
+            render: function (data, type, full) {
+              if (full.attachment_url) {
+                return `<a href="${full.attachment_url}" target="_blank" class="btn btn-sm btn-icon btn-label-primary" title="عرض المرفق"><i class="ti ti-paperclip"></i></a>`;
+              }
+              return '<span class="text-muted">-</span>';
+            }
+          },
+          {
+            targets: 9,
+            render: function (data, type, full) {
+              return `<small class="text-muted">${full.created_by_name}</small>`;
+            }
+          },
+          {
+            targets: 10,
+            orderable: false,
+            searchable: false,
+            render: function (data, type, full) {
+              let actions = `
+                <div class="d-inline-block text-nowrap">
+                  <a href="${baseUrl}admin/customer-invoices/${full.id}/print" target="_blank" class="btn btn-sm btn-icon" title="طباعة الفاتورة">
+                    <i class="ti ti-printer text-primary"></i>
+                  </a>
+                  <button class="btn btn-sm btn-icon btn-view-invoice" data-id="${full.id}" title="عرض التفاصيل">
+                    <i class="ti ti-eye text-info"></i>
+                  </button>
+                  <button class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                    <i class="ti ti-dots-vertical"></i>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-end m-0">
+                    <a href="${baseUrl}admin/customer-invoices/${full.id}/print" target="_blank" class="dropdown-item">
+                      <i class="ti ti-printer me-2 text-primary"></i>طباعة الفاتورة
+                    </a>
+                    <a href="javascript:void(0);" class="dropdown-item btn-view-invoice" data-id="${full.id}">
+                      <i class="ti ti-eye me-2 text-info"></i>عرض التفاصيل
+                    </a>
+              `;
+
+              if (full.status === 'unpaid') {
+                actions += `
+                    <a href="javascript:void(0);" class="dropdown-item btn-pay-invoice" data-id="${full.id}" data-number="${full.invoice_number}" data-total="${full.total_amount}" data-remaining="${full.remaining_amount}">
+                      <i class="ti ti-cash me-2 text-success"></i>تسجيل سداد
+                    </a>
+                `;
+              }
+
+              if (full.status !== 'approved' && full.status !== 'cancelled') {
+                actions += `
+                    <a href="javascript:void(0);" class="dropdown-item btn-edit-invoice" data-id="${full.id}">
+                      <i class="ti ti-edit me-2 text-warning"></i>تعديل الفاتورة
+                    </a>
+                    <a href="javascript:void(0);" class="dropdown-item btn-approve-invoice" data-id="${full.id}" data-number="${full.invoice_number}">
+                      <i class="ti ti-check me-2 text-primary"></i>اعتماد نهائي
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="javascript:void(0);" class="dropdown-item text-danger btn-cancel-invoice" data-id="${full.id}" data-number="${full.invoice_number}">
+                      <i class="ti ti-circle-x me-2"></i>إلغاء الفاتورة وفك الحركات
+                    </a>
+                `;
+              }
+
+              actions += `
+                  </div>
+                </div>
+              `;
+              return actions;
+            }
+          }
+        ],
+        order: [[1, 'desc']],
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+          sLengthMenu: '_MENU_',
+          search: '',
+          searchPlaceholder: 'بحث في الفواتير...'
+        }
+      });
+    }
+
+    // Filter change
+    $('#filter-invoice-status').on('change', function () {
+      if (dt_invoices) dt_invoices.ajax.reload();
+    });
+
+    $('#btnRefreshInvoices').on('click', function () {
+      if (dt_invoices) dt_invoices.ajax.reload();
+    });
+
+    // Load Uninvoiced Transactions
+    function loadUninvoicedTransactions() {
+      const tbody = $('#uninvoiced-transactions-table-body');
+      tbody.html(`
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
+            جاري جلب الحركات المالية غير المفوترة...
+          </td>
+        </tr>
+      `);
+      $('#checkAllUninvoiced').prop('checked', false);
+      $('#create-invoice-selected-count').text('0');
+      $('#create-invoice-selected-total').text('0.00');
+
+      $.get(baseUrl + 'admin/customer-invoices/wallet/' + walletId + '/uninvoiced-transactions', function (res) {
+        if (res.status === 1 && res.data && res.data.length > 0) {
+          let rowsHtml = '';
+          res.data.forEach(function (tx) {
+            rowsHtml += `
+              <tr class="uninvoiced-row" data-search="${(tx.sequence || '') + ' ' + (tx.task_number || '') + ' ' + (tx.description || '')}">
+                <td class="text-center">
+                  <input type="checkbox" class="form-check-input tx-checkbox" name="transaction_ids[]" value="${tx.id}" data-amount="${tx.amount}">
+                </td>
+                <td><span class="fw-semibold">${tx.sequence || tx.id}</span></td>
+                <td>${tx.task_number ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
+                <td><span class="text-truncate d-inline-block" style="max-width: 280px;" title="${tx.description}">${tx.description}</span></td>
+                <td><small class="text-muted">${tx.current_maturity}</small></td>
+                <td class="text-end fw-bold text-danger">${parseFloat(tx.amount).toFixed(2)}</td>
+              </tr>
+            `;
+          });
+          tbody.html(rowsHtml);
+        } else {
+          tbody.html(`
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="ti ti-circle-check fs-2 text-success d-block mb-1"></i>
+                لا توجد حركات مدينة غير مفوترة في هذه المحفظة حالياً.
+              </td>
+            </tr>
+          `);
+        }
+      }).fail(function () {
+        tbody.html(`
+          <tr>
+            <td colspan="6" class="text-center py-4 text-danger">
+              حدث خطأ أثناء جلب الحركات. يرجى إعادة المحاولة.
+            </td>
+          </tr>
+        `);
+      });
+    }
+
+    // Open Create Modal
+    $(document).on('click', '#btnOpenCreateInvoiceModal, #btnToolbarCreateInvoice', function () {
+      $('#formCreateCustomerInvoice')[0].reset();
+      $('#issue_date').val(new Date().toISOString().split('T')[0]);
+      loadUninvoicedTransactions();
+      $('#createCustomerInvoiceModal').modal('show');
+    });
+
+    $('#btnReloadUninvoiced').on('click', function () {
+      loadUninvoicedTransactions();
+    });
+
+    // Filter Uninvoiced Transactions Search
+    $(document).on('keyup', '#uninvoiced-search', function () {
+      const q = $(this).val().toLowerCase();
+      $('.uninvoiced-row').each(function () {
+        const text = $(this).data('search').toLowerCase();
+        if (text.indexOf(q) !== -1) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    });
+
+    // Recalculate selected sum & count
+    function updateCreateInvoiceTotals() {
+      let count = 0;
+      let total = 0.0;
+      $('.tx-checkbox:checked').each(function () {
+        count++;
+        total += parseFloat($(this).data('amount')) || 0;
+      });
+      $('#create-invoice-selected-count').text(count);
+      $('#create-invoice-selected-total').text(total.toFixed(2));
+    }
+
+    $(document).on('change', '.tx-checkbox', function () {
+      updateCreateInvoiceTotals();
+    });
+
+    // Check All
+    $(document).on('change', '#checkAllUninvoiced', function () {
+      const isChecked = $(this).is(':checked');
+      $('.uninvoiced-row:visible .tx-checkbox').prop('checked', isChecked);
+      updateCreateInvoiceTotals();
+    });
+
+    // Submit Create Invoice
+    $('#formCreateCustomerInvoice').on('submit', function (e) {
+      e.preventDefault();
+
+      const selectedCount = $('.tx-checkbox:checked').length;
+      if (selectedCount === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'يرجى تحديد حركة مدينة واحدة على الأقل لربطها بالفاتورة.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        return;
+      }
+
+      if (!$('#due_date').val()) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'يرجى تحديد تاريخ استحقاق الفاتورة.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        return;
+      }
+
+      const submitBtn = $('#btnSubmitCreateInvoice');
+      submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جاري الحفظ وتعميم الاستحقاق...');
+
+      const formData = new FormData(this);
+
+      $.ajax({
+        url: baseUrl + 'admin/customer-invoices/store',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (res) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ وإنشاء الفاتورة');
+          if (res.status === 1) {
+            $('#createCustomerInvoiceModal').modal('hide');
+            Swal.fire({
+              icon: 'success',
+              title: 'تم بنجاح',
+              text: res.success || 'تم إنشاء الفاتورة المحاسبية بنجاح وتعميم تاريخ الاستحقاق على الحركات.',
+              customClass: { confirmButton: 'btn btn-primary' }
+            });
+            if (dt_invoices) dt_invoices.ajax.reload();
+            if (dt_data) dt_data.ajax.reload();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'خطأ',
+              text: res.error || 'فشل إنشاء الفاتورة',
+              customClass: { confirmButton: 'btn btn-primary' }
+            });
+          }
+        },
+        error: function (xhr) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ وإنشاء الفاتورة');
+          let msg = 'حدث خطأ غير متوقع';
+          if (xhr.responseJSON && xhr.responseJSON.error) {
+            msg = xhr.responseJSON.error;
+          } else if (xhr.responseJSON && xhr.responseJSON.message) {
+            msg = xhr.responseJSON.message;
+          }
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: msg,
+            customClass: { confirmButton: 'btn btn-primary' }
+          });
+        }
+      });
+    });
+
+    // View Invoice Details
+    let currentViewingInvoiceId = null;
+    $(document).on('click', '.btn-view-invoice', function () {
+      const id = $(this).data('id');
+      currentViewingInvoiceId = id;
+
+      $.get(baseUrl + 'admin/customer-invoices/' + id, function (res) {
+        if (res.status === 1) {
+          const inv = res.invoice;
+          $('#viewInvoiceNumber').text(inv.invoice_number);
+          $('#viewInvoiceRef').text(inv.accounting_reference_no || '-');
+          $('#viewInvoiceIssueDate').text(inv.issue_date ? inv.issue_date.split('T')[0] : '-');
+          $('#viewInvoiceDueDate').text(inv.due_date ? inv.due_date.split('T')[0] : '-');
+          $('#viewInvoiceTotal').text(parseFloat(inv.total_amount).toFixed(2));
+          $('#viewInvoicePaid').text(parseFloat(inv.paid_amount).toFixed(2));
+          $('#viewInvoiceRemaining').text(parseFloat(inv.remaining_amount).toFixed(2));
+
+          const statusBadges = {
+            unpaid: '<span class="badge bg-label-warning">مستحقة للدفع</span>',
+            paid: '<span class="badge bg-label-success">مدفوعة</span>',
+            approved: '<span class="badge bg-label-primary">معتمدة نهائياً</span>',
+            cancelled: '<span class="badge bg-label-secondary">ملغاة</span>'
+          };
+          $('#viewInvoiceStatusBadge').html(statusBadges[inv.status] || inv.status);
+
+          if (inv.notes) {
+            $('#viewInvoiceNotes').text(inv.notes);
+            $('#viewInvoiceNotesBox').show();
+          } else {
+            $('#viewInvoiceNotesBox').hide();
+          }
+
+          if (res.attachment_url) {
+            $('#viewInvoiceAttachmentLink').attr('href', res.attachment_url);
+            $('#viewInvoiceAttachmentBox').show();
+          } else {
+            $('#viewInvoiceAttachmentBox').hide();
+          }
+
+          $('#viewInvoiceCreator').text(inv.creator ? inv.creator.name : '-');
+          $('#viewInvoiceCreatedAt').text(inv.created_at ? inv.created_at.split('T')[0] : '-');
+
+          if (inv.approver) {
+            $('#viewInvoiceApprover').text(inv.approver.name + ' (' + (inv.approved_at ? inv.approved_at.split('T')[0] : '') + ')');
+            $('#viewInvoiceApproverBox').show();
+          } else {
+            $('#viewInvoiceApproverBox').hide();
+          }
+
+          let itemsHtml = '';
+          if (inv.items && inv.items.length > 0) {
+            inv.items.forEach(function (item, idx) {
+              const seq = item.wallet_transaction ? item.wallet_transaction.sequence : item.wallet_transaction_id;
+              const taskNo = item.task ? (item.task.custom_task_number || item.task_id) : '-';
+              const desc = item.wallet_transaction ? item.wallet_transaction.description : '-';
+              itemsHtml += `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td><span class="fw-semibold">${seq}</span></td>
+                  <td>${taskNo !== '-' ? '<span class="badge bg-label-info">' + taskNo + '</span>' : '-'}</td>
+                  <td>${desc}</td>
+                  <td class="text-end fw-bold">${parseFloat(item.amount).toFixed(2)}</td>
+                </tr>
+              `;
+            });
+          } else {
+            itemsHtml = '<tr><td colspan="5" class="text-center text-muted py-2">لا توجد بنود مرتبطة</td></tr>';
+          }
+          $('#viewInvoiceItemsBody').html(itemsHtml);
+
+          $('#viewCustomerInvoiceModal').modal('show');
+        }
+      }).fail(function () {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ',
+          text: 'تعذر جلب تفاصيل الفاتورة.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+      });
+    });
+
+    // Print from Details Modal
+    $('#btnModalPrintInvoice').on('click', function () {
+      if (currentViewingInvoiceId) {
+        window.open(baseUrl + 'admin/customer-invoices/' + currentViewingInvoiceId + '/print', '_blank');
+      }
+    });
+
+    // Pay Invoice Modal
+    $(document).on('click', '.btn-pay-invoice', function () {
+      const id = $(this).data('id');
+      const number = $(this).data('number');
+      const total = parseFloat($(this).data('total')).toFixed(2);
+      const remaining = parseFloat($(this).data('remaining')).toFixed(2);
+
+      $('#pay_invoice_id').val(id);
+      $('#payInvoiceNumber').text(number);
+      $('#payInvoiceTotal').text(total + ' ر.س');
+      $('#payInvoiceRemaining').text(remaining + ' ر.س');
+      $('#pay_amount').val(remaining).attr('max', remaining);
+      $('#pay_date').val(new Date().toISOString().split('T')[0]);
+      $('#pay_notes').val('');
+
+      $('#payCustomerInvoiceModal').modal('show');
+    });
+
+    // Submit Payment
+    $('#formPayCustomerInvoice').on('submit', function (e) {
+      e.preventDefault();
+      const id = $('#pay_invoice_id').val();
+      const submitBtn = $('#btnSubmitPayment');
+      submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جاري التسجيل...');
+
+      $.post(baseUrl + 'admin/customer-invoices/' + id + '/pay', $(this).serialize(), function (res) {
+        submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
+        if (res.status === 1) {
+          $('#payCustomerInvoiceModal').modal('hide');
+          Swal.fire({
+            icon: 'success',
+            title: 'تم بنجاح',
+            text: res.success || 'تم تسجيل سداد الفاتورة بنجاح.',
+            customClass: { confirmButton: 'btn btn-primary' }
+          });
+          if (dt_invoices) dt_invoices.ajax.reload();
+          if (dt_data) dt_data.ajax.reload();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: res.error || 'فشل تسجيل السداد',
+            customClass: { confirmButton: 'btn btn-primary' }
+          });
+        }
+      }).fail(function (xhr) {
+        submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
+        let msg = 'حدث خطأ أثناء السداد';
+        if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+        Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
+      });
+    });
+
+    // Approve Invoice
+    $(document).on('click', '.btn-approve-invoice', function () {
+      const id = $(this).data('id');
+      const number = $(this).data('number');
+
+      Swal.fire({
+        title: 'الاعتماد النهائي للفاتورة',
+        text: `هل أنت متأكد من اعتماد الفاتورة (${number}) بشكل نهائي؟ لن يمكن تعديلها بعد ذلك.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، اعتماد الفاتورة',
+        cancelButtonText: 'إلغاء',
+        customClass: {
+          confirmButton: 'btn btn-primary me-2',
+          cancelButton: 'btn btn-label-secondary'
+        },
+        buttonsStyling: false
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          $.post(baseUrl + 'admin/customer-invoices/' + id + '/approve', function (res) {
+            if (res.status === 1) {
+              Swal.fire({
+                icon: 'success',
+                title: 'تم الاعتماد',
+                text: res.success || 'تم الاعتماد النهائي للفاتورة بنجاح.',
+                customClass: { confirmButton: 'btn btn-primary' }
+              });
+              if (dt_invoices) dt_invoices.ajax.reload();
+              if (dt_data) dt_data.ajax.reload();
+            } else {
+              Swal.fire({ icon: 'error', title: 'خطأ', text: res.error || 'فشل الاعتماد', customClass: { confirmButton: 'btn btn-primary' } });
+            }
+          }).fail(function (xhr) {
+            let msg = 'تعذر اعتماد الفاتورة';
+            if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+            Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
+          });
+        }
+      });
+    });
+
+    // Cancel Invoice
+    $(document).on('click', '.btn-cancel-invoice', function () {
+      const id = $(this).data('id');
+      const number = $(this).data('number');
+
+      Swal.fire({
+        title: 'إلغاء الفاتورة وفك الحركات',
+        text: `هل أنت متأكد من إلغاء الفاتورة (${number})؟ سيتم فك ارتباط الحركات وإعادة تاريخ الاستحقاق السابق لكل حركة.`,
+        input: 'text',
+        inputPlaceholder: 'سبب الإلغاء (اختياري)...',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، إلغاء الفاتورة',
+        cancelButtonText: 'تراجع',
+        customClass: {
+          confirmButton: 'btn btn-danger me-2',
+          cancelButton: 'btn btn-label-secondary'
+        },
+        buttonsStyling: false
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          $.post(baseUrl + 'admin/customer-invoices/' + id + '/cancel', { reason: result.value }, function (res) {
+            if (res.status === 1) {
+              Swal.fire({
+                icon: 'success',
+                title: 'تم الإلغاء',
+                text: res.success || 'تم إلغاء الفاتورة وفك ارتباط الحركات بنجاح.',
+                customClass: { confirmButton: 'btn btn-primary' }
+              });
+              if (dt_invoices) dt_invoices.ajax.reload();
+              if (dt_data) dt_data.ajax.reload();
+            } else {
+              Swal.fire({ icon: 'error', title: 'خطأ', text: res.error || 'فشل الإلغاء', customClass: { confirmButton: 'btn btn-primary' } });
+            }
+          }).fail(function (xhr) {
+            let msg = 'تعذر إلغاء الفاتورة';
+            if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+            Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
+          });
+        }
+      });
+    });
+
+    // Edit Invoice
+    $(document).on('click', '.btn-edit-invoice', function () {
+      const id = $(this).data('id');
+
+      $.get(baseUrl + 'admin/customer-invoices/' + id, function (res) {
+        if (res.status === 1) {
+          const inv = res.invoice;
+          $('#edit_invoice_id').val(inv.id);
+          $('#editInvoiceNumberTitle').text(inv.invoice_number);
+          $('#edit_accounting_reference_no').val(inv.accounting_reference_no || '');
+          $('#edit_issue_date').val(inv.issue_date ? inv.issue_date.split('T')[0] : '');
+          $('#edit_due_date').val(inv.due_date ? inv.due_date.split('T')[0] : '');
+          $('#edit_notes').val(inv.notes || '');
+          $('#edit_attachment').val('');
+
+          if (res.attachment_url) {
+            $('#editCurrentAttachmentPreview').html(`
+              <a href="${res.attachment_url}" target="_blank" class="text-primary">
+                <i class="ti ti-file me-1"></i> المرفق الحالي
+              </a>
+            `);
+          } else {
+            $('#editCurrentAttachmentPreview').html('<span class="text-muted">لا يوجد مرفق حالي</span>');
+          }
+
+          $('#editCustomerInvoiceModal').modal('show');
+        }
+      });
+    });
+
+    // Submit Edit Invoice
+    $('#formEditCustomerInvoice').on('submit', function (e) {
+      e.preventDefault();
+      const id = $('#edit_invoice_id').val();
+      const submitBtn = $('#btnSubmitEditInvoice');
+      submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جاري الحفظ وتحديث الاستحقاق...');
+
+      const formData = new FormData(this);
+
+      $.ajax({
+        url: baseUrl + 'admin/customer-invoices/' + id + '/update',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (res) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ التعديلات');
+          if (res.status === 1) {
+            $('#editCustomerInvoiceModal').modal('hide');
+            Swal.fire({
+              icon: 'success',
+              title: 'تم التعديل',
+              text: res.success || 'تم تحديث الفاتورة وتعميم تاريخ الاستحقاق بنجاح.',
+              customClass: { confirmButton: 'btn btn-primary' }
+            });
+            if (dt_invoices) dt_invoices.ajax.reload();
+            if (dt_data) dt_data.ajax.reload();
+          } else {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: res.error || 'فشل التعديل', customClass: { confirmButton: 'btn btn-primary' } });
+          }
+        },
+        error: function (xhr) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ التعديلات');
+          let msg = 'حدث خطأ أثناء التعديل';
+          if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+          Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
+        }
+      });
+    });
+  }
 
 });

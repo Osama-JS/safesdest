@@ -142,6 +142,11 @@ class InvestorController extends Controller
       'broker_commission_source' => 'nullable|in:investor_commission,task_commission',
       'broker_commission_type' => 'nullable|in:percentage,fixed',
       'broker_commission_value' => 'nullable|numeric|min:0',
+      'brokers' => 'nullable|array',
+      'brokers.*.broker_id' => 'nullable|exists:users,id',
+      'brokers.*.broker_commission_source' => 'nullable|in:investor_commission,task_commission',
+      'brokers.*.broker_commission_type' => 'nullable|in:percentage,fixed',
+      'brokers.*.broker_commission_value' => 'nullable|numeric|min:0',
       'bank_name' => 'nullable|string|max:255',
       'custom_bank_name' => 'nullable|string|max:255',
       'account_number' => 'nullable|string|max:50',
@@ -334,10 +339,74 @@ class InvestorController extends Controller
 
       $contractData['contract_type'] = $request->contract_type;
 
-      InvestmentContract::updateOrCreate(
+      $contract = InvestmentContract::updateOrCreate(
         ['user_id' => $investor->id, 'status' => 'active'],
         $contractData
       );
+
+      // مزامنة الوسطاء المتعددين للعقد الاستثماري
+      $syncData = [];
+      $firstBroker = null;
+
+      if ($request->has('brokers') && is_array($request->brokers)) {
+          foreach ($request->brokers as $b) {
+              if (!empty($b['broker_id'])) {
+                  $bId = (int)$b['broker_id'];
+                  $bSource = $b['broker_commission_source'] ?? 'investor_commission';
+                  $bType = $b['broker_commission_type'] ?? 'percentage';
+                  $bVal = isset($b['broker_commission_value']) ? (float)$b['broker_commission_value'] : 0.00;
+
+                  $syncData[$bId] = [
+                      'broker_commission_source' => $bSource,
+                      'broker_commission_type'   => $bType,
+                      'broker_commission_value'  => $bVal,
+                  ];
+
+                  if (!$firstBroker) {
+                      $firstBroker = [
+                          'broker_id'                => $bId,
+                          'broker_commission_source' => $bSource,
+                          'broker_commission_type'   => $bType,
+                          'broker_commission_value'  => $bVal,
+                      ];
+                  }
+              }
+          }
+      } elseif ($request->filled('broker_id')) {
+          // للتوافق العكسي إذا تم الإرسال عبر حقل منفرد
+          $bId = (int)$request->broker_id;
+          $bSource = $request->broker_commission_source ?? 'investor_commission';
+          $bType = $request->broker_commission_type ?? 'percentage';
+          $bVal = (float)($request->broker_commission_value ?? 0);
+          $syncData[$bId] = [
+              'broker_commission_source' => $bSource,
+              'broker_commission_type'   => $bType,
+              'broker_commission_value'  => $bVal,
+          ];
+          $firstBroker = [
+              'broker_id'                => $bId,
+              'broker_commission_source' => $bSource,
+              'broker_commission_type'   => $bType,
+              'broker_commission_value'  => $bVal,
+          ];
+      }
+
+      $contract->brokers()->sync($syncData);
+
+      // تحديث بيانات الوسيط الأساسي في جدول العقد للتوافق العكسي
+      if ($firstBroker) {
+          $contract->update([
+              'broker_id'                => $firstBroker['broker_id'],
+              'broker_commission_source' => $firstBroker['broker_commission_source'],
+              'broker_commission_type'   => $firstBroker['broker_commission_type'],
+              'broker_commission_value'  => $firstBroker['broker_commission_value'],
+          ]);
+      } else {
+          $contract->update([
+              'broker_id'                => null,
+              'broker_commission_value'  => 0.00,
+          ]);
+      }
 
       DB::commit();
       return response()->json(['status' => 1, 'success' => __('Investor saved successfully')]);
@@ -350,11 +419,11 @@ class InvestorController extends Controller
   public function show($id)
   {
     $investor = User::with([
-      'activeInvestmentContract',
+      'activeInvestmentContract.brokers',
       'investorWallet',
       'userWallet',
       'investmentContracts' => function ($q) {
-        $q->orderBy('created_at', 'desc')->limit(5);
+        $q->with('brokers')->orderBy('created_at', 'desc')->limit(5);
       }
     ])->findOrFail($id);
 

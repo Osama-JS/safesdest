@@ -249,7 +249,12 @@
                         </div>
                     </h4>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    @can('view_payout_requests')
+                        <a href="{{ route('teams.payout-requests.index') }}" class="btn btn-label-primary">
+                            <i class="ti ti-building-bank me-1"></i>{{ __('طلبات Payout للفرق') }}
+                        </a>
+                    @endcan
                     @can('generate_payment_request')
                         <button type="button" class="btn btn-success" onclick="showTeamPaymentRequestOptions()">
                             <i class="ti ti-file-invoice me-1"></i>{{ __('Payment Request') }}

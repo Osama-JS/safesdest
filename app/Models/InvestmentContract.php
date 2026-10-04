@@ -54,11 +54,21 @@ class InvestmentContract extends Model
     }
 
     /**
-     * العلاقة مع الوسيط (Broker)
+     * العلاقة مع الوسيط (Broker) - التوافق العكسي
      */
     public function broker()
     {
         return $this->belongsTo(User::class, 'broker_id');
+    }
+
+    /**
+     * العلاقة لدعم الوسطاء المتعددين للعقد الاستثماري
+     */
+    public function brokers()
+    {
+        return $this->belongsToMany(User::class, 'investment_contract_brokers', 'investment_contract_id', 'broker_id')
+                    ->withPivot('broker_commission_source', 'broker_commission_type', 'broker_commission_value', 'notes')
+                    ->withTimestamps();
     }
 
     /**

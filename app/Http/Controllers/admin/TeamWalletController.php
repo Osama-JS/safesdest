@@ -162,6 +162,7 @@ class TeamWalletController extends Controller
         }
 
         try {
+            $hyperPayNotes = '';
             $wallet = Team_Wallet::with('team')->findOrFail($req->wallet);
             $team = $wallet->team;
             $adjustedBalance = $wallet->balance;
@@ -179,42 +180,88 @@ class TeamWalletController extends Controller
                 }
             }
 
-            // --- HyperPay Payout Integration for Manual Transaction ---
-            $hyperPayNotes = '';
+            // --- HyperPay Payout Integration for Team Debit Transaction ---
             if ($req->payment_method === 'hyperpay' && $req->type === 'debit' && !$existingTransaction) {
                 if (!$team->iban_number || !$team->bic_code || !$team->beneficiary_name) {
                     return response()->json([
                         'status' => 2,
-                        'error' => __('Team bank details are incomplete for HyperPay Payout. Please update team bank details.')
+                        'error' => __('بيانات الحساب البنكي للفريق غير مكتملة (اسم المستفيد أو الآيبان أو كود BIC). يرجى تحديث بيانات الفريق البنكية.')
                     ]);
                 }
 
-                $payoutService = app(HyperPayPayoutService::class);
-                $payoutResponse = $payoutService->sendPayout([
-                    'amount' => $req->amount,
-                    'currency' => 'SAR',
-                    'externalId' => 'TPW-M-' . $wallet->id . '-' . time(),
-                    'beneficiary_name' => $team->beneficiary_name,
-                    'address1' => $team->bank_address1 ?? $team->address,
-                    'address2' => $team->bank_address2 ?? '.',
-                    'city' => $team->bank_city ?? 'Riyadh',
-                    'country' => $team->bank_country ?? 'SA',
-                    'iban' => str_replace(' ', '', $team->iban_number),
-                    'bic' => $team->bic_code,
-                    'purpose' => $req->purpose ?: 'BA',
-                    'description' => "Manual Payout for Team #{$team->id} ({$team->name})"
+                $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($team->iban_number, 'الفريق');
+                if (!$ibanCheck['valid']) {
+                    return response()->json(['status' => 2, 'error' => $ibanCheck['message']]);
+                }
+
+                $countryMapping = [
+                    'السعودية' => 'SA',
+                    'الإمارات' => 'AE',
+                    'الكويت' => 'KW',
+                    'عمان' => 'OM',
+                    'البحرين' => 'BH',
+                    'قطر' => 'QA',
+                    'مصر' => 'EG',
+                    'الأردن' => 'JO',
+                ];
+                $countryCode = $countryMapping[$team->bank_country] ?? ($team->bank_country ?: 'SA');
+                $beneficiaryName = $req->beneficiary_name ?: \App\Services\HyperPayPayoutService::formatBeneficiaryName($team->beneficiary_name);
+
+                $imagePath = null;
+                if ($req->hasFile('image')) {
+                    $imagePath = FileHelper::uploadFile($req->file("image"), 'wallets/team/transactions');
+                }
+
+                $externalId = 'TPW-' . $wallet->id . '-' . time();
+
+                \App\Models\HyperpayPayout::create([
+                    'reference_id'        => $externalId,
+                    'team_wallet_id'      => $wallet->id,
+                    'team_id'             => $team->id,
+                    'amount'              => $req->amount,
+                    'payout_type'         => 'TPW',
+                    'created_by'          => auth()->id(),
+                    'transaction_details' => [
+                        'amount'           => $req->amount,
+                        'beneficiary_name' => $beneficiaryName,
+                        'description'      => $req->description,
+                        'maturity'         => $req->maturity,
+                        'task_id'          => $req->task_id,
+                        'image'            => $imagePath,
+                        'admin_id'         => auth()->id(),
+                        'iban'             => str_replace(' ', '', $team->iban_number),
+                        'bic'              => $team->bic_code,
+                        'bank_name'        => $team->bank_name,
+                        'address1'         => $team->bank_address1 ?? $team->address,
+                        'address2'         => $team->bank_address2 ?? '.',
+                        'city'             => $team->bank_city ?? 'Riyadh',
+                        'country'          => $countryCode,
+                        'purpose'          => $req->purpose ?: 'BA',
+                    ],
+                    'status'              => 'pending_approval'
                 ]);
 
-                if (!$payoutResponse['status']) {
-                    return response()->json([
-                        'status' => 2,
-                        'error' => __('HyperPay Error: ') . $payoutResponse['message']
-                    ]);
-                }
+                // إشعار المدير بالمصادقة على دفعة Payout جديدة للفريق
+                \App\Services\AdminNotificationDispatcher::dispatch(
+                    eventKey: 'payout_approval_required',
+                    title: "طلب مصادقة دفعة Payout جديدة لفريق #{$externalId}",
+                    message: "تم تسجيل حركة دفع Payout لفريق {$team->name} بمبلغ " . number_format($req->amount, 2) . " ر.س وبانتظار مصادقة المدير.",
+                    actionUrl: url('/admin/teams/payout-requests'),
+                    priority: 'high',
+                    extraData: [
+                        'reference_id'   => $externalId,
+                        'team_id'        => $team->id,
+                        'team_name'      => $team->name,
+                        'team_wallet_id' => $wallet->id,
+                        'amount'         => $req->amount,
+                        'payout_type'    => 'TPW',
+                    ]
+                );
 
-                $payoutId = $payoutResponse['data']['payoutId'] ?? 'N/A';
-                $bulkId = $payoutResponse['data']['bulkId'] ?? 'N/A';
-                $hyperPayNotes = " | HyperPay PayoutId: {$payoutId} | BulkId: {$bulkId}";
+                return response()->json([
+                    'status'  => 1,
+                    'success' => __('تم تسجيل حركة الدفع بنجاح. تم تحويل الطلب إلى صفحة "طلبات الدفع عبر الـ Payout للفرق" بانتظار مصادقة المدير.'),
+                ]);
             }
             // --- End HyperPay Logic ---
 
@@ -222,7 +269,7 @@ class TeamWalletController extends Controller
 
             $data = [
               'amount' => $req->amount,
-              'description' => $req->description . $hyperPayNotes,
+              'description' => $req->description . ($hyperPayNotes ?? ''),
               'transaction_type' => $req->type,
               'maturity_time' => $req->type === 'credit' ? null : $req->maturity,
             ];

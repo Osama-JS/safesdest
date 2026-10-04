@@ -24,9 +24,7 @@ class Wallet_Transaction extends Model
     'sequence',
     'task_id',
     'clearance_id',
-    'team_id',
-    'clearance_id',
-
+    'customer_invoice_id',
   ];
 
 
@@ -49,6 +47,11 @@ class Wallet_Transaction extends Model
   public function task()
   {
     return $this->belongsTo(Task::class, 'task_id');
+  }
+
+  public function customerInvoice()
+  {
+    return $this->belongsTo(CustomerInvoice::class, 'customer_invoice_id');
   }
 
   public function clearance()

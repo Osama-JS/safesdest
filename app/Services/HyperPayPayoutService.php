@@ -62,14 +62,14 @@ class HyperPayPayoutService
     /**
      * Validate IBAN format and MOD-97 Checksum (ISO 7064 / ISO 13616)
      */
-    public static function validateIbanChecksum(?string $iban): array
+    public static function validateIbanChecksum(?string $iban, string $entityType = 'المستفيد'): array
     {
         $cleanIban = strtoupper(str_replace([' ', '-', '.'], '', trim($iban ?? '')));
 
         if (empty($cleanIban)) {
             return [
                 'valid'   => false,
-                'message' => 'رقم الآيبان فارغ. يرجى إدخال رقم الآيبان البنكي للسائق.',
+                'message' => "رقم الآيبان فارغ. يرجى إدخال رقم الآيبان البنكي لـ {$entityType}.",
             ];
         }
 
@@ -120,7 +120,7 @@ class HyperPayPayoutService
         if ($remainder !== 1) {
             return [
                 'valid'   => false,
-                'message' => "رقم الآيبان ({$cleanIban}) غير صحيح رياضياً أو به خطأ في أحد الأرقام (فشل في فحص التحقق للآيبان IBAN Checksum). يرجى مراجعة وتعديل رقم الآيبان في ملف السائق من خلال تطبيق البنك.",
+                'message' => "رقم الآيبان ({$cleanIban}) غير صحيح رياضياً أو به خطأ في أحد الأرقام (فشل في فحص التحقق للآيبان IBAN Checksum). يرجى مراجعة وتعديل رقم الآيبان في ملف {$entityType} من خلال تطبيق البنك.",
             ];
         }
 
@@ -214,7 +214,7 @@ class HyperPayPayoutService
         $lower = strtolower($msg);
 
         if (str_contains($lower, 'checksum')) {
-            return 'رقم الآيبان غير صحيح أو به خطأ في أحد الأرقام (لم يجتز فحص التحقق الرياضي للآيبان IBAN Checksum). يرجى مراجعة وتصحيح رقم الآيبان في ملف السائق.';
+            return 'رقم الآيبان غير صحيح أو به خطأ في أحد الأرقام (لم يجتز فحص التحقق الرياضي للآيبان IBAN Checksum). يرجى مراجعة وتصحيح رقم الآيبان من خلال تطبيق البنك.';
         }
         if (str_contains($lower, 'field format is invalid')) {
             return 'صيغة الحقل غير مقبولة لدى بوابة الدفع (تأكد من عدم وجود رموز خاصة أو أحرف غير مدعومة).';

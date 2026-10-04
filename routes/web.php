@@ -721,6 +721,19 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::get('/wallets/payment/request/{id}', [WalletsController::class, 'paymentRequest'])->name('wallets.payment_request');
 
+                // Customer Invoices Routes (فواتير ديون العملاء المحاسبية)
+                Route::prefix('customer-invoices')->name('admin.customer-invoices.')->group(function () {
+                    Route::get('/wallet/{walletId}/data', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'listByWallet'])->name('data');
+                    Route::get('/wallet/{walletId}/uninvoiced-transactions', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'getUninvoicedTransactions'])->name('uninvoiced-transactions');
+                    Route::post('/store', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'store'])->name('store');
+                    Route::get('/{id}', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'show'])->name('show');
+                    Route::post('/{id}/update', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'update'])->name('update');
+                    Route::post('/{id}/pay', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'pay'])->name('pay');
+                    Route::post('/{id}/approve', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'approve'])->name('approve');
+                    Route::post('/{id}/cancel', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'cancel'])->name('cancel');
+                    Route::get('/{id}/print', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'print'])->name('print');
+                });
+
 
                 Route::get('/drivers', [DriversController::class, 'index'])->name('drivers.drivers');
                 Route::get('/drivers/account/{id}/{name?}', [DriversController::class, 'show'])->name('drivers.show');
@@ -780,6 +793,20 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/teams/wallet/payment-request-logs', [TeamWalletController::class, 'getTeamPaymentRequestLogs'])->name('teams.wallet.payment-request-logs');
                 Route::get('/teams/wallet/team-tasks/{teamId}', [TeamWalletController::class, 'getTeamTasks'])->name('teams.wallet.team-tasks');
                 Route::post('/teams/wallet/generate-payment-pdf', [TeamWalletController::class, 'generateTeamPaymentPDF'])->name('teams.wallet.generate-payment-pdf');
+
+                // Team Payout Requests Routes (HyperPay)
+                Route::get('/teams/payout-requests', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'index'])->name('teams.payout-requests.index');
+                Route::get('/teams/payout-requests/data', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'getData'])->name('teams.payout-requests.data');
+                Route::get('/teams/payout-requests/{id}', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'show'])->name('teams.payout-requests.show');
+                Route::post('/teams/payout-requests/{id}/approve', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'approve'])->name('teams.payout-requests.approve');
+                Route::post('/teams/payout-requests/{id}/reject', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'reject'])->name('teams.payout-requests.reject');
+
+                // Investor Payout Requests Routes (HyperPay)
+                Route::get('/investors/payout-requests', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'index'])->name('investors.payout-requests.index');
+                Route::get('/investors/payout-requests/data', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'getData'])->name('investors.payout-requests.data');
+                Route::get('/investors/payout-requests/{id}', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'show'])->name('investors.payout-requests.show');
+                Route::post('/investors/payout-requests/{id}/approve', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'approve'])->name('investors.payout-requests.approve');
+                Route::post('/investors/payout-requests/{id}/reject', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'reject'])->name('investors.payout-requests.reject');
 
 
 
@@ -963,6 +990,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('reports/statistical', [App\Http\Controllers\admin\StatisticalReportController::class, 'index'])->name('admin.reports.statistical');
                 Route::post('reports/statistical/generate', [App\Http\Controllers\admin\StatisticalReportController::class, 'generateReport'])->name('admin.reports.statistical.generate');
                 Route::post('reports/statistical/preview', [App\Http\Controllers\admin\StatisticalReportController::class, 'previewReport'])->name('admin.reports.statistical.preview');
+
+                // Broker Reports Routes
+                Route::get('reports/brokers', [App\Http\Controllers\admin\BrokerReportsController::class, 'index'])->name('admin.reports.brokers');
+                Route::post('reports/brokers/preview', [App\Http\Controllers\admin\BrokerReportsController::class, 'preview'])->name('admin.reports.brokers.preview');
+                Route::post('reports/brokers/generate', [App\Http\Controllers\admin\BrokerReportsController::class, 'generate'])->name('admin.reports.brokers.generate');
 
                 // Sales Routes
                 Route::group(['prefix' => 'sales'], function () {

@@ -19,13 +19,18 @@ class HyperpayPayout extends Model
         'bulk_id',
         'wallet_id',
         'driver_id',
+        'team_id',
+        'team_wallet_id',
+        'user_id',
+        'user_wallet_id',
         'amount',
         'transaction_details',
         'status',
         'failure_reason',
         'webhook_payload',
-        'payout_type', // e.g. 'MT' (Manual), 'WP' (Wallet Payment), 'WD' (Withdrawal)
+        'payout_type', // e.g. 'MT', 'WP', 'WD', 'TPW', 'IPW', 'IWD'
         'source_withdrawal_id',
+        'source_commission_withdrawal_id',
         'created_by',
         'approved_by',
         'approved_at',
@@ -52,6 +57,36 @@ class HyperpayPayout extends Model
         return $this->belongsTo(Driver::class);
     }
 
+    public function team()
+    {
+        return $this->belongsTo(Teams::class, 'team_id');
+    }
+
+    public function teamWallet()
+    {
+        return $this->belongsTo(Team_Wallet::class, 'team_wallet_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function investor()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function userWallet()
+    {
+        return $this->belongsTo(UserWallet::class, 'user_wallet_id');
+    }
+
+    public function commissionWithdrawal()
+    {
+        return $this->belongsTo(InvestorCommissionWithdrawal::class, 'source_commission_withdrawal_id');
+    }
+
     public function withdrawal()
     {
         return $this->belongsTo(WithdrawalRequest::class, 'source_withdrawal_id');
@@ -76,11 +111,15 @@ class HyperpayPayout extends Model
     {
         return match ($this->payout_type) {
             'MT' => __('حركة يدوية (سحب/خصم)'),
-            'WP' => __('تسوية مستحقات'),
-            'WD' => __('طلب سحب رصيد'),
+            'WP' => __('تسوية مستحقات سائق'),
+            'WD' => __('طلب سحب رصيد سائق'),
             'UWP' => __('سحب عمولات مستخدم'),
             'INV' => __('سحب أرباح مستثمر'),
-            'TWM', 'TWP' => __('محفظة الفريق'),
+            'TPW' => __('صرف مستحقات فريق (Payout)'),
+            'TWM' => __('حركة خصم فريق (Payout)'),
+            'TWP' => __('تسوية مستحقات فريق'),
+            'IPW' => __('صرف عمولات مستثمر (Payout)'),
+            'IWD' => __('طلب سحب عمولات مستثمر (Payout)'),
             default => $this->payout_type ?: __('غير محدد'),
         };
     }

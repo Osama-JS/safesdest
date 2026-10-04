@@ -217,6 +217,32 @@
                 </div>
             </div>
 
+            <!-- Brokers Report -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon warning mx-auto" style="background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);">
+                            <i class="ti ti-briefcase"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('Brokers Report') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('Generate comprehensive reports for brokers commissions from customers, drivers, and tasks with detailed wallet transactions or summary aggregates.') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-primary me-2">{{ __('Excel Export') }}</span>
+                            <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
+                            <span class="badge bg-warning">{{ __('2 Modes') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.brokers') }}" class="btn btn-warning" style="background-color: #fda085; border-color: #fda085; color: #fff;">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- <!-- Driver Performance Report (Coming Soon) -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100 opacity-50">

@@ -593,7 +593,7 @@ class WalletsController extends Controller
 
         $totalFiltered = $query->count();
         $wallets = $query
-          ->with(['user', 'task']) // Eager load relationships
+          ->with(['user', 'task', 'customerInvoice']) // Eager load relationships
           ->offset($start)
           ->limit($limit)
           ->orderBy($order, $dir)
@@ -617,6 +617,8 @@ class WalletsController extends Controller
               'sequence'    => $val->sequence,
               'status'      => (int) $val->status, // Ensure it's integer
               'is_payout'   => str_contains($val->description, 'HyperPay Payout ID') || str_contains($val->description, 'رقم العملية:') || str_contains($val->description, 'سحب نقدي - طلب رقم #'),
+              'customer_invoice_id' => $val->customer_invoice_id,
+              'invoice_number'      => $val->customerInvoice ? $val->customerInvoice->invoice_number : null,
               'created_at'  => $val->created_at->format('Y-m-d H:i'),
             ];
         }

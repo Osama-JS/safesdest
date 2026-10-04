@@ -269,37 +269,17 @@
                                                 <span class="min_commission_threshold-error text-danger text-error"></span>
                                             </div>
 
-                                            <div class="col-12 mt-4"><h5 class="border-bottom pb-2">{{ __('Broker Settings (optional)') }}</h5></div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">{{ __('Broker') }}</label>
-                                                <select name="broker_id" class="form-select select2" id="broker_id">
-                                                    <option value="">{{ __('No Broker') }}</option>
-                                                    @foreach($users as $user)
-                                                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
-                                                    @endforeach
-                                                </select>
-                                                <span class="broker_id-error text-danger text-error"></span>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">{{ __('Broker Commission Source') }}</label>
-                                                <select name="broker_commission_source" class="form-select">
-                                                    <option value="investor_commission">{{ __('From investor profit commission') }}</option>
-                                                    <option value="task_commission">{{ __('From total task commission (platform bears)') }}</option>
-                                                </select>
-                                                <span class="broker_commission_source-error text-danger text-error"></span>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">{{ __('Broker Commission Calculation') }}</label>
-                                                <select name="broker_commission_type" class="form-select">
-                                                    <option value="percentage">{{ __('Percentage (%)') }}</option>
-                                                    <option value="fixed">{{ __('Fixed Amount (SAR)') }}</option>
-                                                </select>
-                                                <span class="broker_commission_type-error text-danger text-error"></span>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">{{ __('Broker Commission Value') }}</label>
-                                                <input type="number" step="0.01" name="broker_commission_value" class="form-control" placeholder="0.00">
-                                                <span class="broker_commission_value-error text-danger text-error"></span>
+                                            <div class="col-12 mt-4">
+                                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                                    <h5 class="mb-0">{{ __('Brokers & Marketing Settings (optional)') }}</h5>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-contract-broker">
+                                                        <i class="ti ti-plus me-1"></i>{{ __('Add Broker') }}
+                                                    </button>
+                                                </div>
+                                                <p class="text-muted small mb-3">{{ __('You can link one or more brokers to this investment contract with custom commission rates.') }}</p>
+                                                <div id="investor-brokers-container">
+                                                    <!-- Dynamic broker rows -->
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -631,4 +611,45 @@
             </div>
         </div>
     </div>
+
+<script type="text/template" id="investor-broker-row-template">
+    <div class="border rounded p-3 mb-3 broker-row bg-lighter" data-index="{index}">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-label-primary"><i class="ti ti-user-check me-1"></i>{{ __('Broker') }} #{number}</span>
+            <button type="button" class="btn btn-xs btn-label-danger remove-broker-row">
+                <i class="ti ti-trash me-1"></i>{{ __('Remove') }}
+            </button>
+        </div>
+        <div class="row g-2">
+            <div class="col-md-4">
+                <label class="form-label required">{{ __('Broker') }}</label>
+                <select name="brokers[{index}][broker_id]" class="form-select select2 broker-select" required>
+                    <option value="">{{ __('Select Broker') }}</option>
+                    @foreach($users as $user)
+                        <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label required">{{ __('Commission Source') }}</label>
+                <select name="brokers[{index}][broker_commission_source]" class="form-select">
+                    <option value="investor_commission">{{ __('From investor profit') }}</option>
+                    <option value="task_commission">{{ __('From total task commission (platform bears)') }}</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label required">{{ __('Calculation Type') }}</label>
+                <select name="brokers[{index}][broker_commission_type]" class="form-select">
+                    <option value="percentage">{{ __('Percentage (%)') }}</option>
+                    <option value="fixed">{{ __('Fixed (SAR)') }}</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label required">{{ __('Commission Value') }}</label>
+                <input type="number" step="0.01" min="0" name="brokers[{index}][broker_commission_value]" class="form-control" placeholder="0.00" value="0.00" required>
+            </div>
+        </div>
+    </div>
+</script>
 @endsection
+

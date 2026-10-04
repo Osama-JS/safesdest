@@ -114,6 +114,11 @@ class SettingsController extends Controller
     ]);
 
     foreach ($validated as $key => $value) {
+      // Do not overwrite existing password if submitted empty
+      if ($key === 'mail_password' && empty($value)) {
+        continue;
+      }
+
       Settings::updateOrCreate(
         ['key' => $key],
         [

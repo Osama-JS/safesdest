@@ -26,16 +26,23 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar avatar-lg me-4">
-                            <span class="avatar-initial rounded bg-label-primary">
-                                <i class="ti ti-user ti-lg"></i>
-                            </span>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar avatar-lg me-4">
+                                <span class="avatar-initial rounded bg-label-primary">
+                                    <i class="ti ti-user ti-lg"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h4 class="mb-1">{{ $user->name }}</h4>
+                                <p class="mb-0 text-muted">{{ $user->email }}</p>
+                                <small class="text-muted">{{ __('User ID') }}: #{{ $user->id }}</small>
+                            </div>
                         </div>
                         <div>
-                            <h4 class="mb-1">{{ $user->name }}</h4>
-                            <p class="mb-0 text-muted">{{ $user->email }}</p>
-                            <small class="text-muted">{{ __('User ID') }}: #{{ $user->id }}</small>
+                            <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
+                                <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين (Payout)') }}
+                            </a>
                         </div>
                     </div>
                 </div>

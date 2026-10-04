@@ -27,6 +27,11 @@
                 </ol>
             </nav>
         </div>
+        <div>
+            <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
+                <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين عبر Payout') }}
+            </a>
+        </div>
     </div>
 
     {{-- كروت الإحصائيات --}}

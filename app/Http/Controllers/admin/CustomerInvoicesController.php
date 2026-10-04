@@ -89,15 +89,18 @@ class CustomerInvoicesController extends Controller
             $transactions = $this->invoiceService->getUninvoicedTransactions($walletId);
 
             $data = $transactions->map(function ($tx) {
+                $taskCustom = $tx->task ? $tx->task->custom_task_number : null;
+                $taskId = $tx->task_id;
                 return [
-                    'id'               => $tx->id,
-                    'sequence'         => $tx->sequence ?? $tx->id,
-                    'amount'           => (float) $tx->amount,
-                    'task_id'          => $tx->task_id,
-                    'task_number'      => $tx->task ? ($tx->task->custom_task_number ?? $tx->task->id) : null,
-                    'description'      => $tx->description,
-                    'current_maturity' => $tx->maturity_time ? date('Y-m-d', strtotime($tx->maturity_time)) : '-',
-                    'created_at'       => $tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '-',
+                    'id'                 => $tx->id,
+                    'sequence'           => $tx->sequence ?? $tx->id,
+                    'amount'             => (float) $tx->amount,
+                    'task_id'            => $taskId,
+                    'task_number'        => $taskCustom ?: ($taskId ? ('#' . $taskId) : null),
+                    'custom_task_number' => $taskCustom,
+                    'description'        => $tx->description,
+                    'current_maturity'   => $tx->maturity_time ? date('Y-m-d', strtotime($tx->maturity_time)) : '-',
+                    'created_at'         => $tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '-',
                 ];
             });
 

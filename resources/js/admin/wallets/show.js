@@ -1463,19 +1463,40 @@ $(function () {
       $('#checkAllUninvoiced').prop('checked', false);
       $('#create-invoice-selected-count').text('0');
       $('#create-invoice-selected-total').text('0.00');
+      $('#uninvoiced-task-search').val('');
+      $('#uninvoiced-search').val('');
+      $('#matching-tasks-count-badge').hide();
 
       $.get(baseUrl + 'admin/customer-invoices/wallet/' + walletId + '/uninvoiced-transactions', function (res) {
         if (res.status === 1 && res.data && res.data.length > 0) {
           let rowsHtml = '';
           res.data.forEach(function (tx) {
+            const taskId = tx.task_id ? tx.task_id.toString().trim() : '';
+            const taskNo = tx.task_number ? tx.task_number.toString().trim() : '';
+            const customNo = tx.custom_task_number ? tx.custom_task_number.toString().trim() : '';
+            const searchCorpus = (
+              (tx.sequence || '') + ' ' +
+              taskId + ' ' +
+              taskNo + ' ' +
+              customNo + ' ' +
+              (tx.description || '') + ' ' +
+              (tx.amount || '')
+            ).toLowerCase();
+
             rowsHtml += `
-              <tr class="uninvoiced-row" data-search="${(tx.sequence || '') + ' ' + (tx.task_number || '') + ' ' + (tx.description || '')}">
+              <tr class="uninvoiced-row"
+                  data-task-id="${taskId}"
+                  data-task-number="${taskNo.toLowerCase()}"
+                  data-custom-number="${customNo.toLowerCase()}"
+                  data-search="${searchCorpus}">
                 <td class="text-center">
                   <input type="checkbox" class="form-check-input tx-checkbox" name="transaction_ids[]" value="${tx.id}" data-amount="${tx.amount}">
                 </td>
                 <td><span class="fw-semibold">${tx.sequence || tx.id}</span></td>
-                <td>${tx.task_number ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
-                <td><span class="text-truncate d-inline-block" style="max-width: 280px;" title="${tx.description}">${tx.description}</span></td>
+                <td>
+                  ${taskNo ? `<span class="badge bg-label-primary fs-tiny fw-bold"><i class="ti ti-hash me-1"></i>${taskNo}</span>` : '<span class="text-muted">-</span>'}
+                </td>
+                <td><span class="text-truncate d-inline-block" style="max-width: 270px;" title="${tx.description}">${tx.description}</span></td>
                 <td><small class="text-muted">${tx.current_maturity}</small></td>
                 <td class="text-end fw-bold text-danger">${parseFloat(tx.amount).toFixed(2)}</td>
               </tr>
@@ -1515,16 +1536,95 @@ $(function () {
       loadUninvoicedTransactions();
     });
 
-    // Filter Uninvoiced Transactions Search
-    $(document).on('keyup', '#uninvoiced-search', function () {
-      const q = $(this).val().toLowerCase();
+    // Filter Uninvoiced Transactions by Task Number or General Search
+    function filterUninvoicedRows() {
+      const rawTaskQuery = ($('#uninvoiced-task-search').val() || '').trim().toLowerCase();
+      const rawGeneralQuery = ($('#uninvoiced-search').val() || '').trim().toLowerCase();
+
+      // Split task query by comma, semicolon, space, newline or tab
+      const taskTokens = rawTaskQuery ? rawTaskQuery.split(/[\s,;\n]+/).filter(t => t.length > 0) : [];
+
+      let visibleCount = 0;
+      let matchingTaskCount = 0;
+
       $('.uninvoiced-row').each(function () {
-        const text = $(this).data('search').toLowerCase();
-        if (text.indexOf(q) !== -1) {
-          $(this).show();
-        } else {
-          $(this).hide();
+        const row = $(this);
+        const rowTaskId = (row.data('task-id') || '').toString().toLowerCase();
+        const rowTaskNo = (row.data('task-number') || '').toString().toLowerCase();
+        const rowCustomNo = (row.data('custom-number') || '').toString().toLowerCase();
+        const rowSearch = (row.data('search') || '').toString().toLowerCase();
+
+        // Check task tokens
+        let matchesTask = true;
+        if (taskTokens.length > 0) {
+          matchesTask = taskTokens.some(token => {
+            const cleanToken = token.replace(/^[#]/, '').trim();
+            return (
+              rowTaskId === cleanToken ||
+              (cleanToken.length >= 2 && rowTaskId.indexOf(cleanToken) !== -1) ||
+              rowTaskNo.indexOf(token) !== -1 ||
+              rowTaskNo.indexOf(cleanToken) !== -1 ||
+              rowCustomNo.indexOf(token) !== -1 ||
+              rowCustomNo.indexOf(cleanToken) !== -1
+            );
+          });
         }
+
+        // Check general search
+        let matchesGeneral = true;
+        if (rawGeneralQuery) {
+          matchesGeneral = rowSearch.indexOf(rawGeneralQuery) !== -1;
+        }
+
+        if (matchesTask && matchesGeneral) {
+          row.show();
+          visibleCount++;
+          if (taskTokens.length > 0) {
+            matchingTaskCount++;
+          }
+        } else {
+          row.hide();
+        }
+      });
+
+      // Update matching badge
+      if (taskTokens.length > 0) {
+        $('#matching-tasks-count-text').text(`تم العثور على ${matchingTaskCount} حركة مطابقة للمهام`);
+        $('#matching-tasks-count-badge').show();
+      } else {
+        $('#matching-tasks-count-badge').hide();
+      }
+    }
+
+    $(document).on('keyup input', '#uninvoiced-task-search, #uninvoiced-search', filterUninvoicedRows);
+
+    // Clear Task Search
+    $(document).on('click', '#btnClearTaskSearch', function () {
+      $('#uninvoiced-task-search').val('');
+      filterUninvoicedRows();
+    });
+
+    // Select All Matching Filtered Tasks
+    $(document).on('click', '#btnSelectFilteredTasks', function () {
+      const visibleCheckboxes = $('.uninvoiced-row:visible .tx-checkbox');
+      if (visibleCheckboxes.length === 0) {
+        Swal.fire({
+          icon: 'info',
+          title: 'تنبيه',
+          text: 'لا توجد حركات مطابقة للبحث الحالي لتحديدها.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        return;
+      }
+      visibleCheckboxes.prop('checked', true);
+      updateCreateInvoiceTotals();
+
+      Swal.fire({
+        icon: 'success',
+        title: 'تم التحديد',
+        text: `تم تحديد ${visibleCheckboxes.length} حركة مطابقة بنجاح.`,
+        timer: 1500,
+        showConfirmButton: false
       });
     });
 
@@ -1544,7 +1644,7 @@ $(function () {
       updateCreateInvoiceTotals();
     });
 
-    // Check All
+    // Check All Visible
     $(document).on('change', '#checkAllUninvoiced', function () {
       const isChecked = $(this).is(':checked');
       $('.uninvoiced-row:visible .tx-checkbox').prop('checked', isChecked);

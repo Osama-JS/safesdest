@@ -726,7 +726,7 @@
         <div class="modal fade" id="createCustomerInvoiceModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
-                    <div class="modal-header bg-light py-3">
+                    <div class="modal-header py-3">
                         <h5 class="modal-title fw-bold text-primary">
                             <i class="ti ti-file-invoice me-2"></i> <?php echo e(__('Create Accounting Invoice')); ?>
 
@@ -740,7 +740,7 @@
                         <div class="modal-body py-3">
                             <!-- Invoice Meta Fields -->
                             <div class="card mb-4 border">
-                                <div class="card-header bg-light py-2">
+                                <div class="card-header bg-white border-bottom py-2">
                                     <h6 class="mb-0 fw-semibold text-secondary">
                                         <i class="ti ti-info-circle me-1"></i> <?php echo e(__('Invoice Details')); ?>
 
@@ -781,14 +781,32 @@
 
                             <!-- Transactions Selection Box -->
                             <div class="card border">
-                                <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <h6 class="mb-0 fw-semibold text-secondary">
                                         <i class="ti ti-list-check me-1"></i> <?php echo e(__('Select Uninvoiced Debit Transactions')); ?>
 
                                     </h6>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <input type="text" class="form-control form-control-sm" id="uninvoiced-search" placeholder="<?php echo e(__('Search transactions...')); ?>" style="width: 220px;">
-                                        <button type="button" class="btn btn-xs btn-outline-primary" id="btnReloadUninvoiced">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <!-- Dedicated Task Number Search -->
+                                        <div class="input-group input-group-sm" style="min-width: 290px; max-width: 380px;">
+                                            <span class="input-group-text bg-white text-primary border-primary">
+                                                <i class="ti ti-hash me-1"></i> <?php echo e(__('Task #')); ?>
+
+                                            </span>
+                                            <input type="text" class="form-control border-primary" id="uninvoiced-task-search" placeholder="<?php echo e(__('Search task numbers (e.g. 101, 102)...')); ?>" title="<?php echo e(__('Search by one or multiple task numbers separated by comma or space')); ?>">
+                                            <button class="btn btn-primary" type="button" id="btnSelectFilteredTasks" title="<?php echo e(__('Select all matching tasks')); ?>">
+                                                <i class="ti ti-checkbox me-1"></i> <?php echo e(__('Select Matching')); ?>
+
+                                            </button>
+                                            <button class="btn btn-outline-secondary" type="button" id="btnClearTaskSearch" title="<?php echo e(__('Clear')); ?>">
+                                                <i class="ti ti-x"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- General search for description / sequence -->
+                                        <input type="text" class="form-control form-control-sm" id="uninvoiced-search" placeholder="<?php echo e(__('General search...')); ?>" style="width: 160px;">
+
+                                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnReloadUninvoiced" title="<?php echo e(__('Refresh')); ?>">
                                             <i class="ti ti-refresh"></i>
                                         </button>
                                     </div>
@@ -796,16 +814,16 @@
                                 <div class="card-body p-0">
                                     <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
                                         <table class="table table-hover table-sm align-middle mb-0" id="uninvoicedTransactionsTable">
-                                            <thead class="table-light sticky-top">
+                                            <thead class="bg-white border-bottom sticky-top">
                                                 <tr>
-                                                    <th style="width: 40px;" class="text-center">
-                                                        <input type="checkbox" class="form-check-input" id="checkAllUninvoiced">
+                                                    <th style="width: 40px; background-color: #fff;" class="text-center bg-white">
+                                                        <input type="checkbox" class="form-check-input" id="checkAllUninvoiced" title="<?php echo e(__('Select all visible')); ?>">
                                                     </th>
-                                                    <th style="width: 130px;"><?php echo e(__('Sequence / ID')); ?></th>
-                                                    <th style="width: 130px;"><?php echo e(__('Task #')); ?></th>
-                                                    <th><?php echo e(__('Description')); ?></th>
-                                                    <th style="width: 130px;"><?php echo e(__('Current Maturity')); ?></th>
-                                                    <th style="width: 140px;" class="text-end"><?php echo e(__('Amount (SAR)')); ?></th>
+                                                    <th style="width: 130px; background-color: #fff;" class="bg-white"><?php echo e(__('Sequence / ID')); ?></th>
+                                                    <th style="width: 140px; background-color: #fff;" class="bg-white"><?php echo e(__('Task #')); ?></th>
+                                                    <th style="background-color: #fff;" class="bg-white"><?php echo e(__('Description')); ?></th>
+                                                    <th style="width: 130px; background-color: #fff;" class="bg-white"><?php echo e(__('Current Maturity')); ?></th>
+                                                    <th style="width: 140px; background-color: #fff;" class="text-end bg-white"><?php echo e(__('Amount (SAR)')); ?></th>
                                                 </tr>
                                             </thead>
                                             <tbody id="uninvoiced-transactions-table-body">
@@ -819,10 +837,18 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                        <div>
-                                            <span class="fw-semibold text-muted"><?php echo e(__('Selected Transactions')); ?>:</span>
-                                            <span class="badge bg-primary fs-6 px-2 py-1 ms-1" id="create-invoice-selected-count">0</span>
+                                    <div class="p-3 bg-white border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div>
+                                                <span class="fw-semibold text-muted"><?php echo e(__('Selected Transactions')); ?>:</span>
+                                                <span class="badge bg-primary fs-6 px-2 py-1 ms-1" id="create-invoice-selected-count">0</span>
+                                            </div>
+                                            <div id="matching-tasks-count-badge" style="display: none;">
+                                                <span class="badge bg-label-info">
+                                                    <i class="ti ti-search me-1"></i>
+                                                    <span id="matching-tasks-count-text"></span>
+                                                </span>
+                                            </div>
                                         </div>
                                         <div>
                                             <span class="fw-semibold text-muted"><?php echo e(__('Total Invoice Amount')); ?>:</span>
@@ -834,7 +860,7 @@
                             </div>
                         </div>
 
-                        <div class="modal-footer bg-light py-2">
+                        <div class="modal-footer py-2">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
                             <button type="submit" class="btn btn-primary" id="btnSubmitCreateInvoice">
                                 <i class="ti ti-check me-1"></i> <?php echo e(__('Save & Create Invoice')); ?>

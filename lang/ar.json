@@ -2094,5 +2094,12 @@
     "Approve Customer Invoices": "اعتماد فواتير العملاء",
     "Cancel Customer Invoices": "إلغاء فواتير العملاء",
     "Filter by Status": "تصفية حسب الحالة",
-    "All Statuses": "كافة الحالات"
+    "All Statuses": "كافة الحالات",
+    "Search task numbers (e.g. 101, 102)...": "بحث بأرقام المهام (مثال: 101, 102)...",
+    "Search by one or multiple task numbers separated by comma or space": "بحث برقم مهمة واحد أو عدة أرقام مهام مفصولة بفواصل أو مسافات",
+    "Select Matching": "تحديد المطابق",
+    "Select all matching tasks": "تحديد جميع المهام المطابقة للبحث",
+    "Clear task search": "مسح بحث المهام",
+    "General search...": "بحث عام (بالوصف أو رقم الحركة)...",
+    "Select all visible": "تحديد كافة الحركات الظاهرة"
 }

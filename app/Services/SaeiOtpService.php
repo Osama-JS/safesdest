@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Services\Interfaces\SaeiOtpServiceInterface;
+use App\Models\Settings;
 
 /**
  * خدمة التحقق عبر OTP — منصة ساعي (Automize)
@@ -12,12 +13,7 @@ use App\Services\Interfaces\SaeiOtpServiceInterface;
  * الوثائق: https://saei.automize.sa
  * الرابط الأساسي: https://api.saei.automize.sa/api
  *
- * الإعدادات المطلوبة في ملف .env :
- *   SAEI_API_KEY=sk_live_xxxxxxxxxxxxxxx
- *   SAEI_FROM_PHONE_ID=1276243858896899     ← Phone Number ID وليس رقم الهاتف
- *   SAEI_TEMPLATE_ID=77                     ← رقم معرّف القالب (template_id)
- *   SAEI_CALLBACK_SECRET=                   ← مفتاح توقيع Callback (اختياري)
- *   SAEI_SIMULATION=false                   ← true لتجاهل الإرسال الفعلي في بيئة التطوير
+ * الإعدادات تدار الآن من لوحة التحكم (صفحة الإعدادات العامة) أو ملف .env
  *
  * دورة حياة التحقق:
  *   1. sendOtp($phone)         → ترسل الرقم لساعي ← تعيد verification_id
@@ -58,12 +54,12 @@ class SaeiOtpService implements SaeiOtpServiceInterface
 
     public function __construct()
     {
-        $this->baseUrl       = rtrim(env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api'), '/');
-        $this->apiKey        = env('SAEI_API_KEY', '');
-        $this->fromPhoneId   = env('SAEI_FROM_PHONE_ID', '');
-        $this->templateId    = (int) env('SAEI_TEMPLATE_ID', 0);
-        $this->callbackSecret = env('SAEI_CALLBACK_SECRET');
-        $this->simulation    = (bool) env('SAEI_SIMULATION', false);
+        $this->baseUrl        = rtrim(Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api')), '/');
+        $this->apiKey         = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
+        $this->fromPhoneId    = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID', ''));
+        $this->templateId     = (int) Settings::getValue('saei_template_id', env('SAEI_TEMPLATE_ID', 0));
+        $this->callbackSecret = Settings::getValue('saei_callback_secret', env('SAEI_CALLBACK_SECRET'));
+        $this->simulation     = filter_var(Settings::getValue('saei_simulation', env('SAEI_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN);
     }
 
     // ─────────────────────────────────────────────────────────────

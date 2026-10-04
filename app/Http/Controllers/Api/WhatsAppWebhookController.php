@@ -11,6 +11,7 @@ use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
 use App\Models\Customer;
 use App\Models\Driver;
+use App\Models\Settings;
 use App\Services\AdminNotificationDispatcher;
 
 class WhatsAppWebhookController extends Controller
@@ -20,15 +21,21 @@ class WhatsAppWebhookController extends Controller
      */
     public function verify(Request $request)
     {
-        $verifyToken = env('WHATSAPP_VERIFY_TOKEN');
+        $verifyToken = Settings::getValue('whatsapp_verify_token', env('WHATSAPP_VERIFY_TOKEN'));
 
-        $mode = $request->query('hub_mode');
-        $token = $request->query('hub_verify_token');
-        $challenge = $request->query('hub_challenge');
+        $mode = $request->query('hub_mode', $request->query('hub.mode'));
+        $token = $request->query('hub_verify_token', $request->query('hub.verify_token'));
+        $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
 
         if ($mode === 'subscribe' && $token === $verifyToken) {
-            return response($challenge, 200);
+            return response($challenge, 200)->header('Content-Type', 'text/plain');
         }
+
+        Log::warning('WhatsApp Webhook verification failed', [
+            'mode' => $mode,
+            'token' => $token,
+            'expected_token' => $verifyToken ? 'SET' : 'NOT_SET'
+        ]);
 
         return response('Forbidden', 403);
     }

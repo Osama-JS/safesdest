@@ -12,7 +12,7 @@ class SettingsController extends Controller
 
   public function __construct()
   {
-    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection']]);
+    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings']]);
   }
 
   public function index()
@@ -223,4 +223,58 @@ class SettingsController extends Controller
       ], 500);
     }
   }
+
+  /**
+   * تحديث وحفظ إعدادات الربط مع ساعي وواتساب (Saei & WhatsApp Cloud API)
+   */
+  public function updateSaeiSettings(Request $request)
+  {
+    $validated = $request->validate([
+      'saei_otp_enabled'       => 'nullable|string|in:0,1',
+      'saei_simulation'        => 'nullable|string|in:0,1',
+      'saei_api_key'           => 'nullable|string',
+      'saei_base_url'          => 'nullable|url',
+      'saei_from_phone_id'     => 'nullable|string',
+      'saei_template_id'       => 'nullable|numeric',
+      'saei_callback_secret'   => 'nullable|string',
+      'whatsapp_cloud_token'   => 'nullable|string',
+      'whatsapp_cloud_waba_id' => 'nullable|string',
+      'whatsapp_cloud_phone_id'=> 'nullable|string',
+      'whatsapp_verify_token'  => 'nullable|string',
+      'whatsapp_cloud_url'     => 'nullable|url',
+    ]);
+
+    $descriptions = [
+      'saei_otp_enabled'       => 'تفعيل خدمة ساعي لإرسال OTP عبر واتساب',
+      'saei_simulation'        => 'وضع المحاكاة لتجربة إرسال OTP بدون خصم رصيد',
+      'saei_api_key'           => 'مفتاح الـ API الخاص بمنصة ساعي (Saei Secret Key)',
+      'saei_base_url'          => 'الرابط الأساسي لـ API ساعي (Base URL)',
+      'saei_from_phone_id'     => 'معرّف رقم الهاتف المُرسِل في ساعي وميتا (Phone Number ID)',
+      'saei_template_id'       => 'رقم معرّف قالب OTP في ساعي (Template ID)',
+      'saei_callback_secret'   => 'المفتاح السري لتوقيع Callback لساعي',
+      'whatsapp_cloud_token'   => 'رمز الوصول الدائم لحساب واتساب كلاود في ميتا (Cloud Token)',
+      'whatsapp_cloud_waba_id' => 'معرّف حساب واتساب للأعمال (WABA ID)',
+      'whatsapp_cloud_phone_id'=> 'معرّف رقم واتساب السحابي (Cloud Phone ID)',
+      'whatsapp_verify_token'  => 'رمز التحقق الخاص بالويب هوك (Webhook Verify Token)',
+      'whatsapp_cloud_url'     => 'رابط Graph API لواتساب كلاود',
+    ];
+
+    foreach ($validated as $key => $value) {
+      Settings::updateOrCreate(
+        ['key' => $key],
+        [
+          'value'       => $value ?? '',
+          'category'    => 'saei',
+          'name'        => $descriptions[$key] ?? $key,
+          'description' => $descriptions[$key] ?? '',
+        ]
+      );
+    }
+
+    return response()->json([
+      'success' => true,
+      'message' => 'تم حفظ وتحديث إعدادات ساعي وواتساب بنجاح، وأصبحت سارية المفعول فوراً!'
+    ]);
+  }
 }
+

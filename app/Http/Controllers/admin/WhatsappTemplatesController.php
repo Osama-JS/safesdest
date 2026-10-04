@@ -5,6 +5,7 @@ namespace App\Http\Controllers\admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\WhatsappTemplate;
+use App\Models\Settings;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -144,14 +145,14 @@ class WhatsappTemplatesController extends Controller
      */
     public function fetchFromCloud()
     {
-        $wabaId   = env('WHATSAPP_CLOUD_WABA_ID');
-        $token    = env('WHATSAPP_CLOUD_TOKEN');
-        $apiVer   = env('WHATSAPP_CLOUD_API_VERSION', 'v21.0');
+        $wabaId   = Settings::getValue('whatsapp_cloud_waba_id', env('WHATSAPP_CLOUD_WABA_ID'));
+        $token    = Settings::getValue('whatsapp_cloud_token', env('WHATSAPP_CLOUD_TOKEN'));
+        $apiVer   = Settings::getValue('whatsapp_cloud_api_version', env('WHATSAPP_CLOUD_API_VERSION', 'v21.0'));
 
         if (!$wabaId || !$token) {
             return response()->json([
                 'status'  => 0,
-                'message' => __('WhatsApp Cloud API credentials (WABA ID & Token) are not configured in .env'),
+                'message' => __('WhatsApp Cloud API credentials (WABA ID & Token) are not configured in Settings or .env'),
             ]);
         }
 

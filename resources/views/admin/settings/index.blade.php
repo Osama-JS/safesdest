@@ -4,12 +4,30 @@
 
 <!-- Vendor Styles -->
 @section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/@form-validation/form-validation.scss', 'resources/assets/vendor/libs/animate-css/animate.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
+    @vite([
+        'resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss',
+        'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss',
+        'resources/assets/vendor/libs/datatables-buttons-bs5/buttons.bootstrap5.scss',
+        'resources/assets/vendor/libs/select2/select2.scss',
+        'resources/assets/vendor/libs/@form-validation/form-validation.scss',
+        'resources/assets/vendor/libs/animate-css/animate.scss',
+        'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'
+    ])
 @endsection
 
 <!-- Vendor Scripts -->
 @section('vendor-script')
-    @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
+    @vite([
+        'resources/assets/vendor/libs/moment/moment.js',
+        'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js',
+        'resources/assets/vendor/libs/select2/select2.js',
+        'resources/assets/vendor/libs/@form-validation/popular.js',
+        'resources/assets/vendor/libs/@form-validation/bootstrap5.js',
+        'resources/assets/vendor/libs/@form-validation/auto-focus.js',
+        'resources/assets/vendor/libs/cleavejs/cleave.js',
+        'resources/assets/vendor/libs/cleavejs/cleave-phone.js',
+        'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'
+    ])
 @endsection
 
 <!-- Page Scripts -->
@@ -17,7 +35,6 @@
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/model.js'])
     @vite(['resources/js/admin/settings.js'])
-
 @endsection
 
 @section('content')
@@ -50,438 +67,358 @@
                             </span>
                         </div>
                         <p class="text-muted mb-0">
-                            {{ __('إدارة إعدادات المنصة الحيوية والقوالب الافتراضية، الربط مع خدمات الخرائط والدفع، والخيارات التشغيلية الرئيسية.') }}
+                            {{ __('مركز إدارة إعدادات المنصة الحيوية: خوادم الربط والـ API، واتساب وساعي، البريد الإلكتروني، تحديثات التطبيقات، وقوالب النماذج.') }}
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Templates') }}</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-9">
-                        <label for="customer-template" class="mb-2">{{ __('Default Customer Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="customer_template">
-                            @if (empty($settings['customer_template']['value']) || empty($templates))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['customer_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                            @if (!empty($settings['customer_template']['value']))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                        </select>
-                        <span class="customer-error text-danger"></span>
-                    </div>
-                    <div class="form-group mb-9">
-                        <label for="driver-template" class="mb-2">{{ __('Default Driver Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="driver_template" id="driver-template">
-                            @if (empty($settings['driver_template']['value']) || empty($templates))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['driver_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                            @if (!empty($settings['customer_template']['value']))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                        </select>
-                        <span class="driver-error text-danger"></span>
-                    </div>
 
-                    <div class="form-group mb-9">
-                        <label for="user-template" class="mb-2">{{ __('Default User Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="user_template" id="user-template">
-                            @if (empty($settings['user_template']['value']) || empty($templates))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['user_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                            @if (!empty($settings['customer_template']['value']))
-                                <option value="">{{ __('--- Select Template') }}</option>
-                            @endif
-                        </select>
-                        <span class="user-error text-danger"></span>
-                    </div>
-                    <div class="form-group mb-9">
-                        <label for="task-template" class="mb-2">{{ __('Default Task Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="task_template" id="task-template">
-                            <option value="">{{ __('--- Select Template') }}</option>
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['task_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="task-error text-danger"></span>
-                    </div>
+    <!-- Navigation Tabs (Pills) -->
+    <ul class="nav nav-pills flex-column flex-md-row mb-4 gap-2 gap-md-1 border-bottom pb-3" id="settingsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active d-flex align-items-center" id="nav-general-tab" data-bs-toggle="pill" data-bs-target="#nav-general" type="button" role="tab" aria-controls="nav-general" aria-selected="true">
+                <i class="ti ti-settings me-2 fs-5"></i> {{ __('الإعدادات والتشغيل') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-saei-tab" data-bs-toggle="pill" data-bs-target="#nav-saei" type="button" role="tab" aria-controls="nav-saei" aria-selected="false">
+                <i class="ti ti-brand-whatsapp text-success me-2 fs-5"></i> {{ __('واتساب وساعي (OTP)') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-mail-tab" data-bs-toggle="pill" data-bs-target="#nav-mail" type="button" role="tab" aria-controls="nav-mail" aria-selected="false">
+                <i class="ti ti-mail me-2 fs-5"></i> {{ __('خادم البريد (SMTP)') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-mtahd-tab" data-bs-toggle="pill" data-bs-target="#nav-mtahd" type="button" role="tab" aria-controls="nav-mtahd" aria-selected="false">
+                <i class="ti ti-shield-check me-2 fs-5"></i> {{ __('منصة متعهد (الضمان)') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-apps-tab" data-bs-toggle="pill" data-bs-target="#nav-apps" type="button" role="tab" aria-controls="nav-apps" aria-selected="false">
+                <i class="ti ti-device-mobile me-2 fs-5"></i> {{ __('تحديثات التطبيقات') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-templates-tab" data-bs-toggle="pill" data-bs-target="#nav-templates" type="button" role="tab" aria-controls="nav-templates" aria-selected="false">
+                <i class="ti ti-file-text me-2 fs-5"></i> {{ __('قوالب النماذج') }}
+            </button>
+        </li>
+    </ul>
 
-                    <div class="form-group mb-9">
-                        <label for="task-template" class="mb-2">{{ __('Default Task (From Port) Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="task_from_port_template"
-                            id="task-from-port-template">
-                            <option value="">{{ __('--- Select Template') }}</option>
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['task_from_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="task-error text-danger"></span>
-                    </div>
+    <!-- Tab Content -->
+    <div class="tab-content p-0 border-0 shadow-none" id="settingsTabContent">
 
-                    <div class="form-group mb-9">
-                        <label for="task-template" class="mb-2">{{ __('Default Task (To Port) Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="task_to_port_template"
-                            id="task-to-port-template">
-                            <option value="">{{ __('--- Select Template') }}</option>
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['task_to_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="task-error text-danger"></span>
-                    </div>
-
-                    <div class="form-group mb-9">
-                        <label for="task-template" class="mb-2">{{ __('Default Customs Clearances Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="customs_clearance_template"
-                            id="task-to-port-template">
-                            <option value="">{{ __('--- Select Template') }}</option>
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['customs_clearance_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="task-error text-danger"></span>
-                    </div>
-
-                    <div class="form-group mb-9">
-                        <label for="task-template"
-                            class="mb-2">{{ __('Default Customs Clearances Agent Template') }}</label>
-                        <select class="form-select  update-setting-select" data-key="customs_clearance_agent_template"
-                            id="task-to-port-template">
-                            <option value="">{{ __('--- Select Template') }}</option>
-                            @foreach ($templates as $val)
-                                <option value="{{ $val->id }}"
-                                    {{ ($settings['customs_clearance_agent_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
-                                    {{ $val->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <span class="task-error text-danger"></span>
-                    </div>
-
-                </div>
-            </div>
-        <div class="col-md-4">
-            <div class="card mt-3">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Policies & Reports Settings') }}</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-4">
-                        <label class="mb-2 d-flex justify-content-between align-items-center">
-                            {{ __('Enable Internal Signatures') }}
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input update-setting-checkbox" type="checkbox"
-                                    data-key="internal_signatures_enabled"
-                                    {{ ($settings['internal_signatures_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
-                            </div>
-                        </label>
-                        <p class="text-muted small">{{ $settings['internal_signatures_enabled']['description'] ?? __('Enable display of stored signatures in PDF policies and reports.') }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        </div>
-        {{-- <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Drivers Commission') }}</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-9">
-                        <label for="commission-type" class="mb-2">{{ __('Commission Type') }}</label>
-                        <select class="form-select  update-setting-select" data-key="commission_type">
-
-                            <option value="rate" {{ ($settings['commission_type']['value'] ?? null) == 'rate' ? 'selected' : '' }}>
-                                {{ __('Rate') }}</option>
-                            <option value="fixed"
-                                {{ ($settings['commission_type']['value'] ?? null) == 'fixed' ? 'selected' : '' }}>
-                                {{ __('Fixed') }}</option>
-                        </select>
-                        <span class="commission_type-error text-danger"></span>
-                    </div>
-                    <div class="form-group mb-9">
-                        <label for="commission_rate" class="mb-2">{{ __('Commission Rate') }}</label>
-                        <input type="number" data-key="commission_rate" max="100" min="0" step="any"
-                            value="{{ $settings['commission_rate']['value'] ?? '' }}" class="form-control update-setting-input">
-                        <span class="commission_rate-error text-danger"></span>
-                    </div>
-
-                    <div class="form-group mb-9">
-                        <label for="commission_fixed" class="mb-2">{{ __('Commission fixed Amount') }}</label>
-                        <input type="number" data-key="commission_fixed" min="0" step="any"
-                            value="{{ $settings['commission_fixed']['value'] ?? '' }}" class="form-control update-setting-input">
-                        <span class="commission_fixed-error text-danger"></span>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
-        <div class="col-md-8">
-
-            <div class="card border ">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('System Management') }}</strong></div>
-                    </div>
-                </div>
-
-                <div class="card-body text-center">
-
-                    <h5 class="card-title">{{ __('Backup Management') }}</h5>
-                    <p class="card-text text-muted">
-                        {{ __('Manage database backups and uploaded files with advanced encryption') }}
-                    </p>
-                    <div class="d-flex gap-2 justify-content-center">
-                        <a href="{{ route('settings.backup') }}" class="btn btn-primary">
-                            <i class="ti ti-settings me-1"></i>
-                            {{ __('Manage Backups') }}
-                        </a>
-
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-        <!-- Task Distribution Settings -->
-        <div class="col-md-12">
-            <div class="card mt-3">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Task Distribution Settings') }}</strong></div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-4">
-                        <label class="mb-2 d-flex justify-content-between align-items-center">
-                            {{ __('Auto Distribution Enabled') }}
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input update-setting-checkbox" type="checkbox"
-                                    data-key="auto_distribution_enabled"
-                                    {{ ($settings['auto_distribution_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
-                            </div>
-                        </label>
-                        <p class="text-muted small">{{ $settings['auto_distribution_enabled']['description'] ?? '' }}</p>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="distribution_mode" class="mb-2">{{ __('Distribution Mode') }}</label>
-                        <select class="form-select update-setting-select" data-key="distribution_mode">
-                            <option value="sequential" {{ ($settings['distribution_mode']['value'] ?? 'sequential') == 'sequential' ? 'selected' : '' }}>
-                                {{ __('Sequential (One by one)') }}
-                            </option>
-                            <option value="broadcast" {{ ($settings['distribution_mode']['value'] ?? '') == 'broadcast' ? 'selected' : '' }}>
-                                {{ __('Broadcast (Top 5 nearby)') }}
-                            </option>
-                        </select>
-                        <p class="text-muted small">{{ $settings['distribution_mode']['description'] ?? '' }}</p>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="max_distribution_distance" class="mb-2">{{ __('Max Distribution Distance (Meters)') }}</label>
-                        <input type="number" data-key="max_distribution_distance"
-                            value="{{ $settings['max_distribution_distance']['value'] ?? '1000' }}"
-                            class="form-control update-setting-input">
-                        <p class="text-muted small">{{ $settings['max_distribution_distance']['description'] ?? '' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- App Update Settings -->
-        <div class="col-md-12">
-            <div class="card mt-3">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Driver App Update Settings') }}</strong></div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-4">
-                        <label for="min_driver_app_version" class="mb-2">{{ __('Minimum App Version') }}</label>
-                        <input type="text" data-key="min_driver_app_version"
-                            value="{{ $settings['min_driver_app_version']['value'] ?? '1.0.0' }}"
-                            class="form-control update-setting-input" placeholder="e.g., 1.0.5">
-                        <p class="text-muted small">{{ $settings['min_driver_app_version']['description'] ?? '' }}</p>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="driver_app_update_url" class="mb-2">{{ __('ِAndroid App Update URL') }}</label>
-                        <input type="url" data-key="driver_app_update_url"
-                            value="{{ $settings['driver_app_update_url']['value'] ?? '' }}"
-                            class="form-control update-setting-input" placeholder="https://play.google.com/store/apps/details?id=...">
-                        <p class="text-muted small">{{ $settings['driver_app_update_url']['description'] ?? '' }}</p>
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="driver_app_ios_update_url" class="mb-2">{{ __('IOS App Update URL') }}</label>
-                        <input type="url" data-key="driver_app_ios_update_url"
-                            value="{{ $settings['driver_app_ios_update_url']['value'] ?? '' }}"
-                            class="form-control update-setting-input" placeholder="https://">
-                        <p class="text-muted small">{{ $settings['driver_app_ios_update_url']['description'] ?? '' }}</p>
-                    </div>
-                </div>
-            </div>
-
-             <div class="card mt-3">
-                <div class="card-header">
-                    <div class="divider text-start">
-                        <div class="divider-text"><strong>{{ __('Customer App Update Settings') }}</strong></div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="form-group mb-4">
-                        <label for="min_customer_app_version" class="mb-2">{{ __('Minimum App Version') }}</label>
-                        <input type="text" data-key="min_customer_app_version"
-                            value="{{ $settings['min_customer_app_version']['value'] ?? '1.0.0' }}"
-                            class="form-control update-setting-input" placeholder="e.g., 1.0.5">
-                        <p class="text-muted small">{{ $settings['min_customer_app_version']['description'] ?? '' }}</p>
-                    </div>
-
-                    <div class="form-group mb-4">
-                        <label for="customer_app_update_url" class="mb-2">{{ __('ِAndroid App Update URL') }}</label>
-                        <input type="url" data-key="customer_app_update_url"
-                            value="{{ $settings['customer_app_update_url']['value'] ?? '' }}"
-                            class="form-control update-setting-input" placeholder="https://play.google.com/store/apps/details?id=...">
-                        <p class="text-muted small">{{ $settings['customer_app_update_url']['description'] ?? '' }}</p>
-                    </div>
-                    <div class="form-group mb-4">
-                        <label for="customer_app_ios_update_url" class="mb-2">{{ __('IOS App Update URL') }}</label>
-                        <input type="url" data-key="customer_app_ios_update_url"
-                            value="{{ $settings['customer_app_ios_update_url']['value'] ?? '' }}"
-                            class="form-control update-setting-input" placeholder="https://">
-                        <p class="text-muted small">{{ $settings['customer_app_ios_update_url']['description'] ?? '' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mtahd (Amnn) Escrow Settings Card -->
-            <div class="card mt-4 border-0 shadow-sm">
-                <div class="card-header bg-label-primary py-3">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-3">
-                            <h5 class="card-title mb-0 text-primary">
-                                <i class="ti ti-shield-check me-2 fs-3"></i>{{ __('إعدادات وحساب المنصة في متعهد (Amnn / Mtahd Escrow)') }}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 1: General & Operations                                   --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade show active" id="nav-general" role="tabpanel" aria-labelledby="nav-general-tab">
+            <div class="row g-4">
+                <!-- Task Distribution Card -->
+                <div class="col-12 col-lg-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-label-primary py-3">
+                            <h5 class="card-title mb-0 text-primary d-flex align-items-center">
+                                <i class="ti ti-git-fork me-2 fs-4"></i>{{ __('إعدادات توزيع المهام التشغيلية (Task Distribution)') }}
                             </h5>
                         </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input update-setting-checkbox" type="checkbox" id="setting_mtahd_enabled" data-key="mtahd_enabled" {{ ($settings['mtahd_enabled']['value'] ?? '1') != '0' ? 'checked' : '' }}>
-                                <label class="form-check-label fw-bold text-dark" for="setting_mtahd_enabled">
-                                    {{ __('تفعيل خدمة متعهد في النظام والتطبيق') }}
-                                </label>
+                        <div class="card-body pt-4">
+                            <div class="card bg-label-light border p-3 mb-4">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input update-setting-checkbox" type="checkbox" id="auto_distribution_enabled"
+                                        data-key="auto_distribution_enabled"
+                                        {{ ($settings['auto_distribution_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold text-dark" for="auto_distribution_enabled">
+                                        {{ __('تفعيل التوزيع التلقائي للمهام على السائقين (Auto Distribution)') }}
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">{{ $settings['auto_distribution_enabled']['description'] ?? __('يقوم النظام بتوزيع المهام الجديدة تلقائياً على السائقين القريبين المتاحين.') }}</small>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn_test_mtahd_conn">
-                                <i class="ti ti-plug-connected me-1"></i>{{ __('اختبار الاتصال بالـ API') }}
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ __('نمط التوزيع (Distribution Mode)') }}</label>
+                                    <select class="form-select update-setting-select" data-key="distribution_mode">
+                                        <option value="sequential" {{ ($settings['distribution_mode']['value'] ?? 'sequential') == 'sequential' ? 'selected' : '' }}>
+                                            {{ __('تتابعي - واحد تلو الآخر (Sequential)') }}
+                                        </option>
+                                        <option value="broadcast" {{ ($settings['distribution_mode']['value'] ?? '') == 'broadcast' ? 'selected' : '' }}>
+                                            {{ __('بث جماعي لأقرب 5 سائقين (Broadcast)') }}
+                                        </option>
+                                    </select>
+                                    <small class="text-muted">{{ $settings['distribution_mode']['description'] ?? __('آلية إشعار السائقين بالمهمة الجديدة.') }}</small>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ __('أقصى مسافة للبحث عن سائقين (بالأمتار)') }}</label>
+                                    <div class="input-group">
+                                        <input type="number" data-key="max_distribution_distance"
+                                            value="{{ $settings['max_distribution_distance']['value'] ?? '1000' }}"
+                                            class="form-control update-setting-input">
+                                        <span class="input-group-text">{{ __('متر') }}</span>
+                                    </div>
+                                    <small class="text-muted">{{ $settings['max_distribution_distance']['description'] ?? __('النطاق الجغرافي للبحث عن السائقين المتاحين.') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Policies & Reports Signatures -->
+                <div class="col-12 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-label-info py-3">
+                            <h5 class="card-title mb-0 text-info d-flex align-items-center">
+                                <i class="ti ti-signature me-2 fs-4"></i>{{ __('التوقيعات الرقمية والسياسات') }}
+                            </h5>
+                        </div>
+                        <div class="card-body pt-4">
+                            <div class="card bg-label-light border p-3 mb-3">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input update-setting-checkbox" type="checkbox" id="internal_signatures_enabled"
+                                        data-key="internal_signatures_enabled"
+                                        {{ ($settings['internal_signatures_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold text-dark" for="internal_signatures_enabled">
+                                        {{ __('تفعيل التوقيعات في بوالص الشحن والتقارير') }}
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">{{ $settings['internal_signatures_enabled']['description'] ?? __('إظهار توقيعات السائقين والعملاء المخزنة تلقائياً داخل وثائق الـ PDF المصدرة.') }}</small>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Backups Quick Link -->
+                            <div class="d-flex align-items-center justify-content-between p-3 rounded bg-lighter">
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-dark"><i class="ti ti-database me-1"></i> {{ __('إدارة النسخ الاحتياطي') }}</h6>
+                                    <small class="text-muted">{{ __('إنشاء واسترجاع النسخ الاحتياطية للنظام') }}</small>
+                                </div>
+                                <a href="{{ route('settings.backup') }}" class="btn btn-sm btn-primary">
+                                    <i class="ti ti-settings me-1"></i> {{ __('إدارة') }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 2: WhatsApp & Saei OTP                                    --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-saei" role="tabpanel" aria-labelledby="nav-saei-tab">
+            @php
+                $saeiOtpEnabled = ($settings['saei_otp_enabled']['value'] ?? '1') == '1';
+                $saeiSimulation = ($settings['saei_simulation']['value'] ?? '0') == '1';
+                $saeiApiKey = $settings['saei_api_key']['value'] ?? env('SAEI_API_KEY', '');
+                $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api');
+                $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '1276243858896899');
+                $saeiTemplateId = $settings['saei_template_id']['value'] ?? env('SAEI_TEMPLATE_ID', '77');
+                $saeiCallbackSecret = $settings['saei_callback_secret']['value'] ?? env('SAEI_CALLBACK_SECRET', '');
+                $waCloudToken = $settings['whatsapp_cloud_token']['value'] ?? env('WHATSAPP_CLOUD_TOKEN', '');
+                $waCloudWabaId = $settings['whatsapp_cloud_waba_id']['value'] ?? env('WHATSAPP_CLOUD_WABA_ID', '2008107733152275');
+                $waCloudPhoneId = $settings['whatsapp_cloud_phone_id']['value'] ?? env('WHATSAPP_CLOUD_PHONE_ID', '1276243858896899');
+                $waVerifyToken = $settings['whatsapp_verify_token']['value'] ?? env('WHATSAPP_VERIFY_TOKEN', '23423jlkjkjkwsdl234kjlk99kd');
+                $webhookUrl = url('/api/whatsapp/webhook');
+            @endphp
+            <div class="card border-0 shadow-sm" id="saei_settings_card">
+                <div class="card-header bg-label-success py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="card-title mb-0 text-success">
+                                <i class="ti ti-brand-whatsapp me-2 fs-3"></i>{{ __('إعدادات الربط مع واتساب وساعي (Saei & WhatsApp Cloud API)') }}
+                            </h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{{ route('admin.whatsapp-otp-test.index') }}" class="btn btn-sm btn-outline-success">
+                                <i class="ti ti-shield-check me-1"></i>{{ __('فحص واختبار OTP') }}
+                            </a>
+                            <button type="button" class="btn btn-sm btn-success" id="btn_save_saei_settings">
+                                <i class="ti ti-device-floppy me-1"></i>{{ __('حفظ إعدادات ساعي وواتساب') }}
                             </button>
                         </div>
                     </div>
                 </div>
                 <div class="card-body pt-4">
-                    <div class="alert alert-info border-0 mb-4" role="alert">
+                    <div class="alert alert-success border-0 mb-4" role="alert">
                         <div class="d-flex">
                             <i class="ti ti-info-circle fs-3 me-2"></i>
                             <div>
-                                <h6 class="alert-heading mb-1 fw-bold">{{ __('آلية الضمان المالي في متعهد:') }}</h6>
+                                <h6 class="alert-heading mb-1 fw-bold">{{ __('إدارة المزود ساعي (Saei / Meta BSP):') }}</h6>
                                 <p class="mb-0 small">
-                                    {{ __('المنصة مسجلة كبائع معتمد في متعهد، ويقوم العميل بسداد قيمة المهمة في حساب الضمان، وعند إتمام التوصيل يتم تحرير كامل المبلغ لحساب المنصة وتغذية محفظة السائق بصافي مستحقاته تلقائياً.') }}
+                                    {{ __('تتحكم هذه الإعدادات مباشرة في إرسال أكواد التحقق (OTP) للعملاء والسائقين عبر منصة ساعي المعتمدة، وكذلك إرسال واستقبال رسائل ومحادثات وقوالب الواتساب السحابية (Meta Cloud API). التعديلات هنا تطبق فورياً وتلغي الاعتماد على ملف .env.') }}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label fw-bold">{{ __('رقم حساب المنصة كبائع في متعهد (Seller Customer #)') }}</label>
-                                <div class="input-group">
-                                    <input type="text" id="setting_mtahd_seller_num" data-key="mtahd_platform_customer_number"
-                                        value="{{ $settings['mtahd_platform_customer_number']['value'] ?? config('services.mtahd.platform_seller_number') }}"
-                                        class="form-control update-setting-input font-monospace" placeholder="e.g., CUST_123456">
-                                    <button class="btn btn-primary" type="button" id="btn_create_platform_mtahd">
-                                        <i class="ti ti-user-plus me-1"></i>{{ __('إنشاء / توثيق في متعهد') }}
-                                    </button>
+                    <!-- Webhook Quick Info Banner -->
+                    <div class="card bg-lighter border border-dashed mb-4">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center g-3">
+                                <div class="col-md-7">
+                                    <label class="form-label fw-bold text-dark mb-1">
+                                        <i class="ti ti-webhook text-primary me-1"></i>{{ __('رابط الـ Webhook المباشر لاستقبال الرسائل (Callback URL):') }}
+                                    </label>
+                                    <div class="input-group input-group-merge">
+                                        <input type="text" class="form-control font-monospace bg-white" id="info_webhook_url" value="{{ $webhookUrl }}" readonly>
+                                        <button class="btn btn-outline-primary" type="button" onclick="copySettingVal('info_webhook_url')">
+                                            <i class="ti ti-copy me-1"></i>{{ __('نسخ') }}
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">{{ __('ضع هذا الرابط في خانة Webhook Callback URL في لوحة مطوري ميتا أو منصة ساعي.') }}</small>
                                 </div>
-                                <small class="text-muted">{{ __('معرف حساب المنصة المسجل لدى متعهد لتلقي أموال الضمان المالي.') }}</small>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label fw-bold">{{ __('رابط الـ API الأساسي (Base URL)') }}</label>
-                                <input type="url" data-key="mtahd_base_url"
-                                    value="{{ $settings['mtahd_base_url']['value'] ?? config('services.mtahd.base_url') }}"
-                                    class="form-control update-setting-input font-monospace" placeholder="https://sandbox-api.amnn.sa/api/v1">
-                                <small class="text-muted">{{ __('بيئة الاختبار: https://sandbox-api.amnn.sa/api/v1 | بيئة الإنتاج: https://api.amnn.sa/api/v1') }}</small>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label fw-bold">{{ __('مفتاح الربط (API Token / Secret)') }}</label>
-                                <input type="password" data-key="mtahd_api_token"
-                                    value="{{ $settings['mtahd_api_token']['value'] ?? config('services.mtahd.api_token') }}"
-                                    class="form-control update-setting-input font-monospace" placeholder="c2199c8e...">
-                                <small class="text-muted">{{ __('رمز التفويض المعتمد الخاص بحساب منصتكم من شركة متعهد (أمن).') }}</small>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label fw-bold">{{ __('مفتاح توقيع الإشعارات (Webhook Secret)') }}</label>
-                                <input type="password" data-key="mtahd_webhook_secret"
-                                    value="{{ $settings['mtahd_webhook_secret']['value'] ?? config('services.mtahd.webhook_secret') }}"
-                                    class="form-control update-setting-input font-monospace" placeholder="webhook_secret_key">
-                                <small class="text-muted">{{ __('يستخدم للتحقق المشفر من صحة الإشعارات اللحظية الواردة إلى: ') }} <code>/api/webhooks/mtahd</code></small>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-bold text-dark mb-1">
+                                        <i class="ti ti-key text-warning me-1"></i>{{ __('رمز التحقق للـ Webhook (Verify Token):') }}
+                                    </label>
+                                    <div class="input-group input-group-merge">
+                                        <input type="text" class="form-control font-monospace bg-white" id="info_verify_token" value="{{ $waVerifyToken }}" readonly>
+                                        <button class="btn btn-outline-warning" type="button" onclick="copySettingVal('info_verify_token')">
+                                            <i class="ti ti-copy me-1"></i>{{ __('نسخ') }}
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">{{ __('يجب أن يتطابق مع Verify Token في إعدادات ميتا.') }}</small>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <form id="saeiSettingsForm">
+                        <!-- Operational Switches -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-label-light border p-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="setting_saei_otp_enabled" name="saei_otp_enabled" value="1" {{ $saeiOtpEnabled ? 'checked' : '' }}>
+                                        <label class="form-check-label fw-bold text-dark" for="setting_saei_otp_enabled">
+                                            {{ __('تفعيل التحقق بـ OTP عبر منصة ساعي (Saei Service)') }}
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">{{ __('عند التفعيل، تُرسل أكواد OTP للعملاء والسائقين عبر واتساب ساعي تلقائياً.') }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-label-light border p-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="setting_saei_simulation" name="saei_simulation" value="1" {{ $saeiSimulation ? 'checked' : '' }}>
+                                        <label class="form-check-label fw-bold text-dark" for="setting_saei_simulation">
+                                            {{ __('وضع المحاكاة والتجربة (Simulation Mode)') }}
+                                        </label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">{{ __('إرسال أكواد وهمية في بيئة التطوير دون إجراء اتصال حقيقي مع ساعي أو خصم رصيد.') }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Saei Specific Settings Header -->
+                        <h6 class="fw-bold text-heading mb-3 pb-2 border-bottom d-flex align-items-center">
+                            <i class="ti ti-plug text-success me-2"></i>{{ __('بيانات الاعتماد الخاصة بمنصة ساعي (Saei / Automize Credentials)') }}
+                        </h6>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Saei API Key -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ __('مفتاح الـ API السري لمنصة ساعي (Saei API Key)') }} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="saei_api_key" name="saei_api_key" class="form-control font-monospace"
+                                        value="{{ $saeiApiKey }}" placeholder="sk_live_...">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn_toggle_saei_api_key">
+                                        <i class="ti ti-eye" id="saei_api_key_icon"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ __('المفتاح السري المستخرج من لوحة تحكم منصة ساعي (saei.automize.sa).') }}</small>
+                            </div>
+
+                            <!-- Saei Base URL -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ __('رابط API ساعي الأساسي (Base URL)') }} <span class="text-danger">*</span></label>
+                                <input type="url" id="saei_base_url" name="saei_base_url" class="form-control font-monospace"
+                                    value="{{ $saeiBaseUrl }}" placeholder="https://api.saei.automize.sa/api">
+                                <small class="text-muted">{{ __('الافتراضي: https://api.saei.automize.sa/api') }}</small>
+                            </div>
+
+                            <!-- Saei From Phone ID -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('معرّف رقم الهاتف المُرسِل (Phone Number ID)') }} <span class="text-danger">*</span></label>
+                                <input type="text" id="saei_from_phone_id" name="saei_from_phone_id" class="form-control font-monospace"
+                                    value="{{ $saeiFromPhoneId }}" placeholder="1276243858896899">
+                                <small class="text-muted">{{ __('معرف الرقم في ساعي وميتا (وليس رقم الهاتف نفسه).') }}</small>
+                            </div>
+
+                            <!-- Saei Template ID -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('معرّف قالب OTP في ساعي (Template ID)') }} <span class="text-danger">*</span></label>
+                                <input type="number" id="saei_template_id" name="saei_template_id" class="form-control font-monospace"
+                                    value="{{ $saeiTemplateId }}" placeholder="77">
+                                <small class="text-muted">{{ __('معرّف قالب الـ Authentication المعتمد في ساعي (مثل: 77).') }}</small>
+                            </div>
+
+                            <!-- Saei Callback Secret -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('مفتاح توقيع Callback (اختياري)') }}</label>
+                                <input type="text" id="saei_callback_secret" name="saei_callback_secret" class="form-control font-monospace"
+                                    value="{{ $saeiCallbackSecret }}" placeholder="sec_...">
+                                <small class="text-muted">{{ __('للتحقق من توقيع الهيدر X-OTP-Signature إذا كان مفعلاً في ساعي.') }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Meta Cloud API Header -->
+                        <h6 class="fw-bold text-heading mb-3 pb-2 border-bottom d-flex align-items-center">
+                            <i class="ti ti-brand-meta text-primary me-2"></i>{{ __('بيانات الربط مع واتساب السحابي / ميتا (Meta Cloud API & Webhook)') }}
+                        </h6>
+
+                        <div class="row g-3">
+                            <!-- Cloud Token -->
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">{{ __('رمز الوصول الدائم لواتساب كلاود (Meta Permanent Cloud Token)') }}</label>
+                                <div class="input-group">
+                                    <input type="password" id="whatsapp_cloud_token" name="whatsapp_cloud_token" class="form-control font-monospace"
+                                        value="{{ $waCloudToken }}" placeholder="EAATbN3...">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn_toggle_cloud_token">
+                                        <i class="ti ti-eye" id="cloud_token_icon"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ __('رمز وصول الـ System User الدائم لإرسال واسترجاع القوالب والمحادثات.') }}</small>
+                            </div>
+
+                            <!-- WABA ID -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('معرّف حساب واتساب للأعمال (WABA ID)') }}</label>
+                                <input type="text" id="whatsapp_cloud_waba_id" name="whatsapp_cloud_waba_id" class="form-control font-monospace"
+                                    value="{{ $waCloudWabaId }}" placeholder="2008107733152275">
+                                <small class="text-muted">{{ __('WhatsApp Business Account ID الخاص بالحساب.') }}</small>
+                            </div>
+
+                            <!-- Cloud Phone ID -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('معرّف رقم الهاتف السحابي (Cloud Phone ID)') }}</label>
+                                <input type="text" id="whatsapp_cloud_phone_id" name="whatsapp_cloud_phone_id" class="form-control font-monospace"
+                                    value="{{ $waCloudPhoneId }}" placeholder="1276243858896899">
+                                <small class="text-muted">{{ __('Phone Number ID لرقم المنصة المعتمد.') }}</small>
+                            </div>
+
+                            <!-- Webhook Verify Token -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">{{ __('رمز التحقق للـ Webhook (Verify Token)') }}</label>
+                                <input type="text" id="whatsapp_verify_token" name="whatsapp_verify_token" class="form-control font-monospace"
+                                    value="{{ $waVerifyToken }}" placeholder="23423jlkjkjkwsdl234kjlk99kd">
+                                <small class="text-muted">{{ __('الرمز الذي يتم إدخاله في Meta لمصادقة الـ Webhook.') }}</small>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
+        </div>
 
-            <!-- Mail (SMTP) Settings Card -->
-            <div class="card mt-4 border-0 shadow-sm" id="mail_settings_card">
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 3: Mail (SMTP) Settings                                   --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-mail" role="tabpanel" aria-labelledby="nav-mail-tab">
+            <div class="card border-0 shadow-sm" id="mail_settings_card">
                 <div class="card-header bg-label-primary py-3">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
@@ -603,50 +540,387 @@
                     </form>
                 </div>
             </div>
+        </div>
 
-            <!-- Test Email Modal -->
-            <div class="modal fade" id="testEmailModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content border-0 shadow">
-                        <div class="modal-header bg-label-primary py-3">
-                            <div class="d-flex align-items-center">
-                                <i class="ti ti-send fs-4 me-2 text-primary"></i>
-                                <h5 class="modal-title fw-bold mb-0 text-heading">{{ __('اختبار اتصال خادم البريد (SMTP)') }}</h5>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 4: Mtahd Escrow Settings                                  --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-mtahd" role="tabpanel" aria-labelledby="nav-mtahd-tab">
+            <div class="card border-0 shadow-sm" id="mtahd_settings_card">
+                <div class="card-header bg-label-primary py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5 class="card-title mb-0 text-primary">
+                                <i class="ti ti-shield-check me-2 fs-3"></i>{{ __('إعدادات وحساب المنصة في متعهد (Amnn / Mtahd Escrow)') }}
+                            </h5>
                         </div>
-                        <div class="modal-body p-4">
-                            <p class="text-muted small mb-3">
-                                {{ __('سيقوم النظام بإرسال بريد تجريبي فوري للتحقق من دقة بيانات الاتصال (Host, Port, Username, Password) مع إعطائك تقريراً لحظياً بالنتيجة أو كود الخطأ إن وجد.') }}
-                            </p>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">{{ __('إرسال البريد التجريبي إلى:') }} <span class="text-danger">*</span></label>
-                                <input type="email" id="modal_test_email_recipient" class="form-control"
-                                    value="{{ auth()->user()?->email ?? 'admin@safedest.com' }}" placeholder="name@example.com">
-                            </div>
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="test_using_form_values" checked>
-                                <label class="form-check-label small fw-bold" for="test_using_form_values">
-                                    {{ __('استخدم القيم الحالية المدخلة في النموذج أعلاه (للتجربة قبل الحفظ)') }}
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input update-setting-checkbox" type="checkbox" id="setting_mtahd_enabled" data-key="mtahd_enabled" {{ ($settings['mtahd_enabled']['value'] ?? '1') != '0' ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold text-dark" for="setting_mtahd_enabled">
+                                    {{ __('تفعيل خدمة متعهد في النظام والتطبيق') }}
                                 </label>
                             </div>
-                        </div>
-                        <div class="modal-footer border-top bg-light">
-                            <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('إلغاء') }}</button>
-                            <button type="button" class="btn btn-primary" id="btn_send_test_email">
-                                <i class="ti ti-mail-fast me-1"></i> {{ __('إرسال رسالة الاختبار الآن') }}
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn_test_mtahd_conn">
+                                <i class="ti ti-plug-connected me-1"></i>{{ __('اختبار الاتصال بالـ API') }}
                             </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-4">
+                    <div class="alert alert-info border-0 mb-4" role="alert">
+                        <div class="d-flex">
+                            <i class="ti ti-info-circle fs-3 me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1 fw-bold">{{ __('حساب المنصة كبائع معتمد (Seller Account):') }}</h6>
+                                <p class="mb-0 small">
+                                    {{ __('يتم إنشاء صفقات الضمان المالي تلقائياً بين المنصة والعميل لكل مهمة/شحنة. يجب ربط رقم بائع معتمد (Platform Seller Number) صادر من منصة أمن/متعهد لضمان قيد ودفع المبالغ بصورة صحيحة.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('رقم حساب المنصة في متعهد (Platform Seller Number)') }}</label>
+                                <div class="input-group">
+                                    <input type="text" id="setting_mtahd_seller_num" data-key="mtahd_platform_customer_number"
+                                        value="{{ $settings['mtahd_platform_customer_number']['value'] ?? config('services.mtahd.platform_customer_number') }}"
+                                        class="form-control update-setting-input font-monospace" placeholder="e.g., CUS-XXXXXX">
+                                    <button class="btn btn-primary" type="button" id="btn_create_platform_mtahd">
+                                        <i class="ti ti-user-plus me-1"></i>{{ __('إنشاء / توثيق حساب') }}
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ __('المعرف الرقمي لحساب المنصة لدى متعهد. إذا لم يكن لديك حساب، اضغط على زر الإنشاء لتوثيقه فوراً.') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('رابط الـ API الأساسي (Base URL)') }}</label>
+                                <input type="url" data-key="mtahd_base_url"
+                                    value="{{ $settings['mtahd_base_url']['value'] ?? config('services.mtahd.base_url') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://sandbox-api.amnn.sa/api/v1">
+                                <small class="text-muted">{{ __('بيئة الاختبار: https://sandbox-api.amnn.sa/api/v1 | بيئة الإنتاج: https://api.amnn.sa/api/v1') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('مفتاح الربط (API Token / Secret)') }}</label>
+                                <input type="password" data-key="mtahd_api_token"
+                                    value="{{ $settings['mtahd_api_token']['value'] ?? config('services.mtahd.api_token') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="c2199c8e...">
+                                <small class="text-muted">{{ __('رمز التفويض المعتمد الخاص بحساب منصتكم من شركة متعهد (أمن).') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-bold">{{ __('مفتاح توقيع الإشعارات (Webhook Secret)') }}</label>
+                                <input type="password" data-key="mtahd_webhook_secret"
+                                    value="{{ $settings['mtahd_webhook_secret']['value'] ?? config('services.mtahd.webhook_secret') }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="webhook_secret_key">
+                                <small class="text-muted">{{ __('يستخدم للتحقق المشفر من صحة الإشعارات اللحظية الواردة إلى: ') }} <code>/api/webhooks/mtahd</code></small>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 5: Mobile Apps Updates                                    --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-apps" role="tabpanel" aria-labelledby="nav-apps-tab">
+            <div class="row g-4">
+                <!-- Driver App Settings -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-label-warning py-3">
+                            <h5 class="card-title mb-0 text-warning d-flex align-items-center">
+                                <i class="ti ti-steering-wheel me-2 fs-4"></i>{{ __('تحديثات تطبيق السائق (Driver App)') }}
+                            </h5>
+                        </div>
+                        <div class="card-body pt-4">
+                            <div class="form-group mb-4">
+                                <label class="form-label fw-bold">{{ __('الحد الأدنى لإصدار التطبيق (Minimum App Version)') }}</label>
+                                <input type="text" data-key="min_driver_app_version"
+                                    value="{{ $settings['min_driver_app_version']['value'] ?? '1.0.0' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="e.g., 1.0.5">
+                                <small class="text-muted">{{ $settings['min_driver_app_version']['description'] ?? __('الإصدارات الأقدم ستطلب التحديث الإجباري.') }}</small>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label fw-bold"><i class="ti ti-brand-android text-success me-1"></i> {{ __('رابط متجر أندرويد (Google Play Store)') }}</label>
+                                <input type="url" data-key="driver_app_update_url"
+                                    value="{{ $settings['driver_app_update_url']['value'] ?? '' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://play.google.com/store/apps/details?id=...">
+                                <small class="text-muted">{{ $settings['driver_app_update_url']['description'] ?? '' }}</small>
+                            </div>
+
+                            <div class="form-group mb-2">
+                                <label class="form-label fw-bold"><i class="ti ti-brand-apple text-dark me-1"></i> {{ __('رابط متجر آبل (Apple App Store)') }}</label>
+                                <input type="url" data-key="driver_app_ios_update_url"
+                                    value="{{ $settings['driver_app_ios_update_url']['value'] ?? '' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://apps.apple.com/app/...">
+                                <small class="text-muted">{{ $settings['driver_app_ios_update_url']['description'] ?? '' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer App Settings -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-label-info py-3">
+                            <h5 class="card-title mb-0 text-info d-flex align-items-center">
+                                <i class="ti ti-user me-2 fs-4"></i>{{ __('تحديثات تطبيق العميل (Customer App)') }}
+                            </h5>
+                        </div>
+                        <div class="card-body pt-4">
+                            <div class="form-group mb-4">
+                                <label class="form-label fw-bold">{{ __('الحد الأدنى لإصدار التطبيق (Minimum App Version)') }}</label>
+                                <input type="text" data-key="min_customer_app_version"
+                                    value="{{ $settings['min_customer_app_version']['value'] ?? '1.0.0' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="e.g., 1.0.5">
+                                <small class="text-muted">{{ $settings['min_customer_app_version']['description'] ?? __('الإصدارات الأقدم ستطلب التحديث الإجباري.') }}</small>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label fw-bold"><i class="ti ti-brand-android text-success me-1"></i> {{ __('رابط متجر أندرويد (Google Play Store)') }}</label>
+                                <input type="url" data-key="customer_app_update_url"
+                                    value="{{ $settings['customer_app_update_url']['value'] ?? '' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://play.google.com/store/apps/details?id=...">
+                                <small class="text-muted">{{ $settings['customer_app_update_url']['description'] ?? '' }}</small>
+                            </div>
+
+                            <div class="form-group mb-2">
+                                <label class="form-label fw-bold"><i class="ti ti-brand-apple text-dark me-1"></i> {{ __('رابط متجر آبل (Apple App Store)') }}</label>
+                                <input type="url" data-key="customer_app_ios_update_url"
+                                    value="{{ $settings['customer_app_ios_update_url']['value'] ?? '' }}"
+                                    class="form-control update-setting-input font-monospace" placeholder="https://apps.apple.com/app/...">
+                                <small class="text-muted">{{ $settings['customer_app_ios_update_url']['description'] ?? '' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 6: Form Templates                                         --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-templates" role="tabpanel" aria-labelledby="nav-templates-tab">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-label-primary py-3">
+                    <h5 class="card-title mb-0 text-primary d-flex align-items-center">
+                        <i class="ti ti-file-text me-2 fs-4"></i>{{ __('قوالب النماذج الافتراضية للكيانات والمهام (Default Form Templates)') }}
+                    </h5>
+                </div>
+                <div class="card-body pt-4">
+                    <p class="text-muted small mb-4">
+                        {{ __('تحديد القوالب الافتراضية التي يتم تحميلها وتطبيقها تلقائياً عند إنشاء كيانات جديدة أو إسناد المهام في لوحة التحكم والتطبيقات.') }}
+                    </p>
+
+                    <div class="row g-4">
+                        <!-- Customer Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-user me-1 text-primary"></i> {{ __('قالب العميل الافتراضي') }}</label>
+                                <select class="form-select update-setting-select" data-key="customer_template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['customer_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="customer-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Driver Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-steering-wheel me-1 text-warning"></i> {{ __('قالب السائق الافتراضي') }}</label>
+                                <select class="form-select update-setting-select" data-key="driver_template" id="driver-template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['driver_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="driver-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- User Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-users me-1 text-info"></i> {{ __('قالب المستخدم الإداري') }}</label>
+                                <select class="form-select update-setting-select" data-key="user_template" id="user-template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['user_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="user-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Task Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-checkbox me-1 text-success"></i> {{ __('قالب المهمة العام') }}</label>
+                                <select class="form-select update-setting-select" data-key="task_template" id="task-template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['task_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="task-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Task From Port Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-ship me-1 text-primary"></i> {{ __('قالب مهمة (من الميناء)') }}</label>
+                                <select class="form-select update-setting-select" data-key="task_from_port_template" id="task-from-port-template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['task_from_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="task-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Task To Port Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-anchor me-1 text-secondary"></i> {{ __('قالب مهمة (إلى الميناء)') }}</label>
+                                <select class="form-select update-setting-select" data-key="task_to_port_template" id="task-to-port-template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['task_to_port_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="task-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Customs Clearance Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-building-warehouse me-1 text-danger"></i> {{ __('قالب التخليص الجمركي') }}</label>
+                                <select class="form-select update-setting-select" data-key="customs_clearance_template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['customs_clearance_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="task-error text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <!-- Customs Clearance Agent Template -->
+                        <div class="col-md-6 col-lg-3">
+                            <div class="form-group">
+                                <label class="form-label fw-bold mb-2"><i class="ti ti-id me-1 text-dark"></i> {{ __('قالب وكيل التخليص') }}</label>
+                                <select class="form-select update-setting-select" data-key="customs_clearance_agent_template">
+                                    <option value="">{{ __('--- اختر قالباً ---') }}</option>
+                                    @foreach ($templates as $val)
+                                        <option value="{{ $val->id }}" {{ ($settings['customs_clearance_agent_template']['value'] ?? null) == $val->id ? 'selected' : '' }}>
+                                            {{ $val->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <span class="task-error text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
-</div>
+
+    <!-- Test Email Modal -->
+    <div class="modal fade" id="testEmailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-label-primary py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="ti ti-send fs-4 me-2 text-primary"></i>
+                        <h5 class="modal-title fw-bold mb-0 text-heading">{{ __('اختبار اتصال خادم البريد (SMTP)') }}</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-3">
+                        {{ __('سيقوم النظام بإرسال بريد تجريبي فوري للتحقق من دقة بيانات الاتصال (Host, Port, Username, Password) مع إعطائك تقريراً لحظياً بالنتيجة أو كود الخطأ إن وجد.') }}
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ __('إرسال البريد التجريبي إلى:') }} <span class="text-danger">*</span></label>
+                        <input type="email" id="modal_test_email_recipient" class="form-control"
+                            value="{{ auth()->user()?->email ?? 'admin@safedest.com' }}" placeholder="name@example.com">
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="test_using_form_values" checked>
+                        <label class="form-check-label small fw-bold" for="test_using_form_values">
+                            {{ __('استخدم القيم الحالية المدخلة في النموذج أعلاه (للتجربة قبل الحفظ)') }}
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('إلغاء') }}</button>
+                    <button type="button" class="btn btn-primary" id="btn_send_test_email">
+                        <i class="ti ti-mail-fast me-1"></i> {{ __('إرسال رسالة الاختبار الآن') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Toggle password visibility
+        // Activate Tab from URL Hash on page load (e.g., #mail_settings_card or #saei_settings_card)
+        const hash = window.location.hash;
+        if (hash) {
+            const tabMap = {
+                '#mail_settings_card': '#nav-mail-tab',
+                '#saei_settings_card': '#nav-saei-tab',
+                '#mtahd_settings_card': '#nav-mtahd-tab',
+                '#nav-saei': '#nav-saei-tab',
+                '#nav-mail': '#nav-mail-tab',
+                '#nav-mtahd': '#nav-mtahd-tab',
+                '#nav-apps': '#nav-apps-tab',
+                '#nav-templates': '#nav-templates-tab',
+                '#nav-general': '#nav-general-tab'
+            };
+            const targetTabSelector = tabMap[hash] || hash + '-tab';
+            const targetTrigger = document.querySelector(targetTabSelector) || document.querySelector(`[data-bs-target="${hash}"]`);
+            if (targetTrigger) {
+                const tab = new bootstrap.Tab(targetTrigger);
+                tab.show();
+            }
+        }
+
+        // Toggle Mail password visibility
         const btnTogglePwd = document.getElementById('btn_toggle_mail_pwd');
         if (btnTogglePwd) {
             btnTogglePwd.addEventListener('click', function () {
@@ -699,16 +973,18 @@
                     if (data.success) {
                         Swal.fire({
                             icon: 'success',
-                            title: '{{ __("تم الحفظ بنجاح") }}',
+                            title: '{{ __("تم بنجاح") }}',
                             text: data.message,
-                            timer: 2000,
-                            showConfirmButton: false
+                            customClass: { confirmButton: 'btn btn-success' },
+                            buttonsStyling: false
                         });
                     } else {
                         Swal.fire({
                             icon: 'error',
                             title: '{{ __("خطأ") }}',
-                            text: data.message || '{{ __("حدث خطأ أثناء حفظ الإعدادات") }}'
+                            text: data.message || '{{ __("فشل في حفظ إعدادات البريد") }}',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
                         });
                     }
                 })
@@ -718,41 +994,45 @@
                     Swal.fire({
                         icon: 'error',
                         title: '{{ __("خطأ") }}',
-                        text: '{{ __("تعذر الاتصال بالسيرفر") }}'
+                        text: '{{ __("تعذر الاتصال بالسيرفر") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
                     });
                 });
             });
         }
 
         // Open Test Email Modal
-        const btnOpenTestModal = document.getElementById('btn_open_test_mail_modal');
-        if (btnOpenTestModal) {
-            btnOpenTestModal.addEventListener('click', function () {
-                const modalElem = document.getElementById('testEmailModal');
-                if (modalElem) {
-                    const modal = new bootstrap.Modal(modalElem);
-                    modal.show();
-                }
+        const btnOpenModal = document.getElementById('btn_open_test_mail_modal');
+        if (btnOpenModal) {
+            btnOpenModal.addEventListener('click', function () {
+                const modal = new bootstrap.Modal(document.getElementById('testEmailModal'));
+                modal.show();
             });
         }
 
         // Send Test Email
-        const btnSendTestEmail = document.getElementById('btn_send_test_email');
-        if (btnSendTestEmail) {
-            btnSendTestEmail.addEventListener('click', function () {
-                const recipient = document.getElementById('modal_test_email_recipient').value;
+        const btnSendTest = document.getElementById('btn_send_test_email');
+        if (btnSendTest) {
+            btnSendTest.addEventListener('click', function () {
+                const recipient = document.getElementById('modal_test_email_recipient').value.trim();
                 if (!recipient) {
-                    Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى كتابة عنوان البريد الإلكتروني للمستلم.' });
+                    Swal.fire({ icon: 'warning', title: '{{ __("تنبيه") }}', text: '{{ __("يرجى إدخال عنوان بريد إلكتروني صالح لاستقبال الاختبار.") }}' });
                     return;
                 }
 
-                const useFormValues = document.getElementById('test_using_form_values').checked;
+                const btn = this;
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الفحص والإرسال...';
+
                 const payload = {
                     _token: '{{ csrf_token() }}',
-                    test_email: recipient
+                    test_email: recipient,
                 };
 
-                if (useFormValues) {
+                const useCurrentValues = document.getElementById('test_using_form_values').checked;
+                if (useCurrentValues) {
                     payload.mail_mailer = document.getElementById('mail_mailer').value;
                     payload.mail_host = document.getElementById('mail_host').value;
                     payload.mail_port = document.getElementById('mail_port').value;
@@ -762,13 +1042,6 @@
                     payload.mail_from_address = document.getElementById('mail_from_address').value;
                     payload.mail_from_name = document.getElementById('mail_from_name').value;
                 }
-
-                Swal.fire({
-                    title: '{{ __("جاري الاتصال وإرسال البريد...") }}',
-                    text: '{{ __("يتم الاتصال بخادم الـ SMTP والتحقق من الصلاحيات") }}',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
 
                 fetch("{{ route('settings.mail.test-connection') }}", {
                     method: 'POST',
@@ -781,26 +1054,34 @@
                 })
                 .then(res => res.json())
                 .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
                     if (data.success) {
-                        const modalElem = document.getElementById('testEmailModal');
-                        if (modalElem) {
-                            const modalInstance = bootstrap.Modal.getInstance(modalElem);
-                            if (modalInstance) modalInstance.hide();
-                        }
+                        const modalEl = document.getElementById('testEmailModal');
+                        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                        if (modalInstance) modalInstance.hide();
+
                         Swal.fire({
                             icon: 'success',
-                            title: '{{ __("نجاح الاتصال والإرسال") }}',
-                            text: data.message
+                            title: '{{ __("الاتصال والإرسال ناجح!") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-success' },
+                            buttonsStyling: false
                         });
                     } else {
                         Swal.fire({
                             icon: 'error',
                             title: '{{ __("فشل الاتصال / الإرسال") }}',
-                            html: `<div class="text-danger small font-monospace text-start p-2 bg-light rounded">${data.message}</div>`
+                            html: '<div class="text-start dir-ltr font-monospace small bg-light p-3 rounded mt-2 text-danger">' +
+                                (data.message || 'Unknown error') + '</div>',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
                         });
                     }
                 })
                 .catch(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
                     Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("تعذر الاتصال بالسيرفر") }}' });
                 });
             });
@@ -878,6 +1159,126 @@
                         })
                         .catch(() => Swal.fire({ icon: 'error', title: '{{ __("خطأ") }}', text: '{{ __("تعذر الاتصال بالسيرفر") }}' }));
                     }
+                });
+            });
+        }
+
+        // Copy setting value to clipboard
+        window.copySettingVal = function (elementId) {
+            const input = document.getElementById(elementId);
+            if (!input) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: '{{ __("تم النسخ إلى الحافظة بنجاح!") }}',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            });
+        };
+
+        // Toggle Saei API Key visibility
+        const btnToggleSaeiKey = document.getElementById('btn_toggle_saei_api_key');
+        if (btnToggleSaeiKey) {
+            btnToggleSaeiKey.addEventListener('click', function () {
+                const input = document.getElementById('saei_api_key');
+                const icon = document.getElementById('saei_api_key_icon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'ti ti-eye-off';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'ti ti-eye';
+                }
+            });
+        }
+
+        // Toggle Cloud Token visibility
+        const btnToggleCloudToken = document.getElementById('btn_toggle_cloud_token');
+        if (btnToggleCloudToken) {
+            btnToggleCloudToken.addEventListener('click', function () {
+                const input = document.getElementById('whatsapp_cloud_token');
+                const icon = document.getElementById('cloud_token_icon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'ti ti-eye-off';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'ti ti-eye';
+                }
+            });
+        }
+
+        // Save Saei & WhatsApp Settings
+        const btnSaveSaei = document.getElementById('btn_save_saei_settings');
+        if (btnSaveSaei) {
+            btnSaveSaei.addEventListener('click', function () {
+                const btn = this;
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الحفظ...") }}';
+
+                const payload = {
+                    _token: '{{ csrf_token() }}',
+                    saei_otp_enabled: document.getElementById('setting_saei_otp_enabled').checked ? '1' : '0',
+                    saei_simulation: document.getElementById('setting_saei_simulation').checked ? '1' : '0',
+                    saei_api_key: document.getElementById('saei_api_key').value,
+                    saei_base_url: document.getElementById('saei_base_url').value,
+                    saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
+                    saei_template_id: document.getElementById('saei_template_id').value,
+                    saei_callback_secret: document.getElementById('saei_callback_secret').value,
+                    whatsapp_cloud_token: document.getElementById('whatsapp_cloud_token').value,
+                    whatsapp_cloud_waba_id: document.getElementById('whatsapp_cloud_waba_id').value,
+                    whatsapp_cloud_phone_id: document.getElementById('whatsapp_cloud_phone_id').value,
+                    whatsapp_verify_token: document.getElementById('whatsapp_verify_token').value,
+                };
+
+                fetch("{{ route('settings.saei.update') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    if (data.success) {
+                        const infoVerify = document.getElementById('info_verify_token');
+                        if (infoVerify) infoVerify.value = payload.whatsapp_verify_token;
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("تم الحفظ بنجاح") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-success' },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("خطأ") }}',
+                            text: data.message || '{{ __("فشل حفظ الإعدادات") }}',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("خطأ") }}',
+                        text: '{{ __("تعذر الاتصال بالسيرفر") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
                 });
             });
         }

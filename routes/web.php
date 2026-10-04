@@ -550,6 +550,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/mtahd/test-connection', [SettingsController::class, 'testMtahdConnection'])->name('settings.mtahd.test-connection');
                     Route::post('/mail/update', [SettingsController::class, 'updateMailSettings'])->name('settings.mail.update');
                     Route::post('/mail/test-connection', [SettingsController::class, 'testMailConnection'])->name('settings.mail.test-connection');
+                    Route::post('/saei/update', [SettingsController::class, 'updateSaeiSettings'])->name('settings.saei.update');
 
                     Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
                     Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');

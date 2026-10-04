@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use App\Models\WhatsappTemplate;
 use App\Models\WhatsappConversation;
 use App\Models\WhatsappMessage;
+use App\Models\Settings;
 use App\Services\Interfaces\WhatsAppServiceInterface;
 
 class CloudWhatsAppService implements WhatsAppServiceInterface
@@ -20,11 +21,11 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
 
     public function __construct()
     {
-        $this->url        = rtrim(env('WHATSAPP_CLOUD_URL', 'https://graph.facebook.com/v21.0/'), '/') . '/';
-        $this->phoneId    = env('WHATSAPP_CLOUD_PHONE_ID') ?: env('SAEI_FROM_PHONE_ID');
-        $this->token      = env('WHATSAPP_CLOUD_TOKEN');
-        $this->wabaId     = env('WHATSAPP_CLOUD_WABA_ID');
-        $this->simulation = (bool) env('WHATSAPP_SIMULATION', false);
+        $this->url        = rtrim(Settings::getValue('whatsapp_cloud_url', env('WHATSAPP_CLOUD_URL', 'https://graph.facebook.com/v21.0/')), '/') . '/';
+        $this->phoneId    = Settings::getValue('saei_from_phone_id') ?: Settings::getValue('whatsapp_cloud_phone_id', env('WHATSAPP_CLOUD_PHONE_ID') ?: env('SAEI_FROM_PHONE_ID'));
+        $this->token      = Settings::getValue('whatsapp_cloud_token', env('WHATSAPP_CLOUD_TOKEN'));
+        $this->wabaId     = Settings::getValue('whatsapp_cloud_waba_id', env('WHATSAPP_CLOUD_WABA_ID'));
+        $this->simulation = filter_var(Settings::getValue('whatsapp_simulation', env('WHATSAPP_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -32,7 +33,8 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
      */
     public function sendOTP($phone, $code, $lang = 'ar')
     {
-        if (env('SAEI_OTP_ENABLED', false)) {
+        $saeiEnabled = filter_var(Settings::getValue('saei_otp_enabled', env('SAEI_OTP_ENABLED', true)), FILTER_VALIDATE_BOOLEAN);
+        if ($saeiEnabled) {
             $saei = app(SaeiOtpService::class);
             $res = $saei->sendOtp($phone);
             return $res['success'] ?? false;

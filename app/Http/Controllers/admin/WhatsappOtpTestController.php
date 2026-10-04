@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Services\SaeiOtpService;
+use App\Models\Settings;
 
 class WhatsappOtpTestController extends Controller
 {
@@ -22,13 +23,16 @@ class WhatsappOtpTestController extends Controller
      */
     public function index()
     {
+        $saeiEnabled = filter_var(Settings::getValue('saei_otp_enabled', env('SAEI_OTP_ENABLED', true)), FILTER_VALIDATE_BOOLEAN);
+        $apiKey = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
+
         $config = [
-            'provider'        => env('SAEI_OTP_ENABLED', false) ? 'ساعي (Saei)' : 'WhatsApp Cloud API',
-            'saei_enabled'    => (bool) env('SAEI_OTP_ENABLED', false),
-            'simulation'      => (bool) env('SAEI_SIMULATION', false),
-            'api_key_set'     => !empty(env('SAEI_API_KEY')) && env('SAEI_API_KEY') !== 'sk_live_WgWLxp_YOUR_FULL_KEY_HERE',
-            'from_phone'      => env('SAEI_FROM_PHONE_ID', '—'),
-            'template_id'     => env('SAEI_TEMPLATE_ID', '—'),
+            'provider'        => $saeiEnabled ? 'ساعي (Saei)' : 'WhatsApp Cloud API',
+            'saei_enabled'    => $saeiEnabled,
+            'simulation'      => filter_var(Settings::getValue('saei_simulation', env('SAEI_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN),
+            'api_key_set'     => !empty($apiKey) && $apiKey !== 'sk_live_WgWLxp_YOUR_FULL_KEY_HERE',
+            'from_phone'      => Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID', '—')),
+            'template_id'     => Settings::getValue('saei_template_id', env('SAEI_TEMPLATE_ID', '—')),
         ];
 
         return view('admin.whatsapp-otp-test.index', compact('config'));

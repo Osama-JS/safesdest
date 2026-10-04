@@ -230,6 +230,8 @@ class AdminNotificationDispatcher
             'driver_registered'           => 'ti-steering-wheel text-primary',
             'team_created'                => 'ti-users text-info',
             'file_expired'                => 'ti-file-alert text-warning',
+            'customer_invoice_due'        => 'ti-file-invoice text-warning',
+            'customer_invoice_overdue'    => 'ti-file-alert text-danger',
             default                       => 'ti-bell text-primary',
         };
     }

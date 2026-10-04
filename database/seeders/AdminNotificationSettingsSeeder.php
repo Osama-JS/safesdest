@@ -52,6 +52,30 @@ class AdminNotificationSettingsSeeder extends Seeder
                 'target_roles'   => ['Owner', 'Admin'],
                 'priority'       => 'high',
             ],
+            [
+                'event_key'      => 'customer_invoice_due',
+                'category'       => 'financial',
+                'name_ar'        => 'استحقاق فاتورة محاسبية لعميل',
+                'name_en'        => 'Customer Invoice Due Today',
+                'description_ar' => 'يُطلق عند حلول موعد استحقاق فاتورة محاسبية غير مسددة بالكامل لعميل لتنبيه المحاسب والإدارة بسدادها.',
+                'in_app_enabled' => true,
+                'email_enabled'  => true,
+                'webpush_enabled'=> false,
+                'target_roles'   => ['Owner', 'Admin'],
+                'priority'       => 'high',
+            ],
+            [
+                'event_key'      => 'customer_invoice_overdue',
+                'category'       => 'financial',
+                'name_ar'        => 'تأخر سداد فاتورة محاسبية لعميل',
+                'name_en'        => 'Customer Invoice Overdue',
+                'description_ar' => 'يُطلق عند تجاوز فاتورة محاسبية لعميل موعد استحقاقها دون سدادها بالكامل لمتابعة التحصيل.',
+                'in_app_enabled' => true,
+                'email_enabled'  => true,
+                'webpush_enabled'=> false,
+                'target_roles'   => ['Owner', 'Admin'],
+                'priority'       => 'high',
+            ],
 
             // ==========================================
             // 2. أحداث المهام والرحلات (Tasks)

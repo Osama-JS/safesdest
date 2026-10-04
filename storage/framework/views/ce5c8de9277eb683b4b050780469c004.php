@@ -750,7 +750,7 @@
                                     <div class="row g-3">
                                         <div class="col-md-3">
                                             <label class="form-label fw-bold"><?php echo e(__('Invoice Number Serial')); ?></label>
-                                            <input type="text" class="form-control bg-light" value="<?php echo e(__('Auto-generated (INV-YYYY-XXXX)')); ?>" readonly>
+                                            <input type="text" class="form-control bg-white" value="<?php echo e(__('Auto-generated (INV-YYYY-XXXX)')); ?>" readonly>
                                             <small class="text-muted"><?php echo e(__('Generated automatically upon saving')); ?></small>
                                         </div>
                                         <div class="col-md-3">
@@ -876,7 +876,7 @@
         <div class="modal fade" id="viewCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
-                    <div class="modal-header bg-light py-3">
+                    <div class="modal-header py-3">
                         <div class="d-flex align-items-center gap-2">
                             <h5 class="modal-title fw-bold text-primary mb-0" id="viewInvoiceTitle">
                                 <i class="ti ti-file-invoice me-1"></i> <?php echo e(__('Invoice Details')); ?>
@@ -906,19 +906,19 @@
                                 <span class="fw-bold fs-6" id="viewInvoiceDueDate">-</span>
                             </div>
                             <div class="col-md-4 col-4">
-                                <div class="p-2 border rounded bg-light text-center">
+                                <div class="p-2 border rounded text-center">
                                     <small class="text-muted d-block"><?php echo e(__('Total Amount')); ?></small>
                                     <span class="fw-bold text-dark fs-5" id="viewInvoiceTotal">0.00</span> <small>ر.س</small>
                                 </div>
                             </div>
                             <div class="col-md-4 col-4">
-                                <div class="p-2 border rounded bg-light text-center">
+                                <div class="p-2 border rounded text-center">
                                     <small class="text-muted d-block"><?php echo e(__('Paid Amount')); ?></small>
                                     <span class="fw-bold text-success fs-5" id="viewInvoicePaid">0.00</span> <small>ر.س</small>
                                 </div>
                             </div>
                             <div class="col-md-4 col-4">
-                                <div class="p-2 border rounded bg-light text-center">
+                                <div class="p-2 border rounded text-center">
                                     <small class="text-muted d-block"><?php echo e(__('Remaining Amount')); ?></small>
                                     <span class="fw-bold text-danger fs-5" id="viewInvoiceRemaining">0.00</span> <small>ر.س</small>
                                 </div>
@@ -928,18 +928,18 @@
                         <!-- Notes & Attachment -->
                         <div class="row g-3 mb-3">
                             <div class="col-md-8" id="viewInvoiceNotesBox" style="display: none;">
-                                <div class="p-2 border rounded bg-light">
+                                <div class="p-2 border rounded">
                                     <small class="text-muted fw-bold d-block"><?php echo e(__('Notes')); ?>:</small>
                                     <span id="viewInvoiceNotes" class="text-secondary" style="white-space: pre-line;"></span>
                                 </div>
                             </div>
                             <div class="col-md-4" id="viewInvoiceAttachmentBox" style="display: none;">
-                                <div class="p-2 border rounded bg-light text-center">
+                                <div class="p-2 border rounded text-center">
                                     <small class="text-muted fw-bold d-block mb-1"><?php echo e(__('Attachment File')); ?>:</small>
-                                    <a href="#" target="_blank" class="btn btn-xs btn-outline-primary" id="viewInvoiceAttachmentLink">
-                                        <i class="ti ti-download me-1"></i> <?php echo e(__('View Attachment')); ?>
+                                    <button type="button" class="btn btn-xs btn-outline-primary btn-preview-attachment" id="viewInvoiceAttachmentBtn" data-url="" data-name="">
+                                        <i class="ti ti-eye me-1"></i> <?php echo e(__('View Attachment')); ?>
 
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -951,13 +951,13 @@
                         </h6>
                         <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0">
-                                <thead class="table-light sticky-top">
+                                <thead class="bg-white border-bottom sticky-top">
                                     <tr>
-                                        <th>#</th>
-                                        <th><?php echo e(__('Sequence')); ?></th>
-                                        <th><?php echo e(__('Task #')); ?></th>
-                                        <th><?php echo e(__('Description')); ?></th>
-                                        <th class="text-end"><?php echo e(__('Amount (SAR)')); ?></th>
+                                        <th style="background-color: #fff;">#</th>
+                                        <th style="background-color: #fff;"><?php echo e(__('Sequence')); ?></th>
+                                        <th style="background-color: #fff;"><?php echo e(__('Task #')); ?></th>
+                                        <th style="background-color: #fff;"><?php echo e(__('Description')); ?></th>
+                                        <th style="background-color: #fff;" class="text-end"><?php echo e(__('Amount (SAR)')); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody id="viewInvoiceItemsBody"></tbody>
@@ -970,11 +970,7 @@
                             <div id="viewInvoiceApproverBox" style="display: none;"><?php echo e(__('Approved By')); ?>: <span id="viewInvoiceApprover">-</span></div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light py-2">
-                        <button type="button" class="btn btn-outline-primary" id="btnModalPrintInvoice">
-                            <i class="ti ti-printer me-1"></i> <?php echo e(__('Print Invoice')); ?>
-
-                        </button>
+                    <div class="modal-footer py-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
                     </div>
                 </div>
@@ -985,7 +981,7 @@
         <div class="modal fade" id="payCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-md" role="document">
                 <div class="modal-content">
-                    <div class="modal-header bg-light py-3">
+                    <div class="modal-header py-3">
                         <h5 class="modal-title fw-bold text-success">
                             <i class="ti ti-cash me-1"></i> <?php echo e(__('Register Invoice Payment')); ?>
 
@@ -997,7 +993,7 @@
                         <input type="hidden" id="pay_invoice_id">
 
                         <div class="modal-body py-3">
-                            <div class="p-3 rounded bg-light border mb-3">
+                            <div class="p-3 rounded border mb-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <span class="text-muted"><?php echo e(__('Invoice Number')); ?>:</span>
                                     <span class="fw-bold" id="payInvoiceNumber">-</span>
@@ -1025,7 +1021,7 @@
                                 <textarea class="form-control" id="pay_notes" name="notes" rows="2" placeholder="<?php echo e(__('e.g. Bank transfer, receipt number...')); ?>"></textarea>
                             </div>
                         </div>
-                        <div class="modal-footer bg-light py-2">
+                        <div class="modal-footer py-2">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
                             <button type="submit" class="btn btn-success" id="btnSubmitPayment">
                                 <i class="ti ti-check me-1"></i> <?php echo e(__('Confirm Payment')); ?>
@@ -1041,7 +1037,7 @@
         <div class="modal fade" id="editCustomerInvoiceModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
                 <div class="modal-content">
-                    <div class="modal-header bg-light py-3">
+                    <div class="modal-header py-3">
                         <h5 class="modal-title fw-bold text-primary">
                             <i class="ti ti-edit me-1"></i> <?php echo e(__('Edit Invoice Details')); ?> - <span id="editInvoiceNumberTitle"></span>
                         </h5>
@@ -1058,7 +1054,7 @@
 
                             </div>
 
-                            <div class="row g-3">
+                            <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label" for="edit_accounting_reference_no"><?php echo e(__('Accounting Reference Number')); ?></label>
                                     <input type="text" class="form-control" id="edit_accounting_reference_no" name="accounting_reference_no">
@@ -1081,8 +1077,95 @@
                                     <textarea class="form-control" id="edit_notes" name="notes" rows="2"></textarea>
                                 </div>
                             </div>
+
+                            <!-- Transactions Linking & Management Box -->
+                            <div class="card border mb-2">
+                                <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <h6 class="mb-0 fw-semibold text-secondary">
+                                        <i class="ti ti-list-check me-1"></i> <?php echo e(__('Linked Debit Transactions')); ?>
+
+                                    </h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnToggleAddMoreTransactions">
+                                        <i class="ti ti-plus me-1"></i> <?php echo e(__('Add More Uninvoiced Transactions')); ?>
+
+                                    </button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                        <table class="table table-hover table-sm align-middle mb-0">
+                                            <thead class="bg-white border-bottom sticky-top">
+                                                <tr>
+                                                    <th style="width: 40px; background-color: #fff;" class="text-center bg-white">#</th>
+                                                    <th style="width: 120px; background-color: #fff;" class="bg-white"><?php echo e(__('Sequence / ID')); ?></th>
+                                                    <th style="width: 130px; background-color: #fff;" class="bg-white"><?php echo e(__('Task #')); ?></th>
+                                                    <th style="background-color: #fff;" class="bg-white"><?php echo e(__('Description')); ?></th>
+                                                    <th style="width: 130px; background-color: #fff;" class="text-end bg-white"><?php echo e(__('Amount (SAR)')); ?></th>
+                                                    <th style="width: 140px; background-color: #fff;" class="text-center bg-white"><?php echo e(__('Actions')); ?></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="editInvoiceTransactionsBody">
+                                                <!-- Dynamic via JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Expandable section for available uninvoiced transactions -->
+                                    <div id="editAvailableUninvoicedSection" class="border-top p-2" style="display: none; background-color: #fff;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                            <small class="fw-bold text-primary">
+                                                <i class="ti ti-plus me-1"></i> <?php echo e(__('Select Transactions to Add to Invoice')); ?>
+
+                                            </small>
+                                            <input type="text" class="form-control form-control-sm" id="edit-available-task-search" placeholder="<?php echo e(__('Search Task #...')); ?>" style="max-width: 220px;">
+                                        </div>
+                                        <div class="table-responsive border rounded" style="max-height: 180px; overflow-y: auto;">
+                                            <table class="table table-sm table-hover align-middle mb-0">
+                                                <thead class="bg-white border-bottom sticky-top">
+                                                    <tr>
+                                                        <th style="width: 40px; background-color: #fff;" class="text-center bg-white">
+                                                            <input type="checkbox" class="form-check-input" id="checkAllAvailableForEdit">
+                                                        </th>
+                                                        <th style="background-color: #fff;" class="bg-white"><?php echo e(__('Sequence')); ?></th>
+                                                        <th style="background-color: #fff;" class="bg-white"><?php echo e(__('Task #')); ?></th>
+                                                        <th style="background-color: #fff;" class="bg-white"><?php echo e(__('Description')); ?></th>
+                                                        <th style="background-color: #fff;" class="text-end bg-white"><?php echo e(__('Amount (SAR)')); ?></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="editAvailableUninvoicedBody">
+                                                    <!-- Dynamic via JS -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary / Live Calculation Bar -->
+                                    <div class="p-3 bg-white border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div>
+                                            <span class="fw-semibold text-muted"><?php echo e(__('Linked Transactions')); ?>:</span>
+                                            <span class="badge bg-primary fs-6 px-2 py-1 ms-1" id="edit-invoice-selected-count">0</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div>
+                                                <span class="fw-semibold text-muted"><?php echo e(__('New Total')); ?>:</span>
+                                                <span class="badge bg-primary fs-6 px-2 py-1 ms-1" id="edit-invoice-new-total">0.00</span>
+                                                <small>ر.س</small>
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold text-muted"><?php echo e(__('Paid')); ?>:</span>
+                                                <span class="badge bg-success fs-6 px-2 py-1 ms-1" id="edit-invoice-paid">0.00</span>
+                                                <small>ر.س</small>
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold text-muted"><?php echo e(__('Remaining')); ?>:</span>
+                                                <span class="badge bg-danger fs-6 px-2 py-1 ms-1" id="edit-invoice-new-remaining">0.00</span>
+                                                <small>ر.س</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="modal-footer bg-light py-2">
+                        <div class="modal-footer py-2">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
                             <button type="submit" class="btn btn-primary" id="btnSubmitEditInvoice">
                                 <i class="ti ti-check me-1"></i> <?php echo e(__('Save Changes')); ?>
@@ -1090,6 +1173,37 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Preview Invoice Attachment -->
+        <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+            <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header py-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="modal-title fw-bold text-primary mb-0">
+                                <i class="ti ti-file-search me-1"></i> <span id="previewAttachmentTitle"><?php echo e(__('Attachment Preview')); ?></span>
+                            </h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 ms-auto me-2">
+                            <a href="#" download id="previewAttachmentDownloadBtn" class="btn btn-sm btn-outline-primary" title="<?php echo e(__('Download File')); ?>">
+                                <i class="ti ti-download me-1"></i> <?php echo e(__('Download')); ?>
+
+                            </a>
+                            <a href="#" target="_blank" id="previewAttachmentExternalBtn" class="btn btn-sm btn-outline-secondary" title="<?php echo e(__('Open in New Tab')); ?>">
+                                <i class="ti ti-external-link"></i>
+                            </a>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="<?php echo e(__('Close')); ?>"></button>
+                    </div>
+                    <div class="modal-body p-2" id="previewAttachmentBody" style="min-height: 420px; display: flex; align-items: center; justify-content: center; background-color: #fff;">
+                        <!-- Dynamic: Image / PDF Iframe / Download Notice -->
+                    </div>
+                    <div class="modal-footer py-2 border-top">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo e(__('Close')); ?></button>
+                    </div>
                 </div>
             </div>
         </div>

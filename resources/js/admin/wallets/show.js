@@ -1363,7 +1363,7 @@ $(function () {
             targets: 8,
             render: function (data, type, full) {
               if (full.attachment_url) {
-                return `<a href="${full.attachment_url}" target="_blank" class="btn btn-sm btn-icon btn-label-primary" title="عرض المرفق"><i class="ti ti-paperclip"></i></a>`;
+                return `<button type="button" class="btn btn-sm btn-icon btn-preview-attachment" data-url="${full.attachment_url}" data-name="${full.invoice_number}" title="معاينة المرفق"><i class="ti ti-paperclip"></i></button>`;
               }
               return '<span class="text-muted">-</span>';
             }
@@ -1379,53 +1379,40 @@ $(function () {
             orderable: false,
             searchable: false,
             render: function (data, type, full) {
-              let actions = `
-                <div class="d-inline-block text-nowrap">
-                  <a href="${baseUrl}admin/customer-invoices/${full.id}/print" target="_blank" class="btn btn-sm btn-icon" title="طباعة الفاتورة">
-                    <i class="ti ti-printer text-primary"></i>
-                  </a>
-                  <button class="btn btn-sm btn-icon btn-view-invoice" data-id="${full.id}" title="عرض التفاصيل">
-                    <i class="ti ti-eye text-info"></i>
-                  </button>
-                  <button class="btn btn-sm btn-icon dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
-                    <i class="ti ti-dots-vertical"></i>
-                  </button>
-                  <div class="dropdown-menu dropdown-menu-end m-0">
-                    <a href="${baseUrl}admin/customer-invoices/${full.id}/print" target="_blank" class="dropdown-item">
-                      <i class="ti ti-printer me-2 text-primary"></i>طباعة الفاتورة
-                    </a>
-                    <a href="javascript:void(0);" class="dropdown-item btn-view-invoice" data-id="${full.id}">
-                      <i class="ti ti-eye me-2 text-info"></i>عرض التفاصيل
-                    </a>
+              let actions = `<div class="d-flex align-items-center justify-content-end">`;
+
+              // View Details
+              actions += `
+                <button type="button" class="btn btn-sm btn-icon btn-view-invoice" data-id="${full.id}" title="عرض التفاصيل">
+                  <i class="ti ti-eye"></i>
+                </button>
               `;
 
+              // Pay Invoice (if unpaid)
               if (full.status === 'unpaid') {
                 actions += `
-                    <a href="javascript:void(0);" class="dropdown-item btn-pay-invoice" data-id="${full.id}" data-number="${full.invoice_number}" data-total="${full.total_amount}" data-remaining="${full.remaining_amount}">
-                      <i class="ti ti-cash me-2 text-success"></i>تسجيل سداد
-                    </a>
+                  <button type="button" class="btn btn-sm btn-icon btn-pay-invoice text-success" data-id="${full.id}" data-number="${full.invoice_number}" data-total="${full.total_amount}" data-remaining="${full.remaining_amount}" title="تسجيل سداد">
+                    <i class="ti ti-cash"></i>
+                  </button>
                 `;
               }
 
+              // Edit, Approve, Cancel (if not approved and not cancelled)
               if (full.status !== 'approved' && full.status !== 'cancelled') {
                 actions += `
-                    <a href="javascript:void(0);" class="dropdown-item btn-edit-invoice" data-id="${full.id}">
-                      <i class="ti ti-edit me-2 text-warning"></i>تعديل الفاتورة
-                    </a>
-                    <a href="javascript:void(0);" class="dropdown-item btn-approve-invoice" data-id="${full.id}" data-number="${full.invoice_number}">
-                      <i class="ti ti-check me-2 text-primary"></i>اعتماد نهائي
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="javascript:void(0);" class="dropdown-item text-danger btn-cancel-invoice" data-id="${full.id}" data-number="${full.invoice_number}">
-                      <i class="ti ti-circle-x me-2"></i>إلغاء الفاتورة وفك الحركات
-                    </a>
+                  <button type="button" class="btn btn-sm btn-icon btn-edit-invoice" data-id="${full.id}" title="تعديل الفاتورة">
+                    <i class="ti ti-edit"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-icon btn-approve-invoice text-primary" data-id="${full.id}" data-number="${full.invoice_number}" title="اعتماد نهائي">
+                    <i class="ti ti-check"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-icon btn-cancel-invoice text-danger" data-id="${full.id}" data-number="${full.invoice_number}" title="إلغاء الفاتورة وفك الحركات">
+                    <i class="ti ti-circle-x"></i>
+                  </button>
                 `;
               }
 
-              actions += `
-                  </div>
-                </div>
-              `;
+              actions += `</div>`;
               return actions;
             }
           }
@@ -1759,7 +1746,7 @@ $(function () {
           }
 
           if (res.attachment_url) {
-            $('#viewInvoiceAttachmentLink').attr('href', res.attachment_url);
+            $('#viewInvoiceAttachmentBtn').attr('data-url', res.attachment_url).attr('data-name', inv.invoice_number);
             $('#viewInvoiceAttachmentBox').show();
           } else {
             $('#viewInvoiceAttachmentBox').hide();
@@ -1806,13 +1793,6 @@ $(function () {
           customClass: { confirmButton: 'btn btn-primary' }
         });
       });
-    });
-
-    // Print from Details Modal
-    $('#btnModalPrintInvoice').on('click', function () {
-      if (currentViewingInvoiceId) {
-        window.open(baseUrl + 'admin/customer-invoices/' + currentViewingInvoiceId + '/print', '_blank');
-      }
     });
 
     // Pay Invoice Modal
@@ -1952,7 +1932,153 @@ $(function () {
       });
     });
 
-    // Edit Invoice
+    // Variables for edit modal transactions management
+    let editLinkedTransactions = [];
+    let editAvailableTransactions = [];
+    let editInvoicePaidAmount = 0;
+
+    function renderEditInvoiceTransactions() {
+      const tbody = $('#editInvoiceTransactionsBody');
+      if (editLinkedTransactions.length === 0) {
+        tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">لا توجد حركات مرتبطة بهذه الفاتورة</td></tr>');
+      } else {
+        let html = '';
+        let activeCount = 0;
+        let newTotal = 0;
+
+        editLinkedTransactions.forEach((tx, idx) => {
+          if (tx.is_linked) {
+            activeCount++;
+            newTotal += tx.amount;
+          }
+
+          const rowClass = tx.is_linked ? '' : 'table-light text-muted';
+          const strikeStyle = tx.is_linked ? '' : 'text-decoration: line-through; opacity: 0.6;';
+          
+          const actionBtn = tx.is_linked
+            ? `<button type="button" class="btn btn-xs btn-outline-danger btn-unlink-tx" data-id="${tx.id}" title="فصل الارتباط عن الفاتورة">
+                 <i class="ti ti-link-off me-1"></i> فصل الارتباط
+               </button>`
+            : `<button type="button" class="btn btn-xs btn-outline-success btn-relink-tx" data-id="${tx.id}" title="إعادة ربط الحركة بالفاتورة">
+                 <i class="ti ti-link me-1"></i> إعادة الربط
+               </button>`;
+
+          html += `
+            <tr class="${rowClass}">
+              <td class="text-center">${idx + 1}</td>
+              <td><span class="fw-semibold" style="${strikeStyle}">${tx.sequence}</span></td>
+              <td>${tx.task_number && tx.task_number !== '-' ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
+              <td style="${strikeStyle}">${tx.description}</td>
+              <td class="text-end fw-bold" style="${strikeStyle}">${parseFloat(tx.amount).toFixed(2)}</td>
+              <td class="text-center">
+                ${actionBtn}
+              </td>
+            </tr>
+          `;
+        });
+        tbody.html(html);
+
+        const newRemaining = Math.max(0, newTotal - editInvoicePaidAmount);
+        $('#edit-invoice-selected-count').text(activeCount);
+        $('#edit-invoice-new-total').text(newTotal.toFixed(2));
+        $('#edit-invoice-paid').text(editInvoicePaidAmount.toFixed(2));
+        $('#edit-invoice-new-remaining').text(newRemaining.toFixed(2));
+
+        if (activeCount === 0) {
+          $('#btnSubmitEditInvoice').prop('disabled', true);
+        } else {
+          $('#btnSubmitEditInvoice').prop('disabled', false);
+        }
+      }
+    }
+
+    function renderEditAvailableTransactions(filterTask = '') {
+      const tbody = $('#editAvailableUninvoicedBody');
+      const filtered = editAvailableTransactions.filter(tx => {
+        if (!filterTask) return true;
+        const taskStr = (tx.task_number || '') + ' ' + (tx.sequence || '') + ' ' + (tx.description || '');
+        return taskStr.toLowerCase().includes(filterTask.toLowerCase());
+      });
+
+      if (filtered.length === 0) {
+        tbody.html('<tr><td colspan="5" class="text-center text-muted py-2">لا توجد حركات غير مفوترة إضافية</td></tr>');
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(tx => {
+        html += `
+          <tr>
+            <td class="text-center">
+              <button type="button" class="btn btn-xs btn-outline-primary btn-add-tx-to-edit" data-id="${tx.id}">
+                <i class="ti ti-plus me-1"></i> إضافة
+              </button>
+            </td>
+            <td><span class="fw-semibold">${tx.sequence}</span></td>
+            <td>${tx.task_number && tx.task_number !== '-' ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
+            <td>${tx.description}</td>
+            <td class="text-end fw-bold">${parseFloat(tx.amount).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+      tbody.html(html);
+    }
+
+    // Toggle unlinking transaction
+    $(document).on('click', '.btn-unlink-tx', function () {
+      const id = $(this).data('id');
+      const item = editLinkedTransactions.find(t => t.id == id);
+      if (item) {
+        item.is_linked = false;
+        renderEditInvoiceTransactions();
+      }
+    });
+
+    // Re-link transaction
+    $(document).on('click', '.btn-relink-tx', function () {
+      const id = $(this).data('id');
+      const item = editLinkedTransactions.find(t => t.id == id);
+      if (item) {
+        item.is_linked = true;
+        renderEditInvoiceTransactions();
+      }
+    });
+
+    // Toggle add-more section
+    $('#btnToggleAddMoreTransactions').on('click', function () {
+      $('#editAvailableUninvoicedSection').slideToggle(200);
+    });
+
+    // Search available uninvoiced
+    $('#edit-available-task-search').on('input', function () {
+      renderEditAvailableTransactions($(this).val().trim());
+    });
+
+    // Add available tx to linked list
+    $(document).on('click', '.btn-add-tx-to-edit', function () {
+      const id = $(this).data('id');
+      const txIndex = editAvailableTransactions.findIndex(t => t.id == id);
+      if (txIndex !== -1) {
+        const tx = editAvailableTransactions.splice(txIndex, 1)[0];
+        const existing = editLinkedTransactions.find(t => t.id == id);
+        if (existing) {
+          existing.is_linked = true;
+        } else {
+          editLinkedTransactions.push({
+            id: tx.id,
+            sequence: tx.sequence,
+            task_number: tx.task_number,
+            description: tx.description,
+            amount: tx.amount,
+            is_linked: true
+          });
+        }
+        renderEditInvoiceTransactions();
+        renderEditAvailableTransactions($('#edit-available-task-search').val().trim());
+      }
+    });
+
+    // Edit Invoice click
     $(document).on('click', '.btn-edit-invoice', function () {
       const id = $(this).data('id');
 
@@ -1966,12 +2092,54 @@ $(function () {
           $('#edit_due_date').val(inv.due_date ? inv.due_date.split('T')[0] : '');
           $('#edit_notes').val(inv.notes || '');
           $('#edit_attachment').val('');
+          $('#editAvailableUninvoicedSection').hide();
+          $('#edit-available-task-search').val('');
+
+          editInvoicePaidAmount = parseFloat(inv.paid_amount || 0);
+
+          // Populate linked items
+          editLinkedTransactions = [];
+          if (inv.items && inv.items.length > 0) {
+            inv.items.forEach(item => {
+              const tx = item.wallet_transaction;
+              const taskCustom = item.task ? item.task.custom_task_number : null;
+              const taskId = item.task_id;
+              editLinkedTransactions.push({
+                id: item.wallet_transaction_id || (tx ? tx.id : item.id),
+                sequence: (tx && tx.sequence) ? tx.sequence : (item.wallet_transaction_id || item.id),
+                task_number: taskCustom || (taskId ? ('#' + taskId) : '-'),
+                description: tx ? tx.description : '-',
+                amount: parseFloat(item.amount),
+                is_linked: true
+              });
+            });
+          }
+
+          // Populate available uninvoiced transactions in this wallet
+          editAvailableTransactions = [];
+          if (res.uninvoiced_transactions && res.uninvoiced_transactions.length > 0) {
+            const linkedIds = editLinkedTransactions.map(t => t.id);
+            res.uninvoiced_transactions.forEach(tx => {
+              if (!linkedIds.includes(tx.id)) {
+                editAvailableTransactions.push({
+                  id: tx.id,
+                  sequence: tx.sequence,
+                  task_number: tx.task_number || '-',
+                  description: tx.description || '-',
+                  amount: parseFloat(tx.amount)
+                });
+              }
+            });
+          }
+
+          renderEditInvoiceTransactions();
+          renderEditAvailableTransactions();
 
           if (res.attachment_url) {
             $('#editCurrentAttachmentPreview').html(`
-              <a href="${res.attachment_url}" target="_blank" class="text-primary">
-                <i class="ti ti-file me-1"></i> المرفق الحالي
-              </a>
+              <button type="button" class="btn btn-xs btn-outline-primary btn-preview-attachment" data-url="${res.attachment_url}" data-name="${inv.invoice_number}">
+                <i class="ti ti-file-search me-1"></i> معاينة المرفق الحالي
+              </button>
             `);
           } else {
             $('#editCurrentAttachmentPreview').html('<span class="text-muted">لا يوجد مرفق حالي</span>');
@@ -1987,9 +2155,25 @@ $(function () {
       e.preventDefault();
       const id = $('#edit_invoice_id').val();
       const submitBtn = $('#btnSubmitEditInvoice');
+
+      const activeLinked = editLinkedTransactions.filter(t => t.is_linked);
+      if (activeLinked.length === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تنبيه',
+          text: 'يجب أن تحتوي الفاتورة على حركة مدينة واحدة على الأقل. إذا أردت إلغاء الفاتورة وفك جميع الحركات، يرجى استخدام زر إلغاء الفاتورة من جدول الفواتير.',
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        return;
+      }
+
       submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جاري الحفظ وتحديث الاستحقاق...');
 
       const formData = new FormData(this);
+      // Append active transaction IDs
+      activeLinked.forEach(tx => {
+        formData.append('transaction_ids[]', tx.id);
+      });
 
       $.ajax({
         url: baseUrl + 'admin/customer-invoices/' + id + '/update',
@@ -2020,6 +2204,76 @@ $(function () {
           Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
         }
       });
+    });
+
+    // Helper to preview or download invoice attachment based on file type
+    function previewOrDownloadAttachment(url, fileName) {
+      if (!url) return;
+
+      const cleanUrl = url.split('?')[0].split('#')[0];
+      const ext = cleanUrl.split('.').pop().toLowerCase();
+      const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp'];
+
+      $('#previewAttachmentTitle').text((fileName ? fileName + ' - ' : '') + 'معاينة المرفق');
+      $('#previewAttachmentDownloadBtn').attr('href', url).attr('download', fileName ? `${fileName}.${ext}` : 'attachment');
+      $('#previewAttachmentExternalBtn').attr('href', url);
+
+      const body = $('#previewAttachmentBody');
+
+      if (imageExts.includes(ext)) {
+        // Open as Image in modal
+        body.html(`
+          <div class="text-center w-100 p-2">
+            <img src="${url}" class="img-fluid rounded shadow-sm" style="max-height: 75vh; max-width: 100%; object-fit: contain;" alt="مرفق الفاتورة">
+          </div>
+        `);
+        $('#previewAttachmentModal').modal('show');
+      } else if (ext === 'pdf') {
+        // Open as PDF using browser embedded viewer
+        body.html(`
+          <iframe src="${url}" style="width: 100%; height: 75vh; border: none; border-radius: 6px;" title="PDF Viewer"></iframe>
+        `);
+        $('#previewAttachmentModal').modal('show');
+      } else {
+        // Any other file type: download only!
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', fileName ? `${fileName}.${ext}` : 'attachment');
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        Swal.fire({
+          icon: 'info',
+          title: 'تحميل المرفق',
+          text: 'جاري تحميل الملف...',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    }
+
+    // Attachment preview click event
+    $(document).on('click', '.btn-preview-attachment', function (e) {
+      e.preventDefault();
+      const url = $(this).attr('data-url') || $(this).data('url');
+      const name = $(this).attr('data-name') || $(this).data('name') || '';
+      if (url) {
+        previewOrDownloadAttachment(url, name);
+      }
+    });
+
+    // Handle nested modals z-index
+    $('#previewAttachmentModal').on('show.bs.modal', function () {
+      const openModals = $('.modal:visible').length;
+      if (openModals > 0) {
+        const zIndex = 1060 + (10 * openModals);
+        $(this).css('z-index', zIndex);
+        setTimeout(function () {
+          $('.modal-backdrop').not('.modal-stack').last().css('z-index', zIndex - 1).addClass('modal-stack');
+        }, 0);
+      }
     });
   }
 

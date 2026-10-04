@@ -136,9 +136,77 @@ class CustomerInvoiceService
                 $updateData['attachment_file'] = FileHelper::uploadFile($attachmentFile, 'customer_invoices');
             }
 
+            // إذا تم تمرير قائمة الحركات لتعديل الارتباط (فصل حركات أو إضافة حركات)
+            if (isset($data['transaction_ids']) && is_array($data['transaction_ids'])) {
+                $selectedIds = array_map('intval', $data['transaction_ids']);
+
+                if (empty($selectedIds)) {
+                    throw new Exception(__('The invoice must contain at least one linked transaction.'));
+                }
+
+                $currentItems = CustomerInvoiceItem::where('customer_invoice_id', $invoice->id)->get();
+                $currentItemTxIds = $currentItems->pluck('wallet_transaction_id')->toArray();
+
+                // 1. فصل الارتباط عن الحركات المستبعدة وإعادة تاريخ الاستحقاق السابق
+                $toRemoveTxIds = array_diff($currentItemTxIds, $selectedIds);
+                foreach ($toRemoveTxIds as $txId) {
+                    $item = $currentItems->firstWhere('wallet_transaction_id', $txId);
+                    $tx = Wallet_Transaction::find($txId);
+                    if ($tx) {
+                        $tx->update([
+                            'customer_invoice_id' => null,
+                            'maturity_time'       => $item ? $item->previous_maturity_time : null,
+                        ]);
+                    }
+                    if ($item) {
+                        $item->delete();
+                    }
+                }
+
+                // 2. ربط الحركات الجديدة المضافة وتعميم تاريخ الاستحقاق
+                $toAddTxIds = array_diff($selectedIds, $currentItemTxIds);
+                if (!empty($toAddTxIds)) {
+                    $newTransactions = Wallet_Transaction::whereIn('id', $toAddTxIds)
+                        ->where('wallet_id', $invoice->wallet_id)
+                        ->where('transaction_type', 'debit')
+                        ->whereNull('customer_invoice_id')
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($newTransactions->count() !== count($toAddTxIds)) {
+                        throw new Exception(__('Some selected transactions are already invoiced or do not belong to this wallet.'));
+                    }
+
+                    foreach ($newTransactions as $newTx) {
+                        CustomerInvoiceItem::create([
+                            'customer_invoice_id'    => $invoice->id,
+                            'wallet_transaction_id'  => $newTx->id,
+                            'task_id'                => $newTx->task_id,
+                            'amount'                 => $newTx->amount,
+                            'previous_maturity_time' => $newTx->maturity_time,
+                        ]);
+
+                        $newTx->update([
+                            'customer_invoice_id' => $invoice->id,
+                            'maturity_time'       => Carbon::parse($newDueDate)->endOfDay(),
+                        ]);
+                    }
+                }
+
+                // إعادة احتساب إجمالي الفاتورة والمبلغ المتبقي
+                $totalAmount = (float) CustomerInvoiceItem::where('customer_invoice_id', $invoice->id)->sum('amount');
+                $updateData['total_amount'] = $totalAmount;
+                $updateData['remaining_amount'] = max(0, $totalAmount - (float) $invoice->paid_amount);
+                if ($updateData['remaining_amount'] <= 0 && $totalAmount > 0) {
+                    $updateData['status'] = 'paid';
+                } elseif ($invoice->status === 'paid' && $updateData['remaining_amount'] > 0) {
+                    $updateData['status'] = 'unpaid';
+                }
+            }
+
             $invoice->update($updateData);
 
-            // إذا تغيّر تاريخ الاستحقاق، يتم تعميمه فوراً على كافة حركات المحفظة المربوطة
+            // إذا تغيّر تاريخ الاستحقاق، يتم تعميمه فوراً على كافة حركات المحفظة المربوطة حالياً
             if ($newDueDate && $newDueDate !== $oldDueDate) {
                 Wallet_Transaction::where('customer_invoice_id', $invoice->id)
                     ->update(['maturity_time' => Carbon::parse($newDueDate)->endOfDay()]);

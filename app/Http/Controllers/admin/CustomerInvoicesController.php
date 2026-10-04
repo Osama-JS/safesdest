@@ -162,10 +162,28 @@ class CustomerInvoicesController extends Controller
                 'approver'
             ])->findOrFail($id);
 
+            // الحركات غير المفوترة في نفس المحفظة لإتاحة إضافتها عند التعديل
+            $uninvoiced = $this->invoiceService->getUninvoicedTransactions($invoice->wallet_id);
+            $uninvoicedFormatted = $uninvoiced->map(function ($tx) {
+                $taskCustom = $tx->task ? $tx->task->custom_task_number : null;
+                $taskId = $tx->task_id;
+                return [
+                    'id'                 => $tx->id,
+                    'sequence'           => $tx->sequence ?? $tx->id,
+                    'amount'             => (float) $tx->amount,
+                    'task_id'            => $taskId,
+                    'task_number'        => $taskCustom ?: ($taskId ? ('#' . $taskId) : null),
+                    'custom_task_number' => $taskCustom,
+                    'description'        => $tx->description,
+                    'current_maturity'   => $tx->maturity_time ? date('Y-m-d', strtotime($tx->maturity_time)) : '-',
+                ];
+            });
+
             return response()->json([
-                'status'  => 1,
-                'invoice' => $invoice,
-                'attachment_url' => $invoice->attachment_file ? asset('storage/' . $invoice->attachment_file) : null,
+                'status'                  => 1,
+                'invoice'                 => $invoice,
+                'uninvoiced_transactions' => $uninvoicedFormatted,
+                'attachment_url'          => $invoice->attachment_file ? asset('storage/' . $invoice->attachment_file) : null,
             ]);
         } catch (Exception $e) {
             return response()->json(['status' => 0, 'error' => $e->getMessage()], 404);
@@ -185,6 +203,8 @@ class CustomerInvoicesController extends Controller
             'issue_date'              => 'nullable|date',
             'attachment'              => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
             'notes'                   => 'nullable|string|max:1000',
+            'transaction_ids'         => 'nullable|array|min:1',
+            'transaction_ids.*'       => 'exists:wallet_transactions,id',
         ]);
 
         try {

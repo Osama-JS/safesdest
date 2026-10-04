@@ -1144,7 +1144,7 @@
         </div>
 
         <!-- Modal: Preview Invoice Attachment -->
-        <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
+        <div class="modal fade" id="previewAttachmentModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
                 <div class="modal-content">
                     <div class="modal-header py-3 border-bottom">

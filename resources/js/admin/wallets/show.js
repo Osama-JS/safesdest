@@ -2264,15 +2264,29 @@ $(function () {
       }
     });
 
-    // Handle nested modals z-index
+    // Handle nested modals z-index & positioning
     $('#previewAttachmentModal').on('show.bs.modal', function () {
-      const openModals = $('.modal:visible').length;
+      // Ensure modal is at body root to avoid stacking context / overflow issues
+      if (!$(this).parent().is('body')) {
+        $(this).appendTo('body');
+      }
+
+      const openModals = $('.modal.show').not('#previewAttachmentModal').length;
       if (openModals > 0) {
-        const zIndex = 1060 + (10 * openModals);
-        $(this).css('z-index', zIndex);
+        // Stack above existing open modal (default Sneat modal z-index is 1090, backdrop is 1089)
+        $(this).css('z-index', 1105);
         setTimeout(function () {
-          $('.modal-backdrop').not('.modal-stack').last().css('z-index', zIndex - 1).addClass('modal-stack');
-        }, 0);
+          $('.modal-backdrop').not('.modal-stack').last().css('z-index', 1100).addClass('modal-stack');
+        }, 10);
+      } else {
+        $(this).css('z-index', '');
+      }
+    });
+
+    $('#previewAttachmentModal').on('hidden.bs.modal', function () {
+      $(this).css('z-index', '');
+      if ($('.modal.show').length > 0) {
+        $('body').addClass('modal-open');
       }
     });
   }

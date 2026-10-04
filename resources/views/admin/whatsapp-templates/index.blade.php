@@ -28,54 +28,6 @@
     --wa-bubble-bg: #f0f2f5;
 }
 
-/* Hero */
-.wa-hero {
-    background: linear-gradient(135deg, #075E54 0%, #128C7E 60%, #25D366 100%);
-    border-radius: 16px;
-    padding: 32px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 28px;
-}
-.wa-hero::before {
-    content:''; position:absolute; top:-40px; right:-40px;
-    width:200px; height:200px; border-radius:50%;
-    background:rgba(255,255,255,0.06);
-}
-.wa-hero::after {
-    content:''; position:absolute; bottom:-60px; left:20%;
-    width:280px; height:280px; border-radius:50%;
-    background:rgba(255,255,255,0.04);
-}
-.wa-logo-circle {
-    width:64px; height:64px;
-    background:white;
-    border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    margin-bottom:16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-.wa-logo-svg { width:38px; height:38px; }
-
-/* Stat Cards */
-.wa-stat-card {
-    border-radius: 12px;
-    padding: 12px 14px;
-    transition: transform .2s, box-shadow .2s;
-}
-.wa-stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
-.wa-stat-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-}
-.wa-stat-icon.green  { background: rgba(37,211,102,.12); color: #128C7E; }
-.wa-stat-icon.teal   { background: rgba(7,94,84,.10);    color: #075E54; }
-.wa-stat-icon.orange { background: rgba(255,193,7,.15);  color: #c79100; }
-.wa-stat-icon.red    { background: rgba(220,53,69,.12);  color: #dc3545; }
-
-
 /* Template Cards */
 .wa-grid-card {
     background:var(--bs-card-bg,#fff);
@@ -172,85 +124,77 @@
 [data-bs-theme="dark"] .wa-grid-card-header { background:rgba(255,255,255,.03); }
 </style>
 
-{{-- ─── Hero Banner ─────────────────────────────────── --}}
-<div class="wa-hero mb-6">
-    <div class="wa-logo-circle">
-        <svg class="wa-logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="24" fill="#25D366"/>
-            <path fill-rule="evenodd" clip-rule="evenodd"
-                d="M34.4 13.5C31.8 10.9 28.3 9.5 24.6 9.5C16.9 9.5 10.7 15.7 10.7 23.4C10.7 25.9 11.4 28.3 12.6 30.4L10.5 38L18.3 35.9C20.3 37 22.4 37.6 24.6 37.6C32.3 37.6 38.5 31.4 38.5 23.7C38.5 20 37.1 16.5 34.4 13.5ZM24.6 35.1C22.6 35.1 20.7 34.6 19 33.6L18.6 33.3L14.1 34.5L15.3 30.1L15 29.7C13.9 27.9 13.3 25.7 13.3 23.4C13.3 17.1 18.4 12 24.6 12C27.6 12 30.4 13.2 32.5 15.3C34.6 17.4 35.9 20.2 35.9 23.2C35.9 29.7 30.9 35.1 24.6 35.1ZM30.8 26.3C30.5 26.2 28.9 25.4 28.7 25.3C28.4 25.2 28.2 25.2 28 25.5C27.8 25.8 27.2 26.5 27 26.7C26.8 26.9 26.6 26.9 26.3 26.8C25.2 26.3 24.2 25.6 23.4 24.7C22.6 23.8 22 22.8 21.6 21.7C21.4 21.4 21.6 21.2 21.8 21C22 20.8 22.2 20.5 22.4 20.3C22.5 20.1 22.6 19.9 22.6 19.7C22.7 19.5 22.6 19.3 22.5 19.1C22.4 18.9 21.8 17.4 21.5 16.7C21.3 16.1 21 16.1 20.8 16.1C20.6 16.1 20.4 16.1 20.2 16.1C20 16.1 19.6 16.2 19.3 16.5C19 16.8 18.2 17.6 18.2 19.1C18.2 20.6 19.3 22 19.5 22.2C19.7 22.4 21.8 25.8 25.1 27.1C28.4 28.4 28.4 28 29 27.9C29.6 27.9 30.9 27.1 31.1 26.4C31.3 25.7 31.3 25.1 31.2 25C31.1 24.8 30.9 24.8 30.8 26.3Z"
-                fill="white"/>
-        </svg>
+{{-- ─── Page Header ────────────────────────────────────── --}}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="mb-1 text-heading fw-bold">
+            <i class="ti ti-template text-success me-2 fs-2 align-middle"></i> {{ __('قوالب رسائل الواتساب') }}
+        </h4>
+        <p class="text-muted mb-0">{{ __('إدارة ومزامنة قوالب رسائل الواتساب المعتمدة من ميتا (Meta Business Cloud)') }}</p>
     </div>
-    <h3 class="mb-1 text-white fw-bold fs-4">{{ __('WhatsApp Templates') }}</h3>
-    <p class="mb-0 opacity-75" style="font-size:14px;">{{ __('Manage and sync your WhatsApp message templates with Meta Business') }}</p>
-    <div class="mt-4 d-flex flex-wrap gap-2" style="position:relative; z-index:2;">
-        <button id="syncCloudBtn" onclick="syncFromCloud()"
-            class="btn btn-sm fw-semibold"
-            style="background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.35); backdrop-filter:blur(8px);">
+    <div class="d-flex gap-2">
+        <button id="syncCloudBtn" onclick="syncFromCloud()" class="btn btn-primary d-flex align-items-center shadow-sm">
             <i class="ti ti-cloud-download me-1"></i> {{ __('Sync from Meta') }}
         </button>
+        <a href="{{ route('admin.whatsapp-chat.index') }}" class="btn btn-outline-success d-flex align-items-center">
+            <i class="ti ti-brand-whatsapp me-1"></i> {{ __('محادثات الواتساب') }}
+        </a>
+        <a href="{{ route('admin.whatsapp-otp-test.index') }}" class="btn btn-outline-info d-flex align-items-center">
+            <i class="ti ti-shield-check me-1"></i> {{ __('اختبار OTP (ساعي)') }}
+        </a>
     </div>
 </div>
 
-{{-- ─── Stats Row ───────────────────────────────────── --}}
-<div class="row g-3 mb-5">
+{{-- ─── Stats KPI Row ────────────────────────────────── --}}
+<div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-3">
-        <div class="card wa-stat-card">
-            <div class="card-body p-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted d-block mb-1" style="font-size:12px;">{{ __('Total Templates') }}</span>
-                        <h5 class="mb-0 fw-bold" id="stat-total">{{ $templatesCount }}</h5>
-                    </div>
-                    <div class="wa-stat-icon green">
-                        <i class="ti ti-template"></i>
-                    </div>
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted d-block mb-1">{{ __('Total Templates') }}</span>
+                    <h3 class="mb-0 fw-bold text-heading" id="stat-total">{{ $templatesCount }}</h3>
+                </div>
+                <div class="avatar avatar-md bg-label-primary rounded-circle p-2">
+                    <i class="ti ti-template ti-md"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card wa-stat-card">
-            <div class="card-body p-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted d-block mb-1" style="font-size:12px;">{{ __('Approved / Active') }}</span>
-                        <h5 class="mb-0 fw-bold" id="stat-approved">{{ $activeCount }}</h5>
-                    </div>
-                    <div class="wa-stat-icon teal">
-                        <i class="ti ti-circle-check"></i>
-                    </div>
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted d-block mb-1">{{ __('Approved / Active') }}</span>
+                    <h3 class="mb-0 fw-bold text-success" id="stat-approved">{{ $activeCount }}</h3>
+                </div>
+                <div class="avatar avatar-md bg-label-success rounded-circle p-2">
+                    <i class="ti ti-circle-check ti-md"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card wa-stat-card">
-            <div class="card-body p-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted d-block mb-1" style="font-size:12px;">{{ __('Pending Review') }}</span>
-                        <h5 class="mb-0 fw-bold" id="stat-pending">0</h5>
-                    </div>
-                    <div class="wa-stat-icon orange">
-                        <i class="ti ti-clock"></i>
-                    </div>
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted d-block mb-1">{{ __('Pending Review') }}</span>
+                    <h3 class="mb-0 fw-bold text-warning" id="stat-pending">0</h3>
+                </div>
+                <div class="avatar avatar-md bg-label-warning rounded-circle p-2">
+                    <i class="ti ti-clock ti-md"></i>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card wa-stat-card">
-            <div class="card-body p-0">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-muted d-block mb-1" style="font-size:12px;">{{ __('Inactive / Rejected') }}</span>
-                        <h5 class="mb-0 fw-bold" id="stat-inactive">{{ $inactiveCount }}</h5>
-                    </div>
-                    <div class="wa-stat-icon red">
-                        <i class="ti ti-circle-x"></i>
-                    </div>
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted d-block mb-1">{{ __('Inactive / Rejected') }}</span>
+                    <h3 class="mb-0 fw-bold text-danger" id="stat-inactive">{{ $inactiveCount }}</h3>
+                </div>
+                <div class="avatar avatar-md bg-label-danger rounded-circle p-2">
+                    <i class="ti ti-circle-x ti-md"></i>
                 </div>
             </div>
         </div>
@@ -262,7 +206,7 @@
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-3 py-4">
         <div>
             <h5 class="mb-0 d-flex align-items-center gap-2">
-                <svg width="20" height="20" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#25D366"/><path fill-rule="evenodd" clip-rule="evenodd" d="M34.4 13.5C31.8 10.9 28.3 9.5 24.6 9.5C16.9 9.5 10.7 15.7 10.7 23.4C10.7 25.9 11.4 28.3 12.6 30.4L10.5 38L18.3 35.9C20.3 37 22.4 37.6 24.6 37.6C32.3 37.6 38.5 31.4 38.5 23.7C38.5 20 37.1 16.5 34.4 13.5ZM24.6 35.1C22.6 35.1 20.7 34.6 19 33.6L18.6 33.3L14.1 34.5L15.3 30.1L15 29.7C13.9 27.9 13.3 25.7 13.3 23.4C13.3 17.1 18.4 12 24.6 12C27.6 12 30.4 13.2 32.5 15.3C34.6 17.4 35.9 20.2 35.9 23.2C35.9 29.7 30.9 35.1 24.6 35.1ZM30.8 26.3C30.5 26.2 28.9 25.4 28.7 25.3C28.4 25.2 28.2 25.2 28 25.5C27.8 25.8 27.2 26.5 27 26.7C26.8 26.9 26.6 26.9 26.3 26.8C25.2 26.3 24.2 25.6 23.4 24.7C22.6 23.8 22 22.8 21.6 21.7C21.4 21.4 21.6 21.2 21.8 21C22 20.8 22.2 20.5 22.4 20.3C22.5 20.1 22.6 19.9 22.6 19.7C22.7 19.5 22.6 19.3 22.5 19.1C22.4 18.9 21.8 17.4 21.5 16.7C21.3 16.1 21 16.1 20.8 16.1C20.6 16.1 20.4 16.1 20.2 16.1C20 16.1 19.6 16.2 19.3 16.5C19 16.8 18.2 17.6 18.2 19.1C18.2 20.6 19.3 22 19.5 22.2C19.7 22.4 21.8 25.8 25.1 27.1C28.4 28.4 28.4 28 29 27.9C29.6 27.9 30.9 27.1 31.1 26.4C31.3 25.7 31.3 25.1 31.2 25C31.1 24.8 30.9 24.8 30.8 26.3Z" fill="white"/></svg>
+                <i class="ti ti-layout-list text-primary fs-4"></i>
                 {{ __('Message Templates') }}
             </h5>
             <small class="text-muted">{{ __('Click a template to preview it as a WhatsApp message') }}</small>
@@ -313,12 +257,12 @@
 <div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header" style="background:var(--wa-teal); color:white;">
+            <div class="modal-header border-bottom">
                 <h5 class="modal-title d-flex align-items-center gap-2">
-                    <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M34.4 13.5C31.8 10.9 28.3 9.5 24.6 9.5C16.9 9.5 10.7 15.7 10.7 23.4C10.7 25.9 11.4 28.3 12.6 30.4L10.5 38L18.3 35.9C20.3 37 22.4 37.6 24.6 37.6C32.3 37.6 38.5 31.4 38.5 23.7C38.5 20 37.1 16.5 34.4 13.5ZM24.6 35.1C22.6 35.1 20.7 34.6 19 33.6L18.6 33.3L14.1 34.5L15.3 30.1L15 29.7C13.9 27.9 13.3 25.7 13.3 23.4C13.3 17.1 18.4 12 24.6 12C27.6 12 30.4 13.2 32.5 15.3C34.6 17.4 35.9 20.2 35.9 23.2C35.9 29.7 30.9 35.1 24.6 35.1ZM30.8 26.3C30.5 26.2 28.9 25.4 28.7 25.3C28.4 25.2 28.2 25.2 28 25.5C27.8 25.8 27.2 26.5 27 26.7C26.8 26.9 26.6 26.9 26.3 26.8C25.2 26.3 24.2 25.6 23.4 24.7C22.6 23.8 22 22.8 21.6 21.7C21.4 21.4 21.6 21.2 21.8 21C22 20.8 22.2 20.5 22.4 20.3C22.5 20.1 22.6 19.9 22.6 19.7C22.7 19.5 22.6 19.3 22.5 19.1C22.4 18.9 21.8 17.4 21.5 16.7C21.3 16.1 21 16.1 20.8 16.1C20.6 16.1 20.4 16.1 20.2 16.1C20 16.1 19.6 16.2 19.3 16.5C19 16.8 18.2 17.6 18.2 19.1C18.2 20.6 19.3 22 19.5 22.2C19.7 22.4 21.8 25.8 25.1 27.1C28.4 28.4 28.4 28 29 27.9C29.6 27.9 30.9 27.1 31.1 26.4C31.3 25.7 31.3 25.1 31.2 25C31.1 24.8 30.9 24.8 30.8 26.3Z" fill="#25D366"/></svg>
+                    <i class="ti ti-template text-success fs-4"></i>
                     <span id="previewModalTitle">{{ __('Template Preview') }}</span>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-4">
@@ -401,11 +345,11 @@
 <div class="modal fade" id="submitModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header" style="background:var(--wa-teal); color:white;">
+            <div class="modal-header border-bottom">
                 <h5 class="modal-title d-flex align-items-center gap-2" id="modalTitle">
-                    <i class="ti ti-edit"></i> {{ __('Edit Template') }}
+                    <i class="ti ti-edit text-primary fs-4"></i> {{ __('Edit Template') }}
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-4">
@@ -802,19 +746,19 @@ window.changeStatus = function (id, status) {
 /* ── Sync from Meta ──────────────────────────────────────── */
 window.syncFromCloud = function () {
     var btn = $('#syncCloudBtn');
-    btn.prop('disabled', true).html('<i class="ti ti-loader spin me-1"></i> Syncing...');
+    btn.prop('disabled', true).html('<i class="ti ti-loader spin me-1"></i> {{ __("Syncing...") }}');
     $.post(templateSyncUrl, { _token: csrfToken }, function (res) {
-        btn.prop('disabled', false).html('<i class="ti ti-cloud-download me-1"></i> Sync from Meta');
+        btn.prop('disabled', false).html('<i class="ti ti-cloud-download me-1"></i> {{ __("Sync from Meta") }}');
         if (res.status == 1) {
-            Swal.fire({ icon: 'success', title: 'Synced!', html: '<p>' + res.message + '</p>', customClass: { confirmButton: 'btn btn-success' }, buttonsStyling: false });
+            Swal.fire({ icon: 'success', title: '{{ __("Synced!") }}', html: '<p>' + res.message + '</p>', customClass: { confirmButton: 'btn btn-success' }, buttonsStyling: false });
             dtTable && dtTable.ajax.reload();
             loadGrid();
         } else {
-            Swal.fire({ icon: 'warning', title: 'Could not sync', html: '<p>' + (res.message || res.error || 'Unknown error') + '</p>', customClass: { confirmButton: 'btn btn-warning' }, buttonsStyling: false });
+            Swal.fire({ icon: 'warning', title: '{{ __("Could not sync") }}', html: '<p>' + (res.message || res.error || 'Unknown error') + '</p>', customClass: { confirmButton: 'btn btn-warning' }, buttonsStyling: false });
         }
     }).fail(function () {
-        btn.prop('disabled', false).html('<i class="ti ti-cloud-download me-1"></i> Sync from Meta');
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Request failed', customClass: { confirmButton: 'btn btn-danger' }, buttonsStyling: false });
+        btn.prop('disabled', false).html('<i class="ti ti-cloud-download me-1"></i> {{ __("Sync from Meta") }}');
+        Swal.fire({ icon: 'error', title: '{{ __("Error") }}', text: '{{ __("Request failed") }}', customClass: { confirmButton: 'btn btn-danger' }, buttonsStyling: false });
     });
 };
 

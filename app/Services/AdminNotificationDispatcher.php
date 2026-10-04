@@ -232,6 +232,7 @@ class AdminNotificationDispatcher
             'file_expired'                => 'ti-file-alert text-warning',
             'customer_invoice_due'        => 'ti-file-invoice text-warning',
             'customer_invoice_overdue'    => 'ti-file-alert text-danger',
+            'whatsapp_message_received'   => 'ti-brand-whatsapp text-success',
             default                       => 'ti-bell text-primary',
         };
     }

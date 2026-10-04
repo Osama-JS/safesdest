@@ -73,12 +73,32 @@ class GreenApiWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
-     * Send a template message. Green API doesn't use Meta templates directly,
-     * so we just log a warning or send a normal message if needed.
+     * Send a normal text message.
      */
-    public function sendTemplateMessage($phone, $purpose, array $variables = [], $lang = 'ar')
+    public function sendTextMessage($phone, $text)
     {
-        Log::info("Green API: Cannot send Meta templates natively. Purpose: {$purpose}");
-        return false;
+        $idInstance = env('GREEN_API_ID_INSTANCE');
+        $apiTokenInstance = env('GREEN_API_TOKEN_INSTANCE');
+
+        if (!$idInstance || !$apiTokenInstance) {
+            Log::warning('Green API credentials are not set.');
+            return false;
+        }
+
+        $phoneFormatted = ltrim($phone, '+');
+        $chatId = $phoneFormatted . '@c.us';
+        $url = "https://api.green-api.com/waInstance{$idInstance}/sendMessage/{$apiTokenInstance}";
+
+        try {
+            $response = Http::post($url, [
+                'chatId' => $chatId,
+                'message' => $text,
+            ]);
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Error sending Green API message: ' . $e->getMessage());
+            return false;
+        }
     }
 }
+

@@ -10,7 +10,7 @@ interface WhatsAppServiceInterface
      * @param string $phone
      * @param string $code
      * @param string $lang
-     * @return bool
+     * @return bool|array
      */
     public function sendOTP($phone, $code, $lang = 'ar');
     
@@ -21,7 +21,16 @@ interface WhatsAppServiceInterface
      * @param string $purpose
      * @param array $variables
      * @param string $lang
-     * @return bool
+     * @return bool|array
      */
     public function sendTemplateMessage($phone, $purpose, array $variables = [], $lang = 'ar');
+
+    /**
+     * Send a normal text message (only allowed within Meta's 24hr customer service window).
+     *
+     * @param string $phone
+     * @param string $text
+     * @return bool|array
+     */
+    public function sendTextMessage($phone, $text);
 }

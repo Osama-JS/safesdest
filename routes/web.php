@@ -322,8 +322,11 @@ Route::middleware('rate.limit')->group(function () {
                 // WhatsApp Chat & Logs
                 Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
                 Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');
+                Route::get('whatsapp-chat/{id}/poll', [App\Http\Controllers\admin\WhatsappChatController::class, 'pollMessages'])->name('admin.whatsapp-chat.poll');
                 Route::post('whatsapp-chat/{id}/send', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendMessage'])->name('admin.whatsapp-chat.send');
+                Route::post('whatsapp-chat/{id}/send-template', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendTemplate'])->name('admin.whatsapp-chat.send-template');
                 Route::post('whatsapp-chat/{id}/send-open-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendOpenChatTemplate'])->name('admin.whatsapp-chat.send-open-chat');
+                Route::post('whatsapp-chat/start-new', [App\Http\Controllers\admin\WhatsappChatController::class, 'startNewChat'])->name('admin.whatsapp-chat.start-new');
                 Route::get('whatsapp-logs', [App\Http\Controllers\admin\WhatsappLogController::class, 'index'])->name('admin.whatsapp-logs.index');
                 
                 // WhatsApp Broadcast

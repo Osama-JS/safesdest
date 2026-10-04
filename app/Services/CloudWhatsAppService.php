@@ -4,66 +4,73 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Models\WhatsappTemplate;
+use App\Models\WhatsappConversation;
+use App\Models\WhatsappMessage;
 use App\Services\Interfaces\WhatsAppServiceInterface;
 
 class CloudWhatsAppService implements WhatsAppServiceInterface
 {
+    protected ?string $url;
+    protected ?string $phoneId;
+    protected ?string $token;
+    protected ?string $wabaId;
+    protected bool $simulation;
+
+    public function __construct()
+    {
+        $this->url        = rtrim(env('WHATSAPP_CLOUD_URL', 'https://graph.facebook.com/v21.0/'), '/') . '/';
+        $this->phoneId    = env('WHATSAPP_CLOUD_PHONE_ID') ?: env('SAEI_FROM_PHONE_ID');
+        $this->token      = env('WHATSAPP_CLOUD_TOKEN');
+        $this->wabaId     = env('WHATSAPP_CLOUD_WABA_ID');
+        $this->simulation = (bool) env('WHATSAPP_SIMULATION', false);
+    }
+
     /**
-     * Send an OTP via WhatsApp Cloud API
-     *
-     * @param string $phone
-     * @param string $code
-     * @param string $lang
-     * @return bool
+     * Send an OTP via WhatsApp. If Saei is enabled, uses Saei OTP service.
      */
     public function sendOTP($phone, $code, $lang = 'ar')
     {
-        // For testing/simulation
-        if (env('WHATSAPP_SIMULATION', true)) {
+        if (env('SAEI_OTP_ENABLED', false)) {
+            $saei = app(SaeiOtpService::class);
+            $res = $saei->sendOtp($phone);
+            return $res['success'] ?? false;
+        }
+
+        if ($this->simulation) {
             Log::info("SIMULATED CLOUD WHATSAPP OTP sent to {$phone}: {$code}");
             return true;
         }
 
-        return $this->sendTemplateMessage($phone, 'otp', [$code], $lang);
+        $res = $this->sendTemplateMessage($phone, 'otp', [$code], $lang);
+        return is_array($res) ? ($res['success'] ?? false) : (bool)$res;
     }
 
     /**
      * Send a template message using WhatsApp templates stored in database.
-     *
-     * @param string $phone
-     * @param string $purpose
-     * @param array $variables
-     * @param string $lang
-     * @return bool
      */
     public function sendTemplateMessage($phone, $purpose, array $variables = [], $lang = 'ar')
     {
-        $url = env('WHATSAPP_CLOUD_URL');
-        $phoneId = env('WHATSAPP_CLOUD_PHONE_ID');
-        $token = env('WHATSAPP_CLOUD_TOKEN');
+        $phoneFormatted = $this->formatPhone($phone);
 
-        if (!$url || !$phoneId || !$token) {
-            Log::warning('WhatsApp Cloud credentials are not set.');
-            return false;
-        }
-
-        // Format phone to international format without +
-        $phoneFormatted = ltrim($phone, '+');
-
-        // Retrieve template from database
-        $langCode = explode('_', $lang)[0];
-        $template = WhatsappTemplate::where('purpose', $purpose)
-            ->where('status', 1)
-            // Fallback language if specific one is not found or we just use the default
+        // Find active template matching purpose or template_name
+        $template = WhatsappTemplate::where('status', 1)
+            ->where(function($q) use ($purpose) {
+                $q->where('purpose', $purpose)
+                  ->orWhere('template_name', $purpose);
+            })
             ->first();
 
         if (!$template) {
-            Log::warning("WhatsApp Cloud: No active template found for purpose: {$purpose}");
-            return false;
+            Log::warning("WhatsApp Cloud: No active template found for purpose/name: {$purpose}");
+            return [
+                'success' => false,
+                'message' => "لم يتم العثور على قالب نشط باسم: {$purpose}"
+            ];
         }
 
-        // Prepare components for the template (assuming simple body parameters)
+        // Prepare components
         $components = [];
         if (!empty($variables)) {
             $parameters = [];
@@ -79,6 +86,12 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             ];
         }
 
+        $languageCode = $template->language ?? 'ar';
+        // Normalize language code (e.g. en_US or en)
+        if (str_contains($languageCode, '-')) {
+            $languageCode = str_replace('-', '_', $languageCode);
+        }
+
         $payload = [
             'messaging_product' => 'whatsapp',
             'to' => $phoneFormatted,
@@ -86,7 +99,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             'template' => [
                 'name' => $template->template_name,
                 'language' => [
-                    'code' => $template->language ?? 'ar'
+                    'code' => $languageCode
                 ]
             ]
         ];
@@ -95,24 +108,23 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             $payload['template']['components'] = $components;
         }
 
-        // Render the body content if variables are provided
-        $renderedBody = $template->body ?? "Template: {$template->template_name}";
+        // Render body
+        $renderedBody = $template->body_text ?? "قالب: {$template->template_name}";
         if (!empty($variables)) {
             foreach ($variables as $index => $var) {
-                // index is 0-based, placeholders are 1-based (e.g. {{1}})
                 $placeholder = '{{' . ($index + 1) . '}}';
                 $renderedBody = str_replace($placeholder, $var, $renderedBody);
             }
         }
 
-        // 1. Find or create conversation
-        $conversation = \App\Models\WhatsappConversation::firstOrCreate(
+        // 1. Conversation
+        $conversation = WhatsappConversation::firstOrCreate(
             ['phone_number' => $phoneFormatted],
             ['unread_count' => 0]
         );
 
         // 2. Create message record
-        $message = \App\Models\WhatsappMessage::create([
+        $message = WhatsappMessage::create([
             'conversation_id' => $conversation->id,
             'direction' => 'outbound',
             'message_type' => 'template',
@@ -120,31 +132,104 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             'status' => 'pending'
         ]);
 
-        // 3. Dispatch the Job
-        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload)->onQueue('whatsapp');
+        if ($this->simulation) {
+            $message->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'meta_message_id' => 'sim_' . uniqid()
+            ]);
+            $conversation->update([
+                'last_message_preview' => Str::limit($renderedBody, 60),
+                'last_message_time' => now()
+            ]);
+            return ['success' => true, 'message' => $message];
+        }
 
-        return true;
+        if (!$this->url || !$this->phoneId || !$this->token) {
+            $err = 'بيانات اعتماد واتساب كلاود غير مكتملة في ملف .env';
+            $message->update(['status' => 'failed', 'error_log' => $err]);
+            return ['success' => false, 'message' => $err];
+        }
+
+        try {
+            $endpoint = "{$this->url}{$this->phoneId}/messages";
+            $response = Http::withToken($this->token)->timeout(15)->post($endpoint, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $metaId = $data['messages'][0]['id'] ?? null;
+
+                $message->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'meta_message_id' => $metaId,
+                    'error_log' => null
+                ]);
+
+                $conversation->update([
+                    'last_message_preview' => Str::limit($renderedBody, 60),
+                    'last_message_time' => now()
+                ]);
+
+                return ['success' => true, 'meta_id' => $metaId, 'message' => $message];
+            }
+
+            $errorData = $response->json();
+            $errorMessage = $errorData['error']['message'] ?? $response->body();
+            $message->update([
+                'status' => 'failed',
+                'error_log' => json_encode($errorData)
+            ]);
+
+            Log::error("WhatsApp Cloud sendTemplate Error: {$errorMessage}", ['response' => $errorData]);
+            return ['success' => false, 'message' => $errorMessage, 'raw_error' => $errorData];
+        } catch (\Exception $e) {
+            $message->update(['status' => 'failed', 'error_log' => $e->getMessage()]);
+            Log::error("WhatsApp Cloud sendTemplate Exception: {$e->getMessage()}");
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     /**
-     * Send a normal text message (only allowed within 24hr window)
-     *
-     * @param string $phone
-     * @param string $text
-     * @return bool
+     * Send a normal text message (only allowed within Meta's 24hr window)
      */
     public function sendTextMessage($phone, $text)
     {
-        $url = env('WHATSAPP_CLOUD_URL');
-        $phoneId = env('WHATSAPP_CLOUD_PHONE_ID');
-        $token = env('WHATSAPP_CLOUD_TOKEN');
+        $phoneFormatted = $this->formatPhone($phone);
 
-        if (!$url || !$phoneId || !$token) {
-            Log::warning('WhatsApp Cloud credentials are not set.');
-            return false;
+        // 1. Conversation
+        $conversation = WhatsappConversation::firstOrCreate(
+            ['phone_number' => $phoneFormatted],
+            ['unread_count' => 0]
+        );
+
+        // 2. Create message record
+        $message = WhatsappMessage::create([
+            'conversation_id' => $conversation->id,
+            'direction' => 'outbound',
+            'message_type' => 'text',
+            'content' => $text,
+            'status' => 'pending'
+        ]);
+
+        if ($this->simulation) {
+            $message->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'meta_message_id' => 'sim_' . uniqid()
+            ]);
+            $conversation->update([
+                'last_message_preview' => Str::limit($text, 60),
+                'last_message_time' => now()
+            ]);
+            return ['success' => true, 'message' => $message];
         }
 
-        $phoneFormatted = ltrim($phone, '+');
+        if (!$this->url || !$this->phoneId || !$this->token) {
+            $err = 'بيانات اعتماد واتساب كلاود غير مكتملة في ملف .env';
+            $message->update(['status' => 'failed', 'error_log' => $err]);
+            return ['success' => false, 'code' => 'config_missing', 'message' => $err];
+        }
 
         $payload = [
             'messaging_product' => 'whatsapp',
@@ -156,24 +241,72 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             ]
         ];
 
-        // 1. Find or create conversation
-        $conversation = \App\Models\WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        try {
+            $endpoint = "{$this->url}{$this->phoneId}/messages";
+            $response = Http::withToken($this->token)->timeout(15)->post($endpoint, $payload);
 
-        // 2. Create message record
-        $message = \App\Models\WhatsappMessage::create([
-            'conversation_id' => $conversation->id,
-            'direction' => 'outbound',
-            'message_type' => 'text',
-            'content' => $text,
-            'status' => 'pending'
-        ]);
+            if ($response->successful()) {
+                $data = $response->json();
+                $metaId = $data['messages'][0]['id'] ?? null;
 
-        // 3. Dispatch the Job
-        \App\Jobs\SendWhatsAppMessageJob::dispatch($message->id, $payload)->onQueue('whatsapp');
+                $message->update([
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                    'meta_message_id' => $metaId,
+                    'error_log' => null
+                ]);
 
-        return true;
+                $conversation->update([
+                    'last_message_preview' => Str::limit($text, 60),
+                    'last_message_time' => now()
+                ]);
+
+                return ['success' => true, 'meta_id' => $metaId, 'message' => $message];
+            }
+
+            $errorData = $response->json();
+            $metaCode = $errorData['error']['code'] ?? null;
+            $metaSubcode = $errorData['error']['error_subcode'] ?? null;
+            $errorMessage = $errorData['error']['message'] ?? $response->body();
+
+            $message->update([
+                'status' => 'failed',
+                'error_log' => json_encode($errorData)
+            ]);
+
+            // Check if Meta rejected due to 24h window (code 131047)
+            if ($metaCode == 131047 || str_contains(strtolower($errorMessage), '24 hours') || str_contains(strtolower($errorMessage), 're-engagement')) {
+                return [
+                    'success' => false,
+                    'code' => 'window_closed',
+                    'message' => 'عذراً، انتهت نافذة الـ 24 ساعة للمحادثة من قِبل ميتا. يجب إرسال قالب رسمي لإعادة فتحها.',
+                    'raw_error' => $errorData
+                ];
+            }
+
+            Log::error("WhatsApp Cloud sendTextMessage Error: {$errorMessage}", ['response' => $errorData]);
+            return ['success' => false, 'code' => 'api_error', 'message' => $errorMessage, 'raw_error' => $errorData];
+        } catch (\Exception $e) {
+            $message->update(['status' => 'failed', 'error_log' => $e->getMessage()]);
+            Log::error("WhatsApp Cloud sendTextMessage Exception: {$e->getMessage()}");
+            return ['success' => false, 'code' => 'network_error', 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Clean and format phone number to international digits without '+'
+     */
+    protected function formatPhone(string $phone): string
+    {
+        $clean = preg_replace('/[^0-9]/', '', $phone);
+        // If starts with 00, remove
+        if (str_starts_with($clean, '00')) {
+            $clean = substr($clean, 2);
+        }
+        // If local Saudi number starting with 05
+        if (str_starts_with($clean, '05') && strlen($clean) === 10) {
+            $clean = '966' . substr($clean, 1);
+        }
+        return $clean;
     }
 }

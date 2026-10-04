@@ -1,12 +1,10 @@
-@extends('layouts/layoutMaster')
+<?php $__env->startSection('title', 'محادثات الواتساب — لوحة التحكم'); ?>
 
-@section('title', 'محادثات الواتساب — لوحة التحكم')
-
-@section('vendor-style')
-@vite([
+<?php $__env->startSection('vendor-style'); ?>
+<?php echo app('Illuminate\Foundation\Vite')([
     'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss',
     'resources/assets/vendor/libs/toastr/toastr.scss'
-])
+]); ?>
 <style>
     .wa-app-card {
         border-radius: 14px;
@@ -293,9 +291,9 @@
         100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
     }
 </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1 text-heading fw-bold">
@@ -307,10 +305,10 @@
         <button type="button" class="btn btn-outline-success d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#newChatModal">
             <i class="ti ti-message-plus me-1"></i> محادثة جديدة
         </button>
-        <a href="{{ route('admin.whatsapp-templates.index') }}" class="btn btn-outline-secondary d-flex align-items-center">
+        <a href="<?php echo e(route('admin.whatsapp-templates.index')); ?>" class="btn btn-outline-secondary d-flex align-items-center">
             <i class="ti ti-template me-1"></i> إدارة القوالب
         </a>
-        <a href="{{ route('admin.whatsapp-otp-test.index') }}" class="btn btn-outline-info d-flex align-items-center">
+        <a href="<?php echo e(route('admin.whatsapp-otp-test.index')); ?>" class="btn btn-outline-info d-flex align-items-center">
             <i class="ti ti-shield-check me-1"></i> اختبار OTP (ساعي)
         </a>
     </div>
@@ -323,7 +321,7 @@
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted d-block mb-1">إجمالي المحادثات</span>
-                    <h3 class="mb-0 fw-bold text-heading">{{ number_format($stats['total_conversations']) }}</h3>
+                    <h3 class="mb-0 fw-bold text-heading"><?php echo e(number_format($stats['total_conversations'])); ?></h3>
                 </div>
                 <div class="avatar avatar-md bg-label-primary rounded-circle p-2">
                     <i class="ti ti-messages ti-md"></i>
@@ -336,7 +334,7 @@
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted d-block mb-1">رسائل غير مقروءة</span>
-                    <h3 class="mb-0 fw-bold text-danger">{{ number_format($stats['unread_messages']) }}</h3>
+                    <h3 class="mb-0 fw-bold text-danger"><?php echo e(number_format($stats['unread_messages'])); ?></h3>
                 </div>
                 <div class="avatar avatar-md bg-label-danger rounded-circle p-2">
                     <i class="ti ti-bell-ringing ti-md"></i>
@@ -349,7 +347,7 @@
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted d-block mb-1">رسائل واردة (اليوم)</span>
-                    <h3 class="mb-0 fw-bold text-success">{{ number_format($stats['messages_received_today']) }}</h3>
+                    <h3 class="mb-0 fw-bold text-success"><?php echo e(number_format($stats['messages_received_today'])); ?></h3>
                 </div>
                 <div class="avatar avatar-md bg-label-success rounded-circle p-2">
                     <i class="ti ti-arrow-down-left ti-md"></i>
@@ -362,7 +360,7 @@
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
                     <span class="text-muted d-block mb-1">رسائل صادرة (اليوم)</span>
-                    <h3 class="mb-0 fw-bold text-info">{{ number_format($stats['messages_sent_today']) }}</h3>
+                    <h3 class="mb-0 fw-bold text-info"><?php echo e(number_format($stats['messages_sent_today'])); ?></h3>
                 </div>
                 <div class="avatar avatar-md bg-label-info rounded-circle p-2">
                     <i class="ti ti-arrow-up-right ti-md"></i>
@@ -389,24 +387,24 @@
                 <!-- Search Box -->
                 <div class="wa-search-box">
                     <i class="ti ti-search search-icon"></i>
-                    <input type="text" id="conversation-search" class="form-control" placeholder="بحث بالاسم أو رقم الهاتف..." value="{{ $search }}">
+                    <input type="text" id="conversation-search" class="form-control" placeholder="بحث بالاسم أو رقم الهاتف..." value="<?php echo e($search); ?>">
                 </div>
             </div>
 
             <!-- Filter Pills -->
             <div class="wa-filter-tabs">
-                <div class="wa-filter-pill {{ $filter === 'all' ? 'active' : '' }}" data-filter="all">الكل</div>
-                <div class="wa-filter-pill {{ $filter === 'customers' ? 'active' : '' }}" data-filter="customers">العملاء</div>
-                <div class="wa-filter-pill {{ $filter === 'drivers' ? 'active' : '' }}" data-filter="drivers">السائقين</div>
-                <div class="wa-filter-pill {{ $filter === 'unread' ? 'active' : '' }}" data-filter="unread">
-                    غير مقروءة @if($stats['unread_messages'] > 0) <span class="badge bg-danger rounded-pill ms-1">{{ $stats['unread_messages'] }}</span> @endif
+                <div class="wa-filter-pill <?php echo e($filter === 'all' ? 'active' : ''); ?>" data-filter="all">الكل</div>
+                <div class="wa-filter-pill <?php echo e($filter === 'customers' ? 'active' : ''); ?>" data-filter="customers">العملاء</div>
+                <div class="wa-filter-pill <?php echo e($filter === 'drivers' ? 'active' : ''); ?>" data-filter="drivers">السائقين</div>
+                <div class="wa-filter-pill <?php echo e($filter === 'unread' ? 'active' : ''); ?>" data-filter="unread">
+                    غير مقروءة <?php if($stats['unread_messages'] > 0): ?> <span class="badge bg-danger rounded-pill ms-1"><?php echo e($stats['unread_messages']); ?></span> <?php endif; ?>
                 </div>
             </div>
 
             <!-- List -->
             <ul class="wa-conversations-list" id="conversations-ul">
-                @forelse($conversations as $conv)
-                @php
+                <?php $__empty_1 = true; $__currentLoopData = $conversations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $conv): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <?php
                     $uType = $conv->user_type ?? 'unregistered';
                     $roleClass = match($uType) {
                         'customer' => 'customer',
@@ -419,50 +417,56 @@
                         default => 'غير مسجل'
                     };
                     $initials = mb_substr($conv->user_name, 0, 1);
-                @endphp
-                <li class="wa-conversation-item {{ $activeConversationId == $conv->id ? 'active' : '' }}" 
-                    data-id="{{ $conv->id }}" 
-                    data-type="{{ $uType }}" 
-                    data-phone="{{ $conv->phone_number }}"
-                    data-name="{{ $conv->user_name }}">
-                    <div class="wa-avatar {{ $roleClass }} me-3">
-                        {{ $initials }}
-                        <span class="role-dot bg-{{ $uType === 'customer' ? 'success' : ($uType === 'driver' ? 'primary' : 'secondary') }}"></span>
+                ?>
+                <li class="wa-conversation-item <?php echo e($activeConversationId == $conv->id ? 'active' : ''); ?>" 
+                    data-id="<?php echo e($conv->id); ?>" 
+                    data-type="<?php echo e($uType); ?>" 
+                    data-phone="<?php echo e($conv->phone_number); ?>"
+                    data-name="<?php echo e($conv->user_name); ?>">
+                    <div class="wa-avatar <?php echo e($roleClass); ?> me-3">
+                        <?php echo e($initials); ?>
+
+                        <span class="role-dot bg-<?php echo e($uType === 'customer' ? 'success' : ($uType === 'driver' ? 'primary' : 'secondary')); ?>"></span>
                     </div>
                     <div class="flex-grow-1 overflow-hidden">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <h6 class="mb-0 text-truncate fw-semibold" style="font-size: 0.95rem;">
-                                {{ $conv->user_name }}
+                                <?php echo e($conv->user_name); ?>
+
                             </h6>
                             <small class="text-muted text-nowrap ms-1" style="font-size: 0.72rem;">
-                                {{ $conv->last_message_time ? $conv->last_message_time->diffForHumans(null, true) : '' }}
+                                <?php echo e($conv->last_message_time ? $conv->last_message_time->diffForHumans(null, true) : ''); ?>
+
                             </small>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <p class="mb-0 text-truncate text-muted text-preview" style="font-size: 0.82rem; max-width: 80%;">
-                                {{ $conv->last_message_preview ?: 'بدء المحادثة...' }}
+                                <?php echo e($conv->last_message_preview ?: 'بدء المحادثة...'); ?>
+
                             </p>
-                            @if($conv->unread_count > 0)
-                                <span class="badge bg-danger rounded-pill badge-unread">{{ $conv->unread_count }}</span>
-                            @endif
+                            <?php if($conv->unread_count > 0): ?>
+                                <span class="badge bg-danger rounded-pill badge-unread"><?php echo e($conv->unread_count); ?></span>
+                            <?php endif; ?>
                         </div>
                         <div class="mt-1 d-flex align-items-center gap-1">
-                            <span class="badge bg-label-{{ $uType === 'customer' ? 'success' : ($uType === 'driver' ? 'info' : 'secondary') }}" style="font-size: 0.68rem; padding: 2px 6px;">
-                                {{ $roleLabel }}
+                            <span class="badge bg-label-<?php echo e($uType === 'customer' ? 'success' : ($uType === 'driver' ? 'info' : 'secondary')); ?>" style="font-size: 0.68rem; padding: 2px 6px;">
+                                <?php echo e($roleLabel); ?>
+
                             </span>
                             <span class="text-muted" style="font-size: 0.72rem; direction: ltr;">
-                                +{{ ltrim($conv->phone_number, '+') }}
+                                +<?php echo e(ltrim($conv->phone_number, '+')); ?>
+
                             </span>
                         </div>
                     </div>
                 </li>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <li class="p-5 text-center text-muted">
                     <i class="ti ti-messages-off mb-3" style="font-size: 3rem; opacity: 0.4;"></i>
                     <p class="mb-0">لا توجد محادثات مسجلة حتى الآن</p>
                     <small>ستظهر المحادثات هنا فور تلقي أو بدء أي رسالة واتساب</small>
                 </li>
-                @endforelse
+                <?php endif; ?>
             </ul>
         </div>
 
@@ -543,7 +547,7 @@
                 <!-- Input Footer -->
                 <div class="wa-chat-footer d-none" id="chat-footer">
                     <form id="chat-form">
-                        @csrf
+                        <?php echo csrf_field(); ?>
                         <div class="wa-input-box">
                             <button type="button" class="btn btn-icon btn-light rounded-circle" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="إرسال قالب رسمي">
                                 <i class="ti ti-template text-muted"></i>
@@ -624,9 +628,9 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">القالب المبدئي المعتمد لبدء المحادثة <span class="text-danger">*</span></label>
                         <select class="form-select" id="new-chat-template" required>
-                            @foreach($approvedTemplates as $tpl)
-                                <option value="{{ $tpl->template_name }}">{{ $tpl->template_name }} ({{ $tpl->language }})</option>
-                            @endforeach
+                            <?php $__currentLoopData = $approvedTemplates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tpl): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($tpl->template_name); ?>"><?php echo e($tpl->template_name); ?> (<?php echo e($tpl->language); ?>)</option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                         <small class="text-muted">تتطلب سياسة ميتا إرسال قالب رسمي لبدء أي محادثة لأول مرة مع مستخدم جديد.</small>
                     </div>
@@ -657,11 +661,11 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">اختر القالب</label>
                         <select class="form-select" id="selected-template-name" required>
-                            @foreach($approvedTemplates as $tpl)
-                                <option value="{{ $tpl->template_name }}" data-body="{{ $tpl->body_text }}">
-                                    {{ $tpl->template_name }} ({{ $tpl->language }})
+                            <?php $__currentLoopData = $approvedTemplates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $tpl): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($tpl->template_name); ?>" data-body="<?php echo e($tpl->body_text); ?>">
+                                    <?php echo e($tpl->template_name); ?> (<?php echo e($tpl->language); ?>)
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
 
@@ -682,16 +686,16 @@
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('vendor-script')
-@vite([
+<?php $__env->startSection('vendor-script'); ?>
+<?php echo app('Illuminate\Foundation\Vite')([
     'resources/assets/vendor/libs/sweetalert2/sweetalert2.js',
     'resources/assets/vendor/libs/toastr/toastr.js'
-])
-@endsection
+]); ?>
+<?php $__env->stopSection(); ?>
 
-@section('page-script')
+<?php $__env->startSection('page-script'); ?>
 <script type="module">
 $(document).ready(function() {
     let currentConversationId = null;
@@ -802,7 +806,7 @@ $(document).ready(function() {
         chatArea.html('<div class="m-auto text-center py-5"><div class="spinner-border text-success" role="status"></div><p class="mt-2 text-muted small">جاري تحميل المحادثة...</p></div>');
 
         $.ajax({
-            url: "{{ url('admin/whatsapp-chat') }}/" + id + "/messages",
+            url: "<?php echo e(url('admin/whatsapp-chat')); ?>/" + id + "/messages",
             type: "GET",
             success: function(res) {
                 if (res.status !== 'success') return;
@@ -1004,7 +1008,7 @@ $(document).ready(function() {
         if (!currentConversationId) return;
 
         $.ajax({
-            url: "{{ url('admin/whatsapp-chat') }}/" + currentConversationId + "/poll?after_id=" + highestMessageId,
+            url: "<?php echo e(url('admin/whatsapp-chat')); ?>/" + currentConversationId + "/poll?after_id=" + highestMessageId,
             type: "GET",
             success: function(res) {
                 if (res.status === 'success') {
@@ -1085,10 +1089,10 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin"></i>');
 
         $.ajax({
-            url: "{{ url('admin/whatsapp-chat') }}/" + currentConversationId + "/send",
+            url: "<?php echo e(url('admin/whatsapp-chat')); ?>/" + currentConversationId + "/send",
             type: "POST",
             data: {
-                _token: "{{ csrf_token() }}",
+                _token: "<?php echo e(csrf_token()); ?>",
                 message: text
             },
             success: function(res) {
@@ -1157,10 +1161,10 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i> إرسال...');
 
         $.ajax({
-            url: "{{ url('admin/whatsapp-chat') }}/" + currentConversationId + "/send-template",
+            url: "<?php echo e(url('admin/whatsapp-chat')); ?>/" + currentConversationId + "/send-template",
             type: "POST",
             data: {
-                _token: "{{ csrf_token() }}",
+                _token: "<?php echo e(csrf_token()); ?>",
                 template_name: templateName
             },
             success: function(res) {
@@ -1196,10 +1200,10 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i> إرسال...');
 
         $.ajax({
-            url: "{{ route('admin.whatsapp-chat.start-new') }}",
+            url: "<?php echo e(route('admin.whatsapp-chat.start-new')); ?>",
             type: "POST",
             data: {
-                _token: "{{ csrf_token() }}",
+                _token: "<?php echo e(csrf_token()); ?>",
                 phone: phone,
                 template_name: template
             },
@@ -1215,7 +1219,7 @@ $(document).ready(function() {
                             openConversation(res.conversation_id);
                         } else {
                             setTimeout(() => {
-                                window.location.href = "{{ url('admin/whatsapp-chat') }}?conversation_id=" + res.conversation_id;
+                                window.location.href = "<?php echo e(url('admin/whatsapp-chat')); ?>?conversation_id=" + res.conversation_id;
                             }, 400);
                         }
                     }
@@ -1238,10 +1242,12 @@ $(document).ready(function() {
     }
 
     // Auto open conversation if activeConversationId provided in URL
-    let autoId = "{{ $activeConversationId }}";
+    let autoId = "<?php echo e($activeConversationId); ?>";
     if (autoId) {
         openConversation(autoId);
     }
 });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts/layoutMaster', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/admin/whatsapp-chat/index.blade.php ENDPATH**/ ?>

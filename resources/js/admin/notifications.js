@@ -181,6 +181,16 @@ $(function () {
     });
   }
 
+  // Global listeners to refresh notification badge and list from other pages
+  $(document).on('admin:refresh-notifications', function () {
+    updateUnreadCount();
+    loadNotifications();
+  });
+  window.refreshAdminNotifications = function () {
+    updateUnreadCount();
+    loadNotifications();
+  };
+
   // Render list
   function renderNotifications(notifications) {
     notificationList.empty();

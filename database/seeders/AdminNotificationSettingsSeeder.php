@@ -196,6 +196,22 @@ class AdminNotificationSettingsSeeder extends Seeder
                 'target_roles'   => ['Owner', 'Admin'],
                 'priority'       => 'high',
             ],
+
+            // ==========================================
+            // 5. أحداث التواصل والمحادثات (Communication)
+            // ==========================================
+            [
+                'event_key'      => 'whatsapp_message_received',
+                'category'       => 'communication',
+                'name_ar'        => 'استلام رسالة واتساب جديدة',
+                'name_en'        => 'New WhatsApp Message Received',
+                'description_ar' => 'يُطلق فور تلقي رسالة واتساب جديدة من عميل أو سائق على رقم المنصة المعتمد لتنبيه المسؤولين للرد الفوري والمباشر.',
+                'in_app_enabled' => true,
+                'email_enabled'  => true,
+                'webpush_enabled'=> false,
+                'target_roles'   => ['Owner', 'Admin'],
+                'priority'       => 'high',
+            ],
         ];
 
         foreach ($settings as $setting) {

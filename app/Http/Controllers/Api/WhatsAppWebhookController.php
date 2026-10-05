@@ -50,9 +50,27 @@ class WhatsAppWebhookController extends Controller
         Log::info('WhatsApp Webhook Received:', $data);
 
         try {
-            if (isset($data['entry'][0]['changes'][0]['value'])) {
-                $value = $data['entry'][0]['changes'][0]['value'];
+            $valuesToProcess = [];
 
+            if (isset($data['entry']) && is_array($data['entry'])) {
+                foreach ($data['entry'] as $entry) {
+                    if (isset($entry['changes']) && is_array($entry['changes'])) {
+                        foreach ($entry['changes'] as $change) {
+                            if (isset($change['value'])) {
+                                $valuesToProcess[] = $change['value'];
+                            }
+                        }
+                    }
+                }
+            } elseif (isset($data['meta_raw']['value'])) {
+                $valuesToProcess[] = $data['meta_raw']['value'];
+            } elseif (isset($data['data']['messages']) || isset($data['data']['statuses'])) {
+                $valuesToProcess[] = $data['data'];
+            } elseif (isset($data['messages']) || isset($data['statuses'])) {
+                $valuesToProcess[] = $data;
+            }
+
+            foreach ($valuesToProcess as $value) {
                 // 1. Process Status Updates (Delivery Receipts)
                 if (isset($value['statuses'])) {
                     foreach ($value['statuses'] as $statusUpdate) {

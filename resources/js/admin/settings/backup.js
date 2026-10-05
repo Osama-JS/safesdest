@@ -1,40 +1,54 @@
 /**
- * Backup Management
+ * Backup Management & Cloud Automation
  */
 
 'use strict';
-import { deleteRecord, showAlert, showFormModal, generateFields, handleErrors, showBlockAlert } from '../../ajax';
+import { deleteRecord, showAlert } from '../../ajax';
 
 $(function () {
-  // Variable declaration for table
   var dt_data_table = $('.datatables-backups'),
-    backupView = baseUrl + 'admin/settings/backup/';
+    baseUrl = window.baseUrl || '/';
 
-  // ajax setup
+  // Ensure trailing slash on baseUrl
+  if (!baseUrl.endsWith('/')) {
+    baseUrl += '/';
+  }
+
+  // Ajax Setup CSRF
   $.ajaxSetup({
     headers: {
       'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     }
   });
 
-  // Load statistics
+  // Load statistics and initial config
   loadStatistics();
+  loadCloudConfig();
 
-  // Backups datatable
+  // Encryption password toggle
+  $('#is_encrypted').on('change', function () {
+    if ($(this).is(':checked')) {
+      $('#passwordInputContainer').slideDown(200);
+    } else {
+      $('#passwordInputContainer').slideUp(200);
+    }
+  });
+
+  // Backups DataTable
+  var dt_data = null;
   if (dt_data_table.length) {
-    var dt_data = dt_data_table.DataTable({
+    dt_data = dt_data_table.DataTable({
       processing: true,
       serverSide: false,
       ajax: {
         url: baseUrl + 'admin/settings/backup/data',
         dataSrc: function (json) {
-          // Load statistics separately since this endpoint only returns backup data
           loadStatistics();
           return json;
         },
         error: function (xhr, error, thrown) {
           console.error('DataTable AJAX error:', error, thrown);
-          showAlert('error', 'Failed to load backup data. Please refresh the page.');
+          showAlert('error', 'تعذر تحميل بيانات النسخ الاحتياطية. يرجى تحديث الصفحة.');
         }
       },
       columns: [
@@ -49,91 +63,104 @@ $(function () {
       columnDefs: [
         {
           targets: 0,
-          render: function (data, type, full, meta) {
-            return `<span class="fw-medium">${full.name}</span>`;
+          render: function (data, type, full) {
+            var lockIcon = full.is_encrypted
+              ? '<i class="ti ti-lock text-warning ms-1" data-bs-toggle="tooltip" title="مشفرة (AES-256)"></i>'
+              : '';
+            return `<span class="fw-bold text-heading">${full.name}</span> ${lockIcon}`;
           }
         },
         {
           targets: 1,
-          render: function (data, type, full, meta) {
+          render: function (data, type, full) {
             var typeMap = {
-              full: { text: 'Full Backup', class: 'bg-label-primary' },
-              database_only: { text: 'Database', class: 'bg-label-info' },
-              files_only: { text: 'Files Only', class: 'bg-label-warning' }
+              full: { text: 'كامل (قاعدة وبيانات)', class: 'bg-label-primary' },
+              database_only: { text: 'قاعدة بيانات', class: 'bg-label-info' },
+              files_only: { text: 'ملفات فقط', class: 'bg-label-warning' }
             };
-
-            var type = typeMap[full.type] || { text: full.type, class: 'bg-label-secondary' };
-            return `<span class="badge ${type.class}">${type.text}</span>`;
+            var t = typeMap[full.type] || { text: full.type, class: 'bg-label-secondary' };
+            return `<span class="badge ${t.class}">${t.text}</span>`;
           }
         },
         {
           targets: 2,
-          render: function (data, type, full, meta) {
-            return full.description || '<span class="text-muted">-</span>';
+          render: function (data, type, full) {
+            return full.description ? `<span class="text-truncate d-inline-block" style="max-width: 200px;">${full.description}</span>` : '<span class="text-muted">-</span>';
           }
         },
         {
           targets: 3,
-          render: function (data, type, full, meta) {
-            return formatFileSize(full.size);
+          render: function (data, type, full) {
+            return `<span class="badge bg-label-secondary">${full.size_human || formatFileSize(full.size)}</span>`;
           }
         },
         {
           targets: 4,
-          render: function (data, type, full, meta) {
+          render: function (data, type, full) {
             var statusMap = {
-              completed: { text: 'Completed', class: 'bg-label-success' },
-              processing: { text: 'Processing', class: 'bg-label-warning' },
-              failed: { text: 'Failed', class: 'bg-label-danger' }
+              completed: { text: 'مكتملة', class: 'bg-label-success' },
+              processing: { text: 'قيد المعالجة', class: 'bg-label-warning' },
+              failed: { text: 'فشلت', class: 'bg-label-danger' }
             };
-
-            var status = statusMap[full.status] || { text: full.status, class: 'bg-label-secondary' };
-            return `<span class="badge ${status.class}">${status.text}</span>`;
+            var s = statusMap[full.status] || { text: full.status, class: 'bg-label-secondary' };
+            return `<span class="badge ${s.class}">${s.text}</span>`;
           }
         },
         {
           targets: 5,
-          render: function (data, type, full, meta) {
+          render: function (data, type, full) {
             return `<span class="text-nowrap">${formatDate(full.created_at)}</span>`;
           }
         },
         {
           targets: -1,
-          title: 'Actions',
+          title: 'الإجراءات',
           searchable: false,
           orderable: false,
-          render: function (data, type, full, meta) {
-            var actions = `
-              <div class="d-flex align-items-center">
-                <button class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect download-backup" data-name="${full.name}" data-bs-toggle="tooltip" title="Download">
+          className: 'text-center',
+          render: function (data, type, full) {
+            return `
+              <div class="d-inline-flex gap-1 align-items-center">
+                <a href="${baseUrl}admin/settings/backup/direct-download/${full.name}" 
+                   class="btn btn-sm btn-icon btn-text-primary rounded-pill waves-effect" 
+                   data-bs-toggle="tooltip" title="تنزيل مباشر للجهاز">
                   <i class="ti ti-download ti-md"></i>
+                </a>
+                <button type="button" class="btn btn-sm btn-icon btn-text-info rounded-pill waves-effect btn-dispatch-telegram" 
+                        data-name="${full.name}" data-bs-toggle="tooltip" title="إرسال إلى تليجرام">
+                  <i class="ti ti-brand-telegram ti-md"></i>
                 </button>
-                <button class="btn btn-sm btn-icon btn-text-warning rounded-pill waves-effect restore-backup" data-name="${full.name}" data-bs-toggle="tooltip" title="Restore">
+                <button type="button" class="btn btn-sm btn-icon btn-text-danger rounded-pill waves-effect btn-dispatch-email" 
+                        data-name="${full.name}" data-bs-toggle="tooltip" title="إرسال إلى البريد الإلكتروني">
+                  <i class="ti ti-mail ti-md"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-icon btn-text-warning rounded-pill waves-effect restore-backup" 
+                        data-name="${full.name}" data-bs-toggle="tooltip" title="استعادة النظام من النسخة">
                   <i class="ti ti-restore ti-md"></i>
                 </button>
-                <button class="btn btn-sm btn-icon btn-text-danger rounded-pill waves-effect delete-backup" data-name="${full.name}" data-bs-toggle="tooltip" title="Delete">
+                <button type="button" class="btn btn-sm btn-icon btn-text-danger rounded-pill waves-effect delete-backup" 
+                        data-name="${full.name}" data-bs-toggle="tooltip" title="حذف النسخة">
                   <i class="ti ti-trash ti-md"></i>
                 </button>
               </div>
             `;
-            return actions;
           }
         }
       ],
       order: [[5, 'desc']],
       dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>>t<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 25,
-      lengthMenu: [10, 25, 50, 75, 100]
+      lengthMenu: [10, 25, 50, 100]
     });
   }
 
-  // Refresh backups
+  // Refresh
   $('#refreshBackups').on('click', function () {
-    dt_data.ajax.reload();
+    if (dt_data) dt_data.ajax.reload();
     loadStatistics();
   });
 
-  // Create backup form submission
+  // Create Backup Form
   $('#createBackupForm').on('submit', function (e) {
     e.preventDefault();
 
@@ -141,7 +168,7 @@ $(function () {
     var submitBtn = $(this).find('button[type="submit"]');
     var originalText = submitBtn.html();
 
-    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>Creating...');
+    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري إنشاء النسخة...');
 
     $.ajax({
       url: baseUrl + 'admin/settings/backup/create',
@@ -152,19 +179,17 @@ $(function () {
       success: function (response) {
         if (response.status === 1) {
           $('#createBackupModal').modal('hide');
-          dt_data.ajax.reload();
+          if (dt_data) dt_data.ajax.reload();
           loadStatistics();
-          showAlert('success', response.success);
+          showAlert('success', response.success || 'تم إنشاء النسخة الاحتياطية بنجاح');
           $('#createBackupForm')[0].reset();
+          $('#passwordInputContainer').hide();
         } else {
-          showAlert('error', response.error);
+          showAlert('error', response.error || 'فشل في إنشاء النسخة الاحتياطية');
         }
       },
       error: function (xhr) {
-        var errorMsg = 'An error occurred while creating backup';
-        if (xhr.responseJSON && xhr.responseJSON.error) {
-          errorMsg = xhr.responseJSON.error;
-        }
+        var errorMsg = xhr.responseJSON?.error || xhr.responseJSON?.message || 'حدث خطأ أثناء إنشاء النسخة الاحتياطية';
         showAlert('error', errorMsg);
       },
       complete: function () {
@@ -173,48 +198,87 @@ $(function () {
     });
   });
 
-  // Download backup
-
-  $(document).on('click', '.download-backup', function () {
+  // Instant Dispatch to Telegram
+  $(document).on('click', '.btn-dispatch-telegram', function () {
     var backupName = $(this).data('name');
-    showAlert('info', 'The backup is being sent to your email....');
+    var btn = $(this);
+    var originalHtml = btn.html();
 
-    $.get(baseUrl + 'admin/settings/backup/download/' + backupName)
-      .done(function (response) {
-        if (response.status === 1) {
-          showAlert('success', response.message);
+    if (!confirm('هل تريد إرسال النسخة الاحتياطية (' + backupName + ') إلى بوت تليجرام الآن؟')) {
+      return;
+    }
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin"></i>');
+    showAlert('info', 'جاري رفع وإرسال النسخة إلى تليجرام...');
+
+    $.post(baseUrl + 'admin/settings/backup/dispatch/' + backupName, { destination: 'telegram' })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message);
         } else {
-          showAlert('error', response.error);
+          showAlert('error', res.error || 'تعذر الإرسال إلى تليجرام');
         }
       })
       .fail(function (xhr) {
-        let error = xhr.responseJSON?.message || 'فشل في الاتصال بالخادم.';
-
-        showAlert('error', error);
+        var err = xhr.responseJSON?.error || xhr.responseJSON?.message || 'فشل الاتصال بخدمة تليجرام';
+        showAlert('error', err);
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(originalHtml);
       });
   });
 
-  // Restore backup
+  // Instant Dispatch to Email
+  $(document).on('click', '.btn-dispatch-email', function () {
+    var backupName = $(this).data('name');
+    var btn = $(this);
+    var originalHtml = btn.html();
+
+    if (!confirm('هل تريد إرسال النسخة الاحتياطية (' + backupName + ') إلى البريد الإلكتروني الآن؟')) {
+      return;
+    }
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin"></i>');
+    showAlert('info', 'جاري إرسال النسخة الاحتياطية إلى البريد الإلكتروني...');
+
+    $.post(baseUrl + 'admin/settings/backup/dispatch/' + backupName, { destination: 'email' })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message);
+        } else {
+          showAlert('error', res.error || 'تعذر الإرسال إلى البريد الإلكتروني');
+        }
+      })
+      .fail(function (xhr) {
+        var err = xhr.responseJSON?.error || xhr.responseJSON?.message || 'فشل إرسال البريد الإلكتروني';
+        showAlert('error', err);
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(originalHtml);
+      });
+  });
+
+  // Restore Modal Trigger
   $(document).on('click', '.restore-backup', function () {
     var backupName = $(this).data('name');
     $('#restoreBackupName').val(backupName);
     $('#restoreBackupModal').modal('show');
   });
 
-  // Restore backup form submission
+  // Restore Form Submit
   $('#restoreBackupForm').on('submit', function (e) {
     e.preventDefault();
+
+    if (!$('#confirmRestore').is(':checked')) {
+      showAlert('warning', 'يرجى تأكيد الموافقة على عملية الاستبدال');
+      return;
+    }
 
     var formData = new FormData(this);
     var submitBtn = $(this).find('button[type="submit"]');
     var originalText = submitBtn.html();
 
-    // Show confirmation
-    if (!confirm('Are you sure you want to restore this backup? This process will replace current data.')) {
-      return;
-    }
-
-    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>Restoring...');
+    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري الاستعادة...');
 
     $.ajax({
       url: baseUrl + 'admin/settings/backup/restore',
@@ -225,20 +289,16 @@ $(function () {
       success: function (response) {
         if (response.status === 1) {
           $('#restoreBackupModal').modal('hide');
-          showAlert('success', response.success);
-          // Reload page after successful restore
+          showAlert('success', response.success || 'تمت الاستعادة بنجاح');
           setTimeout(() => {
             window.location.reload();
           }, 2000);
         } else {
-          showAlert('error', response.error);
+          showAlert('error', response.error || 'فشلت الاستعادة');
         }
       },
       error: function (xhr) {
-        var errorMsg = 'An error occurred while restoring backup';
-        if (xhr.responseJSON && xhr.responseJSON.error) {
-          errorMsg = xhr.responseJSON.error;
-        }
+        var errorMsg = xhr.responseJSON?.error || 'حدث خطأ أثناء استعادة النسخة الاحتياطية';
         showAlert('error', errorMsg);
       },
       complete: function () {
@@ -247,171 +307,277 @@ $(function () {
     });
   });
 
-  // Delete backup
+  // Delete Backup
   $(document).on('click', '.delete-backup', function () {
-    let url = baseUrl + 'admin/settings/backup/delete/' + $(this).data('name');
-    deleteRecord('Backup : ' + $(this).data('name'), url);
+    var name = $(this).data('name');
+    var url = baseUrl + 'admin/settings/backup/delete/' + name;
+    deleteRecord('النسخة الاحتياطية: ' + name, url);
   });
 
-  document.addEventListener('deletedSuccess', function (event) {
-    dt_data.ajax.reload();
+  document.addEventListener('deletedSuccess', function () {
+    if (dt_data) dt_data.ajax.reload();
     loadStatistics();
   });
 
-  // Show statistics modal
-  $('#statisticsModal').on('show.bs.modal', function () {
-    loadDetailedStatistics();
-  });
-
-  // Helper functions
-  function loadStatistics() {
-    $.get(baseUrl + 'admin/settings/backup/statistics')
-      .done(function (response) {
-        if (response.status === 1) {
-          updateStatisticsCards(response.data);
-        }
-      })
-      .fail(function () {
-        console.log('Failed to load statistics');
-      });
-  }
-
-  function updateStatisticsCards(data) {
-    $('#totalBackups').text(data.total_backups || 0);
-    $('#totalSize').text(formatFileSize(data.total_size || 0));
-    $('#latestBackup').text(data.latest_backup ? formatDate(data.latest_backup) : '-');
-
-    // Update backup health based on latest backup age
-    var health = 'Good';
-    if (data.latest_backup) {
-      var daysSinceLastBackup = Math.floor((new Date() - new Date(data.latest_backup)) / (1000 * 60 * 60 * 24));
-      if (daysSinceLastBackup > 7) {
-        health = 'Needs Backup';
-      } else if (daysSinceLastBackup > 3) {
-        health = 'Average';
-      }
-    } else {
-      health = 'No Backups';
-    }
-    $('#backupHealth').text(health);
-  }
-
-  function loadDetailedStatistics() {
-    $('#statisticsContent').html(
-      '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>'
-    );
-
-    $.get(baseUrl + 'admin/settings/backup/statistics')
-      .done(function (response) {
-        if (response.status === 1) {
-          var data = response.data;
-          var html = `
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="card ">
-                  <div class="card-body text-center">
-                    <h3 class="card-title">${data.total_backups || 0}</h3>
-                    <p class="card-text">Total Backups</p>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card ">
-                  <div class="card-body text-center">
-                    <h3 class="card-title">${formatFileSize(data.total_size || 0)}</h3>
-                    <p class="card-text">Total Size</p>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="card ">
-                  <div class="card-body text-center">
-                    <h3 class="card-title">${data.latest_backup ? formatDate(data.latest_backup) : '-'}</h3>
-                    <p class="card-text">Latest Backup</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-
-          if (data.backup_types) {
-            html +=
-              '<div class="row mt-4"><div class="col-12"><h6>Backup Types Distribution</h6><div class="d-flex justify-content-between">';
-            for (var type in data.backup_types) {
-              var typeLabel = type === 'full' ? 'Full' : type === 'database_only' ? 'Database' : 'Files';
-              html += `<span>${typeLabel}: ${data.backup_types[type]}</span>`;
-            }
-            html += '</div></div></div>';
-          }
-
-          $('#statisticsContent').html(html);
-        } else {
-          $('#statisticsContent').html(
-            '<div class="alert alert-danger">An error occurred while loading statistics</div>'
-          );
-        }
-      })
-      .fail(function () {
-        $('#statisticsContent').html(
-          '<div class="alert alert-danger">An error occurred while loading statistics</div>'
-        );
-      });
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes === 0) return '0 B';
-    var k = 1024;
-    var sizes = ['B', 'KB', 'MB', 'GB'];
-    var i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return (
-      date.toLocaleDateString('ar-EG', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        calendar: 'gregory' // تأكيد استخدام التقويم الميلادي
-      }) +
-      ' ' +
-      date.toLocaleTimeString('ar-EG', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
-    );
-  }
-
-  // Upload and restore backup
+  // Upload and Restore Form Submit
   $('#uploadRestoreForm').on('submit', function (e) {
     e.preventDefault();
     var formData = new FormData(this);
     var submitBtn = $(this).find('button[type="submit"]');
-    submitBtn.prop('disabled', true).text('جاري الاستعادة...');
+    submitBtn.prop('disabled', true).text('جاري فحص واستعادة النسخة...');
+
     $.ajax({
       url: baseUrl + 'admin/settings/backup/upload-restore',
       type: 'POST',
       data: formData,
       processData: false,
       contentType: false,
-      headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
       success: function (response) {
         if (response.status === 1) {
           showAlert('success', response.success);
           $('#uploadRestoreModal').modal('hide');
-          dt_data.ajax.reload();
+          if (dt_data) dt_data.ajax.reload();
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
         } else {
-          showAlert('error', response.error);
+          showAlert('error', response.error || 'فشلت الاستعادة من الملف المرفوع');
         }
       },
       error: function (xhr) {
-        showAlert('error', 'حدث خطأ أثناء استعادة النسخة الاحتياطية');
+        showAlert('error', xhr.responseJSON?.error || 'حدث خطأ أثناء معالجة الملف المرفوع');
       },
       complete: function () {
         submitBtn.prop('disabled', false).text('استعادة النسخة');
       }
     });
   });
+
+  // Cloud & Auto-Backup Settings Modal
+  $('#cloudSettingsModal').on('show.bs.modal', function () {
+    loadCloudConfig();
+  });
+
+  function loadCloudConfig() {
+    $.get(baseUrl + 'admin/settings/backup/config').done(function (res) {
+      if (res.status === 1 && res.config) {
+        var c = res.config;
+        $('#cfg_backup_auto_enabled').prop('checked', !!c.backup_auto_enabled);
+        $('#cfg_backup_schedule_frequency').val(c.backup_schedule_frequency || 'daily');
+        $('#cfg_backup_schedule_time').val(c.backup_schedule_time || '02:00');
+        $('#cfg_backup_max_retention_count').val(c.backup_max_retention_count || 15);
+        $('#cfg_backup_auto_destinations').val(c.backup_auto_destinations || 'local,telegram');
+        $('#cfg_backup_auto_encrypt').prop('checked', !!c.backup_auto_encrypt);
+
+        $('#cfg_telegram_backup_enabled').prop('checked', !!c.telegram_backup_enabled);
+        $('#cfg_backup_telegram_bot_token').val(c.backup_telegram_bot_token || '');
+        $('#cfg_backup_telegram_chat_id').val(c.backup_telegram_chat_id || '');
+
+        $('#cfg_email_backup_enabled').prop('checked', !!c.email_backup_enabled);
+        $('#cfg_backup_email_recipient').val(c.backup_email_recipient || '');
+
+        // Update auto backup header card
+        if (c.backup_auto_enabled) {
+          $('#autoBackupStatus').html('<span class="text-dark fw-bold">مُفعل (' + (c.backup_schedule_time || '02:00') + ')</span>');
+        } else {
+          $('#autoBackupStatus').html('<span class="text-muted">مُعطل</span>');
+        }
+      }
+    });
+  }
+
+  // Save Cloud Settings Form
+  $('#cloudBackupSettingsForm').on('submit', function (e) {
+    e.preventDefault();
+    var formData = $(this).serialize();
+    var submitBtn = $(this).find('button[type="submit"]');
+    var originalText = submitBtn.html();
+
+    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري الحفظ...');
+
+    $.post(baseUrl + 'admin/settings/backup/config', formData)
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message || 'تم حفظ الإعدادات بنجاح');
+          $('#cloudSettingsModal').modal('hide');
+          loadStatistics();
+          loadCloudConfig();
+        } else {
+          showAlert('error', res.error || 'فشل حفظ الإعدادات');
+        }
+      })
+      .fail(function (xhr) {
+        showAlert('error', xhr.responseJSON?.error || 'حدث خطأ أثناء حفظ الإعدادات');
+      })
+      .always(function () {
+        submitBtn.prop('disabled', false).html(originalText);
+      });
+  });
+
+  // Test Telegram Button
+  $('#btnTestTelegram').on('click', function () {
+    var btn = $(this);
+    var orig = btn.html();
+    var token = $('#cfg_backup_telegram_bot_token').val();
+    var chatId = $('#cfg_backup_telegram_chat_id').val();
+
+    if (!token || !chatId) {
+      showAlert('warning', 'يرجى إدخال Bot Token و Chat ID أولاً');
+      return;
+    }
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري اختبار الاتصال...');
+
+    $.post(baseUrl + 'admin/settings/backup/test-destination', {
+      type: 'telegram',
+      telegram_backup_bot_token: token,
+      telegram_backup_chat_id: chatId
+    })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message);
+        } else {
+          showAlert('error', res.error || 'فشل اختبار اتصال تليجرام');
+        }
+      })
+      .fail(function (xhr) {
+        showAlert('error', xhr.responseJSON?.error || 'فشل اختبار تليجرام');
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(orig);
+      });
+  });
+
+  // Test Email Button
+  $('#btnTestEmail').on('click', function () {
+    var btn = $(this);
+    var orig = btn.html();
+    var email = $('#cfg_backup_email_recipient').val();
+
+    if (!email) {
+      showAlert('warning', 'يرجى إدخال البريد الإلكتروني للمستلم أولاً');
+      return;
+    }
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري اختبار إرسال البريد...');
+
+    $.post(baseUrl + 'admin/settings/backup/test-destination', {
+      type: 'email',
+      backup_email_recipient: email
+    })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message);
+        } else {
+          showAlert('error', res.error || 'فشل اختبار البريد');
+        }
+      })
+      .fail(function (xhr) {
+        showAlert('error', xhr.responseJSON?.error || 'فشل اختبار البريد');
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(orig);
+      });
+  });
+
+  // Statistics Modal
+  $('#statisticsModal').on('show.bs.modal', function () {
+    loadDetailedStatistics();
+  });
+
+  function loadStatistics() {
+    $.get(baseUrl + 'admin/settings/backup/statistics')
+      .done(function (response) {
+        if (response.status === 1 && response.data) {
+          var d = response.data;
+          $('#totalBackups').text(d.total_backups || 0);
+          $('#totalSize').text(d.total_size_human || formatFileSize(d.total_size || 0));
+          $('#latestBackup').text(d.latest_backup ? formatDate(d.latest_backup) : '-');
+        }
+      });
+  }
+
+  function loadDetailedStatistics() {
+    $('#statisticsContent').html(
+      '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>'
+    );
+
+    $.get(baseUrl + 'admin/settings/backup/statistics')
+      .done(function (response) {
+        if (response.status === 1 && response.data) {
+          var data = response.data;
+          var html = `
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="card bg-white border shadow-none text-center p-3">
+                  <h3 class="card-title text-dark mb-1">${data.total_backups || 0}</h3>
+                  <p class="card-text text-muted mb-0">إجمالي النسخ</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card bg-white border shadow-none text-center p-3">
+                  <h3 class="card-title text-dark mb-1">${data.total_size_human || formatFileSize(data.total_size || 0)}</h3>
+                  <p class="card-text text-muted mb-0">الحجم الكلي</p>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card bg-white border shadow-none text-center p-3">
+                  <h3 class="card-title text-dark mb-1">${data.free_disk_human || '-'}</h3>
+                  <p class="card-text text-muted mb-0">المساحة الشاغرة بالقرص</p>
+                </div>
+              </div>
+            </div>
+          `;
+
+          if (data.backup_types) {
+            html += `
+              <div class="row mt-4">
+                <div class="col-12">
+                  <h6 class="fw-bold mb-2">توزيع أنواع النسخ:</h6>
+                  <div class="d-flex justify-content-around border rounded p-3 bg-light">
+                    <span><strong>قاعدة البيانات:</strong> ${data.backup_types.database_only || 0}</span>
+                    <span><strong>شامل (بيانات وملفات):</strong> ${data.backup_types.full || 0}</span>
+                    <span><strong>ملفات فقط:</strong> ${data.backup_types.files_only || 0}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          $('#statisticsContent').html(html);
+        } else {
+          $('#statisticsContent').html('<div class="alert alert-danger">حدث خطأ أثناء تحميل الإحصائيات</div>');
+        }
+      })
+      .fail(function () {
+        $('#statisticsContent').html('<div class="alert alert-danger">فشل في جلب الإحصائيات</div>');
+      });
+  }
+
+  function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    var k = 1024;
+    var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return '-';
+    var date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return (
+      date.toLocaleDateString('ar-EG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }) +
+      ' ' +
+      date.toLocaleTimeString('ar-EG', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    );
+  }
 });

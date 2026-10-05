@@ -409,6 +409,12 @@
                                 <small class="text-muted">{{ __('الرمز الذي يتم إدخاله في Meta لمصادقة الـ Webhook.') }}</small>
                             </div>
                         </div>
+                        <div class="d-flex justify-content-end align-items-center gap-2 mt-4 pt-3 border-top">
+                            <span class="text-muted small"><i class="ti ti-info-circle me-1"></i>{{ __('اضغط على زر الحفظ لتطبيق التغييرات فورياً على السيرفر') }}</span>
+                            <button type="button" class="btn btn-success px-4 btn-save-saei-settings">
+                                <i class="ti ti-device-floppy me-1"></i>{{ __('حفظ وتطبيق إعدادات ساعي وواتساب') }}
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -1212,72 +1218,79 @@
         }
 
         // Save Saei & WhatsApp Settings
-        const btnSaveSaei = document.getElementById('btn_save_saei_settings');
-        if (btnSaveSaei) {
-            btnSaveSaei.addEventListener('click', function () {
-                const btn = this;
-                const originalHtml = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الحفظ...") }}';
+        const saveSaeiButtons = document.querySelectorAll('#btn_save_saei_settings, .btn-save-saei-settings');
+        if (saveSaeiButtons.length > 0) {
+            saveSaeiButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const originalHtml = btn.innerHTML;
+                    saveSaeiButtons.forEach(b => {
+                        b.disabled = true;
+                        b.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الحفظ...") }}';
+                    });
 
-                const payload = {
-                    _token: '{{ csrf_token() }}',
-                    saei_otp_enabled: document.getElementById('setting_saei_otp_enabled').checked ? '1' : '0',
-                    saei_simulation: document.getElementById('setting_saei_simulation').checked ? '1' : '0',
-                    saei_api_key: document.getElementById('saei_api_key').value,
-                    saei_base_url: document.getElementById('saei_base_url').value,
-                    saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
-                    saei_template_id: document.getElementById('saei_template_id').value,
-                    saei_callback_secret: document.getElementById('saei_callback_secret').value,
-                    whatsapp_cloud_token: document.getElementById('whatsapp_cloud_token').value,
-                    whatsapp_cloud_waba_id: document.getElementById('whatsapp_cloud_waba_id').value,
-                    whatsapp_cloud_phone_id: document.getElementById('whatsapp_cloud_phone_id').value,
-                    whatsapp_verify_token: document.getElementById('whatsapp_verify_token').value,
-                };
+                    const payload = {
+                        _token: '{{ csrf_token() }}',
+                        saei_otp_enabled: document.getElementById('setting_saei_otp_enabled').checked ? '1' : '0',
+                        saei_simulation: document.getElementById('setting_saei_simulation').checked ? '1' : '0',
+                        saei_api_key: document.getElementById('saei_api_key').value,
+                        saei_base_url: document.getElementById('saei_base_url').value,
+                        saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
+                        saei_template_id: document.getElementById('saei_template_id').value,
+                        saei_callback_secret: document.getElementById('saei_callback_secret').value,
+                        whatsapp_cloud_token: document.getElementById('whatsapp_cloud_token').value,
+                        whatsapp_cloud_waba_id: document.getElementById('whatsapp_cloud_waba_id').value,
+                        whatsapp_cloud_phone_id: document.getElementById('whatsapp_cloud_phone_id').value,
+                        whatsapp_verify_token: document.getElementById('whatsapp_verify_token').value,
+                    };
 
-                fetch("{{ route('settings.saei.update') }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                    if (data.success) {
-                        const infoVerify = document.getElementById('info_verify_token');
-                        if (infoVerify) infoVerify.value = payload.whatsapp_verify_token;
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: '{{ __("تم الحفظ بنجاح") }}',
-                            text: data.message,
-                            customClass: { confirmButton: 'btn btn-success' },
-                            buttonsStyling: false
+                    fetch("{{ route('settings.saei.update') }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        saveSaeiButtons.forEach(b => {
+                            b.disabled = false;
+                            b.innerHTML = originalHtml;
                         });
-                    } else {
+                        if (data.success) {
+                            const infoVerify = document.getElementById('info_verify_token');
+                            if (infoVerify) infoVerify.value = payload.whatsapp_verify_token;
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: '{{ __("تم الحفظ بنجاح") }}',
+                                text: data.message,
+                                customClass: { confirmButton: 'btn btn-success' },
+                                buttonsStyling: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '{{ __("خطأ") }}',
+                                text: data.message || '{{ __("فشل حفظ الإعدادات") }}',
+                                customClass: { confirmButton: 'btn btn-danger' },
+                                buttonsStyling: false
+                            });
+                        }
+                    })
+                    .catch(() => {
+                        saveSaeiButtons.forEach(b => {
+                            b.disabled = false;
+                            b.innerHTML = originalHtml;
+                        });
                         Swal.fire({
                             icon: 'error',
                             title: '{{ __("خطأ") }}',
-                            text: data.message || '{{ __("فشل حفظ الإعدادات") }}',
+                            text: '{{ __("تعذر الاتصال بالسيرفر") }}',
                             customClass: { confirmButton: 'btn btn-danger' },
                             buttonsStyling: false
                         });
-                    }
-                })
-                .catch(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                    Swal.fire({
-                        icon: 'error',
-                        title: '{{ __("خطأ") }}',
-                        text: '{{ __("تعذر الاتصال بالسيرفر") }}',
-                        customClass: { confirmButton: 'btn btn-danger' },
-                        buttonsStyling: false
                     });
                 });
             });

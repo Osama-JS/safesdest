@@ -24,6 +24,9 @@
 
 @if(auth()->check())
     @vite(['resources/js/admin/notifications.js'])
+    @if(auth()->user()->can('view_whatsapp_chat'))
+        @vite(['resources/js/admin/whatsapp-floating-chat.js'])
+    @endif
 @endif
 
 <script>

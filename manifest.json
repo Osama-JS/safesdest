@@ -1,0 +1,12 @@
+{
+    "app_name": "Safedests",
+    "backup_name": "backup_2026_10_05_14_57_22_35ad40f9",
+    "type": "database_only",
+    "created_at": "2026-10-05T14:57:27+00:00",
+    "created_by": "System",
+    "db_connection": "pgsql",
+    "tables_count": 120,
+    "records_count": 0,
+    "is_encrypted": false,
+    "notes": "Test verification backup"
+}

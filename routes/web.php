@@ -321,6 +321,7 @@ Route::middleware('rate.limit')->group(function () {
 
                 // WhatsApp Chat & Logs
                 Route::get('whatsapp-chat', [App\Http\Controllers\admin\WhatsappChatController::class, 'index'])->name('admin.whatsapp-chat.index');
+                Route::get('whatsapp-chat/widget-summary', [App\Http\Controllers\admin\WhatsappChatController::class, 'widgetSummary'])->name('admin.whatsapp-chat.widget-summary');
                 Route::get('whatsapp-chat/{id}/messages', [App\Http\Controllers\admin\WhatsappChatController::class, 'getMessages'])->name('admin.whatsapp-chat.messages');
                 Route::get('whatsapp-chat/{id}/poll', [App\Http\Controllers\admin\WhatsappChatController::class, 'pollMessages'])->name('admin.whatsapp-chat.poll');
                 Route::post('whatsapp-chat/{id}/send', [App\Http\Controllers\admin\WhatsappChatController::class, 'sendMessage'])->name('admin.whatsapp-chat.send');
@@ -560,10 +561,15 @@ Route::middleware('rate.limit')->group(function () {
                     Route::get('backup/data', [BackupController::class, 'getData'])->name('settings.backup.data');
                     Route::post('backup/create', [BackupController::class, 'create'])->name('settings.backup.create');
                     Route::get('backup/download/{backupName}', [BackupController::class, 'download'])->name('settings.backup.download');
+                    Route::get('backup/direct-download/{backupName}', [BackupController::class, 'directDownload'])->name('settings.backup.direct-download');
+                    Route::post('backup/dispatch/{backupName}', [BackupController::class, 'dispatchBackup'])->name('settings.backup.dispatch');
                     Route::delete('backup/delete/{backupName}', [BackupController::class, 'delete'])->name('settings.backup.delete');
                     Route::post('backup/restore', [BackupController::class, 'restore'])->name('settings.backup.restore');
                     Route::post('backup/upload-restore', [BackupController::class, 'uploadAndRestore'])->name('settings.backup.upload-restore');
                     Route::get('backup/statistics', [BackupController::class, 'getStatistics'])->name('settings.backup.statistics');
+                    Route::get('backup/config', [BackupController::class, 'getConfig'])->name('settings.backup.config');
+                    Route::post('backup/config', [BackupController::class, 'saveConfig'])->name('settings.backup.config.save');
+                    Route::post('backup/test-destination', [BackupController::class, 'testDestination'])->name('settings.backup.test-destination');
 
 
                     Route::get('/vehicles', [VehiclesController::class, 'index'])->name('settings.vehicles');

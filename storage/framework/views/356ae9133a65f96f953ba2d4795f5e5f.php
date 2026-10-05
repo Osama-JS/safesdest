@@ -81,6 +81,12 @@
         <?php echo $__env->make('layouts.sections.notifications.modal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
     <?php endif; ?>
 
+    <!-- WhatsApp Floating Chat Widget -->
+    <?php if(auth()->check() && auth()->guard('web')->check() && auth()->user()->can('view_whatsapp_chat')): ?>
+        <?php echo $__env->make('layouts.sections.whatsapp.floating-chat', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+    <?php endif; ?>
+    <!-- / WhatsApp Floating Chat Widget -->
+
     <!-- Include Scripts -->
     <!-- $isFront is used to append the front layout scripts only on the front layout otherwise the variable will be blank -->
     <?php echo $__env->make('layouts/sections/scripts' . $isFront, array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>

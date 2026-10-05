@@ -1,16 +1,14 @@
-@extends('layouts/layoutMaster')
+<?php $__env->startSection('title', __('Backup Management')); ?>
 
-@section('title', __('Backup Management'))
+<?php $__env->startSection('vendor-style'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss']); ?>
+<?php $__env->stopSection(); ?>
 
-@section('vendor-style')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.scss', 'resources/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.scss', 'resources/assets/vendor/libs/select2/select2.scss', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.scss'])
-@endsection
+<?php $__env->startSection('vendor-script'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js']); ?>
+<?php $__env->stopSection(); ?>
 
-@section('vendor-script')
-    @vite(['resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js'])
-@endsection
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -19,30 +17,36 @@
                         <div>
                             <h5 class="card-title mb-1">
                                 <i class="ti ti-server-cog me-2 fs-3 text-white bg-primary rounded p-1"></i>
-                                {{ __('Settings') }} | {{ __('Backup Management') }}
+                                <?php echo e(__('Settings')); ?> | <?php echo e(__('Backup Management')); ?>
+
                             </h5>
-                            <p class="text-muted mb-0">{{ __('إدارة النسخ الاحتياطي لقاعدة البيانات والملفات مع الرفع السحابي والجدولة التلقائية') }}</p>
+                            <p class="text-muted mb-0"><?php echo e(__('إدارة النسخ الاحتياطي لقاعدة البيانات والملفات مع الرفع السحابي والجدولة التلقائية')); ?></p>
                         </div>
                         <div class="d-flex gap-2 flex-wrap">
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBackupModal">
                                 <i class="ti ti-plus me-1"></i>
-                                {{ __('Create Backup') }}
+                                <?php echo e(__('Create Backup')); ?>
+
                             </button>
                             <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#cloudSettingsModal">
                                 <i class="ti ti-cloud-computing me-1"></i>
-                                {{ __('النسخ التلقائي والسحابي') }}
+                                <?php echo e(__('النسخ التلقائي والسحابي')); ?>
+
                             </button>
                             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadRestoreModal">
                                 <i class="ti ti-upload me-1"></i>
-                                {{ __('Upload restore Backup') }}
+                                <?php echo e(__('Upload restore Backup')); ?>
+
                             </button>
                             <button type="button" class="btn btn-outline-info" id="refreshBackups">
                                 <i class="ti ti-refresh me-1"></i>
-                                {{ __('Refresh') }}
+                                <?php echo e(__('Refresh')); ?>
+
                             </button>
                             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#statisticsModal">
                                 <i class="ti ti-chart-bar me-1"></i>
-                                {{ __('Statistics') }}
+                                <?php echo e(__('Statistics')); ?>
+
                             </button>
                         </div>
                     </div>
@@ -55,7 +59,7 @@
                             <div class="card bg-white border shadow-none">
                                 <div class="card-body text-center p-3">
                                     <h3 class="card-title text-dark mb-1" id="totalBackups">0</h3>
-                                    <p class="card-text text-muted mb-0">{{ __('Total Backups') }}</p>
+                                    <p class="card-text text-muted mb-0"><?php echo e(__('Total Backups')); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -63,7 +67,7 @@
                             <div class="card bg-white border shadow-none">
                                 <div class="card-body text-center p-3">
                                     <h3 class="card-title text-dark mb-1" id="totalSize">0 MB</h3>
-                                    <p class="card-text text-muted mb-0">{{ __('Total Size') }}</p>
+                                    <p class="card-text text-muted mb-0"><?php echo e(__('Total Size')); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -71,7 +75,7 @@
                             <div class="card bg-white border shadow-none">
                                 <div class="card-body text-center p-3">
                                     <h3 class="card-title text-dark mb-1" id="latestBackup">-</h3>
-                                    <p class="card-text text-muted mb-0">{{ __('Latest Backup') }}</p>
+                                    <p class="card-text text-muted mb-0"><?php echo e(__('Latest Backup')); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -79,7 +83,7 @@
                             <div class="card bg-white border shadow-none">
                                 <div class="card-body text-center p-3">
                                     <h3 class="card-title text-dark mb-1" id="autoBackupStatus">-</h3>
-                                    <p class="card-text text-muted mb-0">{{ __('النسخ التلقائي') }}</p>
+                                    <p class="card-text text-muted mb-0"><?php echo e(__('النسخ التلقائي')); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -90,13 +94,13 @@
                     <table id="backupsTable" class="datatables-backups table border-top">
                         <thead>
                             <tr>
-                                <th>{{ __('Backup Name') }}</th>
-                                <th>{{ __('Type') }}</th>
-                                <th>{{ __('Description') }}</th>
-                                <th>{{ __('Size') }}</th>
-                                <th>{{ __('Status') }}</th>
-                                <th>{{ __('Created At') }}</th>
-                                <th class="text-center">{{ __('Actions') }}</th>
+                                <th><?php echo e(__('Backup Name')); ?></th>
+                                <th><?php echo e(__('Type')); ?></th>
+                                <th><?php echo e(__('Description')); ?></th>
+                                <th><?php echo e(__('Size')); ?></th>
+                                <th><?php echo e(__('Status')); ?></th>
+                                <th><?php echo e(__('Created At')); ?></th>
+                                <th class="text-center"><?php echo e(__('Actions')); ?></th>
                             </tr>
                         </thead>
                     </table>
@@ -112,7 +116,8 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-plus me-1 text-primary"></i>
-                        {{ __('Create New Backup') }}
+                        <?php echo e(__('Create New Backup')); ?>
+
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -120,22 +125,22 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ __('Backup Type') }}</label>
+                                <label class="form-label fw-bold"><?php echo e(__('Backup Type')); ?></label>
                                 <select name="backup_type" class="form-select" required>
-                                    <option value="database_only" selected>{{ __('Database Only (قاعدة البيانات فقط)') }}</option>
-                                    <option value="full">{{ __('Full Backup (Database + Files) (شامل قاعدة البيانات والملفات)') }}</option>
-                                    <option value="files_only">{{ __('Files Only (ملفات التخزين فقط)') }}</option>
+                                    <option value="database_only" selected><?php echo e(__('Database Only (قاعدة البيانات فقط)')); ?></option>
+                                    <option value="full"><?php echo e(__('Full Backup (Database + Files) (شامل قاعدة البيانات والملفات)')); ?></option>
+                                    <option value="files_only"><?php echo e(__('Files Only (ملفات التخزين فقط)')); ?></option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ __('Description (Optional)') }}</label>
+                                <label class="form-label fw-bold"><?php echo e(__('Description (Optional)')); ?></label>
                                 <input type="text" name="description" class="form-control"
-                                    placeholder="{{ __('وصف أو ملاحظة حول النسخة') }}">
+                                    placeholder="<?php echo e(__('وصف أو ملاحظة حول النسخة')); ?>">
                             </div>
 
                             <!-- Destinations -->
                             <div class="col-12 mt-3">
-                                <label class="form-label fw-bold">{{ __('وجهات حفظ وإرسال النسخة') }}</label>
+                                <label class="form-label fw-bold"><?php echo e(__('وجهات حفظ وإرسال النسخة')); ?></label>
                                 <div class="d-flex gap-4 flex-wrap border rounded p-3 bg-light">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="destinations[]" value="local" id="destLocal" checked>
@@ -179,15 +184,17 @@
 
                         <div class="alert alert-info mt-3 mb-0">
                             <i class="ti ti-info-circle me-2"></i>
-                            <strong>{{ __('Note:') }}</strong>
-                            {{ __('The backup creation process may take several minutes depending on the data size.') }}
+                            <strong><?php echo e(__('Note:')); ?></strong>
+                            <?php echo e(__('The backup creation process may take several minutes depending on the data size.')); ?>
+
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
                         <button type="submit" class="btn btn-primary">
                             <i class="ti ti-device-floppy me-1"></i>
-                            {{ __('Create Backup') }}
+                            <?php echo e(__('Create Backup')); ?>
+
                         </button>
                     </div>
                 </form>
@@ -202,7 +209,8 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-cloud-computing text-warning me-1"></i>
-                        {{ __('إعدادات النسخ الاحتياطي التلقائي والسحابي') }}
+                        <?php echo e(__('إعدادات النسخ الاحتياطي التلقائي والسحابي')); ?>
+
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -358,7 +366,8 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-restore text-warning me-1"></i>
-                        {{ __('Restore Backup') }}
+                        <?php echo e(__('Restore Backup')); ?>
+
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -368,17 +377,18 @@
 
                         <div class="alert alert-warning">
                             <i class="ti ti-alert-triangle me-2"></i>
-                            <strong>{{ __('Warning:') }}</strong>
-                            {{ __('The restore process will replace current data. The system automatically creates a safety rollback backup before restoring.') }}
+                            <strong><?php echo e(__('Warning:')); ?></strong>
+                            <?php echo e(__('The restore process will replace current data. The system automatically creates a safety rollback backup before restoring.')); ?>
+
                         </div>
 
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="form-label">{{ __('Restore Type') }}</label>
+                                <label class="form-label"><?php echo e(__('Restore Type')); ?></label>
                                 <select name="restore_type" class="form-select" required>
-                                    <option value="database_only" selected>{{ __('Database Only') }}</option>
-                                    <option value="full">{{ __('Full Restore (Database + Files)') }}</option>
-                                    <option value="files_only">{{ __('Files Only') }}</option>
+                                    <option value="database_only" selected><?php echo e(__('Database Only')); ?></option>
+                                    <option value="full"><?php echo e(__('Full Restore (Database + Files)')); ?></option>
+                                    <option value="files_only"><?php echo e(__('Files Only')); ?></option>
                                 </select>
                             </div>
                             <div class="col-12">
@@ -390,15 +400,17 @@
                         <div class="form-check mt-3">
                             <input class="form-check-input" type="checkbox" id="confirmRestore" required>
                             <label class="form-check-label text-danger fw-bold" for="confirmRestore">
-                                {{ __('I confirm that I understand this process will replace current data') }}
+                                <?php echo e(__('I confirm that I understand this process will replace current data')); ?>
+
                             </label>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
                         <button type="submit" class="btn btn-warning">
                             <i class="ti ti-restore me-1"></i>
-                            {{ __('Restore Backup') }}
+                            <?php echo e(__('Restore Backup')); ?>
+
                         </button>
                     </div>
                 </form>
@@ -411,14 +423,14 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ __('Backup Statistics') }}</h5>
+                    <h5 class="modal-title"><?php echo e(__('Backup Statistics')); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div id="statisticsContent">
                         <div class="text-center">
                             <div class="spinner-border" role="status">
-                                <span class="visually-hidden">{{ __('Loading...') }}</span>
+                                <span class="visually-hidden"><?php echo e(__('Loading...')); ?></span>
                             </div>
                         </div>
                     </div>
@@ -434,41 +446,44 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="ti ti-upload text-success me-1"></i>
-                        {{ __('Restore Backup from Uploaded File') }}
+                        <?php echo e(__('Restore Backup from Uploaded File')); ?>
+
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="uploadRestoreForm" enctype="multipart/form-data">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">{{ __('Backup File (ZIP)') }}</label>
+                            <label class="form-label"><?php echo e(__('Backup File (ZIP)')); ?></label>
                             <input type="file" class="form-control" name="backup_file" accept=".zip" required>
-                            <small class="text-muted">{{ __('Maximum size: 1 GB') }}</small>
+                            <small class="text-muted"><?php echo e(__('Maximum size: 1 GB')); ?></small>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">{{ __('Backup Password (إذا كانت مشفرة)') }}</label>
+                            <label class="form-label"><?php echo e(__('Backup Password (إذا كانت مشفرة)')); ?></label>
                             <input type="password" class="form-control" name="backup_password" placeholder="كلمة المرور إن وجدت">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">{{ __('Restore Type') }}</label>
+                            <label class="form-label"><?php echo e(__('Restore Type')); ?></label>
                             <select class="form-select" name="restore_type" required>
-                                <option value="database_only" selected>{{ __('Database Only') }}</option>
-                                <option value="full">{{ __('Full Restore') }}</option>
-                                <option value="files_only">{{ __('Files Only') }}</option>
+                                <option value="database_only" selected><?php echo e(__('Database Only')); ?></option>
+                                <option value="full"><?php echo e(__('Full Restore')); ?></option>
+                                <option value="files_only"><?php echo e(__('Files Only')); ?></option>
                             </select>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                        <button type="submit" class="btn btn-primary">{{ __('Restore Backup') }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo e(__('Cancel')); ?></button>
+                        <button type="submit" class="btn btn-primary"><?php echo e(__('Restore Backup')); ?></button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@section('page-script')
-    @vite(['resources/js/admin/settings/backup.js', 'resources/js/ajax.js'])
-@endsection
+<?php $__env->startSection('page-script'); ?>
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/settings/backup.js', 'resources/js/ajax.js']); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts/layoutMaster', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\safedestssss\resources\views/admin/settings/backup/index.blade.php ENDPATH**/ ?>

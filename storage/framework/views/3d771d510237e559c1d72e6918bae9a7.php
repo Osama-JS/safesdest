@@ -24,6 +24,9 @@
 
 <?php if(auth()->check()): ?>
     <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/notifications.js']); ?>
+    <?php if(auth()->user()->can('view_whatsapp_chat')): ?>
+        <?php echo app('Illuminate\Foundation\Vite')(['resources/js/admin/whatsapp-floating-chat.js']); ?>
+    <?php endif; ?>
 <?php endif; ?>
 
 <script>

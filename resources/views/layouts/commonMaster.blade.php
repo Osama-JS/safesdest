@@ -80,6 +80,12 @@
         @include('layouts.sections.notifications.modal')
     @endif
 
+    <!-- WhatsApp Floating Chat Widget -->
+    @if (auth()->check() && auth()->guard('web')->check() && auth()->user()->can('view_whatsapp_chat'))
+        @include('layouts.sections.whatsapp.floating-chat')
+    @endif
+    <!-- / WhatsApp Floating Chat Widget -->
+
     <!-- Include Scripts -->
     <!-- $isFront is used to append the front layout scripts only on the front layout otherwise the variable will be blank -->
     @include('layouts/sections/scripts' . $isFront)

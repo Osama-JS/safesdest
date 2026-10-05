@@ -19,8 +19,8 @@ class WhatsappChatController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:view_whatsapp_logs')->only(['index', 'getMessages', 'pollMessages']);
-        $this->middleware('permission:view_whatsapp_logs')->only(['sendMessage', 'sendTemplate', 'sendOpenChatTemplate', 'startNewChat']);
+        $this->middleware('permission:view_whatsapp_chat')->only(['index', 'getMessages', 'pollMessages', 'widgetSummary']);
+        $this->middleware('permission:send_whatsapp_chat')->only(['sendMessage', 'sendTemplate', 'sendOpenChatTemplate', 'startNewChat']);
     }
 
     public function index(Request $request)
@@ -467,5 +467,93 @@ class WhatsappChatController extends Controller
             'name'       => null,
             'type_label' => 'غير مسجل',
         ];
+    }
+
+    /**
+     * Get lightweight summary data for the floating chat widget
+     */
+    public function widgetSummary(Request $request)
+    {
+        $search = $request->query('search');
+        $filter = $request->query('filter', 'all');
+
+        $query = WhatsappConversation::with(['customer', 'driver'])
+            ->orderBy('last_message_time', 'desc');
+
+        if ($filter === 'customers') {
+            $query->where('user_type', 'customer');
+        } elseif ($filter === 'drivers') {
+            $query->where('user_type', 'driver');
+        } elseif ($filter === 'unread') {
+            $query->where('unread_count', '>', 0);
+        }
+
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('phone_number', 'LIKE', "%{$search}%")
+                  ->orWhereHas('customer', function($cq) use ($search) {
+                      $cq->where('name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('driver', function($dq) use ($search) {
+                      $dq->where('name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        $conversations = $query->limit(40)->get()->map(function($c) {
+            $avatar = null;
+            if ($c->user_type === 'customer' && $c->customer && $c->customer->image) {
+                $avatar = asset('storage/' . $c->customer->image);
+            } elseif ($c->user_type === 'driver' && $c->driver && $c->driver->image) {
+                $avatar = asset('storage/' . $c->driver->image);
+            }
+
+            // Check 24h window
+            $lastInbound = $c->lastInboundMessage;
+            $isWindowOpen = false;
+            if ($lastInbound && $lastInbound->created_at) {
+                $isWindowOpen = $lastInbound->created_at->diffInHours(now()) < 24;
+            }
+
+            return [
+                'id' => $c->id,
+                'phone_number' => $c->phone_number,
+                'user_name' => $c->user_name,
+                'user_type' => $c->user_type,
+                'user_type_label' => $c->user_type_label,
+                'avatar' => $avatar,
+                'last_message_preview' => $c->last_message_preview,
+                'last_message_time' => $c->last_message_time ? $c->last_message_time->diffForHumans() : '',
+                'unread_count' => (int) $c->unread_count,
+                'is_window_open' => $isWindowOpen,
+            ];
+        });
+
+        $unreadTotal = (int) WhatsappConversation::sum('unread_count');
+        $unreadConversations = (int) WhatsappConversation::where('unread_count', '>', 0)->count();
+
+        // Get approved templates for quick sending
+        $approvedTemplates = WhatsappTemplate::where('status', 1)
+            ->where(function($q) {
+                $q->where('meta_status', 'APPROVED')->orWhereNull('meta_status');
+            })
+            ->get(['id', 'template_name', 'category', 'language', 'body_text'])
+            ->map(function($t) {
+                return [
+                    'id' => $t->id,
+                    'name' => $t->template_name,
+                    'category' => $t->category,
+                    'language' => $t->language,
+                    'body' => $t->body_text,
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'unread_total' => $unreadTotal,
+            'unread_conversations' => $unreadConversations,
+            'conversations' => $conversations,
+            'approved_templates' => $approvedTemplates,
+        ]);
     }
 }

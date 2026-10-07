@@ -1012,16 +1012,39 @@ function logTeamPaymentRequest(data) {
     success: function (response) {
       if (response.status === 1) {
         console.log('Team payment request logged successfully:', response.log_id);
+        if (data.paymentMethod === 'hyperpay') {
+          Swal.fire({
+            icon: 'success',
+            title: 'تم تسجيل الطلب بنجاح',
+            text: response.success || 'تم تحويل الطلب إلى صفحة "طلبات الصرف عبر الـ Payout للفرق" بانتظار مصادقة واعتماد المدير.',
+            customClass: { confirmButton: 'btn btn-success' },
+            buttonsStyling: false
+          });
+        }
         // Refresh payment logs if visible
-        if ($('#team-payment-logs-section').is(':visible')) {
+        if ($('#team-payment-logs-section').is(':visible') || $('#teamPaymentLogsContainer').length) {
           loadTeamPaymentRequestLogs();
         }
       } else {
         console.error('Failed to log team payment request:', response.error);
+        Swal.fire({
+          icon: 'error',
+          title: 'خطأ',
+          text: response.error || 'فشل تسجيل طلب السداد',
+          customClass: { confirmButton: 'btn btn-danger' },
+          buttonsStyling: false
+        });
       }
     },
     error: function (xhr, status, error) {
       console.error('Error logging team payment request:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'خطأ في الاتصال',
+        text: 'حدث خطأ أثناء إرسال طلب السداد إلى السيرفر.',
+        customClass: { confirmButton: 'btn btn-danger' },
+        buttonsStyling: false
+      });
     }
   });
 }

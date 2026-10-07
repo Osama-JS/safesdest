@@ -26,22 +26,38 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
 
     public function __construct()
     {
-        // Default base URL for v1 API
-        $defaultUrl = 'https://api.saei.automize.sa/v1';
-        $configuredUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', $defaultUrl));
-
-        // Normalize to /v1
-        $configuredUrl = rtrim($configuredUrl, '/');
-        if (str_ends_with($configuredUrl, '/api')) {
-            $configuredUrl = preg_replace('/\/api$/', '/v1', $configuredUrl);
-        } elseif (!str_ends_with($configuredUrl, '/v1')) {
-            $configuredUrl .= '/v1';
-        }
-
-        $this->baseUrl     = $configuredUrl;
+        // Saei API structure: https://api.saei.automize.sa/api  + /v1/...
+        // Correct base URL must end in /api/v1
+        $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api'));
+        $this->baseUrl     = self::normalizeBaseUrl($rawUrl);
         $this->apiKey      = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
         $this->fromPhoneId = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID'));
         $this->simulation  = filter_var(Settings::getValue('saei_simulation', env('SAEI_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Normalize any Saei base URL to always end in /api/v1
+     * Accepts: https://api.saei.automize.sa/api
+     *          https://api.saei.automize.sa/api/v1
+     *          https://api.saei.automize.sa
+     */
+    protected static function normalizeBaseUrl(string $url): string
+    {
+        $url = rtrim(trim($url), '/');
+        // Already ends in /api/v1
+        if (str_ends_with($url, '/api/v1')) {
+            return $url;
+        }
+        // Ends in /api  → append /v1
+        if (str_ends_with($url, '/api')) {
+            return $url . '/v1';
+        }
+        // Ends in /v1  → this is wrong (missing /api), fix it
+        if (str_ends_with($url, '/v1')) {
+            return rtrim($url, '/v1') . '/api/v1';
+        }
+        // Bare domain → append /api/v1
+        return $url . '/api/v1';
     }
 
     /**
@@ -53,13 +69,7 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             $this->apiKey = trim($apiKey);
         }
         if ($baseUrl !== null && !empty($baseUrl)) {
-            $configuredUrl = rtrim(trim($baseUrl), '/');
-            if (str_ends_with($configuredUrl, '/api')) {
-                $configuredUrl = preg_replace('/\/api$/', '/v1', $configuredUrl);
-            } elseif (!str_ends_with($configuredUrl, '/v1')) {
-                $configuredUrl .= '/v1';
-            }
-            $this->baseUrl = $configuredUrl;
+            $this->baseUrl = self::normalizeBaseUrl($baseUrl);
         }
         if ($phoneId !== null) {
             $this->fromPhoneId = trim($phoneId);
@@ -484,49 +494,62 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
-     * Get account details and connected WhatsApp numbers to verify credentials
+     * Verify Saei credentials by calling GET /api/v1/account
+     * Returns success=true with account data, or success=false with a clear Arabic error message.
      */
     public function getAccountInfo(): array
     {
         if (empty($this->apiKey)) {
             return [
                 'success' => false,
-                'message' => 'لم يتم إدخال مفتاح الـ API الخاص بساعي.'
+                'message' => 'لم يتم إدخال مفتاح الـ API الخاص بساعي. يرجى إدخاله في حقل «مفتاح API» أعلاه ثم حفظه.'
             ];
         }
 
         try {
-            // Check numbers list
+            // Primary verification endpoint: GET /api/v1/account
             $response = Http::withHeaders($this->getHeaders())
-                ->timeout(10)
-                ->get("{$this->baseUrl}/numbers");
-
-            if ($response->successful()) {
-                $numbers = $response->json()['data'] ?? [];
-                return [
-                    'success' => true,
-                    'message' => 'تم الاتصال بساعي بنجاح!',
-                    'numbers' => $numbers,
-                ];
-            }
-
-            // Fallback: check account endpoint
-            $accResponse = Http::withHeaders($this->getHeaders())
-                ->timeout(10)
+                ->timeout(15)
                 ->get("{$this->baseUrl}/account");
 
-            if ($accResponse->successful()) {
+            Log::info('[SaeiWhatsApp] getAccountInfo', [
+                'url'    => "{$this->baseUrl}/account",
+                'status' => $response->status(),
+                'body'   => substr($response->body(), 0, 500),
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
                 return [
                     'success' => true,
-                    'message' => 'تم الاتصال بحساب ساعي بنجاح!',
-                    'account' => $accResponse->json(),
+                    'message' => 'تم الاتصال بساعي بنجاح! ✅',
+                    'account' => $data,
                 ];
             }
 
-            $err = $response->json()['message'] ?? 'فشل الاتصال بساعي، يرجى التأكد من صحة مفتاح الـ API.';
-            return ['success' => false, 'message' => $err];
+            $status = $response->status();
+            $body   = $response->json();
+
+            if ($status === 401) {
+                return [
+                    'success' => false,
+                    'message' => 'مفتاح الـ API غير صحيح أو منتهي الصلاحية (401). يرجى نسخ مفتاح جديد من لوحة تحكم ساعي.',
+                ];
+            }
+
+            if ($status === 403) {
+                return [
+                    'success' => false,
+                    'message' => 'ليس لديك صلاحية الوصول إلى هذا الحساب (403). تحقق من صلاحيات المفتاح في ساعي.',
+                ];
+            }
+
+            $msg = $body['message'] ?? "خطأ غير معروف (HTTP {$status})";
+            return ['success' => false, 'message' => "فشل الاتصال بساعي: {$msg}"];
+
         } catch (\Throwable $e) {
-            return ['success' => false, 'message' => 'استثناء أثناء الاتصال: ' . $e->getMessage()];
+            Log::error('[SaeiWhatsApp] getAccountInfo exception: ' . $e->getMessage());
+            return ['success' => false, 'message' => 'تعذر الاتصال بخادم ساعي: ' . $e->getMessage()];
         }
     }
 

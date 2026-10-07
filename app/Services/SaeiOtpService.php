@@ -54,12 +54,20 @@ class SaeiOtpService implements SaeiOtpServiceInterface
 
     public function __construct()
     {
-        $this->baseUrl        = rtrim(Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api')), '/');
+        $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1'));
+        $this->baseUrl        = self::normalizeBaseUrl($rawUrl);
         $this->apiKey         = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
         $this->fromPhoneId    = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID', ''));
         $this->templateId     = (int) Settings::getValue('saei_template_id', env('SAEI_TEMPLATE_ID', 0));
         $this->callbackSecret = Settings::getValue('saei_callback_secret', env('SAEI_CALLBACK_SECRET'));
         $this->simulation     = filter_var(Settings::getValue('saei_simulation', env('SAEI_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    protected static function normalizeBaseUrl(string $url): string
+    {
+        $url = rtrim(trim($url), '/');
+        $url = preg_replace('#/(api/v1|api|v1)$#', '', $url);
+        return $url . '/v1';
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -115,7 +123,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(15)
-                ->post("{$this->baseUrl}/v1/verify/start", [
+                ->post("{$this->baseUrl}/verify/start", [
                     'to'          => $phone,
                     'from'        => $this->fromPhoneId,
                     'template_id' => $this->templateId,
@@ -204,7 +212,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         try {
             $response = Http::withHeaders($this->headers())
                 ->timeout(15)
-                ->post("{$this->baseUrl}/v1/verify/check", [
+                ->post("{$this->baseUrl}/verify/check", [
                     'verification_id' => $verificationId,
                     'code'            => $code,
                 ]);

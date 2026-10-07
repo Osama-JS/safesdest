@@ -26,9 +26,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
 
     public function __construct()
     {
-        // Saei API structure: https://api.saei.automize.sa/api  + /v1/...
-        // Correct base URL must end in /api/v1
-        $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api'));
+        // Saei API structure: https://api.saei.automize.sa/v1
+        $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1'));
         $this->baseUrl     = self::normalizeBaseUrl($rawUrl);
         $this->apiKey      = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
         $this->fromPhoneId = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID'));
@@ -36,28 +35,17 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
-     * Normalize any Saei base URL to always end in /api/v1
-     * Accepts: https://api.saei.automize.sa/api
-     *          https://api.saei.automize.sa/api/v1
-     *          https://api.saei.automize.sa
+     * Normalize any Saei base URL to always end in /v1
+     * Accepts: https://api.saei.automize.sa
+     *          https://api.saei.automize.sa/v1
+     *          https://api.saei.automize.sa/api (strips /api)
      */
     protected static function normalizeBaseUrl(string $url): string
     {
         $url = rtrim(trim($url), '/');
-        // Already ends in /api/v1
-        if (str_ends_with($url, '/api/v1')) {
-            return $url;
-        }
-        // Ends in /api  → append /v1
-        if (str_ends_with($url, '/api')) {
-            return $url . '/v1';
-        }
-        // Ends in /v1  → this is wrong (missing /api), fix it
-        if (str_ends_with($url, '/v1')) {
-            return rtrim($url, '/v1') . '/api/v1';
-        }
-        // Bare domain → append /api/v1
-        return $url . '/api/v1';
+        // Strip trailing /api/v1, /api, or /v1
+        $url = preg_replace('#/(api/v1|api|v1)$#', '', $url);
+        return $url . '/v1';
     }
 
     /**
@@ -494,8 +482,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
-     * Verify Saei credentials by calling GET /api/v1/account
-     * Returns success=true with account data, or success=false with a clear Arabic error message.
+     * Verify Saei credentials by calling GET /v1/me
+     * Returns success=true with workspace data, or success=false with a clear Arabic error message.
      */
     public function getAccountInfo(): array
     {
@@ -507,23 +495,31 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         }
 
         try {
-            // Primary verification endpoint: GET /api/v1/account
+            // Official Saei verification endpoint: GET /v1/me
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(15)
-                ->get("{$this->baseUrl}/account");
+                ->get("{$this->baseUrl}/me");
 
             Log::info('[SaeiWhatsApp] getAccountInfo', [
-                'url'    => "{$this->baseUrl}/account",
+                'url'    => "{$this->baseUrl}/me",
                 'status' => $response->status(),
                 'body'   => substr($response->body(), 0, 500),
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
+                $workspaceName = $data['workspace']['name'] ?? 'ساعي';
+                $keyName = $data['api_key']['name'] ?? '';
+                $isLive = !empty($data['livemode']);
+                $modeText = $isLive ? 'Live' : 'Test';
+                $msg = "تم الاتصال بساعي بنجاح! ✅ (مساحة العمل: {$workspaceName} | الوضع: {$modeText})";
+
                 return [
-                    'success' => true,
-                    'message' => 'تم الاتصال بساعي بنجاح! ✅',
-                    'account' => $data,
+                    'success'   => true,
+                    'message'   => $msg,
+                    'workspace' => $data['workspace'] ?? null,
+                    'api_key'   => $data['api_key'] ?? null,
+                    'account'   => $data,
                 ];
             }
 
@@ -533,7 +529,7 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             if ($status === 401) {
                 return [
                     'success' => false,
-                    'message' => 'مفتاح الـ API غير صحيح أو منتهي الصلاحية (401). يرجى نسخ مفتاح جديد من لوحة تحكم ساعي.',
+                    'message' => 'مفتاح الـ API غير مصرح به (401). يرجى التأكد من نسخه بالكامل من لوحة تحكم ساعي.',
                 ];
             }
 
@@ -544,7 +540,7 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
                 ];
             }
 
-            $msg = $body['message'] ?? "خطأ غير معروف (HTTP {$status})";
+            $msg = $body['error']['message'] ?? ($body['message'] ?? "خطأ غير معروف (HTTP {$status})");
             return ['success' => false, 'message' => "فشل الاتصال بساعي: {$msg}"];
 
         } catch (\Throwable $e) {

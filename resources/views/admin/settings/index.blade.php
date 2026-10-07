@@ -215,7 +215,7 @@
                 $saeiOtpEnabled = ($settings['saei_otp_enabled']['value'] ?? '1') == '1';
                 $saeiSimulation = ($settings['saei_simulation']['value'] ?? '0') == '1';
                 $saeiApiKey = $settings['saei_api_key']['value'] ?? env('SAEI_API_KEY', '');
-                $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/api');
+                $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1');
                 $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '1276243858896899');
                 $saeiTemplateId = $settings['saei_template_id']['value'] ?? env('SAEI_TEMPLATE_ID', '77');
                 $saeiCallbackSecret = $settings['saei_callback_secret']['value'] ?? env('SAEI_CALLBACK_SECRET', '');
@@ -363,8 +363,8 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">{{ __('رابط API ساعي الأساسي (Base URL)') }} <span class="text-danger">*</span></label>
                                 <input type="url" id="saei_base_url" name="saei_base_url" class="form-control font-monospace"
-                                    value="{{ $saeiBaseUrl }}" placeholder="https://api.saei.automize.sa/api">
-                                <small class="text-muted">{{ __('الافتراضي: https://api.saei.automize.sa/api') }}</small>
+                                    value="{{ $saeiBaseUrl }}" placeholder="https://api.saei.automize.sa/v1">
+                                <small class="text-muted">{{ __('الافتراضي: https://api.saei.automize.sa/v1') }}</small>
                             </div>
 
                             <!-- Saei From Phone ID -->

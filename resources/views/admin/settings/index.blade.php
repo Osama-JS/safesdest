@@ -211,6 +211,7 @@
         {{-- ══════════════════════════════════════════════════════════════ --}}
         <div class="tab-pane fade" id="nav-saei" role="tabpanel" aria-labelledby="nav-saei-tab">
             @php
+                $waProvider = $settings['whatsapp_provider']['value'] ?? env('WHATSAPP_PROVIDER', 'saei');
                 $saeiOtpEnabled = ($settings['saei_otp_enabled']['value'] ?? '1') == '1';
                 $saeiSimulation = ($settings['saei_simulation']['value'] ?? '0') == '1';
                 $saeiApiKey = $settings['saei_api_key']['value'] ?? env('SAEI_API_KEY', '');
@@ -233,6 +234,9 @@
                             </h5>
                         </div>
                         <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn_test_saei_connection">
+                                <i class="ti ti-plug-connected me-1"></i>{{ __('اختبار الاتصال بساعي') }}
+                            </button>
                             <a href="{{ route('admin.whatsapp-otp-test.index') }}" class="btn btn-sm btn-outline-success">
                                 <i class="ti ti-shield-check me-1"></i>{{ __('فحص واختبار OTP') }}
                             </a>
@@ -288,6 +292,28 @@
                     </div>
 
                     <form id="saeiSettingsForm">
+                        <!-- Active Provider Selection -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="card bg-label-success border p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <label class="form-label fw-bold text-success mb-0 fs-6" for="setting_whatsapp_provider">
+                                            <i class="ti ti-brand-whatsapp me-1"></i>{{ __('مزود خدمة الواتساب النشط للمنصة (Active WhatsApp Provider)') }}
+                                        </label>
+                                        <span class="badge bg-success">{{ __('ساعي هو المزود الافتراضي والموصى به') }}</span>
+                                    </div>
+                                    <select name="whatsapp_provider" id="setting_whatsapp_provider" class="form-select border-success fw-bold">
+                                        <option value="saei" {{ $waProvider === 'saei' ? 'selected' : '' }}>🟢 ساعي (Saei WhatsApp API / Automize - موصى به لكافة الرسائل والشات)</option>
+                                        <option value="cloud" {{ $waProvider === 'cloud' ? 'selected' : '' }}>واتساب كلاود المباشر (Meta Cloud API)</option>
+                                        <option value="green" {{ $waProvider === 'green' ? 'selected' : '' }}>جرين إيه بي آي (Green API)</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2">
+                                        {{ __('يحدد هذا الخيار المزود الذي تعتمده المنصة لإرسال واستقبال رسائل المحادثات والشات والقوالب في الوقت الفعلي.') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Operational Switches -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
@@ -1230,6 +1256,7 @@
 
                     const payload = {
                         _token: '{{ csrf_token() }}',
+                        whatsapp_provider: document.getElementById('setting_whatsapp_provider') ? document.getElementById('setting_whatsapp_provider').value : 'saei',
                         saei_otp_enabled: document.getElementById('setting_saei_otp_enabled').checked ? '1' : '0',
                         saei_simulation: document.getElementById('setting_saei_simulation').checked ? '1' : '0',
                         saei_api_key: document.getElementById('saei_api_key').value,
@@ -1291,6 +1318,65 @@
                             customClass: { confirmButton: 'btn btn-danger' },
                             buttonsStyling: false
                         });
+                    });
+                });
+            });
+        }
+
+        // Test Saei Connection Button
+        const btnTestSaei = document.getElementById('btn_test_saei_connection');
+        if (btnTestSaei) {
+            btnTestSaei.addEventListener('click', function () {
+                const originalHtml = btnTestSaei.innerHTML;
+                btnTestSaei.disabled = true;
+                btnTestSaei.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الفحص...") }}';
+
+                const testPayload = {
+                    saei_api_key: document.getElementById('saei_api_key').value,
+                    saei_base_url: document.getElementById('saei_base_url').value,
+                    saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
+                };
+
+                fetch("{{ route('settings.saei.test-connection') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testPayload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btnTestSaei.disabled = false;
+                    btnTestSaei.innerHTML = originalHtml;
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("نجاح الاتصال بساعي") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-success' },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("فشل الاتصال") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(err => {
+                    btnTestSaei.disabled = false;
+                    btnTestSaei.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("خطأ") }}',
+                        text: '{{ __("تعذر إتمام فحص الاتصال بساعي") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
                     });
                 });
             });

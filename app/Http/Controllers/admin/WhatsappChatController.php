@@ -14,13 +14,14 @@ use App\Models\Notification_Users;
 use App\Services\Interfaces\WhatsAppServiceInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class WhatsappChatController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:view_whatsapp_chat')->only(['index', 'getMessages', 'pollMessages', 'widgetSummary']);
-        $this->middleware('permission:send_whatsapp_chat')->only(['sendMessage', 'sendTemplate', 'sendOpenChatTemplate', 'startNewChat']);
+        $this->middleware('permission:view_whatsapp_chat')->only(['index', 'getMessages', 'pollMessages', 'widgetSummary', 'markRead']);
+        $this->middleware('permission:send_whatsapp_chat')->only(['sendMessage', 'sendMedia', 'sendTemplate', 'sendOpenChatTemplate', 'startNewChat']);
     }
 
     public function index(Request $request)
@@ -180,14 +181,17 @@ class WhatsappChatController extends Controller
             ],
             'messages' => $messages->map(function($msg) {
                 return [
-                    'id'           => $msg->id,
-                    'direction'    => $msg->direction,
-                    'message_type' => $msg->message_type,
-                    'content'      => $msg->content,
-                    'status'       => $msg->status,
-                    'time'         => $msg->created_at ? $msg->created_at->format('h:i A') : '',
-                    'date'         => $msg->created_at ? $msg->created_at->format('Y-m-d') : '',
-                    'is_today'     => $msg->created_at ? $msg->created_at->isToday() : false,
+                    'id'             => $msg->id,
+                    'direction'      => $msg->direction,
+                    'message_type'   => $msg->message_type,
+                    'content'        => $msg->content,
+                    'media_url'      => $msg->media_url,
+                    'media_filename' => $msg->media_filename,
+                    'status'         => $msg->status,
+                    'error_code'     => $msg->error_code,
+                    'time'           => $msg->created_at ? $msg->created_at->format('h:i A') : '',
+                    'date'           => $msg->created_at ? $msg->created_at->format('Y-m-d') : '',
+                    'is_today'       => $msg->created_at ? $msg->created_at->isToday() : false,
                 ];
             })
         ]);
@@ -206,39 +210,29 @@ class WhatsappChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // 24-hour window status
-        $lastInbound = $conversation->lastInboundMessage;
-        $isWindowOpen = false;
-        $remainingHours = 0;
-
-        if ($lastInbound && $lastInbound->created_at) {
-            $diffHours = $lastInbound->created_at->diffInHours(now());
-            if ($diffHours < 24) {
-                $isWindowOpen = true;
-                $remainingHours = 24 - $diffHours;
-            }
-        }
-
         $unreadMessagesTotal = WhatsappConversation::sum('unread_count');
 
         return response()->json([
             'status'                 => 'success',
             'has_new'                => $newMessages->count() > 0,
-            'is_window_open'         => $isWindowOpen,
-            'window_remaining_hours' => $remainingHours,
+            'is_window_open'         => $conversation->is_window_open,
+            'window_remaining_hours' => $conversation->window_remaining_hours,
             'unread_stats' => [
                 'unread_messages' => (int) $unreadMessagesTotal,
             ],
             'messages' => $newMessages->map(function($msg) {
                 return [
-                    'id'           => $msg->id,
-                    'direction'    => $msg->direction,
-                    'message_type' => $msg->message_type,
-                    'content'      => $msg->content,
-                    'status'       => $msg->status,
-                    'time'         => $msg->created_at ? $msg->created_at->format('h:i A') : '',
-                    'date'         => $msg->created_at ? $msg->created_at->format('Y-m-d') : '',
-                    'is_today'     => $msg->created_at ? $msg->created_at->isToday() : false,
+                    'id'             => $msg->id,
+                    'direction'      => $msg->direction,
+                    'message_type'   => $msg->message_type,
+                    'content'        => $msg->content,
+                    'media_url'      => $msg->media_url,
+                    'media_filename' => $msg->media_filename,
+                    'status'         => $msg->status,
+                    'error_code'     => $msg->error_code,
+                    'time'           => $msg->created_at ? $msg->created_at->format('h:i A') : '',
+                    'date'           => $msg->created_at ? $msg->created_at->format('Y-m-d') : '',
+                    'is_today'       => $msg->created_at ? $msg->created_at->isToday() : false,
                 ];
             })
         ]);
@@ -252,11 +246,9 @@ class WhatsappChatController extends Controller
 
         $conversation = WhatsappConversation::findOrFail($id);
         $phone = $conversation->phone_number;
-        
-        $lastInbound = $conversation->lastInboundMessage;
 
         // Check 24hr window
-        if (!$lastInbound || $lastInbound->created_at->diffInHours(now()) >= 24) {
+        if (!$conversation->is_window_open) {
             return response()->json([
                 'status'  => 'error',
                 'code'    => 'window_closed',
@@ -279,6 +271,93 @@ class WhatsappChatController extends Controller
             'status'  => 'success',
             'message' => 'تم إرسال الرسالة بنجاح.',
             'time'    => now()->format('h:i A'),
+        ]);
+    }
+
+    public function sendMedia(Request $request, $id, WhatsAppServiceInterface $waService)
+    {
+        $request->validate([
+            'file'    => 'required|file|max:20480', // 20MB
+            'caption' => 'nullable|string|max:1000',
+        ]);
+
+        $conversation = WhatsappConversation::findOrFail($id);
+        $phone = $conversation->phone_number;
+
+        if (!$conversation->is_window_open) {
+            return response()->json([
+                'status'  => 'error',
+                'code'    => 'window_closed',
+                'message' => 'عذراً، لقد مرت أكثر من 24 ساعة منذ آخر رسالة واردة من الطرف الآخر. يلزم إرسال قالب معتمد أولاً لإعادة فتح النافذة.'
+            ]);
+        }
+
+        $file = $request->file('file');
+        $mime = $file->getMimeType();
+        $originalFilename = $file->getClientOriginalName();
+
+        // Determine media type for Saei / WhatsApp
+        $mediaType = 'document';
+        if (str_starts_with($mime, 'image/')) {
+            $mediaType = 'image';
+        } elseif (str_starts_with($mime, 'video/')) {
+            $mediaType = 'video';
+        } elseif (str_starts_with($mime, 'audio/')) {
+            $mediaType = 'audio';
+        }
+
+        // Store file publicly in whatsapp_media directory
+        $path = $file->store('whatsapp_media', 'public');
+        $mediaUrl = asset('storage/' . $path);
+
+        $caption = $request->input('caption');
+
+        $result = $waService->sendMediaMessage(
+            $phone,
+            $mediaType,
+            $mediaUrl,
+            $caption,
+            $originalFilename
+        );
+
+        if (is_array($result) && !($result['success'] ?? false)) {
+            return response()->json([
+                'status'  => 'error',
+                'code'    => $result['code'] ?? 'media_failed',
+                'message' => $result['message'] ?? 'فشل إرسال الملف المرفق عبر واتساب'
+            ]);
+        }
+
+        return response()->json([
+            'status'         => 'success',
+            'message'        => 'تم إرسال الملف بنجاح.',
+            'media_url'      => $mediaUrl,
+            'media_filename' => $originalFilename,
+            'media_type'     => $mediaType,
+            'caption'        => $caption,
+            'time'           => now()->format('h:i A'),
+        ]);
+    }
+
+    public function markRead(Request $request, $id, WhatsAppServiceInterface $waService)
+    {
+        $conversation = WhatsappConversation::findOrFail($id);
+        $conversation->update(['unread_count' => 0]);
+
+        // Find last inbound message with saei_message_id
+        $lastInbound = $conversation->messages()
+            ->where('direction', 'inbound')
+            ->whereNotNull('saei_message_id')
+            ->latest('id')
+            ->first();
+
+        if ($lastInbound && $lastInbound->saei_message_id) {
+            $waService->markAsRead($lastInbound->saei_message_id, true);
+        }
+
+        return response()->json([
+            'status'       => 'success',
+            'unread_total' => (int) WhatsappConversation::sum('unread_count')
         ]);
     }
 

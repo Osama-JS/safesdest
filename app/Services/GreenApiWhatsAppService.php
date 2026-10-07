@@ -75,7 +75,7 @@ class GreenApiWhatsAppService implements WhatsAppServiceInterface
     /**
      * Send a normal text message.
      */
-    public function sendTextMessage($phone, $text)
+    public function sendTextMessage($phone, $text, $reference = null)
     {
         $idInstance = env('GREEN_API_ID_INSTANCE');
         $apiTokenInstance = env('GREEN_API_TOKEN_INSTANCE');
@@ -99,6 +99,21 @@ class GreenApiWhatsAppService implements WhatsAppServiceInterface
             Log::error('Error sending Green API message: ' . $e->getMessage());
             return false;
         }
+    }
+
+    public function sendMediaMessage($phone, string $type, string $mediaUrl, ?string $caption = null, ?string $filename = null, ?string $reference = null)
+    {
+        return ['success' => false, 'message' => 'Media messaging is not supported in GreenApiWhatsAppService.'];
+    }
+
+    public function markAsRead(string $messageId, bool $typingIndicator = false)
+    {
+        return ['success' => true];
+    }
+
+    public function getAccountInfo(): array
+    {
+        return ['success' => true, 'message' => 'GreenApi active'];
     }
 }
 

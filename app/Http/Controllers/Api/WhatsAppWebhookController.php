@@ -50,6 +50,12 @@ class WhatsAppWebhookController extends Controller
         Log::info('WhatsApp Webhook Received:', $data);
 
         try {
+            // Check for Saei specific event structure: { "event": "message.received|message.sent|...", "data": { ... } }
+            if (isset($data['event']) && is_string($data['event']) && isset($data['data'])) {
+                $this->processSaeiEvent($data['event'], $data['data']);
+                return response('EVENT_RECEIVED', 200);
+            }
+
             $valuesToProcess = [];
 
             if (isset($data['entry']) && is_array($data['entry'])) {
@@ -77,7 +83,9 @@ class WhatsAppWebhookController extends Controller
                         $metaId = $statusUpdate['id'];
                         $status = $statusUpdate['status']; // sent, delivered, read, failed
 
-                        $message = WhatsappMessage::where('meta_message_id', $metaId)->first();
+                        $message = WhatsappMessage::where('meta_message_id', $metaId)
+                            ->orWhere('saei_message_id', $metaId)
+                            ->first();
                         
                         if ($message) {
                             $updateData = ['status' => $status];
@@ -104,6 +112,10 @@ class WhatsAppWebhookController extends Controller
                         $metaId = $msg['id'];
                         $type = $msg['type'];
                         
+                        $mediaUrl = null;
+                        $mediaFilename = null;
+                        $mediaMimeType = null;
+
                         // Extract content based on type
                         $content = '';
                         if ($type === 'text') {
@@ -111,14 +123,21 @@ class WhatsAppWebhookController extends Controller
                         } elseif ($type === 'image') {
                             $caption = $msg['image']['caption'] ?? '';
                             $content = '📷 صورة' . ($caption ? ": {$caption}" : '');
+                            $mediaUrl = $msg['image']['link'] ?? ($msg['image']['url'] ?? null);
+                            $mediaMimeType = $msg['image']['mime_type'] ?? null;
                         } elseif ($type === 'document') {
-                            $docName = $msg['document']['filename'] ?? ($msg['document']['caption'] ?? '');
-                            $content = '📄 مستند' . ($docName ? ": {$docName}" : '');
+                            $mediaFilename = $msg['document']['filename'] ?? null;
+                            $caption = $msg['document']['caption'] ?? '';
+                            $content = '📄 مستند' . ($mediaFilename ? ": {$mediaFilename}" : ($caption ? ": {$caption}" : ''));
+                            $mediaUrl = $msg['document']['link'] ?? ($msg['document']['url'] ?? null);
+                            $mediaMimeType = $msg['document']['mime_type'] ?? null;
                         } elseif ($type === 'audio' || $type === 'voice') {
                             $content = '🎤 رسالة صوتية';
+                            $mediaUrl = $msg['audio']['link'] ?? ($msg['audio']['url'] ?? null);
                         } elseif ($type === 'video') {
                             $caption = $msg['video']['caption'] ?? '';
                             $content = '🎥 مقطع فيديو' . ($caption ? ": {$caption}" : '');
+                            $mediaUrl = $msg['video']['link'] ?? ($msg['video']['url'] ?? null);
                         } elseif ($type === 'location') {
                             $locName = $msg['location']['name'] ?? ($msg['location']['address'] ?? '');
                             $content = '📍 موقع جغرافي' . ($locName ? ": {$locName}" : '');
@@ -132,7 +151,10 @@ class WhatsAppWebhookController extends Controller
                         }
 
                         // Prevent duplicate processing
-                        $exists = WhatsappMessage::where('meta_message_id', $metaId)->exists();
+                        $exists = WhatsappMessage::where('meta_message_id', $metaId)
+                            ->orWhere('saei_message_id', $metaId)
+                            ->exists();
+
                         if (!$exists) {
                             $normalizedPhone = $this->cleanPhoneNumber($rawPhone);
 
@@ -159,15 +181,20 @@ class WhatsAppWebhookController extends Controller
                             $conversation->update([
                                 'last_message_preview' => Str::limit($content, 80),
                                 'last_message_time' => now(),
+                                'reply_window_expires_at' => now()->addHours(24),
                                 'unread_count' => DB::raw('unread_count + 1')
                             ]);
 
                             $messageRecord = WhatsappMessage::create([
                                 'conversation_id' => $conversation->id,
                                 'meta_message_id' => $metaId,
+                                'saei_message_id' => str_starts_with($metaId, 'imsg_') || str_starts_with($metaId, 'msg_') ? $metaId : null,
                                 'direction' => 'inbound',
                                 'message_type' => $type,
                                 'content' => $content,
+                                'media_url' => $mediaUrl,
+                                'media_filename' => $mediaFilename,
+                                'media_mime_type' => $mediaMimeType,
                                 'status' => 'delivered',
                                 'delivered_at' => now(),
                             ]);
@@ -283,5 +310,162 @@ class WhatsAppWebhookController extends Controller
             'type_label' => 'غير مسجل',
             'user'       => null
         ];
+    }
+
+    /**
+     * Process native Saei webhook events:
+     * - message.received
+     * - message.sent
+     * - message.delivered
+     * - message.read
+     * - message.failed
+     */
+    protected function processSaeiEvent(string $event, array $messageData): void
+    {
+        $saeiId    = $messageData['id'] ?? null;
+        $metaId    = $messageData['provider_message_id'] ?? null;
+        $reference = $messageData['reference'] ?? null;
+
+        // 1. Status Events: message.sent, message.delivered, message.read, message.failed
+        if (str_starts_with($event, 'message.') && $event !== 'message.received') {
+            $statusName = explode('.', $event)[1] ?? 'delivered';
+            
+            $query = WhatsappMessage::query();
+            if ($saeiId) {
+                $query->where('saei_message_id', $saeiId);
+            } elseif ($metaId) {
+                $query->where('meta_message_id', $metaId);
+            } elseif ($reference) {
+                $query->where('reference', $reference);
+            } else {
+                return;
+            }
+
+            $message = $query->first();
+            if ($message) {
+                $update = ['status' => $statusName];
+                if ($statusName === 'sent' && !$message->sent_at) $update['sent_at'] = now();
+                if ($statusName === 'delivered') $update['delivered_at'] = now();
+                if ($statusName === 'read') $update['read_at'] = now();
+
+                if ($statusName === 'failed' && isset($messageData['error'])) {
+                    $update['error_code']  = $messageData['error']['code'] ?? null;
+                    $update['error_title'] = $messageData['error']['title'] ?? null;
+                    $update['error_log']   = json_encode($messageData['error'], JSON_UNESCAPED_UNICODE);
+                }
+
+                $message->update($update);
+            }
+            return;
+        }
+
+        // 2. Inbound Message Event: message.received
+        if ($event === 'message.received') {
+            $rawPhone = $messageData['from'] ?? null;
+            if (!$rawPhone) return;
+
+            $type = $messageData['type'] ?? 'text';
+            $mediaUrl = null;
+            $mediaFilename = null;
+            $mediaMimeType = null;
+            $content = '';
+
+            if ($type === 'text') {
+                $content = $messageData['text']['body'] ?? '';
+            } elseif ($type === 'image') {
+                $caption = $messageData['image']['caption'] ?? '';
+                $content = '📷 صورة' . ($caption ? ": {$caption}" : '');
+                $mediaUrl = $messageData['image']['link'] ?? ($messageData['image']['url'] ?? null);
+            } elseif ($type === 'document') {
+                $mediaFilename = $messageData['document']['filename'] ?? null;
+                $caption = $messageData['document']['caption'] ?? '';
+                $content = '📄 مستند' . ($mediaFilename ? ": {$mediaFilename}" : ($caption ? ": {$caption}" : ''));
+                $mediaUrl = $messageData['document']['link'] ?? ($messageData['document']['url'] ?? null);
+            } elseif ($type === 'audio') {
+                $content = '🎤 رسالة صوتية';
+                $mediaUrl = $messageData['audio']['link'] ?? null;
+            } elseif ($type === 'video') {
+                $caption = $messageData['video']['caption'] ?? '';
+                $content = '🎥 مقطع فيديو' . ($caption ? ": {$caption}" : '');
+                $mediaUrl = $messageData['video']['link'] ?? null;
+            } elseif ($type === 'interactive') {
+                $content = $messageData['interactive']['reply']['title'] ?? 'رد تفاعلي';
+            } elseif ($type === 'reaction') {
+                $emoji = $messageData['reaction']['emoji'] ?? '';
+                $content = $emoji ? "تفاعل بـ: {$emoji}" : 'أزال التفاعل';
+            } else {
+                $content = "رسالة ({$type})";
+            }
+
+            // Check duplicate
+            $exists = WhatsappMessage::where(function($q) use ($saeiId, $metaId) {
+                if ($saeiId) $q->where('saei_message_id', $saeiId);
+                if ($metaId) $q->orWhere('meta_message_id', $metaId);
+            })->exists();
+
+            if (!$exists) {
+                $normalizedPhone = $this->cleanPhoneNumber($rawPhone);
+                $resolvedUser = $this->resolveUserByPhone($normalizedPhone);
+
+                $conversation = WhatsappConversation::firstOrCreate(
+                    ['phone_number' => $normalizedPhone],
+                    [
+                        'user_type' => $resolvedUser['user_type'],
+                        'user_id'   => $resolvedUser['user_id'],
+                        'unread_count' => 0
+                    ]
+                );
+
+                if (!$conversation->user_id && $resolvedUser['user_id']) {
+                    $conversation->update([
+                        'user_type' => $resolvedUser['user_type'],
+                        'user_id'   => $resolvedUser['user_id'],
+                    ]);
+                }
+
+                $conversation->update([
+                    'saei_conversation_id'    => $messageData['conversation_id'] ?? $conversation->saei_conversation_id,
+                    'last_message_preview'    => Str::limit($content, 80),
+                    'last_message_time'       => now(),
+                    'reply_window_expires_at' => now()->addHours(24),
+                    'unread_count'            => DB::raw('unread_count + 1')
+                ]);
+
+                $messageRecord = WhatsappMessage::create([
+                    'conversation_id'     => $conversation->id,
+                    'saei_message_id'     => $saeiId,
+                    'meta_message_id'     => $metaId,
+                    'direction'           => 'inbound',
+                    'message_type'        => $type,
+                    'content'             => $content,
+                    'media_url'           => $mediaUrl,
+                    'media_filename'      => $mediaFilename,
+                    'status'              => 'delivered',
+                    'delivered_at'        => now(),
+                ]);
+
+                // Dispatch notification
+                $displayName = $resolvedUser['name'] ?: ($messageData['contact']['name'] ?? "+{$normalizedPhone}");
+                $typeLabel   = $resolvedUser['type_label'];
+                $title       = "رسالة واتساب جديدة من: {$displayName} [{$typeLabel}]";
+
+                AdminNotificationDispatcher::dispatch(
+                    'whatsapp_message_received',
+                    $title,
+                    Str::limit($content, 120),
+                    url('admin/whatsapp-chat?conversation_id=' . $conversation->id),
+                    'ti-brand-whatsapp text-success',
+                    [
+                        'conversation_id' => $conversation->id,
+                        'phone'           => $normalizedPhone,
+                        'user_type'       => $resolvedUser['user_type'],
+                        'user_id'         => $resolvedUser['user_id'],
+                        'message_id'      => $messageRecord->id,
+                        'content'         => $content,
+                    ],
+                    'high'
+                );
+            }
+        }
     }
 }

@@ -264,6 +264,42 @@
         cursor: not-allowed;
     }
 
+    /* Media Messages */
+    .wa-media-preview {
+        max-width: 280px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .wa-media-preview img {
+        max-width: 100%;
+        max-height: 240px;
+        border-radius: 6px;
+        cursor: pointer;
+        display: block;
+        transition: opacity 0.2s;
+    }
+    .wa-media-preview img:hover {
+        opacity: 0.9;
+    }
+    .wa-doc-card {
+        background: rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #2b343b;
+        margin-bottom: 4px;
+        transition: background 0.15s;
+    }
+    .wa-doc-card:hover {
+        background: rgba(0, 0, 0, 0.08);
+        color: #111b21;
+    }
+
     /* Right Profile Drawer */
     .wa-profile-drawer {
         width: 320px;
@@ -548,6 +584,10 @@
                             <button type="button" class="btn btn-icon btn-light rounded-circle" data-bs-toggle="modal" data-bs-target="#sendTemplateModal" title="إرسال قالب رسمي">
                                 <i class="ti ti-template text-muted"></i>
                             </button>
+                            <button type="button" class="btn btn-icon btn-light rounded-circle" id="chat-attach-btn" title="إرفاق ملف أو صورة">
+                                <i class="ti ti-paperclip text-muted"></i>
+                            </button>
+                            <input type="file" id="chat-file-input" class="d-none" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
                             <input type="text" class="form-control wa-message-input" id="chat-input" placeholder="اكتب رسالتك هنا... (اضغط Enter للإرسال)" autocomplete="off">
                             <button type="submit" class="wa-send-btn" id="send-btn" title="إرسال الرسالة">
                                 <i class="ti ti-send"></i>
@@ -854,6 +894,11 @@ $(document).ready(function() {
                 pollInterval = setInterval(function() {
                     pollNewMessages();
                 }, 4000);
+
+                // Mark conversation as read on server & notify Saei
+                $.post("{{ url('admin/whatsapp-chat') }}/" + id + "/mark-read", {
+                    _token: "{{ csrf_token() }}"
+                });
             },
             error: function() {
                 chatArea.html('<div class="m-auto text-center text-danger"><p class="bg-white p-3 rounded shadow-sm">حدث خطأ أثناء تحميل الرسائل</p></div>');
@@ -880,6 +925,85 @@ $(document).ready(function() {
             $('#chat-input').prop('disabled', true).attr('placeholder', 'النافذة مغلقة - اختر قالباً رسمياً لإعادة فتحها');
             $('#send-btn').prop('disabled', true);
         }
+    }
+
+    function buildMessageRowHtml(msg) {
+        let isOut = (msg.direction === 'outbound');
+        let alignment = isOut ? 'outbound' : 'inbound';
+
+        let statusIcon = '';
+        if (isOut) {
+            if (msg.status === 'pending') statusIcon = '<i class="ti ti-clock text-muted"></i>';
+            else if (msg.status === 'sent') statusIcon = '<i class="ti ti-check text-muted"></i>';
+            else if (msg.status === 'delivered') statusIcon = '<i class="ti ti-checks text-muted"></i>';
+            else if (msg.status === 'read') statusIcon = '<i class="ti ti-checks text-primary"></i>';
+            else if (msg.status === 'failed') statusIcon = '<i class="ti ti-alert-circle text-danger" title="فشل الإرسال"></i>';
+        }
+
+        let tagHtml = '';
+        if (msg.message_type === 'template') {
+            tagHtml = `<span class="wa-bubble-tag"><i class="ti ti-template me-1"></i>قالب رسمي</span>`;
+        }
+
+        let mediaHtml = '';
+        if (msg.media_url) {
+            let isImg = msg.message_type === 'image' || /\.(jpg|jpeg|png|webp|gif)$/i.test(msg.media_url);
+            let isVid = msg.message_type === 'video' || /\.(mp4|mov|webm)$/i.test(msg.media_url);
+            let isAud = msg.message_type === 'audio' || /\.(mp3|ogg|wav|m4a)$/i.test(msg.media_url);
+
+            if (isImg) {
+                mediaHtml = `
+                    <div class="wa-media-preview">
+                        <img src="${msg.media_url}" alt="مرفق" onclick="window.open('${msg.media_url}', '_blank')">
+                    </div>
+                `;
+            } else if (isVid) {
+                mediaHtml = `
+                    <div class="wa-media-preview">
+                        <video src="${msg.media_url}" controls class="w-100 rounded" style="max-height: 220px;"></video>
+                    </div>
+                `;
+            } else if (isAud) {
+                mediaHtml = `
+                    <div class="mb-2">
+                        <audio src="${msg.media_url}" controls class="w-100" style="height: 38px;"></audio>
+                    </div>
+                `;
+            } else {
+                let fname = msg.media_filename || 'مستند مرفق';
+                mediaHtml = `
+                    <a href="${msg.media_url}" target="_blank" class="wa-doc-card">
+                        <i class="ti ti-file-text fs-3 text-primary"></i>
+                        <span class="text-truncate fw-semibold small flex-grow-1" style="max-width: 200px;">${escapeHtml(fname)}</span>
+                        <i class="ti ti-download text-muted fs-5"></i>
+                    </a>
+                `;
+            }
+        }
+
+        let errorHtml = '';
+        if (msg.status === 'failed' && msg.error_code) {
+            errorHtml = `<div class="text-danger small mt-1" style="font-size: 11px;"><i class="ti ti-alert-triangle ti-xs me-1"></i>${escapeHtml(msg.error_code)}</div>`;
+        }
+
+        let contentHtml = (msg.content && msg.content !== msg.media_filename)
+            ? `<div class="wa-bubble-content">${escapeHtml(msg.content).replace(/\n/g, '<br>')}</div>`
+            : '';
+
+        return `
+            <div class="wa-bubble-row ${alignment}" data-msg-id="${msg.id}">
+                <div class="wa-bubble">
+                    ${tagHtml}
+                    ${mediaHtml}
+                    ${contentHtml}
+                    ${errorHtml}
+                    <div class="wa-bubble-meta">
+                        <span>${msg.time}</span>
+                        ${statusIcon}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     function renderMessages(messages) {
@@ -916,35 +1040,7 @@ $(document).ready(function() {
                 lastDate = msg.date;
             }
 
-            let isOut = (msg.direction === 'outbound');
-            let alignment = isOut ? 'outbound' : 'inbound';
-
-            let statusIcon = '';
-            if (isOut) {
-                if (msg.status === 'pending') statusIcon = '<i class="ti ti-clock text-muted"></i>';
-                else if (msg.status === 'sent') statusIcon = '<i class="ti ti-check text-muted"></i>';
-                else if (msg.status === 'delivered') statusIcon = '<i class="ti ti-checks text-muted"></i>';
-                else if (msg.status === 'read') statusIcon = '<i class="ti ti-checks text-primary"></i>';
-                else if (msg.status === 'failed') statusIcon = '<i class="ti ti-alert-circle text-danger" title="فشل الإرسال"></i>';
-            }
-
-            let tagHtml = '';
-            if (msg.message_type === 'template') {
-                tagHtml = `<span class="wa-bubble-tag"><i class="ti ti-template me-1"></i>قالب رسمي</span>`;
-            }
-
-            html += `
-                <div class="wa-bubble-row ${alignment}" data-msg-id="${msg.id}">
-                    <div class="wa-bubble">
-                        ${tagHtml}
-                        <div class="wa-bubble-content">${escapeHtml(msg.content).replace(/\n/g, '<br>')}</div>
-                        <div class="wa-bubble-meta">
-                            <span>${msg.time}</span>
-                            ${statusIcon}
-                        </div>
-                    </div>
-                </div>
-            `;
+            html += buildMessageRowHtml(msg);
         });
 
         chatArea.html(html);
@@ -960,37 +1056,11 @@ $(document).ready(function() {
                 highestMessageId = msg.id;
             }
 
-            let isOut = (msg.direction === 'outbound');
-            let alignment = isOut ? 'outbound' : 'inbound';
-            if (!isOut) playAudio = true;
-
-            let statusIcon = '';
-            if (isOut) {
-                if (msg.status === 'pending') statusIcon = '<i class="ti ti-clock text-muted"></i>';
-                else if (msg.status === 'sent') statusIcon = '<i class="ti ti-check text-muted"></i>';
-                else if (msg.status === 'delivered') statusIcon = '<i class="ti ti-checks text-muted"></i>';
-                else if (msg.status === 'read') statusIcon = '<i class="ti ti-checks text-primary"></i>';
-                else if (msg.status === 'failed') statusIcon = '<i class="ti ti-alert-circle text-danger"></i>';
+            if (msg.direction === 'inbound') {
+                playAudio = true;
             }
 
-            let tagHtml = '';
-            if (msg.message_type === 'template') {
-                tagHtml = `<span class="wa-bubble-tag"><i class="ti ti-template me-1"></i>قالب رسمي</span>`;
-            }
-
-            let bubbleHtml = `
-                <div class="wa-bubble-row ${alignment}" data-msg-id="${msg.id}">
-                    <div class="wa-bubble">
-                        ${tagHtml}
-                        <div class="wa-bubble-content">${escapeHtml(msg.content).replace(/\n/g, '<br>')}</div>
-                        <div class="wa-bubble-meta">
-                            <span>${msg.time}</span>
-                            ${statusIcon}
-                        </div>
-                    </div>
-                </div>
-            `;
-            chatArea.append(bubbleHtml);
+            chatArea.append(buildMessageRowHtml(msg));
         });
 
         if (playAudio) {
@@ -1134,6 +1204,70 @@ $(document).ready(function() {
             error: function(xhr) {
                 btn.prop('disabled', false).html('<i class="ti ti-send"></i>');
                 toastr.error('حدث خطأ في الاتصال بالخادم');
+            }
+        });
+    });
+
+    // Attach File Trigger & Upload
+    $('#chat-attach-btn').on('click', function() {
+        if (!currentConversationId) return;
+        $('#chat-file-input').trigger('click');
+    });
+
+    $('#chat-file-input').on('change', function() {
+        let file = this.files[0];
+        if (!file || !currentConversationId) return;
+
+        let tempId = 'temp_file_' + Date.now();
+        let tempBubble = `
+            <div class="wa-bubble-row outbound" id="${tempId}">
+                <div class="wa-bubble">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                        <span class="small">جاري إرسال ${escapeHtml(file.name)}...</span>
+                    </div>
+                    <div class="wa-bubble-meta">
+                        <span>الآن</span>
+                        <i class="ti ti-clock text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#chat-messages').append(tempBubble);
+        scrollToBottom();
+
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append('_token', "{{ csrf_token() }}");
+
+        $.ajax({
+            url: "{{ url('admin/whatsapp-chat') }}/" + currentConversationId + "/send-media",
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res.status === 'success') {
+                    $(`#${tempId}`).replaceWith(buildMessageRowHtml({
+                        id: Date.now(),
+                        direction: 'outbound',
+                        message_type: res.media_type || 'document',
+                        media_url: res.media_url,
+                        media_filename: res.media_filename,
+                        content: res.caption || res.media_filename,
+                        status: 'sent',
+                        time: res.time || 'الآن'
+                    }));
+                } else {
+                    $(`#${tempId} .wa-bubble-meta`).html(`<span class="text-danger small">${res.message || 'فشل الإرسال'}</span>`);
+                }
+            },
+            error: function(xhr) {
+                let errMsg = xhr.responseJSON ? xhr.responseJSON.message : 'فشل رفع الملف';
+                $(`#${tempId} .wa-bubble-meta`).html(`<span class="text-danger small">${errMsg}</span>`);
+            },
+            complete: function() {
+                $('#chat-file-input').val('');
             }
         });
     });

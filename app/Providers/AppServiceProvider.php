@@ -30,8 +30,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(\App\Services\Interfaces\WhatsAppServiceInterface::class, function ($app) {
-            $provider = env('WHATSAPP_PROVIDER', 'green');
+            $provider = \App\Models\Settings::getValue('whatsapp_provider') ?: env('WHATSAPP_PROVIDER', 'saei');
             
+            if ($provider === 'saei') {
+                return new \App\Services\SaeiWhatsAppService();
+            }
+
             if ($provider === 'cloud') {
                 return new \App\Services\CloudWhatsAppService();
             }

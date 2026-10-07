@@ -42,6 +42,8 @@ $(function () {
   const replyForm = $('#whatsapp-widget-reply-form');
   const replyInput = $('#whatsapp-widget-message-input');
   const sendBtn = $('#whatsapp-widget-send-btn');
+  const attachBtn = $('#whatsapp-widget-attach-btn');
+  const fileInput = $('#whatsapp-widget-file-input');
   const templatesDropdown = $('#whatsapp-templates-dropdown');
   const mobileBackBtn = $('#whatsapp-mobile-back');
 
@@ -466,6 +468,15 @@ $(function () {
           if (res.unread_stats) {
             updateUnreadBadge(res.unread_stats.unread_messages);
           }
+
+          // Mark as read on server & notify Saei
+          $.post(baseUrl + `admin/whatsapp-chat/${id}/mark-read`, {
+            _token: $('meta[name="csrf-token"]').attr('content')
+          }).done(function (markRes) {
+            if (markRes && markRes.unread_total !== undefined) {
+              updateUnreadBadge(markRes.unread_total);
+            }
+          });
         }
       });
   }
@@ -492,11 +503,58 @@ $(function () {
   function buildMessageBubble(m) {
     const isOut = m.direction === 'outbound';
     const bubbleClass = isOut ? 'outbound' : 'inbound';
-    const statusIcon = isOut ? (m.status === 'read' ? 'ti-checks text-primary' : (m.status === 'delivered' ? 'ti-checks text-muted' : 'ti-check text-muted')) : '';
+    const statusIcon = isOut ? (m.status === 'read' ? 'ti-checks text-primary' : (m.status === 'delivered' ? 'ti-checks text-muted' : (m.status === 'failed' ? 'ti-alert-circle text-danger' : 'ti-check text-muted'))) : '';
+
+    let mediaHtml = '';
+    if (m.media_url) {
+      const isImg = m.message_type === 'image' || /\.(jpg|jpeg|png|webp|gif)$/i.test(m.media_url);
+      const isVid = m.message_type === 'video' || /\.(mp4|mov|webm)$/i.test(m.media_url);
+      const isAud = m.message_type === 'audio' || /\.(mp3|ogg|wav|m4a)$/i.test(m.media_url);
+
+      if (isImg) {
+        mediaHtml = `
+          <div class="whatsapp-media-preview mb-1">
+            <img src="${m.media_url}" alt="صورة مرفقة" onclick="window.open('${m.media_url}', '_blank')">
+          </div>
+        `;
+      } else if (isVid) {
+        mediaHtml = `
+          <div class="whatsapp-media-preview mb-1">
+            <video src="${m.media_url}" controls class="w-100 rounded" style="max-height: 180px;"></video>
+          </div>
+        `;
+      } else if (isAud) {
+        mediaHtml = `
+          <div class="mb-1">
+            <audio src="${m.media_url}" controls class="w-100" style="height: 36px;"></audio>
+          </div>
+        `;
+      } else {
+        const fname = m.media_filename || 'مستند مرفق';
+        mediaHtml = `
+          <a href="${m.media_url}" target="_blank" class="whatsapp-doc-card">
+            <i class="ti ti-file-text fs-4 text-primary"></i>
+            <span class="text-truncate small flex-grow-1" style="max-width: 140px;">${escapeHtml(fname)}</span>
+            <i class="ti ti-download text-muted"></i>
+          </a>
+        `;
+      }
+    }
+
+    let errorHtml = '';
+    if (m.status === 'failed' && m.error_code) {
+      errorHtml = `<div class="text-danger small mt-1" style="font-size: 10px;"><i class="ti ti-alert-triangle ti-xs me-1"></i>${escapeHtml(m.error_code)}</div>`;
+    }
+
+    const contentHtml = (m.content && m.content !== m.media_filename)
+      ? `<div class="whatsapp-bubble-content">${escapeHtml(m.content)}</div>`
+      : '';
 
     return `
       <div class="whatsapp-bubble ${bubbleClass}" data-id="${m.id}">
-        <div class="whatsapp-bubble-content">${escapeHtml(m.content || '')}</div>
+        ${mediaHtml}
+        ${contentHtml}
+        ${errorHtml}
         <div class="whatsapp-bubble-time">
           <span>${m.time || ''}</span>
           ${isOut ? `<i class="ti ${statusIcon} ti-xs ms-1"></i>` : ''}
@@ -544,22 +602,86 @@ $(function () {
         if (res.status === 'success' && res.message) {
           const m = res.message;
           $(`#${tempId}`).replaceWith(buildMessageBubble({
-            id: m.id,
+            id: m.id || Date.now(),
             direction: 'outbound',
-            content: m.content,
-            status: m.status,
-            time: m.time || 'الآن'
+            content: message,
+            status: 'sent',
+            time: res.time || 'الآن'
           }));
-          activeLastMessageId = Math.max(activeLastMessageId, m.id);
+          if (m.id) {
+            activeLastMessageId = Math.max(activeLastMessageId, m.id);
+          }
         }
       })
       .fail(function (xhr) {
-        $(`#${tempId} .whatsapp-bubble-time`).html('<span class="text-danger small">فشل الإرسال</span> <i class="ti ti-alert-triangle text-danger ti-xs"></i>');
+        const errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'فشل الإرسال';
+        $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${escapeHtml(errMsg)}</span> <i class="ti ti-alert-triangle text-danger ti-xs"></i>`);
       })
       .always(function () {
         sendBtn.prop('disabled', false);
         replyInput.focus();
       });
+  });
+
+  // Attach File Trigger & Upload
+  attachBtn.on('click', function () {
+    if (!activeConversationId) return;
+    fileInput.trigger('click');
+  });
+
+  fileInput.on('change', function () {
+    const file = this.files[0];
+    if (!file || !activeConversationId) return;
+
+    const tempId = 'temp_file_' + Date.now();
+    const tempBubble = `
+      <div class="whatsapp-bubble outbound" id="${tempId}">
+        <div class="d-flex align-items-center gap-2">
+          <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+          <span class="small">جاري رفع وإرسال ${escapeHtml(file.name)}...</span>
+        </div>
+        <div class="whatsapp-bubble-time">
+          <small class="text-muted">جاري الإرسال...</small>
+        </div>
+      </div>
+    `;
+    messagesStream.append(tempBubble);
+    scrollToBottom();
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+    $.ajax({
+      url: baseUrl + `admin/whatsapp-chat/${activeConversationId}/send-media`,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function (res) {
+        if (res.status === 'success') {
+          $(`#${tempId}`).replaceWith(buildMessageBubble({
+            id: Date.now(),
+            direction: 'outbound',
+            message_type: res.media_type || 'document',
+            media_url: res.media_url,
+            media_filename: res.media_filename,
+            content: res.caption || res.media_filename,
+            status: 'sent',
+            time: res.time || 'الآن'
+          }));
+        } else {
+          $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${res.message || 'فشل الإرسال'}</span>`);
+        }
+      },
+      error: function (xhr) {
+        const errMsg = xhr.responseJSON ? xhr.responseJSON.message : 'فشل رفع الملف';
+        $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${errMsg}</span>`);
+      },
+      complete: function () {
+        fileInput.val('');
+      }
+    });
   });
 
   // Send Template Click

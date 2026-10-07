@@ -195,7 +195,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
     /**
      * Send a normal text message (only allowed within Meta's 24hr window)
      */
-    public function sendTextMessage($phone, $text)
+    public function sendTextMessage($phone, $text, $reference = null)
     {
         $phoneFormatted = $this->formatPhone($phone);
 
@@ -293,6 +293,21 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
             Log::error("WhatsApp Cloud sendTextMessage Exception: {$e->getMessage()}");
             return ['success' => false, 'code' => 'network_error', 'message' => $e->getMessage()];
         }
+    }
+
+    public function sendMediaMessage($phone, string $type, string $mediaUrl, ?string $caption = null, ?string $filename = null, ?string $reference = null)
+    {
+        return ['success' => false, 'message' => 'Media messaging is not supported in CloudWhatsAppService, please use Saei.'];
+    }
+
+    public function markAsRead(string $messageId, bool $typingIndicator = false)
+    {
+        return ['success' => true];
+    }
+
+    public function getAccountInfo(): array
+    {
+        return ['success' => true, 'message' => 'CloudWhatsAppService active'];
     }
 
     /**

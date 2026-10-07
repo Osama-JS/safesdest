@@ -10,13 +10,16 @@ class WhatsappConversation extends Model
         'phone_number',
         'user_type',
         'user_id',
+        'saei_conversation_id',
         'last_message_preview',
         'last_message_time',
+        'reply_window_expires_at',
         'unread_count'
     ];
 
     protected $casts = [
         'last_message_time' => 'datetime',
+        'reply_window_expires_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -78,6 +81,9 @@ class WhatsappConversation extends Model
 
     public function getIsWindowOpenAttribute(): bool
     {
+        if ($this->reply_window_expires_at) {
+            return $this->reply_window_expires_at->isFuture();
+        }
         $lastInbound = $this->lastInboundMessage;
         if (!$lastInbound || !$lastInbound->created_at) {
             return false;
@@ -87,6 +93,9 @@ class WhatsappConversation extends Model
 
     public function getWindowRemainingHoursAttribute(): int
     {
+        if ($this->reply_window_expires_at) {
+            return max(0, (int) now()->diffInHours($this->reply_window_expires_at, false));
+        }
         $lastInbound = $this->lastInboundMessage;
         if (!$lastInbound || !$lastInbound->created_at) {
             return 0;

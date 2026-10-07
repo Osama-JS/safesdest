@@ -148,6 +148,12 @@
                                 </ul>
                             </div>
 
+                            <!-- Attach File Button -->
+                            <button type="button" class="btn btn-sm btn-icon btn-outline-secondary rounded-circle" id="whatsapp-widget-attach-btn" title="إرفاق ملف أو صورة">
+                                <i class="ti ti-paperclip ti-xs"></i>
+                            </button>
+                            <input type="file" id="whatsapp-widget-file-input" class="d-none" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+
                             <!-- Text Input -->
                             <input type="text" class="form-control form-control-sm rounded-pill" id="whatsapp-widget-message-input" placeholder="اكتب ردك هنا..." autocomplete="off" required>
 
@@ -500,6 +506,40 @@
     align-items: center;
     justify-content: flex-end;
     gap: 3px;
+}
+.whatsapp-media-preview {
+    max-width: 230px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+.whatsapp-media-preview img {
+    max-width: 100%;
+    max-height: 180px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: block;
+    transition: opacity 0.2s;
+}
+.whatsapp-media-preview img:hover {
+    opacity: 0.9;
+}
+.whatsapp-doc-card {
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: #2b343b;
+    margin-bottom: 4px;
+    transition: background 0.15s;
+}
+.whatsapp-doc-card:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #111b21;
 }
 
 /* Responsive styles for Small Screens (< 768px) */

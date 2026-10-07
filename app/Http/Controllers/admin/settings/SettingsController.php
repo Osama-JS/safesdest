@@ -12,7 +12,7 @@ class SettingsController extends Controller
 
   public function __construct()
   {
-    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings']]);
+    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings', 'testSaeiConnection']]);
   }
 
   public function index()
@@ -230,6 +230,7 @@ class SettingsController extends Controller
   public function updateSaeiSettings(Request $request)
   {
     $validated = $request->validate([
+      'whatsapp_provider'      => 'nullable|string|in:saei,cloud,green',
       'saei_otp_enabled'       => 'nullable|string|in:0,1',
       'saei_simulation'        => 'nullable|string|in:0,1',
       'saei_api_key'           => 'nullable|string',
@@ -245,6 +246,7 @@ class SettingsController extends Controller
     ]);
 
     $descriptions = [
+      'whatsapp_provider'      => 'مزود خدمة الواتساب النشط للمنصة (saei / cloud / green)',
       'saei_otp_enabled'       => 'تفعيل خدمة ساعي لإرسال OTP عبر واتساب',
       'saei_simulation'        => 'وضع المحاكاة لتجربة إرسال OTP بدون خصم رصيد',
       'saei_api_key'           => 'مفتاح الـ API الخاص بمنصة ساعي (Saei Secret Key)',
@@ -275,6 +277,54 @@ class SettingsController extends Controller
       'success' => true,
       'message' => 'تم حفظ وتحديث إعدادات ساعي وواتساب بنجاح، وأصبحت سارية المفعول فوراً!'
     ]);
+  }
+
+  /**
+   * اختبار الاتصال بمنصة ساعي للتحقق من صحة مفتاح الـ API والربط
+   */
+  public function testSaeiConnection(Request $request)
+  {
+    try {
+      $apiKey = $request->input('saei_api_key') ?: Settings::where('key', 'saei_api_key')->value('value') ?: env('SAEI_API_KEY', '');
+      $baseUrl = $request->input('saei_base_url') ?: Settings::where('key', 'saei_base_url')->value('value') ?: env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1');
+      $phoneId = $request->input('saei_from_phone_id') ?: Settings::where('key', 'saei_from_phone_id')->value('value') ?: env('SAEI_FROM_PHONE_ID', '');
+
+      if (empty($apiKey)) {
+        return response()->json([
+          'success' => false,
+          'message' => 'يرجى إدخال مفتاح الـ API الخاص بمنصة ساعي أولاً.'
+        ], 422);
+      }
+
+      $saeiService = new \App\Services\SaeiWhatsAppService();
+      $saeiService->setCredentials($apiKey, $baseUrl, $phoneId);
+
+      $res = $saeiService->getAccountInfo();
+
+      if ($res['success']) {
+        $msg = $res['message'] ?? 'تم الاتصال بمنصة ساعي بنجاح والاعتمادات صحيحة!';
+        if (!empty($res['numbers'])) {
+          $count = count($res['numbers']);
+          $msg .= " (عدد الأرقام المرتبطة بحساب ساعي: {$count})";
+        }
+        return response()->json([
+          'success' => true,
+          'message' => $msg,
+          'data' => $res
+        ]);
+      }
+
+      return response()->json([
+        'success' => false,
+        'message' => $res['message'] ?? 'فشل الاتصال بمنصة ساعي. يرجى التأكد من صحة مفتاح الـ API والرابط.'
+      ], 400);
+
+    } catch (\Throwable $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'حدث خطأ أثناء فحص الاتصال بساعي: ' . $e->getMessage()
+      ], 500);
+    }
   }
 }
 

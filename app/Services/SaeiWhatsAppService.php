@@ -140,8 +140,9 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             'reference' => $reference,
         ];
 
-        if (!empty($this->fromPhoneId)) {
-            $payload['from'] = $this->fromPhoneId;
+        $fromParam = $this->resolveFromNumber();
+        if (!empty($fromParam)) {
+            $payload['from'] = $fromParam;
         }
 
         try {
@@ -292,8 +293,9 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             'reference' => $reference,
         ];
 
-        if (!empty($this->fromPhoneId)) {
-            $payload['from'] = $this->fromPhoneId;
+        $fromParam = $this->resolveFromNumber();
+        if (!empty($fromParam)) {
+            $payload['from'] = $fromParam;
         }
 
         try {
@@ -406,8 +408,9 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             'reference' => $reference,
         ];
 
-        if (!empty($this->fromPhoneId)) {
-            $payload['from'] = $this->fromPhoneId;
+        $fromParam = $this->resolveFromNumber();
+        if (!empty($fromParam)) {
+            $payload['from'] = $fromParam;
         }
 
         try {
@@ -512,13 +515,21 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
                 $keyName = $data['api_key']['name'] ?? '';
                 $isLive = !empty($data['livemode']);
                 $modeText = $isLive ? 'Live' : 'Test';
+
+                $numbers = $this->getNumbers();
+                $numbersCount = count($numbers);
+
                 $msg = "تم الاتصال بساعي بنجاح! ✅ (مساحة العمل: {$workspaceName} | الوضع: {$modeText})";
+                if ($numbersCount > 0) {
+                    $msg .= " - الأرقام المتاحة: {$numbersCount}";
+                }
 
                 return [
                     'success'   => true,
                     'message'   => $msg,
                     'workspace' => $data['workspace'] ?? null,
                     'api_key'   => $data['api_key'] ?? null,
+                    'numbers'   => $numbers,
                     'account'   => $data,
                 ];
             }
@@ -547,6 +558,78 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             Log::error('[SaeiWhatsApp] getAccountInfo exception: ' . $e->getMessage());
             return ['success' => false, 'message' => 'تعذر الاتصال بخادم ساعي: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Get all registered WhatsApp numbers from Saei
+     */
+    public function getNumbers(): array
+    {
+        if (empty($this->apiKey)) {
+            return [];
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$this->apiKey}",
+                'Accept'        => 'application/json',
+            ])->timeout(10)->get("{$this->baseUrl}/numbers");
+
+            if ($response->successful()) {
+                return $response->json()['data'] ?? [];
+            }
+            return [];
+        } catch (\Throwable $e) {
+            Log::error('[SaeiWhatsApp] getNumbers exception: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Resolve the 'from' parameter for Saei API.
+     * Saei accepts:
+     * 1. A number ID (e.g. num_25)
+     * 2. An E.164 phone number (e.g. +966557507505)
+     *
+     * It rejects Meta Cloud numeric IDs (e.g. 1276243858896899).
+     */
+    public function resolveFromNumber(): ?string
+    {
+        $from = trim($this->fromPhoneId ?? '');
+        if (empty($from)) {
+            return '+966557507505'; // Default registered Safe Destination company number
+        }
+
+        // 1. Starts with num_ -> Saei number ID
+        if (str_starts_with($from, 'num_')) {
+            return $from;
+        }
+
+        // 2. Starts with + -> Already E.164
+        if (str_starts_with($from, '+')) {
+            return $from;
+        }
+
+        // 3. If it looks like a Meta Cloud Phone Number ID (pure digits >= 13 chars)
+        // e.g. 1276243858896899 -> DO NOT send to Saei as 'from', use registered Saei number
+        if (preg_match('/^1[0-9]{13,17}$/', $from)) {
+            Log::warning("[SaeiWhatsApp] Meta Cloud Phone ID detected in saei_from_phone_id ({$from}). Using registered Saei number (+966557507505) instead.");
+            return '+966557507505';
+        }
+
+        // 4. Local or international phone without + (e.g. 966557507505 or 0557507505)
+        $cleaned = preg_replace('/[^0-9]/', '', $from);
+        if (str_starts_with($cleaned, '05') && strlen($cleaned) === 10) {
+            return '+966' . substr($cleaned, 1);
+        }
+        if (str_starts_with($cleaned, '966') && strlen($cleaned) >= 11) {
+            return '+' . $cleaned;
+        }
+        if (strlen($cleaned) >= 9 && strlen($cleaned) <= 14) {
+            return '+' . $cleaned;
+        }
+
+        return $from;
     }
 
     /**
@@ -582,9 +665,13 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
      */
     protected function translateError(string $code, string $defaultMsg): string
     {
+        if ($code === 'parameter_invalid' && str_contains(strtolower($defaultMsg), 'from')) {
+            return 'حقل الرقم المُرسِل (from) غير صالح. يجب أن يكون رقم واتساب بصيغة دولية (مثل +966557507505) أو معرّف ساعي (مثل num_25).';
+        }
+
         return match ($code) {
             'window_closed' => 'نافذة الـ 24 ساعة مغلقة. تفرض سياسات واتساب إرسال قالب معتمد أولاً لإعادة فتح المحادثة.',
-            'parameter_invalid' => 'يوجد حقل غير صالح في بيانات الإرسال.',
+            'parameter_invalid' => $defaultMsg ?: 'يوجد حقل غير صالح في بيانات الإرسال.',
             'rate_limited' => 'تم تجاوز حد الطلبات المسموح به حالياً من قبل واتساب. يرجى الانتظار قليلاً.',
             'sender_not_configured' => 'لم يتم إعداد رقم الهاتف المُرسل في حساب ساعي.',
             'channel_error' => 'رفض واتساب تسليم الرسالة لهذا الرقم (قد يكون غير مفعل على واتساب أو محظور).',

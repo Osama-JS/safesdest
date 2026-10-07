@@ -70,6 +70,22 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         return $url . '/v1';
     }
 
+    public function resolveFromNumber(): string
+    {
+        $from = trim($this->fromPhoneId ?? '');
+        if (empty($from) || preg_match('/^1[0-9]{13,17}$/', $from)) {
+            return '+966557507505';
+        }
+        if (str_starts_with($from, 'num_') || str_starts_with($from, '+')) {
+            return $from;
+        }
+        $cleaned = preg_replace('/[^0-9]/', '', $from);
+        if (str_starts_with($cleaned, '05') && strlen($cleaned) === 10) {
+            return '+966' . substr($cleaned, 1);
+        }
+        return '+' . $cleaned;
+    }
+
     // ─────────────────────────────────────────────────────────────
     // الهيدرز المشتركة
     // ─────────────────────────────────────────────────────────────
@@ -125,7 +141,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
                 ->timeout(15)
                 ->post("{$this->baseUrl}/verify/start", [
                     'to'          => $phone,
-                    'from'        => $this->fromPhoneId,
+                    'from'        => $this->resolveFromNumber(),
                     'template_id' => $this->templateId,
                 ]);
 

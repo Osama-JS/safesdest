@@ -216,7 +216,7 @@
                 $saeiSimulation = ($settings['saei_simulation']['value'] ?? '0') == '1';
                 $saeiApiKey = $settings['saei_api_key']['value'] ?? env('SAEI_API_KEY', '');
                 $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1');
-                $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '1276243858896899');
+                $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '+966557507505');
                 $saeiTemplateId = $settings['saei_template_id']['value'] ?? env('SAEI_TEMPLATE_ID', '77');
                 $saeiCallbackSecret = $settings['saei_callback_secret']['value'] ?? env('SAEI_CALLBACK_SECRET', '');
                 $waCloudToken = $settings['whatsapp_cloud_token']['value'] ?? env('WHATSAPP_CLOUD_TOKEN', '');
@@ -369,10 +369,16 @@
 
                             <!-- Saei From Phone ID -->
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">{{ __('معرّف رقم الهاتف المُرسِل (Phone Number ID)') }} <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold">{{ __('رقم أو معرّف هاتف الإرسال في ساعي') }} <span class="text-danger">*</span></label>
                                 <input type="text" id="saei_from_phone_id" name="saei_from_phone_id" class="form-control font-monospace"
-                                    value="{{ $saeiFromPhoneId }}" placeholder="1276243858896899">
-                                <small class="text-muted">{{ __('معرف الرقم في ساعي وميتا (وليس رقم الهاتف نفسه).') }}</small>
+                                    value="{{ $saeiFromPhoneId }}" placeholder="+966557507505" list="saei_numbers_list">
+                                <datalist id="saei_numbers_list">
+                                    <option value="+966557507505">شركة الوجهة الآمنة (Safe Destination)</option>
+                                    <option value="+966555723838">شركة Fly vio</option>
+                                    <option value="num_25">معرّف ساعي (num_25)</option>
+                                    <option value="num_26">معرّف ساعي (num_26)</option>
+                                </datalist>
+                                <small class="text-muted">{{ __('يقبل رقم واتساب بالصيغة الدولية مثل +966557507505 أو معرّف ساعي مثل num_25') }}</small>
                             </div>
 
                             <!-- Saei Template ID -->

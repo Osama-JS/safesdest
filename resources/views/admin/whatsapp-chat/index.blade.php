@@ -328,6 +328,15 @@
         70% { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
         100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
     }
+
+    /* Highlight animation when conversation moves to top (like WhatsApp) */
+    @keyframes wa-highlight-fade {
+        0%   { background-color: #d9fdd3; }
+        100% { background-color: transparent; }
+    }
+    .wa-conversation-item.wa-item-highlight {
+        animation: wa-highlight-fade 1.5s ease-out forwards;
+    }
 </style>
 @endsection
 
@@ -1070,6 +1079,80 @@ $(document).ready(function() {
         scrollToBottom();
     }
 
+    // =========================================================================
+    // Move conversation to top of list (like WhatsApp real-time reorder)
+    // =========================================================================
+    function moveConversationToTop(convId, previewText, timeLabel) {
+        let item = $(`.wa-conversation-item[data-id="${convId}"]`);
+        if (!item.length) return;
+
+        let list = item.closest('ul, div.wa-conversations-list, .list-group');
+        if (!list.length) return;
+
+        // Update preview text & time label
+        if (previewText) {
+            item.find('.text-preview').text(previewText);
+        }
+        if (timeLabel) {
+            item.find('small.text-nowrap').text(timeLabel);
+        }
+
+        // Only move if not already first
+        if (item.index() !== 0) {
+            item.detach().prependTo(list);
+            // Brief highlight flash to show it moved
+            item.addClass('wa-item-highlight');
+            setTimeout(function() { item.removeClass('wa-item-highlight'); }, 1500);
+        }
+    }
+
+    // Periodic full sidebar refresh (keeps background conversations in order)
+    let sidebarRefreshInterval = null;
+    function startSidebarRefresh() {
+        if (sidebarRefreshInterval) clearInterval(sidebarRefreshInterval);
+        sidebarRefreshInterval = setInterval(refreshSidebarConversations, 30000);
+    }
+
+    function refreshSidebarConversations() {
+        let activeFilter = $('.wa-filter-pill.active').data('filter') || 'all';
+        let search = $('#conversation-search').val() || '';
+
+        $.get("{{ url('admin/whatsapp-chat/widget-summary') }}", {
+            filter: activeFilter,
+            search: search
+        }, function(res) {
+            if (res.status !== 'success' || !res.conversations) return;
+
+            let convs = res.conversations;
+            let list = $('.wa-conversations-list');
+            if (!list.length) return;
+
+            // Build a map of existing DOM items
+            let existingItems = {};
+            list.find('.wa-conversation-item').each(function() {
+                existingItems[$(this).data('id')] = $(this);
+            });
+
+            // Re-append items in sorted order from server, updating previews
+            convs.forEach(function(c) {
+                let item = existingItems[c.id];
+                if (item) {
+                    // Update preview and time
+                    item.find('.text-preview').text(c.last_message_preview || '');
+                    item.find('small.text-nowrap').text(c.last_message_time || '');
+
+                    // Update unread badge
+                    item.find('.badge-unread').remove();
+                    if (c.unread_count > 0) {
+                        item.find('.d-flex.justify-content-between.align-items-center').last()
+                            .append(`<span class="badge bg-danger rounded-pill badge-unread">${c.unread_count}</span>`);
+                    }
+                    list.append(item.detach());
+                }
+            });
+        });
+    }
+
     function pollNewMessages() {
         if (!currentConversationId) return;
 
@@ -1080,6 +1163,17 @@ $(document).ready(function() {
                 if (res.status === 'success') {
                     if (res.has_new && res.messages.length > 0) {
                         appendNewMessages(res.messages);
+
+                        // Check if any new inbound message arrived - move conversation to top
+                        let hasInbound = res.messages.some(m => m.direction === 'inbound');
+                        let lastMsg = res.messages[res.messages.length - 1];
+                        if (lastMsg) {
+                            moveConversationToTop(
+                                currentConversationId,
+                                lastMsg.content ? lastMsg.content.substring(0, 60) : null,
+                                'الآن'
+                            );
+                        }
                     }
                     if (res.unread_stats) {
                         let totalUnread = res.unread_stats.unread_messages;
@@ -1097,6 +1191,9 @@ $(document).ready(function() {
             }
         });
     }
+
+    // Start periodic sidebar refresh to keep background conversations sorted
+    startSidebarRefresh();
 
     function scrollToBottom() {
         let chatArea = $('#chat-messages');
@@ -1178,6 +1275,7 @@ $(document).ready(function() {
                     `;
                     $('#chat-messages').append(tempBubble);
                     scrollToBottom();
+                    moveConversationToTop(currentConversationId, text.substring(0, 55), 'الآن');
                 } else if (res.code === 'window_closed') {
                     updateWindowUI(false, 0);
                     Swal.fire({
@@ -1258,6 +1356,7 @@ $(document).ready(function() {
                         status: 'sent',
                         time: res.time || 'الآن'
                     }));
+                    moveConversationToTop(currentConversationId, (res.caption || res.media_filename || 'ملف مرفق').substring(0, 55), 'الآن');
                 } else {
                     $(`#${tempId} .wa-bubble-meta`).html(`<span class="text-danger small">${res.message || 'فشل الإرسال'}</span>`);
                 }

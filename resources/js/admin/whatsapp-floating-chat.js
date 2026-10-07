@@ -599,18 +599,19 @@ $(function () {
       _token: $('meta[name="csrf-token"]').attr('content')
     })
       .done(function (res) {
-        if (res.status === 'success' && res.message) {
+        if (res.status === 'success') {
           const m = res.message;
           $(`#${tempId}`).replaceWith(buildMessageBubble({
-            id: m.id || Date.now(),
+            id: (typeof m === 'object' && m && m.id) ? m.id : Date.now(),
             direction: 'outbound',
             content: message,
             status: 'sent',
             time: res.time || 'الآن'
           }));
-          if (m.id) {
+          if (typeof m === 'object' && m && m.id) {
             activeLastMessageId = Math.max(activeLastMessageId, m.id);
           }
+          moveWidgetConvToTop(activeConversationId, message);
         }
       })
       .fail(function (xhr) {
@@ -670,6 +671,7 @@ $(function () {
             status: 'sent',
             time: res.time || 'الآن'
           }));
+          moveWidgetConvToTop(activeConversationId, res.caption || res.media_filename || 'ملف مرفق');
         } else {
           $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${res.message || 'فشل الإرسال'}</span>`);
         }
@@ -701,6 +703,7 @@ $(function () {
       .done(function (res) {
         if (res.status === 'success') {
           selectConversation(activeConversationId);
+          loadSummaryData();
         }
       });
   });
@@ -771,6 +774,26 @@ $(function () {
   // 6. POLLING & INITIALIZATION
   // =========================================================================
 
+  function moveWidgetConvToTop(convId, previewText) {
+    const item = convList.find(`.whatsapp-conv-item[data-id="${convId}"]`);
+    if (!item.length) return;
+
+    // Update preview text
+    if (previewText) {
+      item.find('.text-truncate').first().text(previewText.substring(0, 55));
+    }
+    // Update time to "الآن"
+    item.find('small.text-nowrap').text('الآن');
+
+    // Move to top if not already there
+    if (item.index() !== 0) {
+      item.detach().prependTo(convList);
+      // Brief green pulse highlight
+      item.addClass('conv-item-new');
+      setTimeout(() => item.removeClass('conv-item-new'), 2000);
+    }
+  }
+
   function restartPolling(ms) {
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(function () {
@@ -782,13 +805,23 @@ $(function () {
           after_id: activeLastMessageId
         }).done(function (res) {
           if (res.status === 'success' && res.messages && res.messages.length > 0) {
+            let newBubbles = false;
             res.messages.forEach(function (m) {
               if (m.id > activeLastMessageId) {
                 messagesStream.append(buildMessageBubble(m));
                 activeLastMessageId = m.id;
+                newBubbles = true;
               }
             });
-            scrollToBottom();
+            if (newBubbles) {
+              scrollToBottom();
+              // Move this conversation to top of the list immediately
+              const lastMsg = res.messages[res.messages.length - 1];
+              moveWidgetConvToTop(
+                activeConversationId,
+                lastMsg && lastMsg.content ? lastMsg.content : null
+              );
+            }
           }
         });
       }

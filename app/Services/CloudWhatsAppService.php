@@ -120,10 +120,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
         }
 
         // 1. Conversation
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         // 2. Create message record
         $message = WhatsappMessage::create([
@@ -200,10 +197,7 @@ class CloudWhatsAppService implements WhatsAppServiceInterface
         $phoneFormatted = $this->formatPhone($phone);
 
         // 1. Conversation
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         // 2. Create message record
         $message = WhatsappMessage::create([

@@ -114,4 +114,48 @@ $(function () {
   function formatCurrency(amount) {
     return parseFloat(amount || 0).toFixed(2) + ' ر.س';
   }
+
+  // HyperPay Webhook Token helpers
+  $('#btn_generate_hp_token').on('click', function () {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var token = '';
+    for (var i = 0; i < 32; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    $('#hyperpay_webhook_token').val(token).trigger('change');
+  });
+
+  $('#hyperpay_webhook_token').on('input change', function () {
+    var token = $(this).val().trim();
+    var baseUrl = $('#hyperpay_webhook_url_display').data('base-url') || '';
+    if (token) {
+      $('#hyperpay_webhook_url_display').val(baseUrl + '?token=' + encodeURIComponent(token));
+    } else {
+      $('#hyperpay_webhook_url_display').val(baseUrl);
+    }
+  });
+
+  $('#btn_copy_hp_url').on('click', function () {
+    var copyText = $('#hyperpay_webhook_url_display').val();
+    if (!copyText) return;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(copyText).then(function () {
+        showAlert('success', 'تم نسخ رابط الـ Webhook إلى الحافظة بنجاح', 3000, true);
+      }).catch(function () {
+        fallbackCopyText(copyText);
+      });
+    } else {
+      fallbackCopyText(copyText);
+    }
+  });
+
+  function fallbackCopyText(text) {
+    var tempInput = $('<input>');
+    $('body').append(tempInput);
+    tempInput.val(text).select();
+    document.execCommand('copy');
+    tempInput.remove();
+    showAlert('success', 'تم نسخ رابط الـ Webhook إلى الحافظة بنجاح', 3000, true);
+  }
 });

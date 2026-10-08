@@ -161,12 +161,11 @@ class WhatsAppWebhookController extends Controller
                             // Auto-resolve user (Customer or Driver)
                             $resolvedUser = $this->resolveUserByPhone($normalizedPhone);
 
-                            $conversation = WhatsappConversation::firstOrCreate(
-                                ['phone_number' => $normalizedPhone],
+                            $conversation = WhatsappConversation::findOrCreateByPhone(
+                                $normalizedPhone,
                                 [
                                     'user_type' => $resolvedUser['user_type'],
                                     'user_id' => $resolvedUser['user_id'],
-                                    'unread_count' => 0
                                 ]
                             );
 
@@ -407,12 +406,11 @@ class WhatsAppWebhookController extends Controller
                 $normalizedPhone = $this->cleanPhoneNumber($rawPhone);
                 $resolvedUser = $this->resolveUserByPhone($normalizedPhone);
 
-                $conversation = WhatsappConversation::firstOrCreate(
-                    ['phone_number' => $normalizedPhone],
+                $conversation = WhatsappConversation::findOrCreateByPhone(
+                    $normalizedPhone,
                     [
                         'user_type' => $resolvedUser['user_type'],
                         'user_id'   => $resolvedUser['user_id'],
-                        'unread_count' => 0
                     ]
                 );
 

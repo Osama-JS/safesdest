@@ -49,21 +49,25 @@ use App\Http\Controllers\admin\CompanyManagementController;
 use App\Http\Controllers\admin\MtahdDealLogsController;
 
 Route::get('/lang/{locale}', [LanguageController::class, 'swap'])->name('lang.switch');
-Route::get('/active-account', function () {
+// Local-only test and debug routes
+if (app()->environment('local')) {
+    Route::get('/active-account', function () {
+        return response()->json(['status' => 'debug_active']);
+    })->name("active-account-test");
 
-    dd('hello');
-})->name("active-account-test");
+    Route::get('/test-signit', [SignatureController::class, 'testOAuth']);
+    Route::get('/test-signature', [SignatureController::class, 'testSignatureRequest']);
+}
 
 Route::get('/chosen/vehicles/types/{vehicle}', [VehiclesController::class, 'getTypes']);
 Route::get('/chosen/vehicles/sizes/{type}', [VehiclesController::class, 'getSizes']);
 
 Route::get('/refresh-captcha', [CaptchaController::class, 'refresh'])->name('captcha.refresh');
-Route::get('/test-signit', [SignatureController::class, 'testOAuth']);
 
-Route::get('/test-signature', [SignatureController::class, 'testSignatureRequest']);
-
-// Public Share Task Route
-Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::class, 'share'])->name('admin.tasks.share_link');
+// Public Share Task Route (Protected with Rate Limiting to prevent scraping/enumeration)
+Route::get('/share/task/{id}', [App\Http\Controllers\admin\TaskShareController::class, 'share'])
+    ->middleware('throttle:30,1')
+    ->name('admin.tasks.share_link');
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Payment Routes (no session auth required — secured via payment_token)

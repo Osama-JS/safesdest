@@ -22,19 +22,36 @@ class PayoutRequestsController extends Controller
     }
 
     /**
+     * Base query for driver payouts only
+     */
+    protected function baseDriverPayoutQuery()
+    {
+        return HyperpayPayout::where(function ($q) {
+            $q->whereNotNull('driver_id')
+              ->orWhereNotNull('wallet_id')
+              ->orWhereNotNull('source_withdrawal_id')
+              ->orWhereIn('payout_type', ['WD', 'MT', 'WP']);
+        })->whereNull('team_id')
+          ->whereNull('team_wallet_id')
+          ->whereNull('user_id')
+          ->whereNull('user_wallet_id')
+          ->whereNotIn('payout_type', ['TPW', 'TWM', 'TWP', 'IPW', 'IWD', 'UWP', 'INV']);
+    }
+
+    /**
      * Display the Payout Requests listing and metrics.
      */
     public function index()
     {
         $metrics = [
-            'pending_approval_count'  => HyperpayPayout::where('status', 'pending_approval')->count(),
-            'pending_approval_amount' => HyperpayPayout::where('status', 'pending_approval')->sum('amount'),
-            'processing_count'        => HyperpayPayout::whereIn('status', ['pending', 'processing'])->count(),
-            'processing_amount'       => HyperpayPayout::whereIn('status', ['pending', 'processing'])->sum('amount'),
-            'completed_count'         => HyperpayPayout::where('status', 'completed')->count(),
-            'completed_amount'        => HyperpayPayout::where('status', 'completed')->sum('amount'),
-            'rejected_count'          => HyperpayPayout::where('status', 'rejected')->count(),
-            'failed_count'            => HyperpayPayout::where('status', 'failed')->count(),
+            'pending_approval_count'  => $this->baseDriverPayoutQuery()->where('status', 'pending_approval')->count(),
+            'pending_approval_amount' => $this->baseDriverPayoutQuery()->where('status', 'pending_approval')->sum('amount'),
+            'processing_count'        => $this->baseDriverPayoutQuery()->whereIn('status', ['pending', 'processing'])->count(),
+            'processing_amount'       => $this->baseDriverPayoutQuery()->whereIn('status', ['pending', 'processing'])->sum('amount'),
+            'completed_count'         => $this->baseDriverPayoutQuery()->where('status', 'completed')->count(),
+            'completed_amount'        => $this->baseDriverPayoutQuery()->where('status', 'completed')->sum('amount'),
+            'rejected_count'          => $this->baseDriverPayoutQuery()->where('status', 'rejected')->count(),
+            'failed_count'            => $this->baseDriverPayoutQuery()->where('status', 'failed')->count(),
         ];
 
         return view('admin.wallets.payout_requests.index', compact('metrics'));
@@ -45,7 +62,8 @@ class PayoutRequestsController extends Controller
      */
     public function getData(Request $request)
     {
-        $query = HyperpayPayout::with(['driver', 'wallet', 'creator', 'approver', 'rejector', 'withdrawal'])
+        $query = $this->baseDriverPayoutQuery()
+            ->with(['driver', 'wallet', 'creator', 'approver', 'rejector', 'withdrawal'])
             ->orderBy('id', 'desc');
 
         if ($request->filled('status')) {
@@ -183,6 +201,16 @@ class PayoutRequestsController extends Controller
         $payout = HyperpayPayout::with(['driver.wallet', 'wallet', 'creator', 'approver', 'rejector', 'withdrawal'])
             ->findOrFail($id);
 
+        // التفويض التلقائي الذكي لطلبات الفرق إذا تم استدعاؤها من هنا
+        if ($payout->team_id || $payout->team_wallet_id || in_array($payout->payout_type, ['TPW', 'TWM', 'TWP'])) {
+            return app(TeamPayoutRequestsController::class)->show($id);
+        }
+
+        // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها من هنا
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+            return app(InvestorPayoutRequestsController::class)->show($id);
+        }
+
         $details = $payout->transaction_details ?? [];
 
         // Driver Wallet URL
@@ -285,7 +313,17 @@ class PayoutRequestsController extends Controller
             ], 422);
         }
 
-        $payout = HyperpayPayout::with(['driver', 'wallet', 'withdrawal'])->findOrFail($id);
+        $payout = HyperpayPayout::with(['driver', 'wallet', 'withdrawal', 'team', 'user'])->findOrFail($id);
+
+        // التفويض التلقائي الذكي لطلبات الفرق إذا تم استدعاؤها عبر هذا المسار
+        if ($payout->team_id || $payout->team_wallet_id || in_array($payout->payout_type, ['TPW', 'TWM', 'TWP'])) {
+            return app(TeamPayoutRequestsController::class)->approve($request, $id);
+        }
+
+        // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها عبر هذا المسار
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+            return app(InvestorPayoutRequestsController::class)->approve($request, $id);
+        }
 
         if ($payout->status !== 'pending_approval') {
             return response()->json([
@@ -294,7 +332,7 @@ class PayoutRequestsController extends Controller
             ], 422);
         }
 
-        $driver = $payout->driver;
+        $driver = $payout->driver ?? $payout->wallet?->driver;
         if (!$driver) {
             return response()->json([
                 'success' => false,
@@ -398,6 +436,16 @@ class PayoutRequestsController extends Controller
         ]);
 
         $payout = HyperpayPayout::with(['withdrawal'])->findOrFail($id);
+
+        // التفويض التلقائي الذكي لطلبات الفرق إذا تم استدعاؤها عبر هذا المسار
+        if ($payout->team_id || $payout->team_wallet_id || in_array($payout->payout_type, ['TPW', 'TWM', 'TWP'])) {
+            return app(TeamPayoutRequestsController::class)->reject($request, $id);
+        }
+
+        // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها عبر هذا المسار
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+            return app(InvestorPayoutRequestsController::class)->reject($request, $id);
+        }
 
         if ($payout->status !== 'pending_approval') {
             return response()->json([

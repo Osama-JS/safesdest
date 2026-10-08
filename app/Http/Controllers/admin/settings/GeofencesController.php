@@ -56,7 +56,11 @@ class GeofencesController extends Controller
     $validator = Validator::make($req->all(), [
       'name' => 'required|unique:geofences,name,' . ($req->id ?? 0),
       'description' => 'nullable|string',
-      'coordinates' => 'required|string',
+      'coordinates' => [
+        'required',
+        'string',
+        'regex:/^(POLYGON|MULTIPOLYGON|POINT|LINESTRING)\s*\(\s*[-0-9.,\s()]+\)$/i'
+      ],
       'teams' => 'nullable|array',
     ], [
       'name.required' => __('The geofence name is required.'),
@@ -64,6 +68,7 @@ class GeofencesController extends Controller
       'description.string' => __('The description must be a string.'),
       'coordinates.required' => __('The coordinates field is required.'),
       'coordinates.string' => __('The coordinates must be a string.'),
+      'coordinates.regex' => __('تنسيق الإحداثيات الجغرافية غير صحيح (يجب أن يكون بتنسيق WKT سليم).'),
       'teams.array' => __('Teams must be an array.'),
     ]);
     if ($validator->fails()) {
@@ -72,10 +77,11 @@ class GeofencesController extends Controller
 
     DB::beginTransaction();
     try {
+      $quotedCoords = DB::getPdo()->quote($req->coordinates);
       $data = [
         'name' => $req->name,
         'description' => $req->description,
-        'coordinates' => DB::raw("ST_GeomFromText('{$req->coordinates}', 4326)")
+        'coordinates' => DB::raw("ST_GeomFromText({$quotedCoords}, 4326)")
       ];
 
       if ($req->filled('id')) {

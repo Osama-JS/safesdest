@@ -203,6 +203,70 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- HyperPay Payout Webhook Security Card -->
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-label-warning py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <h5 class="card-title mb-0 text-warning d-flex align-items-center">
+                                <i class="ti ti-shield-lock me-2 fs-4"></i>{{ __('أمان وبوابة الدفع والتحويل HyperPay (Webhook Security)') }}
+                            </h5>
+                            <span class="badge bg-label-warning rounded-pill px-3 py-1 fs-tiny fw-semibold">
+                                <i class="ti ti-info-circle me-1"></i> {{ __('إعداد أمان اختياري') }}
+                            </span>
+                        </div>
+                        <div class="card-body pt-4">
+                            <div class="alert alert-warning d-flex align-items-start mb-4" role="alert">
+                                <i class="ti ti-alert-triangle fs-3 me-2 mt-1"></i>
+                                <div>
+                                    <h6 class="alert-heading fw-bold mb-1">{{ __('آلية عمل التوكن السري (Webhook Token)') }}</h6>
+                                    <p class="mb-0 fs-small">
+                                        {{ __('إذا تركت هذا الحقل فارغاً، فسيتم تجاهل فحص التوكن والعمل بالنظام الحالي مباشرة دون أي قيود (متوافق 100% مع الاتصال الحالي). أما إذا قمت بتعيين قيمة توكن هنا، فسيتم رفض أي إشعار وارد من هايبر باي ما لم يحتوي على التوكن الصحيح لضمان أقصى حماية للعمليات المالية.') }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" for="hyperpay_webhook_token">
+                                        {{ __('رمز الأمان السري للويب هوك (HyperPay Webhook Token)') }}
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="text" 
+                                            id="hyperpay_webhook_token"
+                                            data-key="hyperpay_webhook_token"
+                                            value="{{ $settings['hyperpay_webhook_token']['value'] ?? '' }}"
+                                            placeholder="{{ __('اتركه فارغاً للتجاهل، أو أدخل رمز أمان مخصص') }}"
+                                            class="form-control update-setting-input font-monospace">
+                                        <button class="btn btn-outline-primary" type="button" id="btn_generate_hp_token" title="{{ __('توليد رمز عشوائي قوي') }}">
+                                            <i class="ti ti-refresh me-1"></i> {{ __('توليد رمز') }}
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ __('يتم الحفظ تلقائياً بمجرد التغيير. لمسح التوكن وإلغاء الفحص، افرغ الحقل فقط.') }}
+                                    </small>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ __('رابط Webhook المعتمد لإضافته في لوحة HyperPay') }}</label>
+                                    <div class="input-group">
+                                        <input type="text" readonly 
+                                            id="hyperpay_webhook_url_display"
+                                            data-base-url="{{ url('/api/hyperpay/webhook/payout') }}"
+                                            value="{{ url('/api/hyperpay/webhook/payout') . (!empty($settings['hyperpay_webhook_token']['value'] ?? '') ? '?token=' . ($settings['hyperpay_webhook_token']['value'] ?? '') : '') }}" 
+                                            class="form-control bg-lighter font-monospace text-muted">
+                                        <button class="btn btn-primary" type="button" id="btn_copy_hp_url">
+                                            <i class="ti ti-copy me-1"></i> {{ __('نسخ الرابط') }}
+                                        </button>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ __('يدعم النظام إرسال التوكن عبر الرابط كـ ?token=... أو عبر Header باسم X-Webhook-Token أو Bearer Token.') }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

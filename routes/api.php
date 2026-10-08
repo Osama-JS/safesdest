@@ -27,35 +27,39 @@ Route::post('/signit/webhook', [\App\Http\Controllers\Api\SignitWebhookControlle
 Route::get('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify']);
 Route::post('/whatsapp/webhook', [\App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle']);
 
-// TEST Webhook
-Route::get('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
-    $verifyToken = env('WHATSAPP_VERIFY_TOKEN');
-    $mode = $request->query('hub_mode');
-    $token = $request->query('hub_verify_token');
-    $challenge = $request->query('hub_challenge');
-    
-    \Illuminate\Support\Facades\Log::info('TEST WEBHOOK GET (Verify):', $request->all());
+// TEST Webhook (Only accessible in local development)
+if (app()->environment('local')) {
+    Route::get('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
+        $verifyToken = env('WHATSAPP_VERIFY_TOKEN');
+        $mode = $request->query('hub_mode');
+        $token = $request->query('hub_verify_token');
+        $challenge = $request->query('hub_challenge');
+        
+        \Illuminate\Support\Facades\Log::info('TEST WEBHOOK GET (Verify):', $request->all());
 
-    if ($mode === 'subscribe' && $token === $verifyToken) {
-        return response($challenge, 200);
-    }
-    return response('Forbidden', 403);
-});
+        if ($mode === 'subscribe' && $token === $verifyToken) {
+            return response($challenge, 200);
+        }
+        return response('Forbidden', 403);
+    });
 
-Route::post('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
-    \Illuminate\Support\Facades\Log::info('TEST WEBHOOK POST (Payload):', $request->all());
-    return response('EVENT_RECEIVED', 200);
-});
+    Route::post('/whatsapp/webhook-test', function(\Illuminate\Http\Request $request) {
+        \Illuminate\Support\Facades\Log::info('TEST WEBHOOK POST (Payload):', $request->all());
+        return response('EVENT_RECEIVED', 200);
+    });
+}
 
 // ─────────────────────────────────────────────────────────────
-// Saei OTP Service Routes
+// Saei OTP Service Routes (Protected with Rate Limiting)
 // ─────────────────────────────────────────────────────────────
 
-// إرسال رمز OTP عبر واتساب (POST /api/saei/otp/send)
-Route::post('/saei/otp/send', [\App\Http\Controllers\Api\SaeiOtpController::class, 'send']);
+// إرسال رمز OTP عبر واتساب (POST /api/saei/otp/send) - حد أقصى 3 محاولات بالدقيقة لمنع الإغراق
+Route::post('/saei/otp/send', [\App\Http\Controllers\Api\SaeiOtpController::class, 'send'])
+    ->middleware('throttle:3,1');
 
-// التحقق من رمز OTP (POST /api/saei/otp/verify)
-Route::post('/saei/otp/verify', [\App\Http\Controllers\Api\SaeiOtpController::class, 'verify']);
+// التحقق من رمز OTP (POST /api/saei/otp/verify) - حد أقصى 5 محاولات بالدقيقة لمنع التخمين
+Route::post('/saei/otp/verify', [\App\Http\Controllers\Api\SaeiOtpController::class, 'verify'])
+    ->middleware('throttle:5,1');
 
 // استقبال Callback من ساعي بعد التحقق (POST /api/saei/otp/callback)
 Route::post('/saei/otp/callback', [\App\Http\Controllers\Api\SaeiOtpController::class, 'callback']);

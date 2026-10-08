@@ -460,12 +460,11 @@ class WhatsappChatController extends Controller
         $resolved = $this->resolveUserByPhone($phone);
 
         // Find or create conversation
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phone],
+        $conversation = WhatsappConversation::findOrCreateByPhone(
+            $phone,
             [
                 'user_type'    => $resolved['user_type'],
                 'user_id'      => $resolved['user_id'],
-                'unread_count' => 0
             ]
         );
 

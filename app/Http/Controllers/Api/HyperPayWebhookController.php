@@ -24,6 +24,24 @@ class HyperPayWebhookController extends Controller
     {
         Log::info('HyperPay Webhook Received:', $request->all());
 
+        // Token Verification (Managed from Admin Settings)
+        // If not configured or empty, token verification is bypassed (backward compatibility)
+        $configuredToken = \App\Models\Settings::getValue('hyperpay_webhook_token');
+        if (!empty($configuredToken)) {
+            $incomingToken = $request->query('token')
+                ?? $request->header('X-Webhook-Token')
+                ?? $request->bearerToken()
+                ?? $request->input('token');
+
+            if (!$incomingToken || !hash_equals((string) $configuredToken, (string) $incomingToken)) {
+                Log::warning('HyperPay Webhook Rejected: Invalid or Missing Token', [
+                    'ip' => $request->ip(),
+                    'provided_token_sample' => $incomingToken ? substr($incomingToken, 0, 4) . '***' : 'null'
+                ]);
+                return response()->json(['message' => 'Unauthorized: Invalid webhook token'], 401);
+            }
+        }
+
         $payload = $request->all();
         $reference = $payload['payoutReference'] ?? null;
         $responseCode = $payload['responseCode'] ?? null;

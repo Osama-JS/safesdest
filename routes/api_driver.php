@@ -37,8 +37,10 @@ Route::prefix('driver')->group(function () {
         ]);
     });
 
-    // Test endpoint for debugging task ads (no auth required)
-    Route::get('/task-ads/test-stats', [DriverTaskAdsController::class, 'testStats']);
+    // Test endpoint for debugging task ads (only in local development)
+    if (app()->environment('local')) {
+        Route::get('/task-ads/test-stats', [DriverTaskAdsController::class, 'testStats']);
+    }
     // Download routes (accessible via token in query string)
     Route::get('/tasks/{task}/waybill', [DriverTaskController::class, 'downloadWaybill'])
         ->name('api.driver.tasks.waybill');

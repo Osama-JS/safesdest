@@ -94,11 +94,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         $phoneFormatted = $this->formatPhone($phone);
         $reference = $reference ?: 'msg_' . Str::random(16);
 
-        // 1. Conversation
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        // 1. Conversation (normalized digits, matching with or without '+')
+        $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         // 2. Create message record
         $message = WhatsappMessage::create([
@@ -229,11 +226,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         $templateLang = $template->language ?: $lang;
         $reference = 'tpl_' . Str::random(16);
 
-        // Conversation
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        // Conversation (normalized digits, matching with or without '+')
+        $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         // Render preview body
         $renderedBody = $template->body_text ?? "قالب: {$templateName}";
@@ -355,10 +349,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         $phoneFormatted = $this->formatPhone($phone);
         $reference = $reference ?: 'med_' . Str::random(16);
 
-        $conversation = WhatsappConversation::firstOrCreate(
-            ['phone_number' => $phoneFormatted],
-            ['unread_count' => 0]
-        );
+        // Conversation (normalized digits, matching with or without '+')
+        $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         $previewText = match ($type) {
             'image'    => '📷 صورة' . ($caption ? ": {$caption}" : ''),

@@ -103,4 +103,55 @@ class WhatsappConversation extends Model
         $diff = 24 - $lastInbound->created_at->diffInHours(now());
         return max(0, $diff);
     }
+
+    /**
+     * Normalize any phone string to clean international digits without '+'
+     */
+    public static function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($digits, '00')) {
+            $digits = substr($digits, 2);
+        }
+        if (str_starts_with($digits, '05') && strlen($digits) === 10) {
+            $digits = '966' . substr($digits, 1);
+        }
+        return $digits;
+    }
+
+    /**
+     * Find or create conversation by phone number, matching with or without '+'
+     */
+    public static function findOrCreateByPhone(string $phone, array $attributes = []): self
+    {
+        $cleanPhone = self::normalizePhone($phone);
+
+        $conversation = self::where('phone_number', $cleanPhone)
+            ->orWhere('phone_number', '+' . $cleanPhone)
+            ->first();
+
+        if ($conversation) {
+            // Ensure the stored phone number is consistently digits-only
+            if ($conversation->phone_number !== $cleanPhone) {
+                $conversation->update(['phone_number' => $cleanPhone]);
+            }
+            if (!empty($attributes)) {
+                $updates = [];
+                foreach ($attributes as $k => $v) {
+                    if ($conversation->$k === null && $v !== null) {
+                        $updates[$k] = $v;
+                    }
+                }
+                if (!empty($updates)) {
+                    $conversation->update($updates);
+                }
+            }
+            return $conversation;
+        }
+
+        return self::create(array_merge([
+            'phone_number' => $cleanPhone,
+            'unread_count' => 0,
+        ], $attributes));
+    }
 }

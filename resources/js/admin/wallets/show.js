@@ -1388,8 +1388,8 @@ $(function () {
                 </button>
               `;
 
-              // Pay Invoice (if unpaid)
-              if (full.status === 'unpaid') {
+              // Pay Invoice (if unpaid and has permission)
+              if (full.status === 'unpaid' && (typeof canPayCustomerInvoices === 'undefined' || canPayCustomerInvoices)) {
                 actions += `
                   <button type="button" class="btn btn-sm btn-icon btn-pay-invoice text-success" data-id="${full.id}" data-number="${full.invoice_number}" data-total="${full.total_amount}" data-remaining="${full.remaining_amount}" title="تسجيل سداد">
                     <i class="ti ti-cash"></i>
@@ -1397,19 +1397,29 @@ $(function () {
                 `;
               }
 
-              // Edit, Approve, Cancel (if not approved and not cancelled)
+              // Edit, Approve, Cancel (if not approved, not cancelled, and user has permission)
               if (full.status !== 'approved' && full.status !== 'cancelled') {
-                actions += `
-                  <button type="button" class="btn btn-sm btn-icon btn-edit-invoice" data-id="${full.id}" title="تعديل الفاتورة">
-                    <i class="ti ti-edit"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-icon btn-approve-invoice text-primary" data-id="${full.id}" data-number="${full.invoice_number}" title="اعتماد نهائي">
-                    <i class="ti ti-check"></i>
-                  </button>
-                  <button type="button" class="btn btn-sm btn-icon btn-cancel-invoice text-danger" data-id="${full.id}" data-number="${full.invoice_number}" title="إلغاء الفاتورة وفك الحركات">
-                    <i class="ti ti-circle-x"></i>
-                  </button>
-                `;
+                if (typeof canEditCustomerInvoices === 'undefined' || canEditCustomerInvoices) {
+                  actions += `
+                    <button type="button" class="btn btn-sm btn-icon btn-edit-invoice" data-id="${full.id}" title="تعديل الفاتورة">
+                      <i class="ti ti-edit"></i>
+                    </button>
+                  `;
+                }
+                if (typeof canApproveCustomerInvoices === 'undefined' || canApproveCustomerInvoices) {
+                  actions += `
+                    <button type="button" class="btn btn-sm btn-icon btn-approve-invoice text-primary" data-id="${full.id}" data-number="${full.invoice_number}" title="اعتماد نهائي">
+                      <i class="ti ti-check"></i>
+                    </button>
+                  `;
+                }
+                if (typeof canCancelCustomerInvoices === 'undefined' || canCancelCustomerInvoices) {
+                  actions += `
+                    <button type="button" class="btn btn-sm btn-icon btn-cancel-invoice text-danger" data-id="${full.id}" data-number="${full.invoice_number}" title="إلغاء الفاتورة وفك الحركات">
+                      <i class="ti ti-circle-x"></i>
+                    </button>
+                  `;
+                }
               }
 
               actions += `</div>`;
@@ -1441,7 +1451,7 @@ $(function () {
       const tbody = $('#uninvoiced-transactions-table-body');
       tbody.html(`
         <tr>
-          <td colspan="6" class="text-center py-4 text-muted">
+          <td colspan="7" class="text-center py-4 text-muted">
             <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
             جاري جلب الحركات المالية غير المفوترة...
           </td>
@@ -1461,11 +1471,13 @@ $(function () {
             const taskId = tx.task_id ? tx.task_id.toString().trim() : '';
             const taskNo = tx.task_number ? tx.task_number.toString().trim() : '';
             const customNo = tx.custom_task_number ? tx.custom_task_number.toString().trim() : '';
+            const deliveryNo = tx.delivery_number ? tx.delivery_number.toString().trim() : '';
             const searchCorpus = (
               (tx.sequence || '') + ' ' +
               taskId + ' ' +
               taskNo + ' ' +
               customNo + ' ' +
+              deliveryNo + ' ' +
               (tx.description || '') + ' ' +
               (tx.amount || '')
             ).toLowerCase();
@@ -1475,6 +1487,7 @@ $(function () {
                   data-task-id="${taskId}"
                   data-task-number="${taskNo.toLowerCase()}"
                   data-custom-number="${customNo.toLowerCase()}"
+                  data-delivery-number="${deliveryNo.toLowerCase()}"
                   data-search="${searchCorpus}">
                 <td class="text-center">
                   <input type="checkbox" class="form-check-input tx-checkbox" name="transaction_ids[]" value="${tx.id}" data-amount="${tx.amount}">
@@ -1483,7 +1496,10 @@ $(function () {
                 <td>
                   ${taskNo ? `<span class="badge bg-label-primary fs-tiny fw-bold"><i class="ti ti-hash me-1"></i>${taskNo}</span>` : '<span class="text-muted">-</span>'}
                 </td>
-                <td><span class="text-truncate d-inline-block" style="max-width: 270px;" title="${tx.description}">${tx.description}</span></td>
+                <td>
+                  ${deliveryNo ? `<span class="badge bg-label-info fs-tiny fw-bold"><i class="ti ti-truck-delivery me-1"></i>${deliveryNo}</span>` : '<span class="text-muted">-</span>'}
+                </td>
+                <td><span class="text-truncate d-inline-block" style="max-width: 250px;" title="${tx.description}">${tx.description}</span></td>
                 <td><small class="text-muted">${tx.current_maturity}</small></td>
                 <td class="text-end fw-bold text-danger">${parseFloat(tx.amount).toFixed(2)}</td>
               </tr>
@@ -1493,7 +1509,7 @@ $(function () {
         } else {
           tbody.html(`
             <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
+              <td colspan="7" class="text-center py-4 text-muted">
                 <i class="ti ti-circle-check fs-2 text-success d-block mb-1"></i>
                 لا توجد حركات مدينة غير مفوترة في هذه المحفظة حالياً.
               </td>
@@ -1503,7 +1519,7 @@ $(function () {
       }).fail(function () {
         tbody.html(`
           <tr>
-            <td colspan="6" class="text-center py-4 text-danger">
+            <td colspan="7" class="text-center py-4 text-danger">
               حدث خطأ أثناء جلب الحركات. يرجى إعادة المحاولة.
             </td>
           </tr>
@@ -1523,7 +1539,7 @@ $(function () {
       loadUninvoicedTransactions();
     });
 
-    // Filter Uninvoiced Transactions by Task Number or General Search
+    // Filter Uninvoiced Transactions by Task / Delivery Number or General Search
     function filterUninvoicedRows() {
       const rawTaskQuery = ($('#uninvoiced-task-search').val() || '').trim().toLowerCase();
       const rawGeneralQuery = ($('#uninvoiced-search').val() || '').trim().toLowerCase();
@@ -1539,9 +1555,10 @@ $(function () {
         const rowTaskId = (row.data('task-id') || '').toString().toLowerCase();
         const rowTaskNo = (row.data('task-number') || '').toString().toLowerCase();
         const rowCustomNo = (row.data('custom-number') || '').toString().toLowerCase();
+        const rowDeliveryNo = (row.data('delivery-number') || '').toString().toLowerCase();
         const rowSearch = (row.data('search') || '').toString().toLowerCase();
 
-        // Check task tokens
+        // Check task / delivery tokens
         let matchesTask = true;
         if (taskTokens.length > 0) {
           matchesTask = taskTokens.some(token => {
@@ -1552,7 +1569,9 @@ $(function () {
               rowTaskNo.indexOf(token) !== -1 ||
               rowTaskNo.indexOf(cleanToken) !== -1 ||
               rowCustomNo.indexOf(token) !== -1 ||
-              rowCustomNo.indexOf(cleanToken) !== -1
+              rowCustomNo.indexOf(cleanToken) !== -1 ||
+              rowDeliveryNo.indexOf(token) !== -1 ||
+              rowDeliveryNo.indexOf(cleanToken) !== -1
             );
           });
         }
@@ -1576,7 +1595,7 @@ $(function () {
 
       // Update matching badge
       if (taskTokens.length > 0) {
-        $('#matching-tasks-count-text').text(`تم العثور على ${matchingTaskCount} حركة مطابقة للمهام`);
+        $('#matching-tasks-count-text').text(`تم العثور على ${matchingTaskCount} حركة مطابقة للمهام / أرقام التوصيل`);
         $('#matching-tasks-count-badge').show();
       } else {
         $('#matching-tasks-count-badge').hide();
@@ -1767,19 +1786,21 @@ $(function () {
             inv.items.forEach(function (item, idx) {
               const seq = item.wallet_transaction ? item.wallet_transaction.sequence : item.wallet_transaction_id;
               const taskNo = item.task ? (item.task.custom_task_number || item.task_id) : '-';
+              const deliveryNo = item.task && item.task.delivery_number ? item.task.delivery_number : '-';
               const desc = item.wallet_transaction ? item.wallet_transaction.description : '-';
               itemsHtml += `
                 <tr>
                   <td>${idx + 1}</td>
                   <td><span class="fw-semibold">${seq}</span></td>
                   <td>${taskNo !== '-' ? '<span class="badge bg-label-info">' + taskNo + '</span>' : '-'}</td>
+                  <td>${deliveryNo !== '-' ? '<span class="badge bg-label-primary">' + deliveryNo + '</span>' : '-'}</td>
                   <td>${desc}</td>
                   <td class="text-end fw-bold">${parseFloat(item.amount).toFixed(2)}</td>
                 </tr>
               `;
             });
           } else {
-            itemsHtml = '<tr><td colspan="5" class="text-center text-muted py-2">لا توجد بنود مرتبطة</td></tr>';
+            itemsHtml = '<tr><td colspan="6" class="text-center text-muted py-2">لا توجد بنود مرتبطة</td></tr>';
           }
           $('#viewInvoiceItemsBody').html(itemsHtml);
 
@@ -1940,7 +1961,7 @@ $(function () {
     function renderEditInvoiceTransactions() {
       const tbody = $('#editInvoiceTransactionsBody');
       if (editLinkedTransactions.length === 0) {
-        tbody.html('<tr><td colspan="6" class="text-center text-muted py-3">لا توجد حركات مرتبطة بهذه الفاتورة</td></tr>');
+        tbody.html('<tr><td colspan="7" class="text-center text-muted py-3">لا توجد حركات مرتبطة بهذه الفاتورة</td></tr>');
       } else {
         let html = '';
         let activeCount = 0;
@@ -1968,6 +1989,7 @@ $(function () {
               <td class="text-center">${idx + 1}</td>
               <td><span class="fw-semibold" style="${strikeStyle}">${tx.sequence}</span></td>
               <td>${tx.task_number && tx.task_number !== '-' ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
+              <td>${tx.delivery_number && tx.delivery_number !== '-' ? '<span class="badge bg-label-primary">' + tx.delivery_number + '</span>' : '-'}</td>
               <td style="${strikeStyle}">${tx.description}</td>
               <td class="text-end fw-bold" style="${strikeStyle}">${parseFloat(tx.amount).toFixed(2)}</td>
               <td class="text-center">
@@ -1996,12 +2018,12 @@ $(function () {
       const tbody = $('#editAvailableUninvoicedBody');
       const filtered = editAvailableTransactions.filter(tx => {
         if (!filterTask) return true;
-        const taskStr = (tx.task_number || '') + ' ' + (tx.sequence || '') + ' ' + (tx.description || '');
+        const taskStr = (tx.task_number || '') + ' ' + (tx.delivery_number || '') + ' ' + (tx.sequence || '') + ' ' + (tx.description || '');
         return taskStr.toLowerCase().includes(filterTask.toLowerCase());
       });
 
       if (filtered.length === 0) {
-        tbody.html('<tr><td colspan="5" class="text-center text-muted py-2">لا توجد حركات غير مفوترة إضافية</td></tr>');
+        tbody.html('<tr><td colspan="6" class="text-center text-muted py-2">لا توجد حركات غير مفوترة إضافية</td></tr>');
         return;
       }
 
@@ -2016,6 +2038,7 @@ $(function () {
             </td>
             <td><span class="fw-semibold">${tx.sequence}</span></td>
             <td>${tx.task_number && tx.task_number !== '-' ? '<span class="badge bg-label-info">' + tx.task_number + '</span>' : '-'}</td>
+            <td>${tx.delivery_number && tx.delivery_number !== '-' ? '<span class="badge bg-label-primary">' + tx.delivery_number + '</span>' : '-'}</td>
             <td>${tx.description}</td>
             <td class="text-end fw-bold">${parseFloat(tx.amount).toFixed(2)}</td>
           </tr>
@@ -2068,6 +2091,7 @@ $(function () {
             id: tx.id,
             sequence: tx.sequence,
             task_number: tx.task_number,
+            delivery_number: tx.delivery_number || '-',
             description: tx.description,
             amount: tx.amount,
             is_linked: true
@@ -2104,10 +2128,12 @@ $(function () {
               const tx = item.wallet_transaction;
               const taskCustom = item.task ? item.task.custom_task_number : null;
               const taskId = item.task_id;
+              const deliveryNo = item.task ? item.task.delivery_number : null;
               editLinkedTransactions.push({
                 id: item.wallet_transaction_id || (tx ? tx.id : item.id),
                 sequence: (tx && tx.sequence) ? tx.sequence : (item.wallet_transaction_id || item.id),
                 task_number: taskCustom || (taskId ? ('#' + taskId) : '-'),
+                delivery_number: deliveryNo || '-',
                 description: tx ? tx.description : '-',
                 amount: parseFloat(item.amount),
                 is_linked: true
@@ -2125,6 +2151,7 @@ $(function () {
                   id: tx.id,
                   sequence: tx.sequence,
                   task_number: tx.task_number || '-',
+                  delivery_number: tx.delivery_number || '-',
                   description: tx.description || '-',
                   amount: parseFloat(tx.amount)
                 });

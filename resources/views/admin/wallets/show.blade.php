@@ -17,6 +17,12 @@
     <script>
         const walletId = "{{ $data->id }}";
         const walletUserType = "{{ $data->user_type }}";
+        const canViewCustomerInvoices = {{ auth()->user()->can('view_customer_invoices') ? 'true' : 'false' }};
+        const canCreateCustomerInvoices = {{ auth()->user()->can('create_customer_invoices') ? 'true' : 'false' }};
+        const canEditCustomerInvoices = {{ auth()->user()->can('edit_customer_invoices') ? 'true' : 'false' }};
+        const canPayCustomerInvoices = {{ auth()->user()->can('pay_customer_invoices') ? 'true' : 'false' }};
+        const canApproveCustomerInvoices = {{ auth()->user()->can('approve_customer_invoices') ? 'true' : 'false' }};
+        const canCancelCustomerInvoices = {{ auth()->user()->can('cancel_customer_invoices') ? 'true' : 'false' }};
     </script>
     @vite(['resources/js/admin/wallets/show.js'])
     @vite(['resources/js/ajax.js'])
@@ -134,11 +140,13 @@
                             <i class="ti ti-arrows-left-right me-1"></i> {{ __('Financial Transactions') }}
                         </button>
                     </li>
-                    <li class="nav-item">
-                        <button type="button" class="nav-link" id="nav-tab-invoices" role="tab" data-bs-toggle="tab" data-bs-target="#navs-invoices" aria-controls="navs-invoices" aria-selected="false">
-                            <i class="ti ti-file-invoice me-1"></i> {{ __('Accounting Invoices') }}
-                        </button>
-                    </li>
+                    @can('view_customer_invoices')
+                        <li class="nav-item">
+                            <button type="button" class="nav-link" id="nav-tab-invoices" role="tab" data-bs-toggle="tab" data-bs-target="#navs-invoices" aria-controls="navs-invoices" aria-selected="false">
+                                <i class="ti ti-file-invoice me-1"></i> {{ __('Accounting Invoices') }}
+                            </button>
+                        </li>
+                    @endcan
                 </ul>
             </div>
 
@@ -165,34 +173,35 @@
                     </div>
                 </div>
 
-                <!-- Customer Invoices Tab -->
-                <div class="tab-pane fade" id="navs-invoices" role="tabpanel">
-                    <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light bg-opacity-25">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="form-label mb-0 fw-semibold text-muted">{{ __('Filter by Status') }}:</label>
-                            <select class="form-select form-select-sm" id="filter-invoice-status" style="width: 170px;">
-                                <option value="all">{{ __('All Statuses') }}</option>
-                                <option value="unpaid">{{ __('Unpaid') }}</option>
-                                <option value="paid">{{ __('Paid') }}</option>
-                                <option value="approved">{{ __('Approved') }}</option>
-                                <option value="cancelled">{{ __('Cancelled') }}</option>
-                            </select>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshInvoices">
-                                <i class="ti ti-refresh me-1"></i> {{ __('Refresh') }}
-                            </button>
-                            @can('create_customer_invoices')
-                                <button type="button" class="btn btn-sm btn-primary" id="btnToolbarCreateInvoice">
-                                    <i class="ti ti-plus me-1"></i> {{ __('New Accounting Invoice') }}
+                @can('view_customer_invoices')
+                    <!-- Customer Invoices Tab -->
+                    <div class="tab-pane fade" id="navs-invoices" role="tabpanel">
+                        <div class="p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2 bg-light bg-opacity-25">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0 fw-semibold text-muted">{{ __('Filter by Status') }}:</label>
+                                <select class="form-select form-select-sm" id="filter-invoice-status" style="width: 170px;">
+                                    <option value="all">{{ __('All Statuses') }}</option>
+                                    <option value="unpaid">{{ __('Unpaid') }}</option>
+                                    <option value="paid">{{ __('Paid') }}</option>
+                                    <option value="approved">{{ __('Approved') }}</option>
+                                    <option value="cancelled">{{ __('Cancelled') }}</option>
+                                </select>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshInvoices">
+                                    <i class="ti ti-refresh me-1"></i> {{ __('Refresh') }}
                                 </button>
-                            @endcan
+                                @can('create_customer_invoices')
+                                    <button type="button" class="btn btn-sm btn-primary" id="btnToolbarCreateInvoice">
+                                        <i class="ti ti-plus me-1"></i> {{ __('New Accounting Invoice') }}
+                                    </button>
+                                @endcan
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 datatables-customer-invoices w-100" id="invoicesTable">
-                            <thead class="table-light">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 datatables-customer-invoices w-100" id="invoicesTable">
+                                <thead class="table-light">
                                 <tr>
                                     <th>#</th>
                                     <th>{{ __('Invoice Number') }}</th>
@@ -211,7 +220,8 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            @endcan
+        </div>
         @else
             <!-- Table for non-customer wallets -->
             <div class="card-body p-0">
@@ -767,12 +777,12 @@
                                         <i class="ti ti-list-check me-1"></i> {{ __('Select Uninvoiced Debit Transactions') }}
                                     </h6>
                                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <!-- Dedicated Task Number Search -->
-                                        <div class="input-group input-group-sm" style="min-width: 290px; max-width: 380px;">
+                                        <!-- Dedicated Task / Delivery Number Search -->
+                                        <div class="input-group input-group-sm" style="min-width: 310px; max-width: 410px;">
                                             <span class="input-group-text bg-white text-primary border-primary">
-                                                <i class="ti ti-hash me-1"></i> {{ __('Task #') }}
+                                                <i class="ti ti-hash me-1"></i> {{ __('Task / Delivery #') }}
                                             </span>
-                                            <input type="text" class="form-control border-primary" id="uninvoiced-task-search" placeholder="{{ __('Search task numbers (e.g. 101, 102)...') }}" title="{{ __('Search by one or multiple task numbers separated by comma or space') }}">
+                                            <input type="text" class="form-control border-primary" id="uninvoiced-task-search" placeholder="{{ __('Search task or delivery numbers (e.g. 101, DEL-99)...') }}" title="{{ __('Search by one or multiple task or delivery numbers separated by comma or space') }}">
                                             <button class="btn btn-primary" type="button" id="btnSelectFilteredTasks" title="{{ __('Select all matching tasks') }}">
                                                 <i class="ti ti-checkbox me-1"></i> {{ __('Select Matching') }}
                                             </button>
@@ -797,16 +807,17 @@
                                                     <th style="width: 40px; background-color: #fff;" class="text-center bg-white">
                                                         <input type="checkbox" class="form-check-input" id="checkAllUninvoiced" title="{{ __('Select all visible') }}">
                                                     </th>
-                                                    <th style="width: 130px; background-color: #fff;" class="bg-white">{{ __('Sequence / ID') }}</th>
-                                                    <th style="width: 140px; background-color: #fff;" class="bg-white">{{ __('Task #') }}</th>
+                                                    <th style="width: 120px; background-color: #fff;" class="bg-white">{{ __('Sequence / ID') }}</th>
+                                                    <th style="width: 130px; background-color: #fff;" class="bg-white">{{ __('Task #') }}</th>
+                                                    <th style="width: 140px; background-color: #fff;" class="bg-white">{{ __('Delivery Number') }}</th>
                                                     <th style="background-color: #fff;" class="bg-white">{{ __('Description') }}</th>
                                                     <th style="width: 130px; background-color: #fff;" class="bg-white">{{ __('Current Maturity') }}</th>
-                                                    <th style="width: 140px; background-color: #fff;" class="text-end bg-white">{{ __('Amount (SAR)') }}</th>
+                                                    <th style="width: 130px; background-color: #fff;" class="text-end bg-white">{{ __('Amount (SAR)') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="uninvoiced-transactions-table-body">
                                                 <tr>
-                                                    <td colspan="6" class="text-center py-4 text-muted">
+                                                    <td colspan="7" class="text-center py-4 text-muted">
                                                         <div class="spinner-border spinner-border-sm text-primary me-1" role="status"></div>
                                                         {{ __('Loading uninvoiced transactions...') }}
                                                     </td>
@@ -929,6 +940,7 @@
                                         <th style="background-color: #fff;">#</th>
                                         <th style="background-color: #fff;">{{ __('Sequence') }}</th>
                                         <th style="background-color: #fff;">{{ __('Task #') }}</th>
+                                        <th style="background-color: #fff;">{{ __('Delivery Number') }}</th>
                                         <th style="background-color: #fff;">{{ __('Description') }}</th>
                                         <th style="background-color: #fff;" class="text-end">{{ __('Amount (SAR)') }}</th>
                                     </tr>
@@ -1066,6 +1078,7 @@
                                                     <th style="width: 40px; background-color: #fff;" class="text-center bg-white">#</th>
                                                     <th style="width: 120px; background-color: #fff;" class="bg-white">{{ __('Sequence / ID') }}</th>
                                                     <th style="width: 130px; background-color: #fff;" class="bg-white">{{ __('Task #') }}</th>
+                                                    <th style="width: 130px; background-color: #fff;" class="bg-white">{{ __('Delivery Number') }}</th>
                                                     <th style="background-color: #fff;" class="bg-white">{{ __('Description') }}</th>
                                                     <th style="width: 130px; background-color: #fff;" class="text-end bg-white">{{ __('Amount (SAR)') }}</th>
                                                     <th style="width: 140px; background-color: #fff;" class="text-center bg-white">{{ __('Actions') }}</th>
@@ -1083,7 +1096,7 @@
                                             <small class="fw-bold text-primary">
                                                 <i class="ti ti-plus me-1"></i> {{ __('Select Transactions to Add to Invoice') }}
                                             </small>
-                                            <input type="text" class="form-control form-control-sm" id="edit-available-task-search" placeholder="{{ __('Search Task #...') }}" style="max-width: 220px;">
+                                            <input type="text" class="form-control form-control-sm" id="edit-available-task-search" placeholder="{{ __('Search Task # / Delivery #...') }}" style="max-width: 250px;">
                                         </div>
                                         <div class="table-responsive border rounded" style="max-height: 180px; overflow-y: auto;">
                                             <table class="table table-sm table-hover align-middle mb-0">
@@ -1094,6 +1107,7 @@
                                                         </th>
                                                         <th style="background-color: #fff;" class="bg-white">{{ __('Sequence') }}</th>
                                                         <th style="background-color: #fff;" class="bg-white">{{ __('Task #') }}</th>
+                                                        <th style="background-color: #fff;" class="bg-white">{{ __('Delivery Number') }}</th>
                                                         <th style="background-color: #fff;" class="bg-white">{{ __('Description') }}</th>
                                                         <th style="background-color: #fff;" class="text-end bg-white">{{ __('Amount (SAR)') }}</th>
                                                     </tr>

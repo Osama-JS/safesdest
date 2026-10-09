@@ -227,10 +227,11 @@
             <thead>
                 <tr>
                     <th style="width: 5%;">#</th>
-                    <th style="width: 18%;">رقم الحركة / التسلسل</th>
+                    <th style="width: 15%;">رقم الحركة / التسلسل</th>
                     <th style="width: 15%;">رقم المهمة</th>
-                    <th style="width: 42%;">الوصف والبيان</th>
-                    <th style="width: 20%; text-align: left;">المبلغ (ر.س)</th>
+                    <th style="width: 15%;">رقم التوصيل</th>
+                    <th style="width: 35%;">الوصف والبيان</th>
+                    <th style="width: 15%; text-align: left;">المبلغ (ر.س)</th>
                 </tr>
             </thead>
             <tbody>
@@ -245,12 +246,13 @@
                                 -
                             @endif
                         </td>
+                        <td>{{ $item->task->delivery_number ?? '-' }}</td>
                         <td>{{ $item->walletTransaction->description ?? 'قيمة مهمة / دين محفظة' }}</td>
                         <td style="text-align: left; font-weight: bold;">{{ number_format($item->amount, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-3">لا توجد بنود مرتبطة بهذه الفاتورة</td>
+                        <td colspan="6" class="text-center text-muted py-3">لا توجد بنود مرتبطة بهذه الفاتورة</td>
                     </tr>
                 @endforelse
             </tbody>

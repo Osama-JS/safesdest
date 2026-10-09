@@ -17,6 +17,12 @@ class CustomerInvoicesController extends Controller
     public function __construct(CustomerInvoiceService $invoiceService)
     {
         $this->invoiceService = $invoiceService;
+        $this->middleware('permission:view_customer_invoices', ['only' => ['listByWallet', 'getUninvoicedTransactions', 'show', 'print']]);
+        $this->middleware('permission:create_customer_invoices', ['only' => ['store']]);
+        $this->middleware('permission:edit_customer_invoices', ['only' => ['update']]);
+        $this->middleware('permission:pay_customer_invoices', ['only' => ['pay']]);
+        $this->middleware('permission:approve_customer_invoices', ['only' => ['approve']]);
+        $this->middleware('permission:cancel_customer_invoices', ['only' => ['cancel']]);
     }
 
     /**
@@ -25,6 +31,11 @@ class CustomerInvoicesController extends Controller
     public function listByWallet(Request $request, $walletId)
     {
         $wallet = Wallet::findOrFail($walletId);
+        $user = auth()->user();
+
+        if ($wallet->user_type !== 'customer' || !$user || !$user->checkCustomer($wallet->customer_id)) {
+            abort(403);
+        }
 
         $query = CustomerInvoice::with(['creator', 'approver', 'items'])
             ->where('wallet_id', $wallet->id);
@@ -86,10 +97,18 @@ class CustomerInvoicesController extends Controller
     public function getUninvoicedTransactions($walletId)
     {
         try {
+            $wallet = Wallet::findOrFail($walletId);
+            $user = auth()->user();
+
+            if ($wallet->user_type !== 'customer' || !$user || !$user->checkCustomer($wallet->customer_id)) {
+                abort(403);
+            }
+
             $transactions = $this->invoiceService->getUninvoicedTransactions($walletId);
 
             $data = $transactions->map(function ($tx) {
                 $taskCustom = $tx->task ? $tx->task->custom_task_number : null;
+                $deliveryNumber = $tx->task ? $tx->task->delivery_number : null;
                 $taskId = $tx->task_id;
                 return [
                     'id'                 => $tx->id,
@@ -98,6 +117,7 @@ class CustomerInvoicesController extends Controller
                     'task_id'            => $taskId,
                     'task_number'        => $taskCustom ?: ($taskId ? ('#' . $taskId) : null),
                     'custom_task_number' => $taskCustom,
+                    'delivery_number'    => $deliveryNumber,
                     'description'        => $tx->description,
                     'current_maturity'   => $tx->maturity_time ? date('Y-m-d', strtotime($tx->maturity_time)) : '-',
                     'created_at'         => $tx->created_at ? $tx->created_at->format('Y-m-d H:i') : '-',
@@ -131,6 +151,13 @@ class CustomerInvoicesController extends Controller
             'notes'                   => 'nullable|string|max:1000',
         ]);
 
+        $wallet = Wallet::findOrFail($request->wallet_id);
+        $user = auth()->user();
+
+        if ($wallet->user_type !== 'customer' || !$user || !$user->checkCustomer($wallet->customer_id)) {
+            abort(403);
+        }
+
         try {
             $invoice = $this->invoiceService->createInvoice(
                 $request->all(),
@@ -162,10 +189,16 @@ class CustomerInvoicesController extends Controller
                 'approver'
             ])->findOrFail($id);
 
+            $user = auth()->user();
+            if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+                abort(403);
+            }
+
             // الحركات غير المفوترة في نفس المحفظة لإتاحة إضافتها عند التعديل
             $uninvoiced = $this->invoiceService->getUninvoicedTransactions($invoice->wallet_id);
             $uninvoicedFormatted = $uninvoiced->map(function ($tx) {
                 $taskCustom = $tx->task ? $tx->task->custom_task_number : null;
+                $deliveryNumber = $tx->task ? $tx->task->delivery_number : null;
                 $taskId = $tx->task_id;
                 return [
                     'id'                 => $tx->id,
@@ -174,6 +207,7 @@ class CustomerInvoicesController extends Controller
                     'task_id'            => $taskId,
                     'task_number'        => $taskCustom ?: ($taskId ? ('#' . $taskId) : null),
                     'custom_task_number' => $taskCustom,
+                    'delivery_number'    => $deliveryNumber,
                     'description'        => $tx->description,
                     'current_maturity'   => $tx->maturity_time ? date('Y-m-d', strtotime($tx->maturity_time)) : '-',
                 ];
@@ -196,6 +230,10 @@ class CustomerInvoicesController extends Controller
     public function update(Request $request, $id)
     {
         $invoice = CustomerInvoice::findOrFail($id);
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+            abort(403);
+        }
 
         $request->validate([
             'accounting_reference_no' => 'nullable|string|max:100',
@@ -230,6 +268,10 @@ class CustomerInvoicesController extends Controller
     public function pay(Request $request, $id)
     {
         $invoice = CustomerInvoice::findOrFail($id);
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+            abort(403);
+        }
 
         $request->validate([
             'amount'       => 'required|numeric|min:0.01',
@@ -261,6 +303,10 @@ class CustomerInvoicesController extends Controller
     public function approve($id)
     {
         $invoice = CustomerInvoice::findOrFail($id);
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+            abort(403);
+        }
 
         try {
             $approved = $this->invoiceService->approveInvoice($invoice);
@@ -281,6 +327,10 @@ class CustomerInvoicesController extends Controller
     public function cancel(Request $request, $id)
     {
         $invoice = CustomerInvoice::findOrFail($id);
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+            abort(403);
+        }
 
         try {
             $cancelled = $this->invoiceService->cancelInvoice($invoice, $request->reason);
@@ -307,6 +357,11 @@ class CustomerInvoicesController extends Controller
             'creator',
             'approver'
         ])->findOrFail($id);
+
+        $user = auth()->user();
+        if (!$user || !$user->checkCustomer($invoice->customer_id)) {
+            abort(403);
+        }
 
         return view('admin.wallets.invoices.print', compact('invoice'));
     }

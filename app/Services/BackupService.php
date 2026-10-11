@@ -202,7 +202,7 @@ class BackupService
             if (in_array($type, ['full', 'database_only'])) {
                 $reportProgress(10, 'جاري تفريغ وتصدير قاعدة البيانات (PostgreSQL Dump)...');
                 $sqlDumpPath = $tempStagingDir . DIRECTORY_SEPARATOR . 'database.sql';
-                $dbStats = $this->dumpDatabase($sqlDumpPath);
+                $dbStats = $this->dumpDatabase($sqlDumpPath, $reportProgress);
                 $tablesCount = $dbStats['tables_count'] ?? 0;
                 $recordsCount = $dbStats['records_count'] ?? 0;
                 $dbFileSize = $dbStats['file_size'] ?? (File::exists($sqlDumpPath) ? File::size($sqlDumpPath) : 0);
@@ -630,7 +630,7 @@ class BackupService
     /**
      * Dump PostgreSQL database with native pg_dump or pure PDO fallback.
      */
-    protected function dumpDatabase(string $targetSqlFile): array
+    protected function dumpDatabase(string $targetSqlFile, ?callable $progressCallback = null): array
     {
         $dbConfig = config('database.connections.pgsql');
         $host = $dbConfig['host'] ?? '127.0.0.1';
@@ -647,6 +647,7 @@ class BackupService
             $encodedUser = urlencode($username);
             $connUri = "postgresql://{$encodedUser}:{$encodedPass}@{$host}:{$port}/{$database}";
 
+            // Native PostgreSQL Dump (fastest C-level streaming)
             $cmd = sprintf(
                 '"%s" --dbname="%s" --clean --if-exists --no-owner --file="%s" 2>&1',
                 $pgDumpBinary,
@@ -669,14 +670,14 @@ class BackupService
             Log::warning("pg_dump binary returned {$returnCode} (" . implode("\n", $output) . "), falling back to PDO dumper.");
         }
 
-        // Fallback: Pure PDO Cross-Platform Dumper
-        return $this->dumpDatabaseViaPdo($targetSqlFile);
+        // Fallback: Pure PDO Cross-Platform Dumper with live progress tracking
+        return $this->dumpDatabaseViaPdo($targetSqlFile, $progressCallback);
     }
 
     /**
-     * Pure PDO Database Dumper for PostgreSQL / MySQL.
+     * Pure PDO Database Dumper with live progress callbacks and optimized 1500 chunking.
      */
-    protected function dumpDatabaseViaPdo(string $targetSqlFile): array
+    protected function dumpDatabaseViaPdo(string $targetSqlFile, ?callable $progressCallback = null): array
     {
         $handle = fopen($targetSqlFile, 'w');
         if (!$handle) {
@@ -699,9 +700,14 @@ class BackupService
         $totalTables = count($tables);
         $totalRecords = 0;
 
-        foreach ($tables as $table) {
+        foreach ($tables as $index => $table) {
             if ($table === 'telescope_entries' || $table === 'pulse_entries') {
                 continue;
+            }
+
+            if ($progressCallback && $totalTables > 0) {
+                $pct = 10 + (int) round(($index / $totalTables) * 26); // Maps from 10% to 36%
+                $progressCallback($pct, "جاري استخراج بيانات الجدول: {$table} (" . ($index + 1) . "/{$totalTables})", "محرك التفريغ: PDO");
             }
 
             fwrite($handle, "-- Structure & Data for Table: \"{$table}\"\n");
@@ -711,7 +717,7 @@ class BackupService
             $totalRecords += $count;
 
             if ($count > 0) {
-                $connection->table($table)->orderByRaw('1')->chunk(250, function ($rows) use ($handle, $table) {
+                $connection->table($table)->orderByRaw('1')->chunk(1500, function ($rows) use ($handle, $table) {
                     foreach ($rows as $row) {
                         $rowArray = (array) $row;
                         $columns = array_keys($rowArray);
@@ -740,6 +746,7 @@ class BackupService
             'engine' => 'pdo',
             'tables_count' => $totalTables,
             'records_count' => $totalRecords,
+            'file_size' => File::size($targetSqlFile),
         ];
     }
 
@@ -989,28 +996,78 @@ class BackupService
     }
 
     /**
-     * Spawn detached background worker for creating backup on any OS.
+     * Locate the real CLI PHP binary across Windows and Linux (avoiding php-fpm).
+     */
+    public function getPhpCliBinary(): string
+    {
+        // 1. Try Symfony's PhpExecutableFinder (standard Laravel mechanism)
+        try {
+            $finder = new \Symfony\Component\Process\PhpExecutableFinder();
+            $binary = $finder->find(false);
+            if ($binary && !str_contains(basename($binary), 'fpm')) {
+                return $binary;
+            }
+        } catch (\Throwable $e) {
+            // fallback
+        }
+
+        // 2. Check standard Linux/Unix CLI paths
+        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+            $commonCliPaths = [
+                '/usr/bin/php',
+                '/usr/local/bin/php',
+                '/bin/php',
+                '/opt/cpanel/ea-php83/root/usr/bin/php',
+                '/opt/cpanel/ea-php82/root/usr/bin/php',
+                '/opt/cpanel/ea-php81/root/usr/bin/php',
+                '/usr/bin/php8.3',
+                '/usr/bin/php8.2',
+                '/usr/bin/php8.1',
+            ];
+
+            foreach ($commonCliPaths as $path) {
+                if (@file_exists($path) && @is_executable($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        // 3. Fallback to 'php' in PATH
+        return 'php';
+    }
+
+    /**
+     * Spawn detached background worker for creating backup on any OS with observability.
      */
     public function spawnBackgroundBackup(string $jobId): void
     {
         $artisanPath = base_path('artisan');
-        $phpBinary = PHP_BINARY ?: 'php';
+        $phpBinary = $this->getPhpCliBinary();
+        $logPath = storage_path('logs/backup_job_' . $jobId . '.log');
+
+        Log::info("Launching backup job [{$jobId}] with PHP binary: {$phpBinary}");
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // Windows
-            $cmd = sprintf('start /B "" "%s" "%s" backup:create-job %s > NUL 2>&1', $phpBinary, $artisanPath, escapeshellarg($jobId));
+            $cmd = sprintf('start /B "" "%s" "%s" backup:create-job %s > "%s" 2>&1', $phpBinary, $artisanPath, escapeshellarg($jobId), $logPath);
             pclose(popen($cmd, 'r'));
         } else {
             // Linux / Unix / cPanel / VPS
-            // nice -n 15 ensures that background backup runs with lower CPU priority,
-            // so Nginx, PHP-FPM, and incoming web requests are never choked or starved.
-            $cmd = sprintf('nice -n 15 nohup "%s" "%s" backup:create-job %s > /dev/null 2>&1 &', $phpBinary, $artisanPath, escapeshellarg($jobId));
+            $nicePrefix = '';
+            $checkNice = @exec('which nice 2>/dev/null');
+            if (!empty($checkNice) && @file_exists(trim($checkNice))) {
+                $nicePrefix = 'nice -n 15 ';
+            }
+
+            $cmd = sprintf('%snohup "%s" "%s" backup:create-job %s > "%s" 2>&1 &', $nicePrefix, $phpBinary, $artisanPath, escapeshellarg($jobId), $logPath);
             exec($cmd);
         }
+
+        Log::info("Background backup job spawned with command: {$cmd}");
     }
 
     /**
-     * Locate binary path on Windows or Linux.
+     * Locate binary path on Windows or Linux with common server directories.
      */
     protected function findBinary(string $binaryName): ?string
     {
@@ -1030,9 +1087,28 @@ class BackupService
                     return $p;
                 }
             }
+        } else {
+            // 2. Check common PostgreSQL install paths on Linux (Ubuntu, Debian, RHEL, CentOS, cPanel)
+            $commonLinuxPaths = [
+                "/usr/bin/{$binaryName}",
+                "/usr/local/bin/{$binaryName}",
+                "/usr/pgsql-16/bin/{$binaryName}",
+                "/usr/pgsql-15/bin/{$binaryName}",
+                "/usr/pgsql-14/bin/{$binaryName}",
+                "/usr/lib/postgresql/16/bin/{$binaryName}",
+                "/usr/lib/postgresql/15/bin/{$binaryName}",
+                "/usr/lib/postgresql/14/bin/{$binaryName}",
+                "/opt/cpanel/ea-postgresql16/root/usr/bin/{$binaryName}",
+                "/opt/cpanel/ea-postgresql15/root/usr/bin/{$binaryName}",
+            ];
+            foreach ($commonLinuxPaths as $p) {
+                if (@file_exists($p) && @is_executable($p)) {
+                    return $p;
+                }
+            }
         }
 
-        // 2. Check PATH environment variable
+        // 3. Check PATH environment variable
         $whereCmd = $isWindows ? "where {$exeName} 2>NUL" : "which {$binaryName} 2>/dev/null";
         $output = [];
         exec($whereCmd, $output, $code);

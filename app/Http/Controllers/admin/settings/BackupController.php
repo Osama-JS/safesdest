@@ -137,6 +137,22 @@ class BackupController extends Controller
                 ], 404);
             }
 
+            // Check if process has failed silently at startup
+            $startedAt = $progress['started_at'] ?? 0;
+            $percent = (int) ($progress['percent'] ?? 0);
+            $logPath = storage_path('logs/backup_job_' . $jobId . '.log');
+
+            if (($progress['status'] ?? '') === 'running' && $percent <= 2 && (time() - $startedAt) > 15) {
+                if (File::exists($logPath)) {
+                    $logContent = trim(File::get($logPath));
+                    if (!empty($logContent)) {
+                        $progress['status'] = 'failed';
+                        $progress['error'] = 'فشل تشغيل المعالج بالخلفية: ' . \Illuminate\Support\Str::limit($logContent, 400);
+                        $this->backupService->updateJobProgress($jobId, $progress);
+                    }
+                }
+            }
+
             return response()->json([
                 'status' => 1,
                 'progress' => $progress,

@@ -12,13 +12,24 @@ class GlobalRateLimit
 {
   public function handle(Request $request, Closure $next): Response
   {
-    $key = $request->ip(); // يمكن تغييرها حسب نوع التحديد
+    // Exclude high-frequency live dashboard polling endpoints from rate limiting
+    if (
+        $request->is('admin/settings/backup/progress/*') ||
+        $request->is('admin/system-notifications/*') ||
+        $request->is('admin/notifications/*') ||
+        $request->is('admin/whatsapp-chat/*')
+    ) {
+        return $next($request);
+    }
 
-    RateLimiter::for('global', function () {
-      return Limit::perMinute(60)->by(request()->ip());
+    $key = $request->ip();
+    $maxAttempts = auth()->check() ? 300 : 60;
+
+    RateLimiter::for('global', function () use ($maxAttempts) {
+      return Limit::perMinute($maxAttempts)->by(request()->ip());
     });
 
-    if (RateLimiter::tooManyAttempts('global|' . $key, 60)) {
+    if (RateLimiter::tooManyAttempts('global|' . $key, $maxAttempts)) {
       abort(429, 'Too many requests, please slow down.');
     }
 

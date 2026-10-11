@@ -161,9 +161,10 @@ $(function () {
   });
 
   // Live Progress Polling State
-  var progressPollInterval = null;
+  var progressTimeoutId = null;
   var progressTimerInterval = null;
   var backupStartTime = 0;
+  var consecutiveErrors = 0;
 
   function formatTime(seconds) {
     var mins = Math.floor(seconds / 60);
@@ -171,7 +172,111 @@ $(function () {
     return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
   }
 
+  function stopLiveTracker() {
+    if (progressTimeoutId) {
+      clearTimeout(progressTimeoutId);
+      progressTimeoutId = null;
+    }
+    if (progressTimerInterval) {
+      clearInterval(progressTimerInterval);
+      progressTimerInterval = null;
+    }
+  }
+
+  // Handle modal dismiss/close
+  $('#backupProgressModal').on('hidden.bs.modal', function () {
+    stopLiveTracker();
+  });
+
+  function pollJobProgress(jobId) {
+    $.ajax({
+      url: baseUrl + 'admin/settings/backup/progress/' + jobId,
+      method: 'GET',
+      cache: false,
+      timeout: 10000,
+      success: function (res) {
+        consecutiveErrors = 0;
+
+        if (res.status === 1 && res.progress) {
+          var prog = res.progress;
+          var pct = Math.max(1, Math.min(100, parseInt(prog.percent || 0)));
+
+          $('#backupProgressBar').css('width', pct + '%').attr('aria-valuenow', pct);
+          $('#backupProgressPercent').text(pct + '%');
+
+          if (prog.step_title) {
+            $('#backupProgressTitle').text(prog.step_title);
+          }
+          if (prog.details) {
+            $('#backupProgressDetails').text(prog.details);
+          }
+
+          // Check if completed
+          if (prog.status === 'completed') {
+            stopLiveTracker();
+
+            $('#backupProgressBar').css('width', '100%').removeClass('bg-primary').addClass('bg-success');
+            $('#backupProgressPercent').text('100%');
+            $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-check text-success');
+
+            var summaryText = prog.details || 'تم إنشاء النسخة الاحتياطية بنجاح.';
+            if (prog.result && prog.result.filename) {
+              summaryText = 'الملف: ' + prog.result.filename + ' (' + (prog.result.size_human || '') + ') - الوقت: ' + (prog.result.elapsed_seconds || 0) + ' ثانية';
+            }
+            $('#backupSuccessSummary').text(summaryText);
+
+            setTimeout(function () {
+              $('#backupProgressRunningBody').fadeOut(200, function () {
+                $('#backupProgressSuccessBody').fadeIn(300);
+              });
+            }, 400);
+
+            if (dt_data) dt_data.ajax.reload();
+            loadStatistics();
+            showAlert('success', 'تم اكتمال إنشاء النسخة الاحتياطية بنجاح!');
+            return;
+          }
+          // Check if failed
+          else if (prog.status === 'failed') {
+            stopLiveTracker();
+
+            $('#backupProgressBar').removeClass('bg-primary').addClass('bg-danger');
+            $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-alert-triangle text-danger');
+            $('#backupErrorMessage').text(prog.error || 'حدث خطأ أثناء معالجة النسخة الاحتياطية.');
+
+            $('#backupProgressRunningBody').fadeOut(200, function () {
+              $('#backupProgressErrorBody').fadeIn(300);
+            });
+
+            showAlert('error', 'فشل إنشاء النسخة الاحتياطية: ' + (prog.error || 'خطأ غير محدد'));
+            return;
+          }
+        }
+
+        // Schedule next check (2.5 seconds)
+        progressTimeoutId = setTimeout(function () {
+          pollJobProgress(jobId);
+        }, 2500);
+      },
+      error: function (xhr) {
+        consecutiveErrors++;
+        // If 429 Too Many Requests, back off for 5 seconds
+        var delay = (xhr && xhr.status === 429) ? 5000 : 3000;
+        if (consecutiveErrors > 15) {
+          delay = 7000;
+        }
+
+        progressTimeoutId = setTimeout(function () {
+          pollJobProgress(jobId);
+        }, delay);
+      }
+    });
+  }
+
   function startLiveProgressTracker(jobId) {
+    stopLiveTracker();
+    consecutiveErrors = 0;
+
     // Reset modal elements
     $('#backupProgressRunningBody').show();
     $('#backupProgressSuccessBody').hide();
@@ -184,7 +289,8 @@ $(function () {
     $('#backupElapsedTime').text('00:00');
 
     // Show modal
-    var progressModal = new bootstrap.Modal(document.getElementById('backupProgressModal'), {
+    var modalEl = document.getElementById('backupProgressModal');
+    var progressModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl, {
       backdrop: 'static',
       keyboard: false
     });
@@ -192,89 +298,13 @@ $(function () {
 
     // Start timer
     backupStartTime = Date.now();
-    clearInterval(progressTimerInterval);
     progressTimerInterval = setInterval(function () {
       var elapsedSec = Math.floor((Date.now() - backupStartTime) / 1000);
       $('#backupElapsedTime').text(formatTime(elapsedSec));
     }, 1000);
 
-    // Start Polling
-    clearInterval(progressPollInterval);
-    var isPolling = false;
-
-    progressPollInterval = setInterval(function () {
-      if (isPolling) return;
-      isPolling = true;
-
-      $.ajax({
-        url: baseUrl + 'admin/settings/backup/progress/' + jobId,
-        method: 'GET',
-        cache: false,
-        success: function (res) {
-          if (res.status === 1 && res.progress) {
-            var prog = res.progress;
-            var pct = Math.max(1, Math.min(100, parseInt(prog.percent || 0)));
-
-            $('#backupProgressBar').css('width', pct + '%').attr('aria-valuenow', pct);
-            $('#backupProgressPercent').text(pct + '%');
-
-            if (prog.step_title) {
-              $('#backupProgressTitle').text(prog.step_title);
-            }
-            if (prog.details) {
-              $('#backupProgressDetails').text(prog.details);
-            }
-
-            // Check if completed
-            if (prog.status === 'completed') {
-              clearInterval(progressPollInterval);
-              clearInterval(progressTimerInterval);
-
-              $('#backupProgressBar').css('width', '100%').removeClass('bg-primary').addClass('bg-success');
-              $('#backupProgressPercent').text('100%');
-              $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-check text-success');
-
-              var summaryText = prog.details || 'تم إنشاء النسخة الاحتياطية بنجاح.';
-              if (prog.result && prog.result.filename) {
-                summaryText = 'الملف: ' + prog.result.filename + ' (' + (prog.result.size_human || '') + ') - الوقت: ' + (prog.result.elapsed_seconds || 0) + ' ثانية';
-              }
-              $('#backupSuccessSummary').text(summaryText);
-
-              setTimeout(function () {
-                $('#backupProgressRunningBody').fadeOut(200, function () {
-                  $('#backupProgressSuccessBody').fadeIn(300);
-                });
-              }, 400);
-
-              if (dt_data) dt_data.ajax.reload();
-              loadStatistics();
-              showAlert('success', 'تم اكتمال إنشاء النسخة الاحتياطية بنجاح!');
-            }
-            // Check if failed
-            else if (prog.status === 'failed') {
-              clearInterval(progressPollInterval);
-              clearInterval(progressTimerInterval);
-
-              $('#backupProgressBar').removeClass('bg-primary').addClass('bg-danger');
-              $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-alert-triangle text-danger');
-              $('#backupErrorMessage').text(prog.error || 'حدث خطأ أثناء معالجة النسخة الاحتياطية.');
-
-              $('#backupProgressRunningBody').fadeOut(200, function () {
-                $('#backupProgressErrorBody').fadeIn(300);
-              });
-
-              showAlert('error', 'فشل إنشاء النسخة الاحتياطية: ' + (prog.error || 'خطأ غير محدد'));
-            }
-          }
-        },
-        error: function () {
-          // Keep polling on temporary network glitches
-        },
-        complete: function () {
-          isPolling = false;
-        }
-      });
-    }, 1200);
+    // Initial query
+    pollJobProgress(jobId);
   }
 
   // Create Backup Form

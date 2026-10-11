@@ -1002,7 +1002,9 @@ class BackupService
             pclose(popen($cmd, 'r'));
         } else {
             // Linux / Unix / cPanel / VPS
-            $cmd = sprintf('nohup "%s" "%s" backup:create-job %s > /dev/null 2>&1 &', $phpBinary, $artisanPath, escapeshellarg($jobId));
+            // nice -n 15 ensures that background backup runs with lower CPU priority,
+            // so Nginx, PHP-FPM, and incoming web requests are never choked or starved.
+            $cmd = sprintf('nice -n 15 nohup "%s" "%s" backup:create-job %s > /dev/null 2>&1 &', $phpBinary, $artisanPath, escapeshellarg($jobId));
             exec($cmd);
         }
     }

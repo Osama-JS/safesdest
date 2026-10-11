@@ -160,6 +160,123 @@ $(function () {
     loadStatistics();
   });
 
+  // Live Progress Polling State
+  var progressPollInterval = null;
+  var progressTimerInterval = null;
+  var backupStartTime = 0;
+
+  function formatTime(seconds) {
+    var mins = Math.floor(seconds / 60);
+    var secs = seconds % 60;
+    return (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+  }
+
+  function startLiveProgressTracker(jobId) {
+    // Reset modal elements
+    $('#backupProgressRunningBody').show();
+    $('#backupProgressSuccessBody').hide();
+    $('#backupProgressErrorBody').hide();
+    $('#backupProgressBar').removeClass('bg-success bg-danger').addClass('bg-primary progress-bar-striped progress-bar-animated').css('width', '3%');
+    $('#backupProgressPercent').text('3%');
+    $('#backupProgressTitle').text('جاري تهيئة وبدء العملية...');
+    $('#backupProgressDetails').text('يرجى الانتظار، تتم معالجة الأرشيف والبيانات في الخلفية...');
+    $('#backupProgressSpinner').removeClass('ti-check ti-alert-triangle text-success text-danger').addClass('ti-loader ti-spin text-primary');
+    $('#backupElapsedTime').text('00:00');
+
+    // Show modal
+    var progressModal = new bootstrap.Modal(document.getElementById('backupProgressModal'), {
+      backdrop: 'static',
+      keyboard: false
+    });
+    progressModal.show();
+
+    // Start timer
+    backupStartTime = Date.now();
+    clearInterval(progressTimerInterval);
+    progressTimerInterval = setInterval(function () {
+      var elapsedSec = Math.floor((Date.now() - backupStartTime) / 1000);
+      $('#backupElapsedTime').text(formatTime(elapsedSec));
+    }, 1000);
+
+    // Start Polling
+    clearInterval(progressPollInterval);
+    var isPolling = false;
+
+    progressPollInterval = setInterval(function () {
+      if (isPolling) return;
+      isPolling = true;
+
+      $.ajax({
+        url: baseUrl + 'admin/settings/backup/progress/' + jobId,
+        method: 'GET',
+        cache: false,
+        success: function (res) {
+          if (res.status === 1 && res.progress) {
+            var prog = res.progress;
+            var pct = Math.max(1, Math.min(100, parseInt(prog.percent || 0)));
+
+            $('#backupProgressBar').css('width', pct + '%').attr('aria-valuenow', pct);
+            $('#backupProgressPercent').text(pct + '%');
+
+            if (prog.step_title) {
+              $('#backupProgressTitle').text(prog.step_title);
+            }
+            if (prog.details) {
+              $('#backupProgressDetails').text(prog.details);
+            }
+
+            // Check if completed
+            if (prog.status === 'completed') {
+              clearInterval(progressPollInterval);
+              clearInterval(progressTimerInterval);
+
+              $('#backupProgressBar').css('width', '100%').removeClass('bg-primary').addClass('bg-success');
+              $('#backupProgressPercent').text('100%');
+              $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-check text-success');
+
+              var summaryText = prog.details || 'تم إنشاء النسخة الاحتياطية بنجاح.';
+              if (prog.result && prog.result.filename) {
+                summaryText = 'الملف: ' + prog.result.filename + ' (' + (prog.result.size_human || '') + ') - الوقت: ' + (prog.result.elapsed_seconds || 0) + ' ثانية';
+              }
+              $('#backupSuccessSummary').text(summaryText);
+
+              setTimeout(function () {
+                $('#backupProgressRunningBody').fadeOut(200, function () {
+                  $('#backupProgressSuccessBody').fadeIn(300);
+                });
+              }, 400);
+
+              if (dt_data) dt_data.ajax.reload();
+              loadStatistics();
+              showAlert('success', 'تم اكتمال إنشاء النسخة الاحتياطية بنجاح!');
+            }
+            // Check if failed
+            else if (prog.status === 'failed') {
+              clearInterval(progressPollInterval);
+              clearInterval(progressTimerInterval);
+
+              $('#backupProgressBar').removeClass('bg-primary').addClass('bg-danger');
+              $('#backupProgressSpinner').removeClass('ti-spin ti-loader text-primary').addClass('ti-alert-triangle text-danger');
+              $('#backupErrorMessage').text(prog.error || 'حدث خطأ أثناء معالجة النسخة الاحتياطية.');
+
+              $('#backupProgressRunningBody').fadeOut(200, function () {
+                $('#backupProgressErrorBody').fadeIn(300);
+              });
+
+              showAlert('error', 'فشل إنشاء النسخة الاحتياطية: ' + (prog.error || 'خطأ غير محدد'));
+            }
+          }
+        },
+        error: function () {
+          // Keep polling on temporary network glitches
+        },
+        complete: function () {
+          isPolling = false;
+        }
+      });
+    }, 1200);
+  }
+
   // Create Backup Form
   $('#createBackupForm').on('submit', function (e) {
     e.preventDefault();
@@ -168,7 +285,7 @@ $(function () {
     var submitBtn = $(this).find('button[type="submit"]');
     var originalText = submitBtn.html();
 
-    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري إنشاء النسخة...');
+    submitBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i>جاري الإطلاق...');
 
     $.ajax({
       url: baseUrl + 'admin/settings/backup/create',
@@ -179,17 +296,23 @@ $(function () {
       success: function (response) {
         if (response.status === 1) {
           $('#createBackupModal').modal('hide');
-          if (dt_data) dt_data.ajax.reload();
-          loadStatistics();
-          showAlert('success', response.success || 'تم إنشاء النسخة الاحتياطية بنجاح');
           $('#createBackupForm')[0].reset();
           $('#passwordInputContainer').hide();
+
+          if (response.async && response.job_id) {
+            // Launch live progress tracker
+            startLiveProgressTracker(response.job_id);
+          } else {
+            if (dt_data) dt_data.ajax.reload();
+            loadStatistics();
+            showAlert('success', response.success || 'تم إنشاء النسخة الاحتياطية بنجاح');
+          }
         } else {
-          showAlert('error', response.error || 'فشل في إنشاء النسخة الاحتياطية');
+          showAlert('error', response.error || 'فشل في بدء النسخة الاحتياطية');
         }
       },
       error: function (xhr) {
-        var errorMsg = xhr.responseJSON?.error || xhr.responseJSON?.message || 'حدث خطأ أثناء إنشاء النسخة الاحتياطية';
+        var errorMsg = xhr.responseJSON?.error || xhr.responseJSON?.message || 'حدث خطأ أثناء الاتصال بالخادم';
         showAlert('error', errorMsg);
       },
       complete: function () {

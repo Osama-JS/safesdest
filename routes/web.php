@@ -567,6 +567,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::get('backup/', [BackupController::class, 'index'])->name('settings.backup');
                     Route::get('backup/data', [BackupController::class, 'getData'])->name('settings.backup.data');
                     Route::post('backup/create', [BackupController::class, 'create'])->name('settings.backup.create');
+                    Route::get('backup/progress/{jobId}', [BackupController::class, 'getProgress'])->name('settings.backup.progress');
                     Route::get('backup/download/{backupName}', [BackupController::class, 'download'])->name('settings.backup.download');
                     Route::get('backup/direct-download/{backupName}', [BackupController::class, 'directDownload'])->name('settings.backup.direct-download');
                     Route::post('backup/dispatch/{backupName}', [BackupController::class, 'dispatchBackup'])->name('settings.backup.dispatch');

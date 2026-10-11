@@ -64,7 +64,7 @@ class BackupController extends Controller
     }
 
     /**
-     * Create new backup.
+     * Create new backup asynchronously in the background with real-time tracking.
      */
     public function create(Request $request): JsonResponse
     {
@@ -82,6 +82,8 @@ class BackupController extends Controller
                 $destinations[] = 'local';
             }
 
+            $jobId = 'job_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4));
+
             $options = [
                 'backup_type' => $request->backup_type,
                 'description' => $request->description ?? '',
@@ -89,23 +91,61 @@ class BackupController extends Controller
                 'password' => $request->password,
                 'destinations' => $destinations,
                 'created_by' => auth()->user()->name ?? 'Admin',
+                'job_id' => $jobId,
             ];
 
-            $result = $this->backupService->createBackup($options);
+            // 1. Initialize and save job configuration
+            $this->backupService->saveJobConfig($jobId, $options);
+            $this->backupService->updateJobProgress($jobId, [
+                'job_id' => $jobId,
+                'status' => 'running',
+                'percent' => 2,
+                'step_title' => 'جاري تجهيز وبدء النسخ الاحتياطي في الخلفية...',
+                'details' => null,
+                'started_at' => time(),
+            ]);
+
+            // 2. Spawn detached background process (works on Linux/cPanel/VPS/Windows)
+            $this->backupService->spawnBackgroundBackup($jobId);
 
             return response()->json([
                 'status' => 1,
-                'success' => __('Backup created successfully'),
-                'backup' => $result['backup'],
-                'elapsed_seconds' => $result['elapsed_seconds'] ?? null,
-                'dispatch_results' => $result['dispatch_results'] ?? [],
+                'async' => true,
+                'job_id' => $jobId,
+                'message' => __('تم بدء إنشاء النسخة الاحتياطية في الخلفية بنجاح.'),
             ]);
         } catch (Exception $e) {
-            Log::error('Backup creation failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Backup creation initialization failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'status' => 2,
-                'error' => __('Failed to create backup: ') . $e->getMessage(),
+                'error' => __('Failed to initialize backup: ') . $e->getMessage(),
             ], 422);
+        }
+    }
+
+    /**
+     * Get real-time progress of an active backup job.
+     */
+    public function getProgress(string $jobId): JsonResponse
+    {
+        try {
+            $progress = $this->backupService->getJobProgress($jobId);
+            if (!$progress) {
+                return response()->json([
+                    'status' => 0,
+                    'error' => __('تعذر العثور على حالة العملية المطلوبة.'),
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => 1,
+                'progress' => $progress,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 0,
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 

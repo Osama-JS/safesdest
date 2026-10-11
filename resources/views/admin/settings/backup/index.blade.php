@@ -195,6 +195,75 @@
         </div>
     </div>
 
+    <!-- Real-time Live Progress Modal -->
+    <div class="modal fade" id="backupProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-label-primary py-3">
+                    <h5 class="modal-title d-flex align-items-center mb-0">
+                        <i class="ti ti-loader ti-spin text-primary me-2 fs-4" id="backupProgressSpinner"></i>
+                        <span id="backupProgressModalHeader">{{ __('جاري إنشاء النسخة الاحتياطية في الخلفية') }}</span>
+                    </h5>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <!-- Progress Running Body -->
+                    <div id="backupProgressRunningBody">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold text-dark fs-6" id="backupProgressTitle">جاري تهيئة وبدء العملية...</span>
+                            <span class="badge bg-primary fs-6" id="backupProgressPercent">2%</span>
+                        </div>
+
+                        <div class="progress mb-3" style="height: 16px; border-radius: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                                 id="backupProgressBar"
+                                 role="progressbar"
+                                 style="width: 2%"
+                                 aria-valuenow="2"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"></div>
+                        </div>
+
+                        <p class="text-muted small mb-3" id="backupProgressDetails">يرجى الانتظار، تتم معالجة الأرشيف والبيانات في الخلفية دون انقطاع...</p>
+
+                        <div class="d-flex justify-content-center align-items-center gap-3 text-muted small">
+                            <span class="badge bg-label-secondary py-2 px-3 rounded-pill">
+                                <i class="ti ti-clock me-1"></i>{{ __('الوقت المنقضي:') }} <strong id="backupElapsedTime">00:00</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Success State -->
+                    <div id="backupProgressSuccessBody" style="display: none;" class="py-2">
+                        <div class="mb-3">
+                            <span class="badge bg-label-success p-3 rounded-circle">
+                                <i class="ti ti-check fs-1 text-success"></i>
+                            </span>
+                        </div>
+                        <h5 class="text-success fw-bold mb-2">{{ __('تم إنشاء النسخة الاحتياطية بنجاح!') }}</h5>
+                        <p class="text-muted mb-3" id="backupSuccessSummary"></p>
+                        <button type="button" class="btn btn-success px-4" data-bs-dismiss="modal">
+                            <i class="ti ti-check me-1"></i> {{ __('تم، إغلاق') }}
+                        </button>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="backupProgressErrorBody" style="display: none;" class="py-2">
+                        <div class="mb-3">
+                            <span class="badge bg-label-danger p-3 rounded-circle">
+                                <i class="ti ti-alert-triangle fs-1 text-danger"></i>
+                            </span>
+                        </div>
+                        <h5 class="text-danger fw-bold mb-2">{{ __('فشل إنشاء النسخة الاحتياطية') }}</h5>
+                        <p class="text-danger small mb-3" id="backupErrorMessage"></p>
+                        <button type="button" class="btn btn-label-secondary px-4" data-bs-dismiss="modal">
+                            {{ __('إغلاق') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Cloud & Automated Backup Settings Modal -->
     <div class="modal fade" id="cloudSettingsModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">

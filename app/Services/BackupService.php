@@ -160,7 +160,7 @@ class BackupService
     /**
      * Create a new backup.
      */
-    public function createBackup(array $options = []): array
+    public function createBackup(array $options = [], ?callable $progressCallback = null): array
     {
         $startTime = microtime(true);
         $type = $options['backup_type'] ?? 'database_only'; // 'full', 'database_only', 'files_only'
@@ -169,6 +169,23 @@ class BackupService
         $customPassword = $options['password'] ?? null;
         $destinations = $options['destinations'] ?? ['local'];
         $createdBy = $options['created_by'] ?? (auth()->check() ? auth()->user()->name : 'System');
+        $jobId = $options['job_id'] ?? null;
+
+        $reportProgress = function(int $percent, string $title, ?string $details = null) use ($progressCallback, $jobId) {
+            if ($jobId) {
+                $this->updateJobProgress($jobId, [
+                    'status' => 'running',
+                    'percent' => $percent,
+                    'step_title' => $title,
+                    'details' => $details,
+                ]);
+            }
+            if ($progressCallback) {
+                $progressCallback($percent, $title, $details);
+            }
+        };
+
+        $reportProgress(5, 'جاري تهيئة مجلد النسخ الاحتياطي وإعداد المعاملات...');
 
         $backupName = 'backup_' . Carbon::now()->format('Y_m_d_H_i_s') . '_' . substr(md5(uniqid()), 0, 8);
         $tempStagingDir = $this->tempDir . DIRECTORY_SEPARATOR . $backupName;
@@ -183,21 +200,19 @@ class BackupService
         try {
             // 1. Export Database
             if (in_array($type, ['full', 'database_only'])) {
+                $reportProgress(10, 'جاري تفريغ وتصدير قاعدة البيانات (PostgreSQL Dump)...');
                 $sqlDumpPath = $tempStagingDir . DIRECTORY_SEPARATOR . 'database.sql';
                 $dbStats = $this->dumpDatabase($sqlDumpPath);
                 $tablesCount = $dbStats['tables_count'] ?? 0;
                 $recordsCount = $dbStats['records_count'] ?? 0;
+                $dbFileSize = $dbStats['file_size'] ?? (File::exists($sqlDumpPath) ? File::size($sqlDumpPath) : 0);
+                $dbSizeHuman = $this->formatBytes($dbFileSize);
+                $reportProgress(38, "تم تصدير قاعدة البيانات بنجاح", "تم استخراج {$tablesCount} جدول بحجم {$dbSizeHuman}");
                 Log::info("Database dumped successfully for backup: {$backupName}", $dbStats);
             }
 
-            // 2. Export Uploads / Storage Files
-            if (in_array($type, ['full', 'files_only'])) {
-                $targetFilesDir = $tempStagingDir . DIRECTORY_SEPARATOR . 'files';
-                $this->exportStorageFiles($targetFilesDir);
-                Log::info("Storage files exported successfully for backup: {$backupName}");
-            }
-
-            // 3. Create Manifest
+            // 2. Create Manifest
+            $reportProgress(42, 'جاري تجهيز وتوليد ملف الوصف الفني (Manifest)...');
             $manifest = [
                 'app_name' => config('app.name', 'SafeDest'),
                 'backup_name' => $backupName,
@@ -212,11 +227,22 @@ class BackupService
             ];
             File::put($tempStagingDir . DIRECTORY_SEPARATOR . 'manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-            // 4. Archive into ZIP
+            // 3. Archive directly into ZIP (direct stream, no double disk copying)
             $zipPath = $this->backupDir . DIRECTORY_SEPARATOR . $backupName . '.zip';
             $password = $isEncrypted ? ($customPassword ?: $this->generateSecurePassword()) : null;
+            $includeStorage = in_array($type, ['full', 'files_only']);
 
-            $this->zipDirectoryWithEncryption($tempStagingDir, $zipPath, $password);
+            $reportProgress(46, 'جاري بدء أرشفة وضغط الملفات...');
+
+            $this->zipFilesIntoArchive(
+                $tempStagingDir,
+                $zipPath,
+                $password,
+                $includeStorage,
+                function (int $pct, string $msg, ?string $det = null) use ($reportProgress) {
+                    $reportProgress($pct, $msg, $det);
+                }
+            );
 
             // Clean up temporary folder
             File::deleteDirectory($tempStagingDir);
@@ -226,6 +252,7 @@ class BackupService
             }
 
             $finalSize = File::size($zipPath);
+            $reportProgress(88, 'جاري حساب البصمة الرقمية والتحقق من سلامة الأرشيف...', 'حجم الملف: ' . $this->formatBytes($finalSize));
             $sha256 = hash_file('sha256', $zipPath);
 
             // Save password securely if encrypted
@@ -254,13 +281,15 @@ class BackupService
             // Prune old backups based on retention policy
             $this->cleanupOldBackups();
 
-            // 5. Dispatch to Cloud Destinations (Telegram, Email)
+            // 4. Dispatch to Cloud Destinations (Telegram, Email)
             $dispatchResults = [];
-            if (!empty($destinations)) {
+            if (!empty($destinations) && (in_array('telegram', $destinations) || in_array('email', $destinations))) {
+                $reportProgress(93, 'جاري معالجة الإرسال السحابي (تليجرام / بريد)...');
                 $dispatchResults = $this->dispatchBackup($backupName . '.zip', $destinations);
             }
 
             $elapsedSec = round(microtime(true) - $startTime, 2);
+            $reportProgress(100, 'تم اكتمال النسخة الاحتياطية بنجاح!', "استغرقت العملية {$elapsedSec} ثانية");
 
             return [
                 'success' => true,
@@ -307,25 +336,31 @@ class BackupService
 
             if (!empty($botToken) && !empty($chatId)) {
                 try {
-                    $caption = "📦 *نسخة احتياطية جديدة - منصة SafeDest*\n"
-                        . "📄 الملف: `{$filename}`\n"
-                        . "📊 الحجم: `{$fileSizeHuman}`\n"
-                        . "🔑 SHA256: `{$sha256}`\n"
-                        . "⏰ التاريخ: " . now()->format('Y-m-d H:i:s');
-
-                    $response = Http::timeout(180)
-                        ->attach('document', file_get_contents($filePath), $filename)
-                        ->post("https://api.telegram.org/bot{$botToken}/sendDocument", [
-                            'chat_id' => $chatId,
-                            'caption' => $caption,
-                            'parse_mode' => 'Markdown',
-                        ]);
-
-                    if ($response->successful() && ($response->json('ok') === true)) {
-                        $results['telegram'] = ['success' => true, 'message' => 'تم الإرسال إلى تليجرام بنجاح'];
+                    $fileSizeBytes = filesize($filePath);
+                    if ($fileSizeBytes > 49 * 1024 * 1024) {
+                        Log::warning("Skipping Telegram dispatch for {$filename}: file size {$fileSizeHuman} exceeds Telegram 50MB Bot API limit.");
+                        $results['telegram'] = ['success' => false, 'message' => "حجم النسخة ({$fileSizeHuman}) يتجاوز الحد المسموح به في تليجرام (50 ميجابايت). تم حفظ النسخة محلياً بنجاح."];
                     } else {
-                        $errMsg = $response->json('description') ?: $response->body();
-                        $results['telegram'] = ['success' => false, 'message' => 'استجابة تليجرام: ' . $errMsg];
+                        $caption = "📦 *نسخة احتياطية جديدة - منصة SafeDest*\n"
+                            . "📄 الملف: `{$filename}`\n"
+                            . "📊 الحجم: `{$fileSizeHuman}`\n"
+                            . "🔑 SHA256: `{$sha256}`\n"
+                            . "⏰ التاريخ: " . now()->format('Y-m-d H:i:s');
+
+                        $response = Http::timeout(180)
+                            ->attach('document', file_get_contents($filePath), $filename)
+                            ->post("https://api.telegram.org/bot{$botToken}/sendDocument", [
+                                'chat_id' => $chatId,
+                                'caption' => $caption,
+                                'parse_mode' => 'Markdown',
+                            ]);
+
+                        if ($response->successful() && ($response->json('ok') === true)) {
+                            $results['telegram'] = ['success' => true, 'message' => 'تم الإرسال إلى تليجرام بنجاح'];
+                        } else {
+                            $errMsg = $response->json('description') ?: $response->body();
+                            $results['telegram'] = ['success' => false, 'message' => 'استجابة تليجرام: ' . $errMsg];
+                        }
                     }
                 } catch (\Throwable $e) {
                     $results['telegram'] = ['success' => false, 'message' => 'خطأ تليجرام: ' . $e->getMessage()];
@@ -781,10 +816,15 @@ class BackupService
     }
 
     /**
-     * Zip directory with optional AES-256 encryption.
+     * Zip staging files and storage files directly into archive with live progress callback and optimized storage.
      */
-    protected function zipDirectoryWithEncryption(string $sourceDir, string $outZipPath, ?string $password = null): void
-    {
+    protected function zipFilesIntoArchive(
+        string $stagingDir,
+        string $outZipPath,
+        ?string $password = null,
+        bool $includeStorageFiles = false,
+        ?callable $progressCallback = null
+    ): void {
         $zip = new ZipArchive();
         if ($zip->open($outZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException("تعذر إنشاء ملف الأرشيف: {$outZipPath}");
@@ -794,25 +834,177 @@ class BackupService
             $zip->setPassword($password);
         }
 
-        $files = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::LEAVES_ONLY
-        );
+        $preCompressed = [
+            'jpg', 'jpeg', 'png', 'webp', 'gif', 'svgz',
+            'pdf', 'zip', 'gz', 'tar', 'tgz', 'rar', '7z',
+            'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg', 'webm'
+        ];
 
-        foreach ($files as $file) {
-            if (!$file->isDir()) {
-                $filePath = $file->getRealPath();
-                $relativePath = substr($filePath, strlen($sourceDir) + 1);
-                $cleanRelPath = str_replace('\\', '/', $relativePath);
-                $zip->addFile($filePath, $cleanRelPath);
+        // 1. Add files from staging directory (manifest.json, database.sql, etc.)
+        if (File::isDirectory($stagingDir)) {
+            $stagingFiles = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($stagingDir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
 
-                if ($password) {
-                    $zip->setEncryptionName($cleanRelPath, ZipArchive::EM_AES_256);
+            foreach ($stagingFiles as $file) {
+                if (!$file->isDir()) {
+                    $filePath = $file->getRealPath();
+                    $relativePath = substr($filePath, strlen($stagingDir) + 1);
+                    $cleanRelPath = str_replace('\\', '/', $relativePath);
+                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+                    $zip->addFile($filePath, $cleanRelPath);
+
+                    if (in_array($ext, $preCompressed)) {
+                        $zip->setCompressionName($cleanRelPath, ZipArchive::CM_STORE);
+                    } else {
+                        $zip->setCompressionName($cleanRelPath, ZipArchive::CM_DEFAULT);
+                    }
+
+                    if ($password) {
+                        $zip->setEncryptionName($cleanRelPath, ZipArchive::EM_AES_256);
+                    }
                 }
             }
         }
 
+        // 2. Add storage public files directly without intermediate disk copying
+        $storagePublic = storage_path('app/public');
+        if ($includeStorageFiles && File::isDirectory($storagePublic)) {
+            $storageFiles = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($storagePublic, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            foreach ($storageFiles as $file) {
+                if (!$file->isDir()) {
+                    $filePath = $file->getRealPath();
+                    $relativePath = substr($filePath, strlen($storagePublic) + 1);
+                    $cleanRelPath = 'files/' . str_replace('\\', '/', $relativePath);
+                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+                    $zip->addFile($filePath, $cleanRelPath);
+
+                    if (in_array($ext, $preCompressed)) {
+                        $zip->setCompressionName($cleanRelPath, ZipArchive::CM_STORE);
+                    } else {
+                        $zip->setCompressionName($cleanRelPath, ZipArchive::CM_DEFAULT);
+                    }
+
+                    if ($password) {
+                        $zip->setEncryptionName($cleanRelPath, ZipArchive::EM_AES_256);
+                    }
+                }
+            }
+        }
+
+        // 3. Register real-time libzip progress callback (PHP 8.0+)
+        if (method_exists($zip, 'registerProgressCallback')) {
+            $lastUpdate = 0;
+            $zip->registerProgressCallback(0.01, function (float $ratio) use ($progressCallback, &$lastUpdate) {
+                $now = microtime(true);
+                // Throttle updates to ~400ms to avoid excessive disk I/O on progress file
+                if ($now - $lastUpdate >= 0.4 || $ratio >= 1.0) {
+                    $lastUpdate = $now;
+                    $pct = round(48 + ($ratio * 38)); // Map 0.0-1.0 to 48% -> 86%
+                    if ($progressCallback) {
+                        $progressCallback($pct, "جاري ضغط وضخ البيانات في الأرشيف ({$pct}%)...", "نسبة معالجة البيانات: " . round($ratio * 100) . "%");
+                    }
+                }
+            });
+        }
+
         $zip->close();
+    }
+
+    /**
+     * Backward-compatible alias for zipDirectoryWithEncryption.
+     */
+    protected function zipDirectoryWithEncryption(string $sourceDir, string $outZipPath, ?string $password = null): void
+    {
+        $this->zipFilesIntoArchive($sourceDir, $outZipPath, $password, false);
+    }
+
+    // ==========================================
+    // ASYNCHRONOUS JOB & PROGRESS STATE TRACKING
+    // ==========================================
+
+    public function getJobConfigPath(string $jobId): string
+    {
+        return $this->backupDir . DIRECTORY_SEPARATOR . ".job_{$jobId}.json";
+    }
+
+    public function getJobProgressPath(string $jobId): string
+    {
+        return $this->backupDir . DIRECTORY_SEPARATOR . ".progress_{$jobId}.json";
+    }
+
+    public function saveJobConfig(string $jobId, array $options): void
+    {
+        if (!File::isDirectory($this->backupDir)) {
+            File::makeDirectory($this->backupDir, 0755, true);
+        }
+        File::put($this->getJobConfigPath($jobId), json_encode(['options' => $options, 'created_at' => time()], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
+    public function getJobConfig(string $jobId): ?array
+    {
+        $path = $this->getJobConfigPath($jobId);
+        if (!File::exists($path)) {
+            return null;
+        }
+        return json_decode(File::get($path), true);
+    }
+
+    public function updateJobProgress(string $jobId, array $data): void
+    {
+        if (!File::isDirectory($this->backupDir)) {
+            File::makeDirectory($this->backupDir, 0755, true);
+        }
+        $path = $this->getJobProgressPath($jobId);
+        $current = [];
+        if (File::exists($path)) {
+            $current = json_decode(File::get($path), true) ?: [];
+        }
+        $merged = array_merge($current, $data, ['updated_at' => time()]);
+        File::put($path, json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+
+    public function getJobProgress(string $jobId): ?array
+    {
+        $path = $this->getJobProgressPath($jobId);
+        if (!File::exists($path)) {
+            return null;
+        }
+        return json_decode(File::get($path), true);
+    }
+
+    public function cleanupJobFiles(string $jobId): void
+    {
+        $jobPath = $this->getJobConfigPath($jobId);
+        $progPath = $this->getJobProgressPath($jobId);
+        if (File::exists($jobPath)) File::delete($jobPath);
+        if (File::exists($progPath)) File::delete($progPath);
+    }
+
+    /**
+     * Spawn detached background worker for creating backup on any OS.
+     */
+    public function spawnBackgroundBackup(string $jobId): void
+    {
+        $artisanPath = base_path('artisan');
+        $phpBinary = PHP_BINARY ?: 'php';
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows
+            $cmd = sprintf('start /B "" "%s" "%s" backup:create-job %s > NUL 2>&1', $phpBinary, $artisanPath, escapeshellarg($jobId));
+            pclose(popen($cmd, 'r'));
+        } else {
+            // Linux / Unix / cPanel / VPS
+            $cmd = sprintf('nohup "%s" "%s" backup:create-job %s > /dev/null 2>&1 &', $phpBinary, $artisanPath, escapeshellarg($jobId));
+            exec($cmd);
+        }
     }
 
     /**

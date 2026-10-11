@@ -825,6 +825,13 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('/investors/payout-requests/{id}/approve', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'approve'])->name('investors.payout-requests.approve');
                 Route::post('/investors/payout-requests/{id}/reject', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'reject'])->name('investors.payout-requests.reject');
 
+                // User Payout Requests Routes (HyperPay)
+                Route::get('/users/payout-requests', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'index'])->name('users.payout-requests.index');
+                Route::get('/users/payout-requests/data', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'getData'])->name('users.payout-requests.data');
+                Route::get('/users/payout-requests/{id}', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'show'])->name('users.payout-requests.show');
+                Route::post('/users/payout-requests/{id}/approve', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'approve'])->name('users.payout-requests.approve');
+                Route::post('/users/payout-requests/{id}/reject', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'reject'])->name('users.payout-requests.reject');
+
 
 
                 // Customs Clearances Routes

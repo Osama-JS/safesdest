@@ -39,10 +39,15 @@
                                 <small class="text-muted">{{ __('User ID') }}: #{{ $user->id }}</small>
                             </div>
                         </div>
-                        <div>
-                            <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
-                                <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين (Payout)') }}
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('users.payout-requests.index') }}" class="btn btn-label-primary">
+                                <i class="ti ti-users me-1"></i> {{ __('طلبات دفع المستخدمين (Payout)') }}
                             </a>
+                            @if(isset($isInvestor) && $isInvestor)
+                                <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
+                                    <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين (Payout)') }}
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

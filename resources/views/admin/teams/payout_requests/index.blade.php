@@ -55,6 +55,9 @@
             <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-label-warning">
                 <i class="ti ti-cash me-1"></i> {{ __('طلبات دفع المستثمرين') }}
             </a>
+            <a href="{{ route('users.payout-requests.index') }}" class="btn btn-label-info">
+                <i class="ti ti-users me-1"></i> {{ __('طلبات دفع المستخدمين') }}
+            </a>
         </div>
     </div>
 

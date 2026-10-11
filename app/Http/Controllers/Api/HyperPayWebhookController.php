@@ -275,12 +275,16 @@ class HyperPayWebhookController extends Controller
                 }
             }
 
+            $isUserPayout = ($payout->payout_type === 'UWP');
+            $payoutActionUrl = $isUserPayout ? url('/admin/users/payout-requests') : url('/admin/investors/payout-requests');
+            $actorTitle = $isUserPayout ? 'مستخدم' : 'مستثمر';
+
             // 2. Dispatch Admin Notification
             \App\Services\AdminNotificationDispatcher::dispatch(
                 eventKey: 'payout_status_updated',
-                title: "✅ اكتمال تحويل Payout لمستثمر #{$payout->reference_id}",
-                message: "تم تأكيد تحويل مبلغ " . number_format($payout->amount, 2) . " ر.س بنجاح عبر بوابة HyperPay لحساب المستثمر " . ($user?->name ?? '') . "، وتم قيد الخصم في محفظة العمولات.",
-                actionUrl: url('/admin/investors/payout-requests'),
+                title: "✅ اكتمال تحويل Payout لـ {$actorTitle} #{$payout->reference_id}",
+                message: "تم تأكيد تحويل مبلغ " . number_format($payout->amount, 2) . " ر.س بنجاح عبر بوابة HyperPay لحساب الـ {$actorTitle} " . ($user?->name ?? '') . "، وتم قيد الخصم في المحفظة.",
+                actionUrl: $payoutActionUrl,
                 priority: 'normal',
                 extraData: [
                     'payout_id'      => $payout->id,
@@ -324,12 +328,16 @@ class HyperPayWebhookController extends Controller
                 }
             }
 
+            $isUserPayout = ($payout->payout_type === 'UWP');
+            $payoutActionUrl = $isUserPayout ? url('/admin/users/payout-requests') : url('/admin/investors/payout-requests');
+            $actorTitle = $isUserPayout ? 'مستخدم' : 'مستثمر';
+
             // Dispatch Admin Notification of Failure
             \App\Services\AdminNotificationDispatcher::dispatch(
                 eventKey: 'payout_status_updated',
-                title: "❌ فشل تحويل Payout لمستثمر #{$payout->reference_id}",
-                message: "فشل التحويل البنكي لمبلغ " . number_format($payout->amount, 2) . " ر.س للمستثمر " . ($user?->name ?? '') . ". السبب: {$failureReason}",
-                actionUrl: url('/admin/investors/payout-requests'),
+                title: "❌ فشل تحويل Payout لـ {$actorTitle} #{$payout->reference_id}",
+                message: "فشل التحويل البنكي لمبلغ " . number_format($payout->amount, 2) . " ر.س للـ {$actorTitle} " . ($user?->name ?? '') . ". السبب: {$failureReason}",
+                actionUrl: $payoutActionUrl,
                 priority: 'high',
                 extraData: [
                     'payout_id'      => $payout->id,

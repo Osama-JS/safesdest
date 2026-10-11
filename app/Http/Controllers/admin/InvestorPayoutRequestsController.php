@@ -28,11 +28,13 @@ class InvestorPayoutRequestsController extends Controller
     protected function baseInvestorPayoutQuery()
     {
         return HyperpayPayout::where(function ($q) {
-            $q->whereNotNull('user_id')
-              ->orWhereNotNull('user_wallet_id')
+            $q->whereIn('payout_type', ['IPW', 'IWD', 'INV'])
               ->orWhereNotNull('source_commission_withdrawal_id')
-              ->orWhereIn('payout_type', ['IPW', 'IWD', 'UWP']);
-        });
+              ->orWhere(function ($uq) {
+                  $uq->whereNotNull('user_wallet_id')
+                     ->whereHas('user', fn($userQ) => $userQ->where('investor', true));
+              });
+        })->where('payout_type', '!=', 'UWP');
     }
 
     /**

@@ -206,8 +206,13 @@ class PayoutRequestsController extends Controller
             return app(TeamPayoutRequestsController::class)->show($id);
         }
 
+        // التفويض التلقائي الذكي لطلبات المستخدمين
+        if ($payout->payout_type === 'UWP') {
+            return app(UserPayoutRequestsController::class)->show($id);
+        }
+
         // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها من هنا
-        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'INV'])) {
             return app(InvestorPayoutRequestsController::class)->show($id);
         }
 
@@ -320,8 +325,13 @@ class PayoutRequestsController extends Controller
             return app(TeamPayoutRequestsController::class)->approve($request, $id);
         }
 
+        // التفويض التلقائي الذكي لطلبات المستخدمين
+        if ($payout->payout_type === 'UWP') {
+            return app(UserPayoutRequestsController::class)->approve($request, $id);
+        }
+
         // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها عبر هذا المسار
-        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'INV'])) {
             return app(InvestorPayoutRequestsController::class)->approve($request, $id);
         }
 
@@ -442,8 +452,13 @@ class PayoutRequestsController extends Controller
             return app(TeamPayoutRequestsController::class)->reject($request, $id);
         }
 
+        // التفويض التلقائي الذكي لطلبات المستخدمين
+        if ($payout->payout_type === 'UWP') {
+            return app(UserPayoutRequestsController::class)->reject($request, $id);
+        }
+
         // التفويض التلقائي الذكي لطلبات المستثمرين إذا تم استدعاؤها عبر هذا المسار
-        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'UWP', 'INV'])) {
+        if ($payout->user_id || $payout->user_wallet_id || in_array($payout->payout_type, ['IPW', 'IWD', 'INV'])) {
             return app(InvestorPayoutRequestsController::class)->reject($request, $id);
         }
 

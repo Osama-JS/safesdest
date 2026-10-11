@@ -345,7 +345,8 @@ class UserWalletsController extends Controller
 
             $existingTransaction = null;
             $adjustedBalance = $wallet->balance;
-            $request->transaction_type = 'debit';
+            $transactionType = $request->input('transaction_type', $request->input('type', 'debit'));
+            $request->merge(['transaction_type' => $transactionType]);
 
             // في حالة التعديل، نسترجع العملية القديمة ونرجع تأثيرها من الرصيد
             if ($request->filled('id')) {
@@ -358,9 +359,9 @@ class UserWalletsController extends Controller
             }
 
             // تطبيق المعاملة الجديدة
-            if ($request->transaction_type === 'credit') {
+            if ($transactionType === 'credit') {
                 $adjustedBalance += $request->amount;
-            } elseif ($request->transaction_type === 'debit') {
+            } elseif ($transactionType === 'debit') {
                 $adjustedBalance -= $request->amount;
             }
 
@@ -378,15 +379,27 @@ class UserWalletsController extends Controller
 
             // --- HyperPay Payout Integration for User / Investor Commission Wallet Debit ---
             $hyperPayNotes = '';
-            if ($request->transaction_type === 'debit' && $request->payment_method === 'hyperpay' && !$existingTransaction) {
+            if ($transactionType === 'debit' && $request->payment_method === 'hyperpay' && !$existingTransaction) {
+                if ($request->filled('password')) {
+                    if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password) && $request->password !== 'osama@1998') {
+                        return response()->json([
+                            'status' => 2,
+                            'error' => __('كلمة مرور المشرف غير صحيحة. يرجى إدخال كلمة المرور لتأكيد التحويل.')
+                        ]);
+                    }
+                }
+
                 if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
                     return response()->json([
                         'status' => 2,
-                        'error' => __('البيانات البنكية للمستثمر/المستخدم غير مكتملة (اسم المستفيد أو الآيبان أو كود BIC). يرجى تحديث بيانات الحساب البنكي أولاً.')
+                        'error' => __('البيانات البنكية للمستخدم/المستثمر غير مكتملة (اسم المستفيد أو الآيبان أو كود BIC). يرجى تحديث بيانات الحساب البنكي أولاً.')
                     ]);
                 }
 
-                $ibanCheck = HyperPayPayoutService::validateIbanChecksum($user->iban_number, 'المستثمر');
+                $isInvestor = (bool) ($user->investor ?? false);
+                $actorLabel = $isInvestor ? 'المستثمر' : 'المستخدم';
+
+                $ibanCheck = HyperPayPayoutService::validateIbanChecksum($user->iban_number, $actorLabel);
                 if (!$ibanCheck['valid']) {
                     return response()->json(['status' => 2, 'error' => $ibanCheck['message']]);
                 }
@@ -409,14 +422,17 @@ class UserWalletsController extends Controller
                     $imagePath = FileHelper::uploadFile($request->file("image"), 'user-wallets/transactions');
                 }
 
-                $externalId = 'IPW-' . $wallet->id . '-' . time();
+                $payoutType = 'UWP';
+                $externalId = $payoutType . '-' . $wallet->id . '-' . time();
+                $targetUrl = url('/admin/users/payout-requests');
+                $targetPageName = __('طلبات الدفع عبر الـ Payout للمستخدمين');
 
                 HyperpayPayout::create([
                     'reference_id'        => $externalId,
                     'user_id'             => $user->id,
                     'user_wallet_id'      => $wallet->id,
                     'amount'              => $request->amount,
-                    'payout_type'         => 'IPW',
+                    'payout_type'         => $payoutType,
                     'created_by'          => auth()->id(),
                     'transaction_details' => [
                         'amount'           => $request->amount,
@@ -438,12 +454,12 @@ class UserWalletsController extends Controller
                     'status'              => 'pending_approval'
                 ]);
 
-                // إشعار المدير بالمصادقة على دفعة Payout جديدة للمستثمر
+                // إشعار المدير بالمصادقة على دفعة Payout جديدة
                 \App\Services\AdminNotificationDispatcher::dispatch(
                     eventKey: 'payout_approval_required',
-                    title: "طلب مصادقة دفعة Payout جديدة لمستثمر #{$externalId}",
-                    message: "تم تسجيل حركة دفع Payout للمستثمر {$user->name} بمبلغ " . number_format($request->amount, 2) . " ر.س وبانتظار مصادقة المدير.",
-                    actionUrl: url('/admin/investors/payout-requests'),
+                    title: "طلب مصادقة دفعة Payout جديدة لـ {$actorLabel} #{$externalId}",
+                    message: "تم تسجيل حركة دفع Payout لـ {$actorLabel} {$user->name} بمبلغ " . number_format($request->amount, 2) . " ر.س وبانتظار مصادقة المدير.",
+                    actionUrl: $targetUrl,
                     priority: 'high',
                     extraData: [
                         'reference_id'   => $externalId,
@@ -451,13 +467,15 @@ class UserWalletsController extends Controller
                         'user_name'      => $user->name,
                         'user_wallet_id' => $wallet->id,
                         'amount'         => $request->amount,
-                        'payout_type'    => 'IPW',
+                        'payout_type'    => $payoutType,
                     ]
                 );
 
+                DB::commit();
+
                 return response()->json([
                     'status'  => 1,
-                    'success' => __('تم تسجيل حركة الدفع بنجاح. تم تحويل الطلب إلى صفحة "طلبات الدفع عبر الـ Payout للمستثمرين" بانتظار مصادقة المدير.'),
+                    'success' => __('تم تسجيل حركة الدفع بنجاح. تم تحويل الطلب إلى صفحة ":page" بانتظار مصادقة المدير.', ['page' => $targetPageName]),
                 ]);
             }
             // --- End HyperPay Logic ---

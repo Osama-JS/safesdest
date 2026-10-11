@@ -91,6 +91,16 @@ html[dir="rtl"] .app-notification-toast .toast-progress,
 .app-notification-toast:hover .toast-progress {
     animation-play-state: paused;
 }
+
+/* Hide on mobile and small screens so it does not cover the viewport */
+@media (max-width: 767.98px) {
+    .admin-toast-container,
+    .app-notification-toast {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
 </style>
 
 <!-- In-App Notification Toast Container -->

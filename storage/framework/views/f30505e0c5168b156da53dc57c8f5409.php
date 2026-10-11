@@ -441,6 +441,13 @@
     background: #e7f7ed;
     border-inline-start: 4px solid #25D366;
 }
+@keyframes conv-item-highlight {
+    0%   { background-color: #d9fdd3; }
+    100% { background-color: transparent; }
+}
+.whatsapp-conv-item.conv-item-new {
+    animation: conv-item-highlight 1.5s ease-out forwards;
+}
 .whatsapp-conv-avatar {
     width: 42px;
     height: 42px;

@@ -231,7 +231,21 @@ $(function () {
     return container;
   }
 
+  // Helper to detect mobile or small screens (< 768px)
+  function isMobileScreen() {
+    return (
+      window.innerWidth < 768 ||
+      (window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches)
+    );
+  }
+
   function showNotificationToast(item) {
+    // In small / mobile screens, don't show the toast card so it doesn't cover the screen.
+    // Audio chime, navbar counter, and dropdown list updates will still work normally.
+    if (isMobileScreen()) {
+      return;
+    }
+
     const rtl = isRtl();
     const container = getToastContainer();
 

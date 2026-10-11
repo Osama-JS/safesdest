@@ -58,6 +58,9 @@
             <a href="{{ route('teams.payout-requests.index') }}" class="btn btn-label-success">
                 <i class="ti ti-building-bank me-1"></i> {{ __('طلبات دفع الفرق') }}
             </a>
+            <a href="{{ route('users.payout-requests.index') }}" class="btn btn-label-secondary">
+                <i class="ti ti-users me-1"></i> {{ __('طلبات دفع المستخدمين') }}
+            </a>
         </div>
     </div>
 

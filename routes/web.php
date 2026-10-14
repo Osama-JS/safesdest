@@ -741,6 +741,9 @@ Route::middleware('rate.limit')->group(function () {
 
                 // Customer Invoices Routes (فواتير ديون العملاء المحاسبية)
                 Route::prefix('customer-invoices')->name('admin.customer-invoices.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'index'])->name('index');
+                    Route::get('/all-data', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'allData'])->name('all-data');
+                    Route::get('/statistics', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'getStatistics'])->name('statistics');
                     Route::get('/wallet/{walletId}/data', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'listByWallet'])->name('data');
                     Route::get('/wallet/{walletId}/uninvoiced-transactions', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'getUninvoicedTransactions'])->name('uninvoiced-transactions');
                     Route::post('/store', [App\Http\Controllers\admin\CustomerInvoicesController::class, 'store'])->name('store');

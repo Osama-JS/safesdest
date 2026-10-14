@@ -23,6 +23,7 @@
         const canPayCustomerInvoices = {{ auth()->user()->can('pay_customer_invoices') ? 'true' : 'false' }};
         const canApproveCustomerInvoices = {{ auth()->user()->can('approve_customer_invoices') ? 'true' : 'false' }};
         const canCancelCustomerInvoices = {{ auth()->user()->can('cancel_customer_invoices') ? 'true' : 'false' }};
+        const canForceEditCustomerInvoices = {{ auth()->user()->can('force_edit_customer_invoices') ? 'true' : 'false' }};
     </script>
     @vite(['resources/js/admin/wallets/show.js'])
     @vite(['resources/js/ajax.js'])
@@ -754,7 +755,7 @@
                                         </div>
                                         <div class="col-md-3">
                                             <label class="form-label text-danger fw-bold" for="due_date">* {{ __('Due Date (Maturity)') }}</label>
-                                            <input type="date" class="form-control border-primary" id="due_date" name="due_date" required min="{{ date('Y-m-d') }}">
+                                            <input type="date" class="form-control border-primary" id="due_date" name="due_date" required>
                                             <small class="text-primary d-block mt-1">{{ __('Will update maturity on all linked transactions') }}</small>
                                         </div>
                                         <div class="col-md-6">
@@ -1029,14 +1030,46 @@
                     <form id="formEditCustomerInvoice" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" id="edit_invoice_id">
+                        <input type="hidden" id="edit_is_force_edit" name="is_force_edit" value="0">
 
                         <div class="modal-body py-3">
-                            <div class="alert alert-info py-2 mb-3">
+                            <!-- Force Edit Warning Banner (shown only when editing approved invoice) -->
+                            <div id="editForceEditBanner" class="alert alert-danger py-2 mb-3 border-danger shadow-xs" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <i class="ti ti-shield-bolt ti-md me-2 text-danger"></i>
+                                    <div>
+                                        <strong class="d-block text-danger">{{ __('Force Edit on Approved Invoice') }}</strong>
+                                        <small class="text-dark">{{ __('Warning: This invoice has already been approved. Any changes will be audited and permanently logged in Activity Logs under Force Edit.') }}</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info py-2 mb-3" id="editNormalInfoAlert">
                                 <i class="ti ti-info-circle me-1"></i>
                                 {{ __('Note: Updating the due date will automatically propagate to all linked wallet transactions.') }}
                             </div>
 
                             <div class="row g-3 mb-3">
+                                <!-- Force Edit Justification Reason & Admin Password Confirmation -->
+                                <div class="col-md-12" id="editForceEditReasonContainer" style="display: none;">
+                                    <div class="row g-2">
+                                        <div class="col-md-7">
+                                            <label class="form-label text-danger fw-bold" for="edit_force_edit_reason">
+                                                <i class="ti ti-alert-triangle me-1"></i> * {{ __('Force Edit Justification / Reason') }}
+                                            </label>
+                                            <textarea class="form-control border-danger" id="edit_force_edit_reason" name="force_edit_reason" rows="2" placeholder="{{ __('State the reason for modifying this approved invoice...') }}"></textarea>
+                                            <small class="text-muted">{{ __('This reason will be recorded in the system audit logs alongside your identity.') }}</small>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label text-danger fw-bold" for="edit_force_edit_password">
+                                                <i class="ti ti-lock me-1"></i> * {{ __('Admin Password Confirmation') }}
+                                            </label>
+                                            <input type="password" class="form-control border-danger" id="edit_force_edit_password" name="password" autocomplete="current-password" placeholder="{{ __('Enter your account password...') }}">
+                                            <small class="text-muted">{{ __('Required to authorize force modification') }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label" for="edit_accounting_reference_no">{{ __('Accounting Reference Number') }}</label>
                                     <input type="text" class="form-control" id="edit_accounting_reference_no" name="accounting_reference_no">

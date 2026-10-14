@@ -1351,9 +1351,9 @@ $(function () {
             targets: 7,
             render: function (data, type, full) {
               const badges = {
-                unpaid: '<span class="badge bg-label-warning">مستحقة للدفع</span>',
-                paid: '<span class="badge bg-label-success">مدفوعة</span>',
-                approved: '<span class="badge bg-label-primary">معتمدة نهائياً</span>',
+                unpaid: '<span class="badge bg-label-warning">بانتظار الاعتماد</span>',
+                approved: '<span class="badge bg-label-info">معتمدة (بانتظار السداد)</span>',
+                paid: '<span class="badge bg-label-success">مسددة ومقفلة نهائياً</span>',
                 cancelled: '<span class="badge bg-label-secondary">ملغاة</span>'
               };
               return badges[full.status] || full.status;
@@ -1388,8 +1388,8 @@ $(function () {
                 </button>
               `;
 
-              // Pay Invoice (if unpaid and has permission)
-              if (full.status === 'unpaid' && (typeof canPayCustomerInvoices === 'undefined' || canPayCustomerInvoices)) {
+              // Pay Invoice (ONLY if approved and has remaining amount)
+              if (full.status === 'approved' && parseFloat(full.remaining_amount) > 0 && (typeof canPayCustomerInvoices === 'undefined' || canPayCustomerInvoices)) {
                 actions += `
                   <button type="button" class="btn btn-sm btn-icon btn-pay-invoice text-success" data-id="${full.id}" data-number="${full.invoice_number}" data-total="${full.total_amount}" data-remaining="${full.remaining_amount}" title="تسجيل سداد">
                     <i class="ti ti-cash"></i>
@@ -1397,8 +1397,17 @@ $(function () {
                 `;
               }
 
-              // Edit, Approve, Cancel (if not approved, not cancelled, and user has permission)
-              if (full.status !== 'approved' && full.status !== 'cancelled') {
+              // Force Edit (ONLY if approved and has force_edit permission)
+              if (full.status === 'approved' && (typeof canForceEditCustomerInvoices !== 'undefined' ? canForceEditCustomerInvoices : true)) {
+                actions += `
+                  <button type="button" class="btn btn-sm btn-icon btn-force-edit-invoice text-danger" data-id="${full.id}" title="تعديل بالقوة على الفاتورة المعتمَدة">
+                    <i class="ti ti-shield-bolt"></i>
+                  </button>
+                `;
+              }
+
+              // Edit & Approve (ONLY if unpaid / pending approval)
+              if (full.status === 'unpaid') {
                 if (typeof canEditCustomerInvoices === 'undefined' || canEditCustomerInvoices) {
                   actions += `
                     <button type="button" class="btn btn-sm btn-icon btn-edit-invoice" data-id="${full.id}" title="تعديل الفاتورة">
@@ -1408,11 +1417,15 @@ $(function () {
                 }
                 if (typeof canApproveCustomerInvoices === 'undefined' || canApproveCustomerInvoices) {
                   actions += `
-                    <button type="button" class="btn btn-sm btn-icon btn-approve-invoice text-primary" data-id="${full.id}" data-number="${full.invoice_number}" title="اعتماد نهائي">
+                    <button type="button" class="btn btn-sm btn-icon btn-approve-invoice text-primary" data-id="${full.id}" data-number="${full.invoice_number}" title="اعتماد الفاتورة">
                       <i class="ti ti-check"></i>
                     </button>
                   `;
                 }
+              }
+
+              // Cancel (if not paid, not cancelled, and no payments registered)
+              if (full.status !== 'paid' && full.status !== 'cancelled' && parseFloat(full.paid_amount || 0) === 0) {
                 if (typeof canCancelCustomerInvoices === 'undefined' || canCancelCustomerInvoices) {
                   actions += `
                     <button type="button" class="btn btn-sm btn-icon btn-cancel-invoice text-danger" data-id="${full.id}" data-number="${full.invoice_number}" title="إلغاء الفاتورة وفك الحركات">
@@ -1530,9 +1543,24 @@ $(function () {
     // Open Create Modal
     $(document).on('click', '#btnOpenCreateInvoiceModal, #btnToolbarCreateInvoice', function () {
       $('#formCreateCustomerInvoice')[0].reset();
-      $('#issue_date').val(new Date().toISOString().split('T')[0]);
+      const todayStr = new Date().toISOString().split('T')[0];
+      $('#issue_date').val(todayStr);
+      const nextDay = new Date();
+      nextDay.setDate(nextDay.getDate() + 1);
+      $('#due_date').attr('min', nextDay.toISOString().split('T')[0]);
       loadUninvoicedTransactions();
       $('#createCustomerInvoiceModal').modal('show');
+    });
+
+    $('#issue_date').on('change', function () {
+      const issueVal = $(this).val();
+      if (issueVal) {
+        const d = new Date(issueVal);
+        d.setDate(d.getDate() + 1);
+        $('#due_date').attr('min', d.toISOString().split('T')[0]);
+      } else {
+        $('#due_date').removeAttr('min');
+      }
     });
 
     $('#btnReloadUninvoiced').on('click', function () {
@@ -1672,13 +1700,26 @@ $(function () {
         return;
       }
 
-      if (!$('#due_date').val()) {
+      const issueDateVal = $('#issue_date').val();
+      const dueDateVal = $('#due_date').val();
+      if (!dueDateVal) {
         Swal.fire({
           icon: 'warning',
           title: 'تنبيه',
           text: 'يرجى تحديد تاريخ استحقاق الفاتورة.',
           customClass: { confirmButton: 'btn btn-primary' }
         });
+        return;
+      }
+
+      if (issueDateVal && dueDateVal <= issueDateVal) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تاريخ الاستحقاق غير صالح',
+          text: `تاريخ استحقاق الفاتورة يجب أن يكون أكبر من تاريخ إصدار الفاتورة (${issueDateVal}).`,
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        $('#due_date').focus();
         return;
       }
 
@@ -1750,9 +1791,9 @@ $(function () {
           $('#viewInvoiceRemaining').text(parseFloat(inv.remaining_amount).toFixed(2));
 
           const statusBadges = {
-            unpaid: '<span class="badge bg-label-warning">مستحقة للدفع</span>',
-            paid: '<span class="badge bg-label-success">مدفوعة</span>',
-            approved: '<span class="badge bg-label-primary">معتمدة نهائياً</span>',
+            unpaid: '<span class="badge bg-label-warning">بانتظار الاعتماد</span>',
+            approved: '<span class="badge bg-label-info">معتمدة (بانتظار السداد)</span>',
+            paid: '<span class="badge bg-label-success">مسددة ومقفلة نهائياً</span>',
             cancelled: '<span class="badge bg-label-secondary">ملغاة</span>'
           };
           $('#viewInvoiceStatusBadge').html(statusBadges[inv.status] || inv.status);
@@ -2102,9 +2143,42 @@ $(function () {
       }
     });
 
-    // Edit Invoice click
-    $(document).on('click', '.btn-edit-invoice', function () {
-      const id = $(this).data('id');
+    // Edit Invoice helper (Normal & Force Edit)
+    function openWalletInvoiceEditModal(id, isForceEdit = false) {
+      $('#edit_invoice_id').val(id);
+      $('#edit_is_force_edit').val(isForceEdit ? '1' : '0');
+      $('#edit_force_edit_reason').val('');
+      $('#edit_force_edit_password').val('');
+
+      if (isForceEdit) {
+        $('#editForceEditBanner').show();
+        $('#editForceEditReasonContainer').show();
+        $('#edit_force_edit_reason').prop('required', true);
+        $('#edit_force_edit_password').prop('required', true);
+        $('#editNormalInfoAlert').hide();
+        $('#editCustomerInvoiceModal .modal-title')
+          .removeClass('text-primary')
+          .addClass('text-danger')
+          .html(`<i class="ti ti-shield-bolt me-1 text-danger"></i> تعديل بالقوة على الفاتورة - <span id="editInvoiceNumberTitle"></span>`);
+        $('#btnSubmitEditInvoice')
+          .removeClass('btn-primary')
+          .addClass('btn-danger')
+          .html('<i class="ti ti-shield-bolt me-1"></i> حفظ التعديل بالقوة');
+      } else {
+        $('#editForceEditBanner').hide();
+        $('#editForceEditReasonContainer').hide();
+        $('#edit_force_edit_reason').prop('required', false);
+        $('#edit_force_edit_password').prop('required', false);
+        $('#editNormalInfoAlert').show();
+        $('#editCustomerInvoiceModal .modal-title')
+          .removeClass('text-danger')
+          .addClass('text-primary')
+          .html(`<i class="ti ti-edit me-1 text-primary"></i> تعديل بيانات الفاتورة - <span id="editInvoiceNumberTitle"></span>`);
+        $('#btnSubmitEditInvoice')
+          .removeClass('btn-danger')
+          .addClass('btn-primary')
+          .html('<i class="ti ti-check me-1"></i> حفظ التعديلات');
+      }
 
       $.get(baseUrl + 'admin/customer-invoices/' + id, function (res) {
         if (res.status === 1) {
@@ -2114,6 +2188,13 @@ $(function () {
           $('#edit_accounting_reference_no').val(inv.accounting_reference_no || '');
           $('#edit_issue_date').val(inv.issue_date ? inv.issue_date.split('T')[0] : '');
           $('#edit_due_date').val(inv.due_date ? inv.due_date.split('T')[0] : '');
+          if (inv.issue_date) {
+            const d = new Date(inv.issue_date.split('T')[0]);
+            d.setDate(d.getDate() + 1);
+            $('#edit_due_date').attr('min', d.toISOString().split('T')[0]);
+          } else {
+            $('#edit_due_date').removeAttr('min');
+          }
           $('#edit_notes').val(inv.notes || '');
           $('#edit_attachment').val('');
           $('#editAvailableUninvoicedSection').hide();
@@ -2175,13 +2256,75 @@ $(function () {
           $('#editCustomerInvoiceModal').modal('show');
         }
       });
+    }
+
+    $(document).on('click', '.btn-edit-invoice', function () {
+      const id = $(this).data('id');
+      openWalletInvoiceEditModal(id, false);
+    });
+
+    $(document).on('click', '.btn-force-edit-invoice', function () {
+      const id = $(this).data('id');
+      openWalletInvoiceEditModal(id, true);
+    });
+
+    $('#edit_issue_date').on('change', function () {
+      const issueVal = $(this).val();
+      if (issueVal) {
+        const d = new Date(issueVal);
+        d.setDate(d.getDate() + 1);
+        $('#edit_due_date').attr('min', d.toISOString().split('T')[0]);
+      } else {
+        $('#edit_due_date').removeAttr('min');
+      }
     });
 
     // Submit Edit Invoice
     $('#formEditCustomerInvoice').on('submit', function (e) {
       e.preventDefault();
+
+      const editIssueDateVal = $('#edit_issue_date').val();
+      const editDueDateVal = $('#edit_due_date').val();
+      if (editDueDateVal && editIssueDateVal && editDueDateVal <= editIssueDateVal) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'تاريخ الاستحقاق غير صالح',
+          text: `تاريخ استحقاق الفاتورة يجب أن يكون أكبر من تاريخ إصدار الفاتورة (${editIssueDateVal}).`,
+          customClass: { confirmButton: 'btn btn-primary' }
+        });
+        $('#edit_due_date').focus();
+        return;
+      }
+
       const id = $('#edit_invoice_id').val();
       const submitBtn = $('#btnSubmitEditInvoice');
+      const isForceEdit = $('#edit_is_force_edit').val() === '1';
+
+      if (isForceEdit) {
+        const reason = $('#edit_force_edit_reason').val().trim();
+        if (!reason) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'سبب التعديل بالقوة مطلوب',
+            text: 'يجب كتابة مبرر وسبب التعديل بالقوة لتوثيق العملية في سجل التدقيق.',
+            customClass: { confirmButton: 'btn btn-primary' }
+          });
+          $('#edit_force_edit_reason').focus();
+          return;
+        }
+
+        const pwd = $('#edit_force_edit_password').val();
+        if (!pwd) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'كلمة المرور مطلوبة',
+            text: 'يرجى إدخال كلمة المرور الخاصة بك لتأكيد واعتماد التعديل بالقوة.',
+            customClass: { confirmButton: 'btn btn-primary' }
+          });
+          $('#edit_force_edit_password').focus();
+          return;
+        }
+      }
 
       const activeLinked = editLinkedTransactions.filter(t => t.is_linked);
       if (activeLinked.length === 0) {
@@ -2209,13 +2352,13 @@ $(function () {
         contentType: false,
         processData: false,
         success: function (res) {
-          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ التعديلات');
+          submitBtn.prop('disabled', false).html(isForceEdit ? '<i class="ti ti-shield-bolt me-1"></i> حفظ التعديل بالقوة' : '<i class="ti ti-check me-1"></i> حفظ التعديلات');
           if (res.status === 1) {
             $('#editCustomerInvoiceModal').modal('hide');
             Swal.fire({
               icon: 'success',
-              title: 'تم التعديل',
-              text: res.success || 'تم تحديث الفاتورة وتعميم تاريخ الاستحقاق بنجاح.',
+              title: isForceEdit ? 'تم التعديل بالقوة بنجاح' : 'تم التعديل بنجاح',
+              text: res.success || (isForceEdit ? 'تم التعديل بالقوة وتوثيق العملية في سجل النشاطات بنجاح.' : 'تم تحديث الفاتورة وتعميم تاريخ الاستحقاق بنجاح.'),
               customClass: { confirmButton: 'btn btn-primary' }
             });
             if (dt_invoices) dt_invoices.ajax.reload();
@@ -2225,7 +2368,7 @@ $(function () {
           }
         },
         error: function (xhr) {
-          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> حفظ التعديلات');
+          submitBtn.prop('disabled', false).html(isForceEdit ? '<i class="ti ti-shield-bolt me-1"></i> حفظ التعديل بالقوة' : '<i class="ti ti-check me-1"></i> حفظ التعديلات');
           let msg = 'حدث خطأ أثناء التعديل';
           if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
           Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });

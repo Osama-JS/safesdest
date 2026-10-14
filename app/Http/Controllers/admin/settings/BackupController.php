@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class BackupController extends Controller
@@ -170,6 +171,7 @@ class BackupController extends Controller
      */
     public function directDownload(string $backupName): BinaryFileResponse|JsonResponse
     {
+        @set_time_limit(0);
         $filename = str_ends_with($backupName, '.zip') ? $backupName : $backupName . '.zip';
         $filePath = $this->backupService->getBackupPath($filename);
 
@@ -317,6 +319,9 @@ class BackupController extends Controller
 
         $tempUploadedPath = null;
         try {
+            @set_time_limit(0);
+            @ini_set('memory_limit', '1024M');
+
             $uploadedFile = $request->file('backup_file');
             $tempUploadedPath = storage_path('app/temp/uploaded_' . time() . '_' . Str::random(6) . '.zip');
 

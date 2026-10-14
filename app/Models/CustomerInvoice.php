@@ -80,7 +80,7 @@ class CustomerInvoice extends Model
      */
     public function getIsOverdueAttribute(): bool
     {
-        if (in_array($this->status, ['paid', 'approved', 'cancelled'])) {
+        if (in_array($this->status, ['paid', 'cancelled'])) {
             return false;
         }
         return $this->due_date && $this->due_date->isPast();

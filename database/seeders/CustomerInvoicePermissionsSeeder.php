@@ -51,6 +51,11 @@ class CustomerInvoicePermissionsSeeder extends Seeder
                 'd_name' => 'Cancel Customer Invoices',
                 'slug' => 'Customer Invoices Permissions'
             ],
+            [
+                'name' => 'force_edit_customer_invoices',
+                'd_name' => 'Force Edit Customer Invoices',
+                'slug' => 'Customer Invoices Permissions'
+            ],
         ];
 
         // Create permission type if it doesn't exist

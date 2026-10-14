@@ -6,6 +6,9 @@ use App\Models\ActivityLog;
 
 trait LogsActivity
 {
+    public ?string $customActivityAction = null;
+    public ?array $customActivityExtraNew = null;
+
     /**
      * Boot the trait to listen for model events.
      */
@@ -19,8 +22,14 @@ trait LogsActivity
             $oldValues = array_intersect_key($model->getOriginal(), $model->getDirty());
             $newValues = $model->getDirty();
             
-            if (!empty($newValues)) {
-                static::logActivity($model, 'تحديث', $oldValues, $newValues);
+            $action = !empty($model->customActivityAction) ? $model->customActivityAction : 'تحديث';
+
+            if (!empty($model->customActivityExtraNew) && is_array($model->customActivityExtraNew)) {
+                $newValues = array_merge($newValues, $model->customActivityExtraNew);
+            }
+
+            if (!empty($newValues) || !empty($model->customActivityAction)) {
+                static::logActivity($model, $action, $oldValues, $newValues);
             }
         });
 

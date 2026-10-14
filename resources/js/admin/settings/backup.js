@@ -460,6 +460,58 @@ $(function () {
     });
   });
 
+  // Dispatch existing backup to Telegram
+  $(document).on('click', '.btn-dispatch-telegram', function () {
+    var name = $(this).data('name');
+    var btn = $(this);
+    var origHtml = btn.html();
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin"></i>');
+
+    $.post(baseUrl + 'admin/settings/backup/dispatch/' + name, {
+      destination: 'telegram'
+    })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message || 'تم إرسال النسخة إلى تليجرام بنجاح');
+        } else {
+          showAlert('error', res.error || 'فشل الإرسال إلى تليجرام');
+        }
+      })
+      .fail(function (xhr) {
+        showAlert('error', xhr.responseJSON?.error || 'فشل إرسال النسخة إلى تليجرام');
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(origHtml);
+      });
+  });
+
+  // Dispatch existing backup to Email
+  $(document).on('click', '.btn-dispatch-email', function () {
+    var name = $(this).data('name');
+    var btn = $(this);
+    var origHtml = btn.html();
+
+    btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin"></i>');
+
+    $.post(baseUrl + 'admin/settings/backup/dispatch/' + name, {
+      destination: 'email'
+    })
+      .done(function (res) {
+        if (res.status === 1) {
+          showAlert('success', res.message || 'تم إرسال النسخة إلى البريد الإلكتروني بنجاح');
+        } else {
+          showAlert('error', res.error || 'فشل الإرسال إلى البريد');
+        }
+      })
+      .fail(function (xhr) {
+        showAlert('error', xhr.responseJSON?.error || 'فشل إرسال النسخة إلى البريد الإلكتروني');
+      })
+      .always(function () {
+        btn.prop('disabled', false).html(origHtml);
+      });
+  });
+
   // Delete Backup
   $(document).on('click', '.delete-backup', function () {
     var name = $(this).data('name');

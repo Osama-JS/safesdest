@@ -61,6 +61,10 @@ class CustomerInvoiceService
             $dueDate = Carbon::parse($data['due_date'])->toDateString();
             $issueDate = !empty($data['issue_date']) ? Carbon::parse($data['issue_date'])->toDateString() : now()->toDateString();
 
+            if (Carbon::parse($dueDate)->startOfDay()->lte(Carbon::parse($issueDate)->startOfDay())) {
+                throw new Exception(__('The due date must be greater than the invoice issue date (:date).', ['date' => $issueDate]));
+            }
+
             // رفع الملف إن وُجد
             $filePath = null;
             if ($attachmentFile) {
@@ -112,20 +116,44 @@ class CustomerInvoiceService
      *
      * @throws Exception
      */
-    public function updateInvoice(CustomerInvoice $invoice, array $data, ?object $attachmentFile = null): CustomerInvoice
+    public function updateInvoice(CustomerInvoice $invoice, array $data, ?object $attachmentFile = null, bool $isForceEdit = false): CustomerInvoice
     {
-        if ($invoice->status === 'approved') {
-            throw new Exception(__('Approved invoices cannot be modified.'));
+        if ($invoice->status === 'paid') {
+            throw new Exception(__('Paid and closed invoices cannot be modified.'));
         }
 
-        return DB::transaction(function () use ($invoice, $data, $attachmentFile) {
+        if ($invoice->status === 'cancelled') {
+            throw new Exception(__('Cancelled invoices cannot be modified.'));
+        }
+
+        if ($invoice->status === 'approved') {
+            if (!$isForceEdit || !Auth::check() || !Auth::user()->can('force_edit_customer_invoices')) {
+                throw new Exception(__('This invoice is already approved. Force edit permission is required to modify it.'));
+            }
+        } elseif ($invoice->status !== 'unpaid') {
+            throw new Exception(__('Only unpaid or approved invoices can be modified.'));
+        }
+
+        return DB::transaction(function () use ($invoice, $data, $attachmentFile, $isForceEdit) {
             $oldDueDate = $invoice->due_date ? $invoice->due_date->toDateString() : null;
             $newDueDate = isset($data['due_date']) ? Carbon::parse($data['due_date'])->toDateString() : $oldDueDate;
+            $targetIssueDate = !empty($data['issue_date'])
+                ? Carbon::parse($data['issue_date'])->toDateString()
+                : ($invoice->issue_date ? $invoice->issue_date->toDateString() : Carbon::today()->toDateString());
+
+            if ($newDueDate && Carbon::parse($newDueDate)->startOfDay()->lte(Carbon::parse($targetIssueDate)->startOfDay())) {
+                throw new Exception(__('The due date must be greater than the invoice issue date (:date).', ['date' => $targetIssueDate]));
+            }
+
+            $notes = $data['notes'] ?? $invoice->notes;
+            if ($isForceEdit && !empty($data['force_edit_reason'])) {
+                $notes = ($notes ? ($notes . "\n") : '') . '【' . __('Force Edit Reason: :reason', ['reason' => $data['force_edit_reason']]) . ' (' . (Auth::user() ? Auth::user()->name : '') . ' - ' . now()->format('Y-m-d H:i') . ')】';
+            }
 
             $updateData = [
                 'accounting_reference_no' => $data['accounting_reference_no'] ?? $invoice->accounting_reference_no,
                 'due_date'                => $newDueDate,
-                'notes'                   => $data['notes'] ?? $invoice->notes,
+                'notes'                   => $notes,
             ];
 
             if (!empty($data['issue_date'])) {
@@ -200,8 +228,18 @@ class CustomerInvoiceService
                 if ($updateData['remaining_amount'] <= 0 && $totalAmount > 0) {
                     $updateData['status'] = 'paid';
                 } elseif ($invoice->status === 'paid' && $updateData['remaining_amount'] > 0) {
-                    $updateData['status'] = 'unpaid';
+                    $updateData['status'] = 'approved';
                 }
+            }
+
+            if ($isForceEdit) {
+                $invoice->customActivityAction = 'تعديل بالقوة على الفاتورة';
+                $invoice->customActivityExtraNew = [
+                    'force_edit'        => true,
+                    'force_edit_reason' => $data['force_edit_reason'] ?? null,
+                    'admin_user_id'     => Auth::id(),
+                    'admin_user_name'   => Auth::user() ? Auth::user()->name : null,
+                ];
             }
 
             $invoice->update($updateData);
@@ -217,14 +255,26 @@ class CustomerInvoiceService
     }
 
     /**
-     * تسجيل سداد الفاتورة (كلي أو جزئي)
+     * تسجيل سداد الفاتورة (كلي أو جزئي) بعد اعتمادها
      *
      * @throws Exception
      */
     public function markAsPaid(CustomerInvoice $invoice, float $amount, ?string $paymentDate = null, ?string $notes = null): CustomerInvoice
     {
-        if (in_array($invoice->status, ['paid', 'approved', 'cancelled'])) {
-            throw new Exception(__('Invoice is already closed or cancelled.'));
+        if ($invoice->status === 'unpaid') {
+            throw new Exception(__('Invoice must be approved first before registering payment.'));
+        }
+
+        if ($invoice->status === 'paid') {
+            throw new Exception(__('Invoice is already fully paid and closed.'));
+        }
+
+        if ($invoice->status === 'cancelled') {
+            throw new Exception(__('Cannot make payment for a cancelled invoice.'));
+        }
+
+        if ($invoice->status !== 'approved') {
+            throw new Exception(__('Payment is only allowed for approved invoices.'));
         }
 
         if ($amount <= 0) {
@@ -234,7 +284,9 @@ class CustomerInvoiceService
         return DB::transaction(function () use ($invoice, $amount, $paymentDate, $notes) {
             $newPaid = (float) $invoice->paid_amount + $amount;
             $remaining = max(0, (float) $invoice->total_amount - $newPaid);
-            $status = ($remaining <= 0) ? 'paid' : 'unpaid';
+            // إذا تم سداد كامل المبلغ تُقفل الفاتورة نهائياً وتصبح حالتها 'paid'
+            // إذا كان السداد جزئياً، تظل الحالة 'approved' بانتظار استكمال السداد
+            $status = ($remaining <= 0) ? 'paid' : 'approved';
 
             $invoice->update([
                 'paid_amount'      => min($invoice->total_amount, $newPaid),
@@ -249,12 +301,20 @@ class CustomerInvoiceService
     }
 
     /**
-     * الاعتماد النهائي للفاتورة
+     * اعتماد الفاتورة في النظام لتصبح رسمية وسارية بانتظار السداد
      *
      * @throws Exception
      */
     public function approveInvoice(CustomerInvoice $invoice): CustomerInvoice
     {
+        if ($invoice->status === 'approved') {
+            throw new Exception(__('Invoice is already approved.'));
+        }
+
+        if ($invoice->status === 'paid') {
+            throw new Exception(__('Invoice is already paid and closed.'));
+        }
+
         if ($invoice->status === 'cancelled') {
             throw new Exception(__('Cannot approve a cancelled invoice.'));
         }
@@ -275,8 +335,12 @@ class CustomerInvoiceService
      */
     public function cancelInvoice(CustomerInvoice $invoice, ?string $reason = null): CustomerInvoice
     {
-        if ($invoice->status === 'approved') {
-            throw new Exception(__('Approved invoices cannot be cancelled.'));
+        if ($invoice->status === 'paid') {
+            throw new Exception(__('Paid and closed invoices cannot be cancelled.'));
+        }
+
+        if ((float) $invoice->paid_amount > 0) {
+            throw new Exception(__('Invoices with registered payments cannot be cancelled.'));
         }
 
         return DB::transaction(function () use ($invoice, $reason) {

@@ -149,6 +149,7 @@
                                         <label class="form-check-label" for="destTelegram">
                                             <i class="ti ti-brand-telegram text-info me-1"></i>
                                             إرسال فوري إلى تليجرام
+                                            <span class="badge bg-label-info ms-1">حتى 50MB</span>
                                         </label>
                                     </div>
                                     <div class="form-check">
@@ -156,8 +157,13 @@
                                         <label class="form-check-label" for="destEmail">
                                             <i class="ti ti-mail text-danger me-1"></i>
                                             إرسال فوري إلى البريد الإلكتروني
+                                            <span class="badge bg-label-danger ms-1">حتى 20MB</span>
                                         </label>
                                     </div>
+                                </div>
+                                <div class="alert alert-warning py-2 px-3 mt-2 mb-0 d-flex align-items-center">
+                                    <i class="ti ti-info-circle me-2 fs-5"></i>
+                                    <small><strong>تنبيه الحجم:</strong> يقبل البريد الإلكتروني مرفقات حتى 20MB وتليجرام حتى 50MB. في النسخ الكبيرة (مثل Full Backup)، يُرجى حفظها محلياً واستخدام التنزيل المباشر.</small>
                                 </div>
                             </div>
 
@@ -340,6 +346,12 @@
                                             </label>
                                         </div>
                                     </div>
+                                    <div class="col-12">
+                                        <div class="alert alert-info py-2 px-3 mt-2 mb-0 d-flex align-items-center">
+                                            <i class="ti ti-rotate-clockwise me-2 fs-5"></i>
+                                            <small><strong>سياسة النسخ الدوري:</strong> في الجدولة التلقائية، يتم إرسال النسخة سحابياً ثم تفريغها من السيرفر فوراً لحفظ المساحة، مع إرسال إشعار فوري للمدراء بنتيجة العملية (سواء نجحت أم فشلت).</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -349,6 +361,7 @@
                                     <input class="form-check-input" type="checkbox" id="cfg_telegram_backup_enabled" name="telegram_backup_enabled" value="1">
                                     <label class="form-check-label fw-bold" for="cfg_telegram_backup_enabled">
                                         تفعيل وجهة تليجرام السحابية
+                                        <span class="badge bg-label-info ms-1">حتى 50MB</span>
                                     </label>
                                 </div>
 
@@ -369,7 +382,12 @@
                                     </div>
                                 </div>
 
-                                <div class="alert alert-info mt-3 mb-0">
+                                <div class="alert alert-warning py-2 px-3 mt-3 mb-2 d-flex align-items-center">
+                                    <i class="ti ti-alert-circle me-2 fs-5"></i>
+                                    <small><strong>حد الحجم:</strong> يقبل بوت تليجرام ملفات حتى 50MB فقط. إذا تجاوزت النسخة 50MB يتم حفظها بالسيرفر مع إرسال إشعار نصي للمحادثة.</small>
+                                </div>
+
+                                <div class="alert alert-info mt-2 mb-0">
                                     <h6 class="alert-heading fw-bold mb-1"><i class="ti ti-help me-1"></i> كيفية الإعداد:</h6>
                                     <ol class="ps-3 mb-0">
                                         <li>تحدث مع <code>@BotFather</code> في تليجرام وأنشئ بوتاً جديداً عبر <code>/newbot</code> وانسخ الـ Token.</li>
@@ -384,6 +402,7 @@
                                     <input class="form-check-input" type="checkbox" id="cfg_email_backup_enabled" name="email_backup_enabled" value="1">
                                     <label class="form-check-label fw-bold" for="cfg_email_backup_enabled">
                                         تفعيل وجهة البريد الإلكتروني
+                                        <span class="badge bg-label-danger ms-1">حتى 20MB</span>
                                     </label>
                                 </div>
 
@@ -401,7 +420,12 @@
                                     </div>
                                 </div>
 
-                                <div class="alert alert-secondary mt-3 mb-0">
+                                <div class="alert alert-warning py-2 px-3 mt-3 mb-2 d-flex align-items-center">
+                                    <i class="ti ti-alert-triangle me-2 fs-5"></i>
+                                    <small><strong>حد الحجم:</strong> خوادم البريد ترفض المرفقات الأكبر من 20MB. في حال تجاوز النسخة هذا الحجم، يتم إرسال إشعار تفصيلي دون المرفق مع حفظ النسخة في لوحة التحكم.</small>
+                                </div>
+
+                                <div class="alert alert-secondary mt-2 mb-0">
                                     <i class="ti ti-info-circle me-1"></i>
                                     يتم استخدام إعدادات خادم SMTP المعتمدة في النظام لإرسال النسخ ومرفقات الـ ZIP تلقائياً.
                                 </div>

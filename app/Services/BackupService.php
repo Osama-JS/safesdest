@@ -288,6 +288,14 @@ class BackupService
                 $dispatchResults = $this->dispatchBackup($backupName . '.zip', $destinations);
             }
 
+            // 5. Delete locally if delete_after_dispatch is set (used by periodic/automated backup)
+            $deleteAfterDispatch = !empty($options['delete_after_dispatch']);
+            if ($deleteAfterDispatch && File::exists($zipPath)) {
+                $reportProgress(98, 'جاري تفريغ النسخة من السيرفر بعد الإرسال السحابي لحفظ المساحة...');
+                $this->deleteBackup($backupName . '.zip');
+                Log::info("Backup {$backupName}.zip deleted locally after cloud dispatch as requested by automated policy.");
+            }
+
             $elapsedSec = round(microtime(true) - $startTime, 2);
             $reportProgress(100, 'تم اكتمال النسخة الاحتياطية بنجاح!', "استغرقت العملية {$elapsedSec} ثانية");
 
@@ -299,10 +307,14 @@ class BackupService
                 'elapsed_seconds' => $elapsedSec,
                 'dispatch_results' => $dispatchResults,
                 'password' => $password,
+                'deleted_locally' => $deleteAfterDispatch,
             ];
         } catch (\Throwable $e) {
             if (File::exists($tempStagingDir)) {
                 File::deleteDirectory($tempStagingDir);
+            }
+            if (isset($zipPath) && File::exists($zipPath) && !empty($options['delete_after_dispatch'])) {
+                @unlink($zipPath);
             }
             Log::error("Backup creation failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             throw new RuntimeException("فشل إنشاء النسخة الاحتياطية: " . $e->getMessage());
@@ -338,8 +350,27 @@ class BackupService
                 try {
                     $fileSizeBytes = filesize($filePath);
                     if ($fileSizeBytes > 49 * 1024 * 1024) {
-                        Log::warning("Skipping Telegram dispatch for {$filename}: file size {$fileSizeHuman} exceeds Telegram 50MB Bot API limit.");
-                        $results['telegram'] = ['success' => false, 'message' => "حجم النسخة ({$fileSizeHuman}) يتجاوز الحد المسموح به في تليجرام (50 ميجابايت). تم حفظ النسخة محلياً بنجاح."];
+                        Log::warning("Skipping Telegram document upload for {$filename}: file size {$fileSizeHuman} exceeds Telegram 50MB Bot API limit.");
+                        
+                        // Send text notification alert to Telegram chat informing admins
+                        $alertMsg = "⚠️ *تنبيه نسخ احتياطي - منصة SafeDest*\n\n"
+                            . "تم إنشاء النسخة الاحتياطية بنجاح: `{$filename}`\n"
+                            . "📊 الحجم: `{$fileSizeHuman}`\n"
+                            . "🔑 SHA256: `{$sha256}`\n"
+                            . "⏰ التاريخ: " . now()->format('Y-m-d H:i:s') . "\n\n"
+                            . "📌 *ملاحظة:* حجم النسخة يتجاوز الحد الأقصى لبوتات تليجرام (50 ميجابايت)، لذلك تم حفظها محلياً بالسيرفر ويمكن تنزيلها مباشرة من لوحة التحكم.";
+
+                        Http::timeout(30)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                            'chat_id' => $chatId,
+                            'text' => $alertMsg,
+                            'parse_mode' => 'Markdown',
+                        ]);
+
+                        $results['telegram'] = [
+                            'success' => true,
+                            'skipped_file' => true,
+                            'message' => "حجم النسخة ({$fileSizeHuman}) يتجاوز 50MB؛ تم إرسال إشعار للمحادثة بتفاصيل النسخة مع حفظها بالسيرفر."
+                        ];
                     } else {
                         $caption = "📦 *نسخة احتياطية جديدة - منصة SafeDest*\n"
                             . "📄 الملف: `{$filename}`\n"
@@ -356,7 +387,7 @@ class BackupService
                             ]);
 
                         if ($response->successful() && ($response->json('ok') === true)) {
-                            $results['telegram'] = ['success' => true, 'message' => 'تم الإرسال إلى تليجرام بنجاح'];
+                            $results['telegram'] = ['success' => true, 'message' => 'تم إرسال ملف النسخة إلى تليجرام بنجاح'];
                         } else {
                             $errMsg = $response->json('description') ?: $response->body();
                             $results['telegram'] = ['success' => false, 'message' => 'استجابة تليجرام: ' . $errMsg];
@@ -381,23 +412,54 @@ class BackupService
                 try {
                     $recipients = array_filter(array_map('trim', explode(',', $recipientsStr)));
                     $subject = "💾 نسخة احتياطية للمنصة - " . config('app.name', 'SafeDest') . " ({$filename})";
-                    $bodyHtml = "<h2>تقرير النسخ الاحتياطي لمنصة " . config('app.name', 'SafeDest') . "</h2>"
-                        . "<p>تم إنشاء نسخة احتياطية لقاعدة البيانات والملفات بنجاح ومرفقة مع هذه الرسالة.</p>"
-                        . "<ul>"
-                        . "<li><strong>اسم الملف:</strong> {$filename}</li>"
-                        . "<li><strong>الحجم:</strong> {$fileSizeHuman}</li>"
-                        . "<li><strong>بصمة التحقق (SHA256):</strong> <code>{$sha256}</code></li>"
-                        . "<li><strong>تاريخ الإنشاء:</strong> " . now()->toDateTimeString() . "</li>"
-                        . "</ul>"
-                        . "<p><em>يرجى حفظ هذا الملف في مكان آمن ومشفر.</em></p>";
+                    $fileSizeBytes = filesize($filePath);
 
-                    Mail::html($bodyHtml, function ($message) use ($recipients, $subject, $filePath, $filename) {
-                        $message->to($recipients)
-                            ->subject($subject)
-                            ->attach($filePath, ['as' => $filename, 'mime' => 'application/zip']);
-                    });
+                    // Email attachment size threshold (20MB)
+                    if ($fileSizeBytes > 20 * 1024 * 1024) {
+                        Log::info("Skipping email attachment for {$filename}: size {$fileSizeHuman} exceeds 20MB limit. Sending notification email instead.");
 
-                    $results['email'] = ['success' => true, 'message' => 'تم إرسال النسخة الاحتياطية إلى البريد الإلكتروني بنجاح'];
+                        $bodyHtml = "<h2>تقرير النسخ الاحتياطي لمنصة " . config('app.name', 'SafeDest') . "</h2>"
+                            . "<div style='background-color:#fff3cd; color:#856404; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #ffeeba;'>"
+                            . "<strong>⚠️ تنبيه حجم الملف:</strong> حجم النسخة الاحتياطية (<strong>{$fileSizeHuman}</strong>) يتجاوز الحد المسموح به لمرفقات البريد الإلكتروني (20 ميجابايت). "
+                            . "لذلك تم إرسال هذا التقرير دون إرفاق الملف تجنباً لرفضه من مزودات البريد."
+                            . "</div>"
+                            . "<ul>"
+                            . "<li><strong>اسم الملف:</strong> {$filename}</li>"
+                            . "<li><strong>الحجم:</strong> {$fileSizeHuman}</li>"
+                            . "<li><strong>بصمة التحقق (SHA256):</strong> <code>{$sha256}</code></li>"
+                            . "<li><strong>تاريخ الإنشاء:</strong> " . now()->toDateTimeString() . "</li>"
+                            . "</ul>"
+                            . "<p>يمكنك تنزيل النسخة مباشرة من لوحة التحكم: <strong>الإعدادات &gt; إدارة النسخ الاحتياطي</strong>.</p>";
+
+                        Mail::html($bodyHtml, function ($message) use ($recipients, $subject) {
+                            $message->to($recipients)
+                                ->subject($subject . " [إشعار دون مرفق كبير]");
+                        });
+
+                        $results['email'] = [
+                            'success' => true,
+                            'skipped_attachment' => true,
+                            'message' => "حجم النسخة ({$fileSizeHuman}) يتجاوز 20MB؛ تم إرسال تقرير إشعار للمستلم بدون المرفق تجنباً لرفض مزود البريد."
+                        ];
+                    } else {
+                        $bodyHtml = "<h2>تقرير النسخ الاحتياطي لمنصة " . config('app.name', 'SafeDest') . "</h2>"
+                            . "<p>تم إنشاء نسخة احتياطية لقاعدة البيانات بنجاح ومرفقة مع هذه الرسالة.</p>"
+                            . "<ul>"
+                            . "<li><strong>اسم الملف:</strong> {$filename}</li>"
+                            . "<li><strong>الحجم:</strong> {$fileSizeHuman}</li>"
+                            . "<li><strong>بصمة التحقق (SHA256):</strong> <code>{$sha256}</code></li>"
+                            . "<li><strong>تاريخ الإنشاء:</strong> " . now()->toDateTimeString() . "</li>"
+                            . "</ul>"
+                            . "<p><em>يرجى حفظ هذا الملف في مكان آمن ومشفر.</em></p>";
+
+                        Mail::html($bodyHtml, function ($message) use ($recipients, $subject, $filePath, $filename) {
+                            $message->to($recipients)
+                                ->subject($subject)
+                                ->attach($filePath, ['as' => $filename, 'mime' => 'application/zip']);
+                        });
+
+                        $results['email'] = ['success' => true, 'message' => 'تم إرسال النسخة ومرفقها إلى البريد الإلكتروني بنجاح'];
+                    }
                 } catch (\Throwable $e) {
                     $results['email'] = ['success' => false, 'message' => 'خطأ إرسال البريد: ' . $e->getMessage()];
                 }

@@ -78,6 +78,7 @@
           <option value="تحديث">تحديث</option>
           <option value="حذف">حذف</option>
           <option value="تعديل إجباري">تعديل إجباري</option>
+          <option value="تعديل بالقوة على الفاتورة">تعديل بالقوة على الفاتورة</option>
         </select>
       </div>
 

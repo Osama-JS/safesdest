@@ -100,6 +100,14 @@
             "permission": "view_wallets"
         },
         {
+            "url": "admin/customer-invoices",
+            "name": "Customer Invoices",
+            "icon": "menu-icon tf-icons ti ti-file-invoice",
+            "slug": "admin.customer-invoices.index",
+            "isactive": "customer-invoices-isactive",
+            "permission": "view_customer_invoices"
+        },
+        {
             "url": "admin/wallets/withdrawals",
             "name": "Withdrawal Requests",
             "icon": "menu-icon tf-icons ti ti-cash-banknote",

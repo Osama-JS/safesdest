@@ -662,6 +662,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('platform-wallet', [PlatformWalletController::class, 'index'])->name('admin.platform-wallet.index');
                 Route::get('platform-wallet/data', [PlatformWalletController::class, 'data'])->name('admin.platform-wallet.data');
                 Route::get('platform-wallet/statistics', [PlatformWalletController::class, 'statistics'])->name('admin.platform-wallet.statistics');
+                Route::get('platform-wallet/task/{id}/deductions', [PlatformWalletController::class, 'taskDeductions'])->name('admin.platform-wallet.task-deductions');
                 Route::get('platform-wallet/export', [PlatformWalletController::class, 'export'])->name('admin.platform-wallet.export');
                 Route::get('platform-wallet/export-excel', [PlatformWalletController::class, 'exportExcel'])->name('admin.platform-wallet.export-excel');
 

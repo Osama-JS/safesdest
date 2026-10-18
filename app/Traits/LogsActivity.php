@@ -55,22 +55,12 @@ trait LogsActivity
             return;
         }
         
-        $sensitiveFields = ['password', 'remember_token'];
-        
         if ($oldValues) {
-            foreach ($sensitiveFields as $field) {
-                if (isset($oldValues[$field])) {
-                    $oldValues[$field] = '********';
-                }
-            }
+            $oldValues = \App\Helpers\SecurityHelper::maskSensitiveData($oldValues);
         }
 
         if ($newValues) {
-            foreach ($sensitiveFields as $field) {
-                if (isset($newValues[$field])) {
-                    $newValues[$field] = '********';
-                }
-            }
+            $newValues = \App\Helpers\SecurityHelper::maskSensitiveData($newValues);
         }
 
         ActivityLog::create([

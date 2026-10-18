@@ -707,11 +707,20 @@
                         <label class="form-label fw-bold">اختر القالب</label>
                         <select class="form-select" id="selected-template-name" required>
                             @foreach($approvedTemplates as $tpl)
-                                <option value="{{ $tpl->template_name }}" data-body="{{ $tpl->body_text }}">
+                                <option value="{{ $tpl->template_name }}" data-id="{{ $tpl->id }}" data-lang="{{ $tpl->language }}" data-body="{{ $tpl->body_text }}">
                                     {{ $tpl->template_name }} ({{ $tpl->language }})
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <!-- Dynamic Variables Section -->
+                    <div class="mb-3 d-none" id="template-variables-section">
+                        <label class="form-label fw-bold d-flex align-items-center">
+                            <i class="ti ti-variable text-warning me-1"></i>
+                            <span>تعبئة متغيرات القالب (مطلوبة):</span>
+                        </label>
+                        <div class="p-3 bg-light rounded border" id="template-variables-container"></div>
                     </div>
 
                     <div class="mb-3">
@@ -1372,11 +1381,65 @@ $(document).ready(function() {
     });
 
     // Template Preview in Modal
+    let currentFullChatRawBody = '';
+
     function updateTemplatePreview() {
         let opt = $('#selected-template-name option:selected');
         let body = opt.data('body') || opt.val();
-        $('#template-preview-box').text(body);
+        let tplName = opt.val() || '';
+        currentFullChatRawBody = body;
+
+        let matches = body.match(/[{][{](\d+)[}][}]/g);
+        let uniqueVars = [];
+        if (matches) {
+            matches.forEach(function(m) {
+                let num = m.replace(/[{}]/g, '');
+                if (!uniqueVars.includes(num)) uniqueVars.push(num);
+            });
+            uniqueVars.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+        }
+
+        if (uniqueVars.length > 0) {
+            $('#template-variables-section').removeClass('d-none');
+            let isOtp = /otp|code|verification/i.test(tplName) || /code|verification/i.test(body);
+            let html = '';
+            uniqueVars.forEach(function(num) {
+                let labelText = isOtp && num === '1' ? 'رمز التحقق (OTP Code):' : ('قيمة المتغير (' + num + '):');
+                let placeholderText = isOtp && num === '1' ? 'مثال: 123456' : ('أدخل قيمة المتغير (' + num + ')');
+                let initialVal = (isOtp && num === '1') ? Math.floor(100000 + Math.random() * 900000) : '';
+
+                html += `
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold mb-1">${labelText}</label>
+                        <input type="text" class="form-control form-control-sm fullchat-tpl-var"
+                               data-var="${num}"
+                               value="${initialVal}"
+                               placeholder="${placeholderText}" required>
+                    </div>
+                `;
+            });
+            $('#template-variables-container').html(html);
+            renderFullChatPreview();
+        } else {
+            $('#template-variables-section').addClass('d-none');
+            $('#template-variables-container').empty();
+            $('#template-preview-box').text(body);
+        }
     }
+
+    function renderFullChatPreview() {
+        let text = currentFullChatRawBody || '';
+        $('.fullchat-tpl-var').each(function() {
+            let varNum = $(this).data('var');
+            let val = $(this).val();
+            if (val) {
+                text = text.replace(new RegExp('[{][{]' + varNum + '[}][}]', 'g'), val);
+            }
+        });
+        $('#template-preview-box').text(text);
+    }
+
+    $(document).on('input', '.fullchat-tpl-var', renderFullChatPreview);
     $('#selected-template-name').on('change', updateTemplatePreview);
     updateTemplatePreview();
 
@@ -1385,8 +1448,25 @@ $(document).ready(function() {
         e.preventDefault();
         if (!currentConversationId) return;
 
-        let templateName = $('#selected-template-name').val();
+        let selectedOpt = $('#selected-template-name option:selected');
+        let templateName = selectedOpt.val();
+        let templateId = selectedOpt.data('id');
+        let templateLang = selectedOpt.data('lang');
         let btn = $('#submit-template-btn');
+
+        let variables = [];
+        let hasMissing = false;
+        $('.fullchat-tpl-var').each(function() {
+            let val = $(this).val().trim();
+            if (!val) hasMissing = true;
+            variables.push(val);
+        });
+
+        if (hasMissing) {
+            toastr.error('يرجى تعبئة جميع متغيرات القالب قبل الإرسال.');
+            return;
+        }
+
         btn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i> إرسال...');
 
         $.ajax({
@@ -1394,7 +1474,10 @@ $(document).ready(function() {
             type: "POST",
             data: {
                 _token: "{{ csrf_token() }}",
-                template_name: templateName
+                template_name: templateName,
+                template_id: templateId,
+                language: templateLang,
+                variables: variables
             },
             success: function(res) {
                 btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال القالب الآن');
@@ -1407,9 +1490,10 @@ $(document).ready(function() {
                     toastr.error(res.message || 'فشل إرسال القالب');
                 }
             },
-            error: function() {
+            error: function(xhr) {
                 btn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال القالب الآن');
-                toastr.error('حدث خطأ أثناء إرسال القالب');
+                let errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'حدث خطأ أثناء إرسال القالب';
+                toastr.error(errMsg);
             }
         });
     });

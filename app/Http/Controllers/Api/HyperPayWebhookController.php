@@ -15,6 +15,8 @@ use App\Models\UserWalletTransaction;
 use App\Models\Team_Wallet;
 use App\Models\Team_Wallet_Transaction;
 
+use App\Helpers\SecurityHelper;
+
 class HyperPayWebhookController extends Controller
 {
     /**
@@ -22,7 +24,7 @@ class HyperPayWebhookController extends Controller
      */
     public function handlePayout(Request $request)
     {
-        Log::info('HyperPay Webhook Received:', $request->all());
+        Log::info('HyperPay Webhook Received:', SecurityHelper::maskSensitiveData($request->all()));
 
         // Token Verification (Managed from Admin Settings)
         // If not configured or empty, token verification is bypassed (backward compatibility)

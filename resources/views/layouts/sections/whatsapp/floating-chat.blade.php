@@ -165,6 +165,43 @@
                     </div>
                 </div>
             </div>
+    <!-- Modal: Confirm & Preview WhatsApp Template -->
+    <div class="modal fade" id="whatsapp-confirm-template-modal" tabindex="-1" aria-hidden="true" style="z-index: 99999;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header border-bottom py-2 px-3 bg-light">
+                    <h6 class="modal-title fw-bold mb-0 d-flex align-items-center text-primary">
+                        <i class="ti ti-brand-whatsapp text-success me-2 fs-5"></i>
+                        <span>إرسال قالب رسمي (WhatsApp Template)</span>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-bold text-dark" id="wa-modal-tpl-name">-</span>
+                        <span class="badge bg-label-info text-uppercase" id="wa-modal-tpl-lang">AR</span>
+                    </div>
+                    <div class="text-muted small mb-1">معاينة نص القالب الذي سيتم إرساله:</div>
+                    <div class="p-2 rounded bg-light border text-dark small" id="wa-modal-tpl-body" style="white-space: pre-wrap; font-size: 12px; max-height: 150px; overflow-y: auto;">
+                        -
+                    </div>
+                    <!-- Dynamic Variables Section (shown when template has placeholders like {{1}}, {{2}}...) -->
+                    <div class="mt-3 d-none" id="wa-modal-tpl-vars-section">
+                        <label class="form-label fw-bold text-dark small mb-1 d-flex align-items-center">
+                            <i class="ti ti-variable text-warning me-1"></i>
+                            <span>تعبئة متغيرات القالب (مطلوبة):</span>
+                        </label>
+                        <div class="p-2 bg-light rounded border" id="wa-modal-tpl-vars-container"></div>
+                    </div>
+                    <div class="alert alert-danger py-2 px-3 small mt-3 mb-0 d-none" id="wa-modal-tpl-error"></div>
+                </div>
+                <div class="modal-footer border-top py-2 px-3 bg-light d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-sm btn-success d-flex align-items-center" id="wa-modal-tpl-send-btn">
+                        <i class="ti ti-send me-1"></i> إرسال القالب الآن
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

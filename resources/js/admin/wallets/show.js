@@ -1362,10 +1362,14 @@ $(function () {
           {
             targets: 8,
             render: function (data, type, full) {
+              let html = '';
               if (full.attachment_url) {
-                return `<button type="button" class="btn btn-sm btn-icon btn-preview-attachment" data-url="${full.attachment_url}" data-name="${full.invoice_number}" title="معاينة المرفق"><i class="ti ti-paperclip"></i></button>`;
+                html += `<button type="button" class="btn btn-sm btn-icon btn-preview-attachment me-1 text-primary" data-url="${full.attachment_url}" data-name="${full.invoice_number}" title="معاينة ملف الفاتورة"><i class="ti ti-file-text"></i></button>`;
               }
-              return '<span class="text-muted">-</span>';
+              if (full.payment_receipt_url) {
+                html += `<button type="button" class="btn btn-sm btn-icon btn-preview-attachment text-success" data-url="${full.payment_receipt_url}" data-name="إيصال سداد ${full.invoice_number}" title="معاينة إيصال السداد"><i class="ti ti-receipt"></i></button>`;
+              }
+              return html || '<span class="text-muted">-</span>';
             }
           },
           {
@@ -1812,6 +1816,13 @@ $(function () {
             $('#viewInvoiceAttachmentBox').hide();
           }
 
+          if (res.payment_receipt_url) {
+            $('#viewInvoicePaymentReceiptBtn').attr('data-url', res.payment_receipt_url).attr('data-name', 'إيصال سداد ' + inv.invoice_number);
+            $('#viewInvoicePaymentReceiptBox').show();
+          } else {
+            $('#viewInvoicePaymentReceiptBox').hide();
+          }
+
           $('#viewInvoiceCreator').text(inv.creator ? inv.creator.name : '-');
           $('#viewInvoiceCreatedAt').text(inv.created_at ? inv.created_at.split('T')[0] : '-');
 
@@ -1870,6 +1881,7 @@ $(function () {
       $('#payInvoiceRemaining').text(remaining + ' ر.س');
       $('#pay_amount').val(remaining).attr('max', remaining);
       $('#pay_date').val(new Date().toISOString().split('T')[0]);
+      $('#wallet_pay_receipt').val('');
       $('#pay_notes').val('');
 
       $('#payCustomerInvoiceModal').modal('show');
@@ -1882,31 +1894,41 @@ $(function () {
       const submitBtn = $('#btnSubmitPayment');
       submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جاري التسجيل...');
 
-      $.post(baseUrl + 'admin/customer-invoices/' + id + '/pay', $(this).serialize(), function (res) {
-        submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
-        if (res.status === 1) {
-          $('#payCustomerInvoiceModal').modal('hide');
-          Swal.fire({
-            icon: 'success',
-            title: 'تم بنجاح',
-            text: res.success || 'تم تسجيل سداد الفاتورة بنجاح.',
-            customClass: { confirmButton: 'btn btn-primary' }
-          });
-          if (dt_invoices) dt_invoices.ajax.reload();
-          if (dt_data) dt_data.ajax.reload();
-        } else {
-          Swal.fire({
-            icon: 'error',
-            title: 'خطأ',
-            text: res.error || 'فشل تسجيل السداد',
-            customClass: { confirmButton: 'btn btn-primary' }
-          });
+      const formData = new FormData(this);
+
+      $.ajax({
+        url: baseUrl + 'admin/customer-invoices/' + id + '/pay',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (res) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
+          if (res.status === 1) {
+            $('#payCustomerInvoiceModal').modal('hide');
+            Swal.fire({
+              icon: 'success',
+              title: 'تم بنجاح',
+              text: res.success || 'تم تسجيل سداد الفاتورة بنجاح.',
+              customClass: { confirmButton: 'btn btn-primary' }
+            });
+            if (dt_invoices) dt_invoices.ajax.reload();
+            if (dt_data) dt_data.ajax.reload();
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'خطأ',
+              text: res.error || 'فشل تسجيل السداد',
+              customClass: { confirmButton: 'btn btn-primary' }
+            });
+          }
+        },
+        error: function (xhr) {
+          submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
+          let msg = 'حدث خطأ أثناء السداد';
+          if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+          Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
         }
-      }).fail(function (xhr) {
-        submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
-        let msg = 'حدث خطأ أثناء السداد';
-        if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
-        Swal.fire({ icon: 'error', title: 'خطأ', text: msg, customClass: { confirmButton: 'btn btn-primary' } });
       });
     });
 

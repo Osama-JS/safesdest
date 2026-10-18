@@ -912,19 +912,27 @@
                             </div>
                         </div>
 
-                        <!-- Notes & Attachment -->
+                        <!-- Notes & Attachment & Payment Receipt -->
                         <div class="row g-3 mb-3">
-                            <div class="col-md-8" id="viewInvoiceNotesBox" style="display: none;">
-                                <div class="p-2 border rounded">
+                            <div class="col-md-6" id="viewInvoiceNotesBox" style="display: none;">
+                                <div class="p-2 border rounded h-100">
                                     <small class="text-muted fw-bold d-block">{{ __('Notes') }}:</small>
                                     <span id="viewInvoiceNotes" class="text-secondary" style="white-space: pre-line;"></span>
                                 </div>
                             </div>
-                            <div class="col-md-4" id="viewInvoiceAttachmentBox" style="display: none;">
-                                <div class="p-2 border rounded text-center">
+                            <div class="col-md-3" id="viewInvoiceAttachmentBox" style="display: none;">
+                                <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center align-items-center">
                                     <small class="text-muted fw-bold d-block mb-1">{{ __('Attachment File') }}:</small>
                                     <button type="button" class="btn btn-xs btn-outline-primary btn-preview-attachment" id="viewInvoiceAttachmentBtn" data-url="" data-name="">
                                         <i class="ti ti-eye me-1"></i> {{ __('View Attachment') }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-3" id="viewInvoicePaymentReceiptBox" style="display: none;">
+                                <div class="p-2 border rounded text-center border-success bg-success bg-opacity-10 h-100 d-flex flex-column justify-content-center align-items-center">
+                                    <small class="text-success fw-bold d-block mb-1"><i class="ti ti-receipt me-1"></i>{{ __('Payment Receipt') }}:</small>
+                                    <button type="button" class="btn btn-xs btn-success btn-preview-attachment" id="viewInvoicePaymentReceiptBtn" data-url="" data-name="">
+                                        <i class="ti ti-eye me-1"></i> {{ __('View Payment Receipt') }}
                                     </button>
                                 </div>
                             </div>
@@ -973,7 +981,7 @@
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                     </div>
-                    <form id="formPayCustomerInvoice">
+                    <form id="formPayCustomerInvoice" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" id="pay_invoice_id">
 
@@ -1000,6 +1008,13 @@
                             <div class="mb-3">
                                 <label class="form-label" for="pay_date">{{ __('Payment Date') }}</label>
                                 <input type="date" class="form-control" id="pay_date" name="payment_date" value="{{ date('Y-m-d') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" for="wallet_pay_receipt">
+                                    <i class="ti ti-receipt me-1 text-success"></i> {{ __('Payment Receipt File') }}
+                                </label>
+                                <input type="file" class="form-control" id="wallet_pay_receipt" name="receipt" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                <small class="text-muted d-block mt-1">{{ __('Upload payment proof or bank transfer receipt (PDF, JPG, PNG)') }}</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label" for="pay_notes">{{ __('Payment Notes') }}</label>

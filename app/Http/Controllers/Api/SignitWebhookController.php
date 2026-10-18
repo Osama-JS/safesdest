@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Task;
+use App\Helpers\SecurityHelper;
 
 class SignitWebhookController extends Controller
 {
@@ -19,7 +20,7 @@ class SignitWebhookController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('Signit Webhook Recieved:', $payload);
+        Log::info('Signit Webhook Recieved:', SecurityHelper::maskSensitiveData($payload));
 
         // استخراج معرف الطلب والحالة
         // بناءً على هيكلية API Signit، نتوقع وجود المعرف والحالة في الجسم
@@ -30,7 +31,7 @@ class SignitWebhookController extends Controller
         $newStatus = $payload['status'] ?? ($payload['signature_request']['status'] ?? null);
 
         if (!$requestId || !$newStatus) {
-            Log::warning('Signit Webhook: Missing required data (ID or Status)', $payload);
+            Log::warning('Signit Webhook: Missing required data (ID or Status)', SecurityHelper::maskSensitiveData($payload));
             return response()->json(['message' => 'Invalid payload'], 400);
         }
 

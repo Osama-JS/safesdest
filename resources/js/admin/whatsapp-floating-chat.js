@@ -46,6 +46,14 @@ $(function () {
   const fileInput = $('#whatsapp-widget-file-input');
   const templatesDropdown = $('#whatsapp-templates-dropdown');
   const mobileBackBtn = $('#whatsapp-mobile-back');
+  const tplModal = $('#whatsapp-confirm-template-modal');
+  const tplModalName = $('#wa-modal-tpl-name');
+  const tplModalLang = $('#wa-modal-tpl-lang');
+  const tplModalBody = $('#wa-modal-tpl-body');
+  const tplModalVarsSection = $('#wa-modal-tpl-vars-section');
+  const tplModalVarsContainer = $('#wa-modal-tpl-vars-container');
+  const tplModalError = $('#wa-modal-tpl-error');
+  const tplModalSendBtn = $('#wa-modal-tpl-send-btn');
 
   const baseUrl = (window.baseUrl || '/').replace(/\/?$/, '/');
 
@@ -402,11 +410,21 @@ $(function () {
 
     let items = '<li class="dropdown-header text-uppercase small fw-bold">اختر قالباً لإرساله:</li>';
     templates.forEach(function (t) {
+      const safeName = escapeHtml(t.name);
+      const safeLang = escapeHtml(t.language || 'ar');
+      const safeBody = escapeHtml(t.body || '');
       items += `
         <li>
-          <a class="dropdown-item small text-truncate send-template-item" href="javascript:void(0);" data-id="${t.id}" data-name="${t.name}">
-            <i class="ti ti-message-dots text-success ti-xs me-1"></i>
-            ${t.name}
+          <a class="dropdown-item small d-flex align-items-center justify-content-between send-template-item" href="javascript:void(0);"
+             data-id="${t.id}"
+             data-name="${safeName}"
+             data-lang="${safeLang}"
+             data-body="${safeBody}">
+            <div class="d-flex align-items-center text-truncate me-2">
+              <i class="ti ti-message-dots text-success ti-xs me-1"></i>
+              <span class="text-truncate">${safeName}</span>
+            </div>
+            <span class="badge bg-label-secondary text-uppercase" style="font-size: 9px;">${safeLang}</span>
           </a>
         </li>
       `;
@@ -686,27 +704,178 @@ $(function () {
     });
   });
 
-  // Send Template Click
+  // Send Template Click - Opens Modal (No browser confirm/alert!)
+  let currentTplRawBody = '';
+
   $(document).on('click', '.send-template-item', function () {
     if (!activeConversationId) return;
     const templateId = $(this).data('id');
     const templateName = $(this).data('name');
+    const templateLang = $(this).data('lang') || 'ar';
+    const templateBody = $(this).data('body') || 'قالب واتساب رسمي معتمد';
+    currentTplRawBody = templateBody;
 
-    if (!confirm(`هل أنت متأكد من رغبتك في إرسال قالب (${templateName}) لهذا المحادثة؟`)) {
+    if (tplModal.length) {
+      tplModalName.text(templateName);
+      tplModalLang.text(templateLang);
+      tplModalBody.text(templateBody);
+      tplModalError.addClass('d-none').text('');
+
+      // Find variables like {{1}}, {{2}} in template body
+      const matches = templateBody.match(/\{\{(\d+)\}\}/g);
+      const uniqueVars = [];
+      if (matches) {
+        matches.forEach(function (m) {
+          const num = m.replace(/\{\{|\}\}/g, '');
+          if (!uniqueVars.includes(num)) uniqueVars.push(num);
+        });
+        uniqueVars.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+      }
+
+      if (uniqueVars.length > 0) {
+        tplModalVarsSection.removeClass('d-none');
+        let inputsHtml = '';
+        const isOtp = /otp|code|verification/i.test(templateName) || /code|verification/i.test(templateBody);
+
+        uniqueVars.forEach(function (num) {
+          const labelText = isOtp && num === '1' ? 'رمز التحقق (OTP Code) {{1}}:' : `قيمة المتغير {{${num}}}:`;
+          const placeholderText = isOtp && num === '1' ? 'مثال: 123456' : `أدخل قيمة المتغير {{${num}}}`;
+          const initialVal = (isOtp && num === '1') ? Math.floor(100000 + Math.random() * 900000) : '';
+
+          inputsHtml += `
+            <div class="mb-2">
+              <label class="form-label small fw-bold mb-1">${labelText}</label>
+              <input type="text" class="form-control form-control-sm wa-tpl-var-field"
+                     data-var="${num}"
+                     value="${initialVal}"
+                     placeholder="${placeholderText}" required>
+            </div>
+          `;
+        });
+        tplModalVarsContainer.html(inputsHtml);
+        updateFloatingTplPreview();
+      } else {
+        tplModalVarsSection.addClass('d-none');
+        tplModalVarsContainer.empty();
+      }
+
+      tplModalSendBtn
+        .prop('disabled', false)
+        .html('<i class="ti ti-send me-1"></i> إرسال القالب الآن')
+        .data('id', templateId)
+        .data('name', templateName)
+        .data('lang', templateLang);
+
+      tplModal.modal('show');
+    } else {
+      executeSendTemplate(templateId, templateName, templateLang, []);
+    }
+  });
+
+  // Live Preview update when typing in variable fields
+  $(document).on('input', '.wa-tpl-var-field', function () {
+    updateFloatingTplPreview();
+  });
+
+  function updateFloatingTplPreview() {
+    let text = currentTplRawBody || '';
+    $('.wa-tpl-var-field').each(function () {
+      const varNum = $(this).data('var');
+      const val = $(this).val();
+      if (val) {
+        text = text.replace(new RegExp('\\{\\{' + varNum + '\\}\\}', 'g'), val);
+      }
+    });
+    tplModalBody.text(text);
+  }
+
+  // Modal Submit Button Click
+  tplModalSendBtn.on('click', function () {
+    const templateId = $(this).data('id');
+    const templateName = $(this).data('name');
+    const templateLang = $(this).data('lang') || 'ar';
+
+    const variables = [];
+    let hasMissing = false;
+    $('.wa-tpl-var-field').each(function () {
+      const val = $(this).val().trim();
+      if (!val) {
+        hasMissing = true;
+      }
+      variables.push(val);
+    });
+
+    if (hasMissing) {
+      tplModalError.removeClass('d-none').text('يرجى تعبئة جميع متغيرات القالب قبل الإرسال.');
       return;
     }
 
-    $.post(baseUrl + `admin/whatsapp-chat/${activeConversationId}/send-template`, {
-      template_id: templateId,
-      _token: $('meta[name="csrf-token"]').attr('content')
-    })
-      .done(function (res) {
+    executeSendTemplate(templateId, templateName, templateLang, variables);
+  });
+
+  function executeSendTemplate(templateId, templateName, templateLang, variables) {
+    if (!activeConversationId || !templateName) return;
+
+    tplModalSendBtn.prop('disabled', true).html('<i class="ti ti-loader ti-spin me-1"></i> جاري الإرسال...');
+    tplModalError.addClass('d-none').text('');
+
+    const tempId = 'temp_tpl_' + Date.now();
+    const tempBubble = `
+      <div class="whatsapp-bubble outbound" id="${tempId}">
+        <div class="d-flex align-items-center gap-2">
+          <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+          <span class="small">جاري إرسال قالب (${escapeHtml(templateName)})...</span>
+        </div>
+        <div class="whatsapp-bubble-time"><small class="text-muted">جاري الإرسال...</small></div>
+      </div>
+    `;
+    messagesStream.append(tempBubble);
+    scrollToBottom();
+
+    $.ajax({
+      url: baseUrl + `admin/whatsapp-chat/${activeConversationId}/send-template`,
+      type: 'POST',
+      data: {
+        template_id: templateId,
+        template_name: templateName,
+        language: templateLang,
+        variables: variables || [],
+        _token: $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (res) {
+        tplModalSendBtn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال القالب الآن');
+        if (tplModal.length) {
+          tplModal.modal('hide');
+        }
+
         if (res.status === 'success') {
+          if (typeof toastr !== 'undefined') {
+            toastr.success(res.message || 'تم إرسال القالب بنجاح');
+          }
           selectConversation(activeConversationId);
           loadSummaryData();
+        } else {
+          const errMsg = res.message || 'فشل إرسال القالب';
+          $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${escapeHtml(errMsg)}</span>`);
+          if (tplModal.length && tplModal.hasClass('show')) {
+            tplModalError.removeClass('d-none').text(errMsg);
+          } else if (typeof toastr !== 'undefined') {
+            toastr.error(errMsg);
+          }
         }
-      });
-  });
+      },
+      error: function (xhr) {
+        tplModalSendBtn.prop('disabled', false).html('<i class="ti ti-send me-1"></i> إرسال القالب الآن');
+        const errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'حدث خطأ أثناء إرسال القالب';
+        $(`#${tempId} .whatsapp-bubble-time`).html(`<span class="text-danger small">${escapeHtml(errMsg)}</span>`);
+        if (tplModal.length && tplModal.hasClass('show')) {
+          tplModalError.removeClass('d-none').text(errMsg);
+        } else if (typeof toastr !== 'undefined') {
+          toastr.error(errMsg);
+        }
+      }
+    });
+  }
 
   // Search & Filter Events
   searchInput.on('input', function () {

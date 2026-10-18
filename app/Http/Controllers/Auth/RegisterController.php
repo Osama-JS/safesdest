@@ -24,6 +24,7 @@ use App\Helpers\FileHelper;
 use App\Http\Controllers\admin\WalletsController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\SecurityHelper;
 
 class RegisterController extends Controller
 {
@@ -397,7 +398,7 @@ class RegisterController extends Controller
 
     public function registerDriver(Request $req)
     {
-        Log::info('Register driver (API) attempt', ['payload' => $req->all()]);
+        Log::info('Register driver (API) attempt', ['payload' => SecurityHelper::maskSensitiveData($req->all())]);
         dd('error');
         $baseRules = [
           'name'           => 'required|string|max:255',

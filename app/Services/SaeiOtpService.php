@@ -208,7 +208,8 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         if ($this->simulation) {
             // في الـ Simulation، اقبل الكود 123456 دائماً
             $approved = ($code === '123456');
-            Log::info("[SaeiOTP][SIMULATION] Verify code={$code} for verification_id={$verificationId}, result=" . ($approved ? 'approved' : 'denied'));
+            $maskedCode = substr($code, 0, 1) . '****';
+            Log::info("[SaeiOTP][SIMULATION] Verify code={$maskedCode} for verification_id={$verificationId}, result=" . ($approved ? 'approved' : 'denied'));
             return [
                 'success' => true,
                 'status'  => $approved ? 'approved' : 'denied',

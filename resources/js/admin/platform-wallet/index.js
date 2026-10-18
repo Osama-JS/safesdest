@@ -40,7 +40,7 @@ $(function () {
   if (dt_platform_wallet.length) {
     var dt_platform = dt_platform_wallet.DataTable({
       processing: true,
-      serverSide: false,
+      serverSide: true,
       ajax: {
         url: walletView + 'data',
         type: 'GET',
@@ -127,7 +127,20 @@ $(function () {
           visible: false, // Hidden by default, toggled later
           className: 'text-nowrap w-auto',
           render: function (data, type, full, meta) {
-            return `<span class="commission-badge bg-info text-white">${data} SAR</span>`;
+            const hasDeductions = parseFloat(full.total_given_commission) > 0;
+            const deductionBtn = hasDeductions
+              ? `<button type="button" class="btn btn-xs btn-icon btn-label-danger ms-1 btn-view-deductions"
+                         data-id="${full.id}" title="عرض تفاصيل الاستقطاعات">
+                   <i class="ti ti-receipt-2 ti-xs"></i>
+                 </button>`
+              : '';
+
+            return `
+              <div class="d-inline-flex align-items-center">
+                <span class="commission-badge bg-info text-white">${data} SAR</span>
+                ${deductionBtn}
+              </div>
+            `;
           }
         },
         {
@@ -210,18 +223,27 @@ $(function () {
           searchable: false,
           orderable: false,
           render: function (data, type, full, meta) {
+            const hasDeductions = parseFloat(full.total_given_commission) > 0;
+            const deductionActionBtn = hasDeductions
+              ? `<button type="button" class="btn btn-sm btn-icon btn-label-danger btn-view-deductions"
+                         data-id="${full.id}" title="تفاصيل الاستقطاعات">
+                   <i class="ti ti-receipt-2"></i>
+                 </button>`
+              : '';
+
+            const viewTaskUrl = (typeof taskShowBaseUrl !== 'undefined') ? (taskShowBaseUrl + full.id) : (baseUrl + 'admin/tasks/list/show/' + full.id);
             return `
               <div class="d-flex align-items-center gap-1">
-                <a href="${baseUrl}admin/tasks/${full.id}" class="btn btn-sm " title="View Task">
+                <a href="${viewTaskUrl}" class="btn btn-sm btn-icon btn-label-primary" title="View Task" target="_blank">
                   <i class="ti ti-eye"></i>
                 </a>
-
+                ${deductionActionBtn}
               </div>
             `;
           }
         }
       ],
-      order: [[10, 'desc']],
+      order: [[11, 'desc']],
       dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6 d-flex justify-content-center justify-content-md-end"f>><"table-responsive"t><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 25,
       lengthMenu: [10, 25, 50, 75, 100],
@@ -425,7 +447,107 @@ $(function () {
   // View details
   $(document).on('click', '.view-details', function () {
     const taskId = $(this).data('id');
-    window.open(baseUrl + 'admin/tasks/' + taskId, '_blank');
+    const targetUrl = (typeof taskShowBaseUrl !== 'undefined') ? (taskShowBaseUrl + taskId) : (baseUrl + 'admin/tasks/list/show/' + taskId);
+    window.open(targetUrl, '_blank');
+  });
+
+  // ===================================================================
+  // COMMISSION DEDUCTIONS BREAKDOWN MODAL
+  // ===================================================================
+  $(document).on('click', '.btn-view-deductions', function () {
+    const taskId = $(this).data('id');
+    const modal = $('#taskCommissionDeductionsModal');
+    const tbody = $('#modalDeductionsTableBody');
+
+    // Reset and show loading state
+    tbody.html(`
+      <tr>
+        <td colspan="6" class="text-center py-4">
+          <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          <span class="ms-2">جاري جلب تفاصيل الاستقطاعات...</span>
+        </td>
+      </tr>
+    `);
+
+    modal.modal('show');
+
+    $.ajax({
+      url: walletView + 'task/' + taskId + '/deductions',
+      type: 'GET',
+      success: function (res) {
+        if (!res.success || !res.data) {
+          tbody.html(`<tr><td colspan="6" class="text-center text-danger py-3">فشل في جلب البيانات</td></tr>`);
+          return;
+        }
+
+        const task = res.data.task;
+        const deductions = res.data.deductions || [];
+
+        // Fill task header details
+        $('#modalTaskNumber').text('#' + task.id);
+        $('#modalCustomerName').text(task.customer_name);
+        $('#modalDriverName').text(task.driver_name);
+        $('#modalTeamName').text(task.team_name);
+        $('#modalTotalPrice').text(task.total_price);
+
+        // Fill financial totals
+        $('#modalGrossCommission').text(task.commission);
+        $('#modalTotalDeductions').text(task.total_deductions);
+        $('#modalNetCommission').text(task.net_commission);
+        $('#modalDeductionsCount').text(deductions.length);
+        const modalTargetUrl = (typeof taskShowBaseUrl !== 'undefined') ? (taskShowBaseUrl + task.id) : (baseUrl + 'admin/tasks/list/show/' + task.id);
+        $('#modalViewTaskLink').attr('href', modalTargetUrl);
+
+        if (deductions.length === 0) {
+          tbody.html(`
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                <i class="ti ti-info-circle ti-md mb-1 d-block text-secondary"></i>
+                لا توجد أي استقطاعات على عمولة هذه المهمة (عمولة المنصة كاملة بنسبة 100%).
+              </td>
+            </tr>
+          `);
+          return;
+        }
+
+        let rowsHtml = '';
+        deductions.forEach(function (item, index) {
+          const phoneBadge = item.beneficiary_phone
+            ? `<small class="text-muted d-block font-monospace"><i class="ti ti-phone ti-xs me-1"></i>${item.beneficiary_phone}</small>`
+            : '';
+
+          rowsHtml += `
+            <tr>
+              <td class="fw-bold">${index + 1}</td>
+              <td class="text-wrap" style="word-break: break-word;">
+                <span class="badge ${item.badge_class} mb-1">${item.type_label}</span>
+                <div class="fw-semibold text-dark">${item.beneficiary_name}</div>
+                ${phoneBadge}
+              </td>
+              <td class="text-wrap" style="word-break: break-word;">
+                <span class="badge bg-label-light text-dark border text-wrap">${item.source_details}</span>
+              </td>
+              <td class="text-wrap small text-muted" style="word-break: break-word;">
+                ${item.description || '-'}
+              </td>
+              <td class="small text-muted">
+                ${item.created_at}
+              </td>
+              <td class="text-end text-nowrap">
+                <span class="fw-bold text-danger fs-6">-${item.amount_formatted}</span>
+                <small class="text-muted fs-tiny">ر.س</small>
+              </td>
+            </tr>
+          `;
+        });
+
+        tbody.html(rowsHtml);
+      },
+      error: function (xhr) {
+        console.error('Deductions error:', xhr);
+        tbody.html(`<tr><td colspan="6" class="text-center text-danger py-3">حدث خطأ أثناء تحميل البيانات</td></tr>`);
+      }
+    });
   });
 
   // Initialize

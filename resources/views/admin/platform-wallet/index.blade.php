@@ -88,6 +88,9 @@
 
 <!-- Page Scripts -->
 @section('page-script')
+    <script>
+        const taskShowBaseUrl = "{{ url('admin/tasks/list/show') }}/";
+    </script>
     @vite(['resources/js/ajax.js'])
     @vite(['resources/js/admin/platform-wallet/index.js'])
 @endsection
@@ -252,6 +255,102 @@
                             </thead>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <!-- Modal: تفاصيل استقطاعات عمولة المنصة للمهمة -->
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <div class="modal fade" id="taskCommissionDeductionsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-white border-bottom py-3">
+                    <h5 class="modal-title fw-bold text-primary mb-0 d-flex align-items-center">
+                        <i class="ti ti-receipt-2 ti-md me-2 text-primary"></i>
+                        <span>{{ __('تفاصيل استقطاعات عمولة المنصة') }} - <span id="modalTaskNumber" class="text-primary fw-bold">#</span></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <!-- Task Summary Banner -->
+                    <div class="card bg-white border mb-4 shadow-xs">
+                        <div class="card-body p-3">
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-md-3">
+                                    <span class="text-muted d-block small mb-1">{{ __('العميل') }}:</span>
+                                    <strong class="text-dark" id="modalCustomerName">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <span class="text-muted d-block small mb-1">{{ __('السائق') }}:</span>
+                                    <strong class="text-dark" id="modalDriverName">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <span class="text-muted d-block small mb-1">{{ __('الفريق') }}:</span>
+                                    <strong class="text-dark" id="modalTeamName">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <span class="text-muted d-block small mb-1">{{ __('قيمة المهمة') }}:</span>
+                                    <strong class="text-dark"><span id="modalTotalPrice">0.00</span> ر.س</strong>
+                                </div>
+                            </div>
+                            <hr class="my-3">
+                            <!-- Financial Calculation Summary Row -->
+                            <div class="row g-3 text-center">
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-label-primary">
+                                        <small class="text-primary d-block fw-semibold">{{ __('إجمالي عمولة المنصة') }}</small>
+                                        <span class="fs-5 fw-bold text-primary" id="modalGrossCommission">0.00</span> <small>ر.س</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-label-danger">
+                                        <small class="text-danger d-block fw-semibold">{{ __('إجمالي الاستقطاعات') }}</small>
+                                        <span class="fs-5 fw-bold text-danger" id="modalTotalDeductions">0.00</span> <small>ر.س</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-2 rounded bg-label-success">
+                                        <small class="text-success d-block fw-semibold">{{ __('صافي المنصة النهائي') }}</small>
+                                        <span class="fs-5 fw-bold text-success" id="modalNetCommission">0.00</span> <small>ر.س</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deductions Table -->
+                    <h6 class="fw-bold text-secondary mb-2 d-flex justify-content-between align-items-center">
+                        <span><i class="ti ti-arrows-split me-1 text-primary"></i> {{ __('قائمة الحصص والعمولات المستقطعة') }}</span>
+                        <span class="badge bg-label-primary rounded-pill" id="modalDeductionsCount">0</span>
+                    </h6>
+
+                    <div class="border rounded bg-white">
+                        <table class="table table-hover table-sm align-middle mb-0 w-100" style="table-layout: fixed;">
+                            <thead class="bg-white border-bottom sticky-top">
+                                <tr>
+                                    <th style="width: 5%; background-color: #ffffff;">#</th>
+                                    <th style="width: 25%; background-color: #ffffff;">{{ __('نوع العمولة / المستفيد') }}</th>
+                                    <th style="width: 20%; background-color: #ffffff;">{{ __('الجهة / المصدر') }}</th>
+                                    <th style="width: 25%; background-color: #ffffff;">{{ __('التفاصيل والبيان') }}</th>
+                                    <th style="width: 12%; background-color: #ffffff;">{{ __('التاريخ') }}</th>
+                                    <th style="width: 13%; background-color: #ffffff;" class="text-end">{{ __('المبلغ المستقطع') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalDeductionsTableBody">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer py-2 bg-white border-top">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="ti ti-x me-1"></i> {{ __('إغلاق') }}
+                    </button>
+                    <a href="#" target="_blank" class="btn btn-primary btn-sm" id="modalViewTaskLink">
+                        <i class="ti ti-eye me-1"></i> {{ __('عرض المهمة بالكامل') }}
+                    </a>
                 </div>
             </div>
         </div>

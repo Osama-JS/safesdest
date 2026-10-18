@@ -259,7 +259,7 @@ class CustomerInvoiceService
      *
      * @throws Exception
      */
-    public function markAsPaid(CustomerInvoice $invoice, float $amount, ?string $paymentDate = null, ?string $notes = null): CustomerInvoice
+    public function markAsPaid(CustomerInvoice $invoice, float $amount, ?string $paymentDate = null, ?string $notes = null, $receiptFile = null): CustomerInvoice
     {
         if ($invoice->status === 'unpaid') {
             throw new Exception(__('Invoice must be approved first before registering payment.'));
@@ -281,20 +281,26 @@ class CustomerInvoiceService
             throw new Exception(__('Payment amount must be greater than zero.'));
         }
 
-        return DB::transaction(function () use ($invoice, $amount, $paymentDate, $notes) {
+        return DB::transaction(function () use ($invoice, $amount, $paymentDate, $notes, $receiptFile) {
             $newPaid = (float) $invoice->paid_amount + $amount;
             $remaining = max(0, (float) $invoice->total_amount - $newPaid);
             // إذا تم سداد كامل المبلغ تُقفل الفاتورة نهائياً وتصبح حالتها 'paid'
             // إذا كان السداد جزئياً، تظل الحالة 'approved' بانتظار استكمال السداد
             $status = ($remaining <= 0) ? 'paid' : 'approved';
 
-            $invoice->update([
+            $updateData = [
                 'paid_amount'      => min($invoice->total_amount, $newPaid),
                 'remaining_amount' => $remaining,
                 'status'           => $status,
                 'payment_date'     => $paymentDate ? Carbon::parse($paymentDate) : now(),
                 'notes'            => $notes ? ($invoice->notes . "\n" . $notes) : $invoice->notes,
-            ]);
+            ];
+
+            if ($receiptFile) {
+                $updateData['payment_receipt'] = FileHelper::uploadFile($receiptFile, 'customer_invoices/receipts');
+            }
+
+            $invoice->update($updateData);
 
             return $invoice;
         });

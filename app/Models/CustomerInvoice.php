@@ -26,6 +26,7 @@ class CustomerInvoice extends Model
         'status', // unpaid, paid, approved, cancelled
         'payment_date',
         'attachment_file',
+        'payment_receipt',
         'notes',
         'created_by',
         'approved_by',

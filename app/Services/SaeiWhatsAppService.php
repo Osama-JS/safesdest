@@ -78,7 +78,8 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         }
 
         if ($this->simulation) {
-            Log::info("[SaeiWhatsApp][SIMULATION] OTP sent to {$phone}: {$code}");
+            $maskedCode = substr($code, 0, 1) . '****';
+            Log::info("[SaeiWhatsApp][SIMULATION] OTP sent to {$phone}: {$maskedCode}");
             return true;
         }
 
@@ -274,28 +275,56 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
             }
         }
 
+        $templateVarsPayload = [];
+        if (!empty($bodyVariables)) {
+            $templateVarsPayload['body'] = $bodyVariables;
+        }
+
+        // Check if template buttons require dynamic url_suffix (e.g. OTP copy-code or dynamic link)
+        $components = is_string($template->components) ? json_decode($template->components, true) : ($template->components ?? []);
+        $buttonVars = [];
+        if (!empty($components)) {
+            foreach ($components as $comp) {
+                if (($comp['type'] ?? '') === 'BUTTONS' && !empty($comp['buttons'])) {
+                    foreach ($comp['buttons'] as $btn) {
+                        $btnUrl = $btn['url'] ?? '';
+                        if (($btn['type'] ?? '') === 'URL' && str_contains($btnUrl, '{{')) {
+                            // Suffix corresponds to code / variable
+                            $suffix = !empty($variables[0]) ? (string)$variables[0] : '';
+                            $buttonVars[] = ['url_suffix' => $suffix];
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!empty($buttonVars)) {
+            $templateVarsPayload['buttons'] = $buttonVars;
+        }
+
+        $templatePayload = [
+            'name'     => $templateName,
+            'language' => $templateLang,
+        ];
+
+        if (!empty($templateVarsPayload)) {
+            $templatePayload['variables'] = $templateVarsPayload;
+        }
+
         $payload = [
-            'to'       => $phoneFormatted,
-            'type'     => 'template',
-            'template' => [
-                'name'      => $templateName,
-                'language'  => $templateLang,
-                'variables' => [
-                    'body' => $bodyVariables,
-                ],
-            ],
+            'to'        => $phoneFormatted,
+            'type'      => 'template',
+            'template'  => $templatePayload,
             'reference' => $reference,
         ];
 
-        $fromParam = $this->resolveFromNumber();
+        $fromParam = $this->resolveFromNumber($templateName);
         if (!empty($fromParam)) {
             $payload['from'] = $fromParam;
         }
 
         try {
-            $response = Http::withHeaders($this->getHeaders())
-                ->timeout(15)
-                ->post("{$this->baseUrl}/messages", $payload);
+            $response = $this->httpClient(15)->post("{$this->baseUrl}/messages", $payload);
 
             if ($response->successful()) {
                 $resData = $response->json();
@@ -562,10 +591,16 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         }
 
         try {
-            $response = Http::withHeaders([
+            $client = Http::withHeaders([
                 'Authorization' => "Bearer {$this->apiKey}",
                 'Accept'        => 'application/json',
-            ])->timeout(10)->get("{$this->baseUrl}/numbers");
+            ])->timeout(10);
+
+            if (app()->environment('local') || !ini_get('curl.cainfo')) {
+                $client = $client->withoutVerifying();
+            }
+
+            $response = $client->get("{$this->baseUrl}/numbers");
 
             if ($response->successful()) {
                 return $response->json()['data'] ?? [];
@@ -578,6 +613,51 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
     }
 
     /**
+     * Get all message templates from Saei API workspace
+     */
+    public function getTemplates(): array
+    {
+        if (empty($this->apiKey)) {
+            return [];
+        }
+
+        try {
+            $client = Http::withHeaders([
+                'Authorization' => "Bearer {$this->apiKey}",
+                'Accept'        => 'application/json',
+            ])->timeout(15);
+
+            if (app()->environment('local') || !ini_get('curl.cainfo')) {
+                $client = $client->withoutVerifying();
+            }
+
+            $response = $client->get("{$this->baseUrl}/templates");
+
+            if ($response->successful()) {
+                return $response->json()['data'] ?? [];
+            }
+
+            Log::error('[SaeiWhatsApp] getTemplates failed: ' . $response->body());
+            return [];
+        } catch (\Throwable $e) {
+            Log::error('[SaeiWhatsApp] getTemplates exception: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Build standard HTTP client with headers and local SSL handling
+     */
+    protected function httpClient(int $timeout = 15): \Illuminate\Http\Client\PendingRequest
+    {
+        $client = Http::withHeaders($this->getHeaders())->timeout($timeout);
+        if (app()->environment('local') || !ini_get('curl.cainfo')) {
+            $client = $client->withoutVerifying();
+        }
+        return $client;
+    }
+
+    /**
      * Resolve the 'from' parameter for Saei API.
      * Saei accepts:
      * 1. A number ID (e.g. num_25)
@@ -585,8 +665,27 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
      *
      * It rejects Meta Cloud numeric IDs (e.g. 1276243858896899).
      */
-    public function resolveFromNumber(): ?string
+    /**
+     * Resolve the 'from' parameter for Saei API.
+     * Saei accepts:
+     * 1. A number ID (e.g. num_25)
+     * 2. An E.164 phone number (e.g. +966557507505)
+     *
+     * It rejects Meta Cloud numeric IDs (e.g. 1276243858896899).
+     */
+    public function resolveFromNumber(?string $templateName = null): ?string
     {
+        // If a template belongs to a specific account, route to its matching number
+        if ($templateName) {
+            $tplLower = strtolower($templateName);
+            if (str_starts_with($tplLower, 'flyvio_')) {
+                return '+966555723838'; // Fly vio registered number
+            }
+            if (str_starts_with($tplLower, 'safedest_')) {
+                return '+966557507505'; // Safe Destination registered number
+            }
+        }
+
         $from = trim($this->fromPhoneId ?? '');
         if (empty($from)) {
             return '+966557507505'; // Default registered Safe Destination company number
@@ -657,11 +756,26 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
      */
     protected function translateError(string $code, string $defaultMsg): string
     {
-        if ($code === 'parameter_invalid' && str_contains(strtolower($defaultMsg), 'from')) {
+        $lowerMsg = strtolower($defaultMsg);
+
+        if (str_contains($lowerMsg, 'no template with that name and language exists')) {
+            return 'القالب المطلوب غير موجود أو غير معتمد بهذه اللغة في مساحة عمل مزود الواتساب (ساعي). يرجى التأكد من مزامنة القوالب أولاً واعتماد القالب بنفس الاسم واللغة في منصة ساعي.';
+        }
+
+        if (str_contains($lowerMsg, 'belongs to a different whatsapp account')) {
+            return 'هذا القالب مسجل تحت حساب واتساب آخر في مساحة العمل، ويجب إرساله من الرقم الخاص بذلك الحساب.';
+        }
+
+        if (str_contains($lowerMsg, "can't send a message to itself")) {
+            return 'لا يمكن لرقم واتساب إرسال رسالة إلى نفسه. يرجى اختيار رقم مستلم مختلف أو الإرسال من رقم آخر.';
+        }
+
+        if ($code === 'parameter_invalid' && str_contains($lowerMsg, 'from')) {
             return 'حقل الرقم المُرسِل (from) غير صالح. يجب أن يكون رقم واتساب بصيغة دولية (مثل +966557507505) أو معرّف ساعي (مثل num_25).';
         }
 
         return match ($code) {
+            'template_not_found' => 'القالب المطلوب غير موجود في مساحة عمل مزود الخدمة (ساعي) أو أن لغة القالب غير متطابقة.',
             'window_closed' => 'نافذة الـ 24 ساعة مغلقة. تفرض سياسات واتساب إرسال قالب معتمد أولاً لإعادة فتح المحادثة.',
             'parameter_invalid' => $defaultMsg ?: 'يوجد حقل غير صالح في بيانات الإرسال.',
             'rate_limited' => 'تم تجاوز حد الطلبات المسموح به حالياً من قبل واتساب. يرجى الانتظار قليلاً.',

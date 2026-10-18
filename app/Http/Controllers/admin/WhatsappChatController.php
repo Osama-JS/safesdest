@@ -364,17 +364,57 @@ class WhatsappChatController extends Controller
     public function sendTemplate(Request $request, $id, WhatsAppServiceInterface $waService)
     {
         $request->validate([
-            'template_name' => 'required|string',
-            'variables'     => 'nullable|array'
+            'template_name' => 'nullable|string',
+            'template_id'   => 'nullable|integer',
+            'variables'     => 'nullable|array',
+            'language'      => 'nullable|string',
         ]);
 
         $conversation = WhatsappConversation::findOrFail($id);
         $phone = $conversation->phone_number;
 
-        $templateName = $request->template_name;
-        $variables = $request->input('variables', []);
+        $template = null;
+        if ($request->filled('template_id')) {
+            $template = WhatsappTemplate::find($request->template_id);
+        }
 
-        $result = $waService->sendTemplateMessage($phone, $templateName, $variables);
+        if (!$template && $request->filled('template_name')) {
+            $template = WhatsappTemplate::where('template_name', $request->template_name)
+                ->when($request->filled('language'), fn($q) => $q->where('language', $request->language))
+                ->first();
+        }
+
+        $templateName = $template ? $template->template_name : $request->template_name;
+        $templateLang = $template ? ($template->language ?: 'ar') : ($request->input('language', 'ar'));
+
+        if (empty($templateName)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'يرجى تحديد القالب المراد إرساله.'
+            ], 422);
+        }
+
+        $variablesInput = $request->input('variables', []);
+        $variables = [];
+        if (is_array($variablesInput)) {
+            ksort($variablesInput);
+            $variables = array_values($variablesInput);
+        }
+
+        // Validate that required body placeholders are supplied
+        if ($template && !empty($template->body_text)) {
+            preg_match_all('/\{\{(\d+)\}\}/', $template->body_text, $matches);
+            $requiredCount = !empty($matches[1]) ? count(array_unique($matches[1])) : 0;
+            $filledCount = count(array_filter($variables, fn($v) => trim((string)$v) !== ''));
+            if ($requiredCount > 0 && $filledCount < $requiredCount) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => "يتطلب هذا القالب تعبئة {$requiredCount} من المتغيرات قبل الإرسال (تم إدخال {$filledCount})."
+                ], 422);
+            }
+        }
+
+        $result = $waService->sendTemplateMessage($phone, $templateName, $variables, $templateLang);
 
         if (is_array($result) && !($result['success'] ?? false)) {
             return response()->json([
@@ -384,9 +424,10 @@ class WhatsappChatController extends Controller
         }
 
         return response()->json([
-            'status'  => 'success',
-            'message' => 'تم إرسال القالب بنجاح وإعادة تفعيل المحادثة.',
-            'time'    => now()->format('h:i A')
+            'status'        => 'success',
+            'template_name' => $templateName,
+            'message'       => "تم إرسال القالب ({$templateName}) بنجاح وإعادة تفعيل المحادثة.",
+            'time'          => now()->format('h:i A')
         ]);
     }
 

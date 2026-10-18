@@ -192,8 +192,6 @@ class CustomerTaskController extends Controller
 
     public function getTasks(Request $request)
     {
-        Log::alert($request->all());
-
         try {
             $customer = $request->user();
 
@@ -1456,8 +1454,7 @@ class CustomerTaskController extends Controller
 
     public function customerCancelTask(Request $req, $id){
       try {
-        Log::alert('customer Cancel Task Start');
-        Log::info($req->all());
+        Log::info('customer Cancel Task Request', ['task_id' => $id, 'reason' => $req->reason]);
           $data = Task::findOrFail($id);
            $user = $req->user();
           if (!$user || $user->id !== $data->customer_id) {

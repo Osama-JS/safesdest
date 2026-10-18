@@ -55,6 +55,11 @@ $(function () {
         $('#statExpiringSoonAmount').html(formatMoney(s.expiring_soon_amount) + ' <small class="fs-tiny">ر.س</small>');
         $('#statExpiringSoonCount').text(s.expiring_soon_count);
 
+        const remainingAmt = s.remaining_amount !== undefined ? s.remaining_amount : (s.total_remaining || 0);
+        const remainingCnt = s.remaining_count !== undefined ? s.remaining_count : 0;
+        $('#statRemainingAmount').html(formatMoney(remainingAmt) + ' <small class="fs-tiny">ر.س</small>');
+        $('#statRemainingCount').text(remainingCnt);
+
         $('#statUpcomingAmount').html(formatMoney(s.upcoming_amount) + ' <small class="fs-tiny">ر.س</small>');
         $('#statUpcomingCount').text(s.upcoming_count);
 
@@ -260,13 +265,24 @@ $(function () {
           orderable: false,
           searchable: false,
           render: function (data, type, row) {
-            if (!data) return '<span class="text-muted">-</span>';
-            return `
-              <button type="button" class="btn btn-icon btn-sm btn-label-primary btn-preview-attachment"
-                      data-url="${data}" data-title="${row.invoice_number}">
-                <i class="ti ti-file-text ti-sm"></i>
-              </button>
-            `;
+            let html = '';
+            if (row.attachment_url) {
+              html += `
+                <button type="button" class="btn btn-icon btn-sm btn-label-primary btn-preview-attachment me-1"
+                        data-url="${row.attachment_url}" data-title="${row.invoice_number}" title="ملف الفاتورة">
+                  <i class="ti ti-file-text ti-sm"></i>
+                </button>
+              `;
+            }
+            if (row.payment_receipt_url) {
+              html += `
+                <button type="button" class="btn btn-icon btn-sm btn-label-success btn-preview-attachment"
+                        data-url="${row.payment_receipt_url}" data-title="إيصال سداد ${row.invoice_number}" title="إيصال السداد">
+                  <i class="ti ti-receipt ti-sm"></i>
+                </button>
+              `;
+            }
+            return html || '<span class="text-muted">-</span>';
           }
         },
         {
@@ -486,6 +502,18 @@ $(function () {
           $('#viewInvoiceAttachmentBox').hide();
         }
 
+        // Payment Receipt
+        if (res.payment_receipt_url) {
+          $('#viewInvoicePaymentReceiptBtn')
+            .attr('data-url', res.payment_receipt_url)
+            .attr('data-title', 'إيصال سداد ' + inv.invoice_number)
+            .removeClass('btn-preview-attachment')
+            .addClass('btn-preview-attachment');
+          $('#viewInvoicePaymentReceiptBox').show();
+        } else {
+          $('#viewInvoicePaymentReceiptBox').hide();
+        }
+
         // Audit
         $('#viewInvoiceCreator').text(inv.creator ? inv.creator.name : '-');
         $('#viewInvoiceCreatedAt').text(inv.created_at ? inv.created_at.replace('T', ' ').substring(0, 16) : '-');
@@ -602,6 +630,7 @@ $(function () {
     $('#payInvoiceRemaining').text(formatMoney(remaining) + ' ر.س');
     $('#pay_amount').val(parseFloat(remaining).toFixed(2));
     $('#pay_amount').attr('max', parseFloat(remaining).toFixed(2));
+    $('#pay_receipt').val('');
     $('#pay_notes').val('');
     $('#payCustomerInvoiceModal').modal('show');
   }
@@ -612,10 +641,14 @@ $(function () {
     const submitBtn = $('#btnSubmitPayment');
     submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> جارٍ المعالجة...');
 
+    const formData = new FormData(this);
+
     $.ajax({
       url: `${invoiceBaseUrl}/${id}/pay`,
       type: 'POST',
-      data: $(this).serialize(),
+      data: formData,
+      processData: false,
+      contentType: false,
       success: function (res) {
         submitBtn.prop('disabled', false).html('<i class="ti ti-check me-1"></i> تأكيد السداد');
         if (res.status === 1) {

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\InvestorWalletExport;
 use App\Exports\InvestorPersonalWalletExport;
+use App\Helpers\SecurityHelper;
 
 class InvestorWalletController extends Controller
 {
@@ -196,7 +197,7 @@ class InvestorWalletController extends Controller
      */
     public function initiateDeposit(Request $request)
     {
-        Log::info('Initiate Deposit hit', $request->all());
+        Log::info('Initiate Deposit hit', SecurityHelper::maskSensitiveData($request->all()));
         $request->validate([
             'amount' => 'required|numeric|min:10',
             'brand'  => 'required|in:VISA,MADA',
@@ -257,7 +258,7 @@ class InvestorWalletController extends Controller
      */
     public function handleDepositCallback(Request $request)
     {
-        Log::info('Investor Deposit Callback Query', $request->query());
+        Log::info('Investor Deposit Callback Query', SecurityHelper::maskSensitiveData($request->query()));
 
         $checkoutId   = $request->query('id');
         $resourcePath = $request->query('resourcePath');

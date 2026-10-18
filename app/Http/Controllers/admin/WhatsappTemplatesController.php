@@ -140,10 +140,81 @@ class WhatsappTemplatesController extends Controller
     }
 
     /**
-     * Fetch all templates from WhatsApp Cloud API (Meta)
+     * Fetch all templates from active WhatsApp provider (Saei or Meta Cloud)
      * and sync them into local DB for purpose mapping.
      */
     public function fetchFromCloud()
+    {
+        $provider = Settings::getValue('whatsapp_provider') ?: env('WHATSAPP_PROVIDER', 'saei');
+
+        if ($provider === 'saei') {
+            return $this->fetchFromSaei();
+        }
+
+        return $this->fetchFromMetaCloud();
+    }
+
+    /**
+     * Fetch all templates from Saei API workspace
+     */
+    protected function fetchFromSaei()
+    {
+        $saeiService = new \App\Services\SaeiWhatsAppService();
+        $templates = $saeiService->getTemplates();
+
+        if (empty($templates)) {
+            $apiKey = Settings::getValue('saei_api_key', env('SAEI_API_KEY'));
+            if (empty($apiKey)) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => __('مفتاح API الخاص بمزود ساعي غير مضبوط في الإعدادات.'),
+                ]);
+            }
+            return response()->json([
+                'status'  => 0,
+                'message' => __('تعذر جلب القوالب من مساحة عمل ساعي (Saei Workspace). تحقق من صحة المفتاح والاتصال.'),
+            ]);
+        }
+
+        $synced = 0;
+        foreach ($templates as $t) {
+            $bodyText = '';
+            foreach ($t['components'] ?? [] as $component) {
+                if (($component['type'] ?? '') === 'BODY') {
+                    $bodyText = $component['text'] ?? '';
+                }
+            }
+
+            $statusApproved = strtolower($t['status'] ?? '') === 'approved';
+
+            WhatsappTemplate::updateOrCreate(
+                [
+                    'template_name' => $t['name'],
+                    'language'      => $t['language'] ?? 'ar',
+                ],
+                [
+                    'purpose'       => $t['name'],
+                    'status'        => $statusApproved ? 1 : 0,
+                    'category'      => $t['category'] ?? null,
+                    'meta_status'   => strtoupper($t['status'] ?? 'APPROVED'),
+                    'body_text'     => $bodyText,
+                    'components'    => json_encode($t['components'] ?? []),
+                ]
+            );
+            $synced++;
+        }
+
+        return response()->json([
+            'status'  => 1,
+            'message' => __('تمت مزامنة :count قوالب بنجاح من مساحة عمل ساعي (Saei)', ['count' => $synced]),
+            'count'   => $synced,
+        ]);
+    }
+
+    /**
+     * Fetch all templates from WhatsApp Cloud API (Meta)
+     */
+    protected function fetchFromMetaCloud()
     {
         $wabaId   = Settings::getValue('whatsapp_cloud_waba_id', env('WHATSAPP_CLOUD_WABA_ID'));
         $token    = Settings::getValue('whatsapp_cloud_token', env('WHATSAPP_CLOUD_TOKEN'));
@@ -159,7 +230,12 @@ class WhatsappTemplatesController extends Controller
         $url = "https://graph.facebook.com/{$apiVer}/{$wabaId}/message_templates";
 
         try {
-            $response = Http::withToken($token)->get($url, [
+            $client = Http::withToken($token)->timeout(15);
+            if (app()->environment('local') || !ini_get('curl.cainfo')) {
+                $client = $client->withoutVerifying();
+            }
+
+            $response = $client->get($url, [
                 'fields' => 'name,status,language,components,category',
                 'limit'  => 100,
             ]);
@@ -187,10 +263,12 @@ class WhatsappTemplatesController extends Controller
                 }
 
                 WhatsappTemplate::updateOrCreate(
-                    ['template_name' => $mt['name']],
+                    [
+                        'template_name' => $mt['name'],
+                        'language'      => $mt['language'],
+                    ],
                     [
                         'purpose'       => $mt['name'],
-                        'language'      => $mt['language'],
                         'status'        => $mt['status'] === 'APPROVED' ? 1 : 0,
                         'category'      => $mt['category'] ?? null,
                         'meta_status'   => $mt['status'] ?? null,

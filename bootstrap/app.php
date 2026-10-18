@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
       $middleware->encryptCookies(except: [
         'direction',
       ]);
+      $middleware->append(\App\Http\Middleware\SecurityHeadersMiddleware::class);
       $middleware->web(LocaleMiddleware::class);
       $middleware->alias([
         'guard.strict' => \App\Http\Middleware\EnsureUserIsAuthenticatedWithCorrectGuard::class,

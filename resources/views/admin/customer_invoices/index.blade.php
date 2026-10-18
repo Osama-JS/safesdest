@@ -269,24 +269,24 @@
             </div>
         </div>
 
-        <!-- 4. Upcoming Invoices (لم يأت وقت استحقاقها بعد) -->
+        <!-- 4. Remaining Amounts (المبالغ المتبقية غير المدفوعة) -->
         <div class="col-sm-6 col-lg-4 col-xl">
-            <div class="card card-stat-pulse pulse-info h-100 card-filter-quick" data-due-status="upcoming" title="{{ __('Click to filter upcoming invoices') }}">
+            <div class="card card-stat-pulse pulse-info h-100 border-info border-opacity-25 card-filter-quick" data-due-status="unpaid_balance" data-status="all" title="{{ __('Click to filter unpaid and remaining invoices') }}">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-start justify-content-between">
                         <div>
                             <span class="text-info fw-bold d-block small mb-1">
-                                <i class="ti ti-calendar-time me-1"></i> {{ __('Upcoming Invoices') }}
+                                <i class="ti ti-wallet me-1"></i> {{ __('Remaining Amounts') }}
                             </span>
-                            <h5 class="mb-1 text-info fw-bold" id="statUpcomingAmount">
-                                {{ number_format($stats['upcoming_amount'], 2) }} <small class="fs-tiny">ر.س</small>
+                            <h5 class="mb-1 text-info fw-bold" id="statRemainingAmount">
+                                {{ number_format($stats['remaining_amount'] ?? $stats['total_remaining'] ?? 0, 2) }} <small class="fs-tiny">ر.س</small>
                             </h5>
                             <small class="text-muted">
-                                <span class="badge bg-label-info font-monospace" id="statUpcomingCount">{{ $stats['upcoming_count'] }}</span> {{ __('Due in future') }}
+                                <span class="badge bg-label-info font-monospace" id="statRemainingCount">{{ $stats['remaining_count'] ?? 0 }}</span> {{ __('Unpaid balance') }}
                             </small>
                         </div>
                         <span class="badge bg-label-info rounded p-2">
-                            <i class="ti ti-calendar-event ti-md"></i>
+                            <i class="ti ti-coins ti-md"></i>
                         </span>
                     </div>
                 </div>
@@ -386,6 +386,7 @@
                         <option value="all">{{ __('All Maturity Statuses') }}</option>
                         <option value="overdue" class="text-danger fw-bold">⚠️ {{ __('Overdue Invoices (Past Due)') }}</option>
                         <option value="expiring_soon" class="text-warning fw-bold">⏳ {{ __('Expiring Soon (Next 7 Days)') }}</option>
+                        <option value="unpaid_balance" class="text-info fw-bold">💰 {{ __('Remaining / Unpaid Invoices') }}</option>
                         <option value="upcoming" class="text-info">📅 {{ __('Upcoming Invoices (Not Due Yet)') }}</option>
                         <option value="due_today" class="text-warning">🔔 {{ __('Due Today') }}</option>
                         <option value="settled" class="text-success">✅ {{ __('Paid & Closed Invoices') }}</option>
@@ -533,19 +534,27 @@
                         </div>
                     </div>
 
-                    <!-- Notes & Attachment -->
+                    <!-- Notes & Attachment & Payment Receipt -->
                     <div class="row g-3 mb-3">
-                        <div class="col-md-8" id="viewInvoiceNotesBox" style="display: none;">
-                            <div class="p-2 border rounded">
+                        <div class="col-md-6" id="viewInvoiceNotesBox" style="display: none;">
+                            <div class="p-2 border rounded h-100">
                                 <small class="text-muted fw-bold d-block">{{ __('Notes') }}:</small>
                                 <span id="viewInvoiceNotes" class="text-secondary" style="white-space: pre-line;"></span>
                             </div>
                         </div>
-                        <div class="col-md-4" id="viewInvoiceAttachmentBox" style="display: none;">
-                            <div class="p-2 border rounded text-center">
+                        <div class="col-md-3" id="viewInvoiceAttachmentBox" style="display: none;">
+                            <div class="p-2 border rounded text-center h-100 d-flex flex-column justify-content-center align-items-center">
                                 <small class="text-muted fw-bold d-block mb-1">{{ __('Attachment File') }}:</small>
                                 <button type="button" class="btn btn-sm btn-outline-primary" id="viewInvoiceAttachmentBtn">
                                     <i class="ti ti-eye me-1"></i> {{ __('View Attachment') }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="viewInvoicePaymentReceiptBox" style="display: none;">
+                            <div class="p-2 border rounded text-center border-success bg-success bg-opacity-10 h-100 d-flex flex-column justify-content-center align-items-center">
+                                <small class="text-success fw-bold d-block mb-1"><i class="ti ti-receipt me-1"></i>{{ __('Payment Receipt') }}:</small>
+                                <button type="button" class="btn btn-sm btn-success" id="viewInvoicePaymentReceiptBtn">
+                                    <i class="ti ti-eye me-1"></i> {{ __('View Payment Receipt') }}
                                 </button>
                             </div>
                         </div>
@@ -605,7 +614,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('Close') }}"></button>
                 </div>
-                <form id="formPayCustomerInvoice">
+                <form id="formPayCustomerInvoice" enctype="multipart/form-data">
                     @csrf
                     <input type="hidden" id="pay_invoice_id">
 
@@ -636,6 +645,13 @@
                         <div class="mb-3">
                             <label class="form-label" for="pay_date">{{ __('Payment Date') }}</label>
                             <input type="date" class="form-control" id="pay_date" name="payment_date" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" for="pay_receipt">
+                                <i class="ti ti-receipt me-1 text-success"></i> {{ __('Payment Receipt File') }}
+                            </label>
+                            <input type="file" class="form-control" id="pay_receipt" name="receipt" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                            <small class="text-muted d-block mt-1">{{ __('Upload payment proof or bank transfer receipt (PDF, JPG, PNG)') }}</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="pay_notes">{{ __('Payment Notes / Reference') }}</label>

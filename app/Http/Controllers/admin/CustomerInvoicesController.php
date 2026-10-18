@@ -81,7 +81,13 @@ class CustomerInvoicesController extends Controller
         $totalCount       = (clone $baseQuery)->count();
         $totalAmount      = (float) (clone $baseQuery)->sum('total_amount');
         $totalPaid        = (float) (clone $baseQuery)->sum('paid_amount');
-        $totalRemaining   = (float) (clone $baseQuery)->sum('remaining_amount');
+
+        // المبالغ المتبقية (الفواتير غير المسددة أو المسددة جزئياً والتي لم تلغَ)
+        $remainingQuery = (clone $baseQuery)
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->where('remaining_amount', '>', 0);
+        $totalRemaining      = (float) $remainingQuery->sum('remaining_amount');
+        $totalRemainingCount = $remainingQuery->count();
 
         // 2. الفواتير المتأخرة عن موعد الاستحقاق (لم تسدد بالكامل وتاريخ استحقاقها ماضٍ)
         $overdueQuery = (clone $baseQuery)
@@ -134,6 +140,8 @@ class CustomerInvoicesController extends Controller
             'total_amount'         => $totalAmount,
             'total_paid'           => $totalPaid,
             'total_remaining'      => $totalRemaining,
+            'remaining_amount'     => $totalRemaining,
+            'remaining_count'      => $totalRemainingCount,
             'overdue_count'        => $overdueCount,
             'overdue_amount'       => $overdueAmount,
             'expiring_soon_count'  => $expiringSoonCount,
@@ -193,6 +201,9 @@ class CustomerInvoicesController extends Controller
                       ->whereDate('due_date', $todayStr);
             } elseif ($request->due_status === 'settled') {
                 $query->where('status', 'paid');
+            } elseif ($request->due_status === 'unpaid_balance' || $request->due_status === 'remaining') {
+                $query->whereNotIn('status', ['paid', 'cancelled'])
+                      ->where('remaining_amount', '>', 0);
             }
         }
 
@@ -260,6 +271,10 @@ class CustomerInvoicesController extends Controller
             if ($inv->attachment_file) {
                 $attachmentUrl = asset('storage/' . $inv->attachment_file);
             }
+            $paymentReceiptUrl = null;
+            if ($inv->payment_receipt) {
+                $paymentReceiptUrl = asset('storage/' . $inv->payment_receipt);
+            }
 
             // تحديد مؤشر وحالة الاستحقاق الذكية
             $dueDate = $inv->due_date ? Carbon::parse($inv->due_date)->startOfDay() : null;
@@ -320,6 +335,7 @@ class CustomerInvoicesController extends Controller
                 'items_count'             => $inv->items->count(),
                 'status'                  => $inv->status,
                 'attachment_url'          => $attachmentUrl,
+                'payment_receipt_url'     => $paymentReceiptUrl,
                 'created_by_name'         => $inv->creator ? $inv->creator->name : '-',
                 'approved_by_name'        => $inv->approver ? $inv->approver->name : null,
                 'approved_at'             => $inv->approved_at ? $inv->approved_at->format('Y-m-d H:i') : null,
@@ -383,6 +399,10 @@ class CustomerInvoicesController extends Controller
             if ($inv->attachment_file) {
                 $attachmentUrl = asset('storage/' . $inv->attachment_file);
             }
+            $paymentReceiptUrl = null;
+            if ($inv->payment_receipt) {
+                $paymentReceiptUrl = asset('storage/' . $inv->payment_receipt);
+            }
 
             $data[] = [
                 'id'                      => $inv->id,
@@ -397,6 +417,7 @@ class CustomerInvoicesController extends Controller
                 'items_count'             => $inv->items->count(),
                 'status'                  => $inv->status,
                 'attachment_url'          => $attachmentUrl,
+                'payment_receipt_url'     => $paymentReceiptUrl,
                 'created_by_name'         => $inv->creator ? $inv->creator->name : '-',
                 'approved_by_name'        => $inv->approver ? $inv->approver->name : null,
                 'approved_at'             => $inv->approved_at ? $inv->approved_at->format('Y-m-d H:i') : null,
@@ -552,6 +573,7 @@ class CustomerInvoicesController extends Controller
                 'can_force_edit'          => $user->can('force_edit_customer_invoices') && $invoice->status === 'approved',
                 'uninvoiced_transactions' => $uninvoicedFormatted,
                 'attachment_url'          => $invoice->attachment_file ? asset('storage/' . $invoice->attachment_file) : null,
+                'payment_receipt_url'     => $invoice->payment_receipt ? asset('storage/' . $invoice->payment_receipt) : null,
             ]);
         } catch (Exception $e) {
             return response()->json(['status' => 0, 'error' => $e->getMessage()], 404);
@@ -665,17 +687,22 @@ class CustomerInvoicesController extends Controller
         }
 
         $request->validate([
-            'amount'       => 'required|numeric|min:0.01',
-            'payment_date' => 'nullable|date',
-            'notes'        => 'nullable|string|max:500',
+            'amount'          => 'required|numeric|min:0.01',
+            'payment_date'    => 'nullable|date',
+            'notes'           => 'nullable|string|max:500',
+            'receipt'         => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'payment_receipt' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
         ]);
+
+        $receiptFile = $request->file('receipt') ?? $request->file('payment_receipt');
 
         try {
             $paid = $this->invoiceService->markAsPaid(
                 $invoice,
                 (float) $request->amount,
                 $request->payment_date,
-                $request->notes
+                $request->notes,
+                $receiptFile
             );
 
             return response()->json([

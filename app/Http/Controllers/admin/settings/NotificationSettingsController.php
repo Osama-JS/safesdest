@@ -25,8 +25,16 @@ class NotificationSettingsController extends Controller
             ->get()
             ->groupBy('category');
 
-        $roles = Role::where('guard_name', 'web')->get();
-        $users = User::where('status', 'active')->select('id', 'name', 'email')->get();
+        $roles = Role::where('guard_name', 'web')
+            ->whereNotIn('name', ['Investor', 'investor'])
+            ->get();
+
+        $users = User::where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('investor')->orWhere('investor', false);
+            })
+            ->select('id', 'name', 'email')
+            ->get();
 
         return view('admin.settings.notifications.index', compact('settings', 'roles', 'users'));
     }

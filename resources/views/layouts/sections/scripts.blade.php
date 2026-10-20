@@ -22,12 +22,11 @@
 @yield('page-script')
 <!-- END: Page JS-->
 
-@if(auth()->check())
+@if(auth()->check() && empty(auth()->user()->investor))
     @vite(['resources/js/admin/notifications.js'])
     @if(auth()->user()->can('view_whatsapp_chat'))
         @vite(['resources/js/admin/whatsapp-floating-chat.js'])
     @endif
-@endif
 
 <script>
     async function subscribeForPush() {
@@ -67,6 +66,7 @@
         return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
     }
 </script>
+@endif
 
 @stack('modals')
 @livewireScripts

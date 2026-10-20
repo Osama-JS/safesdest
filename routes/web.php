@@ -247,6 +247,13 @@ Route::middleware('rate.limit')->group(function () {
 
         Route::middleware(['guard.strict:web'])->group(function () {
             Route::post('/push-subscribe', function (Request $request) {
+                if (!empty($request->user()->investor)) {
+                    if (method_exists($request->user(), 'pushSubscriptions')) {
+                        $request->user()->pushSubscriptions()->delete();
+                    }
+                    return response()->json(['status' => 'skipped', 'message' => 'Investors do not subscribe to admin notifications']);
+                }
+
                 $request->user()->updatePushSubscription(
                     $request->endpoint,
                     $request->keys['p256dh'],

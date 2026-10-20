@@ -42,7 +42,11 @@ class AdminNotificationSetting extends Model
         $userIds = collect($this->target_user_ids ?? [])->filter();
         $roles = collect($this->target_roles ?? [])->filter();
 
-        $query = User::where('status', 'active');
+        // Ensure investors are strictly excluded from admin notifications
+        $query = User::where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('investor')->orWhere('investor', false);
+            });
 
         if ($userIds->isNotEmpty() || $roles->isNotEmpty()) {
             $query->where(function ($q) use ($userIds, $roles) {

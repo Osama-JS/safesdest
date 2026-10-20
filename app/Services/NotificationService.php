@@ -55,6 +55,11 @@ class NotificationService
             // 2. Web Push (Browser) - specifically for User/Customer/Driver who might have subscriptions
             try {
                 if ($recipient instanceof \App\Models\User || $type === 'user') {
+                    // Strictly exclude investors from operational task and admin push notifications
+                    if (!empty($recipient->investor)) {
+                        continue;
+                    }
+
                     $recipient->notify(new \App\Notifications\GeneralPushNotification([
                         'title' => $title,
                         'body' => $body,
@@ -200,7 +205,7 @@ class NotificationService
             foreach ($teamUsers as $tu) {
                 try {
                     $user = $tu->user;
-                    if ($user) {
+                    if ($user && empty($user->investor)) {
                         $user->notify(new \App\Notifications\TeamActivityNotification([
                             'title' => $title,
                             'body' => $body,

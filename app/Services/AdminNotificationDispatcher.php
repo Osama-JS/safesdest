@@ -103,12 +103,19 @@ class AdminNotificationDispatcher
     ): void {
         try {
             $recipients = $setting ? $setting->getRecipientUsers() : User::where('status', 'active')
+                ->where(function ($q) {
+                    $q->whereNull('investor')->orWhere('investor', false);
+                })
                 ->whereHas('roles', fn($q) => $q->whereIn('name', ['Owner', 'Admin']))
                 ->get();
 
             if ($recipients->isEmpty()) {
-                // Absolute fallback to first active user or ID 1
-                $fallbackUser = User::where('status', 'active')->first();
+                // Absolute fallback to first active admin user
+                $fallbackUser = User::where('status', 'active')
+                    ->where(function ($q) {
+                        $q->whereNull('investor')->orWhere('investor', false);
+                    })
+                    ->first();
                 if ($fallbackUser) {
                     $recipients = collect([$fallbackUser]);
                 }
@@ -127,6 +134,9 @@ class AdminNotificationDispatcher
                 ]);
 
                 foreach ($recipients as $user) {
+                    if (!empty($user->investor)) {
+                        continue;
+                    }
                     Notification_Users::create([
                         'notification_id' => $notification->id,
                         'user_id'         => $user->id,
@@ -197,6 +207,9 @@ class AdminNotificationDispatcher
             $recipients = $setting ? $setting->getRecipientUsers() : collect();
 
             foreach ($recipients as $user) {
+                if (!empty($user->investor)) {
+                    continue;
+                }
                 if (method_exists($user, 'pushSubscriptions') && $user->pushSubscriptions()->exists()) {
                     $user->notify(new GeneralPushNotification([
                         'title' => $title,

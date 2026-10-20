@@ -27,11 +27,10 @@ class GeneralPushNotification extends Notification implements ShouldQueue
 
     public function toWebPush($notifiable, $notification)
     {
-        return (new WebPushMessage())
+        $message = (new WebPushMessage())
             ->title($this->data['title'] ?? 'إشعار جديد')
             ->body($this->data['body'] ?? 'لديك رسالة جديدة')
             ->icon($this->data['icon'] ?? '/icon.png')
-            ->image($this->data['image'] ?? null)
             ->action('عرض', 'open_url')
             ->data([
                 'url' => $this->data['url'] ?? '/',
@@ -39,5 +38,11 @@ class GeneralPushNotification extends Notification implements ShouldQueue
             ])
             ->vibrate([200, 100, 200])
             ->requireInteraction();
+
+        if (!empty($this->data['image'])) {
+            $message->image($this->data['image']);
+        }
+
+        return $message;
     }
 }

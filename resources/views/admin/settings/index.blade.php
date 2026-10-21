@@ -279,6 +279,7 @@
                 $saeiOtpEnabled = ($settings['saei_otp_enabled']['value'] ?? '1') == '1';
                 $saeiSimulation = ($settings['saei_simulation']['value'] ?? '0') == '1';
                 $saeiApiKey = $settings['saei_api_key']['value'] ?? env('SAEI_API_KEY', '');
+                $saeiOtpApiKey = $settings['saei_otp_api_key']['value'] ?? env('SAEI_OTP_API_KEY', $saeiApiKey);
                 $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1');
                 $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '+966557507505');
                 $saeiTemplateId = $settings['saei_template_id']['value'] ?? env('SAEI_TEMPLATE_ID', '77');
@@ -410,9 +411,9 @@
                         </h6>
 
                         <div class="row g-3 mb-4">
-                            <!-- Saei API Key -->
+                            <!-- Saei Messages API Key -->
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">{{ __('مفتاح الـ API السري لمنصة ساعي (Saei API Key)') }} <span class="text-danger">*</span></label>
+                                <label class="form-label fw-bold">{{ __('مفتاح ساعي للرسائل والمحادثات (Messages API Key)') }} <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <input type="password" id="saei_api_key" name="saei_api_key" class="form-control font-monospace"
                                         value="{{ $saeiApiKey }}" placeholder="sk_live_...">
@@ -420,7 +421,20 @@
                                         <i class="ti ti-eye" id="saei_api_key_icon"></i>
                                     </button>
                                 </div>
-                                <small class="text-muted">{{ __('المفتاح السري المستخرج من لوحة تحكم منصة ساعي (saei.automize.sa).') }}</small>
+                                <small class="text-muted">{{ __('المفتاح العام المعتمد لإرسال واستقبال رسائل ومحادثات الواتساب.') }}</small>
+                            </div>
+
+                            <!-- Saei OTP Verify Secret Key -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ __('مفتاح التحقق السري لـ OTP (Saei OTP Secret Key)') }} <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="saei_otp_api_key" name="saei_otp_api_key" class="form-control font-monospace"
+                                        value="{{ $saeiOtpApiKey }}" placeholder="sk_live_bacSts...">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn_toggle_saei_otp_api_key">
+                                        <i class="ti ti-eye" id="saei_otp_api_key_icon"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">{{ __('المفتاح السري المستخرج من تبويب «التحقق عبر OTP» في لوحة تحكم ساعي.') }}</small>
                             </div>
 
                             <!-- Saei Base URL -->
@@ -1297,6 +1311,22 @@
             });
         }
 
+        // Toggle Saei OTP Key visibility
+        const btnToggleSaeiOtpKey = document.getElementById('btn_toggle_saei_otp_api_key');
+        if (btnToggleSaeiOtpKey) {
+            btnToggleSaeiOtpKey.addEventListener('click', function () {
+                const input = document.getElementById('saei_otp_api_key');
+                const icon = document.getElementById('saei_otp_api_key_icon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'ti ti-eye-off';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'ti ti-eye';
+                }
+            });
+        }
+
         // Toggle Cloud Token visibility
         const btnToggleCloudToken = document.getElementById('btn_toggle_cloud_token');
         if (btnToggleCloudToken) {
@@ -1330,6 +1360,7 @@
                         saei_otp_enabled: document.getElementById('setting_saei_otp_enabled').checked ? '1' : '0',
                         saei_simulation: document.getElementById('setting_saei_simulation').checked ? '1' : '0',
                         saei_api_key: document.getElementById('saei_api_key').value,
+                        saei_otp_api_key: document.getElementById('saei_otp_api_key') ? document.getElementById('saei_otp_api_key').value : '',
                         saei_base_url: document.getElementById('saei_base_url').value,
                         saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
                         saei_template_id: document.getElementById('saei_template_id').value,

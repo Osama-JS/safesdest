@@ -29,7 +29,7 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         // Saei API structure: https://api.saei.automize.sa/v1
         $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1'));
         $this->baseUrl     = self::normalizeBaseUrl($rawUrl);
-        $this->apiKey      = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
+        $this->apiKey      = trim(Settings::getValue('saei_api_key', env('SAEI_API_KEY', '')) ?? '');
         $this->fromPhoneId = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID'));
         $this->simulation  = filter_var(Settings::getValue('saei_simulation', env('SAEI_SIMULATION', false)), FILTER_VALIDATE_BOOLEAN);
     }

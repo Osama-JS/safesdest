@@ -56,7 +56,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
     {
         $rawUrl = Settings::getValue('saei_base_url', env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1'));
         $this->baseUrl        = self::normalizeBaseUrl($rawUrl);
-        $this->apiKey         = Settings::getValue('saei_api_key', env('SAEI_API_KEY', ''));
+        $this->apiKey         = trim(Settings::getValue('saei_api_key', env('SAEI_API_KEY', '')) ?? '');
         $this->fromPhoneId    = Settings::getValue('saei_from_phone_id', env('SAEI_FROM_PHONE_ID', ''));
         $this->templateId     = (int) Settings::getValue('saei_template_id', env('SAEI_TEMPLATE_ID', 0));
         $this->callbackSecret = Settings::getValue('saei_callback_secret', env('SAEI_CALLBACK_SECRET'));

@@ -162,8 +162,8 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                  <a href="${baseUrl}admin/teams/tasks/show/${full.id}" class="btn btn-sm btn-icon  " >
-                    <i class="ti ti-help"></i>
+                  <a href="${baseUrl}admin/task/${full.id}/report" target="_blank" class="btn btn-sm btn-icon" title="${__('download task status report')}">
+                    <i class="ti ti-file"></i>
                   </a>
               </div>`;
           }

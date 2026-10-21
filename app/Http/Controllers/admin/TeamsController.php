@@ -906,6 +906,8 @@ class TeamsController extends Controller
       }
 
       $transformedTasks = $tasks->map(function ($task) {
+        $netPrice = max(0, (float)($task->total_price ?? 0) - (float)($task->commission ?? 0));
+
         return [
           'id' => $task->id,
           'status' => $task->status,
@@ -921,7 +923,7 @@ class TeamsController extends Controller
             'longitude' => $task->delivery->longitude ?? null,
             'address' => $task->delivery->address ?? null,
           ],
-          'total_price' => $task->total_price,
+          'total_price' => number_format($netPrice, 2, '.', ''),
           'created_at' => $task->created_at,
           'additional_data' => $task->additional_data,
         ];

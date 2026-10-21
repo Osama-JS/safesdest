@@ -443,17 +443,17 @@ $(function () {
           render: function (data, type, full, meta) {
             return `
               <div class="d-flex align-items-center gap-2">
-                  <a href="${baseUrl}admin/teams/tasks/show/${full.id}" class="btn btn-sm btn-icon  " >
-                    <i class="ti ti-help"></i>
+                  <a href="${baseUrl}admin/task/${full.id}/report" target="_blank" class="btn btn-sm btn-icon" title="${__('download task status report')}">
+                    <i class="ti ti-file"></i>
                   </a>
                   <div class="dropdown ">
                   <button class="btn btn-sm btn-icon  dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
                     <i class="ti ti-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end " style="z-index:1100">
-                      <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.id}" data-status="${full.status}">Change Status</a></li>
-                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${full.id}" data-name="${full.id}">Add Note</a></li>
-
+                    <li><a href="${baseUrl}admin/task/${full.id}/report" target="_blank" class="dropdown-item task-report" data-id="${full.id}"><i class="ti ti-file me-2"></i>${__('download task status report')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.id}" data-status="${full.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item add-task-note" data-id="${full.id}" data-name="${full.id}"><i class="ti ti-note me-2"></i>${__('Add Note')}</a></li>
                   </ul>
               </div>
               </div>`;

@@ -94,6 +94,8 @@ class SaeiOtpService implements SaeiOtpServiceInterface
     {
         return [
             'Authorization' => "Bearer {$this->apiKey}",
+            'X-Api-Key'     => $this->apiKey,
+            'api-key'       => $this->apiKey,
             'Content-Type'  => 'application/json',
             'Accept'        => 'application/json',
         ];

@@ -70,11 +70,15 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         return $url . '/api/v1';
     }
 
-    public function resolveFromNumber(): string
+    public function resolveFromNumber(): ?string
     {
         $from = trim($this->fromPhoneId ?? '');
-        if (empty($from) || preg_match('/^1[0-9]{13,17}$/', $from)) {
-            return '+966557507505';
+        if (empty($from)) {
+            return null;
+        }
+        // If it's a Meta Cloud numeric ID (pure digits >= 13 chars), it's not a Saei sender
+        if (preg_match('/^1[0-9]{13,17}$/', $from)) {
+            return null;
         }
         if (str_starts_with($from, 'num_') || str_starts_with($from, '+')) {
             return $from;
@@ -139,19 +143,25 @@ class SaeiOtpService implements SaeiOtpServiceInterface
         }
 
         try {
+            $fromNumber = $this->resolveFromNumber();
+            $payload = [
+                'to'          => $phone,
+                'template_id' => $this->templateId,
+            ];
+            if (!empty($fromNumber)) {
+                $payload['from'] = $fromNumber;
+            }
+
             $response = Http::withHeaders($this->headers())
                 ->timeout(15)
-                ->post("{$this->baseUrl}/verify/start", [
-                    'to'          => $phone,
-                    'from'        => $this->resolveFromNumber(),
-                    'template_id' => $this->templateId,
-                ]);
+                ->post("{$this->baseUrl}/verify/start", $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
 
                 Log::info('[SaeiOTP] OTP sent successfully', [
                     'phone'           => $phone,
+                    'from'            => $fromNumber,
                     'verification_id' => $data['verification_id'] ?? null,
                 ]);
 
@@ -165,9 +175,11 @@ class SaeiOtpService implements SaeiOtpServiceInterface
             // خطأ من ساعي
             $error = $response->json();
             Log::warning('[SaeiOTP] sendOtp failed', [
-                'phone'    => $phone,
-                'status'   => $response->status(),
-                'response' => $error,
+                'phone'       => $phone,
+                'from'        => $fromNumber,
+                'template_id' => $this->templateId,
+                'status'      => $response->status(),
+                'response'    => $error,
             ]);
 
             return [

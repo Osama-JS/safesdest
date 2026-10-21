@@ -449,14 +449,15 @@
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">{{ __('رقم أو معرّف هاتف الإرسال في ساعي') }} <span class="text-danger">*</span></label>
                                 <input type="text" id="saei_from_phone_id" name="saei_from_phone_id" class="form-control font-monospace"
-                                    value="{{ $saeiFromPhoneId }}" placeholder="+966557507505" list="saei_numbers_list">
+                                    value="{{ $saeiFromPhoneId }}" placeholder="1289603500892080" list="saei_numbers_list">
                                 <datalist id="saei_numbers_list">
-                                    <option value="+966557507505">شركة الوجهة الآمنة (Safe Destination)</option>
-                                    <option value="+966555723838">شركة Fly vio</option>
+                                    <option value="1289603500892080">+966 55 572 3838 (المعرّف الافتراضي في ساعي)</option>
+                                    <option value="+966557507505">شركة الوجهة الآمنة (+966557507505)</option>
+                                    <option value="+966555723838">شركة Fly vio (+966555723838)</option>
                                     <option value="num_25">معرّف ساعي (num_25)</option>
                                     <option value="num_26">معرّف ساعي (num_26)</option>
                                 </datalist>
-                                <small class="text-muted">{{ __('يقبل رقم واتساب بالصيغة الدولية مثل +966557507505 أو معرّف ساعي مثل num_25') }}</small>
+                                <small class="text-muted">{{ __('معرّف الرقم الظاهر في مثال ساعي (مثل: 1289603500892080) أو رقم الهاتف بالصيغة الدولية.') }}</small>
                             </div>
 
                             <!-- Saei Template ID -->

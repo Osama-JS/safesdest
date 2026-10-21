@@ -73,21 +73,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
     public function resolveFromNumber(): ?string
     {
         $from = trim($this->fromPhoneId ?? '');
-        if (empty($from)) {
-            return null;
-        }
-        // If it's a Meta Cloud numeric ID (pure digits >= 13 chars), it's not a Saei sender
-        if (preg_match('/^1[0-9]{13,17}$/', $from)) {
-            return null;
-        }
-        if (str_starts_with($from, 'num_') || str_starts_with($from, '+')) {
-            return $from;
-        }
-        $cleaned = preg_replace('/[^0-9]/', '', $from);
-        if (str_starts_with($cleaned, '05') && strlen($cleaned) === 10) {
-            return '+966' . substr($cleaned, 1);
-        }
-        return '+' . $cleaned;
+        return !empty($from) ? $from : null;
     }
 
     // ─────────────────────────────────────────────────────────────

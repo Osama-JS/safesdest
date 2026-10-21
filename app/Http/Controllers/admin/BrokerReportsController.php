@@ -16,6 +16,7 @@ class BrokerReportsController extends Controller
     public function __construct(BrokerReportService $brokerReportService)
     {
         $this->brokerReportService = $brokerReportService;
+        $this->middleware('permission:view_reports');
     }
 
     /**

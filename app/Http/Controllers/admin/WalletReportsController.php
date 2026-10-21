@@ -17,11 +17,11 @@ use Exception;
 
 class WalletReportsController extends Controller
 {
-    // public function __construct()
-    // {
-    //     $this->middleware('permission:view_reports', ['only' => ['index', 'show']]);
-    //     $this->middleware('permission:generate_reports', ['only' => ['generateReport']]);
-    // }
+    public function __construct()
+    {
+        $this->middleware('permission:view_reports', ['only' => ['index', 'show']]);
+        $this->middleware('permission:generate_reports|view_reports', ['only' => ['generateReport', 'getWalletPreview', 'getOwnersByType']]);
+    }
 
     /**
      * Display wallet reports page

@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
           UserPaymentRequestPermissionsSeeder::class,
           MtahdPermissionsSeeder::class,
           ForceUpdateTasksPermissionSeeder::class,
+          ActivityLogPermissionSeeder::class,
         ]);
 
         Customer::factory()->count(10)->create();

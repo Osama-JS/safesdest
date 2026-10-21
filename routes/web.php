@@ -374,9 +374,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::delete('/users/delete/{id}', [UsersController::class, 'destroy'])->name('user.delete');
 
                 // Activity Logs Routes
-                Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity_logs');
-                Route::get('/activity-logs/data', [ActivityLogController::class, 'getData'])->name('admin.activity_logs.data');
-                Route::get('/activity-logs/show/{id}', [ActivityLogController::class, 'show'])->name('admin.activity_logs.show');
+                Route::group(['middleware' => ['permission:view_activity_logs']], function () {
+                    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('admin.activity_logs');
+                    Route::get('/activity-logs/data', [ActivityLogController::class, 'getData'])->name('admin.activity_logs.data');
+                    Route::get('/activity-logs/show/{id}', [ActivityLogController::class, 'show'])->name('admin.activity_logs.show');
+                });
 
                 // Investor Management Routes
 
@@ -961,77 +963,77 @@ Route::middleware('rate.limit')->group(function () {
                 // تضمين routes التخليص  الجديدة
                 // require __DIR__ . '/customs_clearance.php';
 
-                // Platform Reports Routes - Simple Test
-                Route::get('reports', function () {
-                    return view('admin.reports.index');
-                })->name('admin.reports.index');
+                // Platform Reports Routes
+                Route::group(['middleware' => ['permission:view_reports']], function () {
+                    Route::get('reports', [PlatformReportsController::class, 'index'])->name('admin.reports.index');
 
-                Route::get('reports/customer-tasks', [PlatformReportsController::class, 'customerReport'])->name('admin.reports.customer-tasks');
-                // Keep the original controller routes for POST requests
-                Route::post('admin/reports/customer-tasks/generate', [PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
-                Route::post('admin/reports/customer-tasks/preview', [PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
+                    Route::get('reports/customer-tasks', [PlatformReportsController::class, 'customerReport'])->name('admin.reports.customer-tasks');
+                    // Keep the original controller routes for POST requests
+                    Route::post('admin/reports/customer-tasks/generate', [PlatformReportsController::class, 'generateCustomerTasksReport'])->name('admin.reports.customer-tasks.generate');
+                    Route::post('admin/reports/customer-tasks/preview', [PlatformReportsController::class, 'getReportPreview'])->name('admin.reports.customer-tasks.preview');
 
-                // Driver Tasks Report Routes
-                Route::get('reports/driver-tasks', [PlatformReportsController::class, 'driverReport'])->name('admin.reports.driver-tasks');
-                Route::post('admin/reports/driver-tasks/generate', [PlatformReportsController::class, 'generateDriverTasksReport'])->name('admin.reports.driver-tasks.generate');
-                Route::post('admin/reports/driver-tasks/preview', [PlatformReportsController::class, 'getDriverTasksPreview'])->name('admin.reports.driver-tasks.preview');
+                    // Driver Tasks Report Routes
+                    Route::get('reports/driver-tasks', [PlatformReportsController::class, 'driverReport'])->name('admin.reports.driver-tasks');
+                    Route::post('admin/reports/driver-tasks/generate', [PlatformReportsController::class, 'generateDriverTasksReport'])->name('admin.reports.driver-tasks.generate');
+                    Route::post('admin/reports/driver-tasks/preview', [PlatformReportsController::class, 'getDriverTasksPreview'])->name('admin.reports.driver-tasks.preview');
 
-                // Team Tasks Report Routes
-                Route::get('reports/team-tasks', function () {
-                    $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
-                    $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
-                    $teams = App\Models\Teams::select('id', 'name')->get();
+                    // Team Tasks Report Routes
+                    Route::get('reports/team-tasks', function () {
+                        $customers = App\Models\Customer::select('id', 'name', 'company_name')->get();
+                        $drivers = App\Models\Driver::with('team:id,name')->select('id', 'name', 'phone', 'team_id')->get();
+                        $teams = App\Models\Teams::select('id', 'name')->get();
 
-                    $taskStatuses = [
-                        'pending' => __('Pending'),
-                        'confirmed' => __('Confirmed'),
-                        'in_progress' => __('In Progress'),
-                        'completed' => __('Completed'),
-                        'canceled' => __('Canceled'),
-                        'refund' => __('Refund')
-                    ];
+                        $taskStatuses = [
+                            'pending' => __('Pending'),
+                            'confirmed' => __('Confirmed'),
+                            'in_progress' => __('In Progress'),
+                            'completed' => __('Completed'),
+                            'canceled' => __('Canceled'),
+                            'refund' => __('Refund')
+                        ];
 
-                    $paymentStatuses = [
-                        'pending' => __('Pending'),
-                        'completed' => __('Completed'),
-                        'waiting' => __('Waiting')
-                    ];
+                        $paymentStatuses = [
+                            'pending' => __('Pending'),
+                            'completed' => __('Completed'),
+                            'waiting' => __('Waiting')
+                        ];
 
-                    $paymentMethods = [
-                        'cash' => 'cash',
-                        'bank_transfer' => 'bank transfer',
-                        'credit_card' => 'credit card',
-                        'wallet' => 'wallet'
-                    ];
+                        $paymentMethods = [
+                            'cash' => 'cash',
+                            'bank_transfer' => 'bank transfer',
+                            'credit_card' => 'credit card',
+                            'wallet' => 'wallet'
+                        ];
 
-                    return view('admin.reports.team-tasks', compact(
-                        'customers',
-                        'drivers',
-                        'teams',
-                        'taskStatuses',
-                        'paymentStatuses',
-                        'paymentMethods'
-                    ));
-                })->name('admin.reports.team-tasks');
+                        return view('admin.reports.team-tasks', compact(
+                            'customers',
+                            'drivers',
+                            'teams',
+                            'taskStatuses',
+                            'paymentStatuses',
+                            'paymentMethods'
+                        ));
+                    })->name('admin.reports.team-tasks');
 
-                Route::post('admin/reports/team-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateTeamTasksReport'])->name('admin.reports.team-tasks.generate');
-                Route::post('admin/reports/team-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getTeamTasksPreview'])->name('admin.reports.team-tasks.preview');
+                    Route::post('admin/reports/team-tasks/generate', [App\Http\Controllers\admin\PlatformReportsController::class, 'generateTeamTasksReport'])->name('admin.reports.team-tasks.generate');
+                    Route::post('admin/reports/team-tasks/preview', [App\Http\Controllers\admin\PlatformReportsController::class, 'getTeamTasksPreview'])->name('admin.reports.team-tasks.preview');
 
-                // Wallet Reports Routes
-                Route::get('reports/wallet', [App\Http\Controllers\admin\WalletReportsController::class, 'index'])->name('admin.reports.wallet.index');
-                Route::post('reports/wallet/preview', [App\Http\Controllers\admin\WalletReportsController::class, 'getWalletPreview'])->name('admin.reports.wallet.preview');
-                Route::post('reports/wallet/generate', [App\Http\Controllers\admin\WalletReportsController::class, 'generateReport'])->name('admin.reports.wallet.generate');
-                Route::post('reports/wallet/get-owners', [App\Http\Controllers\admin\WalletReportsController::class, 'getOwnersByType'])->name('admin.reports.wallet.get-owners');
+                    // Wallet Reports Routes
+                    Route::get('reports/wallet', [App\Http\Controllers\admin\WalletReportsController::class, 'index'])->name('admin.reports.wallet.index');
+                    Route::post('reports/wallet/preview', [App\Http\Controllers\admin\WalletReportsController::class, 'getWalletPreview'])->name('admin.reports.wallet.preview');
+                    Route::post('reports/wallet/generate', [App\Http\Controllers\admin\WalletReportsController::class, 'generateReport'])->name('admin.reports.wallet.generate');
+                    Route::post('reports/wallet/get-owners', [App\Http\Controllers\admin\WalletReportsController::class, 'getOwnersByType'])->name('admin.reports.wallet.get-owners');
 
-                // Statistical Report Routes
-                Route::get('reports/statistical', [App\Http\Controllers\admin\StatisticalReportController::class, 'index'])->name('admin.reports.statistical');
-                Route::post('reports/statistical/generate', [App\Http\Controllers\admin\StatisticalReportController::class, 'generateReport'])->name('admin.reports.statistical.generate');
-                Route::post('reports/statistical/preview', [App\Http\Controllers\admin\StatisticalReportController::class, 'previewReport'])->name('admin.reports.statistical.preview');
+                    // Statistical Report Routes
+                    Route::get('reports/statistical', [App\Http\Controllers\admin\StatisticalReportController::class, 'index'])->name('admin.reports.statistical');
+                    Route::post('reports/statistical/generate', [App\Http\Controllers\admin\StatisticalReportController::class, 'generateReport'])->name('admin.reports.statistical.generate');
+                    Route::post('reports/statistical/preview', [App\Http\Controllers\admin\StatisticalReportController::class, 'previewReport'])->name('admin.reports.statistical.preview');
 
-                // Broker Reports Routes
-                Route::get('reports/brokers', [App\Http\Controllers\admin\BrokerReportsController::class, 'index'])->name('admin.reports.brokers');
-                Route::post('reports/brokers/preview', [App\Http\Controllers\admin\BrokerReportsController::class, 'preview'])->name('admin.reports.brokers.preview');
-                Route::post('reports/brokers/generate', [App\Http\Controllers\admin\BrokerReportsController::class, 'generate'])->name('admin.reports.brokers.generate');
+                    // Broker Reports Routes
+                    Route::get('reports/brokers', [App\Http\Controllers\admin\BrokerReportsController::class, 'index'])->name('admin.reports.brokers');
+                    Route::post('reports/brokers/preview', [App\Http\Controllers\admin\BrokerReportsController::class, 'preview'])->name('admin.reports.brokers.preview');
+                    Route::post('reports/brokers/generate', [App\Http\Controllers\admin\BrokerReportsController::class, 'generate'])->name('admin.reports.brokers.generate');
+                });
 
                 // Sales Routes
                 Route::group(['prefix' => 'sales'], function () {

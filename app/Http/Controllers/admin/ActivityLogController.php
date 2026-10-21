@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Log;
 
 class ActivityLogController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_activity_logs');
+    }
+
     public function index()
     {
         Log::info('Activity logs index accessed by user ID: ' . (auth()->id() ?? 'guest'));

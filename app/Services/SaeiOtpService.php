@@ -67,7 +67,7 @@ class SaeiOtpService implements SaeiOtpServiceInterface
     {
         $url = rtrim(trim($url), '/');
         $url = preg_replace('#/(api/v1|api|v1)$#', '', $url);
-        return $url . '/v1';
+        return $url . '/api/v1';
     }
 
     public function resolveFromNumber(): string
@@ -331,20 +331,23 @@ class SaeiOtpService implements SaeiOtpServiceInterface
     // ─────────────────────────────────────────────────────────────
 
     /**
-     * تحويل رقم الهاتف إلى صيغة E.164 (مثال: +966XXXXXXXXX)
+     * تحويل رقم الهاتف إلى صيغة E.164 نظيفة وموحدة (مثال: +966XXXXXXXXX)
      *
      * @param  string  $phone
      * @return string
      */
     protected function formatPhone(string $phone): string
     {
-        $phone = preg_replace('/\s+/', '', $phone);
-
-        // أضف + إذا لم يكن موجوداً
-        if (!str_starts_with($phone, '+')) {
-            $phone = '+' . ltrim($phone, '0');
+        $cleaned = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($cleaned, '00')) {
+            $cleaned = substr($cleaned, 2);
+        }
+        if (str_starts_with($cleaned, '05') && strlen($cleaned) === 10) {
+            $cleaned = '966' . substr($cleaned, 1);
+        } elseif (str_starts_with($cleaned, '5') && strlen($cleaned) === 9) {
+            $cleaned = '966' . $cleaned;
         }
 
-        return $phone;
+        return '+' . $cleaned;
     }
 }

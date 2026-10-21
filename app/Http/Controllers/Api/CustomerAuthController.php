@@ -69,9 +69,15 @@ class CustomerAuthController extends Controller
 
         $phone     = $request->phone;
         $phoneCode = $request->phone_code;
-        $cleanPhone = ltrim($phone, '0');
-        $fullPhone = str_replace('+', '', $phoneCode) . $cleanPhone;
-        $e164Phone = '+' . $fullPhone;
+
+        $cleanCode  = preg_replace('/[^0-9]/', '', $phoneCode) ?: '966';
+        $digitsOnly = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($digitsOnly, $cleanCode)) {
+            $digitsOnly = substr($digitsOnly, strlen($cleanCode));
+        }
+        $cleanPhone = ltrim($digitsOnly, '0');
+        $fullPhone  = $cleanCode . $cleanPhone;
+        $e164Phone  = '+' . $fullPhone;
         $lang      = $request->input('language', 'ar');
 
         // Rate limiting: طلب واحد كل دقيقة لنفس الرقم

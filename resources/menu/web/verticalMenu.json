@@ -183,7 +183,8 @@
             "name": "Platform Reports",
             "icon": "menu-icon tf-icons ti ti-report",
             "slug": "reports.reports",
-            "isactive": "reports-isactive"
+            "isactive": "reports-isactive",
+            "permission": "view_reports"
         },
         {
             "url": "admin/settings/statistics",
@@ -365,7 +366,8 @@
             "url": "admin/activity-logs",
             "name": "Activity Logs",
             "icon": "menu-icon tf-icons ti ti-activity",
-            "slug": "admin.activity_logs"
+            "slug": "admin.activity_logs",
+            "permission": "view_activity_logs"
         }
     ]
 }

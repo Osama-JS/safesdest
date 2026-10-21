@@ -69,21 +69,17 @@ class ReportsPermissionsSeeder extends Seeder
                 continue;
             }
 
-            // Check if permission already exists
-            $existingPermission = Permission::where('name', $permission['name'])->first();
-            if ($existingPermission) {
-                continue;
-            }
-
-            $per = Permission::create([
-                'name' => $permission['name'],
-                'd_name' => $permission['d_name'],
-                'guard_name' => 'web',
-                'type_id' => $type->id
-            ]);
+            $per = Permission::firstOrCreate(
+                ['name' => $permission['name'], 'guard_name' => 'web'],
+                [
+                    'd_name' => $permission['d_name'],
+                    'guard_name' => 'web',
+                    'type_id' => $type->id
+                ]
+            );
 
             // Give permission to Owner role
-            if ($role) {
+            if ($role && !$role->hasPermissionTo($per)) {
                 $role->givePermissionTo($per);
             }
         }

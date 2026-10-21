@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\DB;
 
 class StatisticalReportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view_reports');
+    }
+
     public function index()
     {
         $customers = Customer::select('id', 'name', 'company_name')->get();

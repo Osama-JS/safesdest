@@ -26,24 +26,21 @@ class PlatformReportsController extends Controller
     public function __construct(ReportService $reportService)
     {
         $this->reportService = $reportService;
-        // $this->middleware('permission:view_reports', ['only' => ['index']]);
-        // $this->middleware('permission:generate_reports', ['only' => [
-        //   'customerReport',
-        //   'generateCustomerTasksReport',
-        //   'exportToExcel',
-        //   'exportToPdf',
-        //   'getReportPreview',
-        //   'driverReport',
-        //   'generateDriverTasksReport',
-        //   'exportDriverTasksToExcel',
-        //   'exportDriverTasksToPdf',
-        //   'getDriverTasksPreview',
-        //   'teamReport',
-        //   'generateTeamTasksReport',
-        //   'exportTeamTasksToExcel',
-        //   'exportTeamTasksToPdf',
-        //   'getTeamTasksPreview'
-        // ]]);
+        $this->middleware('permission:view_reports', ['only' => ['index', 'customerReport', 'driverReport', 'teamReport']]);
+        $this->middleware('permission:generate_reports|view_reports', ['only' => [
+          'generateCustomerTasksReport',
+          'exportToExcel',
+          'exportToPdf',
+          'getReportPreview',
+          'generateDriverTasksReport',
+          'exportDriverTasksToExcel',
+          'exportDriverTasksToPdf',
+          'getDriverTasksPreview',
+          'generateTeamTasksReport',
+          'exportTeamTasksToExcel',
+          'exportTeamTasksToPdf',
+          'getTeamTasksPreview'
+        ]]);
 
     }
 

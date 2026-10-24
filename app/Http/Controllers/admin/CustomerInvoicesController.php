@@ -77,10 +77,11 @@ class CustomerInvoicesController extends Controller
 
         $today = Carbon::today()->toDateString();
 
-        // 1. إجماليات عامة
-        $totalCount       = (clone $baseQuery)->count();
-        $totalAmount      = (float) (clone $baseQuery)->sum('total_amount');
-        $totalPaid        = (float) (clone $baseQuery)->sum('paid_amount');
+        // 1. إجماليات عامة (يتم استبعاد الفواتير الملغاة تماماً لمنع احتساب مبالغها في الإجمالي وتجنب ارتباك المحاسبين)
+        $activeInvoicesQuery = (clone $baseQuery)->where('status', '!=', 'cancelled');
+        $totalCount          = (clone $activeInvoicesQuery)->count();
+        $totalAmount         = (float) (clone $activeInvoicesQuery)->sum('total_amount');
+        $totalPaid           = (float) (clone $activeInvoicesQuery)->sum('paid_amount');
 
         // المبالغ المتبقية (الفواتير غير المسددة أو المسددة جزئياً والتي لم تلغَ)
         $remainingQuery = (clone $baseQuery)
@@ -132,8 +133,10 @@ class CustomerInvoicesController extends Controller
         // 8. الفواتير غير المعتمدة (بانتظار الاعتماد)
         $unpaidCount = (clone $baseQuery)->where('status', 'unpaid')->count();
 
-        // 9. الفواتير الملغاة
-        $cancelledCount = (clone $baseQuery)->where('status', 'cancelled')->count();
+        // 9. الفواتير الملغاة (إحصائيات منفصلة خاصة بها لا تدخل في الإجمالي العام)
+        $cancelledQuery  = (clone $baseQuery)->where('status', 'cancelled');
+        $cancelledCount  = (clone $cancelledQuery)->count();
+        $cancelledAmount = (float) (clone $cancelledQuery)->sum('total_amount');
 
         return [
             'total_count'          => $totalCount,
@@ -156,6 +159,7 @@ class CustomerInvoicesController extends Controller
             'approved_amount'      => $approvedAmount,
             'unpaid_count'         => $unpaidCount,
             'cancelled_count'      => $cancelledCount,
+            'cancelled_amount'     => $cancelledAmount,
         ];
     }
 

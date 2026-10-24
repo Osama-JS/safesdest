@@ -349,6 +349,9 @@
                     <button type="button" class="btn btn-xs btn-outline-success rounded-pill btn-filter-quick filter-pill-item" data-status="paid" data-due-status="all">
                         <i class="ti ti-circle-check ti-xs me-1"></i> {{ __('Paid & Closed') }} (<span id="pillPaidCount">{{ $stats['paid_approved_count'] }}</span>)
                     </button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill btn-filter-quick filter-pill-item" data-status="cancelled" data-due-status="all">
+                        <i class="ti ti-x ti-xs me-1"></i> {{ __('Cancelled') }} (<span id="pillCancelledCount">{{ $stats['cancelled_count'] }}</span>)
+                    </button>
                 </div>
             </div>
         </div>

@@ -110,6 +110,7 @@ $(function () {
         $('#pillUnpaidCount').text(s.unpaid_count);
         $('#pillApprovedCount').text(s.approved_count);
         $('#pillPaidCount').text(s.paid_approved_count);
+        $('#pillCancelledCount').text(s.cancelled_count || 0);
       }
     });
   }

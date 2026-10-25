@@ -40,8 +40,9 @@ class CustomersController extends Controller
         $tags = Tag::all();
         $roles = Role::where('guard_name', 'customer')->get();
         $customer_template = Settings::where('key', 'customer_template')->first();
+        $banks = \App\Models\Bank::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.customers.index', compact('templates', 'roles', 'tags', 'customer_template'));
+        return view('admin.customers.index', compact('templates', 'roles', 'tags', 'customer_template', 'banks'));
     }
 
     public function getCustomers()

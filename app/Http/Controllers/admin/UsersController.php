@@ -51,6 +51,8 @@ class UsersController extends Controller
         $customers = Customer::where('status', 'active')->get();
         $user_template = Settings::where('key', 'user_template')->first();
 
+        $banks = \App\Models\Bank::where('is_active', true)->orderBy('name')->get();
+
         return view('admin.users.index', [
           'totalUser' => $userCount,
           'active' => $activeCount,
@@ -60,7 +62,8 @@ class UsersController extends Controller
           'teams' => $teams,
           'templates' => $templates,
           'user_template' => $user_template,
-          'customers' => $customers
+          'customers' => $customers,
+          'banks' => $banks
         ]);
     }
 

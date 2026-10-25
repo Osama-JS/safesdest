@@ -200,41 +200,50 @@ class InvestorPaymentService
 
         try {
             // جلب المهام المغلقة ضمن نطاق تاريخ العقد
-        $tasksQuery = Task::with('ad')
-            ->where('closed', true) // فقط المهام المغلقة والمكتملة
-            ->where(function($q) use ($investor) {
-                // يسمح بالمهام التي لا يوجد لها مضارب (مهام المنصة) 
-                // أو المهام التي مولها نفس المضارب الحالي
-                $q->whereNull('investor_id')
-                  ->orWhere('investor_id', $investor->id);
-            })
-            ->where(function($q) {
-                // المهمة يجب أن تكون لها عمولة (إما في جدول المهام أو الإعلان)
-                $q->where('commission', '>', 0)
-                  ->orWhereHas('ad', fn($sub) => $sub->where('service_commission', '>', 0));
-            })
-            // الاعتماد على تاريخ الإنشاء للمطابقة مع العقد
-            ->where('created_at', '>=', $contract->start_date->startOfDay())
-            ->where(function ($q) use ($contract) {
-                if ($contract->end_date) {
-                    $q->where('created_at', '<=', $contract->end_date->endOfDay());
-                }
-            })
-            // تطبيق فلتر العملاء إذا وجد في العقد
-            ->when(!empty($contract->filter_customer_ids), function($q) use ($contract) {
-                $q->whereIn('customer_id', $contract->filter_customer_ids);
-            })
-            // استثناء المهام التي تم احتساب عمولتها لهذا المضارب مسبقاً ولم يتم عمل Refund لها (صافي العمولة > 0)
-            ->whereNotIn('id', function ($query) use ($personalWallet) {
-                $query->select('task_id')
-                      ->from('user_wallet_transactions')
-                      ->where('user_wallet_id', $personalWallet->id)
-                      ->whereNotNull('task_id')
-                      ->groupBy('task_id')
-                      ->havingRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0");
-            });
+            $tasksQuery = Task::with('ad')
+                ->where('closed', true) // فقط المهام المغلقة والمكتملة
+                ->whereNotIn('status', ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'])
+                ->whereNotIn('payment_status', ['refund', 'canceled'])
+                ->where(function($q) use ($investor) {
+                    // يسمح بالمهام التي لا يوجد لها مضارب (مهام المنصة) 
+                    // أو المهام التي مولها نفس المضارب الحالي
+                    $q->whereNull('investor_id')
+                      ->orWhere('investor_id', $investor->id);
+                })
+                ->where(function($q) {
+                    // المهمة يجب أن تكون لها عمولة (إما في جدول المهام أو الإعلان)
+                    $q->where('commission', '>', 0)
+                      ->orWhereHas('ad', fn($sub) => $sub->where('service_commission', '>', 0));
+                })
+                // الاعتماد على تاريخ الإنشاء للمطابقة مع العقد
+                ->where('created_at', '>=', $contract->start_date->startOfDay())
+                ->where(function ($q) use ($contract) {
+                    if ($contract->end_date) {
+                        $q->where('created_at', '<=', $contract->end_date->endOfDay());
+                    }
+                })
+                // تطبيق فلتر العملاء إذا وجد في العقد
+                ->when(!empty($contract->filter_customer_ids), function($q) use ($contract) {
+                    $q->whereIn('customer_id', $contract->filter_customer_ids);
+                })
+                // استثناء المهام التي تم احتساب عمولتها لهذا المضارب مسبقاً ولديها إيداع سارٍ بعد أي خصم عكسي
+                ->whereNotIn('id', function ($query) use ($personalWallet) {
+                    $query->select('task_id')
+                          ->from('user_wallet_transactions')
+                          ->where('user_wallet_id', $personalWallet->id)
+                          ->whereNotNull('task_id')
+                          ->groupBy('task_id')
+                          ->havingRaw("
+                              COUNT(CASE WHEN transaction_type = 'credit' THEN 1 END) > 0
+                              AND (
+                                  COUNT(CASE WHEN transaction_type = 'debit' THEN 1 END) = 0
+                                  OR MAX(CASE WHEN transaction_type = 'credit' THEN created_at END) >= MAX(CASE WHEN transaction_type = 'debit' THEN created_at END)
+                                  OR SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0
+                              )
+                          ");
+                });
 
-        $tasks = $tasksQuery->get();
+            $tasks = $tasksQuery->get();
 
         if ($tasks->isEmpty()) {
             return ['count' => 0, 'total_commission' => 0.0];
@@ -324,22 +333,31 @@ class InvestorPaymentService
         }
 
         try {
-            // جلب المهام المرتبطة بهذا المستثمر كممول
+            // جلب المهام المرتبطة بهذا المستثمر كممول (باستثناء المهام الملغاة أو المستردة)
             $tasksQuery = Task::with('ad')
                 ->where('investor_id', $investor->id)
+                ->whereNotIn('status', ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'])
+                ->whereNotIn('payment_status', ['refund', 'canceled'])
                 ->where(function($q) {
                     // المهمة يجب أن تكون لها عمولة (إما في جدول المهام أو الإعلان)
                     $q->where('commission', '>', 0)
                       ->orWhereHas('ad', fn($sub) => $sub->where('service_commission', '>', 0));
                 })
-                // استثناء المهام التي تم احتساب عمولتها مسبقاً
+                // استثناء المهام التي تم احتساب عمولتها مسبقاً ولديها إيداع سارٍ بعد أي خصم عكسي
                 ->whereNotIn('id', function ($query) use ($personalWallet) {
                     $query->select('task_id')
                           ->from('user_wallet_transactions')
                           ->where('user_wallet_id', $personalWallet->id)
                           ->whereNotNull('task_id')
                           ->groupBy('task_id')
-                          ->havingRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0");
+                          ->havingRaw("
+                              COUNT(CASE WHEN transaction_type = 'credit' THEN 1 END) > 0
+                              AND (
+                                  COUNT(CASE WHEN transaction_type = 'debit' THEN 1 END) = 0
+                                  OR MAX(CASE WHEN transaction_type = 'credit' THEN created_at END) >= MAX(CASE WHEN transaction_type = 'debit' THEN created_at END)
+                                  OR SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) > 0
+                              )
+                          ");
                 });
 
             $tasks = $tasksQuery->get();

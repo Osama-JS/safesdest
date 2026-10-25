@@ -39,7 +39,8 @@ class TeamsController extends Controller
 
   public function index()
   {
-    return view('admin.teams.index');
+    $banks = \App\Models\Bank::where('is_active', true)->orderBy('name')->get();
+    return view('admin.teams.index', compact('banks'));
   }
 
 

@@ -291,16 +291,9 @@
                                                 <label class="form-label" for="user-bank-name">{{ __('Bank Name') }}</label>
                                                 <select id="user-bank-name" name="bank_name" class="form-select">
                                                     <option value="">{{ __('Select Bank') }}</option>
-                                                    <option value="البنك الأهلي السعودي">البنك الأهلي السعودي (SNB)</option>
-                                                    <option value="مصرف الراجحي">مصرف الراجحي (Al Rajhi)</option>
-                                                    <option value="بنك الرياض">بنك الرياض (Riyad Bank)</option>
-                                                    <option value="البنك السعودي الأول">البنك السعودي الأول (SAB)</option>
-                                                    <option value="بنك البلاد">بنك البلاد (Albilad)</option>
-                                                    <option value="مصرف الإنماء">مصرف الإنماء (Alinma)</option>
-                                                    <option value="البنك السعودي للاستثمار">البنك السعودي للاستثمار (SAIB)</option>
-                                                    <option value="البنك العربي الوطني">البنك العربي الوطني (ANB)</option>
-                                                    <option value="بنك الجزيرة">بنك الجزيرة (Aljazira)</option>
-                                                    <option value="البنك السعودي الفرنسي">البنك السعودي الفرنسي (BSF)</option>
+                                                    @foreach($banks as $bank)
+                                                        <option value="{{ $bank->name }}" data-code="{{ $bank->code }}">{{ $bank->name }}</option>
+                                                    @endforeach
                                                     <option value="other">{{ __('Other') }}</option>
                                                 </select>
                                                 <span class="bank_name-error text-danger text-error"></span>

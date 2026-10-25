@@ -90,12 +90,30 @@ class UserCommissionsController extends Controller
             ) {
                 $taskIds = $tasks->pluck('id')->all();
 
-                // فحص الحركات المسجلة مسبقاً لهذه الدفعة دفعة واحدة في استعلام فردي سريع
-                $existingMap = UserWalletTransaction::whereIn('task_id', $taskIds)
-                    ->where('transaction_type', 'credit')
-                    ->where('description', 'LIKE', '%Commission from Task%')
-                    ->get(['id', 'user_wallet_id', 'task_id'])
+                // فحص الحركات المسجلة مسبقاً لهذه الدفعة مع مراعاة الخصومات العكسية عند إلغاء المهام
+                $existingTransactions = UserWalletTransaction::whereIn('task_id', $taskIds)
+                    ->whereNotNull('task_id')
+                    ->get(['id', 'user_wallet_id', 'task_id', 'transaction_type', 'amount'])
                     ->groupBy(fn($item) => "{$item->user_wallet_id}_{$item->task_id}");
+
+                $activeMap = collect();
+                foreach ($existingTransactions as $key => $txs) {
+                    $credits = $txs->where('transaction_type', 'credit');
+                    if ($credits->isEmpty()) {
+                        continue;
+                    }
+                    $debits = $txs->where('transaction_type', 'debit');
+                    if ($debits->isEmpty()) {
+                        $activeMap->put($key, true);
+                        continue;
+                    }
+                    $netAmount = (float) $credits->sum('amount') - (float) $debits->sum('amount');
+                    $lastCredit = $credits->sortByDesc('id')->first();
+                    $lastDebit = $debits->sortByDesc('id')->first();
+                    if ($netAmount > 0.0001 && $lastCredit && $lastDebit && $lastCredit->id > $lastDebit->id) {
+                        $activeMap->put($key, true);
+                    }
+                }
 
                 foreach ($tasks as $task) {
                     $totalTasksExamined++;
@@ -144,7 +162,7 @@ class UserCommissionsController extends Controller
                         }
 
                         $cacheKey = "{$userWallet->id}_{$task->id}";
-                        if (isset($existingMap[$cacheKey])) {
+                        if ($activeMap->has($cacheKey)) {
                             continue;
                         }
 
@@ -161,7 +179,7 @@ class UserCommissionsController extends Controller
                         ]);
 
                         // حفظ المفتاح في الخريطة لمنع التكرار في نفس الدورة
-                        $existingMap->put($cacheKey, collect([true]));
+                        $activeMap->put($cacheKey, true);
 
                         $totalCommissionsCreated++;
                         $totalAmountDistributed += $amount;
@@ -248,15 +266,11 @@ class UserCommissionsController extends Controller
                     $userWallet = $userWalletController->createWallet($user->id, true);
                 }
 
-                // ✅ التحقق من أن المستخدم لم يستلم عمولته لهذه المهمة من قبل
-                $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $userWallet->id)
-                    ->where('task_id', $task->id)
-                    ->where('transaction_type', 'credit')
-                    ->where('description', 'LIKE', '%Commission from Task%')
-                    ->exists();
+                // ✅ التحقق من أن المستخدم لديه عمولة نشطة وسارية لهذه المهمة (مع مراعاة الخصومات العكسية)
+                $alreadyReceived = UserWalletTransaction::hasActiveCommissionForTask($userWallet->id, $task->id);
 
                 if ($alreadyReceived) {
-                    Log::info("User #{$user->id} has already received commission for task #{$task->id}, skipping...");
+                    Log::info("User #{$user->id} has already received active commission for task #{$task->id}, skipping...");
                     continue; // تجاوز المستخدم ولا تكرر العملية
                 }
 

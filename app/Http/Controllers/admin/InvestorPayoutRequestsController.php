@@ -19,7 +19,7 @@ class InvestorPayoutRequestsController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_payout_requests|view_investors', ['only' => ['index', 'getData', 'show']]);
-        $this->middleware('permission:approve_payout_requests|save_investors', ['only' => ['approve', 'reject']]);
+        $this->middleware('permission:approve_payout_requests|save_investors', ['only' => ['approve', 'reject', 'checkStatus']]);
     }
 
     /**
@@ -34,7 +34,7 @@ class InvestorPayoutRequestsController extends Controller
                   $uq->whereNotNull('user_wallet_id')
                      ->whereHas('user', fn($userQ) => $userQ->where('investor', true));
               });
-        })->where('payout_type', '!=', 'UWP');
+        });
     }
 
     /**
@@ -182,6 +182,12 @@ class InvestorPayoutRequestsController extends Controller
                 // Reject Button
                 $actionsHtml .= "<button type='button' class='btn btn-sm btn-icon btn-label-danger reject-btn' data-id='{$payout->id}' data-reference='{$payout->reference_id}' title='" . __('رفض الطلب') . "'>
                     <i class='ti ti-x'></i>
+                </button>";
+            }
+
+            if (in_array($payout->status, ['pending', 'processing']) && $canApprove) {
+                $actionsHtml .= "<button type='button' class='btn btn-sm btn-icon btn-label-info btn-check-status' data-id='{$payout->id}' data-reference='{$payout->reference_id}' title='" . __('الاستعلام المباشر من البنك') . "'>
+                    <i class='ti ti-refresh'></i>
                 </button>";
             }
 
@@ -448,5 +454,70 @@ class InvestorPayoutRequestsController extends Controller
             'success' => true,
             'message' => __('تم رفض طلب الدفع عبر الـ Payout للمستثمر بنجاح دون أي مساس بمحفظة العمولات.'),
         ]);
+    }
+
+    /**
+     * Check live investor payout status directly from HyperPay API.
+     */
+    public function checkStatus($id)
+    {
+        try {
+            $payout = $this->baseInvestorPayoutQuery()->findOrFail($id);
+
+            if (!$payout->reference_id) {
+                return response()->json(['success' => false, 'message' => __('لا يوجد رقم مرجع صحيح لهذا الطلب.')], 422);
+            }
+
+            $payoutService = app(HyperPayPayoutService::class);
+            $response = $payoutService->checkPayoutStatus($payout->reference_id, $payout->payout_id);
+
+            if (!$response['status'] && !in_array($response['code'] ?? '', ['63000', '90000', '77000'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $response['message'] ?? __('تعذر الاستعلام عن حالة الحوالة لدى بوابة HyperPay.')
+                ], 422);
+            }
+
+            $statusCode = $response['code'] ?? '';
+            $hyperpayStatus = $response['message'] ?? 'Unknown';
+
+            if (in_array($payout->status, ['pending', 'processing'])) {
+                if ($statusCode === '00000' || in_array($statusCode, ['63000', '77000'])) {
+                    $payoutIdVal = $response['data']['payoutId'] ?? ($response['data']['payouts'][0]['payoutId'] ?? $payout->payout_id);
+                    $webhookToken = \App\Models\Settings::getValue('hyperpay_webhook_token');
+                    $webhookPayload = [
+                        'payoutReference' => $payout->reference_id,
+                        'responseCode'    => $statusCode,
+                        'payoutId'        => $payoutIdVal,
+                        'amount'          => $payout->amount,
+                        'responseMessage' => $hyperpayStatus,
+                        'hyperpayDetails' => $response['data'] ?? [],
+                        'token'           => $webhookToken,
+                    ];
+                    $webhookRequest = new \Illuminate\Http\Request();
+                    $webhookRequest->replace($webhookPayload);
+                    app(\App\Http\Controllers\Api\HyperPayWebhookController::class)->handlePayout($webhookRequest);
+
+                    $payout->refresh();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => __('الحالة المحدثة من HyperPay: ') . $hyperpayStatus,
+                'data'    => [
+                    'status'          => $payout->status,
+                    'code'            => $statusCode,
+                    'responseMessage' => $hyperpayStatus,
+                    'raw'             => $response['data'] ?? [],
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("[InvestorPayoutCheckStatus] Failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => __('حدث خطأ أثناء الاستعلام: ') . $e->getMessage(),
+            ], 500);
+        }
     }
 }

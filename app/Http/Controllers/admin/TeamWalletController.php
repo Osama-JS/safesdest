@@ -182,6 +182,24 @@ class TeamWalletController extends Controller
 
             // --- HyperPay Payout Integration for Team Debit Transaction ---
             if ($req->payment_method === 'hyperpay' && $req->type === 'debit' && !$existingTransaction) {
+                // التحقق من عدم وجود أي طلب دفع Payout نشط لم يصادق عليه أو قيد المعالجة للفريق
+                $existingActivePayout = \App\Models\HyperpayPayout::where(function ($q) use ($team, $wallet) {
+                        $q->where('team_wallet_id', $wallet->id);
+                        if ($team) {
+                            $q->orWhere('team_id', $team->id);
+                        }
+                    })
+                    ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                    ->latest()
+                    ->first();
+
+                if ($existingActivePayout) {
+                    return response()->json([
+                        'status' => 2,
+                        'error'  => __('لا يمكن إنشاء طلب دفع جديد عبر الـ Payout للفريق لوجود طلب سابق قيد الانتظار أو المعالجة البنكية (رقم المرجع: :ref). يجب معالجة الطلب السابق أولاً.', ['ref' => $existingActivePayout->reference_id])
+                    ]);
+                }
+
                 if (!$team->iban_number || !$team->bic_code || !$team->beneficiary_name) {
                     return response()->json([
                         'status' => 2,
@@ -460,6 +478,24 @@ class TeamWalletController extends Controller
             // --- HyperPay Payout Integration ---
             $externalId = null;
             if ($request->payment_method === 'hyperpay') {
+                // التحقق من عدم وجود أي طلب دفع Payout نشط لم يصادق عليه أو قيد المعالجة للفريق
+                $existingActivePayout = \App\Models\HyperpayPayout::where(function ($q) use ($team, $teamWallet) {
+                        $q->where('team_wallet_id', $teamWallet->id);
+                        if ($team) {
+                            $q->orWhere('team_id', $team->id);
+                        }
+                    })
+                    ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                    ->latest()
+                    ->first();
+
+                if ($existingActivePayout) {
+                    return response()->json([
+                        'status' => 0,
+                        'error'  => __('لا يمكن إنشاء طلب سداد جديد عبر الـ Payout للفريق لوجود طلب سابق قيد الانتظار أو المعالجة البنكية (رقم المرجع: :ref). يجب معالجة الطلب السابق أولاً.', ['ref' => $existingActivePayout->reference_id])
+                    ]);
+                }
+
                 if (!$team->iban_number || !$team->bic_code || !$team->beneficiary_name) {
                     return response()->json([
                         'status' => 0,

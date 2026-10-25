@@ -31,6 +31,7 @@
         const payoutShowUrl = "{{ route('teams.payout-requests.show', ':id') }}";
         const payoutApproveUrl = "{{ route('teams.payout-requests.approve', ':id') }}";
         const payoutRejectUrl = "{{ route('teams.payout-requests.reject', ':id') }}";
+        const payoutCheckStatusUrl = "{{ route('teams.payout-requests.check-status', ':id') }}";
     </script>
     @vite(['resources/js/admin/teams/payout-requests.js'])
 @endsection

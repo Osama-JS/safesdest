@@ -44,22 +44,8 @@ $(function () {
     const bankName = $(this).val();
     const customBankField = $('#user-custom-bank-field');
     const bicField = $('#user-bic-code');
-
-    // Bank to BIC Mapping
-    const bankBicMapping = {
-      'البنك الأهلي السعودي': 'NCBKSAJE',
-      'بنك الراجحي': 'RJHISARI',
-      'بنك الرياض': 'RIBLSARI',
-      'البنك السعودي للاستثمار': 'SIBCSARI',
-      'البنك السعودي الفرنسي': 'BSFRSARI',
-      'البنك السعودي البريطاني (ساب)': 'SABBSA22',
-      'بنك العربي الوطني': 'ARNBSARI',
-      'بنك سامبا': 'SAMBSA22',
-      'البنك الأول': 'SAUBSARI',
-      'بنك الجزيرة': 'BJAZSAJE',
-      'بنك الإنماء': 'INMASARI',
-      'البنك العربي': 'ARNBUS6XXX'
-    };
+    const selectedOption = $(this).find('option:selected');
+    const bicCode = selectedOption.data('code');
 
     if (bankName === 'other') {
       customBankField.show();
@@ -70,8 +56,8 @@ $(function () {
       $('#user-custom-bank-name').attr('required', false).val('');
 
       // Auto-fill BIC Code and make it readonly
-      if (bankBicMapping[bankName]) {
-        bicField.val(bankBicMapping[bankName]).prop('readonly', true);
+      if (bicCode) {
+        bicField.val(bicCode).prop('readonly', true);
       } else {
         bicField.val('').prop('readonly', false);
       }
@@ -474,6 +460,9 @@ $(function () {
         $('#user-custom-bank-name').val(data.bank_name);
       }
       $('#user-bank-name').trigger('change');
+      if (data.bic_code) {
+        $('#user-bic-code').val(data.bic_code);
+      }
 
       $('#modelTitle').html(`${__('Edit User')}: <span class="bg-info text-white px-2 rounded">${data.name}</span>`);
     });

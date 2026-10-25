@@ -746,6 +746,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/payout-requests/{id}', [App\Http\Controllers\admin\PayoutRequestsController::class, 'show'])->name('wallets.payout-requests.show');
                 Route::post('/wallets/payout-requests/{id}/approve', [App\Http\Controllers\admin\PayoutRequestsController::class, 'approve'])->name('wallets.payout-requests.approve');
                 Route::post('/wallets/payout-requests/{id}/reject', [App\Http\Controllers\admin\PayoutRequestsController::class, 'reject'])->name('wallets.payout-requests.reject');
+                Route::post('/wallets/payout-requests/{id}/check-status', [App\Http\Controllers\admin\PayoutRequestsController::class, 'checkStatus'])->name('wallets.payout-requests.check-status');
 
                 Route::get('/wallets/payment/request/{id}', [WalletsController::class, 'paymentRequest'])->name('wallets.payment_request');
 
@@ -831,6 +832,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/teams/payout-requests/{id}', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'show'])->name('teams.payout-requests.show');
                 Route::post('/teams/payout-requests/{id}/approve', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'approve'])->name('teams.payout-requests.approve');
                 Route::post('/teams/payout-requests/{id}/reject', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'reject'])->name('teams.payout-requests.reject');
+                Route::post('/teams/payout-requests/{id}/check-status', [App\Http\Controllers\admin\TeamPayoutRequestsController::class, 'checkStatus'])->name('teams.payout-requests.check-status');
 
                 // Investor Payout Requests Routes (HyperPay)
                 Route::get('/investors/payout-requests', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'index'])->name('investors.payout-requests.index');
@@ -838,6 +840,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/investors/payout-requests/{id}', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'show'])->name('investors.payout-requests.show');
                 Route::post('/investors/payout-requests/{id}/approve', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'approve'])->name('investors.payout-requests.approve');
                 Route::post('/investors/payout-requests/{id}/reject', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'reject'])->name('investors.payout-requests.reject');
+                Route::post('/investors/payout-requests/{id}/check-status', [App\Http\Controllers\admin\InvestorPayoutRequestsController::class, 'checkStatus'])->name('investors.payout-requests.check-status');
 
                 // User Payout Requests Routes (HyperPay)
                 Route::get('/users/payout-requests', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'index'])->name('users.payout-requests.index');
@@ -845,6 +848,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/users/payout-requests/{id}', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'show'])->name('users.payout-requests.show');
                 Route::post('/users/payout-requests/{id}/approve', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'approve'])->name('users.payout-requests.approve');
                 Route::post('/users/payout-requests/{id}/reject', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'reject'])->name('users.payout-requests.reject');
+                Route::post('/users/payout-requests/{id}/check-status', [App\Http\Controllers\admin\UserPayoutRequestsController::class, 'checkStatus'])->name('users.payout-requests.check-status');
 
 
 

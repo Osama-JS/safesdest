@@ -31,6 +31,7 @@
         const payoutShowUrl = "{{ route('users.payout-requests.show', ':id') }}";
         const payoutApproveUrl = "{{ route('users.payout-requests.approve', ':id') }}";
         const payoutRejectUrl = "{{ route('users.payout-requests.reject', ':id') }}";
+        const payoutCheckStatusUrl = "{{ route('users.payout-requests.check-status', ':id') }}";
     </script>
     @vite(['resources/js/admin/users/payout-requests.js'])
 @endsection

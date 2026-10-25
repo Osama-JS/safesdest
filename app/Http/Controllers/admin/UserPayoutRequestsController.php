@@ -18,7 +18,7 @@ class UserPayoutRequestsController extends Controller
     public function __construct()
     {
         $this->middleware('permission:view_payout_requests|view_admins', ['only' => ['index', 'getData', 'show']]);
-        $this->middleware('permission:approve_payout_requests|save_admins', ['only' => ['approve', 'reject']]);
+        $this->middleware('permission:approve_payout_requests|save_admins', ['only' => ['approve', 'reject', 'checkStatus']]);
     }
 
     /**
@@ -34,8 +34,11 @@ class UserPayoutRequestsController extends Controller
                      ->whereNull('driver_id')
                      ->whereNull('source_withdrawal_id')
                      ->whereNull('source_commission_withdrawal_id')
-                     ->whereNotIn('payout_type', ['TPW', 'TWM', 'TWP', 'MT', 'WP', 'WD', 'INV']);
+                     ->whereNotIn('payout_type', ['TPW', 'TWM', 'TWP', 'MT', 'WP', 'WD', 'INV', 'IPW', 'IWD']);
               });
+        })->where(function ($q) {
+            $q->whereDoesntHave('user', fn($uq) => $uq->where('investor', true))
+              ->orWhereNull('user_id');
         });
     }
 
@@ -55,8 +58,11 @@ class UserPayoutRequestsController extends Controller
             'failed_count'            => $this->baseUserPayoutQuery()->where('status', 'failed')->count(),
         ];
 
-        // Fetch users who have user wallets
-        $users = User::whereHas('userWallet')
+        // Fetch non-investor users who have user wallets
+        $users = User::where(function ($q) {
+                $q->where('investor', false)->orWhereNull('investor');
+            })
+            ->whereHas('userWallet')
             ->select('id', 'name', 'phone')
             ->orderBy('name')
             ->get();
@@ -178,6 +184,12 @@ class UserPayoutRequestsController extends Controller
                 // Reject Button
                 $actionsHtml .= "<button type='button' class='btn btn-sm btn-icon btn-label-danger reject-btn' data-id='{$payout->id}' data-reference='{$payout->reference_id}' title='" . __('رفض الطلب') . "'>
                     <i class='ti ti-x'></i>
+                </button>";
+            }
+
+            if (in_array($payout->status, ['pending', 'processing']) && $canApprove) {
+                $actionsHtml .= "<button type='button' class='btn btn-sm btn-icon btn-label-info btn-check-status' data-id='{$payout->id}' data-reference='{$payout->reference_id}' title='" . __('الاستعلام المباشر من البنك') . "'>
+                    <i class='ti ti-refresh'></i>
                 </button>";
             }
 
@@ -424,5 +436,70 @@ class UserPayoutRequestsController extends Controller
             'success' => true,
             'message' => __('تم رفض طلب الدفع عبر الـ Payout للمستخدم بنجاح دون أي مساس برصيد المحفظة.'),
         ]);
+    }
+
+    /**
+     * Check live user payout status directly from HyperPay API.
+     */
+    public function checkStatus($id)
+    {
+        try {
+            $payout = $this->baseUserPayoutQuery()->findOrFail($id);
+
+            if (!$payout->reference_id) {
+                return response()->json(['success' => false, 'message' => __('لا يوجد رقم مرجع صحيح لهذا الطلب.')], 422);
+            }
+
+            $payoutService = app(HyperPayPayoutService::class);
+            $response = $payoutService->checkPayoutStatus($payout->reference_id, $payout->payout_id);
+
+            if (!$response['status'] && !in_array($response['code'] ?? '', ['63000', '90000', '77000'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $response['message'] ?? __('تعذر الاستعلام عن حالة الحوالة لدى بوابة HyperPay.')
+                ], 422);
+            }
+
+            $statusCode = $response['code'] ?? '';
+            $hyperpayStatus = $response['message'] ?? 'Unknown';
+
+            if (in_array($payout->status, ['pending', 'processing'])) {
+                if ($statusCode === '00000' || in_array($statusCode, ['63000', '77000'])) {
+                    $payoutIdVal = $response['data']['payoutId'] ?? ($response['data']['payouts'][0]['payoutId'] ?? $payout->payout_id);
+                    $webhookToken = \App\Models\Settings::getValue('hyperpay_webhook_token');
+                    $webhookPayload = [
+                        'payoutReference' => $payout->reference_id,
+                        'responseCode'    => $statusCode,
+                        'payoutId'        => $payoutIdVal,
+                        'amount'          => $payout->amount,
+                        'responseMessage' => $hyperpayStatus,
+                        'hyperpayDetails' => $response['data'] ?? [],
+                        'token'           => $webhookToken,
+                    ];
+                    $webhookRequest = new \Illuminate\Http\Request();
+                    $webhookRequest->replace($webhookPayload);
+                    app(\App\Http\Controllers\Api\HyperPayWebhookController::class)->handlePayout($webhookRequest);
+
+                    $payout->refresh();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => __('الحالة المحدثة من HyperPay: ') . $hyperpayStatus,
+                'data'    => [
+                    'status'          => $payout->status,
+                    'code'            => $statusCode,
+                    'responseMessage' => $hyperpayStatus,
+                    'raw'             => $response['data'] ?? [],
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("[UserPayoutCheckStatus] Failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => __('حدث خطأ أثناء الاستعلام: ') . $e->getMessage(),
+            ], 500);
+        }
     }
 }

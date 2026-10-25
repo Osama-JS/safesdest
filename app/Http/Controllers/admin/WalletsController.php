@@ -315,6 +315,22 @@ class WalletsController extends Controller
                     throw new \Exception(__('بيانات الحساب البنكي للسائق غير مكتملة لتحويل HyperPay Payout. يرجى تحديث ملف السائق أولاً.'));
                 }
 
+                // 1. التحقق من عدم وجود أي طلب تحويل Payout نشط لم يصادق عليه أو قيد المعالجة للسائق
+                $existingActivePayout = \App\Models\HyperpayPayout::where(function ($q) use ($driver, $wallet) {
+                        $q->where('wallet_id', $wallet->id)
+                          ->orWhere('driver_id', $driver->id);
+                    })
+                    ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                    ->latest()
+                    ->first();
+
+                if ($existingActivePayout) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('لا يمكن إنشاء طلب تسوية جديد عبر الـ Payout للسائق لوجود طلب تحويل سابق قيد الانتظار أو المعالجة البنكية (رقم المرجع: :ref). يجب مصادقة الطلب السابق أو رفضه أولاً.', ['ref' => $existingActivePayout->reference_id])
+                    ], 422);
+                }
+
                 // Check if any requested transactions are already pending approval in another payout
                 $requestedTxIds = collect($request->transactions)->pluck('id')->toArray();
                 $existingPendingPayouts = \App\Models\HyperpayPayout::where('wallet_id', $wallet->id)
@@ -407,6 +423,25 @@ class WalletsController extends Controller
             // --- End HyperPay Logic ---
 
             $transactionIds = collect($request->transactions)->pluck('id')->toArray();
+
+            // منع السداد اليدوي لأي حركات محجوزة ضمن طلب HyperPay Payout قيد الانتظار أو المعالجة البنكية
+            $lockedTxIds = [];
+            $activePayouts = \App\Models\HyperpayPayout::where(function ($q) use ($driver, $wallet) {
+                    $q->where('wallet_id', $wallet->id)
+                      ->orWhere('driver_id', $driver->id);
+                })
+                ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                ->get();
+
+            foreach ($activePayouts as $ap) {
+                $txs = collect($ap->transaction_details['transactions'] ?? [])->pluck('id')->toArray();
+                $lockedTxIds = array_merge($lockedTxIds, $txs);
+            }
+
+            $lockedIntersect = array_intersect($transactionIds, $lockedTxIds);
+            if (!empty($lockedIntersect)) {
+                throw new \Exception(__('بعض الحركات المحددة مرتبطة بطلب دفع عبر HyperPay Payout قيد المراجعة أو المعالجة البنكية، ولا يمكن سدادها يدوياً حتى تكتمل أو تُلغى العملية السابقة.'));
+            }
 
             // Get wallet transactions for this specific driver wallet
             $walletTransactions = Wallet_Transaction::whereIn('id', $transactionIds)
@@ -839,15 +874,21 @@ class WalletsController extends Controller
             if ($req->type === 'credit') {
                 $adjustedBalance += $req->amount;
             } elseif ($req->type === 'debit') {
-                // التحقق من عدم وجود عملية تحويل قيد الانتظار أو بانتظار المصادقة
-                $pendingPayout = \App\Models\HyperpayPayout::where('wallet_id', $wallet->id)
+                // التحقق من عدم وجود عملية تحويل قيد الانتظار أو بانتظار المصادقة للسائق أو المحفظة
+                $pendingPayout = \App\Models\HyperpayPayout::where(function ($q) use ($driver, $wallet) {
+                        $q->where('wallet_id', $wallet->id);
+                        if ($driver) {
+                            $q->orWhere('driver_id', $driver->id);
+                        }
+                    })
                     ->whereIn('status', ['pending', 'processing', 'pending_approval'])
-                    ->exists();
+                    ->latest()
+                    ->first();
 
                 if ($pendingPayout) {
                     return response()->json([
                         'status' => 2,
-                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود عملية تحويل عبر HyperPay قيد الانتظار أو بانتظار المصادقة.')
+                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود طلب تحويل عبر HyperPay قيد الانتظار أو بانتظار المصادقة للسائق (رقم المرجع: :ref).', ['ref' => $pendingPayout->reference_id])
                     ]);
                 }
 

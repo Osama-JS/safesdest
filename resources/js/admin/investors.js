@@ -40,30 +40,19 @@ $(function () {
     const bicInput = $('#user-bic-code');
     const countrySelect = $('#user-bank-country');
 
-    const bicMapping = {
-      'البنك الأهلي السعودي': 'NCBKSA22',
-      'مصرف الراجحي': 'RJHISARI',
-      'بنك الرياض': 'RYADSA22',
-      'البنك السعودي الأول': 'SABBSARI',
-      'بنك البلاد': 'ALBISARI',
-      'مصرف الإنماء': 'INMASARI',
-      'البنك السعودي للاستثمار': 'SISISARI',
-      'البنك العربي الوطني': 'ARABSARI',
-      'بنك الجزيرة': 'BJAZSARI',
-      'البنك السعودي الفرنسي': 'BSFRSARI'
-    };
-
+    const selectedOption = bankSelect.find('option:selected');
     const selectedBank = bankSelect.val();
+    const bicCode = selectedOption.data('code');
 
     if (selectedBank === 'other') {
       customBankField.show();
       $('#user-custom-bank-name').attr('required', true);
       bicInput.val('').prop('readonly', false);
       countrySelect.val('أخرى');
-    } else if (selectedBank && bicMapping[selectedBank]) {
+    } else if (selectedBank && bicCode) {
       customBankField.hide();
       $('#user-custom-bank-name').attr('required', false).val('');
-      bicInput.val(bicMapping[selectedBank]).prop('readonly', true);
+      bicInput.val(bicCode).prop('readonly', true);
       countrySelect.val('السعودية');
     } else {
       customBankField.hide();
@@ -421,6 +410,12 @@ $(function () {
         $('#user-custom-bank-name').val(data.bank_name);
       }
       toggleCustomBankField();
+      if (data.bic_code) {
+        $('#user-bic-code').val(data.bic_code);
+      }
+      if (data.bank_country) {
+        $('#user-bank-country').val(data.bank_country);
+      }
 
       if (data.active_investment_contract) {
         let c = data.active_investment_contract;

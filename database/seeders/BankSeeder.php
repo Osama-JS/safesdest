@@ -17,7 +17,13 @@ class BankSeeder extends Seeder
             ['name' => 'البنك الأهلي السعودي', 'code' => 'NCBKSAJE'],
             ['name' => 'بنك الراجحي', 'code' => 'RJHISARI'],
             ['name' => 'بنك الرياض', 'code' => 'RIBLSARI'],
-            ['name' => 'البنك العربي', 'code' => 'ARNBUS6XXX']
+            ['name' => 'بنك الانماء', 'code' => 'INMASARI'],
+            ['name' => 'البنك الاول', 'code' => 'SABBSARI'],
+            ['name' => 'البنك العربي الوطني', 'code' => 'ARNBSARI'],
+            ['name' => 'بنك البلاد', 'code' => 'ALBISARI'],
+            ['name' => 'البنك السعودي الفرنسي', 'code' => 'BSFRSARI'],
+            ['name' => 'البنك السعودي للاستثمار', 'code' => 'SIBCSARI'],
+            ['name' => 'بنك الجزيرة', 'code' => 'BJAZSAJE'],
         ];
 
         foreach ($banks as $bank) {

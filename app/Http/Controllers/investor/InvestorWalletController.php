@@ -417,6 +417,22 @@ class InvestorWalletController extends Controller
 
         $availableBalance = (float) $personalWallet->withdrawable_balance;
 
+        // التحقق من عدم وجود طلب سحب عمولات أو طلب Payout نشط سابق قيد المعالجة
+        $hasActiveWithdrawal = InvestorCommissionWithdrawal::where('user_id', $investor->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->exists();
+
+        $hasActivePayout = \App\Models\HyperpayPayout::where(function ($q) use ($investor, $personalWallet) {
+                $q->where('user_id', $investor->id)
+                  ->orWhere('user_wallet_id', $personalWallet->id);
+            })
+            ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+            ->exists();
+
+        if ($hasActiveWithdrawal || $hasActivePayout) {
+            return back()->with('error', 'لديك طلب سحب أو تحويل بنكي سابق قيد المراجعة والمعالجة حالياً. يرجى الانتظار حتى اكتمال معالجة الطلب السابق قبل تقديم طلب جديد.');
+        }
+
         $request->validate([
             'amount'         => ['required', 'numeric', 'min:1', "max:{$availableBalance}"],
             'bank_name'      => ['nullable', 'string', 'max:100'],

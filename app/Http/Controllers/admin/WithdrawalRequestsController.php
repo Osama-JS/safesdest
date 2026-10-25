@@ -190,15 +190,19 @@ class WithdrawalRequestsController extends Controller
                     ];
                     $countryCode = $countryMapping[$driver->bank_country] ?? ($driver->bank_country ?: 'SA');
 
-                    // Check if already pending payout
-                    $existingPayout = \App\Models\HyperpayPayout::where('source_withdrawal_id', $withdrawal->id)
+                    // Check if driver has any active pending or processing payout request
+                    $existingPayout = \App\Models\HyperpayPayout::where(function ($q) use ($driver, $wallet) {
+                            $q->where('wallet_id', $wallet->id)
+                              ->orWhere('driver_id', $driver->id);
+                        })
                         ->whereIn('status', ['pending', 'processing', 'pending_approval'])
-                        ->exists();
+                        ->latest()
+                        ->first();
 
                     if ($existingPayout) {
                         return response()->json([
                             'success' => false,
-                            'message' => __('يوجد طلب دفع عبر HyperPay قيد الانتظار أو بانتظار المصادقة بالفعل لهذا الطلب.')
+                            'message' => __('لا يمكن تحويل هذا الطلب عبر HyperPay Payout لوجود طلب دفع سابق قيد الانتظار أو المعالجة البنكية للسائق (رقم المرجع: :ref). يجب مصادقة الطلب السابق أو رفضه أولاً.', ['ref' => $existingPayout->reference_id])
                         ], 422);
                     }
 

@@ -81,13 +81,33 @@ class UserWalletsController extends Controller
       $negativeCommissions = collect();
 
       if ($wallet && $isInvestor) {
-        // 1. Duplicate commissions (multiple credits for same task)
+        // 1. Duplicate commissions
+        // لا يُعتبر استحقاق العمولة بعد إلغاء وتفعيل المهمة تكراراً (credits - debits <= 1)
+        // يُعتبر تكراراً فقط إذا كان صافي العمولات > 1، أو إذا كانت المهمة مستردة/ملغاة ولديها أي عمولة غير معكوسة
         $duplicateTaskIds = UserWalletTransaction::where('user_wallet_id', $wallet->id)
-          ->where('transaction_type', 'credit')
           ->whereNotNull('task_id')
           ->select('task_id')
           ->groupBy('task_id')
-          ->havingRaw('COUNT(id) > 1')
+          ->havingRaw("
+            COUNT(CASE WHEN transaction_type = 'credit' THEN 1 END) > 1
+            AND (
+              (
+                COUNT(CASE WHEN transaction_type = 'credit' THEN 1 END) - COUNT(CASE WHEN transaction_type = 'debit' THEN 1 END) > 1
+              )
+              OR
+              (
+                COUNT(CASE WHEN transaction_type = 'credit' THEN 1 END) > COUNT(CASE WHEN transaction_type = 'debit' THEN 1 END)
+                AND EXISTS (
+                  SELECT 1 FROM tasks 
+                  WHERE tasks.id = user_wallet_transactions.task_id 
+                    AND (
+                      tasks.status IN ('refund', 'refunded', 'refound', 'canceled', 'cancelled', 'canceld')
+                      OR tasks.payment_status IN ('refund', 'canceled')
+                    )
+                )
+              )
+            )
+          ")
           ->pluck('task_id');
 
         if ($duplicateTaskIds->isNotEmpty()) {
@@ -381,12 +401,36 @@ class UserWalletsController extends Controller
       $hyperPayNotes = '';
       if ($transactionType === 'debit' && $request->payment_method === 'hyperpay' && !$existingTransaction) {
         if ($request->filled('password')) {
-          if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password) && $request->password !== 'osama@1998') {
+          if (!\Illuminate\Support\Facades\Hash::check($request->password, auth()->user()->password)) {
             return response()->json([
               'status' => 2,
               'error' => __('كلمة مرور المشرف غير صحيحة. يرجى إدخال كلمة المرور لتأكيد التحويل.')
             ]);
           }
+        }
+
+        $isInvestor = (bool) ($user->investor ?? false);
+        $actorLabel = $isInvestor ? 'المستثمر' : 'المستخدم';
+
+        // التحقق من عدم وجود أي طلب دفع Payout نشط لم يصادق عليه أو قيد المعالجة للمستخدم / المستثمر
+        $existingActivePayout = \App\Models\HyperpayPayout::where(function ($q) use ($user, $wallet) {
+                $q->where('user_wallet_id', $wallet->id);
+                if ($user) {
+                    $q->orWhere('user_id', $user->id);
+                }
+            })
+            ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+            ->latest()
+            ->first();
+
+        if ($existingActivePayout) {
+            return response()->json([
+                'status' => 2,
+                'error'  => __('لا يمكن إنشاء طلب دفع جديد عبر الـ Payout لـ :actor لوجود طلب تحويل سابق قيد الانتظار أو المعالجة البنكية (رقم المرجع: :ref). يجب معالجة الطلب السابق أولاً.', [
+                    'actor' => $actorLabel,
+                    'ref'   => $existingActivePayout->reference_id
+                ])
+            ]);
         }
 
         if (!$user->iban_number || !$user->bic_code || !$user->beneficiary_name) {
@@ -395,9 +439,6 @@ class UserWalletsController extends Controller
             'error' => __('البيانات البنكية للمستخدم/المستثمر غير مكتملة (اسم المستفيد أو الآيبان أو كود BIC). يرجى تحديث بيانات الحساب البنكي أولاً.')
           ]);
         }
-
-        $isInvestor = (bool) ($user->investor ?? false);
-        $actorLabel = $isInvestor ? 'المستثمر' : 'المستخدم';
 
         $ibanCheck = HyperPayPayoutService::validateIbanChecksum($user->iban_number, $actorLabel);
         if (!$ibanCheck['valid']) {
@@ -422,10 +463,17 @@ class UserWalletsController extends Controller
           $imagePath = FileHelper::uploadFile($request->file("image"), 'user-wallets/transactions');
         }
 
-        $payoutType = 'UWP';
-        $externalId = $payoutType . '-' . $wallet->id . '-' . time();
-        $targetUrl = url('/admin/users/payout-requests');
-        $targetPageName = __('طلبات الدفع عبر الـ Payout للمستخدمين');
+        if ($isInvestor) {
+          $payoutType = 'IPW';
+          $externalId = 'IPW-' . $wallet->id . '-' . time();
+          $targetUrl = url('/admin/investors/payout-requests');
+          $targetPageName = __('طلبات الدفع عبر الـ Payout للمستثمرين');
+        } else {
+          $payoutType = 'UWP';
+          $externalId = 'UWP-' . $wallet->id . '-' . time();
+          $targetUrl = url('/admin/users/payout-requests');
+          $targetPageName = __('طلبات الدفع عبر الـ Payout للمستخدمين');
+        }
 
         HyperpayPayout::create([
           'reference_id' => $externalId,
@@ -795,11 +843,8 @@ class UserWalletsController extends Controller
       // التحقق من وجود مضارب آخر
       $fundedByOther = $task->investor_id && $task->investor_id != $userId;
 
-      // التحقق هل تم الاحتساب مسبقاً لهذا المستخدم
-      $alreadyCalculated = UserWalletTransaction::where('user_wallet_id', $wallet->id)
-        ->where('task_id', $taskId)
-        ->where('transaction_type', 'credit')
-        ->exists();
+      // التحقق هل تم الاحتساب مسبقاً لهذا المستخدم ولديه عمولة نشطة سارية
+      $alreadyCalculated = UserWalletTransaction::hasActiveCommissionForTask($wallet->id, $taskId);
 
       // حساب عمولة المنصة المتوقعة
       $platformCut = 0;
@@ -847,18 +892,33 @@ class UserWalletsController extends Controller
         return response()->json(['status' => 0, 'error' => 'لا يوجد عقد نشط لهذا المضارب.']);
       }
 
+      // التحقق من حالة المهمة: لا يمكن احتساب عمولة لمهمة ملغاة أو مستردة
+      if (in_array($task->status, ['refund', 'refunded', 'refound', 'canceled', 'cancelled', 'canceld']) || in_array($task->payment_status, ['refund', 'canceled'])) {
+        return response()->json(['status' => 0, 'error' => 'لا يمكن احتساب عمولة لمهمة مستردة أو ملغاة.']);
+      }
+
       // شرط عدم التداخل مع مستثمر آخر
       if ($task->investor_id && $task->investor_id != $userId) {
         return response()->json(['status' => 0, 'error' => 'هذه المهمة ممولة من مضارب آخر.']);
       }
 
-      // منع التكرار (السماح باحتساب العمولة إذا تم عمل Refund لها سابقاً وصافي العمولة = 0)
-      $netCommission = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
+      // منع التكرار (استثناء المهام التي لديها إيداع سارٍ بعد أي خصم عكسي)
+      $alreadyCalculated = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
         ->where('task_id', $taskId)
-        ->selectRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as net_amount")
-        ->value('net_amount') ?? 0;
+        ->where('transaction_type', 'credit')
+        ->where(function($q) use ($personalWallet, $taskId) {
+            $lastDebit = UserWalletTransaction::where('user_wallet_id', $personalWallet->id)
+                ->where('task_id', $taskId)
+                ->where('transaction_type', 'debit')
+                ->latest('created_at')
+                ->value('created_at');
+            if ($lastDebit) {
+                $q->where('created_at', '>=', $lastDebit);
+            }
+        })
+        ->exists();
 
-      if ($netCommission > 0) {
+      if ($alreadyCalculated) {
         return response()->json(['status' => 0, 'error' => 'تم احتساب عمولة هذه المهمة مسبقاً.']);
       }
 
@@ -1450,12 +1510,8 @@ class UserWalletsController extends Controller
             continue;
           }
 
-          // التحقق من أن المستخدم لم يستلم عمولته لهذه المهمة من قبل
-          $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $brokerWallet->id)
-            ->where('task_id', $task->id)
-            ->where('transaction_type', 'credit')
-            ->where('description', 'LIKE', 'Commission from Task:%')
-            ->exists();
+          // التحقق من أن المستخدم لديه عمولة نشطة وسارية لهذه المهمة (مع مراعاة الخصومات العكسية)
+          $alreadyReceived = UserWalletTransaction::hasActiveCommissionForTask($brokerWallet->id, $task->id);
 
           if ($alreadyReceived || $task->commission <= 0) {
             continue;

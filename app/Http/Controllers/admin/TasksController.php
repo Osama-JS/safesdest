@@ -4026,10 +4026,7 @@ class TasksController extends Controller
 
                     $isPaid = false;
                     if ($b->userWallet) {
-                        $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
-                            ->where('task_id', $task->id)
-                            ->where('transaction_type', 'credit')
-                            ->exists();
+                        $isPaid = \App\Models\UserWalletTransaction::hasActiveCommissionForTask($b->userWallet->id, $task->id);
                     }
 
                     $totalBrokersShare += $share;
@@ -4058,10 +4055,7 @@ class TasksController extends Controller
 
                     $isPaid = false;
                     if ($b->userWallet) {
-                        $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
-                            ->where('task_id', $task->id)
-                            ->where('transaction_type', 'credit')
-                            ->exists();
+                        $isPaid = \App\Models\UserWalletTransaction::hasActiveCommissionForTask($b->userWallet->id, $task->id);
                     }
 
                     $totalBrokersShare += $share;
@@ -4087,10 +4081,7 @@ class TasksController extends Controller
 
                 $isPaid = false;
                 if ($b->userWallet) {
-                    $isPaid = \App\Models\UserWalletTransaction::where('user_wallet_id', $b->userWallet->id)
-                        ->where('task_id', $task->id)
-                        ->where('transaction_type', 'credit')
-                        ->exists();
+                    $isPaid = \App\Models\UserWalletTransaction::hasActiveCommissionForTask($b->userWallet->id, $task->id);
                 }
 
                 $totalBrokersShare += $share;
@@ -4501,14 +4492,11 @@ class TasksController extends Controller
                     $userWallet = $userWalletController->createWallet($user->id, true);
                 }
 
-                // ✅ التحقق من أن المستخدم لم يستلم عمولته لهذه المهمة من قبل
-                $alreadyReceived = UserWalletTransaction::where('user_wallet_id', $userWallet->id)
-                    ->where('task_id', $task->id)
-                    ->where('transaction_type', 'credit')
-                    ->exists();
+                // ✅ التحقق من أن المستخدم لديه عمولة نشطة وسارية لهذه المهمة (مع مراعاة الخصومات العكسية عند إلغاء المهام)
+                $alreadyReceived = UserWalletTransaction::hasActiveCommissionForTask($userWallet->id, $task->id);
 
                 if ($alreadyReceived) {
-                    Log::info("User #{$user->id} has already received commission for task #{$task->id}, skipping...");
+                    Log::info("User #{$user->id} has already received active commission for task #{$task->id}, skipping...");
                     continue; // تجاوز المستخدم ولا تكرر العملية
                 }
 

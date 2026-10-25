@@ -425,4 +425,52 @@ $(function () {
       }, 100);
     }
   });
+
+  // Handle Check Status Button
+  $(document).on('click', '.btn-check-status', function () {
+    const payoutId = $(this).data('id');
+    const reference = $(this).data('reference') || '';
+    if (!payoutId || typeof payoutCheckStatusUrl === 'undefined') return;
+
+    const url = payoutCheckStatusUrl.replace(':id', payoutId);
+
+    Swal.fire({
+      title: 'الاستعلام من HyperPay',
+      text: 'جاري فحص حالة الحوالة (' + reference + ') مباشرة من بوابة الدفع...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      },
+      success: function (res) {
+        Swal.fire({
+          icon: res.success ? 'success' : 'info',
+          title: res.success ? 'تم تحديث الحالة' : 'تنبيه',
+          text: res.message || 'تم فحص الحالة بنجاح',
+          customClass: { confirmButton: 'btn btn-primary' },
+          buttonsStyling: false
+        });
+        if (typeof dt_payouts !== 'undefined' && dt_payouts) {
+          dt_payouts.ajax.reload(null, false);
+        }
+      },
+      error: function (xhr) {
+        const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'حدث خطأ أثناء فحص حالة الطلب.';
+        Swal.fire({
+          icon: 'error',
+          title: 'فشل الاستعلام',
+          text: msg,
+          customClass: { confirmButton: 'btn btn-danger' },
+          buttonsStyling: false
+        });
+      }
+    });
+  });
 });

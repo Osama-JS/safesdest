@@ -42,7 +42,9 @@ class InvestorController extends Controller
       })
       ->orderBy('name')
       ->get();
-    return view('admin.investors.index', compact('customers', 'templates', 'investor_template', 'users'));
+
+    $banks = \App\Models\Bank::where('is_active', true)->orderBy('name')->get();
+    return view('admin.investors.index', compact('customers', 'templates', 'investor_template', 'users', 'banks'));
   }
 
   public function getData(Request $request)

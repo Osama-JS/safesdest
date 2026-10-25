@@ -118,4 +118,42 @@ class UserWalletTransaction extends Model
   {
     return $query->where('user_id', $userId);
   }
+
+  /**
+   * التحقق مما إذا كان للمحفظة عمولة نشطة وسارية لمهمة معينة (مع مراعاة الخصومات العكسية عند إلغاء المهام)
+   *
+   * @param int|null $userWalletId
+   * @param int|null $taskId
+   * @return bool
+   */
+  public static function hasActiveCommissionForTask($userWalletId, $taskId): bool
+  {
+    if (!$userWalletId || !$taskId) {
+      return false;
+    }
+
+    $transactions = self::where('user_wallet_id', $userWalletId)
+      ->where('task_id', $taskId)
+      ->get(['id', 'transaction_type', 'amount', 'created_at']);
+
+    if ($transactions->isEmpty()) {
+      return false;
+    }
+
+    $credits = $transactions->where('transaction_type', 'credit');
+    if ($credits->isEmpty()) {
+      return false;
+    }
+
+    $debits = $transactions->where('transaction_type', 'debit');
+    if ($debits->isEmpty()) {
+      return true;
+    }
+
+    $netAmount = (float) $credits->sum('amount') - (float) $debits->sum('amount');
+    $lastCredit = $credits->sortByDesc('id')->first();
+    $lastDebit = $debits->sortByDesc('id')->first();
+
+    return ($netAmount > 0.0001 && $lastCredit && $lastDebit && $lastCredit->id > $lastDebit->id);
+  }
 }

@@ -29,9 +29,10 @@ class ActivityLogController extends Controller
             1 => 'user_id',
             2 => 'action',
             3 => 'table_name',
-            4 => 'ip_address',
-            5 => 'created_at',
-            6 => 'actions'
+            4 => 'record_id',
+            5 => 'ip_address',
+            6 => 'created_at',
+            7 => 'actions'
         ];
 
         $totalData = ActivityLog::count();
@@ -72,6 +73,7 @@ class ActivityLogController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('action', 'LIKE', "%{$search}%")
                     ->orWhere('table_name', 'LIKE', "%{$search}%")
+                    ->orWhere('record_id', 'LIKE', "%{$search}%")
                     ->orWhere('ip_address', 'LIKE', "%{$search}%")
                     ->orWhereHas('user', function ($uq) use ($search) {
                         $uq->where('name', 'LIKE', "%{$search}%");
@@ -112,6 +114,9 @@ class ActivityLogController extends Controller
             $nestedData['action'] = $actionBadge;
 
             $nestedData['table_name'] = '<span class="fw-medium">' . $log->table_name . '</span>';
+            $nestedData['record_id'] = $log->record_id
+                ? '<span class="badge bg-label-primary font-monospace fw-bold">#' . $log->record_id . '</span>'
+                : '<span class="text-muted">-</span>';
             $nestedData['ip_address'] = $log->ip_address ?? '-';
             $nestedData['created_at'] = Carbon::parse($log->created_at)->format('Y-m-d H:i');
 
@@ -135,6 +140,12 @@ class ActivityLogController extends Controller
 
         $html = view('admin.activity-logs.show', compact('log'))->render();
 
-        return response()->json(['html' => $html]);
+        return response()->json([
+            'html' => $html,
+            'log_id' => $log->id,
+            'record_id' => $log->record_id,
+            'table_name' => $log->table_name,
+            'action' => $log->action
+        ]);
     }
 }

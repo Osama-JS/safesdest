@@ -11,6 +11,7 @@ class ActivityLog extends Model
         'user_id',
         'action',
         'table_name',
+        'record_id',
         'old_values',
         'new_values',
         'ip_address'
@@ -24,5 +25,14 @@ class ActivityLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getRecordIdAttribute($value)
+    {
+        if ($value !== null && $value !== '') {
+            return (string) $value;
+        }
+
+        return (string) ($this->new_values['id'] ?? $this->old_values['id'] ?? '');
     }
 }

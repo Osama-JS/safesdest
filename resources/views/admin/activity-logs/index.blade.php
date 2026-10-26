@@ -125,6 +125,7 @@
           <th>المستخدم</th>
           <th>الإجراء</th>
           <th>الجدول</th>
+          <th>معرف الصف (ID)</th>
           <th>عنوان IP</th>
           <th>التاريخ والوقت</th>
           <th>تفاصيل</th>
@@ -138,8 +139,11 @@
 <div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">تفاصيل الحركة</h5>
+      <div class="modal-header d-flex justify-content-between align-items-center">
+        <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="logDetailsTitle">
+          <span>تفاصيل الحركة</span>
+          <span id="logModalRecordBadge" class="badge bg-label-primary font-monospace" style="display: none;"></span>
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="logDetailsBody">
@@ -196,6 +200,7 @@ $(function () {
         { data: 'user' },
         { data: 'action' },
         { data: 'table_name' },
+        { data: 'record_id' },
         { data: 'ip_address' },
         { data: 'created_at' },
         { data: 'actions', orderable: false, searchable: false }
@@ -224,6 +229,7 @@ $(function () {
   $(document).on('click', '.view-record', function() {
       var logId = $(this).data('id');
       $('#logDetailsModal').modal('show');
+      $('#logModalRecordBadge').hide().text('');
       $('#logDetailsBody').html('<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
       
       $.ajax({
@@ -231,6 +237,11 @@ $(function () {
           type: 'GET',
           success: function(response) {
               $('#logDetailsBody').html(response.html);
+              if (response.record_id) {
+                  $('#logModalRecordBadge').text('معرف الصف المتأثر: #' + response.record_id).show();
+              } else {
+                  $('#logModalRecordBadge').hide();
+              }
           },
           error: function() {
               $('#logDetailsBody').html('<div class="alert alert-danger">حدث خطأ أثناء جلب التفاصيل.</div>');

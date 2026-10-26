@@ -67,6 +67,7 @@ trait LogsActivity
             'user_id' => $user->id,
             'action' => $action,
             'table_name' => $model->getTable(),
+            'record_id' => $model->getKey() ? (string) $model->getKey() : null,
             'old_values' => $oldValues,
             'new_values' => $newValues,
             'ip_address' => request()->ip(), // تسجيل عنوان الـ IP

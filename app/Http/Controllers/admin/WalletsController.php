@@ -829,6 +829,7 @@ class WalletsController extends Controller
 
         try {
             $wallet = Wallet::findOrFail($req->wallet);
+            $driver = $wallet->user_type === 'driver' ? $wallet->driver : null;
 
             // التحقق من صحة مبالغ التسوية
             if ($req->type === 'credit' && $req->has('settlement_tasks') && is_array($req->settlement_tasks)) {
@@ -888,7 +889,7 @@ class WalletsController extends Controller
                 if ($pendingPayout) {
                     return response()->json([
                         'status' => 2,
-                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود طلب تحويل عبر HyperPay قيد الانتظار أو بانتظار المصادقة للسائق (رقم المرجع: :ref).', ['ref' => $pendingPayout->reference_id])
+                        'error' => __('لا يمكن إضافة عملية خصم جديدة لوجود طلب تحويل عبر HyperPay قيد الانتظار أو بانتظار المصادقة (رقم المرجع: :ref).', ['ref' => $pendingPayout->reference_id])
                     ]);
                 }
 

@@ -17,8 +17,11 @@
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <span class="text-muted d-block mb-1">الجدول المتأثر</span>
+                        <span class="text-muted d-block mb-1">الجدول ومعرف الصف المتأثر</span>
                         <span class="badge bg-label-info">{{ $log->table_name }}</span>
+                        @if($log->record_id)
+                            <span class="badge bg-label-primary font-monospace ms-1">ID: #{{ $log->record_id }}</span>
+                        @endif
                     </div>
                     <div class="col-md-6 mb-3 mb-md-0">
                         <span class="text-muted d-block mb-1">نوع الإجراء</span>

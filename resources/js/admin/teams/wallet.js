@@ -29,11 +29,10 @@ $(function () {
   function handlePaymentMethodChange() {
     if ($('#trans_payment_method').val() === 'hyperpay' && $('#debit').is(':checked')) {
       $('#manual-hyperpay-bank-details').show();
-      $('#file-upload-section').hide();
     } else {
       $('#manual-hyperpay-bank-details').hide();
-      $('#file-upload-section').show();
     }
+    $('#file-upload-section').show();
   }
 
   $('#credit, #debit').on('change', toggleMaturityTime);

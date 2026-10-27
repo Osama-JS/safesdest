@@ -57,28 +57,33 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        $unshown = Notification_Users::where('user_id', $user->id)
+        $query = Notification_Users::where('user_id', $user->id)
             ->where('status', false)
-            ->where('is_shown', false)
-            ->with('notification')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+            ->where('is_shown', false);
 
-        if ($unshown->isEmpty()) {
+        $totalUnshown = (clone $query)->count();
+
+        if ($totalUnshown === 0) {
             return response()->json([
-                'success' => true,
-                'has_new' => false,
-                'data'    => [],
+                'success'     => true,
+                'has_new'     => false,
+                'total_count' => 0,
+                'data'        => [],
             ]);
         }
 
-        // Mark as shown so chime and modal trigger only once
-        Notification_Users::whereIn('id', $unshown->pluck('id'))
-            ->update([
-                'is_shown' => true,
-                'shown_at' => now(),
-            ]);
+        // Fetch up to 10 latest for dropdown list
+        $unshown = (clone $query)
+            ->with('notification')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Mark all unshown as shown so chime and toast trigger only once
+        $query->update([
+            'is_shown' => true,
+            'shown_at' => now(),
+        ]);
 
         $data = $unshown->map(function ($nu) {
             $notif = $nu->notification;
@@ -95,9 +100,10 @@ class NotificationController extends Controller
         });
 
         return response()->json([
-            'success' => true,
-            'has_new' => true,
-            'data'    => $data,
+            'success'     => true,
+            'has_new'     => true,
+            'total_count' => $totalUnshown,
+            'data'        => $data,
         ]);
     }
 

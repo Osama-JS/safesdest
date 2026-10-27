@@ -1037,6 +1037,11 @@ Route::middleware('rate.limit')->group(function () {
                     Route::get('reports/brokers', [App\Http\Controllers\admin\BrokerReportsController::class, 'index'])->name('admin.reports.brokers');
                     Route::post('reports/brokers/preview', [App\Http\Controllers\admin\BrokerReportsController::class, 'preview'])->name('admin.reports.brokers.preview');
                     Route::post('reports/brokers/generate', [App\Http\Controllers\admin\BrokerReportsController::class, 'generate'])->name('admin.reports.brokers.generate');
+
+                    // Payout Reports Routes
+                    Route::get('reports/payouts', [App\Http\Controllers\admin\PayoutReportsController::class, 'index'])->name('admin.reports.payouts');
+                    Route::post('reports/payouts/preview', [App\Http\Controllers\admin\PayoutReportsController::class, 'preview'])->name('admin.reports.payouts.preview');
+                    Route::post('reports/payouts/generate', [App\Http\Controllers\admin\PayoutReportsController::class, 'generate'])->name('admin.reports.payouts.generate');
                 });
 
                 // Sales Routes

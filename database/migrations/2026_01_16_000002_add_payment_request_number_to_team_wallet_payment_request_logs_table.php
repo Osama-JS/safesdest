@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('team_wallet_payment_request_logs', function (Blueprint $table) {
-            $table->string('payment_request_number', 50)->nullable()->after('amount')->comment('رقم طلب السداد المطبوع');
-            $table->index('payment_request_number', 'team_payment_request_number_index');
-        });
+        // Schema::table('team_wallet_payment_request_logs', function (Blueprint $table) {
+        //     $table->string('payment_request_number', 50)->nullable()->after('amount')->comment('رقم طلب السداد المطبوع');
+        //     $table->index('payment_request_number', 'team_payment_request_number_index');
+        // });
     }
 
     /**

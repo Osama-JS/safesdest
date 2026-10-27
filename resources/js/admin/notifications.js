@@ -350,6 +350,104 @@ $(function () {
     }, 350);
   }
 
+  function showSummaryNotificationToast(totalCount) {
+    if (isMobileScreen()) {
+      return;
+    }
+
+    const rtl = isRtl();
+    const container = getToastContainer();
+
+    const toastId = 'toast-summary-' + Math.random().toString(36).substring(2, 7);
+    const title = rtl ? 'إشعارات جديدة' : 'New Notifications';
+    const message = rtl
+      ? `لديك عدد (${totalCount}) من الإشعارات الجديدة.`
+      : `You have (${totalCount}) new notifications.`;
+    const actionText = rtl ? 'عرض جميع الإشعارات' : 'View All Notifications';
+    const closeText = rtl ? 'إغلاق' : 'Close';
+    const arrowIcon = rtl ? 'ti-arrow-left' : 'ti-arrow-right';
+    const allNotificationsUrl = (typeof baseUrl !== 'undefined' ? baseUrl : '/') + 'admin/system-notifications/all';
+
+    const toastHtml = `
+      <div class="app-notification-toast app-notification-summary-toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="p-3">
+          <div class="d-flex align-items-start gap-2 mb-2">
+            <div class="avatar avatar-sm flex-shrink-0">
+              <span class="avatar-initial rounded-circle bg-label-primary shadow-sm">
+                <i class="ti ti-bell-ringing fs-5"></i>
+              </span>
+            </div>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-heading fs-6">${title}</h6>
+                <button type="button" class="btn-close toast-close-btn p-1 ms-2" aria-label="Close"></button>
+              </div>
+              <small class="text-muted"><i class="ti ti-bell me-1"></i>${totalCount} ${rtl ? 'إشعارات متراكمة' : 'notifications'}</small>
+            </div>
+          </div>
+          <p class="mb-2 text-body small fw-medium" style="line-height: 1.45;">${message}</p>
+          <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+            <a href="${allNotificationsUrl}" class="btn btn-xs btn-primary">
+              <i class="ti ${arrowIcon} me-1"></i> ${actionText}
+            </a>
+            <button type="button" class="btn btn-xs btn-label-secondary toast-close-btn">
+              <i class="ti ti-x me-1"></i> ${closeText}
+            </button>
+          </div>
+        </div>
+        <div class="toast-progress"></div>
+      </div>
+    `;
+
+    const $toast = $(toastHtml);
+    $(container).append($toast);
+
+    requestAnimationFrame(() => {
+      $toast.addClass('toast-show');
+    });
+
+    let remainingTime = 7000;
+    let startTime = Date.now();
+    let dismissTimer = null;
+    let isPaused = false;
+
+    function startTimer(duration) {
+      startTime = Date.now();
+      remainingTime = duration;
+      dismissTimer = setTimeout(() => {
+        dismissToast($toast);
+      }, duration);
+    }
+
+    function pauseTimer() {
+      if (!isPaused) {
+        isPaused = true;
+        clearTimeout(dismissTimer);
+        const elapsed = Date.now() - startTime;
+        remainingTime = Math.max(800, remainingTime - elapsed);
+        $toast.find('.toast-progress').css('animation-play-state', 'paused');
+      }
+    }
+
+    function resumeTimer() {
+      if (isPaused) {
+        isPaused = false;
+        $toast.find('.toast-progress').css('animation-play-state', 'running');
+        startTimer(remainingTime);
+      }
+    }
+
+    startTimer(7000);
+
+    $toast.on('mouseenter', pauseTimer);
+    $toast.on('mouseleave', resumeTimer);
+
+    $toast.find('.toast-close-btn').on('click', function (e) {
+      e.stopPropagation();
+      dismissToast($toast);
+    });
+  }
+
   function checkLatestUnshown() {
     $.ajax({
       url: apiBase + '/latest-unshown',
@@ -365,17 +463,27 @@ $(function () {
             $('.dropdown-notifications .ti-bell').removeClass('animate__animated animate__tada');
           }, 1500);
 
-          // 3. Show Toaster for each incoming notification
-          res.data.forEach((item, index) => {
-            setTimeout(() => {
-              showNotificationToast(item);
-            }, index * 250);
+          const totalCount = res.total_count || res.data.length;
 
-            // Also prepend directly to navbar dropdown list
+          // 3. Show Toaster: if > 2 show only 1 summary notification; otherwise show individual notifications
+          if (totalCount > 2) {
+            showSummaryNotificationToast(totalCount);
+          } else {
+            res.data.forEach((item, index) => {
+              setTimeout(() => {
+                showNotificationToast(item);
+              }, index * 250);
+            });
+          }
+
+          // Prepend items to navbar dropdown list
+          res.data.forEach(item => {
             if (notificationList.find('.text-muted').length > 0) {
               notificationList.empty();
             }
-            notificationList.prepend(notificationTemplate(item));
+            if (notificationList.find(`[data-id="${item.id}"]`).length === 0) {
+              notificationList.prepend(notificationTemplate(item));
+            }
           });
 
           // 4. Update unread count

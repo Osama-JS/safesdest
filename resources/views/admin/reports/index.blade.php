@@ -243,6 +243,32 @@
                 </div>
             </div>
 
+            <!-- Payout Payments Report -->
+            <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
+                <div class="card report-card h-100">
+                    <div class="card-body text-center">
+                        <div class="report-icon primary mx-auto" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="ti ti-credit-card"></i>
+                        </div>
+                        <h5 class="card-title">{{ __('تقرير المدفوعات عبر Payout') }}</h5>
+                        <p class="card-text text-muted">
+                            {{ __('استعراض شامل لجميع المدفوعات والتحويلات البنكية الناجحة والفاشلة والمرفوضة عبر بوابة Payout مع فلاتر وإحصائيات متقدمة.') }}
+                        </p>
+                        <div class="mt-3">
+                            <span class="badge bg-primary me-2">{{ __('Excel Export') }}</span>
+                            <span class="badge bg-secondary me-2">{{ __('PDF Export') }}</span>
+                            <span class="badge bg-success">{{ __('Live Preview') }}</span>
+                        </div>
+                        <div class="mt-4">
+                            <a href="{{ route('admin.reports.payouts') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                <i class="ti ti-report me-1"></i>
+                                {{ __('Generate Report') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- <!-- Driver Performance Report (Coming Soon) -->
             <div class="col-xl-4 col-lg-6 col-md-6 mb-4">
                 <div class="card report-card h-100 opacity-50">

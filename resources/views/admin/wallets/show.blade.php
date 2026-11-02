@@ -323,8 +323,19 @@
                                                 </button>
 
                                                 <div id="settlement-panel" class="border rounded p-3 bg-light" style="display: none;">
-                                                    <h6 class="mb-2 text-primary"><i class="ti ti-list-check me-1"></i>{{ __('Unsettled Investor Tasks') }}</h6>
-                                                    <p class="small text-muted mb-2">{{ __('Select tasks to settle with this credit amount.') }}</p>
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                                        <div>
+                                                            <h6 class="mb-0 text-primary"><i class="ti ti-list-check me-1"></i>{{ __('Unsettled Investor Tasks') }}</h6>
+                                                            <p class="small text-muted mb-0">{{ __('Select tasks to settle with this credit amount.') }}</p>
+                                                        </div>
+                                                        <div class="input-group input-group-sm" style="max-width: 250px;">
+                                                            <span class="input-group-text bg-white border-end-0"><i class="ti ti-search text-muted"></i></span>
+                                                            <input type="text" id="searchSettlementTasksInput" class="form-control border-start-0 border-end-0" placeholder="{{ __('Search by Task #...') }}">
+                                                            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearSearchSettlementTasks" style="display: none;">
+                                                                <i class="ti ti-x"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
 
                                                     <div class="d-flex justify-content-between mb-2">
                                                         <span class="fw-bold">{{ __('Credit Amount') }}: <span id="settlement-credit-amount" class="text-success">0</span> ريال</span>
@@ -939,9 +950,19 @@
                         </div>
 
                         <!-- Items Table -->
-                        <h6 class="fw-bold text-secondary mb-2">
-                            <i class="ti ti-list me-1"></i> {{ __('Linked Debit Transactions') }}
-                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <h6 class="fw-bold text-secondary mb-0">
+                                <i class="ti ti-list me-1"></i> {{ __('Linked Debit Transactions') }}
+                                <span class="badge bg-label-secondary ms-1" id="viewInvoiceItemsCount">0</span>
+                            </h6>
+                            <div class="input-group input-group-sm" style="max-width: 260px;">
+                                <span class="input-group-text bg-white border-end-0"><i class="ti ti-search text-muted"></i></span>
+                                <input type="text" id="searchLinkedTransactionsInput" class="form-control border-start-0 border-end-0" placeholder="{{ __('Search by Task #...') }}">
+                                <button type="button" class="btn btn-outline-secondary border-start-0" id="clearSearchLinkedTransactions" style="display: none;">
+                                    <i class="ti ti-x"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="table-responsive border rounded" style="max-height: 250px; overflow-y: auto;">
                             <table class="table table-hover table-sm align-middle mb-0">
                                 <thead class="bg-white border-bottom sticky-top">

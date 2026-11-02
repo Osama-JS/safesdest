@@ -22,9 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('team_wallet_payment_request_logs', function (Blueprint $table) {
-            $table->dropIndex('team_payment_request_number_index');
-            $table->dropColumn('payment_request_number');
-        });
+        // Schema::table('team_wallet_payment_request_logs', function (Blueprint $table) {
+        //     $table->dropIndex('team_payment_request_number_index');
+        //     $table->dropColumn('payment_request_number');
+        // });
     }
 };

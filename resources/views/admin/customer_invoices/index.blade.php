@@ -564,9 +564,19 @@
                     </div>
 
                     <!-- Linked Items Table -->
-                    <h6 class="fw-bold text-secondary mb-2">
-                        <i class="ti ti-list me-1"></i> {{ __('Linked Debit Transactions') }}
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <h6 class="fw-bold text-secondary mb-0">
+                            <i class="ti ti-list me-1"></i> {{ __('Linked Debit Transactions') }}
+                            <span class="badge bg-label-secondary ms-1" id="viewInvoiceItemsCount">0</span>
+                        </h6>
+                        <div class="input-group input-group-sm" style="max-width: 260px;">
+                            <span class="input-group-text bg-white border-end-0"><i class="ti ti-search text-muted"></i></span>
+                            <input type="text" id="searchLinkedTransactionsInput" class="form-control border-start-0 border-end-0" placeholder="{{ __('Search by Task #...') }}">
+                            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearSearchLinkedTransactions" style="display: none;">
+                                <i class="ti ti-x"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div class="table-responsive border rounded" style="max-height: 220px; overflow-y: auto;">
                         <table class="table table-hover table-sm align-middle mb-0">
                             <thead class="bg-white border-bottom sticky-top">

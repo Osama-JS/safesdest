@@ -534,9 +534,11 @@ $(function () {
             const taskCustom = task.custom_task_number || (task.id ? '#' + task.id : '-');
             const deliveryNumber = task.delivery_number || '-';
             const seq = tx.sequence || item.wallet_transaction_id;
+            const taskIdRaw = task.id ? String(task.id) : '';
+            const taskCustomRaw = task.custom_task_number ? String(task.custom_task_number) : '';
 
             itemsHtml += `
-              <tr>
+              <tr class="invoice-item-row" data-task-id="${taskIdRaw}" data-task-custom="${taskCustomRaw}" data-delivery-number="${deliveryNumber}">
                 <td>${index + 1}</td>
                 <td class="font-monospace fw-semibold">${seq}</td>
                 <td><span class="badge bg-label-primary">${taskCustom}</span></td>
@@ -550,6 +552,10 @@ $(function () {
           itemsHtml = '<tr><td colspan="6" class="text-center text-muted py-3">لا توجد حركات مرتبطة</td></tr>';
         }
         $('#viewInvoiceItemsBody').html(itemsHtml);
+        $('#viewInvoiceItemsCount').text(inv.items ? inv.items.length : 0);
+        $('#searchLinkedTransactionsInput').val('');
+        $('#clearSearchLinkedTransactions').hide();
+        $('#viewInvoiceNoSearchResults').remove();
 
         // Quick action buttons in modal:
         // 1. Pay button: ONLY if approved and remaining > 0
@@ -590,6 +596,45 @@ $(function () {
         customClass: { confirmButton: 'btn btn-primary' }
       });
     });
+  });
+
+  // Filter linked transactions by task ID / custom task # in view invoice modal
+  $(document).on('input', '#searchLinkedTransactionsInput', function () {
+    const query = $(this).val().trim().toLowerCase().replace('#', '');
+    if (query.length > 0) {
+      $('#clearSearchLinkedTransactions').show();
+    } else {
+      $('#clearSearchLinkedTransactions').hide();
+    }
+
+    let visibleCount = 0;
+    $('#viewInvoiceItemsBody tr.invoice-item-row').each(function () {
+      const taskId = String($(this).data('task-id') || '').toLowerCase();
+      const taskCustom = String($(this).data('task-custom') || '').toLowerCase();
+      const deliveryNum = String($(this).data('delivery-number') || '').toLowerCase();
+      const rowText = $(this).text().toLowerCase();
+
+      if (!query || taskId.includes(query) || taskCustom.includes(query) || deliveryNum.includes(query) || rowText.includes(query)) {
+        $(this).show();
+        visibleCount++;
+      } else {
+        $(this).hide();
+      }
+    });
+
+    if (visibleCount === 0 && $('#viewInvoiceItemsBody tr.invoice-item-row').length > 0) {
+      if ($('#viewInvoiceNoSearchResults').length === 0) {
+        $('#viewInvoiceItemsBody').append('<tr id="viewInvoiceNoSearchResults"><td colspan="6" class="text-center text-muted py-3"><i class="ti ti-search-off me-1"></i> لا توجد حركات مطابقة لرقم المهمة المطلوب</td></tr>');
+      } else {
+        $('#viewInvoiceNoSearchResults').show();
+      }
+    } else {
+      $('#viewInvoiceNoSearchResults').hide();
+    }
+  });
+
+  $(document).on('click', '#clearSearchLinkedTransactions', function () {
+    $('#searchLinkedTransactionsInput').val('').trigger('input').focus();
   });
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -1137,6 +1137,9 @@ $(function () {
   function renderSettlementTasks() {
     const tbody = $('#settlement-tasks-tbody');
     tbody.empty();
+    $('#searchSettlementTasksInput').val('');
+    $('#clearSearchSettlementTasks').hide();
+    $('#settlementTasksNoResults').remove();
     
     if (unsettledTasks.length === 0) {
       tbody.html('<tr><td colspan="5" class="text-center text-muted">لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
@@ -1160,7 +1163,7 @@ $(function () {
            </small>`;
 
       const tr = `
-        <tr class="${isSettledByAdmin ? 'table-success bg-opacity-10' : ''}">
+        <tr class="settlement-task-row ${isSettledByAdmin ? 'table-success bg-opacity-10' : ''}" data-task-id="${task.task_id}">
           <td>
             <input type="checkbox" class="form-check-input settlement-task-checkbox" data-id="${task.transaction_id}" data-amount="${task.unpaid_amount}" value="${task.transaction_id}">
           </td>
@@ -1175,6 +1178,43 @@ $(function () {
       tbody.append(tr);
     });
   }
+
+  // Filter Unsettled Tasks by Task ID
+  $('#searchSettlementTasksInput').on('input', function() {
+    const query = $(this).val().trim().toLowerCase().replace('#', '');
+    if (query.length > 0) {
+      $('#clearSearchSettlementTasks').show();
+    } else {
+      $('#clearSearchSettlementTasks').hide();
+    }
+
+    let visibleCount = 0;
+    $('#settlement-tasks-tbody tr.settlement-task-row').each(function() {
+      const taskId = String($(this).data('task-id') || '').toLowerCase();
+      const text = $(this).text().toLowerCase();
+
+      if (!query || taskId.includes(query) || text.includes(query)) {
+        $(this).show();
+        visibleCount++;
+      } else {
+        $(this).hide();
+      }
+    });
+
+    if (visibleCount === 0 && $('#settlement-tasks-tbody tr.settlement-task-row').length > 0) {
+      if ($('#settlementTasksNoResults').length === 0) {
+        $('#settlement-tasks-tbody').append('<tr id="settlementTasksNoResults"><td colspan="5" class="text-center text-muted py-3"><i class="ti ti-search-off me-1"></i> لا توجد مهام مطابقة لرقم المهمة</td></tr>');
+      } else {
+        $('#settlementTasksNoResults').show();
+      }
+    } else {
+      $('#settlementTasksNoResults').hide();
+    }
+  });
+
+  $('#clearSearchSettlementTasks').on('click', function() {
+    $('#searchSettlementTasksInput').val('').trigger('input').focus();
+  });
 
   function autoSelectSettlementTasks() {
     const creditAmount = parseFloat($('#trans_amount').val()) || 0;
@@ -1207,7 +1247,12 @@ $(function () {
   });
 
   $('#selectAllSettlementTasks').on('change', function() {
-    $('.settlement-task-checkbox').prop('checked', $(this).prop('checked'));
+    const isChecked = $(this).prop('checked');
+    if ($('#searchSettlementTasksInput').val().trim().length > 0) {
+      $('#settlement-tasks-tbody tr.settlement-task-row:visible .settlement-task-checkbox').prop('checked', isChecked);
+    } else {
+      $('.settlement-task-checkbox').prop('checked', isChecked);
+    }
     updateSettlementTotal();
   });
 
@@ -1838,10 +1883,12 @@ $(function () {
             inv.items.forEach(function (item, idx) {
               const seq = item.wallet_transaction ? item.wallet_transaction.sequence : item.wallet_transaction_id;
               const taskNo = item.task ? (item.task.custom_task_number || item.task_id) : '-';
+              const taskIdRaw = item.task ? String(item.task.id || item.task_id || '') : (item.task_id ? String(item.task_id) : '');
+              const taskCustomRaw = item.task && item.task.custom_task_number ? String(item.task.custom_task_number) : '';
               const deliveryNo = item.task && item.task.delivery_number ? item.task.delivery_number : '-';
               const desc = item.wallet_transaction ? item.wallet_transaction.description : '-';
               itemsHtml += `
-                <tr>
+                <tr class="invoice-item-row" data-task-id="${taskIdRaw}" data-task-custom="${taskCustomRaw}" data-delivery-number="${deliveryNo}">
                   <td>${idx + 1}</td>
                   <td><span class="fw-semibold">${seq}</span></td>
                   <td>${taskNo !== '-' ? '<span class="badge bg-label-info">' + taskNo + '</span>' : '-'}</td>
@@ -1855,6 +1902,10 @@ $(function () {
             itemsHtml = '<tr><td colspan="6" class="text-center text-muted py-2">لا توجد بنود مرتبطة</td></tr>';
           }
           $('#viewInvoiceItemsBody').html(itemsHtml);
+          $('#viewInvoiceItemsCount').text(inv.items ? inv.items.length : 0);
+          $('#searchLinkedTransactionsInput').val('');
+          $('#clearSearchLinkedTransactions').hide();
+          $('#viewInvoiceNoSearchResults').remove();
 
           $('#viewCustomerInvoiceModal').modal('show');
         }
@@ -1866,6 +1917,45 @@ $(function () {
           customClass: { confirmButton: 'btn btn-primary' }
         });
       });
+    });
+
+    // Filter linked transactions by task ID / custom task # in view invoice modal
+    $(document).on('input', '#searchLinkedTransactionsInput', function () {
+      const query = $(this).val().trim().toLowerCase().replace('#', '');
+      if (query.length > 0) {
+        $('#clearSearchLinkedTransactions').show();
+      } else {
+        $('#clearSearchLinkedTransactions').hide();
+      }
+
+      let visibleCount = 0;
+      $('#viewInvoiceItemsBody tr.invoice-item-row').each(function () {
+        const taskId = String($(this).data('task-id') || '').toLowerCase();
+        const taskCustom = String($(this).data('task-custom') || '').toLowerCase();
+        const deliveryNum = String($(this).data('delivery-number') || '').toLowerCase();
+        const rowText = $(this).text().toLowerCase();
+
+        if (!query || taskId.includes(query) || taskCustom.includes(query) || deliveryNum.includes(query) || rowText.includes(query)) {
+          $(this).show();
+          visibleCount++;
+        } else {
+          $(this).hide();
+        }
+      });
+
+      if (visibleCount === 0 && $('#viewInvoiceItemsBody tr.invoice-item-row').length > 0) {
+        if ($('#viewInvoiceNoSearchResults').length === 0) {
+          $('#viewInvoiceItemsBody').append('<tr id="viewInvoiceNoSearchResults"><td colspan="6" class="text-center text-muted py-3"><i class="ti ti-search-off me-1"></i> لا توجد حركات مطابقة لرقم المهمة المطلوب</td></tr>');
+        } else {
+          $('#viewInvoiceNoSearchResults').show();
+        }
+      } else {
+        $('#viewInvoiceNoSearchResults').hide();
+      }
+    });
+
+    $(document).on('click', '#clearSearchLinkedTransactions', function () {
+      $('#searchLinkedTransactionsInput').val('').trigger('input').focus();
     });
 
     // Pay Invoice Modal

@@ -119,6 +119,10 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
     Route::get('/task-ads/{id}', [\App\Http\Controllers\Api\DriverTaskAdsController::class, 'show'])
         ->name('api.driver.task-ads.show');
 
+    // Demand Heatmap for available opportunities
+    Route::get('/heatmap', [\App\Http\Controllers\Api\DriverHeatmapController::class, 'getHeatmapData'])
+        ->name('api.driver.heatmap');
+
     // Location, status and FCM token routes (allowed for all authenticated drivers including guests)
     Route::prefix('location')->group(function () {
         Route::post('/', [\App\Http\Controllers\Api\DriverLocationController::class, 'updateLocation'])
@@ -195,6 +199,15 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
 
         Route::post('/{task}/cancel', [DriverTaskController::class, 'cancelTask'])
             ->name('api.driver.tasks.cancel');
+
+        Route::get('/{task}/document-download-url', [DriverTaskController::class, 'getDocumentDownloadUrl'])
+            ->name('api.driver.tasks.document-download-url');
+
+        // Task Chat Routes
+        Route::get('/{task}/messages', [\App\Http\Controllers\Api\DriverTaskChatController::class, 'index'])
+            ->name('api.driver.tasks.messages.index');
+        Route::post('/{task}/messages', [\App\Http\Controllers\Api\DriverTaskChatController::class, 'store'])
+            ->name('api.driver.tasks.messages.store');
     });
 
     // Task Ads routes (actions requiring completed profile)

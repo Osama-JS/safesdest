@@ -147,6 +147,12 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks/{id}/payment-status', [CustomerTaskController::class, 'getPaymentStatus'])
         ->name('api.customer.tasks.payment-status');
 
+    // Task Live Chat routes
+    Route::get('/tasks/{id}/messages', [\App\Http\Controllers\Api\CustomerTaskChatController::class, 'index'])
+        ->name('api.customer.tasks.messages.index');
+    Route::post('/tasks/{id}/messages', [\App\Http\Controllers\Api\CustomerTaskChatController::class, 'store'])
+        ->name('api.customer.tasks.messages.store');
+
     // Wallet view routes (Allowed for guests to view)
     Route::post('/wallet', [CustomerWalletController::class, 'show'])
     ->name('api.customer.wallet');

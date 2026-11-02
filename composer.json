@@ -17,6 +17,7 @@
     "laravel-notification-channels/webpush": "^10.2",
     "laravel/framework": "^11.0",
     "laravel/jetstream": "^5.3",
+    "laravel/reverb": "^1.12",
     "laravel/sanctum": "^4.0",
     "laravel/tinker": "^2.9",
     "livewire/livewire": "^3.0",
@@ -84,6 +85,19 @@
       "php-http/discovery": true
     }
   },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://repo.packagist.org",
+      "options": {
+        "ssl": {
+          "verify_peer": false,
+          "verify_peer_name": false,
+          "allow_self_signed": true
+        }
+      }
+    }
+  ],
   "minimum-stability": "stable",
   "prefer-stable": true
 }

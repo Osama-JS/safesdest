@@ -1059,13 +1059,86 @@ class DriverTaskController extends Controller
     }
 
     /**
-     * Download waybill
+     * Generate a temporary signed download URL for task documents
      */
-          public function downloadWaybill(Request $request, $taskId)
+    public function getDocumentDownloadUrl(Request $request, $taskId)
     {
         try {
-            // Allow token in query string for launchUrl compatibility
-            if (!$request->user() && $request->has('token')) {
+            $validator = Validator::make($request->all(), [
+                'type' => 'required|string|in:waybill,customer-policy'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $driver = $request->user();
+            $task = Task::where('driver_id', $driver->id)->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found or not assigned to you'
+                ], 404);
+            }
+
+            $type = $request->input('type');
+            $routeName = $type === 'waybill'
+                ? 'api.driver.tasks.waybill'
+                : 'api.driver.tasks.customer-policy';
+
+            // Generate signed URL valid for 5 minutes (300 seconds)
+            $signedUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+                $routeName,
+                now()->addMinutes(5),
+                [
+                    'task' => $task->id,
+                    'driver' => $driver->id
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Download URL generated successfully',
+                'data' => [
+                    'download_url' => $signedUrl,
+                    'expires_in' => 300
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Generate document download URL error', [
+                'error' => $e->getMessage(),
+                'task_id' => $taskId,
+                'driver_id' => $request->user()->id ?? 'unknown'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate download URL'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download waybill
+     */
+    public function downloadWaybill(Request $request, $taskId)
+    {
+        try {
+            $driver = null;
+
+            // 1. Verify Signed URL (New secure method)
+            if ($request->hasValidSignature()) {
+                $driverId = $request->query('driver');
+                $driver = Driver::find($driverId);
+            }
+            // 2. Legacy Token in query string (Backward compatibility)
+            elseif ($request->has('token')) {
                 $token = $request->token;
                 if (strpos($token, '|') !== false) {
                     $token = explode('|', $token)[1];
@@ -1077,14 +1150,19 @@ class DriverTaskController extends Controller
 
                 if ($accessToken && $accessToken->tokenable_type === 'App\Models\Driver') {
                     $driver = Driver::find($accessToken->tokenable_id);
-                    if ($driver) {
-                        auth()->login($driver);
-                    }
                 }
             }
+            // 3. Sanctum header user
+            elseif ($request->user()) {
+                $driver = $request->user();
+            }
 
-            $driver = $request->user();
-            if (!$driver) return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized or expired link'
+                ], 401);
+            }
 
             $task = Task::with(['customer', 'pickup', 'delivery', 'driver', 'team'])
                 ->where('driver_id', $driver->id)
@@ -1095,7 +1173,7 @@ class DriverTaskController extends Controller
             Log::error('Download waybill error', [
                 'error' => $e->getMessage(),
                 'task_id' => $taskId,
-                'driver_id' => $request->user()->id ?? 'unknown'
+                'driver_id' => $driver->id ?? ($request->user()->id ?? 'unknown')
             ]);
 
             return response()->json([
@@ -1111,8 +1189,15 @@ class DriverTaskController extends Controller
     public function downloadCustomerPolicy(Request $request, $taskId)
     {
         try {
-            // Allow token in query string for launchUrl compatibility
-            if (!$request->user() && $request->has('token')) {
+            $driver = null;
+
+            // 1. Verify Signed URL (New secure method)
+            if ($request->hasValidSignature()) {
+                $driverId = $request->query('driver');
+                $driver = Driver::find($driverId);
+            }
+            // 2. Legacy Token in query string (Backward compatibility)
+            elseif ($request->has('token')) {
                 $token = $request->token;
                 if (strpos($token, '|') !== false) {
                     $token = explode('|', $token)[1];
@@ -1124,14 +1209,19 @@ class DriverTaskController extends Controller
 
                 if ($accessToken && $accessToken->tokenable_type === 'App\Models\Driver') {
                     $driver = Driver::find($accessToken->tokenable_id);
-                    if ($driver) {
-                        auth()->login($driver);
-                    }
                 }
             }
+            // 3. Sanctum header user
+            elseif ($request->user()) {
+                $driver = $request->user();
+            }
 
-            $driver = $request->user();
-            if (!$driver) return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized or expired link'
+                ], 401);
+            }
 
             $task = Task::with(['customer', 'pickup', 'delivery', 'driver', 'team'])
                 ->where('driver_id', $driver->id)
@@ -1142,7 +1232,7 @@ class DriverTaskController extends Controller
             Log::error('Download customer policy error', [
                 'error' => $e->getMessage(),
                 'task_id' => $taskId,
-                'driver_id' => $request->user()->id ?? 'unknown'
+                'driver_id' => $driver->id ?? ($request->user()->id ?? 'unknown')
             ]);
 
             return response()->json([

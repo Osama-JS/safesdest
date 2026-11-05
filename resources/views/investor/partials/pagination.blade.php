@@ -27,7 +27,7 @@
     </div>
 
     {{-- أزرار التنقل --}}
-    <nav aria-label="{{ __('Pagination') }}">
+    <nav aria-label="{{ __('Pagination Navigation') }}">
         <ul class="investor-pagination mb-0 d-flex align-items-center gap-1">
 
             {{-- زر الصفحة الأولى --}}

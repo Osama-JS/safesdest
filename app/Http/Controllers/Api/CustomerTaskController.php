@@ -126,16 +126,35 @@ class CustomerTaskController extends Controller
     {
         try {
             $customer = $request->user();
-            $query = Task::where('customer_id', $customer->id)->where('closed', false)->where('status', '!=', 'canceled')->where('status', '!=', 'refund');
+            $query = Task::with(['pickup', 'delivery', 'driver', 'vehicle_size.type.vehicle'])
+                ->where('customer_id', $customer->id)
+                ->where('closed', false)
+                ->where('status', '!=', 'canceled')
+                ->where('status', '!=', 'refund');
 
             $tasks = $query->get();
 
-            $tasksData = $tasks->map(function ($task) {
-                $lat = $task->pickup->latitude;
-                $lng = $task->pickup->longitude;
+            $unreadMap = \App\Models\TaskChatMessage::whereIn('task_id', $tasks->pluck('id'))
+                ->where('sender_type', 'driver')
+                ->where('is_read', false)
+                ->selectRaw('task_id, COUNT(*) as count')
+                ->groupBy('task_id')
+                ->pluck('count', 'task_id');
+
+            $tasksData = $tasks->map(function ($task) use ($unreadMap) {
+                $lat = $task->pickup?->latitude;
+                $lng = $task->pickup?->longitude;
                 if ($task->driver_id && in_array($task->status, ['in_progress', 'assign'])) {
-                    $lat = $task->driver->altitude;
-                    $lng = $task->driver->longitude;
+                    if (!empty($task->driver?->altitude) && !empty($task->driver?->longitude)) {
+                        $lat = $task->driver->altitude;
+                        $lng = $task->driver->longitude;
+                    }
+                }
+                if (empty($lat) || empty($lng)) {
+                    if (!empty($task->delivery?->latitude) && !empty($task->delivery?->longitude)) {
+                        $lat = $task->delivery->latitude;
+                        $lng = $task->delivery->longitude;
+                    }
                 }
                 $main_status = 'in_progress';
                 if ($task->status == 'completed') {
@@ -172,6 +191,7 @@ class CustomerTaskController extends Controller
                     'price' => (string) $task->total_price, // ✅ تحويل إلى string
                     'currency' => 'SAR',
                     'vehicle' => $task->vehicle_size ? $task->vehicle_size->type->vehicle->name . '-' . $task->vehicle_size->type->name . ' - ' . $task->vehicle_size->name : null,
+                    'unread_chat_count' => (int) ($unreadMap[$task->id] ?? 0),
                     'created_at' => $task->created_at,
                 ];
             });
@@ -265,7 +285,14 @@ class CustomerTaskController extends Controller
             $tasks = $query->with(['driver', 'vehicle_size', 'pricingTemplate'])
                           ->paginate($perPage);
 
-            $tasksData = $tasks->map(function ($task) {
+            $unreadMap = \App\Models\TaskChatMessage::whereIn('task_id', $tasks->pluck('id'))
+                ->where('sender_type', 'driver')
+                ->where('is_read', false)
+                ->selectRaw('task_id, COUNT(*) as count')
+                ->groupBy('task_id')
+                ->pluck('count', 'task_id');
+
+            $tasksData = $tasks->map(function ($task) use ($unreadMap) {
                 // $runing = $task->status->in(['advertised', 'in_progress', 'assign','started','in pickup point','loading','in the way','in delivery point','unloading']) ?? 0;
                 return [
                     'id' => $task->id,
@@ -328,7 +355,7 @@ class CustomerTaskController extends Controller
                         }
                         return $item;
                     }),
-
+                    'unread_chat_count' => (int) ($unreadMap[$task->id] ?? 0),
                     'created_at' => $task->created_at,
                 ];
             });
@@ -446,6 +473,10 @@ class CustomerTaskController extends Controller
                     }
                     return $item;
                 }),
+                'unread_chat_count' => \App\Models\TaskChatMessage::where('task_id', $task->id)
+                    ->where('sender_type', 'driver')
+                    ->where('is_read', false)
+                    ->count(),
                 'created_at' => $task->created_at,
                 'history' => $history,
             ];

@@ -58,19 +58,31 @@ class InvestorWalletsController extends Controller
                 ]);
             }
 
-            // Credit (Deposits/Capital) - ONLY within date range
-            $credit = (float) (clone $queryInPeriod)
+            // إجمالي رأس المال المودع (Deposits/Capital) - ONLY within date range
+            $depositedCapital = (float) (clone $queryInPeriod)
                 ->where('transaction_type', 'credit')
                 ->whereIn('source_type', ['capital', 'hyperpay'])
                 ->sum('amount');
 
-            // Returned Capital - ONLY within date range
+            // إجمالي سحوبات رأس المال المنفذة (سحوبات نقدية بدون task_id)
+            $withdrawnCapital = (float) (clone $queryInPeriod)
+                ->where('transaction_type', 'debit')
+                ->whereNull('task_id')
+                ->sum('amount');
+
+            // صافي رأس المال الأساسي الفعلي للمستثمر (مطابق لـ investor/dashboard)
+            $baseCapital = max(0, $depositedCapital - $withdrawnCapital);
+
+            // للتوافق العكسي
+            $credit = $depositedCapital;
+
+            // Returned Capital (رأس المال المسترد من المهام بعد السداد) - ONLY within date range
             $returned_capital = (float) (clone $queryInPeriod)
                 ->where('transaction_type', 'credit')
                 ->whereIn('source_type', ['refund', 'capital_return'])
                 ->sum('amount');
 
-            // Debit (Withdrawals/Funding) - ONLY within date range
+            // Debit (إجمالي المصروفات والتمويل والمسحوبات) - ONLY within date range
             $debit = (float) (clone $queryInPeriod)
                 ->where('transaction_type', 'debit')
                 ->sum('amount');
@@ -83,6 +95,9 @@ class InvestorWalletsController extends Controller
             $balance = (float) $queryUpToDate
                 ->selectRaw("SUM(CASE WHEN transaction_type = 'credit' THEN amount ELSE -amount END) as balance")
                 ->value('balance') ?? 0;
+
+            // المبلغ الذي لا يزال في السوق معلقاً في المهام ولم يسترد بعد (صافي رأس المال - الرصيد المتاح)
+            $activeMarketCapital = max(0, $baseCapital - $balance);
 
             // Capital withdrawal requests & disbursement alerts
             $capitalWithdrawalRequests = InvestorCapitalWithdrawal::where('user_id', $user->id)
@@ -98,6 +113,10 @@ class InvestorWalletsController extends Controller
                 'wallet'                      => $wallet,
                 'balance'                     => $balance,
                 'credit'                      => $credit,
+                'depositedCapital'            => $depositedCapital,
+                'withdrawnCapital'            => $withdrawnCapital,
+                'baseCapital'                 => $baseCapital,
+                'activeMarketCapital'         => $activeMarketCapital,
                 'returned_capital'            => $returned_capital,
                 'debit'                       => $debit,
                 'from_date'                   => $fromDate,

@@ -28,7 +28,7 @@ class TaskChatMessageSent implements ShouldBroadcastNow
             'receiver_type' => $message->receiver_type,
             'receiver_id' => $message->receiver_id,
             'message' => $message->message,
-            'attachment_url' => $message->attachment_url,
+            'attachment_url' => $message->attachment_url ? url($message->attachment_url) : null,
             'is_read' => (bool) $message->is_read,
             'created_at' => $message->created_at?->toIso8601String(),
         ];

@@ -45,6 +45,9 @@ Route::prefix('customer')->group(function () {
         ]);
     });
 
+    // Dynamic support contacts endpoint
+    Route::get('/support-contacts', [\App\Http\Controllers\Api\SupportContactController::class, 'getSupportContacts']);
+
 
     Route::get('/template', [CustomerAuthController::class, 'getTemplate'])
         ->name('api.customer.template');
@@ -152,6 +155,10 @@ Route::prefix('customer')->middleware(['auth:sanctum'])->group(function () {
         ->name('api.customer.tasks.messages.index');
     Route::post('/tasks/{id}/messages', [\App\Http\Controllers\Api\CustomerTaskChatController::class, 'store'])
         ->name('api.customer.tasks.messages.store');
+    Route::get('/tasks/{id}/unread-messages', [\App\Http\Controllers\Api\CustomerTaskChatController::class, 'unreadCount'])
+        ->name('api.customer.tasks.messages.unread');
+    Route::get('/chat/unread-counts', [\App\Http\Controllers\Api\CustomerTaskChatController::class, 'unreadCounts'])
+        ->name('api.customer.chat.unread-counts');
 
     // Wallet view routes (Allowed for guests to view)
     Route::post('/wallet', [CustomerWalletController::class, 'show'])

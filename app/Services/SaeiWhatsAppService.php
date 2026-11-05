@@ -206,32 +206,41 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
     {
         $phoneFormatted = $this->formatPhone($phone);
 
+        // Normalize known Meta numeric template IDs or Saei IDs to template name
+        if ($purpose === '1495371592407814' || $purpose === 'tpl_461') {
+            $purpose = 'new_task';
+        }
+
         // Find active template
         $template = WhatsappTemplate::where('status', 1)
             ->where(function($q) use ($purpose) {
                 $q->where('purpose', $purpose)
                   ->orWhere('template_name', $purpose);
+                if (is_numeric($purpose)) {
+                    $q->orWhere('id', (int)$purpose);
+                }
             })
             ->first();
 
-        if (!$template) {
+        // If not found in local table, use purpose directly as template_name if provided
+        $templateName = $template ? $template->template_name : trim($purpose);
+        $templateLang = $template ? ($template->language ?: $lang) : $lang;
+
+        if (empty($templateName)) {
             Log::warning("[SaeiWhatsApp] No active template found for purpose/name: {$purpose}");
             return [
                 'success' => false,
                 'code'    => 'template_not_found',
-                'message' => "لم يتم العثور على قالب نشط وموثق باسم: {$purpose}",
+                'message' => "لم يتم العثور على قالب نشط وموثق باسم أو معرّف: {$purpose}",
             ];
         }
-
-        $templateName = $template->template_name;
-        $templateLang = $template->language ?: $lang;
         $reference = 'tpl_' . Str::random(16);
 
         // Conversation (normalized digits, matching with or without '+')
         $conversation = WhatsappConversation::findOrCreateByPhone($phoneFormatted);
 
         // Render preview body
-        $renderedBody = $template->body_text ?? "قالب: {$templateName}";
+        $renderedBody = $template?->body_text ?? "قالب: {$templateName}";
         if (!empty($variables)) {
             foreach ($variables as $index => $val) {
                 $renderedBody = str_replace('{{' . ($index + 1) . '}}', (string)$val, $renderedBody);
@@ -281,7 +290,7 @@ class SaeiWhatsAppService implements WhatsAppServiceInterface
         }
 
         // Check if template buttons require dynamic url_suffix (e.g. OTP copy-code or dynamic link)
-        $components = is_string($template->components) ? json_decode($template->components, true) : ($template->components ?? []);
+        $components = ($template && is_string($template->components)) ? json_decode($template->components, true) : ($template?->components ?? []);
         $buttonVars = [];
         if (!empty($components)) {
             foreach ($components as $comp) {

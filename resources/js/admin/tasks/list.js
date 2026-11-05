@@ -1904,12 +1904,319 @@ $(function () {
   });
 
   function toggleBulkShareButton() {
-    if ($('.dt-checkboxes:checked').length > 0) {
+    const checkedCount = $('.dt-checkboxes:checked').length;
+    if (checkedCount === 1) {
+      $('#broadcastTaskWhatsapp').fadeIn();
+      $('#shareSelectedWhatsapp').fadeIn();
+    } else if (checkedCount > 1) {
+      $('#broadcastTaskWhatsapp').fadeOut();
       $('#shareSelectedWhatsapp').fadeIn();
     } else {
+      $('#broadcastTaskWhatsapp').fadeOut();
       $('#shareSelectedWhatsapp').fadeOut();
     }
   }
+
+  // Handle WhatsApp Broadcast to Eligible Drivers
+  let currentBroadcastTaskId = null;
+
+  $(document).on('click', '#broadcastTaskWhatsapp', function () {
+    const checked = $('.dt-checkboxes:checked');
+    if (checked.length !== 1) {
+      showAlert('warning', 'يرجى تحديد مهمة واحدة فقط لإرسال الإشعار إلى سائقيها.');
+      return;
+    }
+
+    currentBroadcastTaskId = checked.val();
+
+    // Reset modal state
+    $('#bt_modal_task_number').text('#' + currentBroadcastTaskId);
+    $('#bt_modal_loader').show();
+    $('#bt_modal_content').hide();
+    $('#bt_driver_search').val('');
+    $('#bt_custom_phone').val('');
+    $('#bt_select_all').prop('checked', true).prop('indeterminate', false);
+    $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', true);
+    $('#bt_empty_state').hide();
+    $('#bt_drivers_table').show();
+
+    const modalEl = document.getElementById('broadcastTaskDriversModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    fetch(`${baseUrl}admin/tasks/${currentBroadcastTaskId}/eligible-drivers-whatsapp`, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        $('#bt_modal_loader').hide();
+
+        if (data.status !== 1) {
+          showAlert('danger', data.message || 'حدث خطأ أثناء جلب بيانات السائقين المؤهلين.');
+          modal.hide();
+          return;
+        }
+
+        // Fill task info
+        const taskNum = data.task && data.task.customer_task_number ? `C#${data.task.customer_task_number} (#${data.task.id})` : (data.task && data.task.task_number ? data.task.task_number : `#${(data.task && data.task.id) || ''}`);
+        $('#bt_modal_task_number').text(taskNum);
+        $('#bt_task_vehicle').text((data.task && (data.task.vehicle_label || data.task.vehicle_info)) || '-');
+        $('#bt_task_from').text((data.task && data.task.from) || '-');
+        $('#bt_task_to').text((data.task && data.task.to) || '-');
+
+        // Message preview variables (defensive fallback)
+        const v1 = (data.template && data.template.preview && data.template.preview.var1) || (data.template && data.template.var_1) || (data.task && (data.task.vehicle_label || data.task.vehicle_info)) || '-';
+        const v2 = (data.template && data.template.preview && data.template.preview.var2) || (data.template && data.template.var_2) || (data.task && data.task.from) || '-';
+        const v3 = (data.template && data.template.preview && data.template.preview.var3) || (data.template && data.template.var_3) || (data.task && data.task.to) || '-';
+        $('#bt_preview_var1').text(v1);
+        $('#bt_preview_var2').text(v2);
+        $('#bt_preview_var3').text(v3);
+
+        // Check if template is configured
+        if (!data.template || !data.template.is_configured) {
+          $('#bt_template_warning').attr('style', 'display: flex !important;');
+        } else {
+          $('#bt_template_warning').attr('style', 'display: none !important;');
+        }
+
+        renderBroadcastDrivers(data.drivers || []);
+        $('#bt_modal_content').fadeIn();
+      })
+      .catch(err => {
+        $('#bt_modal_loader').hide();
+        console.error(err);
+        showAlert('danger', 'خطأ في الاتصال بالخادم أثناء جلب السائقين.');
+      });
+  });
+
+  function renderBroadcastDrivers(drivers) {
+    const tbody = $('#bt_drivers_tbody');
+    tbody.empty();
+
+    if (!drivers || drivers.length === 0) {
+      $('#bt_drivers_table').hide();
+      $('#bt_empty_state').show();
+      $('#bt_selected_count').text('0');
+      $('#bt_total_count').text('0');
+      $('#bt_btn_count').text('0');
+      $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', true);
+      return;
+    }
+
+    $('#bt_empty_state').hide();
+    $('#bt_drivers_table').show();
+
+    drivers.forEach(driver => {
+      const avatarSrc = driver.image || driver.avatar;
+      const avatarHtml = avatarSrc
+        ? `<img src="${avatarSrc}" class="rounded-circle me-2" width="28" height="28" alt="${driver.name}">`
+        : `<span class="avatar-initial rounded-circle bg-label-success me-2 p-1 small" style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;"><i class="ti ti-user small"></i></span>`;
+
+      const statusBadge = driver.status === 'active'
+        ? '<span class="badge bg-label-success">نشط</span>'
+        : (driver.status === 'verified' ? '<span class="badge bg-label-primary">معتمد</span>' : `<span class="badge bg-label-secondary">${driver.status}</span>`);
+
+      const rowHtml = `
+        <tr class="bt-driver-row" data-driver-name="${(driver.name || '').toLowerCase()}" data-driver-phone="${driver.phone || ''}">
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input bt-driver-check" value="${driver.id}" checked>
+          </td>
+          <td>
+            <div class="d-flex align-items-center">
+              ${avatarHtml}
+              <div>
+                <span class="fw-bold d-block text-dark">${driver.name || '-'}</span>
+                <small class="text-muted">ID: #${driver.id}</small>
+              </div>
+            </div>
+          </td>
+          <td dir="ltr" class="text-end">
+            <span class="badge bg-label-secondary font-monospace">
+              <i class="ti ti-phone me-1 small"></i>${driver.full_phone || driver.whatsapp_formatted || driver.whatsapp || driver.phone || '-'}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-label-info">${driver.team || '-'}</span>
+          </td>
+          <td class="text-center">
+            ${statusBadge}
+          </td>
+        </tr>
+      `;
+      tbody.append(rowHtml);
+    });
+
+    updateBroadcastCounters();
+  }
+
+  function updateBroadcastCounters() {
+    const visibleRows = $('.bt-driver-row:visible');
+    const totalVisible = visibleRows.length;
+    const selectedVisible = visibleRows.find('.bt-driver-check:checked').length;
+    const customPhone = ($('#bt_custom_phone').val() || '').trim();
+    const hasCustomPhone = customPhone.length >= 8;
+
+    $('#bt_selected_count').text(selectedVisible);
+    $('#bt_total_count').text(totalVisible);
+
+    if (selectedVisible > 0 && hasCustomPhone) {
+      $('#bt_btn_count').text(`${selectedVisible} + رقم خاص`);
+      $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', false);
+    } else if (selectedVisible > 0) {
+      $('#bt_btn_count').text(selectedVisible);
+      $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', false);
+    } else if (hasCustomPhone) {
+      $('#bt_btn_count').text('رقم خاص');
+      $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', false);
+    } else {
+      $('#bt_btn_count').text('0');
+      $('#btnConfirmBroadcastTaskWhatsapp').prop('disabled', true);
+    }
+
+    if (totalVisible === 0) {
+      $('#bt_select_all').prop('checked', false).prop('indeterminate', false);
+    } else if (selectedVisible === totalVisible) {
+      $('#bt_select_all').prop('checked', true).prop('indeterminate', false);
+    } else if (selectedVisible === 0) {
+      $('#bt_select_all').prop('checked', false).prop('indeterminate', false);
+    } else {
+      $('#bt_select_all').prop('indeterminate', true);
+    }
+  }
+
+  // Handle custom phone input change
+  $(document).on('input', '#bt_custom_phone', function () {
+    updateBroadcastCounters();
+  });
+
+  // Filter drivers by search input
+  $(document).on('input', '#bt_driver_search', function () {
+    const term = $(this).val().trim().toLowerCase();
+    $('.bt-driver-row').each(function () {
+      const name = $(this).data('driver-name') || '';
+      const phone = String($(this).data('driver-phone') || '');
+      if (!term || name.includes(term) || phone.includes(term)) {
+        $(this).show();
+      } else {
+        $(this).hide();
+      }
+    });
+    updateBroadcastCounters();
+  });
+
+  // Select all visible drivers toggle
+  $(document).on('change', '#bt_select_all', function () {
+    const isChecked = $(this).is(':checked');
+    $('.bt-driver-row:visible .bt-driver-check').prop('checked', isChecked);
+    updateBroadcastCounters();
+  });
+
+  // Individual driver checkbox
+  $(document).on('change', '.bt-driver-check', function () {
+    updateBroadcastCounters();
+  });
+
+  // Send WhatsApp Broadcast
+  $(document).on('click', '#btnConfirmBroadcastTaskWhatsapp', function () {
+    const selectedDriverIds = [];
+    $('.bt-driver-row:visible .bt-driver-check:checked').each(function () {
+      selectedDriverIds.push($(this).val());
+    });
+    const customPhone = ($('#bt_custom_phone').val() || '').trim();
+
+    if (selectedDriverIds.length === 0 && !customPhone) {
+      showAlert('warning', 'يرجى تحديد سائق واحد على الأقل أو إدخال رقم هاتف خاص لإرسال الإشعار إليه.');
+      return;
+    }
+
+    if (!currentBroadcastTaskId) {
+      showAlert('danger', 'لم يتم العثور على معرّف المهمة.');
+      return;
+    }
+
+    let confirmMsg = '';
+    if (selectedDriverIds.length > 0 && customPhone) {
+      confirmMsg = `هل أنت متأكد من رغبتك في إرسال إشعار المهمة عبر واتساب إلى (${selectedDriverIds.length}) سائق معتمد بالإضافة إلى الرقم الخاص (${customPhone})؟`;
+    } else if (selectedDriverIds.length > 0) {
+      confirmMsg = `هل أنت متأكد من رغبتك في إرسال إشعار المهمة عبر واتساب إلى (${selectedDriverIds.length}) سائق معتمد؟`;
+    } else {
+      confirmMsg = `هل أنت متأكد من رغبتك في إرسال إشعار المهمة عبر واتساب إلى الرقم الخاص (${customPhone})؟`;
+    }
+
+    Swal.fire({
+      title: 'تأكيد الإرسال',
+      text: confirmMsg,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      cancelButtonColor: '#8592a3',
+      confirmButtonText: 'نعم، إرسال الآن',
+      cancelButtonText: 'إلغاء'
+    }).then(result => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'جاري إرسال الإشعارات...',
+          html: 'يرجى الانتظار، جاري إرسال قوالب واتساب للمستلمين المحددين.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        fetch(`${baseUrl}admin/tasks/${currentBroadcastTaskId}/broadcast-whatsapp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            driver_ids: selectedDriverIds,
+            custom_phone: customPhone
+          })
+        })
+          .then(res => res.json())
+          .then(data => {
+            Swal.close();
+            if (data.status === 1) {
+              const modalEl = document.getElementById('broadcastTaskDriversModal');
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              if (modal) modal.hide();
+
+              Swal.fire({
+                title: 'تم الإرسال بنجاح!',
+                text: data.message,
+                icon: 'success',
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#198754'
+              });
+            } else {
+              Swal.fire({
+                title: 'تنبيه',
+                text: data.message || 'فشل في إرسال الإشعارات',
+                icon: 'error',
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#d33'
+              });
+            }
+          })
+          .catch(err => {
+            Swal.close();
+            console.error(err);
+            Swal.fire({
+              title: 'خطأ',
+              text: 'حدث خطأ أثناء الاتصال بالخادم.',
+              icon: 'error',
+              confirmButtonText: 'حسناً'
+            });
+          });
+      }
+    });
+  });
 
   // Bulk share handler
   $(document).on('click', '#shareSelectedWhatsapp', function () {

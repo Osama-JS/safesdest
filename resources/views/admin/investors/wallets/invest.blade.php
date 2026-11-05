@@ -483,65 +483,111 @@
     <!-- Wallet Statistics -->
     <div class="row g-4 mb-4">
         <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-body position-relative">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar bg-label-success rounded me-3">
-                            <i class="ti ti-wallet ti-md"></i>
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body position-relative d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="avatar bg-label-success rounded me-3">
+                                <i class="ti ti-wallet ti-md"></i>
+                            </div>
+                            <div>
+                                <span class="text-heading fw-bold d-block">{{ __('Available Investment Balance') }}</span>
+                                <small class="text-muted" style="font-size: 0.78rem;">{{ __('Available for task funding') }}</small>
+                            </div>
                         </div>
-                        <span class="text-muted fw-medium">{{ __('Current Available Balance Label') }}</span>
+                        <div class="d-flex align-items-baseline mt-2">
+                            <h3 class="mb-0 fw-bold text-success">{{ number_format($balance, 2) }}</h3>
+                            <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-baseline">
-                        <h3 class="mb-0 fw-bold text-success">{{ number_format($balance, 2) }}</h3>
-                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                    <div class="mt-2 pt-2 border-top small text-muted">
+                        <span><i class="ti ti-circle-check text-success me-1"></i>{{ __('Ready for active funding') }}</span>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar bg-label-info rounded me-3">
-                            <i class="ti ti-trending-up ti-md"></i>
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="avatar bg-label-primary rounded me-3">
+                                <i class="ti ti-building-bank ti-md"></i>
+                            </div>
+                            <div>
+                                <span class="text-heading fw-bold d-block">{{ __('Net Base Capital') }}</span>
+                                <small class="text-muted" style="font-size: 0.78rem;">{{ __('Net deposited & retained capital') }}</small>
+                            </div>
                         </div>
-                        <span class="text-muted fw-medium">{{ __('Total Capital Label') }}</span>
+                        <div class="d-flex align-items-baseline mt-2">
+                            <h3 class="mb-0 fw-bold text-primary">{{ number_format($baseCapital ?? $credit, 2) }}</h3>
+                            <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-baseline">
-                        <h3 class="mb-0 fw-bold text-info">{{ number_format($credit, 2) }}</h3>
-                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                        <span class="text-muted" title="{{ __('Gross Deposited Capital') }}">
+                            {{ __('Gross:') }} <strong class="text-heading">{{ number_format($depositedCapital ?? $credit, 2) }}</strong>
+                        </span>
+                        @if(isset($withdrawnCapital) && $withdrawnCapital > 0)
+                            <span class="text-danger" title="{{ __('Capital Withdrawals') }}">
+                                <i class="ti ti-arrow-down-left"></i> {{ __('Withdrawn:') }} <strong>{{ number_format($withdrawnCapital, 2) }}</strong>
+                            </span>
+                        @else
+                            <span class="text-muted small">{{ __('No withdrawals') }}</span>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar bg-label-warning rounded me-3">
-                            <i class="ti ti-arrow-back-up ti-md"></i>
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="avatar bg-label-info rounded me-3">
+                                <i class="ti ti-arrow-back-up ti-md"></i>
+                            </div>
+                            <div>
+                                <span class="text-heading fw-bold d-block">{{ __('Total Returned Capital') }}</span>
+                                <small class="text-muted" style="font-size: 0.78rem;">{{ __('Returned after task settlements') }}</small>
+                            </div>
                         </div>
-                        <span class="text-muted fw-medium">{{ __('Total Investment Returns') }}</span>
+                        <div class="d-flex align-items-baseline mt-2">
+                            <h3 class="mb-0 fw-bold text-info">{{ number_format($returned_capital, 2) }}</h3>
+                            <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-baseline">
-                        <h3 class="mb-0 fw-bold text-warning">{{ number_format($returned_capital, 2) }}</h3>
-                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                    <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                        <span class="text-muted" title="{{ __('Capital currently active in tasks in the market') }}">
+                            {{ __('Still in Market:') }}
+                        </span>
+                        <span class="badge bg-label-warning px-2 py-1 fw-bold font-monospace" style="font-size: 0.8rem;" title="{{ __('Funded in active tasks and not yet returned') }}">
+                            <i class="ti ti-hourglass-empty me-1"></i>{{ number_format($activeMarketCapital ?? max(0, ($baseCapital ?? $credit) - $balance), 2) }} {{ __('SAR') }}
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="avatar bg-label-danger rounded me-3">
-                            <i class="ti ti-trending-down ti-md"></i>
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="avatar bg-label-danger rounded me-3">
+                                <i class="ti ti-trending-down ti-md"></i>
+                            </div>
+                            <div>
+                                <span class="text-heading fw-bold d-block">{{ __('Total Funding and Withdrawals') }}</span>
+                                <small class="text-muted" style="font-size: 0.78rem;">{{ __('Task funding and capital payouts') }}</small>
+                            </div>
                         </div>
-                        <span class="text-muted fw-medium">{{ __('Total withdrawals funding') }}</span>
+                        <div class="d-flex align-items-baseline mt-2">
+                            <h3 class="mb-0 fw-bold text-danger">{{ number_format($debit, 2) }}</h3>
+                            <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                        </div>
                     </div>
-                    <div class="d-flex align-items-baseline">
-                        <h3 class="mb-0 fw-bold text-danger">{{ number_format($debit, 2) }}</h3>
-                        <span class="ms-2 text-muted">{{ __('SAR') }}</span>
+                    <div class="mt-2 pt-2 border-top small text-muted">
+                        <span><i class="ti ti-arrow-up-right text-danger me-1"></i>{{ __('All debits from investment wallet') }}</span>
                     </div>
                 </div>
             </div>

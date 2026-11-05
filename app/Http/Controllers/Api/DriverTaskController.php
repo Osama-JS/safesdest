@@ -90,11 +90,18 @@ class DriverTaskController extends Controller
 
             Log::alert($tasks);
 
+            $unreadMap = \App\Models\TaskChatMessage::whereIn('task_id', $tasks->pluck('id'))
+                ->where('sender_type', 'customer')
+                ->where('is_read', false)
+                ->selectRaw('task_id, COUNT(*) as count')
+                ->groupBy('task_id')
+                ->pluck('count', 'task_id');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tasks retrieved successfully',
                 'data' => [
-                    'tasks' => $tasks->map(function ($task) {
+                    'tasks' => $tasks->map(function ($task) use ($unreadMap) {
                         return [
                           'id' => $task->id,
                           'total_price' => $task->total_price,
@@ -109,8 +116,8 @@ class DriverTaskController extends Controller
                           'pickup_point' => $task->pickup,
                           'delivery_point' => $task->delivery,
                           'driver_cancel' => (bool)$task->driver_cancel,
-                          'driver_cancel_reason' => $task->driver_cancel_reason
-
+                          'driver_cancel_reason' => $task->driver_cancel_reason,
+                          'unread_chat_count' => (int) ($unreadMap[$task->id] ?? 0),
                         ];
                     }),
                     'pagination' => [
@@ -287,7 +294,11 @@ class DriverTaskController extends Controller
                     'conditions' => $task->conditions,
                     'driver_cancel' => (bool)$task->driver_cancel,
                     'driver_cancel_reason' => $task->driver_cancel_reason,
-                    'distances' => $this->calculateTaskDistances($task, $driver)
+                    'distances' => $this->calculateTaskDistances($task, $driver),
+                    'unread_chat_count' => \App\Models\TaskChatMessage::where('task_id', $task->id)
+                        ->where('sender_type', 'customer')
+                        ->where('is_read', false)
+                        ->count(),
                     ]
                 ]
             ], 200);

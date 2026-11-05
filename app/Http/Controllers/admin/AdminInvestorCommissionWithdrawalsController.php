@@ -56,10 +56,11 @@ class AdminInvestorCommissionWithdrawalsController extends Controller
         $withdrawals = $query->latest()->paginate(20)->withQueryString();
 
         $stats = [
-            'total'    => InvestorCommissionWithdrawal::count(),
-            'pending'  => InvestorCommissionWithdrawal::where('status', 'pending')->count(),
-            'approved' => InvestorCommissionWithdrawal::where('status', 'approved')->count(),
-            'rejected' => InvestorCommissionWithdrawal::where('status', 'rejected')->count(),
+            'total'      => InvestorCommissionWithdrawal::count(),
+            'pending'    => InvestorCommissionWithdrawal::where('status', 'pending')->count(),
+            'processing' => InvestorCommissionWithdrawal::where('status', 'processing')->count(),
+            'approved'   => InvestorCommissionWithdrawal::where('status', 'approved')->count(),
+            'rejected'   => InvestorCommissionWithdrawal::where('status', 'rejected')->count(),
             'total_approved_amount' => InvestorCommissionWithdrawal::where('status', 'approved')->sum('amount'),
         ];
 
@@ -80,13 +81,20 @@ class AdminInvestorCommissionWithdrawalsController extends Controller
             ], 422);
         }
 
-        $validator = Validator::make($request->all(), [
-            'receipt'           => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
-            'withdrawal_method' => 'required|in:bank_transfer,cash,check',
-            'reference_number'  => 'nullable|string|max:100',
+        $isPayout = ($request->withdrawal_method === 'payout');
+
+        $rules = [
+            'withdrawal_method' => 'required|in:payout,bank_transfer,cash,check',
             'admin_notes'       => 'nullable|string|max:1000',
-        ], [
-            'receipt.required'           => 'صورة / ملف إيصال التحويل مطلوب للموافقة على السحب.',
+        ];
+
+        if (!$isPayout) {
+            $rules['receipt']          = 'required|file|mimes:jpeg,png,jpg,pdf|max:5120';
+            $rules['reference_number'] = 'nullable|string|max:100';
+        }
+
+        $validator = Validator::make($request->all(), $rules, [
+            'receipt.required'           => 'صورة / ملف إيصال التحويل مطلوب للموافقة اليدوية على السحب.',
             'receipt.mimes'              => 'يجب أن يكون الإيصال ملف صورة (jpeg, png, jpg) أو مستند PDF.',
             'receipt.max'                => 'الحد الأقصى لحجم ملف الإيصال هو 5 ميجابايت.',
             'withdrawal_method.required' => 'يرجى تحديد طريقة السحب / الصرف.',
@@ -116,6 +124,127 @@ class AdminInvestorCommissionWithdrawalsController extends Controller
                 'error'  => 'مبلغ السحب (' . number_format($withdrawal->amount, 2) . ' ر.س) يتجاوز الرصيد المتاح حالياً في محفظة العمولات (' . number_format($withdrawable, 2) . ' ر.س).'
             ], 422);
         }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // مسار الصرف عبر HyperPay Payout (التحويل الآلي المباشر)
+        // ═════════════════════════════════════════════════════════════════════
+        if ($isPayout) {
+            $rawIban = trim($withdrawal->iban_number ?: ($withdrawal->user?->iban_number ?: ''));
+            if (empty($rawIban)) {
+                return response()->json([
+                    'status' => 0,
+                    'error'  => 'لا يوجد رقم آيبان (IBAN) مسجل لهذا المستثمر لتنفيذ التحويل عبر Payout. يرجى التأكد من تسجيل الآيبان أولاً.'
+                ], 422);
+            }
+
+            // فحص التحقق الرياضي للآيبان
+            $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($rawIban, 'المستثمر');
+            if (!$ibanCheck['valid']) {
+                return response()->json([
+                    'status' => 0,
+                    'error'  => $ibanCheck['message']
+                ], 422);
+            }
+            $cleanIban = $ibanCheck['clean'];
+
+            // التحقق من عدم وجود طلب Payout نشط سابق لنفس حركة السحب
+            $existingPayout = \App\Models\HyperpayPayout::where('source_commission_withdrawal_id', $withdrawal->id)
+                ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+                ->first();
+            if ($existingPayout) {
+                return response()->json([
+                    'status' => 0,
+                    'error'  => 'يوجد طلب Payout نشط بالفعل مرتبط بهذا السحب (المرجع: ' . $existingPayout->reference_id . ').'
+                ], 422);
+            }
+
+            // تحديد بيانات البنك واسم المستفيد
+            $saudiBank = \App\Services\HyperPayPayoutService::getSaudiBankInfoFromIban($cleanIban);
+            $bicCode = $saudiBank['bic'] ?: ($withdrawal->user?->bic_code ?: 'NCBKSARI');
+            $bankName = $saudiBank['name'] ?: ($withdrawal->bank_name ?: ($withdrawal->user?->bank_name ?: 'البنك التجاري'));
+            $beneficiaryName = \App\Services\HyperPayPayoutService::formatBeneficiaryName(
+                $withdrawal->account_holder ?: ($withdrawal->user?->beneficiary_name ?: $withdrawal->user?->name)
+            );
+
+            $externalId = 'IPW-' . $withdrawal->id . '-' . time();
+
+            try {
+                DB::beginTransaction();
+
+                // إنشاء سجل الـ Payout في hyperpay_payouts بحالة انتظار المصادقة
+                $payout = \App\Models\HyperpayPayout::create([
+                    'reference_id'                    => $externalId,
+                    'user_id'                         => $withdrawal->user_id,
+                    'user_wallet_id'                  => $wallet->id,
+                    'amount'                          => $withdrawal->amount,
+                    'payout_type'                     => 'IPW',
+                    'source_commission_withdrawal_id' => $withdrawal->id,
+                    'created_by'                      => Auth::id(),
+                    'transaction_details'             => [
+                        'amount'           => $withdrawal->amount,
+                        'beneficiary_name' => $beneficiaryName,
+                        'description'      => "صرف أرباح مستثمر طلب #{$withdrawal->id}",
+                        'admin_id'         => Auth::id(),
+                        'iban'             => $cleanIban,
+                        'bic'              => $bicCode,
+                        'bank_name'        => $bankName,
+                        'address1'         => $withdrawal->user?->bank_address1 ?? ($withdrawal->user?->address ?: 'Riyadh'),
+                        'address2'         => $withdrawal->user?->bank_address2 ?? '.',
+                        'city'             => $withdrawal->user?->bank_city ?? 'Riyadh',
+                        'country'          => 'SA',
+                        'purpose'          => 'BA',
+                        'source_withdrawal_id' => $withdrawal->id,
+                        'admin_notes'      => $request->admin_notes,
+                    ],
+                    'status' => 'pending_approval'
+                ]);
+
+                // تحديث طلب السحب ليصبح قيد المعالجة بالـ Payout
+                $withdrawal->update([
+                    'status'       => 'processing',
+                    'admin_notes'  => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . "تم تحويل الطلب إلى HyperPay Payout (المرجع: {$externalId}) وبانتظار مصادقة المدير المالي.",
+                    'processed_by' => Auth::id(),
+                    'processed_at' => now(),
+                ]);
+
+                DB::commit();
+
+                // إرسال إشعار للمدير المالي بوجود طلب مصادقة دفع جديد
+                \App\Services\AdminNotificationDispatcher::dispatch(
+                    eventKey: 'payout_approval_required',
+                    title: "طلب مصادقة دفعة Payout جديدة للمستثمر #{$externalId}",
+                    message: "تم تحويل طلب سحب العمولات #{$withdrawal->id} للمستثمر {$withdrawal->user?->name} بمبلغ " . number_format($withdrawal->amount, 2) . " ر.س إلى Payout، وبانتظار مصادقة المدير.",
+                    actionUrl: url('/admin/investors/payout-requests'),
+                    priority: 'high',
+                    extraData: [
+                        'reference_id'   => $externalId,
+                        'user_id'        => $withdrawal->user_id,
+                        'user_wallet_id' => $wallet->id,
+                        'amount'         => $withdrawal->amount,
+                        'payout_type'    => 'IPW',
+                    ]
+                );
+
+                return response()->json([
+                    'status'     => 1,
+                    'is_payout'  => true,
+                    'payout_url' => route('investors.payout-requests.index'),
+                    'success'    => 'تم إنشاء طلب الـ Payout بنجاح برقم مرجع (' . $externalId . '). الطلب الآن في شاشة طلبات دفع المستثمرين بانتظار مصادقة المدير المالي لتنفيذ الحوالة البنكية.'
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Commission Payout Creation Failed', ['error' => $e->getMessage()]);
+                return response()->json([
+                    'status' => 0,
+                    'error'  => 'حدث خطأ أثناء إنشاء طلب الـ Payout: ' . $e->getMessage()
+                ], 500);
+            }
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
+        // مسار الصرف اليدوي التقليدي (رفع الإيصال وخصم المحفظة فوراً)
+        // ═════════════════════════════════════════════════════════════════════
 
         try {
             DB::beginTransaction();

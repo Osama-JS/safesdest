@@ -131,6 +131,43 @@ class HyperPayPayoutService
     }
 
     /**
+     * Map Saudi IBAN 2-digit bank code (characters 4 & 5) to Bank Name and official BIC/SWIFT code
+     */
+    public static function getSaudiBankInfoFromIban(?string $iban): array
+    {
+        $cleanIban = strtoupper(str_replace([' ', '-', '.'], '', trim($iban ?? '')));
+        if (!str_starts_with($cleanIban, 'SA') || strlen($cleanIban) < 6) {
+            return [
+                'bank_name' => null,
+                'bic'       => null,
+            ];
+        }
+
+        $bankCode = substr($cleanIban, 4, 2);
+
+        $saudiBanks = [
+            '10' => ['name' => 'البنك الأهلي السعودي (SNB)', 'bic' => 'NCBKSARI'],
+            '80' => ['name' => 'مصرف الراجحي (Al Rajhi Bank)', 'bic' => 'RJHISARI'],
+            '05' => ['name' => 'مصرف الإنماء (Alinma Bank)', 'bic' => 'INMASARI'],
+            '20' => ['name' => 'بنك الرياض (Riyad Bank)', 'bic' => 'RIBLSARI'],
+            '15' => ['name' => 'بنك الجزيرة (Bank AlJazira)', 'bic' => 'BJAZSARI'],
+            '30' => ['name' => 'البنك العربي الوطني (ANB)', 'bic' => 'ARABSARI'],
+            '45' => ['name' => 'البنك السعودي الأول (SAB)', 'bic' => 'SABBSARI'],
+            '50' => ['name' => 'البنك السعودي الفرنسي (BSFR)', 'bic' => 'BSFRSARI'],
+            '55' => ['name' => 'بنك البلاد (Bank Albilad)', 'bic' => 'ALBISARI'],
+            '65' => ['name' => 'البنك السعودي للاستثمار (SAIB)', 'bic' => 'SIBCSARI'],
+            '60' => ['name' => 'بنك الخليج الدولي (GIB)', 'bic' => 'GULFSARI'],
+            '75' => ['name' => 'بنك د360 (D360 Bank)', 'bic' => 'DTHRSARI'],
+            '85' => ['name' => 'بنك إس تي سي (STC Bank)', 'bic' => 'STCBSARI'],
+        ];
+
+        return $saudiBanks[$bankCode] ?? [
+            'bank_name' => null,
+            'bic'       => null,
+        ];
+    }
+
+    /**
      * Parse and translate HyperPay API errors into human-readable Arabic & English details
      */
     public static function parseErrors($result, $finalResponseCode = null, $defaultMessage = null): string
@@ -341,6 +378,15 @@ class HyperPayPayoutService
                 $purpose = 'BA';
             }
 
+            // Ensure Saudi IBAN always uses the verified official BIC/SWIFT code
+            $bicCode = $data['bic'] ?? null;
+            if (str_starts_with($cleanIban, 'SA')) {
+                $saudiBank = self::getSaudiBankInfoFromIban($cleanIban);
+                if (!empty($saudiBank['bic'])) {
+                    $bicCode = $saudiBank['bic'];
+                }
+            }
+
             $payload = [
                 'merchantReference' => 'REF-' . time(),
                 'sourceId'          => trim($this->sourceId),
@@ -360,7 +406,7 @@ class HyperPayPayoutService
                             'country'  => $data['country'] ?? 'SA',
                             'city'     => $data['city'] ?? 'Riyadh',
                             'iban'     => $cleanIban,
-                            'bicCode'  => $data['bic'],
+                            'bicCode'  => $bicCode,
                         ],
                     ]
                 ]

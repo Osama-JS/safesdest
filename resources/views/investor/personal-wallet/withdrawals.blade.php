@@ -19,13 +19,30 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <a href="{{ route('investor.personal-wallet') }}" class="btn btn-label-secondary shadow-sm">
-                <i class="ti ti-arrow-right me-1"></i> العودة لمحفظة العمولات
+                <i class="ti ti-arrow-right me-1"></i> {{ __('Back to Commission Wallet') }}
             </a>
-            <button type="button" class="btn btn-warning shadow-sm text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#withdrawCommissionModal">
-                <i class="ti ti-plus me-1"></i> طلب سحب جديد
-            </button>
+            @if(!empty($hasActiveRequest))
+                <button type="button" class="btn btn-secondary shadow-sm fw-bold disabled" disabled title="{{ __('لديك طلب سحب نقدي قيد المعالجة حالياً') }}">
+                    <i class="ti ti-clock me-1"></i> {{ __('طلب سحب جديد (لديك طلب قيد المعالجة)') }}
+                </button>
+            @else
+                <button type="button" class="btn btn-warning shadow-sm text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#withdrawCommissionModal">
+                    <i class="ti ti-plus me-1"></i> {{ __('طلب سحب جديد') }}
+                </button>
+            @endif
         </div>
     </div>
+
+    {{-- تنبيه في حال وجود طلب سحب قيد المعالجة --}}
+    @if(!empty($hasActiveRequest))
+        <div class="alert alert-warning border-warning d-flex align-items-center mb-4 shadow-sm" role="alert">
+            <i class="ti ti-clock-pause me-2 fs-3 text-warning"></i>
+            <div>
+                <strong class="d-block mb-1">{{ __('يوجد طلب سحب نقدي قيد المعالجة حالياً') }}</strong>
+                <span class="small">{{ __('لديك طلب سحب عمولات قيد المراجعة والمعالجة المصرفية حالياً. لا يمكنك تقديم طلب سحب إضافي حتى يتم الانتهاء من معالجة هذا الطلب بالكامل.') }}</span>
+            </div>
+        </div>
+    @endif
 
     {{-- تنبيهات الفلاش --}}
     @foreach(['success', 'error', 'info'] as $msg)
@@ -148,6 +165,10 @@
                                 <span class="badge bg-label-warning px-3 py-2">
                                     <i class="ti ti-clock me-1"></i> قيد المراجعة
                                 </span>
+                            @elseif($withdrawal->status === 'processing')
+                                <span class="badge bg-label-info px-3 py-2">
+                                    <i class="ti ti-refresh me-1"></i> قيد التحويل البنكي
+                                </span>
                             @elseif($withdrawal->status === 'approved')
                                 <span class="badge bg-label-success px-3 py-2">
                                     <i class="ti ti-check me-1"></i> مقبول ومصروف
@@ -241,6 +262,11 @@
     {{-- نافذة طلب سحب العمولة من محفظة العمولات --}}
     @php
         $availWithdrawable = (float) ($personalWallet?->withdrawable_balance ?? 0);
+        $investorIban = trim($investor->iban_number ?: ($investor->account_number ?: ''));
+        $saudiBankInfo = $investorIban ? \App\Services\HyperPayPayoutService::getSaudiBankInfoFromIban($investorIban) : null;
+        $investorBankName = $investor->bank_name ?: ($saudiBankInfo['name'] ?? 'غير محدد');
+        $investorBeneficiary = $investor->beneficiary_name ?: $investor->name;
+        $hasBankDetails = !empty($investorIban);
     @endphp
     <div class="modal fade" id="withdrawCommissionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -255,64 +281,99 @@
                 <form method="POST" action="{{ route('investor.personal-wallet.request-withdrawal') }}" id="withdrawCommissionForm">
                     @csrf
                     <div class="modal-body">
-                        @if($availWithdrawable <= 0)
-                            <div class="alert alert-warning d-flex align-items-start mb-4">
+                        @if(!empty($hasActiveRequest))
+                            <div class="alert alert-warning d-flex align-items-start mb-3">
+                                <i class="ti ti-clock-pause me-2 mt-1 fs-4"></i>
+                                <div>
+                                    <strong class="d-block mb-1">{{ __('You have an active withdrawal request under processing') }}</strong>
+                                    <p class="mb-0 small">
+                                        {{ __('You already have a commission withdrawal request under review or banking processing. You cannot submit an additional request until the current request is fully processed.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @elseif(!$hasBankDetails)
+                            <div class="alert alert-danger d-flex align-items-start mb-3">
+                                <i class="ti ti-alert-triangle me-2 mt-1 fs-4"></i>
+                                <div>
+                                    <strong class="d-block mb-1">{{ __('Bank account details not registered!') }}</strong>
+                                    <p class="mb-0 small">
+                                        {{ __('You have not added your IBAN to your profile yet. Please contact platform administration to configure your bank account details.') }}
+                                    </p>
+                                </div>
+                            </div>
+                        @elseif($availWithdrawable <= 0)
+                            <div class="alert alert-warning d-flex align-items-start mb-3">
                                 <i class="ti ti-alert-triangle me-2 mt-1"></i>
                                 <div class="small">
-                                    <strong>لا يوجد رصيد متاح للسحب حالياً (0.00 ر.س).</strong>
+                                    <strong>{{ __('No withdrawable balance currently available (0.00 SAR).') }}</strong>
                                     <p class="mb-0 mt-1">
-                                        تصبح عمولات المهام متاحة للسحب بعد سداد العميل واسترداد رأس مال المهام الممولة إلى محفظة الاستثمار.
+                                        {{ __('Task commissions become withdrawable after customer payment and return of capital to the investment wallet.') }}
                                     </p>
                                 </div>
                             </div>
                         @else
-                            <div class="alert alert-warning d-flex align-items-start mb-4">
-                                <i class="ti ti-info-circle me-2 mt-1"></i>
+                            <div class="alert alert-success d-flex align-items-start mb-3">
+                                <i class="ti ti-shield-check me-2 mt-1 text-success fs-5"></i>
                                 <div class="small">
-                                    <strong>تنبيه هام:</strong>
-                                    <p class="mb-0 mt-1">يتم تقديم الطلب للإدارة لمراجعته وإتمام التحويل لحسابك البنكي، وتوثيق إيصال السداد وخصمه من محفظة العمولات فور الاعتماد.</p>
+                                    <strong>{{ __('Secure & Direct Bank Transfer:') }}</strong>
+                                    <p class="mb-0 mt-1">{{ __('The amount will be transferred automatically to your verified bank account below once approved by financial administration.') }}</p>
                                 </div>
                             </div>
                         @endif
 
+                        {{-- بطاقة الحساب البنكي المعتمد المسجل (للقراءة فقط) --}}
+                        @if($hasBankDetails)
+                        <div class="card bg-label-secondary mb-3 border">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-dark small d-flex align-items-center">
+                                        <i class="ti ti-building-bank me-1 text-primary"></i> {{ __('Approved Bank Account for Transfer') }}
+                                    </span>
+                                    <span class="badge bg-label-success rounded-pill px-2 py-0 small">
+                                        <i class="ti ti-check me-1 small"></i>{{ __('Verified') }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">{{ __('Bank:') }}</span>
+                                    <strong class="text-heading small">{{ $investorBankName }}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">{{ __('Beneficiary Name:') }}</span>
+                                    <strong class="text-heading small">{{ $investorBeneficiary }}</strong>
+                                </div>
+                                <div class="mt-2 pt-2 border-top">
+                                    <span class="text-muted small d-block mb-1">{{ __('IBAN Number:') }}</span>
+                                    <div class="bg-white rounded px-2 py-1 border font-monospace small fw-bold text-dark text-break" dir="ltr">
+                                        {{ $investorIban }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="mb-3">
-                            <label class="form-label fw-bold">المبلغ المطلوب سحبه (ر.س) <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">{{ __('Requested Withdrawal Amount (SAR)') }} <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <input type="number" name="amount" id="withdraw_amount" class="form-control"
                                     step="0.01" min="1"
                                     max="{{ number_format($availWithdrawable, 2, '.', '') }}"
                                     value="{{ $availWithdrawable > 0 ? number_format($availWithdrawable, 2, '.', '') : '0.00' }}"
-                                    {{ $availWithdrawable <= 0 ? 'disabled' : '' }}
+                                    {{ ($availWithdrawable <= 0 || !$hasBankDetails || !empty($hasActiveRequest)) ? 'disabled' : '' }}
                                     required>
-                                <button type="button" class="btn btn-label-secondary" id="withdrawMaxBtn" {{ $availWithdrawable <= 0 ? 'disabled' : '' }}>{{ __('Maximum') }}</button>
+                                <button type="button" class="btn btn-label-secondary" id="withdrawMaxBtn" {{ ($availWithdrawable <= 0 || !$hasBankDetails || !empty($hasActiveRequest)) ? 'disabled' : '' }}>{{ __('Maximum') }}</button>
                             </div>
-                            <small class="text-muted">الرصيد المتاح للسحب حالياً: <strong class="{{ $availWithdrawable > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($availWithdrawable, 2) }} ر.س</strong></small>
-                        </div>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label small">اسم البنك</label>
-                                <input type="text" name="bank_name" class="form-control" value="{{ $investor->bank_name }}" placeholder="مثال: مصرف الراجحي" {{ $availWithdrawable <= 0 ? 'disabled' : '' }}>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label small">اسم المستفيد</label>
-                                <input type="text" name="account_holder" class="form-control" value="{{ $investor->name }}" placeholder="الاسم ثلاثي">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label small">رقم الآيبان (IBAN) أو الحساب</label>
-                                <input type="text" name="iban_number" class="form-control font-monospace" value="{{ $investor->iban_number ?: $investor->account_number }}" placeholder="SA0000000000000000000000" {{ $availWithdrawable <= 0 ? 'disabled' : '' }}>
-                            </div>
+                            <small class="text-muted">{{ __('Current Withdrawable Balance:') }} <strong class="{{ $availWithdrawable > 0 ? 'text-success' : 'text-danger' }}">{{ number_format($availWithdrawable, 2) }} {{ __('SAR') }}</strong></small>
                         </div>
 
                         <div class="mb-0">
-                            <label class="form-label small">ملاحظات للمسؤول (اختياري)</label>
-                            <textarea name="investor_notes" class="form-control" rows="2" placeholder="أي تفاصيل أو تعليمات إضافية بخصوص السحب..." {{ $availWithdrawable <= 0 ? 'disabled' : '' }}></textarea>
+                            <label class="form-label small">{{ __('Notes for Administrator (Optional)') }}</label>
+                            <textarea name="investor_notes" class="form-control" rows="2" placeholder="{{ __('Any notes or instructions regarding the withdrawal...') }}" {{ ($availWithdrawable <= 0 || !$hasBankDetails || !empty($hasActiveRequest)) ? 'disabled' : '' }}></textarea>
                         </div>
                     </div>
                     <div class="modal-footer border-top">
                         <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
-                        <button type="submit" class="btn btn-warning text-dark fw-bold" {{ $availWithdrawable <= 0 ? 'disabled' : '' }}>
-                            <i class="ti ti-send me-1"></i> تقديم طلب السحب
+                        <button type="submit" class="btn btn-warning text-dark fw-bold" {{ ($availWithdrawable <= 0 || !$hasBankDetails || !empty($hasActiveRequest)) ? 'disabled' : '' }}>
+                            <i class="ti ti-send me-1"></i> {{ __('Submit Withdrawal Request') }}
                         </button>
                     </div>
                 </form>

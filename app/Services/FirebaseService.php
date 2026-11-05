@@ -16,9 +16,18 @@ class FirebaseService
     public function __construct()
     {
         try {
+            $credentialsPath = storage_path(config('services.firebase.credentials'));
+            if (!file_exists($credentialsPath)) {
+                Log::warning('Firebase credentials file not found at: ' . $credentialsPath);
+            }
+
+            $options = \Kreait\Firebase\Http\HttpClientOptions::default()
+                ->withGuzzleConfigOption('verify', false);
+
             $this->factory = (new Factory())
-                ->withServiceAccount(storage_path(config('services.firebase.credentials')))
-                ->withProjectId(config('services.firebase.project_id'));
+                ->withServiceAccount($credentialsPath)
+                ->withProjectId(config('services.firebase.project_id'))
+                ->withHttpClientOptions($options);
 
             $this->messaging = $this->factory->createMessaging();
         } catch (\Exception $e) {

@@ -70,14 +70,14 @@ class TasksController extends Controller
 
     public function __construct(PdfService $pdfService)
     {
-        $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData']]);
+        $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData', 'getEligibleDriversForWhatsApp']]);
         $this->middleware('permission:create_tasks', ['only' => ['store', 'duplicateTask', 'fixTeamConnection']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
         $this->middleware('permission:force_update_tasks', ['only' => ['forceEdit', 'forceUpdate', 'verifyForceEditPassword']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
         $this->middleware('permission:status_tasks', ['only' => ['chang_status', 'taskAddNote', 'dropTask']]);
-        $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign']]);
+        $this->middleware('permission:assign_tasks', ['only' => ['getToAssign', 'assign', 'broadcastTaskToDriversWhatsApp']]);
         $this->middleware('permission:pricing_tasks', ['only' => ['editPricing', 'updatePricing']]);
         $this->middleware('permission:close_tasks', ['only' => ['closeTask']]);
         $this->middleware('permission:refund_tasks', ['only' => ['refundTask']]);
@@ -5010,6 +5010,288 @@ class TasksController extends Controller
             DB::rollBack();
             Log::error('fixInvestmentConflicts Error: ' . $e->getMessage());
             return response()->json(['status' => 0, 'message' => 'حدث خطأ أثناء الإصلاح']);
+        }
+    }
+
+    /**
+     * Get eligible drivers for broadcasting a task via WhatsApp:
+     * - Same vehicle size/type as task
+     * - Status active / verified
+     * - No active tasks currently (not in assign, started, in_progress, not closed)
+     */
+    public function getEligibleDriversForWhatsApp($id)
+    {
+        try {
+            $task = Task::with([
+                'vehicle_size.type.vehicle',
+                'pickup',
+                'delivery',
+                'customer',
+            ])->findOrFail($id);
+
+            if (!$task->vehicle_size_id) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'لم يتم تحديد نوع وحجم المركبة لهذه المهمة. يرجى تعديل المهمة وتحديد المركبة أولاً.',
+                ], 422);
+            }
+
+            // 1. Get IDs of busy drivers who currently have active tasks
+            $busyDriverIds = Task::whereIn('status', [
+                    'assign',
+                    'started',
+                    'in_progress',
+                    'in pickup point',
+                    'loading',
+                    'in the way',
+                    'in delivery point',
+                    'unloading'
+                ])
+                ->where('closed', false)
+                ->whereNotNull('driver_id')
+                ->pluck('driver_id')
+                ->unique()
+                ->toArray();
+
+            // 2. Fetch eligible drivers
+            $drivers = Driver::with(['team'])
+                ->where('vehicle_size_id', $task->vehicle_size_id)
+                ->whereIn('status', ['active', 'verified'])
+                ->whereNotIn('id', $busyDriverIds)
+                ->where(function ($q) {
+                    $q->where(function($sq) {
+                        $sq->whereNotNull('phone')->where('phone', '!=', '');
+                    })->orWhere(function($sq) {
+                        $sq->whereNotNull('whatsapp_number')->where('whatsapp_number', '!=', '');
+                    });
+                })
+                ->orderBy('name', 'asc')
+                ->get();
+
+            // Vehicle label: e.g. "سطحة مغلقة 11.6متر - Sataha Closed 11.6M"
+            $vehicleSizeName = $task->vehicle_size->name ?? '';
+            $vehicleTypeName = $task->vehicle_size->type->name ?? '';
+            $truckName = $task->vehicle_size->type->vehicle->name ?? '';
+            $vehicleLabel = trim("{$truckName} {$vehicleTypeName} {$vehicleSizeName}");
+            if (empty($vehicleLabel)) {
+                $vehicleLabel = $task->vehicle_size->name ?? 'مركبة نقل';
+            }
+
+            $fromLocation = $task->pickup->address ?? ($task->pickup->contact_name ?? 'الرياض');
+            $toLocation = $task->delivery->address ?? ($task->delivery->contact_name ?? 'جدة');
+
+            // Format driver items for frontend table
+            $driverList = $drivers->map(function ($d) {
+                $rawPhone = !empty($d->whatsapp_number) ? $d->whatsapp_number : $d->phone;
+                $phoneCode = !empty($d->whatsapp_country_code) ? $d->whatsapp_country_code : ($d->phone_code ?? '+966');
+                return [
+                    'id'           => $d->id,
+                    'name'         => $d->name,
+                    'phone'        => $d->phone,
+                    'phone_code'   => $d->phone_code,
+                    'whatsapp'     => $rawPhone,
+                    'full_phone'   => $phoneCode . ' ' . $rawPhone,
+                    'team'         => $d->team?->name ?? 'سائق فردي',
+                    'status'       => $d->status,
+                    'image'        => $d->image ? asset($d->image) : null,
+                ];
+            });
+
+            // Template ID from settings
+            $templateId = Settings::getValue('saei_task_broadcast_template_id');
+
+            return response()->json([
+                'status'         => 1,
+                'task'           => [
+                    'id'                   => $task->id,
+                    'task_number'          => $task->customer_task_number ?: '#' . $task->id,
+                    'customer_task_number' => $task->customer_task_number,
+                    'total_price'          => $task->total_price,
+                    'vehicle_label'        => $vehicleLabel,
+                    'vehicle_info'         => $vehicleLabel,
+                    'from'                 => $fromLocation,
+                    'to'                   => $toLocation,
+                    'status'               => $task->status,
+                ],
+                'template'       => [
+                    'id_or_name'   => $templateId,
+                    'is_configured'=> !empty($templateId),
+                    'var_1'        => $vehicleLabel,
+                    'var_2'        => $fromLocation,
+                    'var_3'        => $toLocation,
+                    'preview'      => [
+                        'var1' => $vehicleLabel,
+                        'var2' => $fromLocation,
+                        'var3' => $toLocation,
+                    ]
+                ],
+                'drivers'        => $driverList,
+                'total_eligible' => $drivers->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('getEligibleDriversForWhatsApp Error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ أثناء استخراج بيانات السائقين: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Broadcast task WhatsApp notification to selected eligible drivers
+     */
+    public function broadcastTaskToDriversWhatsApp(Request $request, $id)
+    {
+        $request->validate([
+            'driver_ids'   => 'nullable|array',
+            'driver_ids.*' => 'integer|exists:drivers,id',
+            'custom_phone' => 'nullable|string|max:30',
+        ]);
+
+        $driverIds = $request->input('driver_ids', []);
+        $customPhone = trim((string) $request->input('custom_phone', ''));
+
+        if (empty($driverIds) && empty($customPhone)) {
+            return response()->json([
+                'status'  => 0,
+                'message' => 'يرجى تحديد سائق واحد على الأقل أو إدخال رقم خاص لإرسال الإشعار إليه.',
+            ], 422);
+        }
+
+        try {
+            $task = Task::with([
+                'vehicle_size.type.vehicle',
+                'pickup',
+                'delivery',
+            ])->findOrFail($id);
+
+            $templateIdOrName = Settings::getValue('saei_task_broadcast_template_id');
+            if (empty($templateIdOrName)) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'لم يتم تحديد معرّف أو اسم القالب في صفحة الإعدادات (admin/settings). يرجى ضبطه أولاً.',
+                ], 422);
+            }
+
+            // Prepare 3 variables:
+            $vehicleSizeName = $task->vehicle_size->name ?? '';
+            $vehicleTypeName = $task->vehicle_size->type->name ?? '';
+            $truckName = $task->vehicle_size->type->vehicle->name ?? '';
+            $varVehicle = trim("{$truckName} {$vehicleTypeName} {$vehicleSizeName}");
+            if (empty($varVehicle)) {
+                $varVehicle = $task->vehicle_size->name ?? 'مركبة نقل';
+            }
+
+            $varFrom = $task->pickup->address ?? ($task->pickup->contact_name ?? 'الرياض');
+            $varTo = $task->delivery->address ?? ($task->delivery->contact_name ?? 'جدة');
+
+            $variables = [$varVehicle, $varFrom, $varTo];
+
+            $drivers = !empty($driverIds) ? Driver::whereIn('id', $driverIds)->get() : collect([]);
+
+            /** @var \App\Services\Interfaces\WhatsAppServiceInterface $whatsapp */
+            $whatsapp = app(\App\Services\Interfaces\WhatsAppServiceInterface::class);
+
+            $successCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            // 1. Send to selected drivers
+            foreach ($drivers as $driver) {
+                // Determine recipient phone
+                $phone = !empty($driver->whatsapp_number) ? $driver->whatsapp_number : $driver->phone;
+                if (empty($phone)) {
+                    $failedCount++;
+                    continue;
+                }
+
+                $phoneCode = !empty($driver->whatsapp_country_code) ? $driver->whatsapp_country_code : ($driver->phone_code ?? '+966');
+                // Format full phone with country code if needed
+                $phoneFormatted = $phone;
+                if (!str_starts_with($phoneFormatted, '+')) {
+                    $cleanCode = ltrim($phoneCode, '+');
+                    $cleanPhone = ltrim($phoneFormatted, '0');
+                    $phoneFormatted = '+' . $cleanCode . $cleanPhone;
+                }
+
+                try {
+                    $res = $whatsapp->sendTemplateMessage(
+                        $phoneFormatted,
+                        $templateIdOrName,
+                        $variables,
+                        'ar'
+                    );
+
+                    if (is_array($res) && ($res['success'] ?? false)) {
+                        $successCount++;
+                    } else {
+                        $failedCount++;
+                        $errMsg = is_array($res) ? ($res['message'] ?? 'فشل غير محدد') : 'فشل الإرسال';
+                        $errors[] = "السائق ({$driver->name}): {$errMsg}";
+                    }
+                } catch (\Throwable $e) {
+                    $failedCount++;
+                    $errors[] = "السائق ({$driver->name}): " . $e->getMessage();
+                }
+            }
+
+            // 2. Send to custom phone if provided
+            if (!empty($customPhone)) {
+                try {
+                    $res = $whatsapp->sendTemplateMessage(
+                        $customPhone,
+                        $templateIdOrName,
+                        $variables,
+                        'ar'
+                    );
+
+                    if (is_array($res) && ($res['success'] ?? false)) {
+                        $successCount++;
+                    } else {
+                        $failedCount++;
+                        $errMsg = is_array($res) ? ($res['message'] ?? 'فشل غير محدد') : 'فشل الإرسال';
+                        $errors[] = "الرقم الخاص ({$customPhone}): {$errMsg}";
+                    }
+                } catch (\Throwable $e) {
+                    $failedCount++;
+                    $errors[] = "الرقم الخاص ({$customPhone}): " . $e->getMessage();
+                }
+            }
+
+            // Log activity in task history
+            try {
+                $targetDetails = [];
+                if (!empty($driverIds)) {
+                    $targetDetails[] = count($driverIds) . ' سائق';
+                }
+                if (!empty($customPhone)) {
+                    $targetDetails[] = "رقم خاص ({$customPhone})";
+                }
+                $targetsStr = implode(' + ', $targetDetails);
+
+                $task->history()->create([
+                    'action_type' => 'whatsapp_broadcast',
+                    'description' => "تم إرسال إشعار المهمة عبر واتساب إلى [{$targetsStr}]. (نجاح: {$successCount}، فشل: {$failedCount})",
+                    'ip'          => request()->ip(),
+                    'user_id'     => auth()->id(),
+                ]);
+            } catch (\Throwable $e) {}
+
+            return response()->json([
+                'status'        => 1,
+                'message'       => "تمت عملية الإرسال بنجاح! تم إرسال الإشعار إلى ({$successCount}) سائق." . ($failedCount > 0 ? " (تعذر الإرسال إلى {$failedCount})" : ""),
+                'success_count' => $successCount,
+                'failed_count'  => $failedCount,
+                'errors'        => array_slice($errors, 0, 5),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('broadcastTaskToDriversWhatsApp Error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ غير متوقع أثناء معالجة الإرسال: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

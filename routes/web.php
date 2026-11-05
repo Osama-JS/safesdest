@@ -568,6 +568,7 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/mail/test-connection', [SettingsController::class, 'testMailConnection'])->name('settings.mail.test-connection');
                     Route::post('/saei/update', [SettingsController::class, 'updateSaeiSettings'])->name('settings.saei.update');
                     Route::post('/saei/test-connection', [SettingsController::class, 'testSaeiConnection'])->name('settings.saei.test-connection');
+                    Route::post('/support/update', [SettingsController::class, 'updateSupportSettings'])->name('settings.support.update');
 
                     Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
                     Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');
@@ -918,6 +919,8 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('tasks/list/data', [TasksController::class, 'getListData'])->name('tasks.list.data');
                 Route::get('tasks/order-share-data/{orderId}', [TasksController::class, 'getOrderShareData'])->name('tasks.order_share_data');
                 Route::post('tasks/bulk-share-data', [TasksController::class, 'getBulkShareData'])->name('tasks.bulk_share_data');
+                Route::get('tasks/{id}/eligible-drivers-whatsapp', [TasksController::class, 'getEligibleDriversForWhatsApp'])->name('tasks.eligible_drivers_whatsapp');
+                Route::post('tasks/{id}/broadcast-whatsapp', [TasksController::class, 'broadcastTaskToDriversWhatsApp'])->name('tasks.broadcast_whatsapp');
                 Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');
 
                 Route::get('tasks/pricing/edit/{id}', [TasksController::class, 'editPricing'])->name('tasks.pricing.edit');

@@ -61,9 +61,20 @@
         window.addEventListener('resize', moveCustomNav); // ØªÙ†Ù ÙŠØ° Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø­Ø¬Ù… Ø§Ù„Ø´Ø§Ø´Ø©
 
         // =========================================================================
-        // Diagnostic Logging & Handlers for Brokers Modal
+        // Diagnostic Logging & Handlers for Brokers Modal (safely wait for jQuery)
         // =========================================================================
-        $(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            function initBrokersSystem() {
+                if (typeof $ === 'undefined') {
+                    setTimeout(initBrokersSystem, 50);
+                    return;
+                }
+                runBrokersSystem();
+            }
+            initBrokersSystem();
+        });
+
+        function runBrokersSystem() {
             console.log('%c[Brokers System] Script Initialized in Page', 'background: #6f42c1; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;');
             console.log('[Brokers System] DOM Check:', {
                 '#viewBrokersBreakdownModal exists': $('#viewBrokersBreakdownModal').length > 0,
@@ -343,6 +354,7 @@
                 console.groupEnd();
             });
         });
+        } // end runBrokersSystem
     </script>
 @endsection
 @section('task-isactive')
@@ -393,13 +405,7 @@
                 {{-- Populate via JS if needed --}}
             </select>
         </div>
-        <!-- Bulk Actions -->
-        <div>
-            <button type="button" class="btn btn-brand-whatsapp text-white share-selected-whatsapp"
-                id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
-                <i class="ti ti-brand-whatsapp me-1"></i> {{ __('Share Selected') }}
-            </button>
-        </div>
+
     </div>
 
 
@@ -411,13 +417,27 @@
     </div>
     <!-- /Search -->
     <div class="card">
-        <div class="card-header border-bottom d-flex justify-content-between align-items-center">
+        <div class="card-header border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">{{ __('Tasks') }}</h5>
-            @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
-                <button type="button" class="btn btn-warning waves-effect waves-light" onclick="openInvestmentConflictsModal()">
-                    <i class="ti ti-alert-triangle me-1"></i> فحص تعارض الاستثمار
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Button when 1 task is selected: Broadcast WhatsApp notification to eligible drivers of same vehicle -->
+                <button type="button" class="btn btn-success text-white shadow-sm"
+                    id="broadcastTaskWhatsapp" style="display: none; background-color: #198754;">
+                    <i class="ti ti-brand-whatsapp me-1 fs-5"></i> {{ __('إرسال إشعار للسائقين (واتساب)') }}
                 </button>
-            @endif
+
+                <!-- Button when tasks are selected: Share selected -->
+                <button type="button" class="btn btn-brand-whatsapp text-white share-selected-whatsapp shadow-sm"
+                    id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
+                    <i class="ti ti-share me-1"></i> {{ __('Share Selected') }}
+                </button>
+
+                @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
+                    <button type="button" class="btn btn-warning waves-effect waves-light" onclick="openInvestmentConflictsModal()">
+                        <i class="ti ti-alert-triangle me-1"></i> فحص تعارض الاستثمار
+                    </button>
+                @endif
+            </div>
         </div>
         <div class="card-datatable table-responsive">
             <table class="datatables-tasks table ">
@@ -1054,6 +1074,184 @@
     </div>
 
 
+
+    <!-- Modal: Broadcast Task to Eligible Drivers via WhatsApp -->
+    <div class="modal fade" id="broadcastTaskDriversModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white py-3" style="background-color: #128C7E;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="ti ti-brand-whatsapp fs-2"></i>
+                        <div>
+                            <h5 class="modal-title text-white mb-0 fw-bold">
+                                {{ __('إرسال إشعار المهمة للسائقين عبر واتساب') }}
+                            </h5>
+                            <small class="text-white-50">
+                                {{ __('المهمة:') }} <span id="bt_modal_task_number" class="fw-bold text-white">#0</span>
+                            </small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Loading Spinner -->
+                    <div id="bt_modal_loader" class="text-center py-5">
+                        <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <p class="mt-3 text-muted fw-semibold">{{ __('جاري البحث عن السائقين المعتمدين والمتاحين لنفس نوع المركبة...') }}</p>
+                    </div>
+
+                    <!-- Main Content (hidden while loading) -->
+                    <div id="bt_modal_content" style="display: none;">
+                        <!-- Task Summary Card -->
+                        <div class="card bg-label-secondary border-0 mb-3">
+                            <div class="card-body p-3">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-5">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-success p-2 rounded-circle">
+                                                <i class="ti ti-truck fs-5"></i>
+                                            </span>
+                                            <div>
+                                                <small class="text-muted d-block">{{ __('نوع وحجم المركبة المطلوبة') }}</small>
+                                                <span class="fw-bold text-dark fs-6" id="bt_task_vehicle">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <div class="d-flex align-items-center justify-content-between bg-white p-2 rounded border">
+                                            <div class="text-start">
+                                                <small class="text-muted d-block"><i class="ti ti-map-pin text-success me-1"></i>{{ __('من / الاستلام') }}</small>
+                                                <span class="fw-bold small" id="bt_task_from">-</span>
+                                            </div>
+                                            <i class="ti ti-arrow-left text-muted fs-4"></i>
+                                            <div class="text-end">
+                                                <small class="text-muted d-block"><i class="ti ti-map-pin text-danger me-1"></i>{{ __('إلى / التسليم') }}</small>
+                                                <span class="fw-bold small" id="bt_task_to">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Template Warning Alert if not set -->
+                        <div id="bt_template_warning" class="alert alert-danger d-flex align-items-center p-3 mb-3" style="display: none !important;">
+                            <i class="ti ti-alert-triangle fs-3 me-2"></i>
+                            <div class="flex-grow-1">
+                                <span class="fw-bold">{{ __('تنبيه:') }}</span>
+                                {{ __('لم يتم ضبط معرّف أو اسم القالب المعتمد في الإعدادات!') }}
+                                <a href="{{ route('settings.general') }}#nav-saei" target="_blank" class="text-danger text-decoration-underline fw-bold ms-1">
+                                    {{ __('انقر هنا للانتقال لصفحة الإعدادات لضبطه') }}
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Message Preview -->
+                        <div class="card border mb-3">
+                            <div class="card-header bg-lighter py-2 px-3 d-flex justify-content-between align-items-center cursor-pointer"
+                                data-bs-toggle="collapse" data-bs-target="#bt_preview_collapse">
+                                <span class="fw-bold text-muted small">
+                                    <i class="ti ti-eye text-primary me-1"></i>{{ __('معاينة نص الرسالة والقالب المعتمد (Meta WhatsApp Template)') }}
+                                </span>
+                                <i class="ti ti-chevron-down text-muted"></i>
+                            </div>
+                            <div class="collapse" id="bt_preview_collapse">
+                                <div class="card-body p-3 bg-light">
+                                    <div class="p-3 bg-white rounded border border-success" style="font-family: inherit; font-size: 13px; line-height: 1.6; border-right: 4px solid #25D366 !important;">
+                                        <div class="text-dark fw-bold mb-1">🔔 لديك مهمة جديدة متاحة للتنفيذ.</div>
+                                        <div class="text-muted small mb-2">You have a new task available for execution.</div>
+                                        <div class="mb-2">🚚 <span id="bt_preview_var1" class="badge bg-label-success fw-bold">-</span></div>
+                                        <div class="mb-1">📅 من / From : <span id="bt_preview_var2" class="fw-bold text-primary">-</span></div>
+                                        <div class="mb-3">📅 إلى / To : <span id="bt_preview_var3" class="fw-bold text-danger">-</span></div>
+                                        <div class="text-dark fw-bold">🚀 افتح التطبيق الآن للاطلاع على تفاصيل المهمة.</div>
+                                        <div class="text-muted small mb-2">🚀 Open the app now to view the task details.</div>
+                                        <div class="small text-muted border-top pt-2 mt-2">
+                                            حمّل التطبيق الآن وابدأ باستخدام خدماتنا.<br>
+                                            <strong>وجهات آمنة لخدمات النقل اللوجستي</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Additional Phone Input Card -->
+                        <div class="card border mb-3 bg-light">
+                            <div class="card-body p-3">
+                                <label for="bt_custom_phone" class="form-label fw-bold text-dark d-flex align-items-center gap-1 mb-1">
+                                    <i class="ti ti-phone-plus text-success fs-5"></i>
+                                    {{ __('إرسال إلى رقم خاص / إضافي (اختياري)') }}
+                                </label>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text bg-white"><i class="ti ti-brand-whatsapp text-success"></i></span>
+                                    <input type="text" class="form-control bg-white" id="bt_custom_phone"
+                                        dir="ltr"
+                                        placeholder="05XXXXXXXX أو 9665XXXXXXXX">
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    {{ __('يمكنك إدخال رقم هاتف إضافي لإرسال إشعار المهمة إليه عبر واتساب (سواء مع السائقين المحددين أو بشكل منفرد).') }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Drivers Controls Bar -->
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="bt_select_all" checked>
+                                    <label class="form-check-label fw-bold text-dark" for="bt_select_all">
+                                        {{ __('تحديد الكل') }}
+                                    </label>
+                                </div>
+                                <span class="badge bg-label-primary px-2 py-1" id="bt_counter_badge">
+                                    {{ __('تم تحديد') }} <strong id="bt_selected_count">0</strong> {{ __('من أصل') }} <strong id="bt_total_count">0</strong> {{ __('سائق') }}
+                                </span>
+                            </div>
+                            <div style="max-width: 260px;">
+                                <div class="input-group input-group-merge input-group-sm">
+                                    <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                    <input type="text" class="form-control" id="bt_driver_search" placeholder="{{ __('بحث بالاسم أو الجوال...') }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Eligible Drivers Table -->
+                        <div class="table-responsive border rounded" style="max-height: 320px;">
+                            <table class="table table-hover table-sm align-middle mb-0" id="bt_drivers_table">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 40px;" class="text-center">#</th>
+                                        <th>{{ __('السائق') }}</th>
+                                        <th>{{ __('رقم الواتساب') }}</th>
+                                        <th>{{ __('الفريق') }}</th>
+                                        <th class="text-center">{{ __('الحالة') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bt_drivers_tbody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="bt_empty_state" class="text-center py-4 text-muted" style="display: none;">
+                            <i class="ti ti-user-x fs-1 text-secondary mb-2 d-block"></i>
+                            <h6 class="fw-bold mb-1">{{ __('لا يوجد سائقين مؤهلين متاحين حالياً') }}</h6>
+                            <p class="small mb-0">{{ __('لم يتم العثور على سائقين معتمدين بنفس نوع المركبة وليس لديهم مهام نشطة.') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2 bg-light d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
+                        {{ __('إلغاء') }}
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnConfirmBroadcastTaskWhatsapp" style="background-color: #198754;" disabled>
+                        <i class="ti ti-brand-whatsapp me-1 fs-5"></i>
+                        {{ __('إرسال الإشعار عبر واتساب') }} (<span id="bt_btn_count">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     @include('admin.tasks.from-modal', ['hasTaskBrokerTemplate' => true])
 

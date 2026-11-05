@@ -433,12 +433,14 @@ class InvestorWalletController extends Controller
             return back()->with('error', 'لديك طلب سحب أو تحويل بنكي سابق قيد المراجعة والمعالجة حالياً. يرجى الانتظار حتى اكتمال معالجة الطلب السابق قبل تقديم طلب جديد.');
         }
 
+        // التحقق من وجود رقم آيبان وحساب بنكي مسجل في ملف المستثمر
+        $ibanNumber = trim($investor->iban_number ?: ($investor->account_number ?: ''));
+        if (empty($ibanNumber)) {
+            return back()->with('error', 'بيانات حسابك البنكي غير مسجلة. يجب التواصل مع إدارة المنصة لتهيئة بياناتك البنكية لتتمكن من تقديم طلب السحب.');
+        }
+
         $request->validate([
             'amount'         => ['required', 'numeric', 'min:1', "max:{$availableBalance}"],
-            'bank_name'      => ['nullable', 'string', 'max:100'],
-            'account_number' => ['nullable', 'string', 'max:50'],
-            'iban_number'    => ['nullable', 'string', 'max:50'],
-            'account_holder' => ['nullable', 'string', 'max:100'],
             'investor_notes' => ['nullable', 'string', 'max:1000'],
         ], [
             'amount.required' => 'يرجى إدخال المبلغ المراد سحبه من العمولات.',
@@ -448,15 +450,20 @@ class InvestorWalletController extends Controller
         ]);
 
         try {
+            $saudiBankInfo = \App\Services\HyperPayPayoutService::getSaudiBankInfoFromIban($ibanNumber);
+            $bankName = $investor->bank_name ?: ($saudiBankInfo['name'] ?? 'غير محدد');
+            $accountHolder = $investor->beneficiary_name ?: $investor->name;
+            $accountNumber = $investor->account_number ?: $ibanNumber;
+
             $withdrawal = InvestorCommissionWithdrawal::create([
                 'user_id'        => $investor->id,
                 'user_wallet_id' => $personalWallet->id,
                 'amount'         => $request->amount,
                 'status'         => 'pending',
-                'bank_name'      => $request->bank_name ?: $investor->bank_name,
-                'account_number' => $request->account_number ?: $investor->account_number,
-                'iban_number'    => $request->iban_number ?: $investor->iban_number,
-                'account_holder' => $request->account_holder ?: $investor->name,
+                'bank_name'      => $bankName,
+                'account_number' => $accountNumber,
+                'iban_number'    => $ibanNumber,
+                'account_holder' => $accountHolder,
                 'investor_notes' => $request->investor_notes,
             ]);
 
@@ -477,12 +484,23 @@ class InvestorWalletController extends Controller
         $investor = auth()->user();
         $personalWallet = $investor->userWallet;
 
+        $hasActiveRequest = InvestorCommissionWithdrawal::where('user_id', $investor->id)
+            ->whereIn('status', ['pending', 'processing'])
+            ->exists()
+            || \App\Models\HyperpayPayout::where(function ($q) use ($investor, $personalWallet) {
+                $q->where('user_id', $investor->id);
+                if ($personalWallet) {
+                    $q->orWhere('user_wallet_id', $personalWallet->id);
+                }
+            })->whereIn('status', ['pending', 'processing', 'pending_approval'])
+            ->exists();
+
         $withdrawals = InvestorCommissionWithdrawal::where('user_id', $investor->id)
             ->with(['transaction', 'processor'])
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
             ->latest()
             ->paginate(15);
 
-        return view('investor.personal-wallet.withdrawals', compact('investor', 'personalWallet', 'withdrawals'));
+        return view('investor.personal-wallet.withdrawals', compact('investor', 'personalWallet', 'withdrawals', 'hasActiveRequest'));
     }
 }

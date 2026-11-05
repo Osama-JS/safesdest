@@ -107,6 +107,11 @@
                 <i class="ti ti-file-text me-2 fs-5"></i> {{ __('قوالب النماذج') }}
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-support-tab" data-bs-toggle="pill" data-bs-target="#nav-support" type="button" role="tab" aria-controls="nav-support" aria-selected="false">
+                <i class="ti ti-headset me-2 fs-5"></i> {{ __('بيانات التواصل والدعم') }}
+            </button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -974,6 +979,207 @@
             </div>
         </div>
 
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 7: Support & Contact Details                               --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        <div class="tab-pane fade" id="nav-support" role="tabpanel" aria-labelledby="nav-support-tab">
+            <div class="row g-4">
+                <div class="col-12 col-xl-8">
+                    <div class="card border-0 shadow-sm" id="support_settings_card">
+                        <div class="card-header bg-label-info py-3 d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0 text-info d-flex align-items-center">
+                                <i class="ti ti-headset me-2 fs-4"></i>{{ __('بيانات التواصل والدعم الفني للمنصة والتطبيقات') }}
+                            </h5>
+                            <span class="badge bg-info text-white">{{ __('مباشر في التطبيقات') }}</span>
+                        </div>
+                        <div class="card-body pt-4">
+                            <form id="form_support_settings" method="POST" action="{{ route('settings.support.update') }}">
+                                @csrf
+
+                                <!-- Master Toggle -->
+                                <div class="card bg-label-light border p-3 mb-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-dark"><i class="ti ti-power me-1 text-primary"></i> {{ __('تفعيل نافذة الدعم الفني في التطبيقات') }}</h6>
+                                            <p class="text-muted small mb-0">{{ __('التحكم في ظهور أو إخفاء زر وقائمة التواصل والدعم الفني في تطبيقي السائقين والعملاء.') }}</p>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" id="support_contacts_enabled" name="support_contacts_enabled" value="1"
+                                                {{ ($settings['support_contacts_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- WhatsApp Section -->
+                                <div class="card border mb-4">
+                                    <div class="card-header bg-light py-2 px-3">
+                                        <h6 class="mb-0 fw-bold d-flex align-items-center text-success">
+                                            <i class="ti ti-brand-whatsapp me-2 fs-4"></i> {{ __('أرقام الواتساب للتواصل السريع (WhatsApp Support)') }}
+                                        </h6>
+                                    </div>
+                                    <div class="card-body pt-3 pb-2">
+                                        <!-- Primary WhatsApp -->
+                                        <div class="p-3 bg-label-light rounded mb-3 border">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-success"><i class="ti ti-phone-call me-1"></i> {{ __('رقم الواتساب الرئيسي #1') }}</span>
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="support_whatsapp_primary_enabled" name="support_whatsapp_primary_enabled" value="1"
+                                                        {{ ($settings['support_whatsapp_primary_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                                    <label class="form-check-label small" for="support_whatsapp_primary_enabled">{{ __('تفعيل العرض') }}</label>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">{{ __('رقم الهاتف (مع الرمز الدولي)') }}</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-white"><i class="ti ti-brand-whatsapp text-success"></i></span>
+                                                        <input type="text" class="form-control" name="support_whatsapp_primary" id="support_whatsapp_primary"
+                                                            value="{{ $settings['support_whatsapp_primary']['value'] ?? '+966540587001' }}" placeholder="+9665XXXXXXXX">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">{{ __('تسمية الزر في التطبيق') }}</label>
+                                                    <input type="text" class="form-control" name="support_whatsapp_primary_label" id="support_whatsapp_primary_label"
+                                                        value="{{ $settings['support_whatsapp_primary_label']['value'] ?? 'خدمة العملاء والدعم الفني' }}" placeholder="مثال: خدمة العملاء والدعم الفني">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Secondary WhatsApp -->
+                                        <div class="p-3 bg-label-light rounded border">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-secondary"><i class="ti ti-phone-call me-1"></i> {{ __('رقم الواتساب الثانوي #2') }}</span>
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="support_whatsapp_secondary_enabled" name="support_whatsapp_secondary_enabled" value="1"
+                                                        {{ ($settings['support_whatsapp_secondary_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                                    <label class="form-check-label small" for="support_whatsapp_secondary_enabled">{{ __('تفعيل العرض') }}</label>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">{{ __('رقم الهاتف (مع الرمز الدولي)') }}</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-white"><i class="ti ti-brand-whatsapp text-success"></i></span>
+                                                        <input type="text" class="form-control" name="support_whatsapp_secondary" id="support_whatsapp_secondary"
+                                                            value="{{ $settings['support_whatsapp_secondary']['value'] ?? '+966560915723' }}" placeholder="+9665XXXXXXXX">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-bold">{{ __('تسمية الزر في التطبيق') }}</label>
+                                                    <input type="text" class="form-control" name="support_whatsapp_secondary_label" id="support_whatsapp_secondary_label"
+                                                        value="{{ $settings['support_whatsapp_secondary_label']['value'] ?? 'الاستفسارات والعمليات' }}" placeholder="مثال: الاستفسارات والعمليات">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Direct Phone & Email & Website -->
+                                <div class="card border mb-4">
+                                    <div class="card-header bg-light py-2 px-3">
+                                        <h6 class="mb-0 fw-bold d-flex align-items-center text-primary">
+                                            <i class="ti ti-address-book me-2 fs-4"></i> {{ __('قنوات الاتصال المباشرة والرسمية') }}
+                                        </h6>
+                                    </div>
+                                    <div class="card-body pt-3">
+                                        <div class="row g-3">
+                                            <!-- Direct Phone Call -->
+                                            <div class="col-12">
+                                                <div class="p-3 bg-label-light rounded border">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <label class="form-label small fw-bold mb-0"><i class="ti ti-phone me-1 text-primary"></i> {{ __('رقم الاتصال المباشر (Phone Call)') }}</label>
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="support_phone_enabled" name="support_phone_enabled" value="1"
+                                                                {{ ($settings['support_phone_enabled']['value'] ?? '0') == '1' ? 'checked' : '' }}>
+                                                            <label class="form-check-label small" for="support_phone_enabled">{{ __('تفعيل العرض') }}</label>
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" class="form-control" name="support_phone" id="support_phone"
+                                                        value="{{ $settings['support_phone']['value'] ?? '+966540587001' }}" placeholder="+966XXXXXXXXX">
+                                                </div>
+                                            </div>
+
+                                            <!-- Email -->
+                                            <div class="col-md-6">
+                                                <div class="p-3 bg-label-light rounded border h-100">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <label class="form-label small fw-bold mb-0"><i class="ti ti-mail me-1 text-info"></i> {{ __('البريد الإلكتروني للدعم') }}</label>
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="support_email_enabled" name="support_email_enabled" value="1"
+                                                                {{ ($settings['support_email_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                                            <label class="form-check-label small" for="support_email_enabled">{{ __('تفعيل العرض') }}</label>
+                                                        </div>
+                                                    </div>
+                                                    <input type="email" class="form-control" name="support_email" id="support_email"
+                                                        value="{{ $settings['support_email']['value'] ?? 'info@safedest.com' }}" placeholder="support@safedest.com">
+                                                </div>
+                                            </div>
+
+                                            <!-- Website -->
+                                            <div class="col-md-6">
+                                                <div class="p-3 bg-label-light rounded border h-100">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <label class="form-label small fw-bold mb-0"><i class="ti ti-world me-1 text-success"></i> {{ __('الموقع الإلكتروني الرسمي') }}</label>
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="support_website_enabled" name="support_website_enabled" value="1"
+                                                                {{ ($settings['support_website_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                                            <label class="form-check-label small" for="support_website_enabled">{{ __('تفعيل العرض') }}</label>
+                                                        </div>
+                                                    </div>
+                                                    <input type="url" class="form-control" name="support_website" id="support_website"
+                                                        value="{{ $settings['support_website']['value'] ?? 'https://www.safedest.com' }}" placeholder="https://www.safedest.com">
+                                                </div>
+                                            </div>
+
+                                            <!-- Working Hours -->
+                                            <div class="col-12">
+                                                <div class="p-3 bg-label-light rounded border">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <label class="form-label small fw-bold mb-0"><i class="ti ti-clock me-1 text-warning"></i> {{ __('ساعات العمل / التواجد') }}</label>
+                                                        <div class="form-check form-switch mb-0">
+                                                            <input class="form-check-input" type="checkbox" id="support_working_hours_enabled" name="support_working_hours_enabled" value="1"
+                                                                {{ ($settings['support_working_hours_enabled']['value'] ?? '1') == '1' ? 'checked' : '' }}>
+                                                            <label class="form-check-label small" for="support_working_hours_enabled">{{ __('تفعيل العرض') }}</label>
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" class="form-control" name="support_working_hours" id="support_working_hours"
+                                                        value="{{ $settings['support_working_hours']['value'] ?? 'متاح على مدار الساعة 24/7' }}" placeholder="مثال: متاح على مدار الساعة 24/7">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="submit" class="btn btn-primary d-flex align-items-center" id="btn_save_support_settings">
+                                        <i class="ti ti-device-floppy me-1 fs-5"></i> {{ __('حفظ إعدادات الدعم والتواصل') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Side Card -->
+                <div class="col-12 col-xl-4">
+                    <div class="card border-0 shadow-sm bg-label-light">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                                <i class="ti ti-bulb text-warning me-2 fs-4"></i> {{ __('كيف تعمل هذه الإعدادات؟') }}
+                            </h6>
+                            <ul class="text-muted small ps-3 mb-0" style="line-height: 1.8;">
+                                <li class="mb-2">{{ __('جميع التغييرات التي تقوم بحفظها هنا تنعكس فوراً وتلقائياً على تطبيقي السائقين والعملاء.') }}</li>
+                                <li class="mb-2">{{ __('يمكنك إلغاء تفعيل أي وسيلة اتصال (مثلاً رقم واتساب معين أو البريد) دون حذفه، وسيختفي فوراً من التطبيق.') }}</li>
+                                <li class="mb-2">{{ __('التبديل العام "تفعيل نافذة الدعم" يتيح لك إخفاء كامل قائمة الدعم بنقرة واحدة عند الصيانة أو الطوارئ.') }}</li>
+                                <li>{{ __('تأكد دائماً من كتابة أرقام الهواتف والواتساب متضمنة مفتاح الدولة مثل (+966).') }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Test Email Modal -->
@@ -1022,6 +1228,8 @@
                 '#mail_settings_card': '#nav-mail-tab',
                 '#saei_settings_card': '#nav-saei-tab',
                 '#mtahd_settings_card': '#nav-mtahd-tab',
+                '#support_settings_card': '#nav-support-tab',
+                '#nav-support': '#nav-support-tab',
                 '#nav-saei': '#nav-saei-tab',
                 '#nav-mail': '#nav-mail-tab',
                 '#nav-mtahd': '#nav-mtahd-tab',
@@ -1477,6 +1685,76 @@
                         icon: 'error',
                         title: '{{ __("خطأ") }}',
                         text: '{{ __("تعذر إتمام فحص الاتصال بساعي") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
+                });
+            });
+        }
+
+        // Save Support & Contact Settings
+        const formSupport = document.getElementById('form_support_settings');
+        if (formSupport) {
+            formSupport.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const btn = document.getElementById('btn_save_support_settings');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الحفظ...") }}';
+
+                const formData = new FormData(formSupport);
+                const checkboxes = [
+                    'support_contacts_enabled',
+                    'support_whatsapp_primary_enabled',
+                    'support_whatsapp_secondary_enabled',
+                    'support_phone_enabled',
+                    'support_email_enabled',
+                    'support_website_enabled',
+                    'support_working_hours_enabled'
+                ];
+                checkboxes.forEach(name => {
+                    const el = document.getElementById(name);
+                    formData.set(name, el && el.checked ? '1' : '0');
+                });
+
+                fetch('{{ route("settings.support.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("تم الحفظ بنجاح") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("خطأ") }}',
+                            text: data.message || '{{ __("فشل حفظ إعدادات الدعم") }}',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("خطأ") }}',
+                        text: '{{ __("تعذر الاتصال بالسيرفر أثناء حفظ الإعدادات") }}',
                         customClass: { confirmButton: 'btn btn-danger' },
                         buttonsStyling: false
                     });

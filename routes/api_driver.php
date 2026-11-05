@@ -37,6 +37,9 @@ Route::prefix('driver')->group(function () {
         ]);
     });
 
+    // Dynamic support contacts endpoint
+    Route::get('/support-contacts', [\App\Http\Controllers\Api\SupportContactController::class, 'getSupportContacts']);
+
     // Test endpoint for debugging task ads (only in local development)
     if (app()->environment('local')) {
         Route::get('/task-ads/test-stats', [DriverTaskAdsController::class, 'testStats']);
@@ -208,7 +211,12 @@ Route::prefix('driver')->middleware(['auth:sanctum', 'driver.guard'])->group(fun
             ->name('api.driver.tasks.messages.index');
         Route::post('/{task}/messages', [\App\Http\Controllers\Api\DriverTaskChatController::class, 'store'])
             ->name('api.driver.tasks.messages.store');
+        Route::get('/{task}/unread-messages', [\App\Http\Controllers\Api\DriverTaskChatController::class, 'unreadCount'])
+            ->name('api.driver.tasks.messages.unread');
     });
+
+    Route::get('/tasks-chat/unread-counts', [\App\Http\Controllers\Api\DriverTaskChatController::class, 'unreadCounts'])
+        ->name('api.driver.chat.unread-counts');
 
     // Task Ads routes (actions requiring completed profile)
     Route::prefix('task-ads')->group(function () {

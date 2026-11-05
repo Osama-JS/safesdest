@@ -18,7 +18,7 @@ class CustomerTaskChatController extends Controller
     {
         try {
             $customer = $request->user();
-            $task = Task::with(['driver.vehicleSize', 'driver.team'])
+            $task = Task::with(['driver.team'])
                 ->where('customer_id', $customer->id)
                 ->findOrFail($taskId);
 
@@ -142,6 +142,27 @@ class CustomerTaskChatController extends Controller
                 Log::warning('Failed to broadcast TaskChatMessageSent to Reverb: ' . $e->getMessage());
             }
 
+            // Send Firebase Push Notification to Driver
+            try {
+                $driver = $task->driver;
+                if ($driver && !empty($driver->fcm_token)) {
+                    $firebaseService = new \App\Services\FirebaseService();
+                    $notifTitle = 'رسالة جديدة من العميل ' . ($customer->name ?? '');
+                    $notifBody = !empty($chatMessage->message) ? $chatMessage->message : '📷 أرسل العميل صورة جديدة';
+                    $notifData = [
+                        'type'        => 'task_chat',
+                        'task_id'     => (string) $task->id,
+                        'sender_type' => 'customer',
+                        'sender_name' => (string) ($customer->name ?? 'العميل'),
+                        'message'     => (string) $notifBody,
+                        'click_action'=> 'FLUTTER_NOTIFICATION_CLICK',
+                    ];
+                    $firebaseService->sendToDevice($driver->fcm_token, $notifTitle, $notifBody, $notifData);
+                }
+            } catch (\Throwable $e) {
+                Log::error('FCM Task Chat notification to driver failed: ' . $e->getMessage());
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Message sent successfully',
@@ -170,6 +191,63 @@ class CustomerTaskChatController extends Controller
                 'success' => false,
                 'message' => 'Failed to send message',
             ], 500);
+        }
+    }
+
+    /**
+     * Get unread messages count for a specific task (messages from driver to customer)
+     */
+    public function unreadCount(Request $request, $taskId)
+    {
+        try {
+            $customer = $request->user();
+            $task = Task::where('customer_id', $customer->id)->findOrFail($taskId);
+
+            $count = TaskChatMessage::where('task_id', $task->id)
+                ->where('sender_type', 'driver')
+                ->where('is_read', false)
+                ->count();
+
+            return response()->json([
+                'success'      => true,
+                'task_id'      => (int) $taskId,
+                'unread_count' => $count,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success'      => false,
+                'unread_count' => 0,
+            ], 200);
+        }
+    }
+
+    /**
+     * Get unread messages counts across all active tasks of this customer
+     */
+    public function unreadCounts(Request $request)
+    {
+        try {
+            $customer = $request->user();
+            $taskIds = Task::where('customer_id', $customer->id)
+                ->whereNotIn('status', ['completed', 'cancelled', 'refund'])
+                ->pluck('id');
+
+            $counts = TaskChatMessage::whereIn('task_id', $taskIds)
+                ->where('sender_type', 'driver')
+                ->where('is_read', false)
+                ->selectRaw('task_id, COUNT(*) as count')
+                ->groupBy('task_id')
+                ->pluck('count', 'task_id');
+
+            return response()->json([
+                'success' => true,
+                'counts'  => $counts,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'counts'  => [],
+            ], 200);
         }
     }
 }

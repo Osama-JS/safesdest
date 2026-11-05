@@ -12,7 +12,7 @@ class SettingsController extends Controller
 
   public function __construct()
   {
-    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings', 'testSaeiConnection']]);
+    $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings', 'testSaeiConnection', 'updateSupportSettings']]);
   }
 
   public function index()
@@ -238,6 +238,7 @@ class SettingsController extends Controller
       'saei_base_url'          => 'nullable|url',
       'saei_from_phone_id'     => 'nullable|string',
       'saei_template_id'       => 'nullable|numeric',
+      'saei_task_broadcast_template_id' => 'nullable|string',
       'saei_callback_secret'   => 'nullable|string',
       'whatsapp_cloud_token'   => 'nullable|string',
       'whatsapp_cloud_waba_id' => 'nullable|string',
@@ -255,6 +256,7 @@ class SettingsController extends Controller
       'saei_base_url'          => 'الرابط الأساسي لـ API ساعي (Base URL)',
       'saei_from_phone_id'     => 'معرّف رقم الهاتف المُرسِل في ساعي وميتا (Phone Number ID)',
       'saei_template_id'       => 'رقم معرّف قالب OTP في ساعي (Template ID)',
+      'saei_task_broadcast_template_id' => 'معرّف أو اسم قالب إشعار المهام المعتمد للسائقين في ساعي/واتساب (Task Broadcast Template ID)',
       'saei_callback_secret'   => 'المفتاح السري لتوقيع Callback لساعي',
       'whatsapp_cloud_token'   => 'رمز الوصول الدائم لحساب واتساب كلاود في ميتا (Cloud Token)',
       'whatsapp_cloud_waba_id' => 'معرّف حساب واتساب للأعمال (WABA ID)',
@@ -327,6 +329,65 @@ class SettingsController extends Controller
         'message' => 'حدث خطأ أثناء فحص الاتصال بساعي: ' . $e->getMessage()
       ], 500);
     }
+  }
+
+  /**
+   * تحديث وحفظ بيانات التواصل والدعم الفني للمنصة والتطبيقات
+   */
+  public function updateSupportSettings(Request $request)
+  {
+    $validated = $request->validate([
+      'support_contacts_enabled'           => 'nullable|string|in:0,1',
+      'support_email'                      => 'nullable|string|max:191',
+      'support_email_enabled'              => 'nullable|string|in:0,1',
+      'support_website'                    => 'nullable|string|max:191',
+      'support_website_enabled'            => 'nullable|string|in:0,1',
+      'support_phone'                      => 'nullable|string|max:50',
+      'support_phone_enabled'              => 'nullable|string|in:0,1',
+      'support_whatsapp_primary'           => 'nullable|string|max:50',
+      'support_whatsapp_primary_label'     => 'nullable|string|max:100',
+      'support_whatsapp_primary_enabled'   => 'nullable|string|in:0,1',
+      'support_whatsapp_secondary'         => 'nullable|string|max:50',
+      'support_whatsapp_secondary_label'   => 'nullable|string|max:100',
+      'support_whatsapp_secondary_enabled' => 'nullable|string|in:0,1',
+      'support_working_hours'              => 'nullable|string|max:191',
+      'support_working_hours_enabled'      => 'nullable|string|in:0,1',
+    ]);
+
+    $descriptions = [
+      'support_contacts_enabled'           => 'تفعيل ظهور بيانات ووسائل الدعم الفني في التطبيقات بالكامل',
+      'support_email'                      => 'بريد الدعم الفني المعتمد للمنصة',
+      'support_email_enabled'              => 'تفعيل أو إلغاء عرض البريد الإلكتروني في التطبيقات',
+      'support_website'                    => 'الموقع الإلكتروني الرسمي للمنصة',
+      'support_website_enabled'            => 'تفعيل أو إلغاء عرض الموقع الإلكتروني في التطبيقات',
+      'support_phone'                      => 'رقم الهاتف المباشر للاتصال',
+      'support_phone_enabled'              => 'تفعيل أو إلغاء عرض رقم الاتصال المباشر في التطبيقات',
+      'support_whatsapp_primary'           => 'رقم الواتساب الرئيسي للتواصل والدعم الفني',
+      'support_whatsapp_primary_label'     => 'تسمية رقم الواتساب الرئيسي',
+      'support_whatsapp_primary_enabled'   => 'تفعيل أو إلغاء عرض رقم الواتساب الرئيسي',
+      'support_whatsapp_secondary'         => 'رقم الواتساب الثانوي للاستفسارات والعمليات',
+      'support_whatsapp_secondary_label'   => 'تسمية رقم الواتساب الثانوي',
+      'support_whatsapp_secondary_enabled' => 'تفعيل أو إلغاء عرض رقم الواتساب الثانوي',
+      'support_working_hours'              => 'ساعات العمل أو نص الملاحظة للدعم',
+      'support_working_hours_enabled'      => 'تفعيل أو إلغاء عرض ساعات العمل',
+    ];
+
+    foreach ($validated as $key => $value) {
+      Settings::updateOrCreate(
+        ['key' => $key],
+        [
+          'value'       => $value ?? '',
+          'category'    => 'support_contact',
+          'name'        => $descriptions[$key] ?? $key,
+          'description' => $descriptions[$key] ?? '',
+        ]
+      );
+    }
+
+    return response()->json([
+      'success' => true,
+      'message' => 'تم حفظ وتحديث بيانات التواصل والدعم الفني بنجاح، وأصبحت سارية في التطبيقات فوراً!'
+    ]);
   }
 }
 

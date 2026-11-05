@@ -160,17 +160,40 @@
                         <div class="col-6 border-end">
                             <p class="mb-1 text-muted small">{{ __('Total Invested') }}</p>
                             <h4 class="mb-0 fw-bold">{{ number_format($stats['total_invested'], 2) }}</h4>
+                            <small class="text-muted" style="font-size: 11px;">{{ __('Cumulative Tasks Funding') }}</small>
                         </div>
                         <div class="col-6">
                             <p class="mb-1 text-muted small">{{ __('Net Profits') }}</p>
                             <h4 class="mb-0 fw-bold text-success">{{ number_format($stats['total_commissions'], 2) }}</h4>
+                            <small class="text-muted" style="font-size: 11px;">{{ __('Total Realized Profits') }}</small>
                         </div>
                     </div>
-                    <div class="mt-3">
+
+                    {{-- قسم رأس المال الأساسي (المودع والمعاد استثماره مطروحاً منه السحوبات) --}}
+                    <div class="pt-3 mt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center bg-label-primary p-2 px-3 rounded">
+                            <div class="text-start">
+                                <span class="d-block fw-bold text-dark small">
+                                    <i class="ti ti-building-bank me-1 text-primary"></i>{{ __('Base Capital') }}
+                                </span>
+                                <small class="text-muted" style="font-size: 11px;">{{ __('Net Deposited & Reinvested') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <h4 class="mb-0 fw-bold text-primary">{{ number_format($stats['base_capital'], 2) }} <small class="fs-tiny">{{ __('SAR') }}</small></h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 d-flex justify-content-center align-items-center gap-2 flex-wrap">
                         <div class="badge bg-label-success rounded-pill px-3 py-2">
                             <i class="ti ti-trending-up me-1"></i>
                             {{ __('ROI Rate') }}: {{ $stats['roi_percentage'] }}%
                         </div>
+                        @if(!empty($stats['capital_withdrawn']) && $stats['capital_withdrawn'] > 0)
+                            <div class="badge bg-label-secondary rounded-pill px-2 py-1 small" title="{{ __('Total Capital Withdrawals') }}">
+                                <i class="ti ti-arrow-down-left me-1 text-danger"></i>{{ __('Capital Withdrawals:') }} {{ number_format($stats['capital_withdrawn'], 2) }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -197,17 +220,36 @@
         </div>
         <div class="col-sm-6 col-xl-3">
             <div class="card card-border-shadow-success h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2 pb-1">
-                        <div class="avatar me-2">
-                            <span class="avatar-initial rounded bg-label-success"><i class="ti ti-cash ti-md"></i></span>
+                <div class="card-body d-flex flex-column justify-content-between p-3">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2 pb-1">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-2">
+                                    <span class="avatar-initial rounded bg-label-success"><i class="ti ti-cash ti-sm"></i></span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ __('Commission Wallet Balance') }}</h6>
+                                </div>
+                            </div>
+                            <span class="badge bg-label-success rounded-pill px-2 py-1 small">
+                                <i class="ti ti-check me-1 small"></i>{{ __('Ready to Withdraw') }}
+                            </span>
                         </div>
-                        <h4 class="ms-1 mb-0">{{ number_format($stats['personal_balance'], 2) }}</h4>
+                        <div class="mt-2">
+                            <small class="text-muted d-block mb-1">{{ __('Instant Withdrawable Balance:') }}</small>
+                            <h4 class="mb-0 fw-bold text-success">{{ number_format($stats['personal_balance'], 2) }} <small class="fs-tiny text-muted">{{ __('SAR') }}</small></h4>
+                        </div>
                     </div>
-                    <p class="mb-1">{{ __('Personal Wallet Balance') }}</p>
-                    <p class="mb-0 small text-muted">
-                        <span class="text-info me-1">{{ __('Withdrawable') }}</span>
-                    </p>
+                    <div class="pt-2 mt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted"><i class="ti ti-wallet me-1"></i>{{ __('Total Wallet Balance:') }}</small>
+                            <span class="fw-bold text-dark small">{{ number_format($stats['personal_total_balance'], 2) }} {{ __('SAR') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted"><i class="ti ti-arrow-down-left me-1 text-danger"></i>{{ __('Withdrawn Commissions:') }}</small>
+                            <span class="fw-bold text-danger small">{{ number_format($stats['withdrawn_commissions'], 2) }} {{ __('SAR') }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -269,6 +311,13 @@
                 <div class="card-body">
                     <div id="investmentRadialChart"></div>
                     <div class="d-flex flex-column gap-3 mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-dot bg-warning"></span>
+                                <small class="fw-bold">{{ __('Base Capital') }}</small>
+                            </div>
+                            <small class="fw-bold text-primary">{{ number_format($stats['base_capital'], 2) }} {{ __('SAR') }}</small>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge badge-dot bg-primary"></span>

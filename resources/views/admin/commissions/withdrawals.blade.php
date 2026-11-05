@@ -103,6 +103,7 @@
                     <select name="status" class="form-select">
                         <option value="">جميع الحالات</option>
                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>قيد المراجعة</option>
+                        <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>قيد الصرف عبر Payout</option>
                         <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>مقبول ومصروف</option>
                         <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>مرفوض</option>
                     </select>
@@ -196,6 +197,10 @@
                                 <span class="badge bg-label-warning px-2 py-1">
                                     <i class="ti ti-clock me-1"></i> قيد المراجعة
                                 </span>
+                            @elseif($w->status === 'processing')
+                                <span class="badge bg-label-info px-2 py-1">
+                                    <i class="ti ti-refresh ti-spin me-1"></i> بانتظار مصادقة Payout
+                                </span>
                             @elseif($w->status === 'approved')
                                 <span class="badge bg-label-success px-2 py-1">
                                     <i class="ti ti-check me-1"></i> مقبول ومصروف
@@ -239,8 +244,8 @@
                                                 '{{ addslashes($w->iban_number ?: ($w->account_number ?: 'غير محدد')) }}',
                                                 '{{ addslashes(str_replace(["\r", "\n"], ' ', $w->investor_notes ?? '')) }}'
                                             )"
-                                            title="الموافقة ورفع الإيصال">
-                                        <i class="ti ti-check me-1"></i> موافقة
+                                            title="معالجة الطلب والصرف">
+                                        <i class="ti ti-check me-1"></i> معالجة
                                     </button>
                                     @endcanany
                                     @canany(['reject_investor_withdrawals', 'manage_investor_withdrawals', 'save_investors'])
@@ -264,6 +269,10 @@
                                         @endcannot
                                     @endcannot
                                 </div>
+                            @elseif($w->status === 'processing')
+                                <a href="{{ route('investors.payout-requests.index') }}" class="btn btn-sm btn-label-info px-2" title="متابعة والمصادقة في شاشة Payout">
+                                    <i class="ti ti-send me-1"></i> مصادقة Payout
+                                </a>
                             @else
                                 <span class="text-muted small">
                                     {{ $w->processor?->name ? 'عبر: ' . $w->processor->name : 'مكتمل' }}
@@ -373,23 +382,38 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">طريقة الصرف / السحب <span class="text-danger">*</span></label>
-                        <select name="withdrawal_method" class="form-select" required>
-                            <option value="bank_transfer" selected>تحويل بنكي</option>
-                            <option value="cash">نقداً</option>
-                            <option value="check">شيك مصدق</option>
+                        <label class="form-label fw-bold">{{ __('Disburse Method / Withdrawal') }} <span class="text-danger">*</span></label>
+                        <select name="withdrawal_method" id="approve_withdrawal_method" class="form-select border-primary fw-bold" required onchange="toggleWithdrawalMethod(this.value)">
+                            <option value="payout" selected>{{ __('Automated Bank Transfer (HyperPay Payout - Sarie)') }}</option>
+                            <option value="bank_transfer">{{ __('Manual Bank Transfer (upload receipt)') }}</option>
+                            <option value="cash">{{ __('Cash (upload receipt)') }}</option>
+                            <option value="check">{{ __('Certified Check (upload receipt)') }}</option>
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">صورة / ملف إيصال التحويل <span class="text-danger">*</span></label>
-                        <input type="file" name="receipt" class="form-control" accept="image/jpeg,image/png,image/jpg,application/pdf" required>
-                        <small class="text-muted">مسموح: JPG, PNG, PDF (الحد الأقصى 5 ميجابايت)</small>
+                    {{-- تنبيه خاص بمسار الـ Payout --}}
+                    <div id="payout_method_alert" class="alert alert-primary d-flex align-items-start mb-3">
+                        <i class="ti ti-send me-2 mt-1 fs-5"></i>
+                        <div class="small">
+                            <strong>{{ __('Dual-Control Authorization (HyperPay Payout):') }}</strong>
+                            <p class="mb-0 mt-1">
+                                {{ __('An authorized bank Payout request will be created immediately for this amount and transferred to the HyperPay Investor Payouts screen for final manager password authorization and instant dispatch via Sarie network.') }}
+                            </p>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small">رقم المرجع / الحوالة البنكية (اختياري)</label>
-                        <input type="text" name="reference_number" class="form-control" placeholder="مثال: REF-92834723">
+                    {{-- حقول الصرف اليدوي فقط --}}
+                    <div id="manual_method_fields" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">صورة / ملف إيصال التحويل <span class="text-danger">*</span></label>
+                            <input type="file" name="receipt" id="approve_receipt_input" class="form-control" accept="image/jpeg,image/png,image/jpg,application/pdf">
+                            <small class="text-muted">مسموح: JPG, PNG, PDF (الحد الأقصى 5 ميجابايت)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small">رقم المرجع / الحوالة البنكية (اختياري)</label>
+                            <input type="text" name="reference_number" class="form-control" placeholder="مثال: REF-92834723">
+                        </div>
                     </div>
 
                     <div class="mb-0">
@@ -398,10 +422,10 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-success" id="btnConfirmApprove">
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmApprove">
                         <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
-                        <i class="ti ti-check me-1"></i> اعتماد الصرف وخصم المحفظة
+                        <span id="btnConfirmApproveText"><i class="ti ti-send me-1"></i> {{ __('Transfer to HyperPay Payout') }}</span>
                     </button>
                 </div>
             </form>
@@ -531,7 +555,37 @@
 
         document.getElementById('approveWithdrawalForm').reset();
         document.getElementById('approve_withdrawal_id').value = id;
+        document.getElementById('approve_withdrawal_method').value = 'payout';
+        toggleWithdrawalMethod('payout');
         approveModalInstance.show();
+    }
+
+    function toggleWithdrawalMethod(val) {
+        const payoutAlert = document.getElementById('payout_method_alert');
+        const manualFields = document.getElementById('manual_method_fields');
+        const receiptInput = document.getElementById('approve_receipt_input');
+        const btn = document.getElementById('btnConfirmApprove');
+        const btnText = document.getElementById('btnConfirmApproveText');
+
+        if (val === 'payout') {
+            if (payoutAlert) payoutAlert.classList.remove('d-none');
+            if (manualFields) manualFields.classList.add('d-none');
+            if (receiptInput) receiptInput.removeAttribute('required');
+            if (btn) {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+            }
+            if (btnText) btnText.innerHTML = '<i class="ti ti-send me-1"></i> تحويل إلى HyperPay Payout';
+        } else {
+            if (payoutAlert) payoutAlert.classList.add('d-none');
+            if (manualFields) manualFields.classList.remove('d-none');
+            if (receiptInput) receiptInput.setAttribute('required', 'required');
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+            }
+            if (btnText) btnText.innerHTML = '<i class="ti ti-check me-1"></i> اعتماد الصرف وخصم المحفظة';
+        }
     }
 
     function copyApproveIban() {
@@ -626,14 +680,36 @@
 
             if (data.status === 1) {
                 approveModalInstance.hide();
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم بنجاح!',
-                    text: data.success,
-                    confirmButtonText: 'حسناً'
-                }).then(() => {
-                    window.location.reload();
-                });
+                if (data.is_payout && data.payout_url) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم إنشاء طلب الـ Payout بنجاح!',
+                        text: data.success,
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="ti ti-external-link me-1"></i> الانتقال لشاشة المصادقة (Payout)',
+                        cancelButtonText: 'البقاء هنا وتحديث الصفحة',
+                        customClass: {
+                            confirmButton: 'btn btn-primary me-2',
+                            cancelButton: 'btn btn-label-secondary'
+                        },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = data.payout_url;
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم بنجاح!',
+                        text: data.success,
+                        confirmButtonText: 'حسناً'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
             } else {
                 Swal.fire({
                     icon: 'error',

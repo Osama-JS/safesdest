@@ -327,9 +327,18 @@ class InvestorPayoutRequestsController extends Controller
         }
 
         $details = $payout->transaction_details ?? [];
-        $beneficiaryName = $details['beneficiary_name'] ?? HyperPayPayoutService::formatBeneficiaryName($user->beneficiary_name);
+        $beneficiaryName = $details['beneficiary_name'] ?? HyperPayPayoutService::formatBeneficiaryName($user->beneficiary_name ?: $user->name);
         $iban = str_replace(' ', '', $details['iban'] ?? $user->iban_number);
         $bic = $details['bic'] ?? $user->bic_code;
+        
+        // Ensure Saudi IBAN always has the verified official BIC
+        if (str_starts_with(strtoupper($iban), 'SA')) {
+            $saudiBank = HyperPayPayoutService::getSaudiBankInfoFromIban($iban);
+            if (!empty($saudiBank['bic'])) {
+                $bic = $saudiBank['bic'];
+            }
+        }
+
         $country = $details['country'] ?? ($user->bank_country ?? 'SA');
         $city = $details['city'] ?? ($user->bank_city ?? 'Riyadh');
         $address1 = $details['address1'] ?? ($user->bank_address1 ?? ($user->address ?: 'Riyadh'));

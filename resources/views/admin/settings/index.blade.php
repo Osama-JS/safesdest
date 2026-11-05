@@ -288,6 +288,7 @@
                 $saeiBaseUrl = $settings['saei_base_url']['value'] ?? env('SAEI_BASE_URL', 'https://api.saei.automize.sa/v1');
                 $saeiFromPhoneId = $settings['saei_from_phone_id']['value'] ?? env('SAEI_FROM_PHONE_ID', '+966557507505');
                 $saeiTemplateId = $settings['saei_template_id']['value'] ?? env('SAEI_TEMPLATE_ID', '77');
+                $saeiTaskBroadcastTemplateId = $settings['saei_task_broadcast_template_id']['value'] ?? env('SAEI_TASK_BROADCAST_TEMPLATE_ID', '');
                 $saeiCallbackSecret = $settings['saei_callback_secret']['value'] ?? env('SAEI_CALLBACK_SECRET', '');
                 $waCloudToken = $settings['whatsapp_cloud_token']['value'] ?? env('WHATSAPP_CLOUD_TOKEN', '');
                 $waCloudWabaId = $settings['whatsapp_cloud_waba_id']['value'] ?? env('WHATSAPP_CLOUD_WABA_ID', '2008107733152275');
@@ -451,7 +452,7 @@
                             </div>
 
                             <!-- Saei From Phone ID -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">{{ __('رقم أو معرّف هاتف الإرسال في ساعي') }} <span class="text-danger">*</span></label>
                                 <input type="text" id="saei_from_phone_id" name="saei_from_phone_id" class="form-control font-monospace"
                                     value="{{ $saeiFromPhoneId }}" placeholder="1289603500892080" list="saei_numbers_list">
@@ -462,23 +463,31 @@
                                     <option value="num_25">معرّف ساعي (num_25)</option>
                                     <option value="num_26">معرّف ساعي (num_26)</option>
                                 </datalist>
-                                <small class="text-muted">{{ __('معرّف الرقم الظاهر في مثال ساعي (مثل: 1289603500892080) أو رقم الهاتف بالصيغة الدولية.') }}</small>
+                                <small class="text-muted">{{ __('معرّف الرقم الظاهر في ساعي.') }}</small>
                             </div>
 
                             <!-- Saei Template ID -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">{{ __('معرّف قالب OTP في ساعي (Template ID)') }} <span class="text-danger">*</span></label>
                                 <input type="number" id="saei_template_id" name="saei_template_id" class="form-control font-monospace"
                                     value="{{ $saeiTemplateId }}" placeholder="77">
-                                <small class="text-muted">{{ __('معرّف قالب الـ Authentication المعتمد في ساعي (مثل: 77).') }}</small>
+                                <small class="text-muted">{{ __('معرّف قالب الـ OTP في ساعي (مثل: 77).') }}</small>
+                            </div>
+
+                            <!-- Saei Task Broadcast Template ID -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-success">{{ __('قالب مشاركة المهمة عبر واتساب') }}</label>
+                                <input type="text" id="saei_task_broadcast_template_id" name="saei_task_broadcast_template_id" class="form-control font-monospace border-success"
+                                    value="{{ $saeiTaskBroadcastTemplateId }}" placeholder="مثال: task_broadcast أو 78">
+                                <small class="text-muted">{{ __('معرّف أو اسم القالب لإشعار السائقين بالمهمة.') }}</small>
                             </div>
 
                             <!-- Saei Callback Secret -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">{{ __('مفتاح توقيع Callback (اختياري)') }}</label>
                                 <input type="text" id="saei_callback_secret" name="saei_callback_secret" class="form-control font-monospace"
                                     value="{{ $saeiCallbackSecret }}" placeholder="sec_...">
-                                <small class="text-muted">{{ __('للتحقق من توقيع الهيدر X-OTP-Signature إذا كان مفعلاً في ساعي.') }}</small>
+                                <small class="text-muted">{{ __('للتحقق من توقيع الهيدر X-OTP-Signature.') }}</small>
                             </div>
                         </div>
 
@@ -1573,6 +1582,7 @@
                         saei_base_url: document.getElementById('saei_base_url').value,
                         saei_from_phone_id: document.getElementById('saei_from_phone_id').value,
                         saei_template_id: document.getElementById('saei_template_id').value,
+                        saei_task_broadcast_template_id: document.getElementById('saei_task_broadcast_template_id') ? document.getElementById('saei_task_broadcast_template_id').value : '',
                         saei_callback_secret: document.getElementById('saei_callback_secret').value,
                         whatsapp_cloud_token: document.getElementById('whatsapp_cloud_token').value,
                         whatsapp_cloud_waba_id: document.getElementById('whatsapp_cloud_waba_id').value,

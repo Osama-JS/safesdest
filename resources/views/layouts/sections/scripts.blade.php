@@ -30,40 +30,57 @@
 
 <script>
     async function subscribeForPush() {
-        const register = await navigator.serviceWorker.register("{{ url('/sw.js') }}");
-        const vapidKey = "{{ env('VAPID_PUBLIC_KEY') }}";
-        const convertedVapidKey = urlBase64ToUint8Array(vapidKey);
+        try {
+            const vapidKey = @json(config('webpush.vapid.public_key') ?: env('VAPID_PUBLIC_KEY'));
+            if (!vapidKey || typeof vapidKey !== 'string' || vapidKey.trim() === '') {
+                console.warn('VAPID public key غير متوفر لتسجيل الإشعارات');
+                return;
+            }
 
-        const subscription = await register.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: convertedVapidKey
-        });
+            const register = await navigator.serviceWorker.register("{{ url('/sw.js') }}");
+            const convertedVapidKey = urlBase64ToUint8Array(vapidKey.trim());
+            if (!convertedVapidKey || convertedVapidKey.length === 0) {
+                console.warn('VAPID key غير صالح');
+                return;
+            }
 
-        await fetch("{{ route('notifications.subscribe') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify(subscription)
-        });
+            const subscription = await register.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+            });
 
-        console.log('تم الاشتراك في الإشعارات بنجاح');
-        // alert('تم الاشتراك في الإشعارات بنجاح');
+            await fetch("{{ route('notifications.subscribe') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(subscription)
+            });
+
+            console.log('تم الاشتراك في الإشعارات بنجاح');
+        } catch (err) {
+            console.warn('تم تخطي أو تعذر الاشتراك في إشعارات Push:', err.message || err);
+        }
     }
 
     if ('serviceWorker' in navigator && 'PushManager' in window) {
-        subscribeForPush();
+        subscribeForPush().catch(err => console.warn('Push error:', err));
     } else {
         console.warn('Push messaging غير مدعوم');
     }
 
     function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        try {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
 
-        const rawData = window.atob(base64);
-        return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+            const rawData = window.atob(base64);
+            return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+        } catch (e) {
+            console.error('خطأ في تحويل مفتاح VAPID:', e);
+            return new Uint8Array();
+        }
     }
 </script>
 @endif

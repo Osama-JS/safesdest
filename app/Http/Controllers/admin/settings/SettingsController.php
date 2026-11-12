@@ -13,6 +13,7 @@ class SettingsController extends Controller
   public function __construct()
   {
     $this->middleware('permission:general_settings', ['only' => ['index', 'setTemplate', 'updateMailSettings', 'testMailConnection', 'updateSaeiSettings', 'testSaeiConnection', 'updateSupportSettings']]);
+    $this->middleware('permission:manage_gotech_settings|general_settings', ['only' => ['updateGoTechSettings', 'testGoTechConnection']]);
   }
 
   public function index()
@@ -388,6 +389,80 @@ class SettingsController extends Controller
       'success' => true,
       'message' => 'تم حفظ وتحديث بيانات التواصل والدعم الفني بنجاح، وأصبحت سارية في التطبيقات فوراً!'
     ]);
+  }
+
+  /**
+   * تحديث وحفظ إعدادات الربط مع منصة Go-Tech للتمويل
+   */
+  public function updateGoTechSettings(Request $request)
+  {
+    $validated = $request->validate([
+      'gotech_enabled'                  => 'nullable|string|in:0,1',
+      'gotech_environment'              => 'nullable|string|in:test,live',
+      'gotech_base_url'                 => 'required|url',
+      'gotech_api_key'                  => 'nullable|string',
+      'gotech_webhook_secret'           => 'nullable|string',
+      'gotech_default_duration_minutes' => 'nullable|numeric|min:5|max:1440',
+      'gotech_auto_publish'             => 'nullable|string|in:0,1',
+    ]);
+
+    $descriptions = [
+      'gotech_enabled'                  => 'تفعيل خدمة الربط مع منصة Go-Tech للتمويل',
+      'gotech_environment'              => 'بيئة الربط (تجريبية test / إنتاجية live)',
+      'gotech_base_url'                 => 'الرابط الأساسي لبوابة Go-Tech API (Base URL)',
+      'gotech_api_key'                  => 'مفتاح الـ API الخاص بشركتنا في منصة Go-Tech',
+      'gotech_webhook_secret'           => 'المفتاح السري لتوقيع الـ Webhook الوارد من Go-Tech',
+      'gotech_default_duration_minutes' => 'مدة صلاحية عرض المهمة الافتراضية بالدقائق قبل انتهائها',
+      'gotech_auto_publish'             => 'النشر التلقائي للمهام الجديدة في Go-Tech',
+    ];
+
+    foreach ($validated as $key => $value) {
+      Settings::updateOrCreate(
+        ['key' => $key],
+        [
+          'value'       => $value ?? '',
+          'category'    => 'gotech',
+          'name'        => $descriptions[$key] ?? $key,
+          'description' => $descriptions[$key] ?? '',
+        ]
+      );
+    }
+
+    return response()->json([
+      'success' => true,
+      'message' => 'تم حفظ وتحديث إعدادات منصة Go-Tech للتمويل بنجاح!'
+    ]);
+  }
+
+  /**
+   * اختبار الاتصال مع بوابة Go-Tech API
+   */
+  public function testGoTechConnection(Request $request)
+  {
+    try {
+      $goTechService = app(\App\Services\GoTechService::class);
+      $res = $goTechService->ping();
+
+      if ($res['success']) {
+        return response()->json([
+          'success' => true,
+          'message' => 'تم الاتصال ببوابة Go-Tech API بنجاح! السيرفر نشط ومفتاح الـ API معتمد وصالح للعمل.',
+          'data'    => $res['data'] ?? [],
+        ]);
+      }
+
+      return response()->json([
+        'success' => false,
+        'message' => $res['message'] ?? 'فشل الاتصال ببوابة Go-Tech API',
+        'details' => $res['details'] ?? null,
+      ], 400);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'حدث خطأ أثناء اختبار الاتصال: ' . $e->getMessage()
+      ], 500);
+    }
   }
 }
 

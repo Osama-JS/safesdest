@@ -69,6 +69,11 @@ Route::post('/saei/otp/callback', [\App\Http\Controllers\Api\SaeiOtpController::
 // ─────────────────────────────────────────────────────────────
 Route::post('/webhooks/mtahd', [\App\Http\Controllers\Api\MtahdWebhookController::class, 'handle']);
 
+// ─────────────────────────────────────────────────────────────
+// Go-Tech Logistics Investment Webhook Route
+// ─────────────────────────────────────────────────────────────
+Route::post('/webhooks/gotech', [\App\Http\Controllers\Api\GoTechWebhookController::class, 'handle']);
+
 
 // Include driver API routes
 require __DIR__.'/api_driver.php';

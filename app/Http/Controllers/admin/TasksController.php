@@ -70,9 +70,11 @@ class TasksController extends Controller
 
     public function __construct(PdfService $pdfService)
     {
-        $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData', 'getEligibleDriversForWhatsApp']]);
+        $this->middleware('permission:view_tasks', ['only' => ['index', 'getData', 'indexList', 'getListData', 'getEligibleDriversForWhatsApp', 'checkGoTechTaskStatus']]);
         $this->middleware('permission:create_tasks', ['only' => ['store', 'duplicateTask', 'fixTeamConnection']]);
         $this->middleware('permission:edit_tasks', ['only' => ['edit', 'update']]);
+        $this->middleware('permission:submit_tasks_gotech|edit_tasks', ['only' => ['getEligibleGoTechTasks', 'submitTaskToGoTech', 'batchSubmitToGoTech']]);
+        $this->middleware('permission:cancel_tasks_gotech|edit_tasks', ['only' => ['cancelGoTechTask']]);
         $this->middleware('permission:force_update_tasks', ['only' => ['forceEdit', 'forceUpdate', 'verifyForceEditPassword']]);
         $this->middleware('permission:show_tasks', ['only' => ['showDetails', 'show']]);
         $this->middleware('permission:delete_tasks', ['only' => ['destroy']]);
@@ -189,6 +191,9 @@ class TasksController extends Controller
                     'size' => $task->vehicle_size->name ?? '-',
                 ] : null,
                 'investor_name' => $task->investor ? $task->investor->name : null,
+                'gotech_status' => $task->gotech_status,
+                'gotech_task_number' => $task->gotech_task_number,
+                'gotech_funding_amount' => $task->gotech_funding_amount,
             ];
 
             if ($driver) {
@@ -333,6 +338,28 @@ class TasksController extends Controller
                         app(\App\Services\MtahdEscrowTaskService::class)->releaseTaskEscrow($find);
                     } catch (\Exception $e) {
                         \Illuminate\Support\Facades\Log::error("Mtahd auto-release error on admin task completion #{$find->id}: " . $e->getMessage());
+                    }
+                }
+
+                // If task was funded via Go-Tech, notify Go-Tech of task completion
+                if ($find->gotech_status === 'funded') {
+                    try {
+                        app(\App\Services\GoTechService::class)->completeTask('TASK-' . $find->id);
+                        $data['gotech_status'] = 'completed';
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error("GoTech auto-complete error on task completion #{$find->id}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            if (in_array($req->status, ['canceled', 'cancelled', 'rejected'])) {
+                // If task is pending funding in Go-Tech, cancel it from the investment market
+                if ($find->gotech_status === 'pending_funding') {
+                    try {
+                        app(\App\Services\GoTechService::class)->cancelTask('TASK-' . $find->id);
+                        $data['gotech_status'] = 'cancelled';
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error("GoTech auto-cancel error on task cancellation #{$find->id}: " . $e->getMessage());
                     }
                 }
             }
@@ -2607,6 +2634,8 @@ class TasksController extends Controller
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%{$search}%")
+                    ->orWhere('customer_task_number', 'LIKE', "%{$search}%")
+                    ->orWhere('gotech_task_number', 'LIKE', "%{$search}%")
                     ->orWhere('delivery_number', 'LIKE', "%{$search}%")
                     ->orWhereHas('order', function ($orderQuery) use ($search) {
                         $orderQuery->where('id', 'LIKE', "%{$search}%");
@@ -2635,6 +2664,20 @@ class TasksController extends Controller
         // 🔍 فلتر الحالة
         if (!empty($statusFilter)) {
             $query->where('status', $statusFilter);
+        }
+
+        // 🌐 فلتر تمويل Go-Tech
+        $gotechFilter = $request->input('gotech_filter');
+        if (!empty($gotechFilter)) {
+            if ($gotechFilter === 'linked') {
+                $query->whereNotNull('gotech_status');
+            } elseif ($gotechFilter === 'pending') {
+                $query->whereIn('gotech_status', ['available', 'pending_funding']);
+            } elseif ($gotechFilter === 'funded') {
+                $query->whereIn('gotech_status', ['funded', 'completed']);
+            } elseif ($gotechFilter === 'not_linked') {
+                $query->whereNull('gotech_status');
+            }
         }
 
         $totalFiltered = $query->count();
@@ -2674,6 +2717,9 @@ class TasksController extends Controller
                     default => '-',
                 },
                 'investor_name' => $task->investor ? $task->investor->name : null,
+                'gotech_status' => $task->gotech_status,
+                'gotech_task_number' => $task->gotech_task_number,
+                'gotech_funding_amount' => $task->gotech_funding_amount,
                 'address' => ($task->pickup->address ?? '-') . ' - To - ' . ($task->delivery->address ?? '-'),
                 'pickup_address' => $task->pickup->address ?? '-',
                 'delivery_address' => $task->delivery->address ?? '-',
@@ -5054,7 +5100,7 @@ class TasksController extends Controller
                 ->toArray();
 
             // 2. Fetch eligible drivers
-            $drivers = Driver::with(['team'])
+            $drivers = Driver::with(['team', 'vehicle_size.type.vehicle'])
                 ->where('vehicle_size_id', $task->vehicle_size_id)
                 ->whereIn('status', ['active', 'verified'])
                 ->whereNotIn('id', $busyDriverIds)
@@ -5081,9 +5127,19 @@ class TasksController extends Controller
             $toLocation = $task->delivery->address ?? ($task->delivery->contact_name ?? 'جدة');
 
             // Format driver items for frontend table
-            $driverList = $drivers->map(function ($d) {
+            $driverList = $drivers->map(function ($d) use ($vehicleLabel) {
                 $rawPhone = !empty($d->whatsapp_number) ? $d->whatsapp_number : $d->phone;
                 $phoneCode = !empty($d->whatsapp_country_code) ? $d->whatsapp_country_code : ($d->phone_code ?? '+966');
+
+                $v = $d->vehicle_size;
+                $vTruck = $v?->type?->vehicle?->name ?? '';
+                $vType = $v?->type?->name ?? '';
+                $vSize = $v?->name ?? '';
+                $driverVehicle = trim("{$vTruck} {$vType} {$vSize}");
+                if (empty($driverVehicle)) {
+                    $driverVehicle = $v?->name ?? $vehicleLabel;
+                }
+
                 return [
                     'id'           => $d->id,
                     'name'         => $d->name,
@@ -5092,6 +5148,8 @@ class TasksController extends Controller
                     'whatsapp'     => $rawPhone,
                     'full_phone'   => $phoneCode . ' ' . $rawPhone,
                     'team'         => $d->team?->name ?? 'سائق فردي',
+                    'vehicle_name' => $driverVehicle,
+                    'vehicle_size_id' => $d->vehicle_size_id,
                     'status'       => $d->status,
                     'image'        => $d->image ? asset($d->image) : null,
                 ];
@@ -5291,6 +5349,392 @@ class TasksController extends Controller
             return response()->json([
                 'status'  => 0,
                 'message' => 'حدث خطأ غير متوقع أثناء معالجة الإرسال: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * إرسال المهمة إلى منصة Go-Tech لطرحها للتمويل الاستثماري
+     */
+    public function submitTaskToGoTech($id, Request $request)
+    {
+        try {
+            // التحقق من الصلاحيات
+            if (!Auth::user()->can('submit_tasks_gotech') && !Auth::user()->can('edit_tasks')) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'ليس لديك صلاحية طرح وإرسال المهام إلى Go-Tech.',
+                ], 403);
+            }
+
+            $task = Task::findOrFail($id);
+
+            if ($task->gotech_status === 'funded') {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'هذه المهمة ممولة بالفعل مسبقاً عبر منصة Go-Tech.',
+                ], 422);
+            }
+
+            $goTechService = app(\App\Services\GoTechService::class);
+            $res = $goTechService->submitTask($task, $request->all());
+
+            if ($res['success']) {
+                $gotechNum = $res['gotech_task']['task_number'] ?? '';
+                Task_History::create([
+                    'task_id'     => $task->id,
+                    'action_type' => 'gotech_submitted',
+                    'description' => "تم طرح المهمة في منصة Go-Tech للاستثمار برقم ({$gotechNum}) بواسطة " . (Auth::user()?->name ?? 'المسؤول') . "، وحُجبت عن المستثمرين الداخليين لحين البت في تمويلها.",
+                    'user_id'     => Auth::id(),
+                    'ip'          => $request->ip(),
+                ]);
+            }
+
+            return response()->json($res, $res['success'] ? 200 : 400);
+
+        } catch (\Exception $e) {
+            Log::error("submitTaskToGoTech Error: " . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ أثناء إرسال المهمة إلى Go-Tech: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * فحص وتحديث حالة التمويل للمهمة من Go-Tech
+     */
+    public function checkGoTechTaskStatus($id)
+    {
+        try {
+            $task = Task::findOrFail($id);
+            $externalTaskId = 'TASK-' . $task->id;
+
+            $goTechService = app(\App\Services\GoTechService::class);
+            $res = $goTechService->checkTaskStatus($externalTaskId);
+
+            if ($res['success']) {
+                $remoteStatus = $res['data']['status'] ?? null;
+                $isFunded = $res['data']['is_funded'] ?? false;
+
+                if ($isFunded && $task->gotech_status !== 'funded') {
+                    $task->update([
+                        'gotech_status'    => 'funded',
+                        'gotech_funded_at' => $res['data']['funded_at'] ?? now(),
+                    ]);
+                } elseif ($remoteStatus && $task->gotech_status !== $remoteStatus) {
+                    $task->update(['gotech_status' => $remoteStatus]);
+                }
+
+                return response()->json([
+                    'status'       => 1,
+                    'task_status'  => $task->gotech_status,
+                    'remote_data'  => $res['data'],
+                    'message'      => "حالة المهمة الحالية في Go-Tech: " . ($task->gotech_status ?: 'غير محددة'),
+                ]);
+            }
+
+            return response()->json($res, 400);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ أثناء فحص حالة المهمة: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * إلغاء عرض المهمة في Go-Tech وسحبها من سوق الاستثمار وفك الارتباط
+     */
+    public function cancelGoTechTask(Request $request, $id)
+    {
+        try {
+            $task = Task::findOrFail($id);
+
+            // التحقق من الصلاحيات
+            if (!Auth::user()->can('cancel_tasks_gotech') && !Auth::user()->can('edit_tasks')) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'ليس لديك صلاحية فك ارتباط وإلغاء طرح المهام في Go-Tech.',
+                ], 403);
+            }
+
+            $userName = Auth::user()?->name ?? 'المسؤول';
+            $isForce = $request->boolean('force_unlink');
+
+            // إذا تم طلب فك الارتباط القسري (محلياً وفورياً)
+            if ($isForce) {
+                $task->update(['gotech_status' => 'cancelled']);
+
+                $desc = ($task->gotech_status === 'funded')
+                    ? "قام المشرف ({$userName}) بفك ارتباط المهمة وإلغاء حالة تمويل Go-Tech قسرياً، وإعادتها لسوق المستثمرين الداخليين."
+                    : "قام المشرف ({$userName}) بفك ارتباط المهمة من Go-Tech قسرياً محلياً، وإعادتها لسوق المستثمرين الداخليين.";
+
+                Task_History::create([
+                    'task_id'     => $task->id,
+                    'action_type' => 'gotech_force_unlinked',
+                    'description' => $desc,
+                    'user_id'     => Auth::id(),
+                    'ip'          => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'status'  => 1,
+                    'success' => true,
+                    'message' => 'تم فك ارتباط المهمة وإلغاء تمويلها بنجاح، وأصبحت متاحة للمستثمرين الداخليين.',
+                ]);
+            }
+
+            // إذا كانت المهمة ممولة بالفعل ولم يُحدد خيار الإلغاء القسري
+            if ($task->gotech_status === 'funded') {
+                return response()->json([
+                    'status'    => 0,
+                    'can_force' => true,
+                    'message'   => 'هذه المهمة ممولة بالفعل من قِبل مستثمر في Go-Tech ولا يمكن إلغاؤها عادياً لارتباطها بالتزام مالي. إذا كنت متأكداً وتريد فك الارتباط محلياً يمكنك تأكيد الإلغاء القسري.',
+                ], 422);
+            }
+
+            // محاولة الإلغاء عبر API الخاص بـ Go-Tech
+            $goTechService = app(\App\Services\GoTechService::class);
+            $res = $goTechService->cancelTask('TASK-' . $task->id);
+
+            $errMsg = $res['message'] ?? '';
+            $isAlreadyCancelledOrNotFound = str_contains($errMsg, 'cancelled')
+                || str_contains($errMsg, 'غير موجودة')
+                || str_contains($errMsg, 'TASK_NOT_FOUND')
+                || str_contains($errMsg, 'TASK_CANNOT_BE_CANCELLED')
+                || ($res['code'] ?? 0) === 404;
+
+            if ($res['success'] || $isAlreadyCancelledOrNotFound) {
+                $task->update(['gotech_status' => 'cancelled']);
+
+                $historyNote = $res['success']
+                    ? "تم فك ارتباط المهمة وإلغاء طلب التمويل من منصة Go-Tech بنجاح بواسطة ({$userName})، وأصبحت متاحة للاستثمار الداخلي."
+                    : "تم فك ارتباط المهمة وتحديث حالتها محلياً بواسطة ({$userName}) بعد رد Go-Tech: ({$errMsg})، وأصبحت متاحة للاستثمار الداخلي.";
+
+                Task_History::create([
+                    'task_id'     => $task->id,
+                    'action_type' => 'gotech_cancelled',
+                    'description' => $historyNote,
+                    'user_id'     => Auth::id(),
+                    'ip'          => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'status'  => 1,
+                    'success' => true,
+                    'message' => 'تم فك ارتباط المهمة وإلغاء طلب التمويل بنجاح، وأصبحت متاحة للمستثمرين الداخليين.',
+                    'data'    => $res['data'] ?? [],
+                ], 200);
+            }
+
+            return response()->json([
+                'status'    => 0,
+                'can_force' => true,
+                'message'   => $errMsg ?: 'فشل إلغاء المهمة في Go-Tech. يمكنك تفعيل الإلغاء القسري لفك الارتباط محلياً.',
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error("cancelGoTechTask Error: " . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ أثناء إلغاء ارتباط المهمة: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * جلب المهام المؤهلة للطرح والتمويل في Go-Tech لعرضها في الـ Modal
+     */
+    public function getEligibleGoTechTasks(Request $request)
+    {
+        try {
+            if (!Auth::user()->can('submit_tasks_gotech') && !Auth::user()->can('edit_tasks')) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'ليس لديك صلاحية استعراض مهام تمويل Go-Tech.',
+                ], 403);
+            }
+
+            $query = Task::eligibleForGoTechFunding()
+                ->with(['customer', 'pickup', 'delivery', 'vehicle_size.type.vehicle'])
+                ->latest();
+
+            if ($request->customer_id) {
+                $query->where('customer_id', $request->customer_id);
+            }
+
+            if ($request->search) {
+                $search = trim($request->search);
+                $query->where(function ($q) use ($search) {
+                    $q->where('id', 'like', "%{$search}%")
+                      ->orWhere('customer_task_number', 'like', "%{$search}%")
+                      ->orWhereHas('customer', fn($sub) => $sub->where('name', 'like', "%{$search}%"))
+                      ->orWhereHas('pickup', fn($sub) => $sub->where('address', 'like', "%{$search}%")->orWhere('contact_name', 'like', "%{$search}%"))
+                      ->orWhereHas('delivery', fn($sub) => $sub->where('address', 'like', "%{$search}%")->orWhere('contact_name', 'like', "%{$search}%"));
+                });
+            }
+
+            $tasks = $query->limit(300)->get();
+
+            // قائمة العملاء المؤهلين للاستثمار للفلتر
+            $customers = Customer::where('allow_investment', true)
+                ->where('status', 'active')
+                ->select('id', 'name')
+                ->get();
+
+            $formatted = $tasks->map(function ($task) {
+                $pickupAddress = trim((string)($task->pickup?->address ?: ($task->pickup?->contact_name ?: 'غير محدد')));
+                $deliveryAddress = trim((string)($task->delivery?->address ?: ($task->delivery?->contact_name ?: 'غير محدد')));
+
+                $vehicleSizeName = $task->vehicle_size?->name ?? '';
+                $vehicleTypeName = $task->vehicle_size?->type?->name ?? '';
+                $truckName = $task->vehicle_size?->type?->vehicle?->name ?? '';
+                $vehicleLabel = trim("{$truckName} {$vehicleTypeName} {$vehicleSizeName}") ?: 'مركبة نقل';
+
+                $amount = max(50, (float)($task->total_price ?: 100));
+
+                return [
+                    'id'                   => $task->id,
+                    'customer_task_number' => $task->customer_task_number ?: '#' . $task->id,
+                    'customer_id'          => $task->customer_id,
+                    'customer_name'        => $task->customer?->name ?? 'غير محدد',
+                    'route'                => "{$pickupAddress} ⬅️ {$deliveryAddress}",
+                    'pickup_address'       => $pickupAddress,
+                    'delivery_address'     => $deliveryAddress,
+                    'vehicle_label'        => $vehicleLabel,
+                    'total_price'          => (float) $task->total_price,
+                    'funding_amount'       => $amount,
+                    'created_at'           => $task->created_at ? $task->created_at->format('Y-m-d H:i') : '-',
+                    'gotech_status'        => $task->gotech_status,
+                ];
+            });
+
+            $vehicles = $formatted->pluck('vehicle_label')->filter()->unique()->values();
+            $routes   = $formatted->pluck('route')->filter()->unique()->values();
+
+            return response()->json([
+                'status'    => 1,
+                'count'     => $formatted->count(),
+                'tasks'     => $formatted,
+                'customers' => $customers,
+                'vehicles'  => $vehicles,
+                'routes'    => $routes,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('getEligibleGoTechTasks Error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ أثناء جلب المهام المؤهلة: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * إرسال دفعة مهام محددة لطرحها للتمويل في Go-Tech
+     */
+    public function batchSubmitToGoTech(Request $request)
+    {
+        try {
+            // التحقق من الصلاحيات
+            if (!Auth::user()->can('submit_tasks_gotech') && !Auth::user()->can('edit_tasks')) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'ليس لديك صلاحية طرح وإرسال المهام إلى Go-Tech.',
+                ], 403);
+            }
+
+            $taskIds = $request->input('task_ids', []);
+            if (empty($taskIds) || !is_array($taskIds)) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'يرجى تحديد مهمة واحدة على الأقل لطرحها للتمويل.',
+                ], 422);
+            }
+
+            $expiresMinutes = (int) ($request->input('expires_in_minutes') ?: Settings::getValue('gotech_default_duration_minutes', 120));
+            $customAmounts = $request->input('funding_amounts', []); // [taskId => amount]
+
+            // استعلام دقيق مع تحقق من الأهلية
+            $tasks = Task::eligibleForGoTechFunding()
+                ->whereIn('id', $taskIds)
+                ->with(['customer', 'pickup', 'delivery', 'vehicle_size.type.vehicle'])
+                ->get();
+
+            if ($tasks->isEmpty()) {
+                return response()->json([
+                    'status'  => 0,
+                    'message' => 'المهام المحددة غير مؤهلة للطرح للتمويل أو تم تمويلها/طرحها مسبقاً.',
+                ], 422);
+            }
+
+            $goTechService = app(\App\Services\GoTechService::class);
+            $succeeded = [];
+            $failed = [];
+
+            foreach ($tasks as $task) {
+                $fundingAmount = isset($customAmounts[$task->id]) && (float)$customAmounts[$task->id] >= 50
+                    ? (float)$customAmounts[$task->id]
+                    : max(50, (float)$task->total_price);
+
+                $res = $goTechService->submitTask($task, [
+                    'funding_amount'     => $fundingAmount,
+                    'expires_in_minutes' => $expiresMinutes,
+                ]);
+
+                if ($res['success']) {
+                    $gotechNum = $res['gotech_task']['task_number'] ?? ($res['data']['task_number'] ?? '');
+                    Task_History::create([
+                        'task_id'     => $task->id,
+                        'action_type' => 'gotech_submitted',
+                        'description' => "تم طرح المهمة ضمن دفعة في Go-Tech برقم ({$gotechNum}) بواسطة " . (Auth::user()?->name ?? 'المسؤول') . "، وحُجبت عن المستثمرين الداخليين.",
+                        'user_id'     => Auth::id(),
+                        'ip'          => $request->ip(),
+                    ]);
+
+                    $succeeded[] = [
+                        'task_id'       => $task->id,
+                        'task_number'   => $task->customer_task_number ?: '#' . $task->id,
+                        'gotech_number' => $gotechNum,
+                    ];
+                } else {
+                    $failed[] = [
+                        'task_id'     => $task->id,
+                        'task_number' => $task->customer_task_number ?: '#' . $task->id,
+                        'reason'      => $res['message'] ?? 'فشل الإرسال إلى Go-Tech',
+                    ];
+                }
+            }
+
+            $successCount = count($succeeded);
+            $failCount    = count($failed);
+
+            if ($successCount > 0) {
+                $msg = "تم طرح {$successCount} مهمة للتمويل في Go-Tech بنجاح.";
+                if ($failCount > 0) {
+                    $msg .= " وتعذر إرسال {$failCount} مهمة.";
+                }
+                return response()->json([
+                    'status'    => 1,
+                    'message'   => $msg,
+                    'succeeded' => $succeeded,
+                    'failed'    => $failed,
+                ]);
+            }
+
+            return response()->json([
+                'status'  => 0,
+                'message' => 'تعذر طرح المهام للتمويل في Go-Tech: ' . ($failed[0]['reason'] ?? 'خطأ غير معروف'),
+                'failed'  => $failed,
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('batchSubmitToGoTech Error: ' . $e->getMessage());
+            return response()->json([
+                'status'  => 0,
+                'message' => 'حدث خطأ غير متوقع أثناء إرسال المهام إلى Go-Tech: ' . $e->getMessage(),
             ], 500);
         }
     }

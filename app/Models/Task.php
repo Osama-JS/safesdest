@@ -64,12 +64,20 @@ class Task extends Model
     'broker_id',
     'broker_commission_type',
     'broker_commission_value',
+    'gotech_task_id',
+    'gotech_task_number',
+    'gotech_status',
+    'gotech_funding_amount',
+    'gotech_funded_at',
+    'gotech_metadata',
   ];
 
   protected $casts = [
     'additional_data' => 'array',
     'pricing_history' => 'array',
     'pricing_details' => 'array',
+    'gotech_metadata' => 'array',
+    'gotech_funded_at' => 'datetime',
     'last_attempt_at' => 'datetime',
     'completed_at' => 'datetime',
 
@@ -263,7 +271,7 @@ class Task extends Model
 
   /**
    * Scope: المهام المتاحة للدفع من محفظة مستثمر
-   * (غير مقفلة، غير مدفوعة من مستثمر)
+   * (غير مقفلة، غير مدفوعة من مستثمر، وغير مطروحة أو ممولة في Go-Tech)
    */
   public function scopeAvailableForInvestorPayment($query)
   {
@@ -273,6 +281,34 @@ class Task extends Model
       ->where('closed', false)
       ->whereNotIn('status', ['pending', 'in_progress', 'advertised', 'canceld', 'canceled', 'cancelled', 'refund', 'refound', 'refunded'])
       ->where('payment_status', 'waiting')
+      ->where(function ($q) {
+          $q->whereNull('gotech_status')
+            ->orWhereNotIn('gotech_status', ['available', 'pending_funding', 'funded']);
+      })
+      ->whereHas('customer', function ($q) {
+          $q->where('allow_investment', true);
+      });
+  }
+
+  /**
+   * Scope: المهام المؤهلة للطرح والتمويل في Go-Tech
+   * (لم تدفع، غير ممولة داخلياً، غير مطروحة أو ممولة في Go-Tech، وتابعة لعميل مفعل لديه الاستثمار)
+   */
+  public function scopeEligibleForGoTechFunding($query)
+  {
+    return $query
+      ->where('closed', false)
+      ->whereNotIn('status', ['canceled', 'canceld', 'cancelled', 'refund', 'refound', 'refunded'])
+      ->whereNotIn('payment_status', ['paid', 'completed'])
+      ->whereNull('investor_id')
+      ->where(function ($q) {
+          $q->whereNull('investor_payment_status')
+            ->orWhere('investor_payment_status', 'none');
+      })
+      ->where(function ($q) {
+          $q->whereNull('gotech_status')
+            ->orWhereNotIn('gotech_status', ['available', 'pending_funding', 'funded']);
+      })
       ->whereHas('customer', function ($q) {
           $q->where('allow_investment', true);
       });

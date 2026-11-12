@@ -71,4 +71,10 @@ return [
     'platform_seller_number' => env('MTAHD_PLATFORM_SELLER_NUMBER', 'CUST_SAFEDESTS_PLATFORM'),
   ],
 
+  'gotech' => [
+    'base_url'               => env('GOTECH_BASE_URL', 'http://127.0.0.1:8000/api/v1'),
+    'api_key'                => env('GOTECH_API_KEY', ''),
+    'webhook_secret'         => env('GOTECH_WEBHOOK_SECRET', ''),
+  ],
+
 ];

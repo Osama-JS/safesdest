@@ -26,6 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
       $middleware->validateCsrfTokens(except: [
         'api/hyperpay/webhook/payout',
         'api/signit/webhook',
+        'api/webhooks/gotech',
+        'admin/settings/gotech/*',
       ]);
       $middleware->encryptCookies(except: [
         'direction',

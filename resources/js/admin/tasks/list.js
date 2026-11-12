@@ -82,6 +82,7 @@ $(function () {
           d.team = $('#team-fillter').val();
           d.driver = $('#driver-fillter').val();
           d.status_filter = $('#statusFilter').val();
+          d.gotech_filter = $('#gotech-fillter').val();
           // البحث من الحقل المخصص
           if ($('#searchFilter').val()) {
             d.search = { value: $('#searchFilter').val() };
@@ -138,10 +139,44 @@ $(function () {
           orderable: false,
           responsivePriority: 1,
           render: function (data, type, full, meta) {
-            let html = `<span>${full.id}</span>`;
+            let html = `<div class="d-flex flex-column align-items-start gap-1">`;
+            html += `<span class="fw-bold text-heading">#${full.id}</span>`;
+
+            // ممولة داخلياً
             if (full.investor_name) {
-              html += `<br><small class="text-info fw-bold">ممولة من: ${full.investor_name}</small>`;
+              html += `<span class="badge bg-label-info py-0 px-1 text-wrap" style="font-size:11px;" title="ممولة من مستثمر داخلي"><i class="ti ti-user-dollar me-1"></i>مستثمر: ${full.investor_name}</span>`;
             }
+
+            // حالة Go-Tech / Go-Trans
+            const gotechStatus = (full.gotech_status || '').toLowerCase();
+            if (gotechStatus === 'available' || gotechStatus === 'pending_funding') {
+              html += `<span class="badge bg-warning text-dark py-1 px-1.5 d-inline-flex align-items-center gap-1 shadow-xs" title="مربوطة بـ Go-Tech ومعروضة في سوق التمويل ولم تُموّل بعد">
+                <span class="spinner-grow spinner-grow-sm text-dark" style="width: 7px; height: 7px;" role="status"></span>
+                <span class="fw-bold" style="font-size: 11px;">Go-Tech: لم تمول بعد</span>
+              </span>`;
+              if (full.gotech_task_number) {
+                html += `<small class="text-muted font-monospace" style="font-size: 10px;">${full.gotech_task_number}</small>`;
+              }
+            } else if (gotechStatus === 'funded') {
+              html += `<span class="badge bg-success py-1 px-1.5 d-inline-flex align-items-center gap-1 shadow-xs" title="تم تمويل هذه المهمة بنجاح من Go-Tech">
+                <i class="ti ti-check fs-6"></i>
+                <span class="fw-bold" style="font-size: 11px;">Go-Tech: ممولة بنجاح</span>
+              </span>`;
+              if (full.gotech_task_number) {
+                html += `<small class="text-success font-monospace" style="font-size: 10px;">${full.gotech_task_number}</small>`;
+              }
+            } else if (gotechStatus === 'completed') {
+              html += `<span class="badge bg-primary py-1 px-1.5 d-inline-flex align-items-center gap-1" title="مكتملة وممولة">
+                <i class="ti ti-circle-check fs-6"></i>
+                <span style="font-size: 11px;">Go-Tech: مكتملة وممولة</span>
+              </span>`;
+            } else if (gotechStatus === 'cancelled' || gotechStatus === 'cancelled_by_company') {
+              html += `<span class="badge bg-label-secondary py-0 px-1" title="ملغاة من Go-Tech" style="font-size: 10px;">
+                <i class="ti ti-ban me-1"></i>Go-Tech: ملغاة
+              </span>`;
+            }
+
+            html += `</div>`;
             return html;
           }
         },
@@ -285,7 +320,18 @@ $(function () {
                 colorClass = 'badge bg-light text-dark';
             }
 
-            return `<span class="w-100 text-center ${colorClass}">${full.payment.replace('_', ' ')}</span>`;
+            let html = `<div class="d-flex flex-column align-items-center gap-1">`;
+            html += `<span class="w-100 text-center ${colorClass}">${full.payment ? full.payment.replace('_', ' ') : '-'}</span>`;
+
+            const gotechStatus = (full.gotech_status || '').toLowerCase();
+            if (gotechStatus === 'funded' || gotechStatus === 'completed') {
+              html += `<span class="badge bg-success w-100 py-1 d-inline-flex align-items-center justify-content-center gap-1 shadow-xs" style="font-size:10px;"><i class="ti ti-cash fs-6"></i> ممولة (Go-Tech)</span>`;
+            } else if (gotechStatus === 'available' || gotechStatus === 'pending_funding') {
+              html += `<span class="badge bg-warning text-dark w-100 py-1 d-inline-flex align-items-center justify-content-center gap-1" style="font-size:10px;"><i class="ti ti-hourglass fs-6"></i> لم تمول بعد (Go-Tech)</span>`;
+            }
+
+            html += `</div>`;
+            return html;
           }
         },
         {
@@ -354,6 +400,21 @@ $(function () {
                     ${!full.closed ? `<li><a href="${baseUrl}admin/tasks/tracking/${full.id}" target="_blank" class="dropdown-item "><i class="ti ti-map-pin me-2"></i>${__('Tracking Task')}</a></li>` : ``}
                     <li><a href="${baseUrl}admin/tasks/${full.id}/report" class="dropdown-item task-report" data-id="${full.id}"><i class="ti ti-file me-2"></i>${__('download task status report')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item edit-task-broker" data-id="${full.id}"><i class="ti ti-truck me-2"></i>${__('Connect Broker')}</a></li>
+
+                    ${(full.gotech_status === 'available' || full.gotech_status === 'pending_funding') ? `
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a href="javascript:;" class="dropdown-item text-warning check-gotech-status" data-id="${full.id}"><i class="ti ti-refresh me-2"></i>${__('فحص حالة التمويل (Go-Tech)')}</a></li>
+                      ${(typeof canCancelGoTech === 'undefined' || canCancelGoTech) ? `
+                        <li><a href="javascript:;" class="dropdown-item text-danger cancel-gotech-task" data-id="${full.id}" data-funded="0"><i class="ti ti-circle-x me-2"></i>${__('إلغاء الطرح في Go-Tech')}</a></li>
+                      ` : ''}
+                    ` : ''}
+                    ${(full.gotech_status === 'funded' || full.gotech_status === 'completed') ? `
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a href="javascript:;" class="dropdown-item text-success check-gotech-status" data-id="${full.id}"><i class="ti ti-check me-2"></i>${__('تفاصيل التمويل (Go-Tech)')}</a></li>
+                      ${(full.gotech_status === 'funded' && (typeof canCancelGoTech === 'undefined' || canCancelGoTech)) ? `
+                        <li><a href="javascript:;" class="dropdown-item text-danger cancel-gotech-task" data-id="${full.id}" data-funded="1"><i class="ti ti-unlink me-2"></i>${__('فك ارتباط Go-Tech وإلغاء التمويل')}</a></li>
+                      ` : ''}
+                    ` : ''}
 
                     ${canDelete ? `<li><hr class="dropdown-divider"></li><li><a href="javascript:;" class="dropdown-item text-danger delete-task" data-id="${full.id}" data-status="${full.status}" data-payment="${full.payment}"><i class="ti ti-trash me-1"></i>${__('Delete Task')}</a></li>` : ''}
                   </ul>
@@ -727,6 +788,9 @@ $(function () {
     dt_data.draw();
   });
   $('#driver-fillter').on('change', function () {
+    dt_data.draw();
+  });
+  $('#gotech-fillter').on('change', function () {
     dt_data.draw();
   });
   $('.dataTables_filter').hide();
@@ -2021,7 +2085,7 @@ $(function () {
         : (driver.status === 'verified' ? '<span class="badge bg-label-primary">معتمد</span>' : `<span class="badge bg-label-secondary">${driver.status}</span>`);
 
       const rowHtml = `
-        <tr class="bt-driver-row" data-driver-name="${(driver.name || '').toLowerCase()}" data-driver-phone="${driver.phone || ''}">
+        <tr class="bt-driver-row" data-driver-name="${(driver.name || '').toLowerCase()}" data-driver-phone="${driver.phone || ''}" data-driver-vehicle="${(driver.vehicle_name || '').toLowerCase()}">
           <td class="text-center">
             <input type="checkbox" class="form-check-input bt-driver-check" value="${driver.id}" checked>
           </td>
@@ -2033,6 +2097,11 @@ $(function () {
                 <small class="text-muted">ID: #${driver.id}</small>
               </div>
             </div>
+          </td>
+          <td>
+            <span class="badge bg-label-secondary text-dark border text-wrap text-start d-inline-block py-1 px-2" style="font-size: 0.82rem; max-width: 260px; line-height: 1.35;">
+              <i class="ti ti-truck me-1 text-primary"></i>${driver.vehicle_name || '-'}
+            </span>
           </td>
           <td dir="ltr" class="text-end">
             <span class="badge bg-label-secondary font-monospace">
@@ -2099,7 +2168,8 @@ $(function () {
     $('.bt-driver-row').each(function () {
       const name = $(this).data('driver-name') || '';
       const phone = String($(this).data('driver-phone') || '');
-      if (!term || name.includes(term) || phone.includes(term)) {
+      const vehicle = String($(this).data('driver-vehicle') || '');
+      if (!term || name.includes(term) || phone.includes(term) || vehicle.includes(term)) {
         $(this).show();
       } else {
         $(this).hide();

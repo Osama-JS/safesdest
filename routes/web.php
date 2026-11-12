@@ -569,6 +569,8 @@ Route::middleware('rate.limit')->group(function () {
                     Route::post('/saei/update', [SettingsController::class, 'updateSaeiSettings'])->name('settings.saei.update');
                     Route::post('/saei/test-connection', [SettingsController::class, 'testSaeiConnection'])->name('settings.saei.test-connection');
                     Route::post('/support/update', [SettingsController::class, 'updateSupportSettings'])->name('settings.support.update');
+                    Route::post('/gotech/update', [SettingsController::class, 'updateGoTechSettings'])->name('settings.gotech.update');
+                    Route::post('/gotech/test-connection', [SettingsController::class, 'testGoTechConnection'])->name('settings.gotech.test-connection');
 
                     Route::get('statistics/', [SystemStatisticsController::class, 'index'])->name('settings.statistics');
                     Route::get('statistics/data', [SystemStatisticsController::class, 'getData'])->name('settings.statistics.data');
@@ -921,6 +923,11 @@ Route::middleware('rate.limit')->group(function () {
                 Route::post('tasks/bulk-share-data', [TasksController::class, 'getBulkShareData'])->name('tasks.bulk_share_data');
                 Route::get('tasks/{id}/eligible-drivers-whatsapp', [TasksController::class, 'getEligibleDriversForWhatsApp'])->name('tasks.eligible_drivers_whatsapp');
                 Route::post('tasks/{id}/broadcast-whatsapp', [TasksController::class, 'broadcastTaskToDriversWhatsApp'])->name('tasks.broadcast_whatsapp');
+                Route::post('tasks/{id}/gotech-submit', [TasksController::class, 'submitTaskToGoTech'])->name('tasks.gotech.submit');
+                Route::get('tasks/{id}/gotech-status', [TasksController::class, 'checkGoTechTaskStatus'])->name('tasks.gotech.status');
+                Route::post('tasks/{id}/gotech-cancel', [TasksController::class, 'cancelGoTechTask'])->name('tasks.gotech.cancel');
+                Route::get('tasks/gotech/eligible-tasks', [TasksController::class, 'getEligibleGoTechTasks'])->name('tasks.gotech.eligible');
+                Route::post('tasks/gotech/batch-submit', [TasksController::class, 'batchSubmitToGoTech'])->name('tasks.gotech.batch_submit');
                 Route::get('tasks/list/show/{id}', [TasksController::class, 'showDetails'])->name('tasks.list.show');
 
                 Route::get('tasks/pricing/edit/{id}', [TasksController::class, 'editPricing'])->name('tasks.pricing.edit');

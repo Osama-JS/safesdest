@@ -35,6 +35,8 @@
     <script>
         const canViewCommissions = {{ auth()->user()->can('view_task_commissions') ? 'true' : 'false' }};
         const canViewTotalPrice = {{ auth()->user()->can('view_task_total_price') ? 'true' : 'false' }};
+        const canSubmitGoTech = {{ (auth()->user()->can('submit_tasks_gotech') || auth()->user()->can('edit_tasks')) ? 'true' : 'false' }};
+        const canCancelGoTech = {{ (auth()->user()->can('cancel_tasks_gotech') || auth()->user()->can('edit_tasks')) ? 'true' : 'false' }};
     </script>
     <script>
         const navContent = document.querySelector('#navbar-custom-nav-container');
@@ -406,6 +408,17 @@
             </select>
         </div>
 
+        <!-- Go-Tech Funding Filter -->
+        <div>
+            <select class="form-select" id="gotech-fillter">
+                <option value="">{{ __('تمويل Go-Tech (الكل)') }}</option>
+                <option value="linked">{{ __('مربوطة بـ Go-Tech (الكل)') }}</option>
+                <option value="pending">{{ __('Go-Tech: قيد التمويل (لم تمول)') }}</option>
+                <option value="funded">{{ __('Go-Tech: تم التمويل بنجاح') }}</option>
+                <option value="not_linked">{{ __('غير معروضة في Go-Tech') }}</option>
+            </select>
+        </div>
+
     </div>
 
 
@@ -431,6 +444,14 @@
                     id="shareSelectedWhatsapp" style="background-color: #25D366; display: none;">
                     <i class="ti ti-share me-1"></i> {{ __('Share Selected') }}
                 </button>
+
+                <!-- Button: Open Go-Tech Funding Modal -->
+                @canany(['submit_tasks_gotech', 'edit_tasks'])
+                <button type="button" class="btn btn-primary text-white shadow-sm waves-effect waves-light"
+                    id="btnOpenGoTechFundingModal">
+                    <i class="ti ti-cash me-1 fs-5"></i> {{ __('طرح مهام للتمويل (Go-Tech)') }}
+                </button>
+                @endcanany
 
                 @if(auth()->check() && auth()->user()->email === 'osama.samomy@gmail.com')
                     <button type="button" class="btn btn-warning waves-effect waves-light" onclick="openInvestmentConflictsModal()">
@@ -1077,7 +1098,7 @@
 
     <!-- Modal: Broadcast Task to Eligible Drivers via WhatsApp -->
     <div class="modal fade" id="broadcastTaskDriversModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header text-white py-3" style="background-color: #128C7E;">
                     <div class="d-flex align-items-center gap-2">
@@ -1221,6 +1242,7 @@
                                     <tr>
                                         <th style="width: 40px;" class="text-center">#</th>
                                         <th>{{ __('السائق') }}</th>
+                                        <th>{{ __('المركبة') }}</th>
                                         <th>{{ __('رقم الواتساب') }}</th>
                                         <th>{{ __('الفريق') }}</th>
                                         <th class="text-center">{{ __('الحالة') }}</th>
@@ -1391,4 +1413,836 @@
             }
         </script>
     @endif
+
+    <!-- ============================================================== -->
+    <!-- Modal: طرح المهام للتمويل في Go-Tech                          -->
+    <!-- ============================================================== -->
+    <div class="modal fade" id="gotechFundingModal" tabindex="-1" aria-labelledby="gotechFundingModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white py-3 px-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="avatar avatar-sm bg-white text-primary rounded d-flex align-items-center justify-content-center p-2">
+                            <i class="ti ti-cash fs-4"></i>
+                        </span>
+                        <div>
+                            <h5 class="modal-title text-white fw-bold mb-0" id="gotechFundingModalLabel">
+                                {{ __('طرح المهام للتمويل اللوجستي عبر Go-Tech') }}
+                            </h5>
+                            <small class="text-white-50">
+                                {{ __('عرض المهام المؤهلة للعملاء المصرح لهم بالاستثمار، غير المدفوعة وغير الممولة سابقاً') }}
+                            </small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Filters Row -->
+                    <div class="bg-light p-3 rounded border mb-3">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold mb-1 fs-6"><i class="ti ti-search me-1"></i> {{ __('بحث سريع') }}</label>
+                                <input type="text" id="gotechSearchInput" class="form-control form-control-sm" placeholder="رقم المهمة، العميل، المسار...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold mb-1 fs-6"><i class="ti ti-user-check me-1"></i> {{ __('العميل') }}</label>
+                                <select id="gotechCustomerFilter" class="form-select form-select-sm">
+                                    <option value="">{{ __('جميع العملاء المؤهلين') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold mb-1 fs-6"><i class="ti ti-truck me-1"></i> {{ __('نوع المركبة') }}</label>
+                                <select id="gotechVehicleFilter" class="form-select form-select-sm">
+                                    <option value="">{{ __('جميع أنواع المركبات') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold mb-1 fs-6"><i class="ti ti-map-pin me-1"></i> {{ __('مسار الرحلة') }}</label>
+                                <select id="gotechRouteFilter" class="form-select form-select-sm">
+                                    <option value="">{{ __('جميع المسارات') }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 align-items-center mt-2 pt-2 border-top">
+                            <div class="col-md-3 d-flex align-items-center gap-2">
+                                <label class="form-label fw-bold mb-0 text-nowrap"><i class="ti ti-list-numbers me-1"></i> {{ __('لكل صفحة:') }}</label>
+                                <select id="gotechPerPageSelect" class="form-select form-select-sm" style="width: 85px;">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="form-label fw-bold mb-0 text-nowrap"><i class="ti ti-clock me-1"></i> {{ __('صلاحية العرض:') }}</label>
+                                    <input type="number" id="gotechDurationMinutes" class="form-control form-control-sm" value="120" min="10" max="1440" style="width: 90px;" title="مدة العرض بالدقائق في Go-Tech">
+                                    <span class="text-muted small">دقيقة</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnSelectAllFiltered">
+                                    <i class="ti ti-checks me-1"></i> {{ __('تحديد كافة المفلتر') }}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="btnClearAllSelections">
+                                    <i class="ti ti-trash me-1"></i> {{ __('إلغاء التحديد') }}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnResetFilters">
+                                    <i class="ti ti-refresh me-1"></i> {{ __('إعادة ضبط') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Bar -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 px-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-label-primary fs-6 px-3 py-2">
+                                <i class="ti ti-list-check me-1"></i>
+                                {{ __('المهام المطابقة للفلاتر:') }} <strong id="gotechEligibleCount">0</strong>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="text-muted fs-6">
+                                {{ __('المحدد حالياً:') }} <strong id="gotechSelectedCount" class="text-success fs-5">0</strong>
+                            </span>
+                            <span class="text-muted fs-6">
+                                {{ __('إجمالي مبلغ التمويل:') }} <strong id="gotechSelectedTotal" class="text-primary fs-5">0.00</strong> {{ __('ريال') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Table -->
+                    <div class="table-responsive border rounded" style="min-height: 250px;">
+                        <table class="table table-hover align-middle mb-0" id="gotechEligibleTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 45px;" class="text-center">
+                                        <input type="checkbox" class="form-check-input" id="gotechSelectAllPage" title="تحديد / إلغاء تحديد الكل في هذه الصفحة">
+                                    </th>
+                                    <th>{{ __('المهمة') }}</th>
+                                    <th>{{ __('العميل') }}</th>
+                                    <th>{{ __('المسار') }}</th>
+                                    <th>{{ __('المركبة') }}</th>
+                                    <th>{{ __('سعر المهمة') }}</th>
+                                    <th style="width: 150px;">{{ __('مبلغ التمويل (ر.س)') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gotechEligibleTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                        {{ __('جاري فحص وجلب المهام المؤهلة للتمويل...') }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Footer -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-2 border-top px-1" id="gotechPaginationWrapper">
+                        <div class="text-muted small" id="gotechPaginationInfo">
+                            {{ __('عرض 0 إلى 0 من إجمالي 0 مهمة') }}
+                        </div>
+                        <nav aria-label="Tasks pagination">
+                            <ul class="pagination pagination-sm mb-0 gap-1" id="gotechPaginationList">
+                                <!-- Populated dynamically -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="ti ti-x me-1"></i> {{ __('إلغاء') }}
+                    </button>
+                    <button type="button" class="btn btn-primary px-4 fw-bold shadow" id="btnSubmitTasksToGoTech" disabled>
+                        <i class="ti ti-send me-1 fs-5"></i>
+                        <span id="btnSubmitTasksToGoTechText">{{ __('إرسال المهام المحددة للتمويل في Go-Tech') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script: Go-Tech Modal Handling with Pagination & Filters -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let eligibleTasks = [];
+            let gotechModalInstance = null;
+            let currentPage = 1;
+            let perPage = 10;
+            const selectedTaskIds = new Set();
+            const customAmounts = {};
+
+            const btnOpenModal = document.getElementById('btnOpenGoTechFundingModal');
+            const modalEl = document.getElementById('gotechFundingModal');
+            const tableBody = document.getElementById('gotechEligibleTableBody');
+            const selectAllPageCheckbox = document.getElementById('gotechSelectAllPage');
+            const searchInput = document.getElementById('gotechSearchInput');
+            const customerFilter = document.getElementById('gotechCustomerFilter');
+            const vehicleFilter = document.getElementById('gotechVehicleFilter');
+            const routeFilter = document.getElementById('gotechRouteFilter');
+            const perPageSelect = document.getElementById('gotechPerPageSelect');
+            const durationInput = document.getElementById('gotechDurationMinutes');
+            const eligibleCountEl = document.getElementById('gotechEligibleCount');
+            const selectedCountEl = document.getElementById('gotechSelectedCount');
+            const selectedTotalEl = document.getElementById('gotechSelectedTotal');
+            const paginationInfoEl = document.getElementById('gotechPaginationInfo');
+            const paginationListEl = document.getElementById('gotechPaginationList');
+            const btnSubmit = document.getElementById('btnSubmitTasksToGoTech');
+            const btnSubmitText = document.getElementById('btnSubmitTasksToGoTechText');
+            const btnSelectAllFiltered = document.getElementById('btnSelectAllFiltered');
+            const btnClearAllSelections = document.getElementById('btnClearAllSelections');
+            const btnResetFilters = document.getElementById('btnResetFilters');
+
+            if (!btnOpenModal || !modalEl) return;
+
+            gotechModalInstance = new bootstrap.Modal(modalEl);
+
+            btnOpenModal.addEventListener('click', function () {
+                gotechModalInstance.show();
+                loadEligibleTasks();
+            });
+
+            function loadEligibleTasks() {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                            {{ __('جاري فحص وجلب المهام المؤهلة للتمويل من قاعدة البيانات...') }}
+                        </td>
+                    </tr>
+                `;
+                selectAllPageCheckbox.checked = false;
+                selectedTaskIds.clear();
+                currentPage = 1;
+                btnSubmit.disabled = true;
+                updateTotals();
+
+                fetch('{{ route("tasks.gotech.eligible") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        eligibleTasks = data.tasks || [];
+                        // Populate initial amounts
+                        eligibleTasks.forEach(t => {
+                            if (!customAmounts[t.id]) {
+                                customAmounts[t.id] = (parseFloat(t.funding_amount) || parseFloat(t.total_price) || 100).toFixed(2);
+                            }
+                        });
+
+                        populateDropdowns(data.customers || [], data.vehicles || [], data.routes || []);
+                        renderTableRows();
+                    } else {
+                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">${data.message || 'فشل جلب المهام'}</td></tr>`;
+                    }
+                })
+                .catch(err => {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">حدث خطأ أثناء الاتصال: ${err.message}</td></tr>`;
+                });
+            }
+
+            function populateDropdowns(customers, vehicles, routes) {
+                // Customers
+                customerFilter.innerHTML = '<option value="">{{ __("جميع العملاء المؤهلين") }}</option>';
+                customers.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.name;
+                    customerFilter.appendChild(opt);
+                });
+
+                // Vehicles
+                vehicleFilter.innerHTML = '<option value="">{{ __("جميع أنواع المركبات") }}</option>';
+                vehicles.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = v;
+                    vehicleFilter.appendChild(opt);
+                });
+
+                // Routes
+                routeFilter.innerHTML = '<option value="">{{ __("جميع المسارات") }}</option>';
+                routes.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = r;
+                    routeFilter.appendChild(opt);
+                });
+            }
+
+            function getFilteredTasks() {
+                const search = (searchInput.value || '').trim().toLowerCase();
+                const custId = customerFilter.value;
+                const vehicleVal = vehicleFilter.value;
+                const routeVal = routeFilter.value;
+
+                return eligibleTasks.filter(t => {
+                    const matchCust = !custId || String(t.customer_id) === String(custId);
+                    const matchVehicle = !vehicleVal || t.vehicle_label === vehicleVal;
+                    const matchRoute = !routeVal || t.route === routeVal;
+                    const matchSearch = !search
+                        || String(t.id).includes(search)
+                        || (t.customer_task_number && t.customer_task_number.toLowerCase().includes(search))
+                        || (t.customer_name && t.customer_name.toLowerCase().includes(search))
+                        || (t.route && t.route.toLowerCase().includes(search))
+                        || (t.pickup_address && t.pickup_address.toLowerCase().includes(search))
+                        || (t.delivery_address && t.delivery_address.toLowerCase().includes(search))
+                        || (t.vehicle_label && t.vehicle_label.toLowerCase().includes(search));
+
+                    return matchCust && matchVehicle && matchRoute && matchSearch;
+                });
+            }
+
+            function renderTableRows() {
+                const filtered = getFilteredTasks();
+                const totalFiltered = filtered.length;
+                eligibleCountEl.textContent = totalFiltered;
+
+                if (totalFiltered === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="ti ti-inbox fs-2 mb-2 d-block"></i>
+                                {{ __('لا توجد أي مهام مؤهلة للتمويل مطابقة للفلاتر المحددة.') }}
+                            </td>
+                        </tr>
+                    `;
+                    selectAllPageCheckbox.checked = false;
+                    selectAllPageCheckbox.disabled = true;
+                    paginationInfoEl.textContent = 'عرض 0 إلى 0 من إجمالي 0 مهمة';
+                    paginationListEl.innerHTML = '';
+                    updateTotals();
+                    return;
+                }
+
+                selectAllPageCheckbox.disabled = false;
+                const totalPages = Math.ceil(totalFiltered / perPage);
+                if (currentPage > totalPages) {
+                    currentPage = totalPages;
+                }
+                if (currentPage < 1) {
+                    currentPage = 1;
+                }
+
+                const startIndex = (currentPage - 1) * perPage;
+                const endIndex = Math.min(startIndex + perPage, totalFiltered);
+                const pageTasks = filtered.slice(startIndex, endIndex);
+
+                let html = '';
+                let allPageSelected = true;
+
+                pageTasks.forEach(task => {
+                    const isSelected = selectedTaskIds.has(task.id);
+                    if (!isSelected) {
+                        allPageSelected = false;
+                    }
+                    const amount = customAmounts[task.id] || (parseFloat(task.funding_amount) || parseFloat(task.total_price) || 100).toFixed(2);
+
+                    html += `
+                        <tr data-task-id="${task.id}" class="${isSelected ? 'table-primary bg-opacity-10' : ''}">
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input gotech-task-checkbox" value="${task.id}" ${isSelected ? 'checked' : ''}>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-primary">#${task.id}</span>
+                                ${task.customer_task_number ? `<br><small class="badge bg-label-info">C#${task.customer_task_number}</small>` : ''}
+                            </td>
+                            <td>
+                                <span class="fw-semibold">${task.customer_name}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-label-secondary text-dark">${task.route}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">${task.vehicle_label}</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold">${(parseFloat(task.total_price) || 0).toFixed(2)} ر.س</span>
+                            </td>
+                            <td>
+                                <input type="number" step="0.5" min="50" class="form-control form-control-sm gotech-amount-input" 
+                                    data-task-id="${task.id}" value="${amount}">
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tableBody.innerHTML = html;
+                selectAllPageCheckbox.checked = allPageSelected && pageTasks.length > 0;
+
+                // Render pagination info and buttons
+                paginationInfoEl.textContent = `عرض ${startIndex + 1} إلى ${endIndex} من أصل ${totalFiltered} مهمة`;
+                renderPaginationButtons(totalPages);
+
+                bindRowEvents();
+                updateTotals();
+            }
+
+            function renderPaginationButtons(totalPages) {
+                if (totalPages <= 1) {
+                    paginationListEl.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+
+                // Previous button
+                html += `
+                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                        <a class="page-link py-1 px-2" href="javascript:;" data-page="${currentPage - 1}">
+                            <i class="ti ti-chevron-right fs-6"></i>
+                        </a>
+                    </li>
+                `;
+
+                // Page numbers (smart sliding window)
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, currentPage + 2);
+
+                if (startPage > 1) {
+                    html += `<li class="page-item"><a class="page-link py-1 px-2" href="javascript:;" data-page="1">1</a></li>`;
+                    if (startPage > 2) {
+                        html += `<li class="page-item disabled"><span class="page-link py-1 px-2">...</span></li>`;
+                    }
+                }
+
+                for (let p = startPage; p <= endPage; p++) {
+                    html += `
+                        <li class="page-item ${p === currentPage ? 'active' : ''}">
+                            <a class="page-link py-1 px-2" href="javascript:;" data-page="${p}">${p}</a>
+                        </li>
+                    `;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<li class="page-item disabled"><span class="page-link py-1 px-2">...</span></li>`;
+                    }
+                    html += `<li class="page-item"><a class="page-link py-1 px-2" href="javascript:;" data-page="${totalPages}">${totalPages}</a></li>`;
+                }
+
+                // Next button
+                html += `
+                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                        <a class="page-link py-1 px-2" href="javascript:;" data-page="${currentPage + 1}">
+                            <i class="ti ti-chevron-left fs-6"></i>
+                        </a>
+                    </li>
+                `;
+
+                paginationListEl.innerHTML = html;
+
+                // Bind click events on page links
+                paginationListEl.querySelectorAll('.page-link[data-page]').forEach(link => {
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const p = parseInt(this.getAttribute('data-page'));
+                        if (p >= 1 && p <= totalPages && p !== currentPage) {
+                            currentPage = p;
+                            renderTableRows();
+                        }
+                    });
+                });
+            }
+
+            function bindRowEvents() {
+                document.querySelectorAll('.gotech-task-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const taskId = parseInt(this.value);
+                        if (this.checked) {
+                            selectedTaskIds.add(taskId);
+                            this.closest('tr').classList.add('table-primary', 'bg-opacity-10');
+                        } else {
+                            selectedTaskIds.delete(taskId);
+                            this.closest('tr').classList.remove('table-primary', 'bg-opacity-10');
+                        }
+                        checkPageSelectAllState();
+                        updateTotals();
+                    });
+                });
+
+                document.querySelectorAll('.gotech-amount-input').forEach(inp => {
+                    inp.addEventListener('input', function () {
+                        const taskId = parseInt(this.getAttribute('data-task-id'));
+                        const val = parseFloat(this.value) || 0;
+                        customAmounts[taskId] = val.toFixed(2);
+                        updateTotals();
+                    });
+                });
+            }
+
+            function checkPageSelectAllState() {
+                const pageCheckboxes = document.querySelectorAll('.gotech-task-checkbox');
+                if (pageCheckboxes.length === 0) {
+                    selectAllPageCheckbox.checked = false;
+                    return;
+                }
+                const allChecked = Array.from(pageCheckboxes).every(cb => cb.checked);
+                selectAllPageCheckbox.checked = allChecked;
+            }
+
+            selectAllPageCheckbox.addEventListener('change', function () {
+                const checked = this.checked;
+                document.querySelectorAll('.gotech-task-checkbox').forEach(cb => {
+                    cb.checked = checked;
+                    const taskId = parseInt(cb.value);
+                    if (checked) {
+                        selectedTaskIds.add(taskId);
+                        cb.closest('tr').classList.add('table-primary', 'bg-opacity-10');
+                    } else {
+                        selectedTaskIds.delete(taskId);
+                        cb.closest('tr').classList.remove('table-primary', 'bg-opacity-10');
+                    }
+                });
+                updateTotals();
+            });
+
+            // Select all currently filtered tasks across all pages
+            btnSelectAllFiltered.addEventListener('click', function () {
+                const filtered = getFilteredTasks();
+                filtered.forEach(t => selectedTaskIds.add(t.id));
+                renderTableRows();
+            });
+
+            // Clear all selections across all pages
+            btnClearAllSelections.addEventListener('click', function () {
+                selectedTaskIds.clear();
+                renderTableRows();
+            });
+
+            // Reset all filters
+            btnResetFilters.addEventListener('click', function () {
+                searchInput.value = '';
+                customerFilter.value = '';
+                vehicleFilter.value = '';
+                routeFilter.value = '';
+                perPageSelect.value = '10';
+                perPage = 10;
+                currentPage = 1;
+                renderTableRows();
+            });
+
+            // Filter change handlers
+            searchInput.addEventListener('input', function () {
+                currentPage = 1;
+                renderTableRows();
+            });
+            customerFilter.addEventListener('change', function () {
+                currentPage = 1;
+                renderTableRows();
+            });
+            vehicleFilter.addEventListener('change', function () {
+                currentPage = 1;
+                renderTableRows();
+            });
+            routeFilter.addEventListener('change', function () {
+                currentPage = 1;
+                renderTableRows();
+            });
+            perPageSelect.addEventListener('change', function () {
+                perPage = parseInt(this.value) || 10;
+                currentPage = 1;
+                renderTableRows();
+            });
+
+            function updateTotals() {
+                const selectedCount = selectedTaskIds.size;
+                let totalAmount = 0;
+
+                selectedTaskIds.forEach(id => {
+                    const task = eligibleTasks.find(t => t.id === id);
+                    if (task) {
+                        const amount = customAmounts[id] ? parseFloat(customAmounts[id]) : (parseFloat(task.funding_amount) || parseFloat(task.total_price) || 0);
+                        totalAmount += amount;
+                    }
+                });
+
+                selectedCountEl.textContent = selectedCount;
+                selectedTotalEl.textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                if (selectedCount > 0) {
+                    btnSubmit.disabled = false;
+                    btnSubmitText.textContent = `إرسال (${selectedCount}) مهمة للتمويل في Go-Tech (${totalAmount.toFixed(2)} ر.س)`;
+                } else {
+                    btnSubmit.disabled = true;
+                    btnSubmitText.textContent = `إرسال المهام المحددة للتمويل في Go-Tech`;
+                }
+            }
+
+            // إرسال المهام المحددة إلى Go-Tech
+            btnSubmit.addEventListener('click', function () {
+                if (selectedTaskIds.size === 0) return;
+
+                const taskIds = Array.from(selectedTaskIds);
+                const fundingAmounts = {};
+                taskIds.forEach(id => {
+                    const task = eligibleTasks.find(t => t.id === id);
+                    const amount = customAmounts[id] ? parseFloat(customAmounts[id]) : (parseFloat(task?.funding_amount) || parseFloat(task?.total_price) || 0);
+                    fundingAmounts[id] = amount;
+                });
+
+                const totalAmount = Object.values(fundingAmounts).reduce((a, b) => a + b, 0);
+                const duration = parseInt(durationInput.value) || 120;
+
+                Swal.fire({
+                    title: 'تأكيد الطرح في Go-Tech',
+                    html: `هل أنت متأكد من رغبتك في إرسال <b>(${taskIds.length})</b> مهمة لطرحها للتمويل في منصة Go-Tech؟<br><br>
+                           <div class="alert alert-primary py-2 text-center">
+                               إجمالي مبلغ التمويل المطلوب: <b>${totalAmount.toFixed(2)} ر.س</b><br>
+                               مدة صلاحية العرض: <b>${duration} دقيقة</b>
+                           </div>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="ti ti-send me-1"></i> نعم، إرسال الآن',
+                    cancelButtonText: 'إلغاء',
+                    customClass: {
+                        confirmButton: 'btn btn-primary me-3',
+                        cancelButton: 'btn btn-outline-secondary'
+                    },
+                    buttonsStyling: false
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        btnSubmit.disabled = true;
+                        btnSubmitText.textContent = 'جاري الإرسال والمعالجة...';
+
+                        fetch('{{ route("tasks.gotech.batch_submit") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                task_ids: taskIds,
+                                funding_amounts: fundingAmounts,
+                                expires_in_minutes: duration
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            btnSubmit.disabled = false;
+                            btnSubmitText.textContent = `إرسال المهام المحددة للتمويل في Go-Tech`;
+
+                            if (data.status === 1) {
+                                let html = `<p class="mb-2">${data.message}</p>`;
+                                if (data.failed && data.failed.length > 0) {
+                                    html += `<div class="alert alert-warning text-start mt-2 p-2" style="font-size:12px; max-height:160px; overflow-y:auto;">
+                                        <strong>تنبيهات المهام:</strong><ul class="mb-0 ps-3">`;
+                                    data.failed.forEach(f => {
+                                        html += `<li><strong>${f.task_number}:</strong> ${f.reason}</li>`;
+                                    });
+                                    html += `</ul></div>`;
+                                }
+                                Swal.fire({
+                                    icon: data.failed && data.failed.length > 0 ? 'warning' : 'success',
+                                    title: data.failed && data.failed.length > 0 ? 'اكتمل الطرح مع بعض التنبيهات' : 'تم الطرح بنجاح!',
+                                    html: html,
+                                    customClass: { confirmButton: 'btn btn-primary' },
+                                    buttonsStyling: false
+                                });
+                                gotechModalInstance.hide();
+                                // تحديث جدول المهام الرئيسي
+                                if (typeof $ !== 'undefined' && $.fn.DataTable && $('.datatables-tasks').length) {
+                                    $('.datatables-tasks').DataTable().ajax.reload(null, false);
+                                }
+                            } else {
+                                let html = `<p class="mb-2">${data.message || 'حدث خطأ أثناء معالجة الطلب'}</p>`;
+                                if (data.failed && data.failed.length > 0) {
+                                    html += `<div class="alert alert-danger text-start mt-2 p-2" style="font-size:12px; max-height:160px; overflow-y:auto;">
+                                        <strong>أسباب عدم قبول المهام:</strong><ul class="mb-0 ps-3">`;
+                                    data.failed.forEach(f => {
+                                        html += `<li><strong>${f.task_number}:</strong> ${f.reason}</li>`;
+                                    });
+                                    html += `</ul></div>`;
+                                }
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'تعذر الإرسال',
+                                    html: html,
+                                    customClass: { confirmButton: 'btn btn-danger' },
+                                    buttonsStyling: false
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            btnSubmit.disabled = false;
+                            btnSubmitText.textContent = `إرسال المهام المحددة للتمويل في Go-Tech`;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'خطأ في الاتصال',
+                                text: err.message,
+                                customClass: { confirmButton: 'btn btn-danger' },
+                                buttonsStyling: false
+                            });
+                        });
+                    }
+                });
+            });
+
+            // إجراءات فحص الحالة وإلغاء الطرح الفردي من جدول المهام
+            $(document).on('click', '.check-gotech-status', function (e) {
+                e.preventDefault();
+                const taskId = $(this).data('id');
+                Swal.fire({
+                    title: 'فحص حالة التمويل في Go-Tech',
+                    text: 'جاري الاستعلام المباشر من بوابة Go-Tech...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                fetch(`${baseUrl}admin/tasks/${taskId}/gotech-status`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 1) {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'حالة المهمة في Go-Tech',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        });
+                        $('.datatables-tasks').DataTable().ajax.reload(null, false);
+                    } else {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'تنبيه',
+                            text: data.message || 'تعذر جلب الحالة',
+                            customClass: { confirmButton: 'btn btn-warning' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(err => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطأ',
+                        text: err.message,
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
+                });
+            });
+
+            $(document).on('click', '.cancel-gotech-task', function (e) {
+                e.preventDefault();
+                const taskId = $(this).data('id');
+                const isFunded = $(this).data('funded') == 1;
+
+                if (typeof canCancelGoTech !== 'undefined' && !canCancelGoTech) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'غير مصرح',
+                        text: 'ليس لديك صلاحية فك ارتباط وإلغاء طرح المهام في Go-Tech.',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
+                    return;
+                }
+
+                const titleText = isFunded ? 'فك ارتباط Go-Tech وإلغاء التمويل' : 'إلغاء طرح المهمة في Go-Tech';
+                const bodyText = isFunded
+                    ? 'تنبيه هام: هذه المهمة تم تمويلها بالفعل من قِبل مستثمر في منصة Go-Tech.\nفك الارتباط سيقوم بإلغاء حالة تمويل Go-Tech وسحب المهمة محلياً لتصبح متاحة فوراً للمستثمرين الداخليين.\nهل ترغب في الاستمرار؟'
+                    : 'هل أنت متأكد من رغبتك في سحب هذه المهمة من سوق الاستثمار في Go-Tech وإعادتها للاستثمار الداخلي؟';
+                const confirmBtnText = isFunded ? 'نعم، فك الارتباط وإلغاء التمويل' : 'نعم، إلغاء الطرح';
+
+                const performCancel = (force = false) => {
+                    Swal.fire({
+                        title: force ? 'جاري فك الارتباط قسرياً...' : 'جاري معالجة الإلغاء...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    fetch(`${baseUrl}admin/tasks/${taskId}/gotech-cancel`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ force_unlink: force ? 1 : (isFunded ? 1 : 0) })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success || data.status === 1) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'تمت العملية بنجاح!',
+                                text: data.message || 'تم فك ارتباط المهمة من Go-Tech وأصبحت متاحة للمستثمرين الداخليين مجدداً.',
+                                customClass: { confirmButton: 'btn btn-success' },
+                                buttonsStyling: false
+                            });
+                            $('.datatables-tasks').DataTable().ajax.reload(null, false);
+                        } else if (data.can_force) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'فك ارتباط قسري مطلوب',
+                                text: (data.message || '') + '\n\nهل ترغب في فك ارتباط المهمة قسرياً محلياً وإتاحتها للمستثمرين الداخليين؟',
+                                showCancelButton: true,
+                                confirmButtonText: 'نعم، فك الارتباط قسرياً',
+                                cancelButtonText: 'تراجع',
+                                customClass: {
+                                    confirmButton: 'btn btn-danger me-3',
+                                    cancelButton: 'btn btn-outline-secondary'
+                                },
+                                buttonsStyling: false
+                            }).then(fRes => {
+                                if (fRes.isConfirmed) {
+                                    performCancel(true);
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'تعذر الإلغاء',
+                                text: data.message || 'فشلت عملية الإلغاء',
+                                customClass: { confirmButton: 'btn btn-danger' },
+                                buttonsStyling: false
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطأ',
+                            text: err.message,
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    });
+                };
+
+                Swal.fire({
+                    title: titleText,
+                    text: bodyText,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: confirmBtnText,
+                    cancelButtonText: 'تراجع',
+                    customClass: {
+                        confirmButton: 'btn btn-danger me-3',
+                        cancelButton: 'btn btn-outline-secondary'
+                    },
+                    buttonsStyling: false
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        performCancel(isFunded);
+                    }
+                });
+            });
+        });
+    </script>
 @endsection

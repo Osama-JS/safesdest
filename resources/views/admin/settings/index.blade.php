@@ -112,6 +112,13 @@
                 <i class="ti ti-headset me-2 fs-5"></i> {{ __('بيانات التواصل والدعم') }}
             </button>
         </li>
+        @canany(['manage_gotech_settings', 'general_settings'])
+        <li class="nav-item" role="presentation">
+            <button class="nav-link d-flex align-items-center" id="nav-gotech-tab" data-bs-toggle="pill" data-bs-target="#nav-gotech" type="button" role="tab" aria-controls="nav-gotech" aria-selected="false">
+                <i class="ti ti-chart-arrows text-primary me-2 fs-5"></i> {{ __('تمويل Go-Tech (الاستثمار)') }}
+            </button>
+        </li>
+        @endcanany
     </ul>
 
     <!-- Tab Content -->
@@ -1189,6 +1196,161 @@
             </div>
         </div>
 
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        {{-- TAB 8: Go-Tech Logistics Investment & Funding                  --}}
+        {{-- ══════════════════════════════════════════════════════════════ --}}
+        @canany(['manage_gotech_settings', 'general_settings'])
+        <div class="tab-pane fade" id="nav-gotech" role="tabpanel" aria-labelledby="nav-gotech-tab">
+            @php
+                $goTechEnabled = ($settings['gotech_enabled']['value'] ?? '1') == '1';
+                $goTechEnv = $settings['gotech_environment']['value'] ?? 'test';
+                $goTechBaseUrl = $settings['gotech_base_url']['value'] ?? 'http://127.0.0.1:8000/api/v1';
+                $goTechApiKey = $settings['gotech_api_key']['value'] ?? '';
+                $goTechWebhookSecret = $settings['gotech_webhook_secret']['value'] ?? '';
+                $goTechDuration = $settings['gotech_default_duration_minutes']['value'] ?? '120';
+                $goTechAutoPublish = ($settings['gotech_auto_publish']['value'] ?? '0') == '1';
+                $goTechWebhookUrl = url('/api/webhooks/gotech');
+            @endphp
+            <div class="row g-4">
+                <div class="col-12 col-xl-8">
+                    <div class="card border-0 shadow-sm" id="gotech_settings_card">
+                        <div class="card-header bg-label-primary py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-chart-arrows text-primary me-2 fs-3"></i>
+                                <h5 class="card-title mb-0 text-primary fw-bold">{{ __('إعدادات الربط مع منصة Go-Tech (التمويل والاستثمار اللوجستي)') }}</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn_test_gotech_connection">
+                                    <i class="ti ti-plug-connected me-1"></i>{{ __('اختبار الاتصال بـ Go-Tech') }}
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary" id="btn_save_gotech_settings">
+                                    <i class="ti ti-device-floppy me-1"></i>{{ __('حفظ إعدادات Go-Tech') }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body pt-4">
+                            <form id="form_gotech_settings">
+                                @csrf
+
+                                <!-- Master Toggle -->
+                                <div class="card bg-label-light border p-3 mb-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-dark"><i class="ti ti-power me-1 text-primary"></i> {{ __('تفعيل خدمة الربط مع Go-Tech') }}</h6>
+                                            <p class="text-muted small mb-0">{{ __('تمكين إرسال مهام النقل إلى سوق الاستثمار في Go-Tech لتمويلها من قبل المستثمرين.') }}</p>
+                                        </div>
+                                        <div class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" id="setting_gotech_enabled" name="gotech_enabled" value="1"
+                                                {{ $goTechEnabled ? 'checked' : '' }}>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <!-- Environment -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" for="setting_gotech_environment">{{ __('بيئة العمل (Environment)') }} <span class="text-danger">*</span></label>
+                                        <select class="form-select border-primary fw-semibold" id="setting_gotech_environment" name="gotech_environment">
+                                            <option value="test" {{ $goTechEnv === 'test' ? 'selected' : '' }}>🧪 بيئة تجريبية (Test / Sandbox)</option>
+                                            <option value="live" {{ $goTechEnv === 'live' ? 'selected' : '' }}>🚀 بيئة الإنتاج المباشرة (Live / Production)</option>
+                                        </select>
+                                        <small class="text-muted">{{ __('المفاتيح التجريبية تبدأ بـ gotech_test_ والإنتاجية بـ gotech_live_.') }}</small>
+                                    </div>
+
+                                    <!-- Default Duration -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" for="setting_gotech_duration">{{ __('مهلة عرض المهمة في سوق التمويل (بالدقائق)') }} <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="setting_gotech_duration" name="gotech_default_duration_minutes"
+                                                value="{{ $goTechDuration }}" min="5" max="1440" placeholder="120">
+                                            <span class="input-group-text">{{ __('دقيقة') }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ __('تنتهي صلاحية المهمة في Go-Tech إذا لم يمولها أي مستثمر خلال هذه المدة.') }}</small>
+                                    </div>
+
+                                    <!-- Base URL -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold" for="setting_gotech_base_url">{{ __('رابط بوابة Go-Tech API الأساسي (Base URL)') }} <span class="text-danger">*</span></label>
+                                        <div class="input-group input-group-merge">
+                                            <span class="input-group-text"><i class="ti ti-link"></i></span>
+                                            <input type="url" class="form-control font-monospace" id="setting_gotech_base_url" name="gotech_base_url"
+                                                value="{{ $goTechBaseUrl }}" placeholder="http://127.0.0.1:8000/api/v1">
+                                        </div>
+                                        <small class="text-muted">{{ __('الافتراضي محلياً: http://127.0.0.1:8000/api/v1 أو رابط النطاق المباشر للمنصة.') }}</small>
+                                    </div>
+
+                                    <!-- API Key -->
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold" for="setting_gotech_api_key">{{ __('مفتاح الـ API الخاص بشركتنا (Company API Key)') }} <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control font-monospace" id="setting_gotech_api_key" name="gotech_api_key"
+                                                value="{{ $goTechApiKey }}" placeholder="gotech_test_... أو gotech_live_...">
+                                            <button class="btn btn-outline-secondary" type="button" id="btn_toggle_gotech_key">
+                                                <i class="ti ti-eye"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">{{ __('يتم توليده ونسخه من صفحة «إعدادات الـ API» داخل حساب شركتنا في بوابة Go-Tech.') }}</small>
+                                    </div>
+
+                                    <!-- Webhook Secret -->
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold" for="setting_gotech_webhook_secret">{{ __('المفتاح السري للـ Webhook (Webhook Secret / HMAC)') }}</label>
+                                        <input type="text" class="form-control font-monospace" id="setting_gotech_webhook_secret" name="gotech_webhook_secret"
+                                            value="{{ $goTechWebhookSecret }}" placeholder="whsec_...">
+                                        <small class="text-muted">{{ __('يستخدم للتحقق المشفر من أن إشعارات التمويل الواردة قادمة فعلياً من سيرفر Go-Tech حصراً.') }}</small>
+                                    </div>
+
+                                    <!-- Webhook URL to Copy -->
+                                    <div class="col-12">
+                                        <div class="card bg-label-light border p-3">
+                                            <label class="form-label fw-bold text-dark d-flex align-items-center gap-1 mb-1">
+                                                <i class="ti ti-webhook text-primary fs-5"></i>
+                                                {{ __('رابط استقبال الويب هوك الخاص بمنصتنا (SafeDests Webhook URL)') }}
+                                            </label>
+                                            <p class="text-muted small mb-2">{{ __('انسخ هذا الرابط والصقه في حقل (Webhook URL) داخل لوحة تحكم شركتنا في منصة Go-Tech لتصلك إشعارات التمويل فوراً:') }}</p>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control font-monospace bg-white" id="gotech_webhook_url_display"
+                                                    value="{{ $goTechWebhookUrl }}" readonly>
+                                                <button class="btn btn-outline-primary" type="button" id="btn_copy_gotech_webhook">
+                                                    <i class="ti ti-copy me-1"></i>{{ __('نسخ الرابط') }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Side Card -->
+                <div class="col-12 col-xl-4">
+                    <div class="card border-0 shadow-sm bg-label-light mb-4">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                                <i class="ti ti-info-circle text-primary me-2 fs-4"></i> {{ __('كيف يعمل ربط التمويل مع Go-Tech؟') }}
+                            </h6>
+                            <ul class="text-muted small ps-3 mb-0" style="line-height: 1.8;">
+                                <li class="mb-2"><strong>طرح المهمة:</strong> تقوم SafeDests بإرسال المهام عبر الـ API إلى سوق الاستثمار في Go-Tech.</li>
+                                <li class="mb-2"><strong>تمويل المستثمر:</strong> يقوم المستثمرون بتمويل تكلفة المهمة مسبقاً من محافظهم، وتقيّد أرباح العمولة لهم.</li>
+                                <li class="mb-2"><strong>الإشعار الفوري:</strong> يُرسل نظام Go-Tech إشعاراً مشفراً (Webhook) إلى منصتنا يغير حالة المهمة إلى <code>funded</code> فوراً.</li>
+                                <li class="mb-2"><strong>التنفيذ والتسليم:</strong> ينفذ السائق المهمة، وعند إغلاقها في SafeDests يتم إشعار Go-Tech باكتمالها تلقائياً.</li>
+                                <li><strong>سحب الرصيد:</strong> رصيد التمويل يصبح متاحاً في محفظة شركتنا في Go-Tech لسحبه ومطالبته.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm border-start border-primary border-4">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-dark mb-1"><i class="ti ti-shield-lock text-success me-1"></i> حماية وتشفير متقدم</h6>
+                            <p class="text-muted small mb-0">جميع مفاتيح الربط مخزنة بصورة مشفرة وآمنة، والاتصال بين النظامين يتم عبر ترويسات مشفرة وتوقيعات HMAC-SHA256.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcanany
+
     </div>
 
     <!-- Test Email Modal -->
@@ -1239,6 +1401,8 @@
                 '#mtahd_settings_card': '#nav-mtahd-tab',
                 '#support_settings_card': '#nav-support-tab',
                 '#nav-support': '#nav-support-tab',
+                '#gotech_settings_card': '#nav-gotech-tab',
+                '#nav-gotech': '#nav-gotech-tab',
                 '#nav-saei': '#nav-saei-tab',
                 '#nav-mail': '#nav-mail-tab',
                 '#nav-mtahd': '#nav-mtahd-tab',
@@ -1753,6 +1917,173 @@
                             icon: 'error',
                             title: '{{ __("خطأ") }}',
                             text: data.message || '{{ __("فشل حفظ إعدادات الدعم") }}',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("خطأ") }}',
+                        text: '{{ __("تعذر الاتصال بالسيرفر أثناء حفظ الإعدادات") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
+                });
+            });
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        // Go-Tech Logistics Investment & Funding Handlers
+        // ─────────────────────────────────────────────────────────────
+
+        // Toggle Go-Tech API Key visibility
+        const btnToggleGoTechKey = document.getElementById('btn_toggle_gotech_key');
+        if (btnToggleGoTechKey) {
+            btnToggleGoTechKey.addEventListener('click', function () {
+                const input = document.getElementById('setting_gotech_api_key');
+                const icon = this.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('ti-eye');
+                    icon.classList.add('ti-eye-off');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('ti-eye-off');
+                    icon.classList.add('ti-eye');
+                }
+            });
+        }
+
+        // Copy Webhook URL button
+        const btnCopyWebhook = document.getElementById('btn_copy_gotech_webhook');
+        if (btnCopyWebhook) {
+            btnCopyWebhook.addEventListener('click', function () {
+                const input = document.getElementById('gotech_webhook_url_display');
+                if (input) {
+                    navigator.clipboard.writeText(input.value).then(() => {
+                        const originalHtml = this.innerHTML;
+                        this.innerHTML = '<i class="ti ti-check me-1"></i> {{ __("تم النسخ!") }}';
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-success');
+                        setTimeout(() => {
+                            this.innerHTML = originalHtml;
+                            this.classList.remove('btn-success');
+                            this.classList.add('btn-outline-primary');
+                        }, 2000);
+                    });
+                }
+            });
+        }
+
+        // Test Go-Tech Connection
+        const btnTestGoTech = document.getElementById('btn_test_gotech_connection');
+        if (btnTestGoTech) {
+            btnTestGoTech.addEventListener('click', function () {
+                const btn = this;
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الاتصال...") }}';
+
+                const liveToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                               || document.querySelector('#form_gotech_settings input[name="_token"]')?.value
+                               || '{{ csrf_token() }}';
+
+                const formData = new FormData();
+                formData.set('_token', liveToken);
+
+                fetch('{{ route("settings.gotech.test-connection") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': liveToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("اتصال ناجح!") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("فشل الاتصال") }}',
+                            text: data.message || '{{ __("تعذر التحقق من الاتصال ببوابة Go-Tech API") }}',
+                            customClass: { confirmButton: 'btn btn-danger' },
+                            buttonsStyling: false
+                        });
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: '{{ __("خطأ") }}',
+                        text: '{{ __("تعذر الاتصال بالسيرفر أثناء فحص الاتصال") }}',
+                        customClass: { confirmButton: 'btn btn-danger' },
+                        buttonsStyling: false
+                    });
+                });
+            });
+        }
+
+        // Save Go-Tech Settings
+        const btnSaveGoTech = document.getElementById('btn_save_gotech_settings');
+        if (btnSaveGoTech) {
+            btnSaveGoTech.addEventListener('click', function () {
+                const btn = this;
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ __("جاري الحفظ...") }}';
+
+                const liveToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                               || document.querySelector('#form_gotech_settings input[name="_token"]')?.value
+                               || '{{ csrf_token() }}';
+
+                const formEl = document.getElementById('form_gotech_settings');
+                const formData = new FormData(formEl);
+                formData.set('gotech_enabled', document.getElementById('setting_gotech_enabled').checked ? '1' : '0');
+                formData.set('_token', liveToken);
+
+                fetch('{{ route("settings.gotech.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': liveToken,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '{{ __("تم الحفظ بنجاح") }}',
+                            text: data.message,
+                            customClass: { confirmButton: 'btn btn-primary' },
+                            buttonsStyling: false
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '{{ __("خطأ") }}',
+                            text: data.message || '{{ __("فشل حفظ إعدادات Go-Tech") }}',
                             customClass: { confirmButton: 'btn btn-danger' },
                             buttonsStyling: false
                         });

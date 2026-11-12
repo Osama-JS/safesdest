@@ -44,6 +44,9 @@ class InvestorPaymentService
             if ($task->investor_payment_status !== 'none') {
                 throw new \Exception(__('Task already paid by another investor'));
             }
+            if (in_array($task->gotech_status, ['pending_funding', 'funded'])) {
+                throw new \Exception(__('لا يمكن دفع هذه المهمة لأنها مطروحة أو ممولة بالفعل عبر منصة Go-Tech.'));
+            }
             if ($task->closed) {
                 throw new \Exception(__('Cannot pay on a closed task'));
             }

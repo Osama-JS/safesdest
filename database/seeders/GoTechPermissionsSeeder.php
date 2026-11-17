@@ -1,4 +1,4 @@
-<?php
+في صفحة <?php
 
 namespace Database\Seeders;
 

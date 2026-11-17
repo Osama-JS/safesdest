@@ -21,25 +21,40 @@ class InvestorPersonalWalletExport implements FromCollection, WithHeadings, With
     protected $wallet;
     protected $transactions;
     protected $investor;
+    protected $balances = [];
 
     public function __construct(UserWallet $wallet, $transactions)
     {
         $this->wallet = $wallet;
         $this->transactions = $transactions;
         $this->investor = $wallet->user;
+
+        // حساب الرصيد التراكمي التاريخي الدقيق بعد كل عملية للمحفظة
+        $allTransactions = UserWalletTransaction::where('user_wallet_id', $this->wallet->id)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get(['id', 'amount', 'transaction_type']);
+
+        $running = 0.0;
+        foreach ($allTransactions as $t) {
+            $running += ($t->transaction_type === 'credit' ? (float) $t->amount : -(float) $t->amount);
+            $this->balances[$t->id] = $running;
+        }
     }
 
     public function collection()
     {
         return collect($this->transactions)->map(function ($trx, $index) {
+            $balanceAfter = $this->balances[$trx->id] ?? (float) ($trx->balance_after ?? 0);
+
             return [
                 'index' => $index + 1,
                 'id' => '#' . $trx->id,
-                'type' => $trx->transaction_type === 'credit' ? 'إيداع' : 'خصم',
+                'type' => $trx->transaction_type === 'credit' ? 'إحتساب' : 'خصم',
                 'amount' => number_format($trx->amount, 2),
                 'description' => $trx->description,
                 'date' => $trx->created_at->format('Y-m-d H:i'),
-                'balance_after' => number_format($trx->balance_after, 2),
+                'balance_after' => number_format($balanceAfter, 2),
             ];
         });
     }
@@ -112,17 +127,32 @@ class InvestorPersonalWalletExport implements FromCollection, WithHeadings, With
                 // Calculate Statistics
                 $totalDeposits = collect($this->transactions)->where('transaction_type', 'credit')->sum('amount');
                 $totalWithdrawals = collect($this->transactions)->where('transaction_type', 'debit')->sum('amount');
+                $currentBalance = (float) $this->wallet->balance;
+                $withdrawableBalance = (float) ($this->wallet->withdrawable_balance ?? 0);
 
-                // Add Statistics
-                $sheet->setCellValue('A6', 'ملخص مالي:');
-                $sheet->setCellValue('B6', 'الرصيد الحالي:');
-                $sheet->setCellValue('C6', number_format($this->wallet->balance, 2) . ' SAR');
-                
-                $sheet->setCellValue('D6', 'إجمالي العمولات المستلمة:');
-                $sheet->setCellValue('E6', number_format($totalDeposits, 2) . ' SAR');
+                // Merge cells for financial summary
+                $sheet->mergeCells('A6:A7');
+                $sheet->mergeCells('B7:D7');
+                $sheet->mergeCells('E7:G7');
+                $sheet->mergeCells('A8:G8');
 
-                $sheet->setCellValue('F6', 'إجمالي المسحوبات:');
-                $sheet->setCellValue('G6', number_format($totalWithdrawals, 2) . ' SAR');
+                // Row 6: Summary Headers & Values (إجمالي العمولات، إجمالي المسحوبات، الرصيد الحالي)
+                $sheet->setCellValue('A6', "ملخص\nمالي");
+                $sheet->setCellValue('B6', 'إجمالي العمولات المستلمة:');
+                $sheet->setCellValue('C6', number_format($totalDeposits, 2) . ' SAR');
+
+                $sheet->setCellValue('D6', 'إجمالي المسحوبات:');
+                $sheet->setCellValue('E6', number_format($totalWithdrawals, 2) . ' SAR');
+
+                $sheet->setCellValue('F6', 'الرصيد الحالي:');
+                $sheet->setCellValue('G6', number_format($currentBalance, 2) . ' SAR');
+
+                // Row 7: Withdrawable Balance (الرصيد القابل للسحب حالياً)
+                $sheet->setCellValue('B7', 'الرصيد القابل للسحب حالياً:');
+                $sheet->setCellValue('E7', number_format($withdrawableBalance, 2) . ' SAR');
+
+                // Row 8: Explanatory note
+                $sheet->setCellValue('A8', '* ملاحظة: الرصيد القابل للسحب يمثل العمولات المسواة والمتاحة للصرف الفعلي، بينما الرصيد الحالي يمثل إجمالي الرصيد الدفتري (العمولات المستلمة − المسحوبات).');
 
                 // Style Header and Statistics
                 $sheet->getStyle('A1:G8')->applyFromArray([
@@ -132,6 +162,9 @@ class InvestorPersonalWalletExport implements FromCollection, WithHeadings, With
 
                 $sheet->getRowDimension(1)->setRowHeight(40);
                 $sheet->getRowDimension(2)->setRowHeight(30);
+                $sheet->getRowDimension(6)->setRowHeight(28);
+                $sheet->getRowDimension(7)->setRowHeight(32);
+                $sheet->getRowDimension(8)->setRowHeight(22);
 
                 $sheet->getStyle('C1:G2')->applyFromArray([
                     'font' => ['size' => 14, 'bold' => true],
@@ -141,15 +174,95 @@ class InvestorPersonalWalletExport implements FromCollection, WithHeadings, With
                     ]
                 ]);
 
-                $sheet->getStyle('A6:G6')->applyFromArray([
+                // Summary Side Box (A6:A7)
+                $sheet->getStyle('A6:A7')->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => '1E293B']],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'D5E8D4']
+                        'startColor' => ['rgb' => 'E2E8F0']
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'wrapText' => true
                     ],
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
-                            'color' => ['rgb' => 'CCCCCC']
+                            'color' => ['rgb' => 'CBD5E1']
+                        ]
+                    ]
+                ]);
+
+                // Row 6 styling
+                $sheet->getStyle('B6:G6')->applyFromArray([
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'F1F5F9']
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => 'CBD5E1']
+                        ]
+                    ]
+                ]);
+                $sheet->getStyle('C6')->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => '059669']]]);
+                $sheet->getStyle('E6')->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => 'DC2626']]]);
+                $sheet->getStyle('G6')->applyFromArray(['font' => ['bold' => true, 'color' => ['rgb' => '2563EB']]]);
+
+                // Row 7 (Withdrawable Balance) styling
+                $sheet->getStyle('B7:D7')->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => '065F46']],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'D1FAE5']
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => 'A7F3D0']
+                        ]
+                    ]
+                ]);
+
+                $sheet->getStyle('E7:G7')->applyFromArray([
+                    'font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => '047857']],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'A7F3D0']
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_MEDIUM,
+                            'color' => ['rgb' => '10B981']
+                        ]
+                    ]
+                ]);
+
+                // Row 8 (Note) styling
+                $sheet->getStyle('A8:G8')->applyFromArray([
+                    'font' => ['bold' => false, 'italic' => true, 'size' => 9.5, 'color' => ['rgb' => '64748B']],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'F8FAFC']
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => 'E2E8F0']
                         ]
                     ]
                 ]);

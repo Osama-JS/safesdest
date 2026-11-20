@@ -326,6 +326,14 @@
                     </a>
                 </li>
 
+                @if (Auth::check() && !Auth::user()->investor && Auth::user()->can('access_my_commission_wallet'))
+                <li>
+                    <a class="dropdown-item" href="{{ route('admin.my-wallet.index') }}">
+                        <i class="ti ti-wallet me-3 ti-md"></i><span class="align-middle">{{ __('My Commission Wallet') }}</span>
+                    </a>
+                </li>
+                @endif
+
                 @if (Auth::check() && Laravel\Jetstream\Jetstream::hasApiFeatures())
                     <li>
                         <a class="dropdown-item" href="{{ route('api-tokens.index') }}">

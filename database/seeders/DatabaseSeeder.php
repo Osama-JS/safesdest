@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
           ForceUpdateTasksPermissionSeeder::class,
           ActivityLogPermissionSeeder::class,
           GoTechPermissionsSeeder::class,
+          UserCommissionWalletPermissionSeeder::class,
         ]);
 
         Customer::factory()->count(10)->create();

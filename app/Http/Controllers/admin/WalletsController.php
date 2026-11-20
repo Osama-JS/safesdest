@@ -817,7 +817,8 @@ class WalletsController extends Controller
           'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf,doc,docx|max:4096',
           'maturity' => 'nullable|date',
           'task_id' => 'nullable|exists:tasks,id',
-          'payment_method' => 'nullable|string|in:manual,hyperpay'
+          'payment_method' => 'nullable|string|in:manual,hyperpay',
+          'customer_invoice_id' => 'nullable|exists:customer_invoices,id'
         ]);
 
         if ($validator->fails()) {
@@ -841,7 +842,7 @@ class WalletsController extends Controller
                     }
                 }
                 
-                if ($req->amount < $totalSettlementNeeded) {
+                if (!$req->filled('customer_invoice_id') && $req->amount < $totalSettlementNeeded) {
                     return response()->json([
                         'status' => 2,
                         'error'  => 'المبلغ المدخل أقل من إجمالي المبالغ للمهام المحددة للتسوية.'
@@ -1032,15 +1033,59 @@ class WalletsController extends Controller
                 $data['wallet_id'] = $req->wallet;
                 $data['user_id'] = auth()->id();
                 $data['task_id'] = $req->task_id;
-                Wallet_Transaction::create($data);
-                
+                if ($req->filled('customer_invoice_id')) {
+                    $data['customer_invoice_id'] = $req->customer_invoice_id;
+                }
+                $createdTransaction = Wallet_Transaction::create($data);
+
+                // --- Customer Invoice Auto-Settlement ---
+                $paidInvoiceObj = null;
+                if ($req->type === 'credit' && $req->filled('customer_invoice_id')) {
+                    $invoice = \App\Models\CustomerInvoice::findOrFail($req->customer_invoice_id);
+                    if ($invoice->status !== 'approved' || (float) $invoice->remaining_amount <= 0) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 2,
+                            'error'  => __('الفاتورة المختارة غير جاهزة للسداد أو أنها مغلقة أو مرفوضة/ملغاة.')
+                        ]);
+                    }
+
+                    if ($invoice->wallet_id == $wallet->id || $invoice->customer_id == $wallet->customer_id) {
+                        $invoiceService = app(\App\Services\CustomerInvoiceService::class);
+
+                        $paymentAmount = (float) min($req->amount, $invoice->remaining_amount);
+                        if ($paymentAmount > 0) {
+                            $invoiceNotes = "سداد عبر محفظة العميل (حركة إيداع رقم #{$createdTransaction->id}) " . ($req->description ? ' | ' . $req->description : '');
+                            // Passing $req->file('image') so markAsPaid saves a copy in customer_invoices/receipts
+                            $paidInvoiceObj = $invoiceService->markAsPaid(
+                                $invoice,
+                                $paymentAmount,
+                                now()->format('Y-m-d'),
+                                $invoiceNotes,
+                                $req->file('image')
+                            );
+                        }
+                    }
+                }
+
                 // --- Investment Settlement Engine ---
+                $tasksToSettle = $req->settlement_tasks ?? [];
+                if ($paidInvoiceObj) {
+                    $invoiceFundedTxIds = $paidInvoiceObj->items()
+                        ->whereHas('task', fn($q) => $q->whereNotNull('investor_id'))
+                        ->whereHas('walletTransaction', fn($q) => $q->where('is_settled', false))
+                        ->pluck('wallet_transaction_id')
+                        ->toArray();
+
+                    $tasksToSettle = array_values(array_unique(array_merge($tasksToSettle, $invoiceFundedTxIds)));
+                }
+
                 $settledInvestorsData = [];
-                if ($req->type === 'credit' && $req->has('settlement_tasks') && is_array($req->settlement_tasks)) {
+                if ($req->type === 'credit' && !empty($tasksToSettle) && is_array($tasksToSettle)) {
                     $creditAmount = clone $req;
                     $remainingCredit = $creditAmount->amount;
                     
-                    foreach ($req->settlement_tasks as $debitTxId) {
+                    foreach ($tasksToSettle as $debitTxId) {
                         if ($remainingCredit <= 0) break;
                         
                         $debitTx = Wallet_Transaction::with('task')->find($debitTxId);
@@ -1147,9 +1192,17 @@ class WalletsController extends Controller
                     'wallet_adjustment'
                 );
             }
+
+            $successMsg = __('Transaction saved successfully');
+            if (isset($paidInvoiceObj) && $paidInvoiceObj) {
+                $statusText = $paidInvoiceObj->status === 'paid' ? 'تم سدادها بالكامل وإغلاقها' : 'تم سداد جزء منها (المتبقي: ' . number_format($paidInvoiceObj->remaining_amount, 2) . ' ر.س)';
+                $successMsg .= " | تم تسديد الفاتورة المحاسبية ({$paidInvoiceObj->invoice_number}): {$statusText}.";
+            }
+
             return response()->json([
                 'status'  => 1,
-                'success' => __('Transaction saved successfully'),
+                'success' => $successMsg,
+                'invoice' => isset($paidInvoiceObj) ? $paidInvoiceObj : null,
             ]);
 
         } catch (\Exception $ex) {
@@ -1612,7 +1665,7 @@ class WalletsController extends Controller
     public function fetchUnsettledTasks($walletId)
     {
         try {
-            $unsettledDebits = Wallet_Transaction::with(['task', 'task.investor'])
+            $unsettledDebits = Wallet_Transaction::with(['task', 'task.investor', 'customerInvoice'])
                 ->where('wallet_id', $walletId)
                 ->where('transaction_type', 'debit')
                 ->where('is_settled', false)
@@ -1638,13 +1691,74 @@ class WalletsController extends Controller
                 $isSettledByAdmin = $settledInfo && $settledInfo->total_settled > 0;
 
                 return [
-                    'transaction_id' => $transaction->id,
-                    'task_id' => $transaction->task_id,
-                    'unpaid_amount' => $transaction->amount - $transaction->settled_amount,
-                    'investor_name' => $transaction->task->investor->name ?? 'غير معروف',
+                    'transaction_id'      => $transaction->id,
+                    'task_id'             => $transaction->task_id,
+                    'unpaid_amount'       => $transaction->amount - $transaction->settled_amount,
+                    'investor_name'       => $transaction->task->investor->name ?? 'غير معروف',
+                    'customer_invoice_id' => $transaction->customer_invoice_id,
+                    'invoice_number'      => $transaction->customerInvoice ? $transaction->customerInvoice->invoice_number : null,
                     'is_settled_by_admin' => $isSettledByAdmin,
-                    'admin_settled_amount' => $settledInfo ? (float) $settledInfo->total_settled : 0,
-                    'admin_settled_note' => $settledInfo ? $settledInfo->note : null,
+                    'admin_settled_amount'=> $settledInfo ? (float) $settledInfo->total_settled : 0,
+                    'admin_settled_note'  => $settledInfo ? $settledInfo->note : null,
+                ];
+            });
+
+            return response()->json(['status' => 1, 'data' => $data]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * جلب الفواتير المحاسبية المتاحة للسداد لمحفظة العميل
+     */
+    public function fetchPayableInvoices($walletId)
+    {
+        try {
+            $wallet = Wallet::findOrFail($walletId);
+            if ($wallet->user_type !== 'customer') {
+                return response()->json(['status' => 1, 'data' => []]);
+            }
+
+            // جلب الفواتير الجاهزة للسداد فقط (معتمدة ومتبقي عليها مبالغ) مع استبعاد المغلقة (المسددة) أو المرفوضة/الملغاة
+            $invoices = \App\Models\CustomerInvoice::with(['items.task.investor', 'items.walletTransaction'])
+                ->where('wallet_id', $walletId)
+                ->where('status', 'approved')
+                ->where('remaining_amount', '>', 0)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            $data = $invoices->map(function ($inv) {
+                $fundedTasks = [];
+                $fundedTasksTotal = 0;
+                foreach ($inv->items as $item) {
+                    $task = $item->task;
+                    $tx = $item->walletTransaction;
+                    if ($task && $task->investor_id && $tx && !$tx->is_settled) {
+                        $unpaid = (float) ($tx->amount - $tx->settled_amount);
+                        $fundedTasks[] = [
+                            'task_id'        => $task->id,
+                            'transaction_id' => $tx->id,
+                            'amount'         => $unpaid,
+                            'investor_name'  => $task->investor?->name ?? 'مستثمر',
+                        ];
+                        $fundedTasksTotal += $unpaid;
+                    }
+                }
+
+                return [
+                    'id'                 => $inv->id,
+                    'invoice_number'     => $inv->invoice_number,
+                    'issue_date'         => $inv->issue_date ? $inv->issue_date->format('Y-m-d') : null,
+                    'due_date'           => $inv->due_date ? $inv->due_date->format('Y-m-d') : null,
+                    'total_amount'       => (float) $inv->total_amount,
+                    'paid_amount'        => (float) $inv->paid_amount,
+                    'remaining_amount'   => (float) $inv->remaining_amount,
+                    'status'             => $inv->status,
+                    'status_label'       => 'معتمدة وجاهزة للسداد',
+                    'funded_tasks'       => $fundedTasks,
+                    'funded_tasks_count' => count($fundedTasks),
+                    'funded_tasks_total' => $fundedTasksTotal,
                 ];
             });
 

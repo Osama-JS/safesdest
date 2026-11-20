@@ -530,6 +530,49 @@ $(function () {
     window.openNotificationModal(customerId, 'customer', customerName);
   });
 
+  // Cached users for commissions modal
+  let cachedUsers = null;
+
+  function loadUsersForCommissions(callback) {
+    if (cachedUsers !== null) {
+      if (typeof callback === 'function') callback(cachedUsers);
+      return;
+    }
+
+    $.get(baseUrl + 'admin/users/data?all=1', function (response) {
+      cachedUsers = response.data || [];
+      if (typeof callback === 'function') callback(cachedUsers);
+    }).fail(function () {
+      if (typeof callback === 'function') callback([]);
+    });
+  }
+
+  function buildUserOptionsHtml(selectedId = null) {
+    let options = `<option value="">${__('Select User')}</option>`;
+    if (cachedUsers && cachedUsers.length > 0) {
+      cachedUsers.forEach(function (user) {
+        const isSelected = selectedId && String(selectedId) === String(user.id) ? ' selected' : '';
+        options += `<option value="${user.id}"${isSelected}>${user.name}</option>`;
+      });
+    }
+    return options;
+  }
+
+  function initUserSelect2($container) {
+    $container.find('.user-select').each(function () {
+      const $select = $(this);
+      if ($select.hasClass('select2-hidden-accessible')) {
+        $select.select2('destroy');
+      }
+      $select.select2({
+        placeholder: __('Select User'),
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#commissionsModal')
+      });
+    });
+  }
+
   // Manage Commissions
   $(document).on('click', '.manage-commissions', function () {
     var customerId = $(this).data('id');
@@ -544,117 +587,129 @@ $(function () {
 
   // Load Customer Commissions
   function loadCustomerCommissions(customerId) {
-    $.get(baseUrl + 'admin/commissions/customer/' + customerId, function (response) {
-      var commissionsHtml = '';
-      var data = response.data || [];
+    $('#commissions-container').html(`
+      <div class="text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    `);
 
-      if (data.length > 0) {
-        data.forEach(function (commission, index) {
-          commissionsHtml += `
-            <div class="commission-item border rounded p-3 mb-3" data-commission-id="${commission.id}">
-              <div class="row align-items-center">
-                <div class="col-md-4">
-                  <label class="form-label">${__('User')}</label>
-                  <select class="form-select user-select" name="commissions[${index}][user_id]" required>
-                    <option value="">${__('Select User')}</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label">${__('Commission Type')}</label>
-                  <select class="form-select commission-type" name="commissions[${index}][commission_type]" required>
-                    <option value="percentage" ${commission.commission_type === 'percentage' ? 'selected' : ''}>${__('Percentage')}</option>
-                    <option value="fixed" ${commission.commission_type === 'fixed' ? 'selected' : ''}>${__('Fixed Amount')}</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label commission-value-label">${commission.commission_type === 'percentage' ? __('Percentage') + ' (%)' : __('Amount') + ' (SAR)'}</label>
-                  <input type="number" class="form-control commission-value" name="commissions[${index}][commission_value]" value="${commission.commission_value}" step="0.01" min="0" required>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label">&nbsp;</label>
-                  <div class="d-flex gap-2">
-                    <button type="button" class="btn  btn-icon text-danger remove-commission">
-                      <i class="ti ti-trash"></i>
-                    </button>
+    loadUsersForCommissions(function () {
+      $.get(baseUrl + 'admin/commissions/customer/' + customerId, function (response) {
+        var commissionsHtml = '';
+        var data = response.data || [];
+
+        if (data.length > 0) {
+          data.forEach(function (commission, index) {
+            commissionsHtml += `
+              <div class="commission-item border rounded p-3 mb-3" data-commission-id="${commission.id}">
+                <div class="row align-items-center">
+                  <div class="col-md-4">
+                    <label class="form-label">${__('User')}</label>
+                    <div class="position-relative">
+                      <select class="form-select user-select" name="commissions[${index}][user_id]" required>
+                        ${buildUserOptionsHtml(commission.user_id)}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">${__('Commission Type')}</label>
+                    <select class="form-select commission-type" name="commissions[${index}][commission_type]" required>
+                      <option value="percentage" ${commission.commission_type === 'percentage' ? 'selected' : ''}>${__('Percentage')}</option>
+                      <option value="fixed" ${commission.commission_type === 'fixed' ? 'selected' : ''}>${__('Fixed Amount')}</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label commission-value-label">${commission.commission_type === 'percentage' ? __('Percentage') + ' (%)' : __('Amount') + ' (SAR)'}</label>
+                    <input type="number" class="form-control commission-value" name="commissions[${index}][commission_value]" value="${commission.commission_value}" step="0.01" min="0" required>
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                      <button type="button" class="btn btn-icon text-danger remove-commission">
+                        <i class="ti ti-trash"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
+                <input type="hidden" name="commissions[${index}][id]" value="${commission.id}">
               </div>
-              <input type="hidden" name="commissions[${index}][id]" value="${commission.id}">
-            </div>
-          `;
-        });
-      }
+            `;
+          });
+        }
 
-      $('#commissions-container').html(commissionsHtml);
-      loadUsersForSelects();
-
-      // Set selected users
-      $(document).on('usersLoaded', function () {
-        data.forEach(function (commission, index) {
-          $(`.commission-item[data-commission-id="${commission.id}"] .user-select`)
-            .val(commission.user_id)
-            .trigger('change');
-        });
+        $('#commissions-container').html(commissionsHtml);
+        initUserSelect2($('#commissions-container'));
       });
-    });
-  }
-
-  // Load Users for Select Dropdowns
-  function loadUsersForSelects() {
-    $.get(baseUrl + 'admin/users/data?all=1', function (response) {
-      var usersOptions = '<option value="">' + __('Select User') + '</option>';
-      response.data.forEach(function (user) {
-        usersOptions += `<option value="${user.id}">${user.name}</option>`;
-      });
-      $('.user-select').html(usersOptions);
-      $(document).trigger('usersLoaded');
     });
   }
 
   // Add New Commission
   $(document).on('click', '#add-commission', function () {
-    var index = $('.commission-item').length;
-    var newCommissionHtml = `
-      <div class="commission-item border rounded p-3 mb-3">
-        <div class="row align-items-center">
-          <div class="col-md-4">
-            <label class="form-label">${__('User')}</label>
-            <select class="form-select user-select" name="commissions[${index}][user_id]" required>
-              <option value="">${__('Select User')}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">${__('Commission Type')}</label>
-            <select class="form-select commission-type" name="commissions[${index}][commission_type]" required>
-              <option value="percentage">${__('Percentage')}</option>
-              <option value="fixed">${__('Fixed Amount')}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label commission-value-label">${__('Percentage')} (%)</label>
-            <input type="number" class="form-control commission-value" name="commissions[${index}][commission_value]" step="0.01" min="0" required>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-sm btn-danger remove-commission">
-                <i class="ti ti-trash"></i>
-              </button>
+    loadUsersForCommissions(function () {
+      var index = $('.commission-item').length;
+      var newCommissionHtml = `
+        <div class="commission-item border rounded p-3 mb-3">
+          <div class="row align-items-center">
+            <div class="col-md-4">
+              <label class="form-label">${__('User')}</label>
+              <div class="position-relative">
+                <select class="form-select user-select" name="commissions[${index}][user_id]" required>
+                  ${buildUserOptionsHtml()}
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">${__('Commission Type')}</label>
+              <select class="form-select commission-type" name="commissions[${index}][commission_type]" required>
+                <option value="percentage">${__('Percentage')}</option>
+                <option value="fixed">${__('Fixed Amount')}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label commission-value-label">${__('Percentage')} (%)</label>
+              <input type="number" class="form-control commission-value" name="commissions[${index}][commission_value]" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">&nbsp;</label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-icon text-danger remove-commission">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
+          <input type="hidden" name="commissions[${index}][id]" value="">
         </div>
-        <input type="hidden" name="commissions[${index}][id]" value="">
-      </div>
-    `;
+      `;
 
-    $('#commissions-container').append(newCommissionHtml);
-    loadUsersForSelects();
+      var $newItem = $(newCommissionHtml);
+      $('#commissions-container').append($newItem);
+      initUserSelect2($newItem);
+    });
   });
 
   // Remove Commission
   $(document).on('click', '.remove-commission', function () {
-    $(this).closest('.commission-item').remove();
+    var $item = $(this).closest('.commission-item');
+    $item.find('.user-select').each(function () {
+      if ($(this).hasClass('select2-hidden-accessible')) {
+        $(this).select2('destroy');
+      }
+    });
+    $item.remove();
     updateCommissionIndexes();
+  });
+
+  // Clean up commissions modal on hide
+  $('#commissionsModal').on('hidden.bs.modal', function () {
+    $('#commissions-container .user-select').each(function () {
+      if ($(this).hasClass('select2-hidden-accessible')) {
+        $(this).select2('destroy');
+      }
+    });
+    $('#commissions-container').empty();
   });
 
   // Update Commission Type Label
@@ -688,6 +743,26 @@ $(function () {
   // Save Commissions
   $(document).on('submit', '#commissionsForm', function (e) {
     e.preventDefault();
+
+    var isValid = true;
+    var $items = $('#commissions-container .commission-item');
+    $items.each(function () {
+      var userId = $(this).find('.user-select').val();
+      var val = $(this).find('.commission-value').val();
+      if (!userId) {
+        isValid = false;
+        showAlert('error', __('Please select a user for each commission.'));
+        return false;
+      }
+      if (val === '' || isNaN(val) || parseFloat(val) < 0) {
+        isValid = false;
+        showAlert('error', __('Please enter a valid commission value.'));
+        return false;
+      }
+    });
+
+    if (!isValid) return;
+
     var formData = new FormData(this);
 
     $.ajax({

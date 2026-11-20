@@ -354,69 +354,21 @@
     </div>
     @endif
 
-    @php
-        $investorSignaturePath = null;
-        if ($user && $user->signature_image) {
-            $cleanPath = preg_replace('/^storage\//', '', $user->signature_image);
-            $possiblePaths = [
-                public_path('storage/' . $cleanPath),
-                storage_path('app/public/' . $cleanPath),
-                storage_path('app/' . $cleanPath),
-            ];
-            foreach ($possiblePaths as $path) {
-                if (file_exists($path) && is_file($path)) {
-                    $investorSignaturePath = $path;
-                    break;
-                }
-            }
-        }
-
-        $performerSignaturePath = null;
-        if ($performer && $performer->signature_image) {
-            $cleanPath = preg_replace('/^storage\//', '', $performer->signature_image);
-            $possiblePaths = [
-                public_path('storage/' . $cleanPath),
-                storage_path('app/public/' . $cleanPath),
-                storage_path('app/' . $cleanPath),
-            ];
-            foreach ($possiblePaths as $path) {
-                if (file_exists($path) && is_file($path)) {
-                    $performerSignaturePath = $path;
-                    break;
-                }
-            }
-        }
-    @endphp
-
     {{-- Footer --}}
     <footer>
-        <table class="signature-row" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <table class="signature-row" style="width: 100%; border-collapse: collapse; margin-top: 30px;">
             <tr>
                 <td style="width: 50%; padding: 10px; vertical-align: top; text-align: right;">
-                    <div class="signature-label">توقيع المضارب</div>
-                    <div class="signature-box" style="width: 100%;">
-                        @if($investorSignaturePath)
-                            <img src="{{ $investorSignaturePath }}" style="max-height: 100%; max-width: 100%;">
-                        @else
-                            <div class="signature-note">لا يوجد توقيع إلكتروني للمستثمر</div>
-                        @endif
-                    </div>
-                    <div class="signature-name" style="font-size:18px;">{{ $user->name }}</div>
+                    <div class="signature-label" style="font-size: 15px; font-weight: 800; color: #1a2733; margin-bottom: 8px;">المضارب</div>
+                    <div class="signature-name" style="font-size: 16px; font-weight: 700; color: #2c3e50;">{{ $user->name }}</div>
                 </td>
                 <td style="width: 50%; padding: 10px; vertical-align: top; text-align: left;">
-                    <div class="signature-label">توقيع المحاسب</div>
-                    <div class="signature-box" style="width: 100%;">
-                        @if($performerSignaturePath)
-                            <img src="{{ $performerSignaturePath }}" style="max-height: 100%; max-width: 100%;">
-                        @else
-                            <div class="signature-note">لا يوجد توقيع إلكتروني للمحاسب</div>
-                        @endif
-                    </div>
-                    <div class="signature-name" style="font-size:18px;">{{ $performer?->name ?? 'غير معروف' }}</div>
+                    <div class="signature-label" style="font-size: 15px; font-weight: 800; color: #1a2733; margin-bottom: 8px;">المدير التنفيذي</div>
+                    <div class="signature-name" style="font-size: 16px; font-weight: 700; color: #2c3e50;">نواف محمد العمري</div>
                 </td>
             </tr>
         </table>
-        <div style="margin-top: 25px; font-size: 10px; color: #888;">
+        <div style="margin-top: 35px; font-size: 10px; color: #888;">
             هذا المستند تم توليده آلياً من نظام SafeDest بتاريخ {{ now()->format('Y-m-d H:i') }}
         </div>
     </footer>

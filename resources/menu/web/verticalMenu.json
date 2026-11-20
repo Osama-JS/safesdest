@@ -8,6 +8,14 @@
             "isactive": "dashboard-isactive"
         },
         {
+            "url": "admin/my-wallet",
+            "name": "My Commission Wallet",
+            "icon": "menu-icon tf-icons ti ti-wallet",
+            "slug": "admin.my-wallet.index",
+            "isactive": "my-wallet-isactive",
+            "permission": "access_my_commission_wallet"
+        },
+        {
             "url": "admin/tasks",
             "name": "Tasks",
             "icon": "menu-icon tf-icons ti ti-truck-delivery",

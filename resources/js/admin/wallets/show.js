@@ -281,6 +281,10 @@ $(function () {
 
   document.addEventListener('formSubmitted', function (event) {
     $('.form_submit').trigger('reset');
+    if ($('#settlement_customer_invoice_id').length) {
+      $('#settlement_customer_invoice_id').val('').trigger('change');
+    }
+    $('#invoiceFundedTasksNotice').hide();
 
     setTimeout(() => {
       $('#submitModal').modal('hide');
@@ -288,6 +292,15 @@ $(function () {
 
     if (dt_data) {
       dt_data.draw();
+    }
+
+    if (typeof dt_invoices !== 'undefined' && dt_invoices) {
+      dt_invoices.ajax.reload(null, false);
+    }
+
+    if (typeof walletUserType !== 'undefined' && walletUserType === 'customer') {
+      if (typeof fetchPayableInvoices === 'function') fetchPayableInvoices();
+      if (typeof fetchUnsettledTasks === 'function') fetchUnsettledTasks();
     }
   });
   document.addEventListener('deletedSuccess', function (event) {
@@ -425,8 +438,18 @@ $(function () {
     $('#payment-method-group').hide();
     $('#manual-hyperpay-bank-details').hide();
 
+    if ($('#settlement_customer_invoice_id').length) {
+      $('#settlement_customer_invoice_id').val('').trigger('change');
+    }
+
     $('#trans_id').val('');
     $('#modelTitle').html('Add New Transaction');
+  });
+
+  $('#submitModal').on('shown.bs.modal', function () {
+    if ($('#settlement-panel').is(':visible')) {
+      initInvoiceSelect2();
+    }
   });
 
   // Payment Request Handler
@@ -1109,27 +1132,197 @@ $(function () {
   
   // --- Investment Settlement Settings Logic ---
   let unsettledTasks = [];
+  let payableInvoices = [];
 
   $('#toggleSettlementPanelBtn').on('click', function() {
     const panel = $('#settlement-panel');
     if (panel.is(':visible')) {
       panel.slideUp();
     } else {
-      panel.slideDown();
+      panel.slideDown(200, function() {
+        initInvoiceSelect2();
+      });
       fetchUnsettledTasks();
+      fetchPayableInvoices();
     }
   });
 
+  function initInvoiceSelect2() {
+    const select = $('#settlement_customer_invoice_id');
+    if (!select.length) return;
+    if (select.data('select2')) {
+      select.select2('destroy');
+    }
+    select.select2({
+      placeholder: '-- بدون ربط بفاتورة (تسوية يدوية مباشرة) --',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('#submitModal')
+    });
+
+    const select2 = select.data('select2');
+    if (select2 && select2.dropdown) {
+      // Force Select2 dropdown to always position downwards (below the select input)
+      select2.dropdown._positionDropdown = function() {
+        var offset = this.$container.offset();
+        var container = {
+          height: this.$container.outerHeight(false),
+          top: offset.top
+        };
+        container.bottom = offset.top + container.height;
+
+        var $offsetParent = this.$dropdownParent;
+        if ($offsetParent.css('position') === 'static') {
+          $offsetParent = $offsetParent.offsetParent();
+        }
+
+        var parentOffset = { top: 0, left: 0 };
+        if ($.contains(document.body, $offsetParent[0]) || ($offsetParent[0] && $offsetParent[0].isConnected)) {
+          parentOffset = $offsetParent.offset();
+        }
+
+        var css = {
+          left: offset.left - parentOffset.left,
+          top: container.bottom - parentOffset.top
+        };
+
+        this.$dropdown
+          .removeClass('select2-dropdown--above')
+          .addClass('select2-dropdown--below');
+        this.$container
+          .removeClass('select2-container--above')
+          .addClass('select2-container--below');
+
+        this.$dropdownContainer.css(css);
+      };
+    }
+
+    select.off('select2:open.forceBelow').on('select2:open.forceBelow', function() {
+      const select2Instance = $(this).data('select2');
+      if (select2Instance && select2Instance.dropdown) {
+        select2Instance.dropdown._positionDropdown();
+      }
+    });
+  }
+
+  function fetchPayableInvoices() {
+    $('#invoiceLoadingSpinner').show();
+    $.get(baseUrl + 'admin/wallets/' + walletId + '/fetch-payable-invoices', function(response) {
+      $('#invoiceLoadingSpinner').hide();
+      if (response.status === 1) {
+        payableInvoices = response.data || [];
+        renderPayableInvoicesDropdown();
+      }
+    }).fail(function() {
+      $('#invoiceLoadingSpinner').hide();
+    });
+  }
+
+  function renderPayableInvoicesDropdown() {
+    const select = $('#settlement_customer_invoice_id');
+    const currentVal = select.val();
+    select.empty();
+    select.append('<option value="">-- بدون ربط بفاتورة (تسوية يدوية مباشرة) --</option>');
+
+    if (payableInvoices.length === 0) {
+      select.append('<option value="" disabled>لا توجد فواتير محاسبية جاهزة للسداد</option>');
+    } else {
+      payableInvoices.forEach(function(inv) {
+        const fundedText = inv.funded_tasks_count > 0 
+          ? ` | تتضمن ${inv.funded_tasks_count} مهام ممولة (${parseFloat(inv.funded_tasks_total).toFixed(2)} ر.س)`
+          : '';
+        const opt = $(`<option value="${inv.id}">فاتورة #${inv.invoice_number} (المتبقي: ${parseFloat(inv.remaining_amount).toFixed(2)} ر.س${fundedText})</option>`);
+        select.append(opt);
+      });
+    }
+
+    initInvoiceSelect2();
+
+    if (currentVal && payableInvoices.some(function(i) { return String(i.id) === String(currentVal); })) {
+      select.val(currentVal).trigger('change');
+    } else {
+      select.val('').trigger('change');
+    }
+  }
+
+  // When invoice selection changes
+  $('#settlement_customer_invoice_id').on('change', function() {
+    const selectedId = $(this).val();
+    const notice = $('#invoiceFundedTasksNotice');
+
+    if (!selectedId) {
+      notice.slideUp();
+      $('.settlement-task-row').removeClass('table-primary');
+      autoSelectSettlementTasks();
+      return;
+    }
+
+    const inv = payableInvoices.find(function(i) { return String(i.id) === String(selectedId); });
+    if (!inv) return;
+
+    // Fill credit amount with invoice remaining amount
+    $('#trans_amount').val(parseFloat(inv.remaining_amount).toFixed(2)).trigger('input');
+
+    // Display the notice with funded tasks info
+    const noticeTitle = $('#invoiceNoticeTitle');
+    const noticeBody = $('#invoiceNoticeBody');
+
+    noticeTitle.html(`<i class="ti ti-file-invoice me-1"></i> فاتورة محاسبية رقم #${inv.invoice_number} - إجمالي المتبقي: <strong>${parseFloat(inv.remaining_amount).toFixed(2)} ر.س</strong>`);
+    
+    if (inv.funded_tasks_count > 0) {
+      noticeBody.html(`
+        <div class="mt-1">
+          <span class="badge bg-primary me-1"><i class="ti ti-check me-1"></i> تتضمن ${inv.funded_tasks_count} مهام ممولة للمستثمرين</span>
+          بقيمة إجمالية قدرها <strong>${parseFloat(inv.funded_tasks_total).toFixed(2)} ر.س</strong>.
+        </div>
+        <div class="mt-2 text-dark">
+          <i class="ti ti-info-circle text-primary me-1"></i>
+          تم تحديد هذه المهام تلقائياً في الجدول كعرض وتنبيه. عند إتمام عملية السداد، سيتم تسوية رأس مال هذه المهام آلياً إلى محافظ الاستثمار الخاصة بالمستثمرين، وتسديد الفاتورة المحاسبية وحفظ نسخة المرفق بها فوراً.
+        </div>
+      `);
+    } else {
+      noticeBody.html(`
+        <div class="mt-1">
+          <i class="ti ti-info-circle text-primary me-1"></i>
+          هذه الفاتورة لا تحتوي على مهام ممولة من مستثمرين. سيتم تسجيل سداد الفاتورة المحاسبية وحفظ نسخة المرفق فيها وتحديث رصيد العميل مباشرة.
+        </div>
+      `);
+    }
+
+    notice.slideDown();
+
+    // In the table, check and highlight only tasks belonging to this invoice
+    $('.settlement-task-checkbox').prop('checked', false);
+    $('.settlement-task-row').removeClass('table-primary');
+
+    $('.settlement-task-row').each(function() {
+      const rowInvoiceId = $(this).data('invoice-id');
+      if (String(rowInvoiceId) === String(inv.id)) {
+        $(this).addClass('table-primary');
+        $(this).find('.settlement-task-checkbox').prop('checked', true);
+      }
+    });
+
+    updateSettlementTotal();
+  });
+
   function fetchUnsettledTasks() {
-    $('#settlement-tasks-tbody').html('<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري التحميل...</td></tr>');
+    $('#settlement-tasks-tbody').html('<tr><td colspan="6" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> جاري تحميل المهام الممولة...</td></tr>');
     
     $.get(baseUrl + 'admin/wallets/' + walletId + '/fetch-unsettled-tasks', function(response) {
       if (response.status === 1) {
         unsettledTasks = response.data;
+        $('#settlement-tasks-count-badge').text(unsettledTasks.length);
         renderSettlementTasks();
-        autoSelectSettlementTasks();
+        
+        // If an invoice is currently selected, re-apply its selection
+        if ($('#settlement_customer_invoice_id').val()) {
+          $('#settlement_customer_invoice_id').trigger('change');
+        } else {
+          autoSelectSettlementTasks();
+        }
       } else {
-        $('#settlement-tasks-tbody').html('<tr><td colspan="5" class="text-center text-danger">حدث خطأ أثناء جلب المهام</td></tr>');
+        $('#settlement-tasks-tbody').html('<tr><td colspan="6" class="text-center text-danger py-3">حدث خطأ أثناء جلب المهام</td></tr>');
       }
     });
   }
@@ -1142,36 +1335,41 @@ $(function () {
     $('#settlementTasksNoResults').remove();
     
     if (unsettledTasks.length === 0) {
-      tbody.html('<tr><td colspan="5" class="text-center text-muted">لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
+      tbody.html('<tr><td colspan="6" class="text-center text-muted py-4"><i class="ti ti-check text-success fs-3 d-block mb-1"></i> لا توجد مهام ديون غير مسددة مرتبطة بمستثمرين</td></tr>');
       return;
     }
     
     unsettledTasks.forEach(function(task, index) {
       const isSettledByAdmin = task.is_settled_by_admin;
       const statusBadge = isSettledByAdmin 
-        ? `<span class="badge bg-label-success fw-bold" title="تمت تسوية رأس مال هذه المهمة للمستثمر مسبقاً من قبل الإدارة، ولن يتم تكرار الصرف للمستثمر">
+        ? `<span class="badge bg-label-success fw-bold" title="تمت تسوية رأس مال هذه المهمة للمستثمر مسبقاً من قبل الإدارة">
              <i class="ti ti-shield-check me-1"></i>تمت التسوية من الإدارة
            </span>
            <small class="d-block text-success mt-1" style="font-size: 0.72rem;">
-             (لن يتم تكرار الصرف في محفظة الاستثمار)
+             (لن يتم تكرار الصرف للمستثمر)
            </small>`
-        : `<span class="badge bg-label-secondary" title="سيتم إرجاع رأس المال للمستثمر تلقائياً عند إتمام هذه التسوية">
-             <i class="ti ti-clock me-1"></i>بانتظار التسوية
+        : `<span class="badge bg-label-warning fw-bold" title="سيتم إرجاع رأس المال للمستثمر تلقائياً عند إتمام هذه التسوية">
+             <i class="ti ti-clock-hour-4 me-1"></i>بانتظار التسوية
            </span>
-           <small class="d-block text-muted mt-1" style="font-size: 0.72rem;">
+           <small class="d-block text-primary mt-1" style="font-size: 0.72rem;">
              (سيُعاد للمستثمر تلقائياً)
            </small>`;
 
+      const invoiceBadge = task.customer_invoice_id 
+        ? `<span class="badge bg-label-info fw-bold" title="مربوطة بالفاتورة المحاسبية"><i class="ti ti-file-invoice me-1"></i>#${task.invoice_number || task.customer_invoice_id}</span>`
+        : `<span class="text-muted small">—</span>`;
+
       const tr = `
-        <tr class="settlement-task-row ${isSettledByAdmin ? 'table-success bg-opacity-10' : ''}" data-task-id="${task.task_id}">
-          <td>
+        <tr class="settlement-task-row ${isSettledByAdmin ? 'table-success bg-opacity-10' : ''}" data-task-id="${task.task_id}" data-invoice-id="${task.customer_invoice_id || ''}">
+          <td class="text-center">
             <input type="checkbox" class="form-check-input settlement-task-checkbox" data-id="${task.transaction_id}" data-amount="${task.unpaid_amount}" value="${task.transaction_id}">
           </td>
           <td>
-            <span class="fw-bold">#${task.task_id}</span>
+            <span class="fw-bold text-primary font-monospace">#${task.task_id}</span>
           </td>
-          <td class="fw-semibold">${parseFloat(task.unpaid_amount).toFixed(2)}</td>
-          <td>${task.investor_name}</td>
+          <td class="fw-bold text-dark font-monospace">${parseFloat(task.unpaid_amount).toFixed(2)} <small class="text-muted">ر.س</small></td>
+          <td class="fw-semibold text-heading">${task.investor_name}</td>
+          <td>${invoiceBadge}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -1203,7 +1401,7 @@ $(function () {
 
     if (visibleCount === 0 && $('#settlement-tasks-tbody tr.settlement-task-row').length > 0) {
       if ($('#settlementTasksNoResults').length === 0) {
-        $('#settlement-tasks-tbody').append('<tr id="settlementTasksNoResults"><td colspan="5" class="text-center text-muted py-3"><i class="ti ti-search-off me-1"></i> لا توجد مهام مطابقة لرقم المهمة</td></tr>');
+        $('#settlement-tasks-tbody').append('<tr id="settlementTasksNoResults"><td colspan="6" class="text-center text-muted py-3"><i class="ti ti-search-off me-1"></i> لا توجد مهام مطابقة لرقم المهمة</td></tr>');
       } else {
         $('#settlementTasksNoResults').show();
       }
@@ -1220,13 +1418,16 @@ $(function () {
     const creditAmount = parseFloat($('#trans_amount').val()) || 0;
     $('#settlement-credit-amount').text(creditAmount.toFixed(2));
     
+    // If an invoice is selected, do not override with generic auto-select
+    if ($('#settlement_customer_invoice_id').val()) {
+      return;
+    }
+
     let currentTotal = 0;
     $('.settlement-task-checkbox').prop('checked', false);
     
     $('.settlement-task-checkbox').each(function() {
       const taskAmount = parseFloat($(this).data('amount'));
-      // If adding this task doesn't exceed the credit amount (or we just allow partial up to the task amount, but since it's full/partial settlement we can just check if we have enough credit)
-      // The backend will handle partial payment if needed. We just select tasks that *could* be covered.
       if (currentTotal < creditAmount) {
         $(this).prop('checked', true);
         currentTotal += taskAmount;
@@ -1238,7 +1439,14 @@ $(function () {
 
   $('#trans_amount').on('input', function() {
     if ($('#settlement-panel').is(':visible')) {
-      autoSelectSettlementTasks();
+      const creditAmount = parseFloat($(this).val()) || 0;
+      $('#settlement-credit-amount').text(creditAmount.toFixed(2));
+      
+      if (!$('#settlement_customer_invoice_id').val()) {
+        autoSelectSettlementTasks();
+      } else {
+        updateSettlementTotal();
+      }
     }
   });
 
@@ -1268,9 +1476,11 @@ $(function () {
     $('#settlement-remaining-amount').text(remaining.toFixed(2));
     
     if (remaining < 0) {
-      $('#settlement-remaining-amount').removeClass('text-success text-warning').addClass('text-danger');
+      $('#settlement-remaining-card').css({'background': '#fef2f2', 'border-color': '#fca5a5'});
+      $('#settlement-remaining-amount-text').css('color', '#991b1b');
     } else {
-      $('#settlement-remaining-amount').removeClass('text-danger text-warning').addClass('text-success');
+      $('#settlement-remaining-card').css({'background': '#fffbeb', 'border-color': '#fde68a'});
+      $('#settlement-remaining-amount-text').css('color', '#92400e');
     }
   }
 
@@ -1288,7 +1498,8 @@ $(function () {
 
       const creditAmount = parseFloat($('#trans_amount').val()) || 0;
 
-      if ($('#settlement-panel').is(':visible') && totalSelected > creditAmount) {
+      // Only warn if no invoice is selected and total selected tasks exceed credit amount
+      if ($('#settlement-panel').is(':visible') && !$('#settlement_customer_invoice_id').val() && totalSelected > creditAmount) {
         e.preventDefault();
         e.stopPropagation();
         Swal.fire({

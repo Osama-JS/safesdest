@@ -266,6 +266,13 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::get('/', [DashboardController::class, 'index'])->name('user.dashboard');
 
+                // My Commission Wallet (Personal wallet for non-investor users / brokers)
+                Route::prefix('my-wallet')->name('admin.my-wallet.')->middleware('permission:access_my_commission_wallet')->group(function () {
+                    Route::get('/', [App\Http\Controllers\admin\UserPersonalWalletController::class, 'index'])->name('index');
+                    Route::get('/export', [App\Http\Controllers\admin\UserPersonalWalletController::class, 'exportExcel'])->name('export');
+                    Route::post('/request-withdrawal', [App\Http\Controllers\admin\UserPersonalWalletController::class, 'requestWithdrawal'])->name('request-withdrawal');
+                });
+
                 // Task Invoice Download
                 Route::get('/tasks/{id}/invoice', [TasksController::class, 'downloadTaskInvoice'])->name('tasks.invoice');
 
@@ -720,6 +727,7 @@ Route::middleware('rate.limit')->group(function () {
                 Route::get('/wallets/statistics', [WalletsController::class, 'getStatistics'])->name('wallets.statistics');
                 Route::post('/wallets/update', [WalletsController::class, 'update'])->name('wallets.update');
                 Route::get('/wallets/{wallet}/fetch-unsettled-tasks', [WalletsController::class, 'fetchUnsettledTasks'])->name('wallets.fetch-unsettled-tasks');
+                Route::get('/wallets/{wallet}/fetch-payable-invoices', [WalletsController::class, 'fetchPayableInvoices'])->name('wallets.fetch-payable-invoices');
                 Route::post('/wallets/status/{id}', [WalletsController::class, 'chang_status'])->name('wallets.status');
                 Route::post('/wallets/preview/{id}', [WalletsController::class, 'change_preview'])->name('wallets.preview');
                 Route::get('/wallets/transaction/show/{id}/{name?}', [WalletsController::class, 'show'])->name('wallets.transaction');

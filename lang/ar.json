@@ -25,5 +25,6 @@
     "Total withdrawals funding": "إجمالي التمويل والمسحوبات",
     "Still in Market:": "المتبقي في السوق:",
     "Capital currently active in tasks in the market": "رأس المال المشغول حالياً في مهام بالسوق ولم يسترد بعد",
-    "Funded in active tasks and not yet returned": "ممول في مهام نشطة ولم يتم استرداده بعد"
+    "Funded in active tasks and not yet returned": "ممول في مهام نشطة ولم يتم استرداده بعد",
+    "My Commission Wallet": "محفظة عمولاتي"
 }

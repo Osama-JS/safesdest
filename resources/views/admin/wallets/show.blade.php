@@ -9,6 +9,37 @@
 
 @endsection
 
+@section('page-style')
+<style>
+    #settlement-panel .select2-container--default .select2-selection--single {
+        height: 38px;
+        padding: 4px 10px;
+        border: 1px solid #7367f0;
+        border-radius: 6px;
+        background-color: #ffffff;
+    }
+    #settlement-panel .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 28px;
+        color: #4b465c;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    #settlement-panel .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+    }
+    #settlement-panel .select2-container {
+        width: 100% !important;
+    }
+    #submitModal .select2-dropdown {
+        z-index: 1065 !important;
+        border: 1px solid #7367f0 !important;
+        border-top: none !important;
+        box-shadow: 0 8px 24px rgba(115, 103, 240, 0.15) !important;
+        border-radius: 0 0 8px 8px !important;
+    }
+</style>
+@endsection
+
 @section('vendor-script')
     @vite(['resources/assets/vendor/libs/moment/moment.js', 'resources/assets/vendor/libs/daterangepicker/daterangepicker.js', 'resources/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js', 'resources/assets/vendor/libs/select2/select2.js', 'resources/assets/vendor/libs/@form-validation/popular.js', 'resources/assets/vendor/libs/@form-validation/bootstrap5.js', 'resources/assets/vendor/libs/@form-validation/auto-focus.js', 'resources/assets/vendor/libs/cleavejs/cleave.js', 'resources/assets/vendor/libs/cleavejs/cleave-phone.js', 'resources/assets/vendor/libs/sweetalert2/sweetalert2.js', 'resources/assets/vendor/libs/block-ui/block-ui.js'])
 @endsection
@@ -318,43 +349,107 @@
                                         <!-- Investment Settlement Settings (Only visible for Credit and Customer Wallets) -->
                                         @if ($data->user_type === 'customer')
                                             <div id="investment-settlement-container" class="mb-4">
-                                                <button type="button" class="btn btn-outline-info w-100 mb-2" id="toggleSettlementPanelBtn">
-                                                    <i class="ti ti-settings me-1"></i> {{ __('Investment Settlement Settings') }}
+                                                <button type="button" class="btn btn-outline-primary w-100 mb-2 fw-bold" id="toggleSettlementPanelBtn">
+                                                    <i class="ti ti-adjustments-horizontal me-1"></i> {{ __('Investment Settlement Settings') }}
+                                                    <span class="badge bg-primary ms-1" id="settlement-tasks-count-badge">0</span>
                                                 </button>
 
-                                                <div id="settlement-panel" class="border rounded p-3 bg-light" style="display: none;">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                                                        <div>
-                                                            <h6 class="mb-0 text-primary"><i class="ti ti-list-check me-1"></i>{{ __('Unsettled Investor Tasks') }}</h6>
-                                                            <p class="small text-muted mb-0">{{ __('Select tasks to settle with this credit amount.') }}</p>
+                                                <div id="settlement-panel" class="p-3 mb-2" style="display: none; background: #ffffff; border: 1.5px solid #dbeafe; box-shadow: 0 4px 18px rgba(59, 130, 246, 0.08); border-radius: 12px;">
+                                                    
+                                                    <!-- Panel Header -->
+                                                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 pb-2 border-bottom">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar avatar-sm me-2 bg-label-primary rounded">
+                                                                <i class="ti ti-list-check fs-5"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h6 class="mb-0 text-primary fw-bold">{{ __('Unsettled Investor Tasks') }}</h6>
+                                                                <p class="small text-muted mb-0">{{ __('Select tasks to settle with this credit amount.') }}</p>
+                                                            </div>
                                                         </div>
-                                                        <div class="input-group input-group-sm" style="max-width: 250px;">
-                                                            <span class="input-group-text bg-white border-end-0"><i class="ti ti-search text-muted"></i></span>
-                                                            <input type="text" id="searchSettlementTasksInput" class="form-control border-start-0 border-end-0" placeholder="{{ __('Search by Task #...') }}">
-                                                            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearSearchSettlementTasks" style="display: none;">
+                                                        <div class="input-group input-group-sm" style="max-width: 260px;">
+                                                            <span class="input-group-text bg-white border-primary border-end-0"><i class="ti ti-search text-primary"></i></span>
+                                                            <input type="text" id="searchSettlementTasksInput" class="form-control border-primary border-start-0 border-end-0" placeholder="{{ __('Search by Task #...') }}">
+                                                            <button type="button" class="btn btn-outline-secondary border-primary border-start-0" id="clearSearchSettlementTasks" style="display: none;">
                                                                 <i class="ti ti-x"></i>
                                                             </button>
                                                         </div>
                                                     </div>
 
-                                                    <div class="d-flex justify-content-between mb-2">
-                                                        <span class="fw-bold">{{ __('Credit Amount') }}: <span id="settlement-credit-amount" class="text-success">0</span> ريال</span>
-                                                        <span class="fw-bold">{{ __('Selected Total') }}: <span id="settlement-selected-total" class="text-primary">0</span> ريال</span>
-                                                        <span class="fw-bold">{{ __('Remaining Amount') }}: <span id="settlement-remaining-amount" class="text-warning">0</span> ريال</span>
+                                                    <!-- Invoice Selection Box -->
+                                                    <div class="mb-3 p-3 rounded" style="background: #f0f7ff; border: 1.5px solid #bfdbfe;">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <label class="form-label fw-bold text-dark mb-0 d-flex align-items-center" for="settlement_customer_invoice_id">
+                                                                <i class="ti ti-file-invoice text-primary me-1 fs-5"></i>
+                                                                <span>ربط بسداد فاتورة محاسبية للعميل (اختياري)</span>
+                                                            </label>
+                                                            <span class="spinner-border spinner-border-sm text-primary" id="invoiceLoadingSpinner" style="display: none;" role="status"></span>
+                                                        </div>
+                                                        <div class="position-relative mt-2">
+                                                            <select name="customer_invoice_id" id="settlement_customer_invoice_id" class="select2 form-select border-primary bg-white shadow-none" style="width: 100%;" data-placeholder="-- بدون ربط بفاتورة (تسوية يدوية مباشرة) --" data-allow-clear="true">
+                                                                <option value="">-- بدون ربط بفاتورة (تسوية يدوية مباشرة) --</option>
+                                                            </select>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-2">
+                                                            <i class="ti ti-info-circle text-primary me-1"></i> عند اختيار الفاتورة سيتم سدادها آلياً وحفظ نسخة من المرفق فيها، وتسوية المهام الممولة التابعة لها للمستثمرين.
+                                                        </small>
                                                     </div>
 
-                                                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-                                                        <table class="table table-sm table-bordered">
-                                                            <thead class="table-dark sticky-top">
+                                                    <!-- Alert Banner for Funded Tasks in Selected Invoice -->
+                                                    <div id="invoiceFundedTasksNotice" class="alert mb-3 p-3" style="display: none; background: #eef2ff; border: 1.5px solid #c7d2fe; color: #3730a3; border-radius: 10px;">
+                                                        <div class="d-flex align-items-start gap-2">
+                                                            <i class="ti ti-bell-ringing fs-4 text-primary mt-1"></i>
+                                                            <div class="flex-grow-1">
+                                                                <div class="fw-bold mb-1" id="invoiceNoticeTitle">تنبيه بالمهام الممولة التابعة للفاتورة</div>
+                                                                <div class="small" id="invoiceNoticeBody"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Settlement Financial Summary Pills -->
+                                                    <div class="row g-2 mb-3">
+                                                        <div class="col-sm-4">
+                                                            <div class="p-2 rounded text-center" style="background: #ecfdf5; border: 1.5px solid #a7f3d0;">
+                                                                <small class="d-block text-muted">{{ __('Credit Amount') }}</small>
+                                                                <span class="fw-bold fs-6" style="color: #065f46;">
+                                                                    <span id="settlement-credit-amount">0.00</span> <small>ر.س</small>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="p-2 rounded text-center" style="background: #eff6ff; border: 1.5px solid #bfdbfe;">
+                                                                <small class="d-block text-muted">{{ __('Selected Total') }}</small>
+                                                                <span class="fw-bold fs-6" style="color: #1e40af;">
+                                                                    <span id="settlement-selected-total">0.00</span> <small>ر.س</small>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <div class="p-2 rounded text-center" id="settlement-remaining-card" style="background: #fffbeb; border: 1.5px solid #fde68a;">
+                                                                <small class="d-block text-muted">{{ __('Remaining Amount') }}</small>
+                                                                <span class="fw-bold fs-6" id="settlement-remaining-amount-text" style="color: #92400e;">
+                                                                    <span id="settlement-remaining-amount">0.00</span> <small>ر.س</small>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Unsettled Tasks Table with Increased Height -->
+                                                    <div class="table-responsive rounded border" style="max-height: 440px; overflow-y: auto; border-color: #e0e7ff !important;">
+                                                        <table class="table table-sm table-hover align-middle mb-0">
+                                                            <thead class="sticky-top" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff;">
                                                                 <tr>
-                                                                    <th style="width: 40px;"><input type="checkbox" id="selectAllSettlementTasks" class="form-check-input"></th>
-                                                                    <th>{{ __('Task #') }}</th>
-                                                                    <th>{{ __('Unpaid Debt') }}</th>
-                                                                    <th>{{ __('Investor') }}</th>
-                                                                    <th>{{ __('تسوية الاستثمار') }}</th>
+                                                                    <th style="width: 40px;" class="text-center">
+                                                                        <input type="checkbox" id="selectAllSettlementTasks" class="form-check-input">
+                                                                    </th>
+                                                                    <th style="color: #ffffff;">{{ __('Task #') }}</th>
+                                                                    <th style="color: #ffffff;">{{ __('Unpaid Debt') }}</th>
+                                                                    <th style="color: #ffffff;">{{ __('Investor') }}</th>
+                                                                    <th style="color: #ffffff;">الفاتورة المحاسبية</th>
+                                                                    <th style="color: #ffffff;">{{ __('تسوية الاستثمار') }}</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody id="settlement-tasks-tbody">
+                                                            <tbody id="settlement-tasks-tbody" class="bg-white">
                                                                 <!-- AJAX will load tasks here -->
                                                             </tbody>
                                                         </table>

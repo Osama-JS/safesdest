@@ -20,20 +20,17 @@ class PdfService
     public function generate(string $view, array $data = [], ?string $filename = null, bool $download = false)
     {
         $html = View::make($view, $data)->render();
-        file_put_contents(storage_path('app/mpdf-debug.html'), $html);
 
-
-        // إعداد mPDF مع دعم الخط العربي
+        // إعداد mPDF مع دعم الخط العربي وتحسين الأداء
         $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
         $fontDirs = $defaultConfig['fontDir'];
 
         $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
         $fontData = $defaultFontConfig['fontdata'];
 
-        // ✅ لا تضع orientation داخل المصفوفة
         $mpdf = new Mpdf([
             'mode' => 'utf-8',
-            'format' => 'A4', // يمكنك وضع ['A4-L'] لو أردت landscape
+            'format' => 'A4',
             'margin_left' => 10,
             'margin_right' => 10,
             'margin_top' => 15,
@@ -49,28 +46,17 @@ class PdfService
             ],
             'default_font' => 'tajawal',
             'tempDir' => storage_path('app/mpdf-temp'),
-
+            'simpleTables' => true,
+            'useSubstitutions' => false,
+            'packTableData' => true,
         ]);
-
-
-        $dom = new \DOMDocument();
-        libxml_use_internal_errors(true);
-        $dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-        $tds = $dom->getElementsByTagName('td');
-        $trs = $dom->getElementsByTagName('tr');
-
-        Log::info('TD count: ' . $tds->length . ', TR count: ' . $trs->length);
-
-        $chunks = str_split($html, 50000); // 50 ألف حرف لكل جزء
 
         if (isset($data['watermark_image']) && !empty($data['watermark_image'])) {
             $mpdf->SetWatermarkImage($data['watermark_image'], 0.1, [150, 150]);
             $mpdf->showWatermarkImage = true;
         }
 
-        foreach ($chunks as $chunk) {
-            $mpdf->WriteHTML($chunk);
-        }
+        $mpdf->WriteHTML($html);
 
         $fileName = $filename ?? 'document.pdf';
 

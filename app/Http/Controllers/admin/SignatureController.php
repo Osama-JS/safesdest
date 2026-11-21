@@ -17,7 +17,7 @@ class SignatureController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'type' => 'required|in:customer,driver,user',
+            'type' => 'required|in:customer,driver,user,investor',
             'id' => 'required|integer',
             'signature' => 'required', // Base64 string or file
         ]);
@@ -101,7 +101,7 @@ class SignatureController extends Controller
     public function get(Request $request)
     {
         $request->validate([
-            'type' => 'required|in:customer,driver,user',
+            'type' => 'required|in:customer,driver,user,investor',
             'id' => 'required|integer',
         ]);
 
@@ -123,7 +123,7 @@ class SignatureController extends Controller
     public function delete(Request $request)
     {
         $request->validate([
-            'type' => 'required|in:customer,driver,user',
+            'type' => 'required|in:customer,driver,user,investor',
             'id' => 'required|integer',
         ]);
 
@@ -158,7 +158,7 @@ class SignatureController extends Controller
         return match ($type) {
             'customer' => Customer::find($id),
             'driver' => Driver::find($id),
-            'user' => User::find($id),
+            'user', 'investor' => User::find($id),
             default => null,
         };
     }

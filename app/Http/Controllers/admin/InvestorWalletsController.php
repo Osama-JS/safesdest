@@ -606,6 +606,7 @@ class InvestorWalletsController extends Controller
             $wallet = $transaction->wallet;
             $user = $wallet->investor;
             $performer = $transaction->performer;
+            $printerUser = auth()->user() ?? $performer;
 
             // تحويل المبلغ إلى كلمات بالعربية
             $amountInWords = $this->convertNumberToArabicWords($transaction->amount);
@@ -617,6 +618,7 @@ class InvestorWalletsController extends Controller
                 'wallet' => $wallet,
                 'user' => $user,
                 'performer' => $performer,
+                'printerUser' => $printerUser,
                 'amountInWords' => $amountInWords
             ], "{$fileName}.pdf", true);
 

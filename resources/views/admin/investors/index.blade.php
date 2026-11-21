@@ -419,6 +419,15 @@
                                     <li class="mb-2"><span class="fw-medium me-1">{{ __('Mobile') }}:</span> <span id="view-phone"></span></li>
                                     <li class="mb-2"><span class="fw-medium me-1">{{ __('Status') }}:</span> <span id="view-status"></span></li>
                                 </ul>
+                                <div class="mt-3" id="view-signature-container" style="display: none;">
+                                    <span class="fw-medium d-block mb-1">{{ __('Signature') }}:</span>
+                                    <div class="border rounded p-2 text-center bg-light mb-2">
+                                        <img id="view-signature" src="" alt="{{ __('Signature') }}" style="max-height: 80px; max-width: 100%;">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary w-100" id="view-modal-manage-signature">
+                                    <i class="ti ti-signature me-1"></i> {{ __('Manage Signature') }}
+                                </button>
                             </div>
                         </div>
                         
@@ -644,5 +653,8 @@
         </div>
     </div>
 </script>
+
+{{-- Include Signature Modal --}}
+@include('admin.partials.signature-modal')
 @endsection
 

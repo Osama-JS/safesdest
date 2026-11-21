@@ -260,6 +260,7 @@ $(function () {
               '<a href="' + baseUrl + 'admin/users/' + full['id'] + '/wallet" class="text-body" title="' + __('Commission wallet') + '"><i class="ti ti-coins ti-sm me-2 text-success"></i></a>' +
               fundTaskBtn +
               '<a href="javascript:;" class="text-body link-tasks" data-id="' + full['id'] + '" data-name="' + full['name'] + '" data-bs-toggle="modal" data-bs-target="#linkTasksModal" title="' + __('Link historical tasks') + '"><i class="ti ti-link ti-sm me-2 text-warning"></i></a>' +
+              '<a href="javascript:;" class="text-body signature-record" data-id="' + full['id'] + '" data-name="' + full['name'] + '" title="' + __('Manage Signature') + '"><i class="ti ti-signature ti-sm me-2 text-info"></i></a>' +
               '<a href="javascript:;" class="text-body edit-record" data-id="' + full['id'] + '" data-bs-toggle="modal" data-bs-target="#investorModal" title="' + __('Edit') + '"><i class="ti ti-edit ti-sm me-2"></i></a>' +
               '<a href="javascript:;" class="text-body delete-record" data-id="' + full['id'] + '" title="' + __('Delete') + '"><i class="ti ti-trash ti-sm mx-2"></i></a>' +
               '</div>'
@@ -514,6 +515,16 @@ $(function () {
       $('#view-phone').text(data.phone_code + data.phone);
       $('#view-status').html('<span class="badge bg-label-success">' + data.status + '</span>');
       
+      // Signature in view modal
+      $('#view-modal-manage-signature').data('id', data.id).data('name', data.name);
+      if (data.signature_image) {
+        let sigUrl = data.signature_image.startsWith('http') ? data.signature_image : baseUrl + data.signature_image;
+        $('#view-signature').attr('src', sigUrl);
+        $('#view-signature-container').show();
+      } else {
+        $('#view-signature-container').hide();
+      }
+
       // Balances
       $('#view-invest-balance').text((data.investor_wallet ? data.investor_wallet.balance : '0.00') + ' ' + __('SAR'));
       $('#view-commission-balance').text((data.user_wallet ? data.user_wallet.balance : '0.00') + ' ' + __('SAR'));
@@ -703,4 +714,19 @@ $(function () {
       $('#exportInvestorsModal').modal('hide');
     }, 600);
   });
+
+  // Manage Signature
+  $(document).on('click', '.signature-record, #view-modal-manage-signature', function () {
+    const id = $(this).data('id');
+    const name = $(this).data('name');
+    if (window.signatureModalManager) {
+      window.signatureModalManager.open('investor', id);
+    }
+  });
+
+  window.refreshDataTable = function () {
+    if (dt_user) {
+      dt_user.draw();
+    }
+  };
 });

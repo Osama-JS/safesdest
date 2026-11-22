@@ -43,6 +43,18 @@ class InvestorPermissionsSeeder extends Seeder
                 'name' => 'delete_investors',
                 'd_name' => 'حذف المستثمرين',
             ],
+            [
+                'name' => 'view_investors_audit',
+                'd_name' => 'عرض تدقيق ومطابقة محافظ المستثمرين والمهام',
+            ],
+            [
+                'name' => 'edit_investors_audit_funding',
+                'd_name' => 'تعديل مبالغ تمويل المهام في المطابقة والتدقيق',
+            ],
+            [
+                'name' => 'delete_investors_audit_transaction',
+                'd_name' => 'حذف عمليات الاسترداد المعلقة في المطابقة والتدقيق',
+            ],
         ];
 
         $ownerRole = Role::where('name', 'Owner')->first();

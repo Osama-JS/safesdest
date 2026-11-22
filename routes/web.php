@@ -394,6 +394,10 @@ Route::middleware('rate.limit')->group(function () {
 
                 Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
+                    Route::get('/audit', [\App\Http\Controllers\admin\InvestorAuditController::class, 'index'])->name('audit');
+                    Route::get('/audit/export-excel', [\App\Http\Controllers\admin\InvestorAuditController::class, 'exportExcel'])->name('audit.export');
+                    Route::post('/audit/update-funding', [\App\Http\Controllers\admin\InvestorAuditController::class, 'updateFundingAmount'])->name('audit.update-funding');
+                    Route::delete('/audit/delete-orphaned-tx', [\App\Http\Controllers\admin\InvestorAuditController::class, 'deleteOrphanedTransaction'])->name('audit.delete-orphaned-tx');
                     Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
                     Route::get('/export-all-excel', [\App\Http\Controllers\admin\InvestorController::class, 'exportAllInvestorsExcel'])->name('export-all-excel');
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');

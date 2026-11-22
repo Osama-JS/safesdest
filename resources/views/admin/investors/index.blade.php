@@ -100,7 +100,12 @@
     <div class="card">
         <div class="card-header border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">{{ __('Investors List') }}</h5>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                @can('view_investors_audit')
+                    <a href="{{ route('admin.investors.audit') }}" class="btn btn-outline-primary">
+                        <i class="ti ti-calculator me-1"></i> {{ __('Audit & Tasks Matching') }}
+                    </a>
+                @endcan
                 <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportInvestorsModal" id="btn-export-investors">
                     <i class="ti ti-file-spreadsheet me-1"></i> {{ __('Comprehensive Excel Report') }}
                 </button>

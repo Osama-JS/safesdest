@@ -55,9 +55,18 @@ class InvestorPermissionsSeeder extends Seeder
                 'name' => 'delete_investors_audit_transaction',
                 'd_name' => 'حذف عمليات الاسترداد المعلقة في المطابقة والتدقيق',
             ],
+            [
+                'name' => 'settle_investors_audit_canceled_task',
+                'd_name' => 'تسوية المهام الملغاة في المطابقة والتدقيق',
+            ],
+            [
+                'name' => 'settle_investors_audit_commission',
+                'd_name' => 'تسوية عمولات المهام في المطابقة والتدقيق',
+            ],
         ];
 
         $ownerRole = Role::where('name', 'Owner')->first();
+        $adminRole = Role::where('name', 'admin')->first();
 
         foreach ($permissions as $perm) {
             $permission = Permission::where('name', $perm['name'])->first();
@@ -69,11 +78,16 @@ class InvestorPermissionsSeeder extends Seeder
                     'guard_name' => 'web',
                     'type_id' => $type->id
                 ]);
+            } else {
+                $permission->update(['d_name' => $perm['d_name']]);
             }
 
-            // 3. Attach to owner role if it exists
+            // 3. Attach to owner and admin role if they exist
             if ($ownerRole) {
                 $ownerRole->givePermissionTo($permission);
+            }
+            if ($adminRole) {
+                $adminRole->givePermissionTo($permission);
             }
         }
     }

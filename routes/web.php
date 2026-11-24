@@ -395,9 +395,18 @@ Route::middleware('rate.limit')->group(function () {
                 Route::prefix('investors')->name('admin.investors.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\admin\InvestorController::class, 'index'])->name('index');
                     Route::get('/audit', [\App\Http\Controllers\admin\InvestorAuditController::class, 'index'])->name('audit');
+                    Route::get('/audit/problematic-tasks-data', [\App\Http\Controllers\admin\InvestorAuditController::class, 'getProblematicTasksData'])->name('audit.problematic-tasks-data');
+                    Route::get('/audit/canceled-tasks-data', [\App\Http\Controllers\admin\InvestorAuditController::class, 'getCanceledTasksData'])->name('audit.canceled-tasks-data');
+                    Route::get('/audit/commission-audit-data', [\App\Http\Controllers\admin\InvestorAuditController::class, 'getCommissionAuditTableData'])->name('audit.commission-audit-data');
                     Route::get('/audit/export-excel', [\App\Http\Controllers\admin\InvestorAuditController::class, 'exportExcel'])->name('audit.export');
                     Route::post('/audit/update-funding', [\App\Http\Controllers\admin\InvestorAuditController::class, 'updateFundingAmount'])->name('audit.update-funding');
+                    Route::post('/audit/edit-funding', [\App\Http\Controllers\admin\InvestorAuditController::class, 'updateFundingAmount'])->name('audit.edit-funding');
                     Route::delete('/audit/delete-orphaned-tx', [\App\Http\Controllers\admin\InvestorAuditController::class, 'deleteOrphanedTransaction'])->name('audit.delete-orphaned-tx');
+                    Route::post('/audit/delete-orphaned-refund', [\App\Http\Controllers\admin\InvestorAuditController::class, 'deleteOrphanedTransaction'])->name('audit.delete-orphaned-refund');
+                    Route::post('/audit/settle-canceled-task', [\App\Http\Controllers\admin\InvestorAuditController::class, 'settleCanceledTask'])->name('audit.settle-canceled-task');
+                    Route::post('/audit/batch-settle-canceled-tasks', [\App\Http\Controllers\admin\InvestorAuditController::class, 'batchSettleCanceledTasks'])->name('audit.batch-settle-canceled-tasks');
+                    Route::post('/audit/settle-commission', [\App\Http\Controllers\admin\InvestorAuditController::class, 'settleCommission'])->name('audit.settle-commission');
+                    Route::post('/audit/batch-settle-commissions', [\App\Http\Controllers\admin\InvestorAuditController::class, 'batchSettleCommissions'])->name('audit.batch-settle-commissions');
                     Route::get('/data', [\App\Http\Controllers\admin\InvestorController::class, 'getData'])->name('data');
                     Route::get('/export-all-excel', [\App\Http\Controllers\admin\InvestorController::class, 'exportAllInvestorsExcel'])->name('export-all-excel');
                     Route::post('/store', [\App\Http\Controllers\admin\InvestorController::class, 'store'])->name('store');

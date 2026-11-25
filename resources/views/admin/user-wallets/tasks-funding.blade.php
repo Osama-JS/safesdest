@@ -144,17 +144,42 @@
                   </div>
                 </div>
                 <div class="col-6">
-                  <div class="border rounded p-2 text-center bg-label-success">
+                  @php
+                    $calc = $task->calculateInvestorCommission($contract);
+                    $myComm = $calc['net_investor_commission'];
+                    $tooltipParts = ['<strong>تفاصيل الحسبة:</strong>'];
+                    $tooltipParts[] = 'عمولة المنصة: ' . number_format($calc['platform_gross'], 2) . ' ر.س';
+                    if ($calc['user_commissions_total'] > 0) {
+                        $tooltipParts[] = 'عمولات المستخدمين: -' . number_format($calc['user_commissions_total'], 2) . ' ر.س';
+                    }
+                    if ($calc['task_brokers_total'] > 0) {
+                        $tooltipParts[] = 'عمولات وسطاء المهمة: -' . number_format($calc['task_brokers_total'], 2) . ' ر.س';
+                    }
+                    if ($calc['contract_task_brokers_total'] > 0) {
+                        $tooltipParts[] = 'عمولة وسيط العقد: -' . number_format($calc['contract_task_brokers_total'], 2) . ' ر.س';
+                    }
+                    $tooltipParts[] = 'صافي العمولة الأساسية: ' . number_format($calc['net_task_commission'], 2) . ' ر.س';
+                    if ($calc['contract_investor_brokers_total'] > 0) {
+                        $tooltipParts[] = 'خصم وسيط المستثمر: -' . number_format($calc['contract_investor_brokers_total'], 2) . ' ر.س';
+                    }
+                    $tooltipTitle = implode('<br>', $tooltipParts);
+                  @endphp
+                  <div class="border rounded p-2 text-center bg-label-success position-relative"
+                       @if($calc['has_deductions'])
+                         data-bs-toggle="tooltip"
+                         data-bs-html="true"
+                         data-bs-placement="top"
+                         title="{!! $tooltipTitle !!}"
+                       @endif>
                     <small class="text-success d-block mb-1">{{ __('Your Expected Commission') }}</small>
-                    @php
-                      // جلب عمولة المنصة من الإعلان أو المهمة مباشرة
-                      $platformComm = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
-
-                      $myComm = $contract->commission_type === 'percentage'
-                        ? min(($platformComm * $contract->commission_value / 100), $platformComm)
-                        : min((float) $contract->commission_value, $platformComm);
-                    @endphp
-                    <span class="fw-bold text-success">{{ number_format($myComm, 2) }} <small>{{ __('SAR') }}</small></span>
+                    <span class="fw-bold text-success fs-5">{{ number_format($myComm, 2) }} <small>{{ __('SAR') }}</small></span>
+                    @if($calc['has_deductions'])
+                      <div class="mt-1">
+                        <span class="badge bg-white text-dark border shadow-xs py-1 px-2" style="font-size: 0.68rem; cursor: help;" title="تم خصم عمولات المستخدمين والوسطاء من عمولة المهمة أولاً">
+                          <i class="ti ti-info-circle text-warning me-1" style="font-size: 0.78rem;"></i>بعد خصم الشركاء ({{ number_format($calc['total_deductions_from_task'] + $calc['contract_investor_brokers_total'], 2) }} ر.س)
+                        </span>
+                      </div>
+                    @endif
                   </div>
                 </div>
               </div>
@@ -170,6 +195,8 @@
                   data-bs-target="#fundTaskModal"
                   data-task-id="{{ $task->id }}"
                   data-total-price="{{ number_format($task->total_price, 2) }}"
+                  data-expected-commission="{{ number_format($myComm, 2) }}"
+                  data-deductions="{{ $calc['has_deductions'] ? number_format($calc['total_deductions_from_task'] + $calc['contract_investor_brokers_total'], 2) : '0.00' }}"
                   data-url="{{ route('admin.user-wallets.pay-task', ['userId' => $investor->id, 'task' => $task->id]) }}">
                   <i class="ti ti-credit-card me-1"></i> {{ __('Pay Task Value') }}
                 </button>
@@ -227,6 +254,7 @@
                 <h6 class="alert-heading mb-1 fw-bold">{{ __('Funding terms and conditions') }}</h6>
                 <ul class="mb-0 ps-3 small">
                   <li>سيتم خصم مبلغ <strong id="displayTotalPrice"></strong> {{ __('SAR') }} من محفظة المستثمر <strong>{{ $investor->name }}</strong> الاستثمارية.</li>
+                  <li id="displayCommissionRow">العمولة المقدرة للمستثمر: <strong id="displayExpectedComm" class="text-success"></strong> {{ __('SAR') }} <span id="displayDeductionsBadge" class="badge bg-warning text-dark ms-1 d-none" style="font-size: 0.7rem;">بعد خصم عمولات الشركاء</span></li>
                   <li>{{ __('Funding cannot be reversed') }}</li>
                   <li>{{ __('Expected profits recorded on task completion') }}</li>
                 </ul>
@@ -259,15 +287,27 @@
         // استخراج البيانات من سمات الزر
         const taskId = button.getAttribute('data-task-id');
         const totalPrice = button.getAttribute('data-total-price');
+        const expComm = button.getAttribute('data-expected-commission');
+        const deductions = parseFloat(button.getAttribute('data-deductions') || 0);
         const actionUrl = button.getAttribute('data-url');
 
         // تحديث محتوى المودال
         const displayTaskId = fundTaskModal.querySelector('#displayTaskId');
         const displayTotalPrice = fundTaskModal.querySelector('#displayTotalPrice');
+        const displayExpectedComm = fundTaskModal.querySelector('#displayExpectedComm');
+        const displayDeductionsBadge = fundTaskModal.querySelector('#displayDeductionsBadge');
         const form = fundTaskModal.querySelector('#fundTaskForm');
 
         if (displayTaskId) displayTaskId.textContent = '#' + taskId;
         if (displayTotalPrice) displayTotalPrice.textContent = totalPrice;
+        if (displayExpectedComm) displayExpectedComm.textContent = expComm;
+        if (displayDeductionsBadge) {
+          if (deductions > 0) {
+            displayDeductionsBadge.classList.remove('d-none');
+          } else {
+            displayDeductionsBadge.classList.add('d-none');
+          }
+        }
         if (form) form.setAttribute('action', actionUrl);
       });
     }

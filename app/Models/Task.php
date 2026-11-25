@@ -352,4 +352,229 @@ class Task extends Model
       default           => $this->amnn_deal_status ?? 'غير محدد',
     };
   }
+
+  /**
+   * حساب تفاصيل عمولة المستثمر للمهمة بعد خصم عمولات المستخدمين ووسطاء المهمة ووسطاء العقد
+   */
+  public function calculateInvestorCommission(InvestmentContract $contract): array
+  {
+      // 1. حساب إجمالي عمولة المنصة الأساسية
+      $platformGross = 0.0;
+      if ($this->ad) {
+          if ($this->ad->service_commission_type == 1) {
+              $platformGross = (float) $this->ad->service_commission;
+          } else {
+              $platformGross = ($this->total_price * (float) $this->ad->service_commission) / 100;
+          }
+      } else {
+          $platformGross = (float) $this->commission;
+      }
+
+      if ($platformGross <= 0) {
+          return [
+              'platform_gross'                  => 0.0,
+              'user_commissions_total'          => 0.0,
+              'user_commissions_details'        => [],
+              'task_brokers_total'              => 0.0,
+              'task_brokers_details'            => [],
+              'contract_task_brokers_total'     => 0.0,
+              'contract_investor_brokers_total' => 0.0,
+              'broker_payouts'                  => [],
+              'total_deductions_from_task'      => 0.0,
+              'net_task_commission'             => 0.0,
+              'gross_investor_commission'       => 0.0,
+              'net_investor_commission'         => 0.0,
+              'has_deductions'                  => false,
+          ];
+      }
+
+      // 2. حساب عمولات المستخدمين المرتبطين بعميل المهمة
+      $userCommissionsTotal = 0.0;
+      $userCommissionsDetails = [];
+      if ($this->customer_id) {
+          $customer = $this->customer;
+          $userCommissions = ($customer && $customer->relationLoaded('userCommissions'))
+              ? $customer->userCommissions->where('status', true)
+              : \App\Models\UserCommission::where('customer_id', $this->customer_id)->where('status', true)->with('user')->get();
+
+          foreach ($userCommissions as $uc) {
+              $user = $uc->user;
+              if ($user && $user->commission_start_date && $this->created_at) {
+                  if ($this->created_at->startOfDay() < \Carbon\Carbon::parse($user->commission_start_date)->startOfDay()) {
+                      continue;
+                  }
+              }
+              $amt = (float) $uc->calculateCommission($platformGross);
+              if ($amt > 0) {
+                  $userCommissionsTotal += $amt;
+                  $userCommissionsDetails[] = [
+                      'user_name' => $user?->name ?? 'مستخدم',
+                      'amount'    => round($amt, 2),
+                      'type'      => $uc->commission_type,
+                      'value'     => (float) $uc->commission_value,
+                  ];
+              }
+          }
+      }
+
+      // 3. حساب عمولات وسطاء المهمة (المباشرين، أو عبر السائق، أو وسيط فردي سابق)
+      $taskBrokersTotal = 0.0;
+      $taskBrokersDetails = [];
+
+      $taskBrokersList = $this->relationLoaded('brokers') ? $this->brokers : $this->brokers()->get();
+      if ($taskBrokersList->isNotEmpty()) {
+          foreach ($taskBrokersList as $b) {
+              if (!empty($b->pivot->commission_start_date) && $this->created_at && $this->created_at < $b->pivot->commission_start_date) {
+                  continue;
+              }
+              $cType = $b->pivot->commission_type ?? 'percentage';
+              $cValue = (float) ($b->pivot->commission_value ?? 0);
+              $share = $cType === 'percentage' ? (($platformGross * $cValue) / 100) : $cValue;
+              if ($share > 0) {
+                  $taskBrokersTotal += $share;
+                  $taskBrokersDetails[] = [
+                      'broker_name' => $b->name,
+                      'source'      => 'مباشر على المهمة',
+                      'amount'      => round($share, 2),
+                      'type'        => $cType,
+                      'value'       => $cValue,
+                  ];
+              }
+          }
+      } elseif ($this->driver && ($driverBrokers = ($this->driver->relationLoaded('brokers') ? $this->driver->brokers : $this->driver->brokers()->get()))->isNotEmpty()) {
+          foreach ($driverBrokers as $b) {
+              if (!empty($b->pivot->commission_start_date) && $this->created_at && $this->created_at < $b->pivot->commission_start_date) {
+                  continue;
+              }
+              $cType = $b->pivot->commission_type ?? 'percentage';
+              $cValue = (float) ($b->pivot->commission_value ?? 0);
+              $share = $cType === 'percentage' ? (($platformGross * $cValue) / 100) : $cValue;
+              if ($share > 0) {
+                  $taskBrokersTotal += $share;
+                  $taskBrokersDetails[] = [
+                      'broker_name' => $b->name,
+                      'source'      => 'وسيط السائق',
+                      'amount'      => round($share, 2),
+                      'type'        => $cType,
+                      'value'       => $cValue,
+                  ];
+              }
+          }
+      } elseif (!empty($this->broker_id) && $this->broker) {
+          $b = $this->broker;
+          $cType = $this->broker_commission_type ?? 'percentage';
+          $cValue = (float) ($this->broker_commission_value ?? 0);
+          $share = $cType === 'percentage' ? (($platformGross * $cValue) / 100) : $cValue;
+          if ($share > 0) {
+              $taskBrokersTotal += $share;
+              $taskBrokersDetails[] = [
+                  'broker_name' => $b->name,
+                  'source'      => 'وسيط المهمة',
+                  'amount'      => round($share, 2),
+                  'type'        => $cType,
+                  'value'       => $cValue,
+              ];
+          }
+      }
+
+      // 4. وسطاء عقد الاستثمار
+      $contractBrokersList = collect();
+      if ($contract->relationLoaded('brokers') ? $contract->brokers->isNotEmpty() : $contract->brokers()->exists()) {
+          $contractBrokersList = $contract->brokers()->get();
+      } elseif ($contract->broker_id && $contract->broker_commission_value > 0) {
+          $contractBrokersList = collect([
+              (object)[
+                  'id'    => $contract->broker_id,
+                  'name'  => optional($contract->broker)->name,
+                  'pivot' => (object)[
+                      'broker_commission_source' => $contract->broker_commission_source,
+                      'broker_commission_type'   => $contract->broker_commission_type,
+                      'broker_commission_value'  => $contract->broker_commission_value,
+                  ]
+              ]
+          ]);
+      }
+
+      $contractTaskBrokersTotal = 0.0;
+      $brokerPayouts = [];
+
+      foreach ($contractBrokersList as $cb) {
+          $pivot = $cb->pivot;
+          $commSource = $pivot->broker_commission_source ?? 'investor_commission';
+          $commType   = $pivot->broker_commission_type ?? 'percentage';
+          $commVal    = (float) ($pivot->broker_commission_value ?? 0);
+
+          if ($commVal <= 0) continue;
+
+          if ($commSource === 'task_commission') {
+              $bShare = ($commType === 'percentage') ? (($platformGross * $commVal) / 100) : $commVal;
+              $contractTaskBrokersTotal += $bShare;
+              $brokerPayouts[] = [
+                  'broker_id'   => $cb->id,
+                  'broker_name' => $cb->name,
+                  'amount'      => round($bShare, 2),
+                  'source'      => 'task_commission',
+                  'type'        => $commType,
+                  'value'       => $commVal,
+              ];
+          }
+      }
+
+      // 5. خصم عمولات المستخدمين والوسطاء ووسطاء المستثمر (من عمولة المهمة) من عمولة المنصة الأساسية أولاً
+      $totalDeductionsFromTask = $userCommissionsTotal + $taskBrokersTotal + $contractTaskBrokersTotal;
+      $netTaskCommission = max(0.0, $platformGross - $totalDeductionsFromTask);
+
+      // التحقق من الحد الأدنى للعقد بناءً على صافي عمولة المهمة
+      $contractInvestorBrokersTotal = 0.0;
+      if ($contract->min_commission_threshold > 0 && $netTaskCommission < (float) $contract->min_commission_threshold) {
+          $grossInvestorCommission = 0.0;
+          $netInvestorCommission = 0.0;
+      } else {
+          // احتساب عمولة المستثمر بناءً على صافي عمولة المهمة بعد الخصومات
+          $grossInvestorCommission = (float) $contract->calculateCommission($netTaskCommission);
+
+          // خصم عمولات وسطاء المستثمر التي مصدرها عمولة المستثمر (investor_commission)
+          foreach ($contractBrokersList as $cb) {
+              $pivot = $cb->pivot;
+              $commSource = $pivot->broker_commission_source ?? 'investor_commission';
+              $commType   = $pivot->broker_commission_type ?? 'percentage';
+              $commVal    = (float) ($pivot->broker_commission_value ?? 0);
+
+              if ($commVal <= 0) continue;
+
+              if ($commSource === 'investor_commission') {
+                  $bShare = ($commType === 'percentage') ? (($grossInvestorCommission * $commVal) / 100) : $commVal;
+                  $contractInvestorBrokersTotal += $bShare;
+                  $brokerPayouts[] = [
+                      'broker_id'   => $cb->id,
+                      'broker_name' => $cb->name,
+                      'amount'      => round($bShare, 2),
+                      'source'      => 'investor_commission',
+                      'type'        => $commType,
+                      'value'       => $commVal,
+                  ];
+              }
+          }
+
+          $netInvestorCommission = max(0.0, $grossInvestorCommission - $contractInvestorBrokersTotal);
+      }
+
+      $hasDeductions = ($totalDeductionsFromTask > 0) || ($contractInvestorBrokersTotal > 0);
+
+      return [
+          'platform_gross'                  => round($platformGross, 2),
+          'user_commissions_total'          => round($userCommissionsTotal, 2),
+          'user_commissions_details'        => $userCommissionsDetails,
+          'task_brokers_total'              => round($taskBrokersTotal, 2),
+          'task_brokers_details'            => $taskBrokersDetails,
+          'contract_task_brokers_total'     => round($contractTaskBrokersTotal, 2),
+          'contract_investor_brokers_total' => round($contractInvestorBrokersTotal, 2),
+          'broker_payouts'                  => $brokerPayouts,
+          'total_deductions_from_task'      => round($totalDeductionsFromTask, 2),
+          'net_task_commission'             => round($netTaskCommission, 2),
+          'gross_investor_commission'       => round($grossInvestorCommission, 2),
+          'net_investor_commission'         => round($netInvestorCommission, 2),
+          'has_deductions'                  => $hasDeductions,
+      ];
+  }
 }

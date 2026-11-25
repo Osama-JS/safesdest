@@ -23,14 +23,16 @@ class HyperpayPayout extends Model
         'team_wallet_id',
         'user_id',
         'user_wallet_id',
+        'investor_wallet_id',
         'amount',
         'transaction_details',
         'status',
         'failure_reason',
         'webhook_payload',
-        'payout_type', // e.g. 'MT', 'WP', 'WD', 'TPW', 'IPW', 'IWD'
+        'payout_type', // e.g. 'MT', 'WP', 'WD', 'TPW', 'IPW', 'IWD', 'ICW'
         'source_withdrawal_id',
         'source_commission_withdrawal_id',
+        'source_capital_withdrawal_id',
         'created_by',
         'approved_by',
         'approved_at',
@@ -87,6 +89,16 @@ class HyperpayPayout extends Model
         return $this->belongsTo(InvestorCommissionWithdrawal::class, 'source_commission_withdrawal_id');
     }
 
+    public function capitalWithdrawal()
+    {
+        return $this->belongsTo(InvestorCapitalWithdrawal::class, 'source_capital_withdrawal_id');
+    }
+
+    public function investorWallet()
+    {
+        return $this->belongsTo(InvestorWallet::class, 'investor_wallet_id');
+    }
+
     public function withdrawal()
     {
         return $this->belongsTo(WithdrawalRequest::class, 'source_withdrawal_id');
@@ -120,6 +132,7 @@ class HyperpayPayout extends Model
             'TWP' => __('تسوية مستحقات فريق'),
             'IPW' => __('صرف عمولات مستثمر (Payout)'),
             'IWD' => __('طلب سحب عمولات مستثمر (Payout)'),
+            'ICW' => __('سحب واسترجاع رأس مال مستثمر (Payout)'),
             default => $this->payout_type ?: __('غير محدد'),
         };
     }

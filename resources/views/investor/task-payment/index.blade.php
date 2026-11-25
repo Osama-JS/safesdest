@@ -149,17 +149,13 @@
                   </div>
                 </div>
                 <div class="col-6">
+                  @php
+                    $calc = $task->calculateInvestorCommission($contract);
+                    $myComm = $calc['net_investor_commission'];
+                  @endphp
                   <div class="border rounded p-2 text-center bg-label-success">
                     <small class="text-success d-block mb-1">{{ __('Your Expected Commission') }}</small>
-                    @php
-                      // جلب عمولة المنصة من الإعلان أو المهمة مباشرة
-                      $platformComm = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
-
-                      $myComm = $contract->commission_type === 'percentage'
-                        ? min(($platformComm * $contract->commission_value / 100), $platformComm)
-                        : min((float) $contract->commission_value, $platformComm);
-                    @endphp
-                    <span class="fw-bold text-success">{{ number_format($myComm, 2) }} <small>{{ __('SAR') }}</small></span>
+                    <span class="fw-bold text-success fs-5">{{ number_format($myComm, 2) }} <small>{{ __('SAR') }}</small></span>
                   </div>
                 </div>
               </div>
@@ -175,6 +171,7 @@
                   data-bs-target="#fundTaskModal"
                   data-task-id="{{ $task->id }}"
                   data-total-price="{{ number_format($task->total_price, 2) }}"
+                  data-expected-commission="{{ number_format($myComm, 2) }}"
                   data-url="{{ route('investor.task-payment.pay', $task) }}">
                   <i class="ti ti-credit-card me-1"></i> {{ __('Pay Task Value') }}
                 </button>
@@ -232,6 +229,7 @@
                 <h6 class="alert-heading mb-1 fw-bold">{{ __('Funding terms and conditions') }}</h6>
                 <ul class="mb-0 ps-3 small">
                   <li>{{ __('The amount') }} <strong id="displayTotalPrice"></strong> {{ __('SAR will be deducted from your current balance upon approval.') }}</li>
+                  <li id="displayCommissionRow">{{ __('Your Expected Commission') }}: <strong id="displayExpectedComm" class="text-success"></strong> {{ __('SAR') }}</li>
                   <li>{{ __('Funding cannot be reversed') }}</li>
                   <li>{{ __('Expected profits recorded on task completion') }}</li>
                 </ul>
@@ -277,16 +275,19 @@
         // استخراج البيانات من سمات الزر
         const taskId = button.getAttribute('data-task-id');
         const totalPrice = button.getAttribute('data-total-price');
+        const expComm = button.getAttribute('data-expected-commission');
         const actionUrl = button.getAttribute('data-url');
 
         // تحديث محتوى المودال
         const displayTaskId = fundTaskModal.querySelector('#displayTaskId');
         const displayTotalPrice = fundTaskModal.querySelector('#displayTotalPrice');
+        const displayExpectedComm = fundTaskModal.querySelector('#displayExpectedComm');
         const form = fundTaskModal.querySelector('#fundTaskForm');
         const passwordInput = fundTaskModal.querySelector('#password');
 
         if (displayTaskId) displayTaskId.textContent = '#' + taskId;
         if (displayTotalPrice) displayTotalPrice.textContent = totalPrice;
+        if (displayExpectedComm) displayExpectedComm.textContent = expComm;
         if (form) form.setAttribute('action', actionUrl);
         if (passwordInput) passwordInput.value = '';
       });

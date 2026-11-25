@@ -6,6 +6,8 @@ use App\Models\InvestmentContract;
 use App\Models\InvestorWallet;
 use App\Models\InvestorWalletTransaction;
 use App\Models\Task;
+use App\Models\Task_History;
+use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\UserWallet;
 use App\Models\UserWalletTransaction;
@@ -257,36 +259,11 @@ class InvestorPaymentService
 
         DB::transaction(function () use ($tasks, $contract, $personalWallet, $investor, &$totalCommission, &$count) {
             foreach ($tasks as $task) {
-                // 1. حساب مبلغ عمولة المنصة الفعلي (Platform Cut)
-                $platformCut = 0;
-                if ($task->ad) {
-                    // إذا كان هناك إعلان، نتحقق من النوع (0 = نسبة مئوية، 1 = مبلغ ثابت)
-                    if ($task->ad->service_commission_type == 1) { 
-                        $platformCut = (float) $task->ad->service_commission;
-                    } else {
-                        // احتساب النسبة من سعر المهمة
-                        $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
-                    }
-                } else {
-                    // العمولة اليدوية في جدول المهام تُعامل كمبلغ ثابت
-                    $platformCut = (float) $task->commission;
+                $earned = $this->processBrokerAndInvestorCommission($investor, $task, $contract, $personalWallet, "مضارب عام");
+                if ($earned > 0) {
+                    $totalCommission += $earned;
+                    $count++;
                 }
-
-                if ($platformCut <= 0) continue;
-
-                // 2. التحقق من الحد الأدنى للعمولة في العقد
-                if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
-                    continue;
-                }
-
-                // 3. حساب نصيب المضارب بناءً على المبلغ الفعلي لعمولة المنصة
-                $investorCommission = $contract->calculateCommission($platformCut);
-                if ($investorCommission <= 0) continue;
-
-                $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "مضارب عام");
-
-                $totalCommission += $investorCommission;
-                $count++;
             }
         });
 
@@ -374,33 +351,11 @@ class InvestorPaymentService
 
             DB::transaction(function () use ($tasks, $contract, $personalWallet, $investor, &$totalCommission, &$count) {
                 foreach ($tasks as $task) {
-                    // 1. حساب مبلغ عمولة المنصة الفعلي
-                    $platformCut = 0;
-                    if ($task->ad) {
-                        if ($task->ad->service_commission_type == 1) { 
-                            $platformCut = (float) $task->ad->service_commission;
-                        } else {
-                            $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
-                        }
-                    } else {
-                        $platformCut = (float) $task->commission;
+                    $earned = $this->processBrokerAndInvestorCommission($investor, $task, $contract, $personalWallet, "");
+                    if ($earned > 0) {
+                        $totalCommission += $earned;
+                        $count++;
                     }
-
-                    if ($platformCut <= 0) continue;
-
-                    // 2. التحقق من الحد الأدنى للعمولة في العقد
-                    if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
-                        continue;
-                    }
-
-                    // 3. حساب نصيب المضارب
-                    $investorCommission = $contract->calculateCommission($platformCut);
-                    if ($investorCommission <= 0) continue;
-
-                    $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet, "");
-
-                    $totalCommission += $investorCommission;
-                    $count++;
                 }
             });
 
@@ -420,122 +375,28 @@ class InvestorPaymentService
         $personalWallet = $investor->userWallet;
         if (!$personalWallet) return;
 
-        // 1. حساب مبلغ عمولة المنصة الفعلي (Platform Cut)
-        $platformCut = 0;
-        if ($task->ad) {
-            if ($task->ad->service_commission_type == 1) { 
-                $platformCut = (float) $task->ad->service_commission;
-            } else {
-                $platformCut = ($task->total_price * $task->ad->service_commission) / 100;
-            }
-        } else {
-            $platformCut = (float) $task->commission;
-        }
-
-        if ($platformCut <= 0) return;
-
-        // 2. التحقق من الحد الأدنى (اختياري هنا لأن المهمة مدفوعة مسبقاً، ولكن نلتزم بالعقد)
-        if ($contract->min_commission_threshold > 0 && $platformCut < $contract->min_commission_threshold) {
-            return;
-        }
-
-        // 3. حساب نصيب المضارب من المبلغ الفعلي
-        $investorCommission = $contract->calculateCommission($platformCut);
-        if ($investorCommission <= 0) return;
-
-        $this->processBrokerAndInvestorCommission($investor, $task, $contract, $platformCut, $investorCommission, $personalWallet);
+        $this->processBrokerAndInvestorCommission($investor, $task, $contract, $personalWallet);
     }
 
     /**
-     * معالجة واحتساب وتوزيع عمولة الوسيط وعمولة المضارب النهائية.
+     * معالجة واحتساب وتوزيع عمولة الوسيط وعمولة المضارب النهائية بعد خصم عمولات المستخدمين والوسطاء.
      */
     private function processBrokerAndInvestorCommission(
         User $investor, 
         Task $task, 
         InvestmentContract $contract, 
-        float $platformCut, 
-        float $investorCommission, 
         UserWallet $personalWallet, 
         string $descSuffix = ""
-    ): void {
-        // جمع قائمة الوسطاء: إما من علاقة brokers المتعددة، أو من broker_id الفردي (توافق عكسي)
-        $brokersList = collect();
-        if ($contract->relationLoaded('brokers') ? $contract->brokers->isNotEmpty() : $contract->brokers()->exists()) {
-            $brokersList = $contract->brokers()->get();
-        } elseif ($contract->broker_id && $contract->broker_commission_value > 0) {
-            $brokersList = collect([
-                (object)[
-                    'id' => $contract->broker_id,
-                    'name' => optional($contract->broker)->name,
-                    'pivot' => (object)[
-                        'broker_commission_source' => $contract->broker_commission_source,
-                        'broker_commission_type'   => $contract->broker_commission_type,
-                        'broker_commission_value'  => $contract->broker_commission_value,
-                    ]
-                ]
-            ]);
+    ): float {
+        $calc = $task->calculateInvestorCommission($contract);
+        $finalInvestorCommission = (float) $calc['net_investor_commission'];
+        $brokerPayouts = $calc['broker_payouts'];
+
+        if ($finalInvestorCommission <= 0 && empty($brokerPayouts)) {
+            return 0.0;
         }
 
-        $totalInvestorDeduction = 0;
-        $totalPlatformDeduction = 0;
-        $brokerPayouts = [];
-
-        foreach ($brokersList as $brokerItem) {
-            $pivot = $brokerItem->pivot;
-            $commSource = $pivot->broker_commission_source ?? 'investor_commission';
-            $commType = $pivot->broker_commission_type ?? 'percentage';
-            $commVal = (float)($pivot->broker_commission_value ?? 0);
-
-            if ($commVal <= 0) {
-                continue;
-            }
-
-            $brokerShare = 0;
-            if ($commType === 'percentage') {
-                if ($commSource === 'investor_commission') {
-                    $brokerShare = ($investorCommission * $commVal) / 100;
-                } else { // task_commission
-                    $brokerShare = ($platformCut * $commVal) / 100;
-                }
-            } else { // fixed
-                $brokerShare = $commVal;
-            }
-
-            if ($brokerShare <= 0) {
-                continue;
-            }
-
-            if ($commSource === 'investor_commission') {
-                $totalInvestorDeduction += $brokerShare;
-            } else {
-                $totalPlatformDeduction += $brokerShare;
-            }
-
-            $brokerPayouts[] = [
-                'broker_id' => $brokerItem->id,
-                'amount'    => $brokerShare,
-                'source'    => $commSource,
-            ];
-        }
-
-        // تطبيق الخصم على حصة المستثمر وحمايتها ألا تقل عن صفر
-        $finalInvestorCommission = max(0, $investorCommission - $totalInvestorDeduction);
-
-        // حماية المنصة ماليًا: إجمالي المدفوعات لا يتجاوز عمولة المنصة
-        $totalPaidOut = $finalInvestorCommission + array_sum(array_column($brokerPayouts, 'amount'));
-        if ($totalPaidOut > $platformCut && !empty($brokerPayouts)) {
-            $excess = $totalPaidOut - $platformCut;
-            $sumBrokers = array_sum(array_column($brokerPayouts, 'amount'));
-            if ($sumBrokers > 0) {
-                foreach ($brokerPayouts as &$payout) {
-                    $ratio = $payout['amount'] / $sumBrokers;
-                    $payout['amount'] = max(0, $payout['amount'] - ($excess * $ratio));
-                }
-                unset($payout);
-            }
-        }
-
-        // إيداع حصص الوسطاء في محافظهم
+        // إيداع حصص وسطاء المستثمر في محافظهم
         $walletsCtrl = new \App\Http\Controllers\admin\UserWalletsController();
         foreach ($brokerPayouts as $payout) {
             if ($payout['amount'] > 0) {
@@ -555,15 +416,31 @@ class InvestorPaymentService
         }
 
         // إيداع حصة المضارب النهائية
-        $hasDeduction = $totalInvestorDeduction > 0;
-        UserWalletTransaction::create([
-            'user_wallet_id'   => $personalWallet->id,
-            'task_id'          => $task->id,
-            'transaction_type' => 'credit',
-            'amount'           => $finalInvestorCommission,
-            'description'      => "عمولة المهمة #{$task->id}" . ($descSuffix ? " ({$descSuffix})" : "") . ($hasDeduction ? " (بعد خصم عمولة الوسيط)" : ""),
-            'status'           => true,
-        ]);
+        if ($finalInvestorCommission > 0) {
+            $descNotes = [];
+            if ($calc['user_commissions_total'] > 0) {
+                $descNotes[] = "عمولات مستخدمين: -{$calc['user_commissions_total']}";
+            }
+            if ($calc['task_brokers_total'] > 0) {
+                $descNotes[] = "عمولات وسطاء: -{$calc['task_brokers_total']}";
+            }
+            if ($calc['contract_task_brokers_total'] > 0 || $calc['contract_investor_brokers_total'] > 0) {
+                $descNotes[] = "عمولة وسيط المستثمر";
+            }
+            $noteSuffix = !empty($descNotes) ? " (بعد خصم " . implode(' و ', $descNotes) . ")" : "";
+            $suffixCombined = ($descSuffix ? " ({$descSuffix})" : "") . $noteSuffix;
+
+            UserWalletTransaction::create([
+                'user_wallet_id'   => $personalWallet->id,
+                'task_id'          => $task->id,
+                'transaction_type' => 'credit',
+                'amount'           => $finalInvestorCommission,
+                'description'      => "عمولة المهمة #{$task->id}{$suffixCombined}",
+                'status'           => true,
+            ]);
+        }
+
+        return $finalInvestorCommission;
     }
 
     /**
@@ -685,5 +562,173 @@ class InvestorPaymentService
             $currentBalance,
             $description
         );
+    }
+
+    /**
+     * إلغاء تمويل المهمة وإجراء عملية عكسية لمحفظة الاستثمار وعمولات المستثمر والوسطاء والشركاء بشكل دقيق.
+     *
+     * @param  Task       $task
+     * @param  User|null  $performer
+     * @param  string     $reason
+     * @return array
+     */
+    public function reverseAndRefundCanceledTask(Task $task, ?User $performer = null, string $reason = ''): array
+    {
+        return DB::transaction(function () use ($task, $performer, $reason) {
+            // قفل سجل المهمة لمنع التضارب
+            $lockedTask = Task::lockForUpdate()->find($task->id);
+            if (!$lockedTask) {
+                return ['success' => false, 'message' => 'Task not found'];
+            }
+
+            $performerId = $performer?->id ?? auth()->id();
+            $refundedCapital = 0.0;
+            $capitalTxId = null;
+            $reversedCommissionsCount = 0;
+            $totalReversedCommission = 0.0;
+            $commissionDetails = [];
+
+            // 1. تحديد المستثمر المرتبط بالمهمة (إما من investor_id أو من أول حركة خصم تمويل في محفظة الاستثمار)
+            $investorId = $lockedTask->investor_id;
+            if (!$investorId) {
+                $firstDebit = InvestorWalletTransaction::where('task_id', $lockedTask->id)
+                    ->where('transaction_type', 'debit')
+                    ->with('wallet')
+                    ->first();
+                $investorId = $firstDebit?->wallet?->user_id;
+            }
+
+            $investor = $investorId ? User::find($investorId) : null;
+            $investorWallet = $investorId ? InvestorWallet::lockForUpdate()->where('user_id', $investorId)->first() : null;
+
+            // 2. فحص استرداد رأس المال في محفظة الاستثمار (مع مراعاة العمليات السابقة لضمان Idempotency)
+            if ($investorWallet) {
+                $iTxs = InvestorWalletTransaction::where('task_id', $lockedTask->id)
+                    ->where('investor_wallet_id', $investorWallet->id)
+                    ->get();
+                $fundedAmount = (float) $iTxs->where('transaction_type', 'debit')->sum('amount');
+                $alreadyRefunded = (float) $iTxs->where('transaction_type', 'credit')->sum('amount');
+                $netLockedCapital = $fundedAmount - $alreadyRefunded;
+
+                if ($netLockedCapital > 0.001) {
+                    $currentBalance = $investorWallet->balance;
+                    $balanceAfterCredit = $currentBalance + $netLockedCapital;
+
+                    $reasonText = $reason ? " ({$reason})" : "";
+                    $capitalTx = InvestorWalletTransaction::create([
+                        'investor_wallet_id' => $investorWallet->id,
+                        'task_id'            => $lockedTask->id,
+                        'transaction_type'   => 'credit',
+                        'source_type'        => 'refund',
+                        'amount'             => $netLockedCapital,
+                        'description'        => "استرداد رأس مال للمهمة رقم #{$lockedTask->id} بسبب إلغاء المهمة{$reasonText}",
+                        'performed_by'       => $performerId,
+                        'balance_after'      => $balanceAfterCredit,
+                    ]);
+
+                    $refundedCapital = $netLockedCapital;
+                    $capitalTxId = $capitalTx->id;
+                }
+            }
+
+            // 3. فحص وعكس عمولات محافظ المستخدمين (المستثمر، وسطاء العقد، وسطاء المهمة، مستخدمو العميل)
+            $uTxs = UserWalletTransaction::where('task_id', $lockedTask->id)->get();
+            $walletsAffected = $uTxs->pluck('user_wallet_id')->unique();
+
+            foreach ($walletsAffected as $wId) {
+                $wallet = UserWallet::lockForUpdate()->find($wId);
+                if (!$wallet) {
+                    continue;
+                }
+
+                $walletTxs = $uTxs->where('user_wallet_id', $wId);
+                $credited = (float) $walletTxs->where('transaction_type', 'credit')->sum('amount');
+                $debited = (float) $walletTxs->where('transaction_type', 'debit')->sum('amount');
+                $netComm = $credited - $debited;
+
+                if ($netComm > 0.001) {
+                    // تحديد صفة صاحب المحفظة لصياغة الوصف المالي بدقة
+                    $walletOwner = $wallet->user;
+                    $roleLabel = 'عمولة';
+                    if ($walletOwner && $investorId && $walletOwner->id == $investorId) {
+                        $roleLabel = 'عمولة المستثمر';
+                    } elseif ($walletOwner && $walletOwner->investor_broker) {
+                        $roleLabel = 'عمولة وسيط المستثمر';
+                    } elseif ($walletOwner && $walletOwner->is_broker) {
+                        $roleLabel = 'عمولة الوسيط';
+                    } elseif ($walletOwner) {
+                        $roleLabel = 'عمولة المستخدم (' . $walletOwner->name . ')';
+                    }
+
+                    $reasonText = $reason ? " - السبب: {$reason}" : "";
+                    $desc = "خصم عكسي لـ {$roleLabel} للمهمة #{$lockedTask->id} بسبب إلغاء المهمة{$reasonText}";
+
+                    UserWalletTransaction::create([
+                        'user_wallet_id'   => $wId,
+                        'user_id'          => $performerId,
+                        'task_id'          => $lockedTask->id,
+                        'transaction_type' => 'debit',
+                        'amount'           => $netComm,
+                        'description'      => $desc,
+                        'status'           => true,
+                        'maturity_time'    => now(),
+                    ]);
+
+                    $totalReversedCommission += $netComm;
+                    $reversedCommissionsCount++;
+                    $commissionDetails[] = [
+                        'wallet_id' => $wId,
+                        'user_id'   => $wallet->user_id,
+                        'amount'    => $netComm,
+                        'role'      => $roleLabel,
+                    ];
+                }
+            }
+
+            // 4. فك ارتباط المستثمر وتحديث حالة التمويل للمهمة إذا كانت مرتبطة بمستثمر
+            $oldInvestorId = $lockedTask->investor_id;
+            $oldInvestorPaymentStatus = $lockedTask->investor_payment_status;
+
+            if ($oldInvestorId !== null || $oldInvestorPaymentStatus !== 'none') {
+                $lockedTask->update([
+                    'investor_id'             => null,
+                    'investor_payment_status' => 'none',
+                ]);
+            }
+
+            // 5. تسجيل العملية في سجل تدقيق المهمة Task_History
+            if ($refundedCapital > 0 || $totalReversedCommission > 0) {
+                $historyNotes = [];
+                if ($refundedCapital > 0) {
+                    $investorName = $investor ? $investor->name : "المستثمر #{$investorId}";
+                    $historyNotes[] = "استرداد رأس المال بمبلغ " . number_format($refundedCapital, 2) . " ر.س في محفظة الاستثمار ({$investorName})";
+                }
+                if ($totalReversedCommission > 0) {
+                    $historyNotes[] = "خصم عكسي للعمولات بمبلغ إجمالي " . number_format($totalReversedCommission, 2) . " ر.س من {$reversedCommissionsCount} محفظة";
+                }
+                $historyNotes[] = "فك ارتباط المستثمر بالمهمة";
+
+                $performerName = $performer ? $performer->name : (auth()->user()?->name ?? 'النظام التلقائي');
+                $logDesc = "تمت المعالجة العكسية للمهمة الملغاة #{$lockedTask->id}: " . implode('، ', $historyNotes) . ". بواسطة: {$performerName}" . ($reason ? " ({$reason})" : "");
+
+                Task_History::create([
+                    'task_id'     => $lockedTask->id,
+                    'action_type' => 'cancellation_financial_reversal',
+                    'description' => $logDesc,
+                    'user_id'     => $performerId,
+                    'ip'          => class_exists('\App\Helpers\IpHelper') ? \App\Helpers\IpHelper::getUserIpAddress() : request()->ip(),
+                ]);
+            }
+
+            return [
+                'success'                    => true,
+                'refunded_capital'           => $refundedCapital,
+                'capital_tx_id'              => $capitalTxId,
+                'reversed_commission_total'  => $totalReversedCommission,
+                'reversed_commissions_count' => $reversedCommissionsCount,
+                'commission_details'         => $commissionDetails,
+                'already_settled'            => ($refundedCapital <= 0.001 && $totalReversedCommission <= 0.001),
+            ];
+        });
     }
 }

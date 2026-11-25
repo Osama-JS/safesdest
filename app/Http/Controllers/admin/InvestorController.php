@@ -564,23 +564,22 @@ class InvestorController extends Controller
         $totalInvested += $taskPrice;
         $assignedTaskIds[] = $task->id;
 
-        // 3. إذا كان مضارب مهام، نحتسب عمولته فوراً
+        // 3. إذا كان مضارب مهام، نحتسب عمولته فوراً بعد خصم عمولات المستخدمين والوسطاء
         if ($contract->contract_type === 'task_investment') {
-          $platformCommission = (float) ($task->ad->service_commission ?? $task->commission ?? 0);
-          if ($platformCommission > 0) {
-            $investorCommission = $contract->calculateCommission($platformCommission);
-            if ($investorCommission > 0) {
-              $personalWallet = $investor->userWallet;
-              if ($personalWallet) {
-                UserWalletTransaction::create([
-                  'user_wallet_id' => $personalWallet->id,
-                  'task_id' => $task->id,
-                  'transaction_type' => 'credit',
-                  'amount' => $investorCommission,
-                  'description' => __('Task commission #:id', ['id' => $task->id]),
-                  'status' => true,
-                ]);
-              }
+          $calc = $task->calculateInvestorCommission($contract);
+          $investorCommission = (float) $calc['net_investor_commission'];
+          if ($investorCommission > 0) {
+            $personalWallet = $investor->userWallet;
+            if ($personalWallet) {
+              $descSuffix = $calc['has_deductions'] ? ' (بعد خصم الشركاء)' : '';
+              UserWalletTransaction::create([
+                'user_wallet_id' => $personalWallet->id,
+                'task_id' => $task->id,
+                'transaction_type' => 'credit',
+                'amount' => $investorCommission,
+                'description' => __('Task commission #:id', ['id' => $task->id]) . $descSuffix,
+                'status' => true,
+              ]);
             }
           }
         }

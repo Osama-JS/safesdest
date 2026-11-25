@@ -362,6 +362,13 @@ class TasksController extends Controller
                         \Illuminate\Support\Facades\Log::error("GoTech auto-cancel error on task cancellation #{$find->id}: " . $e->getMessage());
                     }
                 }
+
+                // تسوية مالية عكسية فورية لمحفظة الاستثمار وعمولات المستثمر والوسطاء والشركاء إذا كانت المهمة ممولة
+                try {
+                    app(\App\Services\InvestorPaymentService::class)->reverseAndRefundCanceledTask($find, auth()->user(), 'إلغاء المهمة وتغيير حالتها إلى ' . $req->status);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Error reversing investor funds on task cancel #{$find->id}: " . $e->getMessage());
+                }
             }
 
             $done = $find->update($data);
@@ -851,6 +858,13 @@ class TasksController extends Controller
             if ($request->cancel_task) {
                 $task->status = 'canceled';
                 $description = 'Admin approved cancellation request and CANCELED the task.';
+
+                // تسوية مالية عكسية فورية لمحفظة الاستثمار وعمولات المستثمر والوسطاء والشركاء إذا كانت المهمة ممولة
+                try {
+                    app(\App\Services\InvestorPaymentService::class)->reverseAndRefundCanceledTask($task, auth()->user(), 'موافقة الإدارة على طلب إلغاء السائق');
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Error reversing investor funds on approve_cancellation #{$task->id}: " . $e->getMessage());
+                }
             } else {
                 $task->status = 'in_progress';
                 $description = 'Admin approved cancellation request and DROPPED the task from driver.';

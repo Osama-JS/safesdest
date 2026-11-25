@@ -534,9 +534,7 @@ class InvestorAuditController extends Controller
         $currentUser = Auth::user();
 
         try {
-            DB::beginTransaction();
-
-            $task = Task::lockForUpdate()->findOrFail($taskId);
+            $task = Task::findOrFail($taskId);
 
             if (!in_array($task->status, ['canceled', 'cancelled'])) {
                 return response()->json([
@@ -545,151 +543,47 @@ class InvestorAuditController extends Controller
                 ]);
             }
 
-            // Find investor ID
-            $investorId = $task->investor_id;
-            if (!$investorId) {
-                $firstDebit = InvestorWalletTransaction::where('task_id', $taskId)
-                    ->where('transaction_type', 'debit')
-                    ->with('wallet')
-                    ->first();
-                $investorId = $firstDebit?->wallet?->user_id;
-            }
+            $result = app(\App\Services\InvestorPaymentService::class)->reverseAndRefundCanceledTask(
+                $task, 
+                $currentUser, 
+                'تسوية مهمة ملغاة من صفحة التدقيق'
+            );
 
-            if (!$investorId) {
-                return response()->json([
-                    'status' => 0,
-                    'error' => 'تعذر تحديد المستثمر المرتبط بهذه المهمة.',
-                ]);
-            }
-
-            $investorWallet = InvestorWallet::lockForUpdate()->where('user_id', $investorId)->first();
-            if (!$investorWallet) {
-                return response()->json([
-                    'status' => 0,
-                    'error' => 'محفظة الاستثمار الخاصة بالمستثمر غير موجودة.',
-                ]);
-            }
-
-            // 1. Check Capital in Investor Wallet
-            $iTxs = InvestorWalletTransaction::where('task_id', $taskId)->get();
-            $fundedAmount = floatval($iTxs->where('transaction_type', 'debit')->sum('amount'));
-            $refundedAmount = floatval($iTxs->where('transaction_type', 'credit')->sum('amount'));
-            $netLockedCapital = $fundedAmount - $refundedAmount;
-
-            $capitalRefunded = false;
-            $newCapitalTxId = null;
-
-            if ($netLockedCapital > 0.001) {
-                $currentBalance = $investorWallet->balance;
-                $balanceAfterCredit = $currentBalance + $netLockedCapital;
-
-                $capitalTx = InvestorWalletTransaction::create([
-                    'investor_wallet_id' => $investorWallet->id,
-                    'task_id'            => $task->id,
-                    'transaction_type'   => 'credit',
-                    'source_type'        => 'refund',
-                    'amount'             => $netLockedCapital,
-                    'description'        => "استرداد رأس مال للمهمة رقم #{$task->id} بسبب إلغاء المهمة",
-                    'performed_by'       => $currentUser->id,
-                    'balance_after'      => $balanceAfterCredit,
-                ]);
-
-                $capitalRefunded = true;
-                $newCapitalTxId = $capitalTx->id;
-            }
-
-            // 2. Check and Reverse Commissions in User Wallets
-            $uTxs = UserWalletTransaction::where('task_id', $taskId)->get();
-            $reversedCommissionsCount = 0;
-            $totalReversedCommission = 0;
-            $walletsAffected = $uTxs->pluck('user_wallet_id')->unique();
-
-            foreach ($walletsAffected as $wId) {
-                $walletTxs = $uTxs->where('user_wallet_id', $wId);
-                $credited = floatval($walletTxs->where('transaction_type', 'credit')->sum('amount'));
-                $debited = floatval($walletTxs->where('transaction_type', 'debit')->sum('amount'));
-                $netComm = $credited - $debited;
-
-                if ($netComm > 0.001) {
-                    UserWalletTransaction::create([
-                        'user_wallet_id'   => $wId,
-                        'user_id'          => $currentUser->id,
-                        'task_id'          => $task->id,
-                        'transaction_type' => 'debit',
-                        'amount'           => $netComm,
-                        'description'      => "خصم عكسي لعمولة المهمة #{$task->id} بسبب إلغاء المهمة",
-                        'status'           => true,
-                    ]);
-
-                    $totalReversedCommission += $netComm;
-                    $reversedCommissionsCount++;
-                }
-            }
-
-            // Check if anything needed settling
-            if (!$capitalRefunded && $totalReversedCommission <= 0.001) {
-                DB::rollBack();
+            if (!empty($result['already_settled'])) {
                 return response()->json([
                     'status' => 0,
                     'error' => 'تمت تسوية هذه المهمة الملغاة مسبقاً بالكامل (رأس المال مسترد والعمولات معكوسة بالفعل).',
                 ]);
             }
 
-            // 3. Update Task investor payment status and unassign from investor
-            $oldInvPaymentStatus = $task->investor_payment_status;
-            $oldInvestorId = $task->investor_id;
-            $task->update([
-                'investor_id'             => null,
-                'investor_payment_status' => 'none',
-            ]);
+            $refundedCapital = (float) ($result['refunded_capital'] ?? 0);
+            $reversedCommission = (float) ($result['reversed_commission_total'] ?? 0);
 
-            // 4. Logging in Task_History
-            $logDesc = "تم تسوية المهمة الملغاة #{$task->id} وفصلها من المستثمر بنجاح: " .
-                ($capitalRefunded ? "إيداع استرداد رأس مال بمبلغ " . number_format($netLockedCapital, 2) . " ر.س في محفظة الاستثمار للمستثمر ({$investorWallet->investor?->name}). " : "") .
-                ($totalReversedCommission > 0 ? "تسجيل خصم عكسي للعمولة بمبلغ " . number_format($totalReversedCommission, 2) . " ر.س من المحفظة الشخصية. " : "") .
-                "تم فك ارتباط المهمة من المستثمر. السبب: إلغاء المهمة - بواسطة {$currentUser->name}";
-
-            Task_History::create([
-                'action_type' => 'updated',
-                'description' => $logDesc,
-                'task_id' => $task->id,
-                'user_id' => $currentUser->id,
-            ]);
-
-            // 5. Activity Log
+            // Activity Log
             ActivityLog::create([
                 'user_id' => $currentUser->id,
                 'action' => 'تسوية مهمة ملغاة وفصلها من المستثمر',
                 'table_name' => 'tasks',
                 'record_id' => (string) $task->id,
-                'old_values' => [
-                    'investor_id' => $oldInvestorId,
-                    'investor_payment_status' => $oldInvPaymentStatus,
-                    'locked_capital' => $netLockedCapital,
-                ],
                 'new_values' => [
                     'investor_id' => null,
                     'investor_payment_status' => 'none',
-                    'refunded_capital' => $netLockedCapital,
-                    'capital_tx_id' => $newCapitalTxId,
-                    'reversed_commission' => $totalReversedCommission,
-                    'log' => $logDesc,
+                    'refunded_capital' => $refundedCapital,
+                    'capital_tx_id' => $result['capital_tx_id'] ?? null,
+                    'reversed_commission' => $reversedCommission,
                 ],
                 'ip_address' => request()->ip(),
             ]);
 
-            DB::commit();
-
             return response()->json([
                 'status' => 1,
-                'success' => "تم تسوية المهمة الملغاة #{$task->id} وفصلها من المستثمر بنجاح! تم استرداد " . number_format($netLockedCapital, 2) . " ر.س لمحفظة الاستثمار" . ($totalReversedCommission > 0 ? " وخصم عكسي " . number_format($totalReversedCommission, 2) . " ر.س من العمولات." : "."),
+                'success' => "تم تسوية المهمة الملغاة #{$task->id} وفصلها من المستثمر بنجاح! تم استرداد " . number_format($refundedCapital, 2) . " ر.س لمحفظة الاستثمار" . ($reversedCommission > 0 ? " وخصم عكسي " . number_format($reversedCommission, 2) . " ر.س من العمولات." : "."),
                 'task_id' => $task->id,
-                'refunded_capital' => $netLockedCapital,
-                'reversed_commission' => $totalReversedCommission,
+                'refunded_capital' => $refundedCapital,
+                'reversed_commission' => $reversedCommission,
             ]);
 
         } catch (Exception $e) {
-            DB::rollBack();
             return response()->json([
                 'status' => 0,
                 'error' => 'حدث خطأ أثناء تسوية المهمة: ' . $e->getMessage(),
@@ -721,150 +615,48 @@ class InvestorAuditController extends Controller
 
         foreach ($taskIds as $taskId) {
             try {
-                DB::beginTransaction();
-
-                $task = Task::lockForUpdate()->find($taskId);
+                $task = Task::find($taskId);
 
                 if (!$task || !in_array($task->status, ['canceled', 'cancelled'])) {
-                    DB::rollBack();
                     $skippedCount++;
                     continue;
                 }
 
-                // Find investor ID
-                $investorId = $task->investor_id;
-                if (!$investorId) {
-                    $firstDebit = InvestorWalletTransaction::where('task_id', $taskId)
-                        ->where('transaction_type', 'debit')
-                        ->with('wallet')
-                        ->first();
-                    $investorId = $firstDebit?->wallet?->user_id;
-                }
+                $result = app(\App\Services\InvestorPaymentService::class)->reverseAndRefundCanceledTask(
+                    $task,
+                    $currentUser,
+                    'تسوية جماعية للمهام الملغاة من صفحة التدقيق'
+                );
 
-                if (!$investorId) {
-                    DB::rollBack();
-                    $errors[] = "المهمة #{$taskId}: تعذر تحديد المستثمر.";
-                    continue;
-                }
-
-                $investorWallet = InvestorWallet::lockForUpdate()->where('user_id', $investorId)->first();
-                if (!$investorWallet) {
-                    DB::rollBack();
-                    $errors[] = "المهمة #{$taskId}: محفظة الاستثمار غير موجودة.";
-                    continue;
-                }
-
-                // 1. Check Capital in Investor Wallet
-                $iTxs = InvestorWalletTransaction::where('task_id', $taskId)->get();
-                $fundedAmount = floatval($iTxs->where('transaction_type', 'debit')->sum('amount'));
-                $refundedAmount = floatval($iTxs->where('transaction_type', 'credit')->sum('amount'));
-                $netLockedCapital = $fundedAmount - $refundedAmount;
-
-                $capitalRefunded = false;
-                $newCapitalTxId = null;
-
-                if ($netLockedCapital > 0.001) {
-                    $currentBalance = $investorWallet->balance;
-                    $balanceAfterCredit = $currentBalance + $netLockedCapital;
-
-                    $capitalTx = InvestorWalletTransaction::create([
-                        'investor_wallet_id' => $investorWallet->id,
-                        'task_id'            => $task->id,
-                        'transaction_type'   => 'credit',
-                        'source_type'        => 'refund',
-                        'amount'             => $netLockedCapital,
-                        'description'        => "استرداد رأس مال للمهمة رقم #{$task->id} بسبب إلغاء المهمة",
-                        'performed_by'       => $currentUser->id,
-                        'balance_after'      => $balanceAfterCredit,
-                    ]);
-
-                    $capitalRefunded = true;
-                    $newCapitalTxId = $capitalTx->id;
-                    $totalCapitalRefunded += $netLockedCapital;
-                }
-
-                // 2. Check and Reverse Commissions in User Wallets
-                $uTxs = UserWalletTransaction::where('task_id', $taskId)->get();
-                $reversedCommissionsForTask = 0;
-                $walletsAffected = $uTxs->pluck('user_wallet_id')->unique();
-
-                foreach ($walletsAffected as $wId) {
-                    $walletTxs = $uTxs->where('user_wallet_id', $wId);
-                    $credited = floatval($walletTxs->where('transaction_type', 'credit')->sum('amount'));
-                    $debited = floatval($walletTxs->where('transaction_type', 'debit')->sum('amount'));
-                    $netComm = $credited - $debited;
-
-                    if ($netComm > 0.001) {
-                        UserWalletTransaction::create([
-                            'user_wallet_id'   => $wId,
-                            'user_id'          => $currentUser->id,
-                            'task_id'          => $task->id,
-                            'transaction_type' => 'debit',
-                            'amount'           => $netComm,
-                            'description'      => "خصم عكسي لعمولة المهمة #{$task->id} بسبب إلغاء المهمة",
-                            'status'           => true,
-                        ]);
-
-                        $reversedCommissionsForTask += $netComm;
-                    }
-                }
-                $totalCommissionsReversed += $reversedCommissionsForTask;
-
-                // Check if anything needed settling
-                if (!$capitalRefunded && $reversedCommissionsForTask <= 0.001) {
-                    DB::rollBack();
+                if (!empty($result['already_settled'])) {
                     $skippedCount++;
                     continue;
                 }
 
-                // 3. Update Task investor payment status and unassign from investor
-                $oldInvPaymentStatus = $task->investor_payment_status;
-                $oldInvestorId = $task->investor_id;
-                $task->update([
-                    'investor_id'             => null,
-                    'investor_payment_status' => 'none',
-                ]);
+                $refundedCapital = (float) ($result['refunded_capital'] ?? 0);
+                $reversedCommission = (float) ($result['reversed_commission_total'] ?? 0);
 
-                // 4. Logging in Task_History
-                $logDesc = "تم تسوية المهمة الملغاة #{$task->id} وفصلها من المستثمر بنجاح (تسوية جماعية): " .
-                    ($capitalRefunded ? "إيداع استرداد رأس مال بمبلغ " . number_format($netLockedCapital, 2) . " ر.س في محفظة الاستثمار للمستثمر ({$investorWallet->investor?->name}). " : "") .
-                    ($reversedCommissionsForTask > 0 ? "تسجيل خصم عكسي للعمولة بمبلغ " . number_format($reversedCommissionsForTask, 2) . " ر.س من المحفظة الشخصية. " : "") .
-                    "تم فك ارتباط المهمة من المستثمر. السبب: إلغاء المهمة - بواسطة {$currentUser->name}";
+                $totalCapitalRefunded += $refundedCapital;
+                $totalCommissionsReversed += $reversedCommission;
+                $settledCount++;
 
-                Task_History::create([
-                    'action_type' => 'updated',
-                    'description' => $logDesc,
-                    'task_id' => $task->id,
-                    'user_id' => $currentUser->id,
-                ]);
-
-                // 5. Activity Log
+                // Activity Log
                 ActivityLog::create([
                     'user_id' => $currentUser->id,
                     'action' => 'تسوية مهمة ملغاة وفصلها من المستثمر جماعية',
                     'table_name' => 'tasks',
                     'record_id' => (string) $task->id,
-                    'old_values' => [
-                        'investor_id' => $oldInvestorId,
-                        'investor_payment_status' => $oldInvPaymentStatus,
-                        'locked_capital' => $netLockedCapital,
-                    ],
                     'new_values' => [
                         'investor_id' => null,
                         'investor_payment_status' => 'none',
-                        'refunded_capital' => $netLockedCapital,
-                        'capital_tx_id' => $newCapitalTxId,
-                        'reversed_commission' => $reversedCommissionsForTask,
-                        'log' => $logDesc,
+                        'refunded_capital' => $refundedCapital,
+                        'capital_tx_id' => $result['capital_tx_id'] ?? null,
+                        'reversed_commission' => $reversedCommission,
                     ],
                     'ip_address' => request()->ip(),
                 ]);
 
-                DB::commit();
-                $settledCount++;
-
             } catch (Exception $e) {
-                DB::rollBack();
                 $errors[] = "المهمة #{$taskId}: " . $e->getMessage();
             }
         }
@@ -909,7 +701,9 @@ class InvestorAuditController extends Controller
         try {
             DB::beginTransaction();
 
-            $task = Task::lockForUpdate()->findOrFail($taskId);
+            $task = Task::with(['customer.userCommissions.user', 'brokers', 'driver.brokers', 'ad', 'investor'])
+                ->lockForUpdate()
+                ->findOrFail($taskId);
 
             if (in_array(strtolower($task->status), ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'])) {
                 DB::rollBack();
@@ -950,39 +744,29 @@ class InvestorAuditController extends Controller
                     ->first();
             }
 
-            // Calculate Platform Commission
-            $platformCut = 0;
-            if ($task->ad) {
-                if ($task->ad->service_commission_type == 1) {
-                    $platformCut = (float) $task->ad->service_commission;
-                } else {
-                    $pct = (float) $task->ad->service_commission;
-                    $platformCut = ($task->total_price * $pct) / 100;
-                }
-            } else {
-                $platformCut = (float) $task->commission;
+            if (!$contract) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 0,
+                    'error' => 'تعذر تحديد عقد الاستثمار لهذا المستثمر.',
+                ]);
             }
 
-            $expectedComm = 0;
-            if ($contract && $platformCut > 0) {
-                if ($contract->min_commission_threshold <= 0 || $platformCut >= $contract->min_commission_threshold) {
-                    $grossExpected = $contract->calculateCommission($platformCut);
-                    $brokerDeduction = 0;
+            $calc = $task->calculateInvestorCommission($contract);
+            $expectedComm = (float) $calc['net_investor_commission'];
 
-                    if ($contract->brokers && $contract->brokers->count() > 0) {
-                        foreach ($contract->brokers as $b) {
-                            $p = $b->pivot;
-                            $bVal = (float)$p->broker_commission_value;
-                            if (($p->broker_commission_source ?? 'investor_commission') === 'investor_commission') {
-                                $brokerDeduction += (($p->broker_commission_type ?? 'percentage') === 'percentage') 
-                                    ? ($grossExpected * $bVal) / 100 
-                                    : $bVal;
-                            }
-                        }
-                    }
-                    $expectedComm = max(0, $grossExpected - $brokerDeduction);
-                }
+            // بناء تفاصيل الخصومات للوصف
+            $descNotes = [];
+            if ($calc['user_commissions_total'] > 0) {
+                $descNotes[] = "مستخدمين: -{$calc['user_commissions_total']}";
             }
+            if ($calc['task_brokers_total'] > 0) {
+                $descNotes[] = "وسطاء: -{$calc['task_brokers_total']}";
+            }
+            if ($calc['contract_task_brokers_total'] > 0 || $calc['contract_investor_brokers_total'] > 0) {
+                $descNotes[] = "وسطاء عقد";
+            }
+            $deductionNote = !empty($descNotes) ? " (بعد خصم " . implode(' و ', $descNotes) . ")" : "";
 
             // Lock and get investor personal wallet
             $userWallet = \App\Models\UserWallet::lockForUpdate()->firstOrCreate(
@@ -1004,7 +788,7 @@ class InvestorAuditController extends Controller
                 DB::rollBack();
                 return response()->json([
                     'status' => 0,
-                    'error' => 'العمولة مطابقة تماماً للعقد (الفارق 0.00 ر.س). لا يتطلب الأمر أي تسوية.',
+                    'error' => 'العمولة مطابقة تماماً للعقد والخصومات (الفارق 0.00 ر.س). لا يتطلب الأمر أي تسوية.',
                 ]);
             }
 
@@ -1023,7 +807,7 @@ class InvestorAuditController extends Controller
                 $newAmountFormatted = number_format($expectedComm, 2);
 
                 $updatedDesc = $primaryCreditTx->description;
-                $noteSuffix = " [تم تسوية العمولة وتعديلها من {$oldAmountFormatted} إلى {$newAmountFormatted} ر.س بناءً على العقد" . ($reason ? " - السبب: {$reason}" : "") . " - بواسطة {$currentUser->name}]";
+                $noteSuffix = " [تم تسوية العمولة وتعديلها من {$oldAmountFormatted} إلى {$newAmountFormatted} ر.س بناءً على العقد{$deductionNote}" . ($reason ? " - السبب: {$reason}" : "") . " - بواسطة {$currentUser->name}]";
                 
                 // Append or replace notes in description cleanly
                 if (!str_contains($updatedDesc, '[تم تسوية العمولة')) {
@@ -1047,7 +831,7 @@ class InvestorAuditController extends Controller
             } else {
                 // If no credit transaction ever existed (uncredited task), create the primary commission credit transaction directly
                 $actionLabel = 'تسجيل عمولة المهمة';
-                $baseDesc = "عمولة المهمة #{$taskId}";
+                $baseDesc = "عمولة المهمة #{$taskId}{$deductionNote}";
                 if ($reason) {
                     $baseDesc .= " [تسوية عمولة بناءً على العقد - السبب: {$reason} - بواسطة {$currentUser->name}]";
                 }
@@ -1142,7 +926,9 @@ class InvestorAuditController extends Controller
             try {
                 DB::beginTransaction();
 
-                $task = Task::lockForUpdate()->find($taskId);
+                $task = Task::with(['customer.userCommissions.user', 'brokers', 'driver.brokers', 'ad', 'investor'])
+                    ->lockForUpdate()
+                    ->find($taskId);
 
                 if (!$task || in_array(strtolower($task->status), ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'])) {
                     DB::rollBack();
@@ -1177,38 +963,26 @@ class InvestorAuditController extends Controller
                         ->first();
                 }
 
-                $platformCut = 0;
-                if ($task->ad) {
-                    if ($task->ad->service_commission_type == 1) {
-                        $platformCut = (float) $task->ad->service_commission;
-                    } else {
-                        $pct = (float) $task->ad->service_commission;
-                        $platformCut = ($task->total_price * $pct) / 100;
-                    }
-                } else {
-                    $platformCut = (float) $task->commission;
+                if (!$contract) {
+                    DB::rollBack();
+                    $errors[] = "المهمة #{$taskId}: تعذر تحديد عقد الاستثمار.";
+                    continue;
                 }
 
-                $expectedComm = 0;
-                if ($contract && $platformCut > 0) {
-                    if ($contract->min_commission_threshold <= 0 || $platformCut >= $contract->min_commission_threshold) {
-                        $grossExpected = $contract->calculateCommission($platformCut);
-                        $brokerDeduction = 0;
+                $calc = $task->calculateInvestorCommission($contract);
+                $expectedComm = (float) $calc['net_investor_commission'];
 
-                        if ($contract->brokers && $contract->brokers->count() > 0) {
-                            foreach ($contract->brokers as $b) {
-                                $p = $b->pivot;
-                                $bVal = (float)$p->broker_commission_value;
-                                if (($p->broker_commission_source ?? 'investor_commission') === 'investor_commission') {
-                                    $brokerDeduction += (($p->broker_commission_type ?? 'percentage') === 'percentage') 
-                                        ? ($grossExpected * $bVal) / 100 
-                                        : $bVal;
-                                }
-                            }
-                        }
-                        $expectedComm = max(0, $grossExpected - $brokerDeduction);
-                    }
+                $descNotes = [];
+                if ($calc['user_commissions_total'] > 0) {
+                    $descNotes[] = "مستخدمين: -{$calc['user_commissions_total']}";
                 }
+                if ($calc['task_brokers_total'] > 0) {
+                    $descNotes[] = "وسطاء: -{$calc['task_brokers_total']}";
+                }
+                if ($calc['contract_task_brokers_total'] > 0 || $calc['contract_investor_brokers_total'] > 0) {
+                    $descNotes[] = "وسطاء عقد";
+                }
+                $deductionNote = !empty($descNotes) ? " (بعد خصم " . implode(' و ', $descNotes) . ")" : "";
 
                 $userWallet = \App\Models\UserWallet::lockForUpdate()->firstOrCreate(
                     ['user_id' => $investor->id],
@@ -1245,7 +1019,7 @@ class InvestorAuditController extends Controller
                     $newAmountFormatted = number_format($expectedComm, 2);
 
                     $updatedDesc = $primaryCreditTx->description;
-                    $noteSuffix = " [تم تسوية العمولة وتعديلها من {$oldAmountFormatted} إلى {$newAmountFormatted} ر.س بناءً على العقد" . ($reason ? " - السبب: {$reason}" : "") . " - بواسطة {$currentUser->name}]";
+                    $noteSuffix = " [تم تسوية العمولة وتعديلها من {$oldAmountFormatted} إلى {$newAmountFormatted} ر.س بناءً على العقد{$deductionNote}" . ($reason ? " - السبب: {$reason}" : "") . " - بواسطة {$currentUser->name}]";
                     
                     if (!str_contains($updatedDesc, '[تم تسوية العمولة')) {
                         $updatedDesc = trim($updatedDesc) . $noteSuffix;
@@ -1274,7 +1048,7 @@ class InvestorAuditController extends Controller
                 } else {
                     // Create primary credit transaction if none ever existed
                     $actionLabel = 'تسجيل عمولة المهمة جماعية';
-                    $baseDesc = "عمولة المهمة #{$taskId}";
+                    $baseDesc = "عمولة المهمة #{$taskId}{$deductionNote}";
                     if ($reason) {
                         $baseDesc .= " [تسوية عمولة بناءً على العقد - السبب: {$reason} - بواسطة {$currentUser->name}]";
                     }
@@ -1936,11 +1710,11 @@ class InvestorAuditController extends Controller
 
         $excludedStatuses = ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'];
 
-        // 2. Preload tasks with ad, customer, investor.userWallet (excluding canceled & refunded tasks)
+        // 2. Preload tasks with ad, customer, userCommissions, brokers (excluding canceled & refunded tasks)
         $tasks = Task::whereIn('id', $taskIds)
             ->whereNotIn('status', $excludedStatuses)
             ->whereNotIn('payment_status', ['refund', 'canceled'])
-            ->with(['investor.userWallet', 'ad', 'customer'])
+            ->with(['investor.userWallet', 'ad', 'customer.userCommissions.user', 'brokers', 'driver.brokers'])
             ->get();
 
         // 3. Preload all contracts with brokers
@@ -1976,23 +1750,6 @@ class InvestorAuditController extends Controller
             $uWallet = $investor->userWallet;
             $walletId = $uWallet ? $uWallet->id : null;
 
-            // Platform commission
-            $platformCut = 0;
-            $sourceDesc = '';
-            if ($task->ad) {
-                if ($task->ad->service_commission_type == 1) {
-                    $platformCut = (float) $task->ad->service_commission;
-                    $sourceDesc = 'ثابت بالإعلان (' . number_format($platformCut, 2) . ' ر.س)';
-                } else {
-                    $pct = (float) $task->ad->service_commission;
-                    $platformCut = ($task->total_price * $pct) / 100;
-                    $sourceDesc = "نسبة {$pct}% بالإعلان (" . number_format($platformCut, 2) . ' ر.س)';
-                }
-            } else {
-                $platformCut = (float) $task->commission;
-                $sourceDesc = 'يدوي بالمهمة (' . number_format($platformCut, 2) . ' ر.س)';
-            }
-
             // Match contract
             $contract = $contracts->where('user_id', $investor->id)
                 ->filter(fn($c) => $c->isTaskWithinContractPeriod($task->created_at))
@@ -2000,38 +1757,50 @@ class InvestorAuditController extends Controller
 
             $expectedComm = 0;
             $contractRate = 'بدون عقد';
+            $platformCut = 0;
+            $sourceDesc = '';
 
             if ($contract) {
                 $contractRate = $contract->commission_type === 'percentage' 
                     ? "{$contract->commission_value}%" 
                     : "ثابت {$contract->commission_value} ر.س";
 
-                if ($platformCut > 0) {
-                    if ($contract->min_commission_threshold <= 0 || $platformCut >= $contract->min_commission_threshold) {
-                        $grossExpected = $contract->calculateCommission($platformCut);
-                        $brokerDeduction = 0;
+                $calc = $task->calculateInvestorCommission($contract);
+                $expectedComm = (float) $calc['net_investor_commission'];
+                $platformCut = (float) $calc['platform_gross'];
 
-                        if ($contract->brokers && $contract->brokers->count() > 0) {
-                            foreach ($contract->brokers as $b) {
-                                $p = $b->pivot;
-                                $bVal = (float)$p->broker_commission_value;
-                                if (($p->broker_commission_source ?? 'investor_commission') === 'investor_commission') {
-                                    $brokerDeduction += (($p->broker_commission_type ?? 'percentage') === 'percentage') 
-                                        ? ($grossExpected * $bVal) / 100 
-                                        : $bVal;
-                                }
-                            }
-                        } elseif ($contract->broker_id && $contract->broker_commission_value > 0) {
-                            $bVal = (float)$contract->broker_commission_value;
-                            if ($contract->broker_commission_source === 'investor_commission') {
-                                $brokerDeduction += ($contract->broker_commission_type === 'percentage') 
-                                    ? ($grossExpected * $bVal) / 100 
-                                    : $bVal;
-                            }
-                        }
-
-                        $expectedComm = max(0, $grossExpected - $brokerDeduction);
+                // تفصيل مصدر العمولة والخصومات
+                $baseDesc = '';
+                if ($task->ad) {
+                    if ($task->ad->service_commission_type == 1) {
+                        $baseDesc = 'ثابت بالإعلان (' . number_format($platformCut, 2) . ' ر.س)';
+                    } else {
+                        $pct = (float) $task->ad->service_commission;
+                        $baseDesc = "نسبة {$pct}% بالإعلان (" . number_format($platformCut, 2) . ' ر.س)';
                     }
+                } else {
+                    $baseDesc = 'يدوي بالمهمة (' . number_format($platformCut, 2) . ' ر.س)';
+                }
+
+                if ($calc['has_deductions']) {
+                    $totalDeducted = $calc['total_deductions_from_task'] + $calc['contract_investor_brokers_total'];
+                    $sourceDesc = $baseDesc . ' [خصم شركاء: -' . number_format($totalDeducted, 2) . ' | صافي الأساس: ' . number_format($calc['net_task_commission'], 2) . ' ر.س]';
+                } else {
+                    $sourceDesc = $baseDesc;
+                }
+            } else {
+                if ($task->ad) {
+                    if ($task->ad->service_commission_type == 1) {
+                        $platformCut = (float) $task->ad->service_commission;
+                        $sourceDesc = 'ثابت بالإعلان (' . number_format($platformCut, 2) . ' ر.س)';
+                    } else {
+                        $pct = (float) $task->ad->service_commission;
+                        $platformCut = ($task->total_price * $pct) / 100;
+                        $sourceDesc = "نسبة {$pct}% بالإعلان (" . number_format($platformCut, 2) . ' ر.س)';
+                    }
+                } else {
+                    $platformCut = (float) $task->commission;
+                    $sourceDesc = 'يدوي بالمهمة (' . number_format($platformCut, 2) . ' ر.س)';
                 }
             }
 

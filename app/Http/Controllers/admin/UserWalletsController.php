@@ -938,19 +938,21 @@ class UserWalletsController extends Controller
         return response()->json(['status' => 0, 'error' => 'لا توجد عمولة للمنصة في هذه المهمة.']);
       }
 
-      // حساب نصيب المضارب
-      $investorCommission = $contract->calculateCommission($platformCut);
+      // حساب نصيب المضارب بعد استقطاع عمولات المستخدمين والوسطاء
+      $calc = $task->calculateInvestorCommission($contract);
+      $investorCommission = (float) $calc['net_investor_commission'];
 
       if ($investorCommission <= 0) {
-        return response()->json(['status' => 0, 'error' => 'عمولة المضارب تساوي صفراً بناءً على العقد.']);
+        return response()->json(['status' => 0, 'error' => 'عمولة المضارب تساوي صفراً بناءً على العقد وبعد خصم عمولات الشركاء.']);
       }
 
+      $descSuffix = $calc['has_deductions'] ? ' (بعد خصم الشركاء)' : '';
       UserWalletTransaction::create([
         'user_wallet_id' => $personalWallet->id,
         'task_id' => $task->id,
         'amount' => $investorCommission,
         'transaction_type' => 'credit',
-        'description' => "عمولة المضارب من المهمة رقم #{$task->id}",
+        'description' => "عمولة المضارب من المهمة رقم #{$task->id}{$descSuffix}",
         'created_by' => Auth::id(),
       ]);
 
@@ -1865,12 +1867,14 @@ class UserWalletsController extends Controller
         ->with('error', __('Task payment page only for task investors'));
     }
 
+    $contract?->loadMissing(['brokers', 'broker']);
+
     $investorWallet = $investor->investorWallet;
     $walletBalance = $investorWallet?->balance ?? 0;
 
     $query = Task::availableForInvestorPayment()
       ->whereNotNull('customer_id')
-      ->with(['customer', 'pickup', 'delivery', 'ad'])
+      ->with(['customer.userCommissions.user', 'brokers', 'driver.brokers', 'pickup', 'delivery', 'ad'])
       ->latest();
 
     // فلتر العملاء المخصصين

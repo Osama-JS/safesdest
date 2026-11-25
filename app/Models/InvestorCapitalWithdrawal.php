@@ -71,6 +71,19 @@ class InvestorCapitalWithdrawal extends Model
     }
 
     /**
+     * Get the HyperPay Payout linked to this withdrawal.
+     */
+    public function payout()
+    {
+        return $this->hasOne(HyperpayPayout::class, 'source_capital_withdrawal_id')->latestOfMany();
+    }
+
+    public function payouts()
+    {
+        return $this->hasMany(HyperpayPayout::class, 'source_capital_withdrawal_id');
+    }
+
+    /**
      * Check if the disbursement date has arrived.
      */
     public function getIsDueForDisbursementAttribute(): bool

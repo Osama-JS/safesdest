@@ -44,7 +44,7 @@
                 <i class="ti ti-cash text-primary me-2 fs-2 align-middle"></i>
                 {{ __('طلبات الدفع عبر HyperPay Payout للمستثمرين') }}
             </h4>
-            <p class="text-muted mb-0">{{ __('مراجعة ومصادقة صرف عمولات المستثمرين بنكياً (نظام الرقابة والمصادقة الثنائية)') }}</p>
+            <p class="text-muted mb-0">{{ __('مراجعة ومصادقة صرف عمولات ورأس مال المستثمرين بنكياً (نظام الرقابة والمصادقة الثنائية)') }}</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('admin.investors.index') }}" class="btn btn-label-secondary">

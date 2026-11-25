@@ -120,6 +120,13 @@ class DistributeTask implements ShouldQueue
                     'user_id' => null,
                 ]);
 
+                // تسوية مالية عكسية فورية لمحفظة الاستثمار وعمولات المستثمر والوسطاء والشركاء إذا كانت المهمة ممولة
+                try {
+                    app(\App\Services\InvestorPaymentService::class)->reverseAndRefundCanceledTask($this->task, null, 'إلغاء تلقائي بعد استنفاد محاولات التوزيع (5 محاولات)');
+                } catch (\Throwable $e) {
+                    Log::error("Error reversing investor funds on DistributeTask cancel #{$this->task->id}: " . $e->getMessage());
+                }
+
                 Log::info('🚫 Task canceled on 5th attempt due to no driver acceptance.', [
                     'task_id' => $this->task->id
                 ]);

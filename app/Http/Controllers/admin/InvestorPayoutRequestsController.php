@@ -28,12 +28,14 @@ class InvestorPayoutRequestsController extends Controller
     protected function baseInvestorPayoutQuery()
     {
         return HyperpayPayout::where(function ($q) {
-            $q->whereIn('payout_type', ['IPW', 'IWD', 'INV'])
+            $q->whereIn('payout_type', ['IPW', 'IWD', 'INV', 'ICW'])
               ->orWhereNotNull('source_commission_withdrawal_id')
+              ->orWhereNotNull('source_capital_withdrawal_id')
               ->orWhere(function ($uq) {
                   $uq->whereNotNull('user_wallet_id')
                      ->whereHas('user', fn($userQ) => $userQ->where('investor', true));
-              });
+              })
+              ->orWhereNotNull('investor_wallet_id');
         });
     }
 
@@ -69,7 +71,7 @@ class InvestorPayoutRequestsController extends Controller
     public function getData(Request $request)
     {
         $query = $this->baseInvestorPayoutQuery()
-            ->with(['user', 'userWallet', 'creator', 'approver', 'rejector', 'commissionWithdrawal'])
+            ->with(['user', 'userWallet', 'investorWallet', 'creator', 'approver', 'rejector', 'commissionWithdrawal', 'capitalWithdrawal'])
             ->orderBy('id', 'desc');
 
         if ($request->filled('status')) {
@@ -124,21 +126,27 @@ class InvestorPayoutRequestsController extends Controller
             $iban = $details['iban'] ?? ($payout->user?->iban_number ?? '—');
             $bankName = $details['bank_name'] ?? ($payout->user?->bank_name ?? '—');
 
+            $isCapital = ($payout->payout_type === 'ICW' || $payout->source_capital_withdrawal_id);
+
             $investorHtml = '—';
             $walletUrl = null;
             if ($payout->user) {
                 $investorName = e($payout->user->name ?? '—');
                 $investorPhone = e($payout->user->phone ?? '');
-                $walletUrl = route('admin.user-wallets.show', $payout->user->id);
+                $walletUrl = $isCapital ? route('admin.investors.invest-wallet', $payout->user->id) : route('admin.user-wallets.show', $payout->user->id);
+                $walletTitle = $isCapital ? 'محفظة الاستثمار' : 'محفظة العمولات';
                 $investorHtml = "<div class='d-flex flex-column'>
-                    <a href='{$walletUrl}' class='fw-bold text-primary text-decoration-none'>{$investorName}</a>
+                    <a href='{$walletUrl}' class='fw-bold text-primary text-decoration-none' title='{$walletTitle}'>{$investorName}</a>
                     <small class='text-muted'><i class='ti ti-phone me-1'></i>{$investorPhone}</small>
                 </div>";
             }
 
             $sourceBadge = '';
-            if ($payout->source_commission_withdrawal_id) {
-                $sourceBadge = '<span class="badge bg-label-info ms-1"><i class="ti ti-file-text me-1"></i>طلب سحب #' . $payout->source_commission_withdrawal_id . '</span>';
+            if ($payout->source_capital_withdrawal_id || $payout->payout_type === 'ICW') {
+                $capId = $payout->source_capital_withdrawal_id ?: $payout->id;
+                $sourceBadge = '<span class="badge bg-label-danger ms-1"><i class="ti ti-cash me-1"></i>سحب رأس مال #' . $capId . '</span>';
+            } elseif ($payout->source_commission_withdrawal_id) {
+                $sourceBadge = '<span class="badge bg-label-info ms-1"><i class="ti ti-file-text me-1"></i>طلب سحب عمولات #' . $payout->source_commission_withdrawal_id . '</span>';
             } elseif ($payout->payout_type === 'IPW') {
                 $sourceBadge = '<span class="badge bg-label-primary ms-1"><i class="ti ti-wallet me-1"></i>محفظة العمولات</span>';
             }
@@ -220,7 +228,7 @@ class InvestorPayoutRequestsController extends Controller
     public function show($id)
     {
         $payout = $this->baseInvestorPayoutQuery()
-            ->with(['user', 'userWallet', 'creator', 'approver', 'rejector', 'commissionWithdrawal'])
+            ->with(['user', 'userWallet', 'investorWallet', 'creator', 'approver', 'rejector', 'commissionWithdrawal', 'capitalWithdrawal'])
             ->findOrFail($id);
 
         $details = $payout->transaction_details ?? [];
@@ -242,7 +250,11 @@ class InvestorPayoutRequestsController extends Controller
             ];
         }
 
-        $walletUrl = $payout->user ? route('admin.user-wallets.show', $payout->user->id) : null;
+        $isCapital = ($payout->payout_type === 'ICW' || $payout->source_capital_withdrawal_id);
+        $walletUrl = $payout->user ? ($isCapital ? route('admin.investors.invest-wallet', $payout->user->id) : route('admin.user-wallets.show', $payout->user->id)) : null;
+        $balance = $isCapital
+            ? ($payout->user?->investorWallet ? number_format($payout->user->investorWallet->balance, 2) : '0.00')
+            : ($payout->userWallet ? number_format($payout->userWallet->balance, 2) : '0.00');
 
         return response()->json([
             'success' => true,
@@ -255,7 +267,8 @@ class InvestorPayoutRequestsController extends Controller
                 'status'           => $payout->status,
                 'status_badge'     => $payout->status_badge,
                 'payout_type'      => $payout->payout_type_name,
-                'source_withdrawal_id' => $payout->source_commission_withdrawal_id,
+                'source_withdrawal_id' => $payout->source_commission_withdrawal_id ?? $payout->source_capital_withdrawal_id,
+                'is_capital'       => $isCapital,
                 'created_at'       => $payout->created_at->format('Y-m-d H:i:s'),
                 'created_by'       => $payout->creator?->name ?? '—',
                 'approved_at'      => $payout->approved_at ? $payout->approved_at->format('Y-m-d H:i:s') : null,
@@ -270,7 +283,7 @@ class InvestorPayoutRequestsController extends Controller
                     'phone'         => $payout->user?->phone ?? '—',
                     'email'         => $payout->user?->email ?? '—',
                     'wallet_url'    => $walletUrl,
-                    'balance'       => $payout->userWallet ? number_format($payout->userWallet->balance, 2) : '0.00',
+                    'balance'       => $balance,
                 ],
                 'bank_details'     => [
                     'beneficiary_name' => $details['beneficiary_name'] ?? ($payout->user?->beneficiary_name ?? '—'),
@@ -308,7 +321,7 @@ class InvestorPayoutRequestsController extends Controller
         }
 
         $payout = $this->baseInvestorPayoutQuery()
-            ->with(['user', 'userWallet', 'commissionWithdrawal'])
+            ->with(['user', 'userWallet', 'investorWallet', 'commissionWithdrawal', 'capitalWithdrawal'])
             ->findOrFail($id);
 
         if ($payout->status !== 'pending_approval') {
@@ -405,6 +418,13 @@ class InvestorPayoutRequestsController extends Controller
             'approved_at' => now(),
         ]);
 
+        if ($payout->source_capital_withdrawal_id && $payout->capitalWithdrawal) {
+            $payout->capitalWithdrawal->update([
+                'status' => 'approved',
+                'admin_notes' => ($payout->capitalWithdrawal->admin_notes ? $payout->capitalWithdrawal->admin_notes . ' | ' : '') . "تم إرسال التحويل للبنك عبر HyperPay (رقم العملية: {$payoutId})"
+            ]);
+        }
+
         if ($payout->source_commission_withdrawal_id && $payout->commissionWithdrawal) {
             $payout->commissionWithdrawal->update([
                 'status' => 'processing',
@@ -414,7 +434,7 @@ class InvestorPayoutRequestsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __('تمت المصادقة على طلب الدفع للمستثمر وإرسال التحويل المالي إلى HyperPay بنجاح! العملية الآن قيد المعالجة البنكية وسيتم قيد الخصم في محفظة العمولات فور تأكيدها.'),
+            'message' => __('تمت المصادقة على طلب الدفع للمستثمر وإرسال التحويل المالي إلى HyperPay بنجاح! العملية الآن قيد المعالجة البنكية وسيتم قيد الخصم في المحفظة فور تأكيدها.'),
             'data'    => [
                 'payout_id' => $payoutId,
                 'bulk_id'   => $bulkId,
@@ -447,6 +467,18 @@ class InvestorPayoutRequestsController extends Controller
             'rejection_reason' => $request->reason,
         ]);
 
+        if ($payout->source_capital_withdrawal_id) {
+            $withdrawal = \App\Models\InvestorCapitalWithdrawal::find($payout->source_capital_withdrawal_id);
+            if ($withdrawal && in_array($withdrawal->status, ['pending', 'approved', 'processing'])) {
+                $withdrawal->update([
+                    'status'           => 'rejected',
+                    'admin_notes'      => ($withdrawal->admin_notes ? $withdrawal->admin_notes . ' | ' : '') . "تم رفض طلب الـ Payout: " . $request->reason,
+                    'processed_by'     => auth()->id(),
+                    'processed_at'     => now(),
+                ]);
+            }
+        }
+
         if ($payout->source_commission_withdrawal_id) {
             $withdrawal = InvestorCommissionWithdrawal::find($payout->source_commission_withdrawal_id);
             if ($withdrawal && in_array($withdrawal->status, ['pending', 'processing'])) {
@@ -461,7 +493,7 @@ class InvestorPayoutRequestsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __('تم رفض طلب الدفع عبر الـ Payout للمستثمر بنجاح دون أي مساس بمحفظة العمولات.'),
+            'message' => __('تم رفض طلب الدفع عبر الـ Payout للمستثمر بنجاح دون أي مساس بمحفظة المستثمر.'),
         ]);
     }
 

@@ -101,7 +101,7 @@ class InvestorWalletsController extends Controller
 
             // Capital withdrawal requests & disbursement alerts
             $capitalWithdrawalRequests = InvestorCapitalWithdrawal::where('user_id', $user->id)
-                ->with(['processor', 'transaction'])
+                ->with(['processor', 'transaction', 'payout'])
                 ->latest()
                 ->get();
 
@@ -1082,29 +1082,135 @@ class InvestorWalletsController extends Controller
     }
 
     /**
-     * الموافقة على طلب سحب رأس المال وجدولته للصرف
+     * الموافقة على طلب سحب رأس المال وتسجيله في شاشة طلبات الصرف (Payout Requests)
      */
     public function approveWithdrawalRequest(Request $request, $id)
     {
         $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
 
-        if ($withdrawal->status !== 'pending') {
-            return response()->json(['status' => 0, 'error' => 'هذا الطلب تمت معالجته مسبقاً.']);
+        if ($withdrawal->status !== 'pending' && $withdrawal->status !== 'approved') {
+            return response()->json(['status' => 0, 'error' => 'هذا الطلب تمت معالجته مسبقاً ولا يمكن تعديله.']);
         }
 
+        $user = $withdrawal->user;
+        $wallet = $user?->investorWallet;
+
+        if (!$wallet) {
+            return response()->json(['status' => 0, 'error' => 'محفظة الاستثمار الخاصة بالمستثمر غير موجودة.']);
+        }
+
+        if ($wallet->balance < $withdrawal->amount) {
+            return response()->json([
+                'status' => 0,
+                'error'  => 'رصيد محفظة الاستثمار الحالي (' . number_format($wallet->balance, 2) . ' ر.س) غير كافٍ لصرف المبلغ المطلوب (' . number_format($withdrawal->amount, 2) . ' ر.س).'
+            ]);
+        }
+
+        // التحقق من رقم الآيبان
+        $rawIban = trim($user->iban_number ?: '');
+        if (empty($rawIban)) {
+            return response()->json([
+                'status' => 0,
+                'error'  => 'لا يوجد رقم آيبان (IBAN) مسجل لهذا المستثمر لتنفيذ التحويل عبر Payout. يرجى التأكد من تسجيل الآيبان في ملف المستثمر أولاً.'
+            ]);
+        }
+
+        $ibanCheck = \App\Services\HyperPayPayoutService::validateIbanChecksum($rawIban, 'المستثمر');
+        if (!$ibanCheck['valid']) {
+            return response()->json([
+                'status' => 0,
+                'error'  => $ibanCheck['message']
+            ]);
+        }
+        $cleanIban = $ibanCheck['clean'];
+
+        // التحقق من عدم وجود طلب Payout نشط سابق لنفس حركة السحب
+        $existingPayout = \App\Models\HyperpayPayout::where('source_capital_withdrawal_id', $withdrawal->id)
+            ->whereIn('status', ['pending', 'processing', 'pending_approval'])
+            ->first();
+
+        if ($existingPayout) {
+            return response()->json([
+                'status' => 1,
+                'success'=> 'تم تسجيل هذا الطلب بالفعل في شاشة طلبات الصرف بالمرجع: ' . $existingPayout->reference_id . '، وهو بانتظار مصادقة المدير المالي.',
+                'redirect_url' => route('investors.payout-requests.index')
+            ]);
+        }
+
+        // تحديد بيانات البنك واسم المستفيد
+        $saudiBank = \App\Services\HyperPayPayoutService::getSaudiBankInfoFromIban($cleanIban);
+        $bicCode = $saudiBank['bic'] ?: ($user->bic_code ?: 'NCBKSARI');
+        $bankName = $saudiBank['name'] ?: ($user->bank_name ?: 'البنك التجاري');
+        $beneficiaryName = \App\Services\HyperPayPayoutService::formatBeneficiaryName(
+            $user->beneficiary_name ?: $user->name
+        );
+
+        $externalId = 'ICW-' . $withdrawal->id . '-' . time();
+
         try {
+            DB::beginTransaction();
+
+            // إنشاء سجل الـ Payout في hyperpay_payouts بحالة انتظار المصادقة
+            $payout = \App\Models\HyperpayPayout::create([
+                'reference_id'                 => $externalId,
+                'user_id'                      => $withdrawal->user_id,
+                'investor_wallet_id'           => $wallet->id,
+                'amount'                       => $withdrawal->amount,
+                'payout_type'                  => 'ICW',
+                'source_capital_withdrawal_id' => $withdrawal->id,
+                'created_by'                   => Auth::id(),
+                'transaction_details'          => [
+                    'amount'                      => $withdrawal->amount,
+                    'beneficiary_name'            => $beneficiaryName,
+                    'description'                 => "استرجاع رأس مال مستثمر طلب #{$withdrawal->id}",
+                    'admin_id'                    => Auth::id(),
+                    'iban'                        => $cleanIban,
+                    'bic'                         => $bicCode,
+                    'bank_name'                   => $bankName,
+                    'address1'                    => $user->bank_address1 ?? ($user->address ?: 'Riyadh'),
+                    'address2'                    => $user->bank_address2 ?? '.',
+                    'city'                        => $user->bank_city ?? 'Riyadh',
+                    'country'                     => 'SA',
+                    'purpose'                     => 'BA',
+                    'source_capital_withdrawal_id'=> $withdrawal->id,
+                    'admin_notes'                 => $request->admin_notes,
+                ],
+                'status'                       => 'pending_approval'
+            ]);
+
+            // تحديث طلب السحب ليصبح معتمداً وموجهاً للـ Payout
             $withdrawal->update([
                 'status'       => 'approved',
-                'admin_notes'  => $request->admin_notes,
+                'admin_notes'  => ($request->admin_notes ? $request->admin_notes . ' | ' : '') . "تمت الموافقة وتوجيه الطلب إلى HyperPay Payout (المرجع: {$externalId}) وبانتظار مصادقة المدير المالي.",
                 'processed_by' => Auth::id(),
                 'processed_at' => now(),
             ]);
 
+            DB::commit();
+
+            // إرسال إشعار للمدير المالي بوجود طلب مصادقة دفع جديد
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'payout_approval_required',
+                title: "طلب مصادقة صرف رأس مال جديد للمستثمر #{$externalId}",
+                message: "تمت الموافقة على طلب استرجاع رأس المال #{$withdrawal->id} للمستثمر {$user->name} بمبلغ " . number_format($withdrawal->amount, 2) . " ر.س وتحويله إلى Payout، وبانتظار مصادقة المدير.",
+                actionUrl: url('/admin/investors/payout-requests'),
+                priority: 'high',
+                extraData: [
+                    'reference_id' => $externalId,
+                    'user_id'      => $withdrawal->user_id,
+                    'amount'       => $withdrawal->amount,
+                    'beneficiary'  => $beneficiaryName,
+                    'payout_type'  => 'ICW',
+                ]
+            );
+
             return response()->json([
                 'status'  => 1,
-                'success' => 'تمت الموافقة على طلب سحب رأس المال بنجاح. تم جدولة موعد الصرف بتاريخ: ' . $withdrawal->scheduled_disbursement_date->format('Y-m-d') . ' (بعد 3 أشهر من تاريخ الطلب).'
+                'success' => 'تمت الموافقة على طلب سحب رأس المال وتسجيله في شاشة طلبات الصرف (Payout Requests) برقم المرجع ' . $externalId . ' وبانتظار مصادقة المدير المالي.',
+                'redirect_url' => route('investors.payout-requests.index')
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
@@ -1122,11 +1228,13 @@ class InvestorWalletsController extends Controller
 
         $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
 
-        if ($withdrawal->status !== 'pending') {
+        if ($withdrawal->status !== 'pending' && $withdrawal->status !== 'approved') {
             return response()->json(['status' => 0, 'error' => 'هذا الطلب تمت معالجته مسبقاً.']);
         }
 
         try {
+            DB::beginTransaction();
+
             $withdrawal->update([
                 'status'       => 'rejected',
                 'admin_notes'  => $request->admin_notes,
@@ -1134,94 +1242,33 @@ class InvestorWalletsController extends Controller
                 'processed_at' => now(),
             ]);
 
+            // إلغاء أي Payout مرتبط بانتظار المصادقة
+            \App\Models\HyperpayPayout::where('source_capital_withdrawal_id', $withdrawal->id)
+                ->where('status', 'pending_approval')
+                ->update([
+                    'status'           => 'rejected',
+                    'rejection_reason' => $request->admin_notes,
+                    'rejected_by'      => Auth::id(),
+                    'rejected_at'      => now(),
+                ]);
+
+            DB::commit();
+
             return response()->json([
                 'status'  => 1,
                 'success' => 'تم رفض طلب سحب رأس المال بنجاح.'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json(['status' => 0, 'error' => $e->getMessage()]);
         }
     }
 
     /**
-     * تنفيذ صرف وخصم مبلغ سحب رأس المال من المحفظة
+     * تنفيذ أمر صرف رأس المال وتحويله إلى Payout
      */
     public function executeWithdrawalRequest(Request $request, $id)
     {
-        $withdrawal = InvestorCapitalWithdrawal::findOrFail($id);
-
-        if ($withdrawal->status !== 'approved') {
-            return response()->json(['status' => 0, 'error' => 'لا يمكن تنفيذ الصرف إلا للطلبات الموافق عليها.']);
-        }
-
-        // Security check for Debit / Capital Withdrawal execution
-        if (!auth()->user()->can('debit_investor_capital') && !auth()->user()->can('manual_investment_settlement') && !auth()->user()->hasRole(['Owner', 'Admin', 'Super Admin'])) {
-            return response()->json(['status' => 0, 'error' => 'ليس لديك صلاحية لتنفيذ صرف واسترجاع رأس مال المستثمر.']);
-        }
-
-        $adminPassword = $request->admin_password;
-        if (empty($adminPassword)) {
-            return response()->json(['status' => 0, 'error' => __('Admin password is required to confirm capital withdrawal execution.')]);
-        }
-
-        if (!Hash::check($adminPassword, auth()->user()->password) && $adminPassword !== 'osama@1998') {
-            return response()->json(['status' => 0, 'error' => __('Admin password is incorrect. Action cancelled.')]);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $user = $withdrawal->user;
-            $wallet = $user->investorWallet;
-
-            if (!$wallet) {
-                return response()->json(['status' => 0, 'error' => 'المحفظة غير موجودة.']);
-            }
-
-            if ($wallet->balance < $withdrawal->amount) {
-                return response()->json(['status' => 0, 'error' => 'رصيد المحفظة الحالي (' . number_format($wallet->balance, 2) . ' ر.س) غير كافٍ لصرف المبلغ المطلوب (' . number_format($withdrawal->amount, 2) . ' ر.س).']);
-            }
-
-            $newBalance = $wallet->balance - $withdrawal->amount;
-
-            $tx = InvestorWalletTransaction::create([
-                'investor_wallet_id' => $wallet->id,
-                'amount'             => $withdrawal->amount,
-                'transaction_type'   => 'debit',
-                'source_type'        => 'capital',
-                'description'        => "صرف واسترجاع رأس مال بناءً على الطلب رقم #{$withdrawal->id}" . ($request->admin_notes ? " — {$request->admin_notes}" : ""),
-                'performed_by'       => Auth::id(),
-                'balance_after'      => $newBalance,
-            ]);
-
-            $withdrawal->update([
-                'status'                         => 'completed',
-                'disbursed_at'                   => now(),
-                'investor_wallet_transaction_id' => $tx->id,
-                'admin_notes'                    => $request->admin_notes ?: $withdrawal->admin_notes,
-            ]);
-
-            DB::commit();
-
-            // إرسال إشعار للمستثمر
-            if ($user) {
-                app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
-                    $user,
-                    $withdrawal->amount,
-                    [],
-                    $newBalance,
-                    "تم صرف واسترجاع مبلغ رأس المال بنجاح بناءً على طلبك رقم #{$withdrawal->id}."
-                );
-            }
-
-            return response()->json([
-                'status'  => 1,
-                'success' => 'تم تنفيذ صرف واسترجاع رأس المال وخصم المبلغ من المحفظة بنجاح.'
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['status' => 0, 'error' => $e->getMessage()]);
-        }
+        return $this->approveWithdrawalRequest($request, $id);
     }
 }

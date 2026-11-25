@@ -32,12 +32,14 @@ class InvestorTaskPaymentController extends Controller
                 ->with('error', __('Task payment page only for task investors'));
         }
 
+        $contract?->loadMissing(['brokers', 'broker']);
+
         $investorWallet = $investor->investorWallet;
         $walletBalance  = $investorWallet?->balance ?? 0;
 
         $query = Task::availableForInvestorPayment()
             ->whereNotNull('customer_id')
-            ->with(['customer', 'pickup', 'delivery', 'ad'])
+            ->with(['customer.userCommissions.user', 'brokers', 'driver.brokers', 'pickup', 'delivery', 'ad'])
             ->latest();
 
         // فلتر العملاء المخصصين

@@ -79,6 +79,9 @@ class HyperPayWebhookController extends Controller
                 case 'UWP': // User Wallet (Commissions)
                     $this->handleInvestorCommissionPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload);
                     break;
+                case 'ICW': // Investor Capital Withdrawal
+                    $this->handleInvestorCapitalPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload);
+                    break;
                 case 'MT': // Manual Transaction (Driver)
                 case 'WP': // Wallet Payment (Driver)
                     $this->handleDriverWalletPayout($referenceId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload);
@@ -348,6 +351,135 @@ class HyperPayWebhookController extends Controller
                     'status'         => 'failed',
                     'failure_reason' => $failureReason,
                     'user_id'        => $payout->user_id,
+                ]
+            );
+        }
+    }
+
+    protected function handleInvestorCapitalPayout($walletId, $isSuccess, $payoutId, $failureReason, $amount, $reference, $payload = [])
+    {
+        $payout = \App\Models\HyperpayPayout::where('reference_id', $reference)->first();
+        if (!$payout) {
+            Log::error("HyperpayPayout for investor capital reference {$reference} not found.");
+            return;
+        }
+
+        if (!in_array($payout->status, ['pending', 'processing'])) {
+            Log::info("Investor Capital Payout for reference {$reference} is already processed (Status: {$payout->status}). Skipping to prevent duplication.");
+            return;
+        }
+
+        $user = $payout->user ?? $payout->investor;
+        $wallet = $payout->investorWallet ?? ($user?->investorWallet ?? \App\Models\InvestorWallet::find($payout->investor_wallet_id ?? $walletId));
+        if (!$wallet) {
+            Log::error("Investor Wallet for capital payout #{$payout->id} not found.");
+            return;
+        }
+
+        $details = $payout->transaction_details ?? [];
+
+        if ($isSuccess) {
+            $payout->update([
+                'status' => 'completed',
+                'webhook_payload' => !empty($payload) ? $payload : null
+            ]);
+            Log::info("Investor Capital Payout for reference {$reference} confirmed by Webhook. PayoutId: " . $payoutId);
+
+            $bankInfo = "البنك: " . ($details['bank_name'] ?? ($user?->bank_name ?? 'غير محدد')) . " | الآيبان: " . ($details['iban'] ?? ($user?->iban_number ?? 'غير محدد')) . " | رقم العملية: {$payoutId}";
+
+            // 1. Create Investor Wallet Transaction Debit ONLY NOW
+            $currentBalance = (float) $wallet->balance;
+            $newBalance = $currentBalance - (float) $payout->amount;
+
+            $transaction = \App\Models\InvestorWalletTransaction::create([
+                'investor_wallet_id' => $wallet->id,
+                'amount'             => $payout->amount,
+                'transaction_type'   => 'debit',
+                'source_type'        => 'capital',
+                'description'        => ($details['description'] ?? "صرف واسترجاع رأس مال مستثمر عبر HyperPay") . " | {$bankInfo}",
+                'performed_by'       => $payout->approved_by ?? ($details['admin_id'] ?? 1),
+                'balance_after'      => $newBalance,
+            ]);
+
+            // 2. If linked to an InvestorCapitalWithdrawal
+            if ($payout->source_capital_withdrawal_id) {
+                $withdrawal = \App\Models\InvestorCapitalWithdrawal::find($payout->source_capital_withdrawal_id);
+                if ($withdrawal && in_array($withdrawal->status, ['pending', 'approved', 'processing'])) {
+                    $withdrawal->update([
+                        'status'                         => 'completed',
+                        'disbursed_at'                   => now(),
+                        'investor_wallet_transaction_id' => $transaction->id,
+                        'admin_notes'                    => ($withdrawal->admin_notes ? $withdrawal->admin_notes . ' | ' : '') . "تم التحويل بنجاح وصرف رأس المال عبر HyperPay (رقم العملية: {$payoutId})",
+                        'processed_by'                   => $payout->approved_by ?? ($details['admin_id'] ?? 1),
+                        'processed_at'                   => now(),
+                    ]);
+                }
+            }
+
+            // 3. Notify Investor
+            if ($user) {
+                try {
+                    app(\App\Services\InvestorNotificationService::class)->notifyTaskInvestment(
+                        $user,
+                        $payout->amount,
+                        [],
+                        $newBalance,
+                        "تم صرف واسترجاع مبلغ رأس المال بنجاح عبر التحويل البنكي (رقم الحوالة: {$payoutId})."
+                    );
+                } catch (\Exception $e) {
+                    Log::error("Failed to send investor capital withdrawal notification: " . $e->getMessage());
+                }
+            }
+
+            // 4. Dispatch Admin Notification
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'payout_status_updated',
+                title: "✅ اكتمال تحويل رأس المال للمستثمر #{$payout->reference_id}",
+                message: "تم تأكيد تحويل مبلغ رأس المال " . number_format($payout->amount, 2) . " ر.س بنجاح عبر بوابة HyperPay لحساب المستثمر " . ($user?->name ?? '') . "، وتم قيد الخصم في محفظة الاستثمار.",
+                actionUrl: url('/admin/investors/payout-requests'),
+                priority: 'normal',
+                extraData: [
+                    'payout_id'          => $payout->id,
+                    'reference_id'       => $payout->reference_id,
+                    'amount'             => $payout->amount,
+                    'status'             => 'completed',
+                    'user_id'            => $payout->user_id,
+                    'investor_wallet_id' => $wallet->id,
+                    'payout_type'        => 'ICW',
+                ]
+            );
+        } else {
+            $payout->update([
+                'status'          => 'failed',
+                'failure_reason'  => $failureReason,
+                'webhook_payload' => !empty($payload) ? $payload : null
+            ]);
+            Log::error("Investor Capital Payout for reference {$reference} failed via Webhook. Reason: " . $failureReason);
+
+            if ($payout->source_capital_withdrawal_id) {
+                $withdrawal = \App\Models\InvestorCapitalWithdrawal::find($payout->source_capital_withdrawal_id);
+                if ($withdrawal && in_array($withdrawal->status, ['pending', 'approved', 'processing'])) {
+                    $withdrawal->update([
+                        'admin_notes' => ($withdrawal->admin_notes ? $withdrawal->admin_notes . ' | ' : '') . "فشل التحويل عبر HyperPay: " . $failureReason,
+                    ]);
+                }
+            }
+
+            // Dispatch Admin Notification
+            \App\Services\AdminNotificationDispatcher::dispatch(
+                eventKey: 'payout_status_updated',
+                title: "❌ فشل تحويل رأس المال للمستثمر #{$payout->reference_id}",
+                message: "فشل تحويل رأس المال بمبلغ " . number_format($payout->amount, 2) . " ر.س للمستثمر " . ($user?->name ?? '') . " عبر HyperPay. السبب: {$failureReason}. لم يتم خصم أي مبلغ من المحفظة.",
+                actionUrl: url('/admin/investors/payout-requests'),
+                priority: 'high',
+                extraData: [
+                    'payout_id'      => $payout->id,
+                    'reference_id'   => $payout->reference_id,
+                    'amount'         => $payout->amount,
+                    'status'         => 'failed',
+                    'user_id'        => $payout->user_id,
+                    'failure_reason' => $failureReason,
+                    'payout_type'    => 'ICW',
                 ]
             );
         }

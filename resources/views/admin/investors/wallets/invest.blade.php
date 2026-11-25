@@ -202,13 +202,13 @@
             // Capital Withdrawal Actions
             window.approveCapitalWithdrawal = function(id, amount) {
                 Swal.fire({
-                    title: 'الموافقة على طلب سحب رأس المال',
-                    text: 'هل أنت متأكد من الموافقة على طلب سحب رأس المال بمبلغ ' + amount + ' ر.س؟ سيتم جدولة موعد الصرف بعد 3 أشهر من تاريخ الطلب.',
+                    title: 'الموافقة وإرسال الطلب إلى Payout',
+                    text: 'هل أنت متأكد من الموافقة على طلب سحب رأس المال بمبلغ ' + amount + ' ر.س؟ سيتم تسجيل الطلب مباشرة في شاشة طلبات الصرف (Payout Requests) للمصادقة البنكية والتحويل.',
                     icon: 'question',
                     input: 'textarea',
                     inputPlaceholder: 'ملاحظات إضافية للمستثمر (اختياري)...',
                     showCancelButton: true,
-                    confirmButtonText: 'نعم، موافقة وجدولة الصرف',
+                    confirmButtonText: 'نعم، موافقة وإرسال لـ Payout',
                     cancelButtonText: 'إلغاء',
                     customClass: {
                         confirmButton: 'btn btn-primary me-2',
@@ -239,8 +239,18 @@
                             icon: 'success',
                             title: 'تمت الموافقة بنجاح!',
                             text: result.value.success,
-                            customClass: { confirmButton: 'btn btn-success' }
-                        }).then(() => location.reload());
+                            showCancelButton: true,
+                            confirmButtonText: 'الانتقال إلى شاشة طلبات الصرف Payout',
+                            cancelButtonText: 'البقاء هنا',
+                            customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' },
+                            buttonsStyling: false
+                        }).then((r) => {
+                            if (r.isConfirmed && result.value.redirect_url) {
+                                window.location.href = result.value.redirect_url;
+                            } else {
+                                location.reload();
+                            }
+                        });
                     }
                 });
             };
@@ -296,75 +306,7 @@
             };
 
             window.executeCapitalWithdrawal = function(id, amount) {
-                Swal.fire({
-                    title: '{{ __("Confirm Capital Return Disbursement") }}',
-                    html: `
-                        <div class="text-start mb-3">
-                            <p class="mb-2">${'{{ __("Are you sure you want to disburse and return :amount SAR to the investor? This amount will be debited immediately from the investment wallet.", ["amount" => "###AMOUNT###"]) }}'.replace('###AMOUNT###', '<strong class="text-danger">' + amount + '</strong>')}</p>
-                        </div>
-                        <div class="mb-3 text-start">
-                            <label class="form-label text-danger fw-bold mb-1" for="swal_admin_password">
-                                <i class="ti ti-lock me-1"></i>{{ __("Admin Password to Confirm Disbursement *") }}
-                            </label>
-                            <input type="password" id="swal_admin_password" class="form-control border-danger" placeholder="{{ __('Enter your password to confirm debit') }}" autocomplete="new-password">
-                        </div>
-                        <div class="mb-2 text-start">
-                            <label class="form-label fw-semibold mb-1" for="swal_admin_notes">
-                                {{ __("Transfer Reference / Notes (Optional)") }}
-                            </label>
-                            <input type="text" id="swal_admin_notes" class="form-control" placeholder="{{ __('Transfer Reference / Notes (Optional)') }}">
-                        </div>
-                    `,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __("Confirm and Disburse") }}',
-                    cancelButtonText: '{{ __("Cancel") }}',
-                    customClass: {
-                        confirmButton: 'btn btn-danger me-2',
-                        cancelButton: 'btn btn-label-secondary'
-                    },
-                    buttonsStyling: false,
-                    showLoaderOnConfirm: true,
-                    didOpen: () => {
-                        const pwdInput = document.getElementById('swal_admin_password');
-                        if (pwdInput) pwdInput.focus();
-                    },
-                    preConfirm: () => {
-                        const password = document.getElementById('swal_admin_password').value;
-                        const notes = document.getElementById('swal_admin_notes').value;
-
-                        if (!password || !password.trim()) {
-                            Swal.showValidationMessage('{{ __("Admin password is required") }}');
-                            return false;
-                        }
-
-                        return $.ajax({
-                            url: baseUrl + 'admin/investors/invest-wallet/withdraw-request/execute/' + id,
-                            type: 'POST',
-                            data: {
-                                _token: $('meta[name="csrf-token"]').attr('content'),
-                                admin_password: password,
-                                admin_notes: notes
-                            }
-                        }).then(response => {
-                            if (response.status !== 1) {
-                                throw new Error(response.error || '{{ __("Failed to process request") }}');
-                            }
-                            return response;
-                        }).catch(error => {
-                            Swal.showValidationMessage(error.message || '{{ __("Failed to process request") }}');
-                        });
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '{{ __("Done!") }}',
-                            text: result.value.success,
-                            customClass: { confirmButton: 'btn btn-success' }
-                        }).then(() => location.reload());
-                    }
-                });
+                window.approveCapitalWithdrawal(id, amount);
             };
         }); // end window.load
     </script>
@@ -416,9 +358,15 @@
                     ]) }}
                 </p>
             </div>
-            <button type="button" class="btn btn-danger btn-sm shadow ms-3 px-3 py-2" onclick="executeCapitalWithdrawal({{ $dueReq->id }}, '{{ number_format($dueReq->amount, 2) }}')">
-                <i class="ti ti-check me-1"></i>{{ __('Execute Disbursement Now') }}
-            </button>
+            @if($dueReq->payout)
+                <a href="{{ route('investors.payout-requests.index') }}?search={{ $dueReq->payout->reference_id }}" class="btn btn-danger btn-sm shadow ms-3 px-3 py-2">
+                    <i class="ti ti-send me-1"></i>{{ __('متابعة بالـ Payout') }}
+                </a>
+            @else
+                <button type="button" class="btn btn-danger btn-sm shadow ms-3 px-3 py-2" onclick="approveCapitalWithdrawal({{ $dueReq->id }}, '{{ number_format($dueReq->amount, 2) }}')">
+                    <i class="ti ti-check me-1"></i>{{ __('تحويل إلى Payout للصرف') }}
+                </button>
+            @endif
         </div>
         @endforeach
     @endif
@@ -442,9 +390,15 @@
                     ]) }}
                 </p>
             </div>
-            <button type="button" class="btn btn-outline-warning btn-sm ms-3" onclick="executeCapitalWithdrawal({{ $pendReq->id }}, '{{ number_format($pendReq->amount, 2) }}')">
-                {{ __('Early Disbursement') }}
-            </button>
+            @if($pendReq->payout)
+                <a href="{{ route('investors.payout-requests.index') }}?search={{ $pendReq->payout->reference_id }}" class="btn btn-outline-warning btn-sm ms-3">
+                    <i class="ti ti-send me-1"></i>{{ __('متابعة بالـ Payout') }}
+                </a>
+            @else
+                <button type="button" class="btn btn-outline-warning btn-sm ms-3" onclick="approveCapitalWithdrawal({{ $pendReq->id }}, '{{ number_format($pendReq->amount, 2) }}')">
+                    <i class="ti ti-send me-1"></i>{{ __('تحويل إلى Payout') }}
+                </button>
+            @endif
         </div>
         @endforeach
     @endif
@@ -700,18 +654,24 @@
                         <td>
                             <div class="d-flex align-items-center gap-1">
                                 @if($wReq->status === 'pending')
-                                    <button type="button" class="btn btn-sm btn-success" title="{{ __('Approve Request and Schedule Disbursement') }}" onclick="approveCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
-                                        <i class="ti ti-check me-1"></i>{{ __('Approve') }}
+                                    <button type="button" class="btn btn-sm btn-success" title="{{ __('الموافقة والتحويل إلى Payout') }}" onclick="approveCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
+                                        <i class="ti ti-check me-1"></i>{{ __('موافقة وإرسال لـ Payout') }}
                                     </button>
                                     <button type="button" class="btn btn-sm btn-danger" title="{{ __('Reject') }}" onclick="rejectCapitalWithdrawal({{ $wReq->id }})">
                                         <i class="ti ti-x me-1"></i>{{ __('Reject') }}
                                     </button>
                                 @elseif($wReq->status === 'approved')
-                                    <button type="button" class="btn btn-sm btn-primary shadow-sm" title="{{ __('Execute Disbursement') }}" onclick="executeCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
-                                        <i class="ti ti-cash me-1"></i>{{ __('Execute Disbursement') }}
-                                    </button>
+                                    @if($wReq->payout)
+                                        <a href="{{ route('investors.payout-requests.index') }}?search={{ $wReq->payout->reference_id }}" class="btn btn-sm btn-info shadow-sm" title="{{ __('متابعة في طلبات الصرف Payout') }}">
+                                            <i class="ti ti-send me-1"></i>{{ __('متابعة في Payout') }}
+                                        </a>
+                                    @else
+                                        <button type="button" class="btn btn-sm btn-primary shadow-sm" title="{{ __('إرسال لـ Payout') }}" onclick="approveCapitalWithdrawal({{ $wReq->id }}, '{{ number_format($wReq->amount, 2) }}')">
+                                            <i class="ti ti-send me-1"></i>{{ __('إرسال لـ Payout') }}
+                                        </button>
+                                    @endif
                                 @elseif($wReq->status === 'completed')
-                                    <span class="badge bg-label-success small"><i class="ti ti-check-double me-1"></i>{{ __('Executed') }}</span>
+                                    <span class="badge bg-label-success small"><i class="ti ti-check-double me-1"></i>{{ __('تم التحويل والصرف') }}</span>
                                 @else
                                     <span class="text-muted small">—</span>
                                 @endif

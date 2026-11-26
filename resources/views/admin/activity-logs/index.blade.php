@@ -75,8 +75,8 @@
         <select id="filter-action" class="select2 form-select" data-allow-clear="true">
           <option value="">جميع الحركات</option>
           <option value="إنشاء">إنشاء</option>
-          <option value="تحديث">تحديث</option>
-          <option value="حذف">حذف</option>
+          <option value="تحديث">{{ __('Refresh') }}</option>
+          <option value="حذف">{{ __('Delete') }}</option>
           <option value="تعديل إجباري">تعديل إجباري</option>
           <option value="تعديل بالقوة على الفاتورة">تعديل بالقوة على الفاتورة</option>
         </select>
@@ -96,7 +96,7 @@
 
       <!-- Date Filter -->
       <div class="col-12 col-md-2">
-        <label class="form-label" for="filter-date">التاريخ</label>
+        <label class="form-label" for="filter-date">{{ __('Date') }}</label>
         <input type="text" id="filter-date" class="form-control flatpickr-date" placeholder="اختر نطاق التاريخ" />
       </div>
 
@@ -123,7 +123,7 @@
         <tr>
           <th>ID</th>
           <th>المستخدم</th>
-          <th>الإجراء</th>
+          <th>{{ __('Action') }}</th>
           <th>الجدول</th>
           <th>معرف الصف (ID)</th>
           <th>عنوان IP</th>
@@ -154,7 +154,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
       </div>
     </div>
   </div>

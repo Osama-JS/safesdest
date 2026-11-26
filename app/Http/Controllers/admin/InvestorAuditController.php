@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ProblematicTasksExport;
+use Carbon\Carbon;
 use Exception;
 
 class InvestorAuditController extends Controller
@@ -38,9 +39,19 @@ class InvestorAuditController extends Controller
     /**
      * Display comprehensive audit of investors, wallets, and funded tasks.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data = $this->calculateAuditData();
+        $defaultFrom = Carbon::now()->subMonth()->format('Y-m-d');
+        $defaultTo = Carbon::now()->format('Y-m-d');
+
+        $commStartDate = $request->filled('comm_date_from') ? $request->input('comm_date_from') : $defaultFrom;
+        $commEndDate = $request->filled('comm_date_to') ? $request->input('comm_date_to') : $defaultTo;
+        if ($request->input('comm_all_time') == 1) {
+            $commStartDate = null;
+            $commEndDate = null;
+        }
+
+        $data = $this->calculateAuditData($commStartDate, $commEndDate);
         return view('admin.investors.audit', [
             'totals' => $data['totals'],
             'investorsData' => $data['investorsData'],
@@ -53,6 +64,8 @@ class InvestorAuditController extends Controller
             'canceledTotalLocked' => $data['canceledTasksAudit']['total_locked_capital'],
             'canceledTotalUnreversedComm' => $data['canceledTasksAudit']['total_unreversed_commission'],
             'commissionSummary' => $data['commissionAudit']['summary'],
+            'commDateFrom' => $commStartDate ?? '',
+            'commDateTo' => $commEndDate ?? '',
         ]);
     }
 
@@ -178,7 +191,21 @@ class InvestorAuditController extends Controller
      */
     public function getCommissionAuditTableData(Request $request)
     {
-        $audit = $this->getCommissionAuditData();
+        $defaultStartDate = Carbon::now()->subMonth()->format('Y-m-d');
+        $defaultEndDate = Carbon::now()->format('Y-m-d');
+
+        if ($request->boolean('all_time') || $request->input('all_time') == '1') {
+            $startDate = null;
+            $endDate = null;
+        } elseif ($request->has('date_from') || $request->has('date_to')) {
+            $startDate = $request->filled('date_from') ? $request->input('date_from') : null;
+            $endDate = $request->filled('date_to') ? $request->input('date_to') : null;
+        } else {
+            $startDate = $defaultStartDate;
+            $endDate = $defaultEndDate;
+        }
+
+        $audit = $this->getCommissionAuditData($startDate, $endDate);
         $tasks = $audit['tasks'];
 
         $search = strtolower(trim($request->input('search', '')));
@@ -1119,7 +1146,7 @@ class InvestorAuditController extends Controller
     /**
      * Calculate audit figures and return structured array.
      */
-    protected function calculateAuditData()
+    protected function calculateAuditData($commStartDate = null, $commEndDate = null)
     {
         $investors = User::where('investor', true)->orderBy('id')->get();
 
@@ -1353,7 +1380,7 @@ class InvestorAuditController extends Controller
             'problematicTasks' => $problematicTasks,
             'customersUnsettled' => array_values($customersUnsettled),
             'canceledTasksAudit' => $this->getCanceledUnsettledTasks(),
-            'commissionAudit' => $this->getCommissionAuditData(),
+            'commissionAudit' => $this->getCommissionAuditData($commStartDate, $commEndDate),
         ];
     }
 
@@ -1697,7 +1724,7 @@ class InvestorAuditController extends Controller
     /**
      * Audit of tasks commissions received by investors vs contract entitlement.
      */
-    public function getCommissionAuditData()
+    public function getCommissionAuditData($startDate = null, $endDate = null)
     {
         // 1. Get task IDs with investor involvement
         $taskIds = InvestorWalletTransaction::whereNotNull('task_id')
@@ -1711,10 +1738,18 @@ class InvestorAuditController extends Controller
         $excludedStatuses = ['canceled', 'cancelled', 'canceld', 'refund', 'refound', 'refunded'];
 
         // 2. Preload tasks with ad, customer, userCommissions, brokers (excluding canceled & refunded tasks)
-        $tasks = Task::whereIn('id', $taskIds)
+        $tasksQuery = Task::whereIn('id', $taskIds)
             ->whereNotIn('status', $excludedStatuses)
-            ->whereNotIn('payment_status', ['refund', 'canceled'])
-            ->with(['investor.userWallet', 'ad', 'customer.userCommissions.user', 'brokers', 'driver.brokers'])
+            ->whereNotIn('payment_status', ['refund', 'canceled']);
+
+        if (!empty($startDate)) {
+            $tasksQuery->whereDate('created_at', '>=', $startDate);
+        }
+        if (!empty($endDate)) {
+            $tasksQuery->whereDate('created_at', '<=', $endDate);
+        }
+
+        $tasks = $tasksQuery->with(['investor.userWallet', 'ad', 'customer.userCommissions.user', 'brokers', 'driver.brokers'])
             ->get();
 
         // 3. Preload all contracts with brokers
@@ -1855,6 +1890,7 @@ class InvestorAuditController extends Controller
 
             $items[] = [
                 'task_id' => $task->id,
+                'task_date' => $task->created_at ? $task->created_at->format('Y-m-d') : '-',
                 'task_price' => (float)$task->total_price,
                 'task_status' => $task->status,
                 'investor_id' => $investor->id,

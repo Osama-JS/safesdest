@@ -617,25 +617,25 @@
         <div class="card-body filter-toolbar py-2">
             <div class="row g-2 align-items-center">
                 {{-- Search --}}
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="input-group input-group-merge">
                         <span class="input-group-text"><i class="ti ti-search text-primary"></i></span>
                         <input type="text" id="commAuditSearchInput" class="form-control" placeholder="{{ __('Search by Task #, Investor, or Customer...') }}">
                     </div>
                 </div>
                 {{-- Filter by Discrepancy Type --}}
-                <div class="col-md-3 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <select id="commAuditStatusFilter" class="form-select">
-                        <option value="discrepant" selected>{{ __('Show Discrepancies Only') }} ({{ $commissionAudit['summary']['discrepant_count'] }})</option>
-                        <option value="all">{{ __('Show All Tasks') }} ({{ $commissionAudit['summary']['total_audited'] }})</option>
-                        <option value="overpaid">{{ __('Overpaid (Actual > Contract)') }} ({{ $commissionAudit['summary']['overpaid_count'] }})</option>
-                        <option value="underpaid">{{ __('Underpaid (Actual < Contract)') }} ({{ $commissionAudit['summary']['underpaid_count'] }})</option>
-                        <option value="uncredited">{{ __('Uncredited Commission') }} ({{ $commissionAudit['summary']['uncredited_count'] }})</option>
-                        <option value="matched">{{ __('100% Matched') }} ({{ $commissionAudit['summary']['matched_count'] }})</option>
+                        <option value="discrepant" selected>{{ __('Show Discrepancies Only') }} (<span id="commFilterDiscrepantBadge">{{ $commissionAudit['summary']['discrepant_count'] }}</span>)</option>
+                        <option value="all">{{ __('Show All Tasks') }} (<span id="commFilterTotalBadge">{{ $commissionAudit['summary']['total_audited'] }}</span>)</option>
+                        <option value="overpaid">{{ __('Overpaid (Actual > Contract)') }} (<span id="commFilterOverpaidBadge">{{ $commissionAudit['summary']['overpaid_count'] }}</span>)</option>
+                        <option value="underpaid">{{ __('Underpaid (Actual < Contract)') }} (<span id="commFilterUnderpaidBadge">{{ $commissionAudit['summary']['underpaid_count'] }}</span>)</option>
+                        <option value="uncredited">{{ __('Uncredited Commission') }} (<span id="commFilterUncreditedBadge">{{ $commissionAudit['summary']['uncredited_count'] }}</span>)</option>
+                        <option value="matched">{{ __('100% Matched') }} (<span id="commFilterMatchedBadge">{{ $commissionAudit['summary']['matched_count'] }}</span>)</option>
                     </select>
                 </div>
                 {{-- Investor Filter --}}
-                <div class="col-md-2 col-sm-6">
+                <div class="col-lg-2 col-md-4 col-sm-6">
                     <select id="commAuditInvestorFilter" class="form-select">
                         <option value="">-- {{ __('All Investors') }} --</option>
                         @foreach($investorsData as $inv)
@@ -643,8 +643,23 @@
                         @endforeach
                     </select>
                 </div>
+                {{-- Date Timeline Filter (From / To) --}}
+                <div class="col-lg-3 col-md-6 col-sm-12">
+                    <div class="input-group input-group-merge">
+                        <span class="input-group-text bg-light text-muted small px-2 py-1">{{ __('From Date') }}</span>
+                        <input type="date" id="commAuditDateFrom" class="form-control" value="{{ $commDateFrom }}" title="{{ __('From Date') }}">
+                        <span class="input-group-text bg-light text-muted small px-2 py-1">{{ __('To Date') }}</span>
+                        <input type="date" id="commAuditDateTo" class="form-control" value="{{ $commDateTo }}" title="{{ __('To Date') }}">
+                        <button type="button" class="btn btn-outline-secondary px-2" id="btnCommAuditResetDates" title="{{ __('Default (Last Month)') }}">
+                            <i class="ti ti-rotate-clockwise"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary px-2" id="btnCommAuditAllTime" title="{{ __('All Time') }}">
+                            <i class="ti ti-infinity"></i>
+                        </button>
+                    </div>
+                </div>
                 {{-- Batch Action & Counter --}}
-                <div class="col-md-4 col-sm-6 text-end d-flex align-items-center justify-content-end gap-2 flex-wrap">
+                <div class="col-lg-3 col-md-6 col-sm-12 text-end d-flex align-items-center justify-content-end gap-2 flex-wrap">
                     @can('settle_investors_audit_commission')
                         <button type="button" id="btnBatchSettleComm" class="btn btn-sm btn-primary d-none" onclick="openBatchSettleCommModal()">
                             <i class="ti ti-checks me-1"></i> {{ __('Settle Selected Commissions') }} (<span id="selectedCommCount">0</span>)
@@ -1541,6 +1556,8 @@
         const search = (document.getElementById('commAuditSearchInput')?.value || '').trim();
         const status = (document.getElementById('commAuditStatusFilter')?.value || 'discrepant').trim();
         const investor = (document.getElementById('commAuditInvestorFilter')?.value || '').trim();
+        const dateFrom = (document.getElementById('commAuditDateFrom')?.value || '').trim();
+        const dateTo = (document.getElementById('commAuditDateTo')?.value || '').trim();
         const tbody = document.getElementById('commissionAuditTableBody');
 
         tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4"><div class="spinner-border text-info spinner-border-sm me-1"></div><span class="text-secondary">{{ __("Loading commission audit data...") }}</span></td></tr>`;
@@ -1553,7 +1570,9 @@
                 per_page: 20,
                 search: search,
                 status: status,
-                investor: investor
+                investor: investor,
+                date_from: dateFrom,
+                date_to: dateTo
             },
             success: function(res) {
                 if (res.status === 1) {
@@ -1580,6 +1599,19 @@
             document.getElementById('commSummaryDiscrepant').textContent = summary.discrepant_count;
             document.getElementById('commSummaryOverpaid').textContent = Number(summary.total_overpaid).toFixed(2);
             document.getElementById('commSummaryUnderpaid').textContent = Number(summary.total_underpaid).toFixed(2);
+
+            const bDisc = document.getElementById('commFilterDiscrepantBadge');
+            if (bDisc) bDisc.textContent = summary.discrepant_count;
+            const bTotal = document.getElementById('commFilterTotalBadge');
+            if (bTotal) bTotal.textContent = summary.total_audited;
+            const bOver = document.getElementById('commFilterOverpaidBadge');
+            if (bOver) bOver.textContent = summary.overpaid_count;
+            const bUnder = document.getElementById('commFilterUnderpaidBadge');
+            if (bUnder) bUnder.textContent = summary.underpaid_count;
+            const bUncred = document.getElementById('commFilterUncreditedBadge');
+            if (bUncred) bUncred.textContent = summary.uncredited_count;
+            const bMatch = document.getElementById('commFilterMatchedBadge');
+            if (bMatch) bMatch.textContent = summary.matched_count;
         }
 
         if (countDisplay) countDisplay.textContent = tasks.length;
@@ -1628,6 +1660,8 @@
                         </a>
                         <br>
                         <span class="badge bg-soft-dark small">${item.task_status}</span>
+                        ${item.task_date ? `<br><small class="text-muted"><i class="ti ti-calendar me-1"></i>${item.task_date}</small>` : ''}
+                    </td>
                     </td>
                     <td><span class="fw-bold text-dark">${item.investor_name}</span></td>
                     <td><span class="text-secondary text-truncate d-inline-block" style="max-width: 180px;" title="${item.customer_name}">${item.customer_name}</span></td>
@@ -2559,6 +2593,35 @@
         const commInvFilter = document.getElementById('commAuditInvestorFilter');
         if (commInvFilter) {
             commInvFilter.addEventListener('change', () => loadCommissionAudit(1));
+        }
+        const commDateFrom = document.getElementById('commAuditDateFrom');
+        if (commDateFrom) {
+            commDateFrom.addEventListener('change', () => loadCommissionAudit(1));
+        }
+        const commDateTo = document.getElementById('commAuditDateTo');
+        if (commDateTo) {
+            commDateTo.addEventListener('change', () => loadCommissionAudit(1));
+        }
+        const btnResetDates = document.getElementById('btnCommAuditResetDates');
+        if (btnResetDates) {
+            btnResetDates.addEventListener('click', function() {
+                const now = new Date();
+                const toStr = now.toISOString().split('T')[0];
+                const lastMonth = new Date();
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                const fromStr = lastMonth.toISOString().split('T')[0];
+                if (commDateFrom) commDateFrom.value = fromStr;
+                if (commDateTo) commDateTo.value = toStr;
+                loadCommissionAudit(1);
+            });
+        }
+        const btnAllTime = document.getElementById('btnCommAuditAllTime');
+        if (btnAllTime) {
+            btnAllTime.addEventListener('click', function() {
+                if (commDateFrom) commDateFrom.value = '';
+                if (commDateTo) commDateTo.value = '';
+                loadCommissionAudit(1);
+            });
         }
         const checkAllComm = document.getElementById('checkAllCommTasks');
         if (checkAllComm) {

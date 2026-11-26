@@ -104,9 +104,9 @@
                 
                 <div class="row mb-4 align-items-end">
                     <div class="col-md-3 mb-2 mb-md-0">
-                        <label class="form-label">الحالة</label>
+                        <label class="form-label">{{ __('Status') }}</label>
                         <select id="filter_status" class="form-select">
-                            <option value="">جميع الحالات</option>
+                            <option value="">{{ __('All Statuses') }}</option>
                             <option value="pending">قيد الانتظار</option>
                             <option value="sent">تم الإرسال</option>
                             <option value="delivered">تم التسليم</option>
@@ -137,9 +137,9 @@
                                 <th>#</th>
                                 <th>الرقم</th>
                                 <th>الاتجاه</th>
-                                <th>النوع</th>
+                                <th>{{ __('Type') }}</th>
                                 <th>المحتوى</th>
-                                <th>الحالة</th>
+                                <th>{{ __('Status') }}</th>
                                 <th>تاريخ الإرسال</th>
                                 <th>سجل الأخطاء</th>
                             </tr>

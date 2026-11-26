@@ -131,15 +131,15 @@
         <h3>بيانات البنك</h3>
         <table>
             <tr>
-                <td class="label">اسم البنك</td>
+                <td class="label">{{ __('Bank Name') }}</td>
                 <td>{{ $bankName }}</td>
             </tr>
             <tr>
-                <td class="label">رقم الحساب</td>
+                <td class="label">{{ __('Account Number') }}</td>
                 <td>{{ $accountNumber }}</td>
             </tr>
             <tr>
-                <td class="label">رقم الآيبان</td>
+                <td class="label">{{ __('IBAN Number') }}</td>
                 <td>{{ $ibanNumber }}</td>
             </tr>
             <tr>

@@ -62,11 +62,11 @@
                 <div class="card-body">
                     <form action="{{ route('admin.user-wallets.show', $user->id) }}" method="GET" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label for="from_date" class="form-label">من تاريخ</label>
+                            <label for="from_date" class="form-label">{{ __('From Date') }}</label>
                             <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
                         </div>
                         <div class="col-md-4">
-                            <label for="to_date" class="form-label">إلى تاريخ</label>
+                            <label for="to_date" class="form-label">{{ __('To Date') }}</label>
                             <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
                         </div>
                         <div class="col-md-4 d-flex gap-2">
@@ -376,7 +376,7 @@
                 <div class="modal-body">
                     <div id="oldBrokerLoading" class="text-center my-4">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">جاري التحميل...</span>
+                            <span class="visually-hidden">{{ __('Loading...') }}</span>
                         </div>
                         <p class="mt-2">جاري البحث عن المهام المطابقة...</p>
                     </div>
@@ -393,11 +393,11 @@
                             <table class="table table-bordered table-sm" id="oldBrokerTasksTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>رقم المهمة</th>
-                                        <th>نوع العمولة</th>
-                                        <th>إجمالي السعر</th>
+                                        <th>{{ __('Task Number') }}</th>
+                                        <th>{{ __('Commission Type') }}</th>
+                                        <th>{{ __('Total Price') }}</th>
                                         <th>العمولة المستحقة</th>
-                                        <th>التاريخ</th>
+                                        <th>{{ __('Date') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -419,7 +419,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <a href="{{ route('admin.user-wallets.export-old-truck-broker', $user->id) }}" target="_blank" class="btn btn-info d-none" id="oldBrokerExportBtn">
                         <i class="ti ti-download me-1"></i> تصدير Excel
                     </a>
@@ -442,7 +442,7 @@
                 <div class="modal-body">
                     <div id="allOldBrokerLoading" class="text-center my-4">
                         <div class="spinner-border text-info" role="status">
-                            <span class="visually-hidden">جاري التحميل...</span>
+                            <span class="visually-hidden">{{ __('Loading...') }}</span>
                         </div>
                         <p class="mt-2">جاري البحث عن جميع المهام المطابقة في النظام...</p>
                     </div>
@@ -459,11 +459,11 @@
                             <table class="table table-bordered table-sm" id="allOldBrokerTasksTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>رقم المهمة</th>
+                                        <th>{{ __('Task Number') }}</th>
                                         <th>الوسيط المرتبط</th>
-                                        <th>إجمالي السعر</th>
+                                        <th>{{ __('Total Price') }}</th>
                                         <th>العمولة المستحقة</th>
-                                        <th>التاريخ</th>
+                                        <th>{{ __('Date') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -479,7 +479,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                     <a href="{{ route('admin.user-wallets.export-all-old-truck-broker') }}" target="_blank" class="btn btn-info d-none" id="allOldBrokerExportBtn">
                         <i class="ti ti-download me-1"></i> تصدير Excel
                     </a>
@@ -549,10 +549,10 @@
                                                 <div class="mt-3 p-3 bg-light border rounded text-dark">
                                                     <strong>البيانات البنكية المسجلة للمضارب:</strong>
                                                     <ul class="list-unstyled mt-2 mb-0">
-                                                        <li><strong>اسم البنك:</strong> {{ $user->bank_name ?? 'غير محدد' }}</li>
-                                                        <li><strong>رقم الآيبان:</strong> <span dir="ltr">{{ $user->iban_number ?? 'غير محدد' }}</span></li>
-                                                        <li><strong>رمز السويفت:</strong> {{ $user->bic_code ?? 'غير محدد' }}</li>
-                                                        <li><strong>اسم المستفيد:</strong> {{ $user->beneficiary_name ?? 'غير محدد' }}</li>
+                                                        <li><strong>{{ __('Bank Name:') }}</strong> {{ $user->bank_name ?? 'غير محدد' }}</li>
+                                                        <li><strong>{{ __('IBAN Number:') }}</strong> <span dir="ltr">{{ $user->iban_number ?? 'غير محدد' }}</span></li>
+                                                        <li><strong>{{ __('SWIFT Code:') }}</strong> {{ $user->bic_code ?? 'غير محدد' }}</li>
+                                                        <li><strong>{{ __('Beneficiary Name:') }}</strong> {{ $user->beneficiary_name ?? 'غير محدد' }}</li>
                                                     </ul>
                                                     @if(!$user->iban_number || !$user->bic_code || !$user->beneficiary_name)
                                                         <div class="alert alert-danger mt-2 mb-0 py-2">
@@ -799,7 +799,7 @@
                                 <tr>
                                     <th>{{ __('Task #') }}</th>
                                     <th>{{ __('Amount') }}</th>
-                                    <th>النوع</th>
+                                    <th>{{ __('Type') }}</th>
                                     <th>{{ __('Date') }}</th>
                                     <th>{{ __('Action') }}</th>
                                 </tr>

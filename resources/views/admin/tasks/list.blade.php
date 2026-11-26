@@ -109,8 +109,8 @@
                 console.warn('[Brokers Breakdown] Permission Denied: view_task_commissions is required!');
                 Swal.fire({
                     icon: 'error',
-                    title: 'غير مصرح',
-                    text: 'ليس لديك صلاحية لعرض عمولات وتفاصيل الوسطاء.'
+                    title: '{{ __('Unauthorized') }}',
+                    text: '{{ __('You do not have permission to view broker commissions and details.') }}'
                 });
                 console.groupEnd();
                 return;
@@ -177,8 +177,8 @@
                         hideModal();
                         Swal.fire({
                             icon: 'error',
-                            title: 'خطأ',
-                            text: res.error || 'تعذر تحميل بيانات الوسطاء'
+                            title: '{{ __('Error') }}',
+                            text: res.error || '{{ __('Unable to load brokers data') }}'
                         });
                         console.groupEnd();
                         return;
@@ -1264,7 +1264,7 @@
                 </div>
                 <div class="modal-footer py-2 bg-light d-flex justify-content-between align-items-center">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                        {{ __('إلغاء') }}
+                        {{ __('Cancel') }} }}
                     </button>
                     <button type="button" class="btn btn-success" id="btnConfirmBroadcastTaskWhatsapp" style="background-color: #198754;" disabled>
                         <i class="ti ti-brand-whatsapp me-1 fs-5"></i>
@@ -1295,8 +1295,8 @@
                             <table class="table table-bordered" id="conflictsTable">
                                 <thead>
                                     <tr>
-                                        <th>رقم المهمة</th>
-                                        <th>العميل</th>
+                                        <th>{{ __('Task Number') }}</th>
+                                        <th>{{ __('Customer') }}</th>
                                         <th>حالة المهمة</th>
                                         <th>إجمالي التكلفة</th>
                                         <th>إجراء</th>
@@ -1309,7 +1309,7 @@
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
-                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                        <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="button" class="btn btn-success" id="fixAllConflictsBtn" style="display: none;"
                             onclick="fixInvestmentConflict('all')">
                             <i class="ti ti-tool me-1"></i> إصلاح الكل
@@ -1326,7 +1326,7 @@
                 const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
                 modal.show();
 
-                fetch('{{ route("tasks.investment_conflicts.data") }}')
+                fetch('{{ route("tasks.investment_conflicts.data') }}')
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 1) {
@@ -1353,7 +1353,7 @@
                                 document.getElementById('fixAllConflictsBtn').style.display = 'block';
                             }
                         } else {
-                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || 'خطأ') + '</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">' + (data.message || '{{ __('Error') }}') + '</td></tr>';
                         }
                     })
                     .catch(err => {
@@ -1373,14 +1373,14 @@
                     },
                     showCancelButton: true,
                     confirmButtonText: 'تأكيد وإصلاح',
-                    cancelButtonText: 'إلغاء',
+                    cancelButtonText: '{{ __('Cancel') }} }}',
                     showLoaderOnConfirm: true,
                     preConfirm: (password) => {
                         if (!password) {
                             Swal.showValidationMessage('يرجى إدخال كلمة المرور');
                             return false;
                         }
-                        return fetch('{{ route("tasks.investment_conflicts.fix") }}', {
+                        return fetch('{{ route("tasks.investment_conflicts.fix') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1556,7 +1556,7 @@
 
                 <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between align-items-center">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="ti ti-x me-1"></i> {{ __('إلغاء') }}
+                        <i class="ti ti-x me-1"></i> {{ __('Cancel') }} }}
                     </button>
                     <button type="button" class="btn btn-primary px-4 fw-bold shadow" id="btnSubmitTasksToGoTech" disabled>
                         <i class="ti ti-send me-1 fs-5"></i>
@@ -1622,7 +1622,7 @@
                 btnSubmit.disabled = true;
                 updateTotals();
 
-                fetch('{{ route("tasks.gotech.eligible") }}', {
+                fetch('{{ route("tasks.gotech.eligible') }}', {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1652,7 +1652,7 @@
 
             function populateDropdowns(customers, vehicles, routes) {
                 // Customers
-                customerFilter.innerHTML = '<option value="">{{ __("جميع العملاء المؤهلين") }}</option>';
+                customerFilter.innerHTML = '<option value="">{{ __('جميع العملاء المؤهلين') }}</option>';
                 customers.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
@@ -1661,7 +1661,7 @@
                 });
 
                 // Vehicles
-                vehicleFilter.innerHTML = '<option value="">{{ __("جميع أنواع المركبات") }}</option>';
+                vehicleFilter.innerHTML = '<option value="">{{ __('جميع أنواع المركبات') }}</option>';
                 vehicles.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v;
@@ -1670,7 +1670,7 @@
                 });
 
                 // Routes
-                routeFilter.innerHTML = '<option value="">{{ __("جميع المسارات") }}</option>';
+                routeFilter.innerHTML = '<option value="">{{ __('جميع المسارات') }}</option>';
                 routes.forEach(r => {
                     const opt = document.createElement('option');
                     opt.value = r;
@@ -2003,7 +2003,7 @@
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: '<i class="ti ti-send me-1"></i> نعم، إرسال الآن',
-                    cancelButtonText: 'إلغاء',
+                    cancelButtonText: '{{ __('Cancel') }} }}',
                     customClass: {
                         confirmButton: 'btn btn-primary me-3',
                         cancelButton: 'btn btn-outline-secondary'
@@ -2014,7 +2014,7 @@
                         btnSubmit.disabled = true;
                         btnSubmitText.textContent = 'جاري الإرسال والمعالجة...';
 
-                        fetch('{{ route("tasks.gotech.batch_submit") }}', {
+                        fetch('{{ route("tasks.gotech.batch_submit') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2119,7 +2119,7 @@
                     } else {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'تنبيه',
+                            title: '{{ __('Notice') }}',
                             text: data.message || 'تعذر جلب الحالة',
                             customClass: { confirmButton: 'btn btn-warning' },
                             buttonsStyling: false
@@ -2129,7 +2129,7 @@
                 .catch(err => {
                     Swal.fire({
                         icon: 'error',
-                        title: 'خطأ',
+                        title: '{{ __('Error') }}',
                         text: err.message,
                         customClass: { confirmButton: 'btn btn-danger' },
                         buttonsStyling: false
@@ -2145,7 +2145,7 @@
                 if (typeof canCancelGoTech !== 'undefined' && !canCancelGoTech) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'غير مصرح',
+                        title: '{{ __('Unauthorized') }}',
                         text: 'ليس لديك صلاحية فك ارتباط وإلغاء طرح المهام في Go-Tech.',
                         customClass: { confirmButton: 'btn btn-danger' },
                         buttonsStyling: false
@@ -2217,7 +2217,7 @@
                     .catch(err => {
                         Swal.fire({
                             icon: 'error',
-                            title: 'خطأ',
+                            title: '{{ __('Error') }}',
                             text: err.message,
                             customClass: { confirmButton: 'btn btn-danger' },
                             buttonsStyling: false

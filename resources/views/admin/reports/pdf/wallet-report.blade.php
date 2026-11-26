@@ -305,10 +305,10 @@
                         <th>رقم المعاملة</th>
                         <th>الرصيد بعد المعاملة</th>
                         <th>المبلغ (ريال)</th>
-                        <th>النوع</th>
-                        <th>الوصف</th>
-                        <th>التاريخ</th>
-                        <th>رقم المهمة</th>
+                        <th>{{ __('Type') }}</th>
+                        <th>{{ __('Description') }}</th>
+                        <th>{{ __('Date') }}</th>
+                        <th>{{ __('Task Number') }}</th>
                     </tr>
                 </thead>
                 <tbody>

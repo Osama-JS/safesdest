@@ -70,7 +70,7 @@
         };
 
         window.fixAnomaly = function(anomalyType, fixAction, taskId, transactionId) {
-            if (!confirm('هل أنت متأكد؟')) return;
+            if (!confirm('{{ __('Are you sure?') }}')) return;
             $('#fundingCheckLoading').removeClass('d-none');
             $('#fundingCheckResults').addClass('d-none');
             $.ajax({
@@ -81,7 +81,7 @@
                     if (response.status === 1) { alert(response.success); window.checkFunding(); }
                     else { alert('خطأ: ' + response.error); $('#fundingCheckLoading').addClass('d-none'); $('#fundingCheckResults').removeClass('d-none'); }
                 },
-                error: function() { alert('حدث خطأ بالاتصال.'); $('#fundingCheckLoading').addClass('d-none'); $('#fundingCheckResults').removeClass('d-none'); }
+                error: function() { alert('{{ __('Connection error occurred.') }}'); $('#fundingCheckLoading').addClass('d-none'); $('#fundingCheckResults').removeClass('d-none'); }
             });
         };
 
@@ -202,14 +202,14 @@
             // Capital Withdrawal Actions
             window.approveCapitalWithdrawal = function(id, amount) {
                 Swal.fire({
-                    title: 'الموافقة وإرسال الطلب إلى Payout',
+                    title: '{{ __('Approve and send request to Payout') }}',
                     text: 'هل أنت متأكد من الموافقة على طلب سحب رأس المال بمبلغ ' + amount + ' ر.س؟ سيتم تسجيل الطلب مباشرة في شاشة طلبات الصرف (Payout Requests) للمصادقة البنكية والتحويل.',
                     icon: 'question',
                     input: 'textarea',
                     inputPlaceholder: 'ملاحظات إضافية للمستثمر (اختياري)...',
                     showCancelButton: true,
-                    confirmButtonText: 'نعم، موافقة وإرسال لـ Payout',
-                    cancelButtonText: 'إلغاء',
+                    confirmButtonText: '{{ __('Yes, approve and send to Payout') }}',
+                    cancelButtonText: '{{ __('Cancel') }}',
                     customClass: {
                         confirmButton: 'btn btn-primary me-2',
                         cancelButton: 'btn btn-label-secondary'
@@ -237,11 +237,11 @@
                     if (result.isConfirmed) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تمت الموافقة بنجاح!',
+                            title: '{{ __('Approved Successfully!') }}',
                             text: result.value.success,
                             showCancelButton: true,
-                            confirmButtonText: 'الانتقال إلى شاشة طلبات الصرف Payout',
-                            cancelButtonText: 'البقاء هنا',
+                            confirmButtonText: '{{ __('Go to Payout Requests Screen') }}',
+                            cancelButtonText: '{{ __('Stay here') }}',
                             customClass: { confirmButton: 'btn btn-primary me-2', cancelButton: 'btn btn-label-secondary' },
                             buttonsStyling: false
                         }).then((r) => {
@@ -257,8 +257,8 @@
 
             window.rejectCapitalWithdrawal = function(id) {
                 Swal.fire({
-                    title: 'رفض طلب سحب رأس المال',
-                    text: 'يرجى كتابة سبب الرفض ليتم إرساله للمستثمر:',
+                    title: '{{ __('Reject Capital Withdrawal Request') }}',
+                    text: '{{ __('Please enter rejection reason to be sent to investor:') }}',
                     icon: 'warning',
                     input: 'textarea',
                     inputPlaceholder: 'سبب الرفض (إلزامي)...',
@@ -268,8 +268,8 @@
                         }
                     },
                     showCancelButton: true,
-                    confirmButtonText: 'تأكيد الرفض',
-                    cancelButtonText: 'إلغاء',
+                    confirmButtonText: '{{ __('Confirm Rejection') }}',
+                    cancelButtonText: '{{ __('Cancel') }}',
                     customClass: {
                         confirmButton: 'btn btn-danger me-2',
                         cancelButton: 'btn btn-label-secondary'
@@ -297,7 +297,7 @@
                     if (result.isConfirmed) {
                         Swal.fire({
                             icon: 'success',
-                            title: 'تم الرفض!',
+                            title: '{{ __('Rejected!') }}',
                             text: result.value.success,
                             customClass: { confirmButton: 'btn btn-success' }
                         }).then(() => location.reload());
@@ -410,11 +410,11 @@
                 <div class="card-body">
                     <form action="{{ route('admin.investors.invest-wallet', $user->id) }}" method="GET" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label for="from_date" class="form-label">من تاريخ</label>
+                            <label for="from_date" class="form-label">{{ __('From Date') }}</label>
                             <input type="date" class="form-control" id="from_date" name="from_date" value="{{ request('from_date') }}">
                         </div>
                         <div class="col-md-4">
-                            <label for="to_date" class="form-label">إلى تاريخ</label>
+                            <label for="to_date" class="form-label">{{ __('To Date') }}</label>
                             <input type="date" class="form-control" id="to_date" name="to_date" value="{{ request('to_date') }}">
                         </div>
                         <div class="col-md-4 d-flex gap-2">
@@ -896,7 +896,7 @@
                                     <th style="width: 50px;">
                                         <input class="form-check-input" type="checkbox" id="selectAllUnsettledTasks">
                                     </th>
-                                    <th>رقم المهمة</th>
+                                    <th>{{ __('Task Number') }}</th>
                                     <th>صاحب المهمة (العميل)</th>
                                     <th>تاريخ التمويل</th>
                                     <th>التكلفة (ر.س)</th>
@@ -922,7 +922,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="button" id="submitManualSettlementBtn" class="btn btn-success" disabled>
                         <span class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
                         حفظ التسوية
@@ -963,7 +963,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="button" id="confirmDeleteSettlement" class="btn btn-danger">
                         <i class="ti ti-trash me-1"></i>
                         تأكيد الحذف
@@ -988,7 +988,7 @@
                             <label class="form-label">بحث بالمبلغ</label>
                             <div class="input-group">
                                 <input type="number" id="restorePaymentAmountFilter" class="form-control" placeholder="أدخل المبلغ للبحث...">
-                                <button class="btn btn-outline-primary" type="button" onclick="fetchMissingPayments()">بحث</button>
+                                <button class="btn btn-outline-primary" type="button" onclick="fetchMissingPayments()">{{ __('Search') }}</button>
                             </div>
                         </div>
                     </div>
@@ -997,23 +997,23 @@
                             <thead>
                                 <tr>
                                     <th># ID</th>
-                                    <th>المبلغ</th>
+                                    <th>{{ __('Amount') }}</th>
                                     <th>تاريخ العملية</th>
                                     <th>المرجع (Checkout ID)</th>
-                                    <th>الحالة</th>
+                                    <th>{{ __('Status') }}</th>
                                     <th>إجراء</th>
                                 </tr>
                             </thead>
                             <tbody id="restorePaymentsTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center">جاري التحميل...</td>
+                                    <td colspan="6" class="text-center">{{ __('Loading...') }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                 </div>
             </div>
         </div>
@@ -1034,12 +1034,12 @@
                     <p>أدخل كلمة المرور لتأكيد إضافة هذه العملية إلى المحفظة:</p>
                     <input type="hidden" id="restorePaymentIdInput">
                     <div class="mb-3 text-start">
-                        <label class="form-label fw-medium" for="restorePaymentPasswordInput">كلمة المرور</label>
+                        <label class="form-label fw-medium" for="restorePaymentPasswordInput">{{ __('Password') }}</label>
                         <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="restorePaymentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="new-password">
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="button" id="submitRestorePaymentBtn" class="btn btn-primary">تأكيد الاستعادة</button>
                 </div>
             </div>
@@ -1060,7 +1060,7 @@
                     <p>أدخل كلمة المرور لتأكيد الإلغاء. سيتم حذف عملية التمويل، فصل المهمة، وحذف جميع عمولات المستثمر والوسطاء المتعلقة بها.</p>
                     <input type="hidden" id="cancelInvestmentTransactionIdInput">
                     <div class="mb-3 text-start">
-                        <label class="form-label fw-medium" for="cancelInvestmentPasswordInput">كلمة المرور</label>
+                        <label class="form-label fw-medium" for="cancelInvestmentPasswordInput">{{ __('Password') }}</label>
                         <input type="text" name="fakeusernameremembered" style="display:none" autocomplete="username"><input type="password" id="cancelInvestmentPasswordInput" class="form-control" placeholder="كلمة المرور" autocomplete="new-password">
                     </div>
                 </div>

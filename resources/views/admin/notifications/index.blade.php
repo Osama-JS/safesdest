@@ -446,7 +446,7 @@
                 icon: isDanger ? 'warning' : 'question',
                 showCancelButton: true,
                 confirmButtonText: confirmText,
-                cancelButtonText: '{{ __("إلغاء") }}',
+                cancelButtonText: '{{ __('Cancel') }} }}',
                 customClass: {
                     confirmButton: isDanger ? 'btn btn-danger me-2' : 'btn btn-primary me-2',
                     cancelButton: 'btn btn-label-secondary'
@@ -487,9 +487,9 @@
             e.preventDefault();
             const url = markAllBtn.getAttribute('data-url');
             showConfirm(
-                '{{ __("تحديد الكل كمقروء") }}',
-                '{{ __("هل أنت متأكد من رغبتك في تحديد جميع إشعاراتك كمقروءة؟") }}',
-                '{{ __("نعم، حدد الكل") }}',
+                '{{ __('تحديد الكل كمقروء') }}',
+                '{{ __('هل أنت متأكد من رغبتك في تحديد جميع إشعاراتك كمقروءة؟') }}',
+                '{{ __('نعم، حدد الكل') }}',
                 false,
                 function () {
                     markAllBtn.disabled = true;
@@ -505,7 +505,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            showFeedback('success', data.message || '{{ __("تم تحديد الكل كمقروء") }}', function () {
+                            showFeedback('success', data.message || '{{ __('تم تحديد الكل كمقروء') }}', function () {
                                 window.location.reload();
                             });
                         } else {
@@ -529,9 +529,9 @@
             e.preventDefault();
             const url = deleteAllReadBtn.getAttribute('data-url');
             showConfirm(
-                '{{ __("حذف الإشعارات المقروءة") }}',
-                '{{ __("هل تريد حذف جميع الإشعارات التي قمت بقراءتها من صندوقك؟") }}',
-                '{{ __("نعم، احذف المقروء") }}',
+                '{{ __('حذف الإشعارات المقروءة') }}',
+                '{{ __('هل تريد حذف جميع الإشعارات التي قمت بقراءتها من صندوقك؟') }}',
+                '{{ __('نعم، احذف المقروء') }}',
                 true,
                 function () {
                     deleteAllReadBtn.disabled = true;
@@ -547,7 +547,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            showFeedback('success', data.message || '{{ __("تم حذف جميع الإشعارات المقروءة بنجاح") }}', function () {
+                            showFeedback('success', data.message || '{{ __('تم حذف جميع الإشعارات المقروءة بنجاح') }}', function () {
                                 window.location.reload();
                             });
                         } else {
@@ -599,16 +599,16 @@
                             if (unreadPill) unreadPill.remove();
                         }
                         toggleBtn.className = 'btn btn-xs btn-label-secondary btn-toggle-read';
-                        toggleBtn.title = '{{ __("تحديد كغير مقروء") }}';
-                        toggleBtn.innerHTML = '<i class="ti ti-mail me-1"></i><span class="toggle-text">{{ __("تحديد كغير مقروء") }}</span>';
+                        toggleBtn.title = '{{ __('تحديد كغير مقروء') }}';
+                        toggleBtn.innerHTML = '<i class="ti ti-mail me-1"></i><span class="toggle-text">{{ __('تحديد كغير مقروء') }}</span>';
                     } else {
                         if (card) {
                             card.classList.remove('border-light', 'shadow-none', 'bg-body');
                             card.classList.add('border-primary', 'border-start', 'border-3', 'bg-label-primary', 'bg-opacity-10', 'shadow-sm');
                         }
                         toggleBtn.className = 'btn btn-xs btn-label-primary btn-toggle-read';
-                        toggleBtn.title = '{{ __("تحديد كمقروء") }}';
-                        toggleBtn.innerHTML = '<i class="ti ti-mail-opened me-1"></i><span class="toggle-text">{{ __("تحديد كمقروء") }}</span>';
+                        toggleBtn.title = '{{ __('تحديد كمقروء') }}';
+                        toggleBtn.innerHTML = '<i class="ti ti-mail-opened me-1"></i><span class="toggle-text">{{ __('تحديد كمقروء') }}</span>';
                     }
                 } else {
                     toggleBtn.innerHTML = originalHtml;
@@ -633,9 +633,9 @@
             const row = document.getElementById('notif-row-' + id);
 
             showConfirm(
-                '{{ __("حذف الإشعار") }}',
-                '{{ __("هل أنت متأكد من حذف هذا الإشعار من صندوقك؟") }}',
-                '{{ __("نعم، احذف") }}',
+                '{{ __('حذف الإشعار') }}',
+                '{{ __('هل أنت متأكد من حذف هذا الإشعار من صندوقك؟') }}',
+                '{{ __('Yes, delete') }}',
                 true,
                 function () {
                     deleteBtn.disabled = true;

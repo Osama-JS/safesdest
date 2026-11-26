@@ -1,6 +1,6 @@
 @extends('layouts/layoutMaster')
 
-@section('title', 'إدارة طلبات سحب العمولات للمستثمرين')
+@section('title', __('Investor Commission Withdrawal Management'))
 
 @section('vendor-style')
 <link rel="stylesheet" href="{{ asset('assets/vendor/libs/sweetalert2/sweetalert2.css') }}" />
@@ -22,8 +22,8 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb breadcrumb-style1 mb-0">
                     <li class="breadcrumb-item"><a href="{{ url('/') }}">{{ __('Home') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('admin.investors.index') }}">المستثمرون</a></li>
-                    <li class="breadcrumb-item active">طلبات سحب العمولات</li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.investors.index') }}">{{ __('Investors') }}</a></li>
+                    <li class="breadcrumb-item active">{{ __('Commission Withdrawal Requests') }}</li>
                 </ol>
             </nav>
         </div>
@@ -45,7 +45,7 @@
                         </div>
                         <h4 class="ms-1 mb-0">{{ $stats['total'] }}</h4>
                     </div>
-                    <p class="mb-0 fw-medium text-muted">إجمالي الطلبات المسجلة</p>
+                    <p class="mb-0 fw-medium text-muted">{{ __('Total Registered Requests') }}</p>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                         </div>
                         <h4 class="ms-1 mb-0 text-warning">{{ $stats['pending'] }}</h4>
                     </div>
-                    <p class="mb-0 fw-medium text-muted">بانتظار المراجعة والصرف</p>
+                    <p class="mb-0 fw-medium text-muted">{{ __('Pending Review and Disbursement') }}</p>
                 </div>
             </div>
         </div>
@@ -71,7 +71,7 @@
                         </div>
                         <h4 class="ms-1 mb-0 text-success">{{ $stats['approved'] }}</h4>
                     </div>
-                    <p class="mb-0 fw-medium text-muted">طلبات تم اعتمادها وصرفها</p>
+                    <p class="mb-0 fw-medium text-muted">{{ __('Approved and Disbursed Requests') }}</p>
                 </div>
             </div>
         </div>
@@ -84,7 +84,7 @@
                         </div>
                         <h4 class="ms-1 mb-0 text-info">{{ number_format($stats['total_approved_amount'], 2) }}</h4>
                     </div>
-                    <p class="mb-0 fw-medium text-muted">إجمالي المبالغ المصروفة (ر.س)</p>
+                    <p class="mb-0 fw-medium text-muted">{{ __('Total Disbursed Amounts (SAR)') }}</p>
                 </div>
             </div>
         </div>
@@ -95,33 +95,33 @@
         <div class="card-body py-3">
             <form method="GET" action="{{ route('admin.investors.commission-withdrawals.index') }}" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label small fw-bold">بحث بالمستثمر</label>
-                    <input type="text" name="search" class="form-control" placeholder="اسم المستثمر، البريد، أو رقم الهاتف..." value="{{ request('search') }}">
+                    <label class="form-label small fw-bold">{{ __('Search Investor') }}</label>
+                    <input type="text" name="search" class="form-control" placeholder="{{ __('Investor name, email, or phone...') }}" value="{{ request('search') }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">الحالة</label>
+                    <label class="form-label small fw-bold">{{ __('Status') }}</label>
                     <select name="status" class="form-select">
-                        <option value="">جميع الحالات</option>
-                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>قيد المراجعة</option>
-                        <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>قيد الصرف عبر Payout</option>
-                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>مقبول ومصروف</option>
-                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>مرفوض</option>
+                        <option value="">{{ __('All Statuses') }}</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>{{ __('Under Review') }}</option>
+                        <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>{{ __('Processing via Payout') }}</option>
+                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>{{ __('Approved and Disbursed') }}</option>
+                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>{{ __('Rejected') }}</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">من تاريخ</label>
+                    <label class="form-label small fw-bold">{{ __('From Date') }}</label>
                     <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold">إلى تاريخ</label>
+                    <label class="form-label small fw-bold">{{ __('To Date') }}</label>
                     <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
                 </div>
                 <div class="col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="ti ti-filter me-1"></i> تصفية
+                        <i class="ti ti-filter me-1"></i> {{ __('Filter') }}
                     </button>
                     @if(request()->anyFilled(['search', 'status', 'date_from', 'date_to']))
-                        <a href="{{ route('admin.investors.commission-withdrawals.index') }}" class="btn btn-label-secondary" title="إعادة تعيين">
+                        <a href="{{ route('admin.investors.commission-withdrawals.index') }}" class="btn btn-label-secondary" title="{{ __('Reset') }}">
                             <i class="ti ti-refresh"></i>
                         </a>
                     @endif
@@ -136,15 +136,15 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="py-3"># الطلب</th>
-                        <th class="py-3">المستثمر</th>
-                        <th class="py-3">المبلغ المطلوب</th>
-                        <th class="py-3">الرصيد المتاح</th>
-                        <th class="py-3">بيانات التحويل البنكي</th>
-                        <th class="py-3">تاريخ الطلب</th>
-                        <th class="py-3 text-center">الحالة</th>
-                        <th class="py-3">الإيصال / الملاحظات</th>
-                        <th class="py-3 text-center">الإجراءات</th>
+                        <th class="py-3">{{ __('# Request') }}</th>
+                        <th class="py-3">{{ __('Investor') }}</th>
+                        <th class="py-3">{{ __('Requested Amount') }}</th>
+                        <th class="py-3">{{ __('Available Balance') }}</th>
+                        <th class="py-3">{{ __('Bank Transfer Details') }}</th>
+                        <th class="py-3">{{ __('Request Date') }}</th>
+                        <th class="py-3 text-center">{{ __('Status') }}</th>
+                        <th class="py-3">{{ __('Receipt / Notes') }}</th>
+                        <th class="py-3 text-center">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -244,7 +244,7 @@
                                                 '{{ addslashes($w->iban_number ?: ($w->account_number ?: 'غير محدد')) }}',
                                                 '{{ addslashes(str_replace(["\r", "\n"], ' ', $w->investor_notes ?? '')) }}'
                                             )"
-                                            title="معالجة الطلب والصرف">
+                                            title="{{ __('Process Request & Disbursement') }}">
                                         <i class="ti ti-check me-1"></i> معالجة
                                     </button>
                                     @endcanany
@@ -257,7 +257,7 @@
                                                 '{{ addslashes($w->bank_name ?: 'غير محدد') }}',
                                                 '{{ addslashes($w->iban_number ?: ($w->account_number ?: 'غير محدد')) }}'
                                             )"
-                                            title="رفض الطلب مع ذكر السبب">
+                                            title="{{ __('Reject Request with Reason') }}">
                                         <i class="ti ti-x me-1"></i> رفض
                                     </button>
                                     @endcanany
@@ -285,7 +285,7 @@
                         <td colspan="9" class="text-center py-5">
                             <div class="text-muted">
                                 <i class="ti ti-files-off display-4 text-light mb-3"></i>
-                                <h5>لا توجد طلبات سحب عمولات مطابقة</h5>
+                                <h5>{{ __('No matching commission withdrawal requests found') }}</h5>
                             </div>
                         </td>
                     </tr>
@@ -333,7 +333,7 @@
                                         <i class="ti ti-user me-1"></i> بيانات المستثمر والطلب
                                     </h6>
                                     <div class="d-flex justify-content-between mb-1">
-                                        <span class="text-muted small">المستثمر:</span>
+                                        <span class="text-muted small">{{ __('Investor:') }}</span>
                                         <strong id="approve_investor_name" class="small text-heading"></strong>
                                     </div>
                                     <div class="d-flex justify-content-between mb-1">
@@ -341,11 +341,11 @@
                                         <span id="approve_investor_contact" class="small text-muted"></span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-1">
-                                        <span class="text-muted small">المبلغ المطلوب:</span>
+                                        <span class="text-muted small">{{ __('Requested Amount:') }}</span>
                                         <strong id="approve_amount" class="text-primary small"></strong>
                                     </div>
                                     <div class="d-flex justify-content-between">
-                                        <span class="text-muted small">الرصيد المتاح للسحب:</span>
+                                        <span class="text-muted small">{{ __('Available Balance for Withdrawal:') }}</span>
                                         <strong id="approve_available_balance" class="text-success small"></strong>
                                     </div>
                                 </div>
@@ -356,15 +356,15 @@
                                         <i class="ti ti-building-bank me-1"></i> بيانات التحويل البنكي
                                     </h6>
                                     <div class="d-flex justify-content-between mb-1">
-                                        <span class="text-muted small">البنك:</span>
+                                        <span class="text-muted small">{{ __('Bank:') }}</span>
                                         <strong id="approve_bank_name" class="small text-heading"></strong>
                                     </div>
                                     <div class="d-flex justify-content-between mb-1">
-                                        <span class="text-muted small">اسم المستفيد:</span>
+                                        <span class="text-muted small">{{ __('Beneficiary Name:') }}</span>
                                         <strong id="approve_account_holder" class="small text-heading"></strong>
                                     </div>
                                     <div class="mb-1">
-                                        <span class="text-muted small d-block mb-1">رقم الآيبان / الحساب:</span>
+                                        <span class="text-muted small d-block mb-1">{{ __('IBAN / Account Number:') }}</span>
                                         <div class="d-flex align-items-center justify-content-between bg-white rounded px-2 py-1 border">
                                             <span id="approve_iban_number" class="font-monospace small fw-bold text-dark text-break"></span>
                                             <button type="button" class="btn btn-xs btn-label-primary ms-1 px-1 py-0" onclick="copyApproveIban()" title="نسخ الآيبان">
@@ -373,7 +373,7 @@
                                         </div>
                                     </div>
                                     <div id="approve_notes_wrapper" class="d-none mt-2 pt-1 border-top">
-                                        <span class="text-muted small d-block">ملاحظة المستثمر:</span>
+                                        <span class="text-muted small d-block">{{ __('Investor Note:') }}</span>
                                         <span id="approve_investor_notes" class="small text-muted fst-italic"></span>
                                     </div>
                                 </div>
@@ -407,17 +407,17 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">صورة / ملف إيصال التحويل <span class="text-danger">*</span></label>
                             <input type="file" name="receipt" id="approve_receipt_input" class="form-control" accept="image/jpeg,image/png,image/jpg,application/pdf">
-                            <small class="text-muted">مسموح: JPG, PNG, PDF (الحد الأقصى 5 ميجابايت)</small>
+                            <small class="text-muted">{{ __('Allowed: JPG, PNG, PDF (Max 5MB)') }}</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label small">رقم المرجع / الحوالة البنكية (اختياري)</label>
+                            <label class="form-label small">{{ __('Reference / Transfer Number (Optional)') }}</label>
                             <input type="text" name="reference_number" class="form-control" placeholder="مثال: REF-92834723">
                         </div>
                     </div>
 
                     <div class="mb-0">
-                        <label class="form-label small">ملاحظات إدارية (اختياري)</label>
+                        <label class="form-label small">{{ __('Administrative Notes (Optional)') }}</label>
                         <textarea name="admin_notes" class="form-control" rows="2" placeholder="أي ملاحظات تسجل على الحركة..."></textarea>
                     </div>
                 </div>
@@ -457,7 +457,7 @@
                     <div class="card bg-label-secondary mb-3 border-0">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between mb-1">
-                                <span class="text-muted small">المستثمر:</span>
+                                <span class="text-muted small">{{ __('Investor:') }}</span>
                                 <strong id="reject_investor_name" class="small"></strong>
                             </div>
                             <div class="d-flex justify-content-between mb-1">
@@ -465,7 +465,7 @@
                                 <strong id="reject_amount" class="text-danger small"></strong>
                             </div>
                             <div class="d-flex justify-content-between">
-                                <span class="text-muted small">البنك / الآيبان:</span>
+                                <span class="text-muted small">{{ __('Bank / IBAN:') }}</span>
                                 <span id="reject_bank_info" class="small font-monospace text-muted"></span>
                             </div>
                         </div>
@@ -478,12 +478,12 @@
                     </div>
 
                     <div class="mb-0">
-                        <label class="form-label small">ملاحظات إدارية داخلية (اختياري)</label>
+                        <label class="form-label small">{{ __('Internal Administrative Notes (Optional)') }}</label>
                         <textarea name="admin_notes" class="form-control" rows="2" placeholder="ملاحظات داخلية لا تظهر للعميل..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-top">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-danger" id="btnConfirmReject">
                         <span class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
                         <i class="ti ti-x me-1"></i> تأكيد رفض الطلب
@@ -509,7 +509,7 @@
                 <a href="#" id="adminDownloadReceiptBtn" class="btn btn-primary" download>
                     <i class="ti ti-download me-1"></i> تحميل
                 </a>
-                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
             </div>
         </div>
     </div>
@@ -592,8 +592,8 @@
         if (!currentApproveIban || currentApproveIban === 'غير محدد') {
             Swal.fire({
                 icon: 'info',
-                title: 'تنبيه',
-                text: 'لا يوجد رقم آيبان لنسخه.',
+                title: '{{ __('Notice') }}',
+                text: '{{ __('No IBAN number to copy.') }}',
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -602,8 +602,8 @@
         navigator.clipboard.writeText(currentApproveIban).then(() => {
             Swal.fire({
                 icon: 'success',
-                title: 'تم النسخ',
-                text: 'تم نسخ رقم الآيبان إلى الحافظة بنجاح: ' + currentApproveIban,
+                title: '{{ __('Copied') }}',
+                text: '{{ __('IBAN copied to clipboard successfully: ') }}' + currentApproveIban,
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -617,8 +617,8 @@
             document.body.removeChild(tempInput);
             Swal.fire({
                 icon: 'success',
-                title: 'تم النسخ',
-                text: 'تم نسخ رقم الآيبان بنجاح.',
+                title: '{{ __('Copied') }}',
+                text: '{{ __('IBAN copied successfully.') }}',
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -683,11 +683,11 @@
                 if (data.is_payout && data.payout_url) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم إنشاء طلب الـ Payout بنجاح!',
+                        title: '{{ __('Payout request created successfully!') }}',
                         text: data.success,
                         showCancelButton: true,
                         confirmButtonText: '<i class="ti ti-external-link me-1"></i> الانتقال لشاشة المصادقة (Payout)',
-                        cancelButtonText: 'البقاء هنا وتحديث الصفحة',
+                        cancelButtonText: '{{ __('Stay here and refresh page') }}',
                         customClass: {
                             confirmButton: 'btn btn-primary me-2',
                             cancelButton: 'btn btn-label-secondary'
@@ -703,9 +703,9 @@
                 } else {
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم بنجاح!',
+                        title: '{{ __('Completed Successfully!') }}',
                         text: data.success,
-                        confirmButtonText: 'حسناً'
+                        confirmButtonText: '{{ __('OK') }}'
                     }).then(() => {
                         window.location.reload();
                     });
@@ -713,7 +713,7 @@
             } else {
                 Swal.fire({
                     icon: 'error',
-                    title: 'خطأ!',
+                    title: '{{ __('Error!') }}',
                     text: data.error || 'حدث خطأ أثناء معالجة الطلب.'
                 });
             }
@@ -723,8 +723,8 @@
             if (spinner) spinner.classList.add('d-none');
             Swal.fire({
                 icon: 'error',
-                title: 'خطأ في الاتصال',
-                text: 'تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً.'
+                title: '{{ __('Connection Error') }}',
+                text: '{{ __('Unable to connect to server, please try again later.') }}'
             });
         });
     });
@@ -758,16 +758,16 @@
                 rejectModalInstance.hide();
                 Swal.fire({
                     icon: 'success',
-                    title: 'تم الرفض بنجاح',
+                    title: '{{ __('Rejected successfully') }}',
                     text: data.success,
-                    confirmButtonText: 'حسناً'
+                    confirmButtonText: '{{ __('OK') }}'
                 }).then(() => {
                     window.location.reload();
                 });
             } else {
                 Swal.fire({
                     icon: 'error',
-                    title: 'خطأ!',
+                    title: '{{ __('Error!') }}',
                     text: data.error || 'حدث خطأ أثناء رفض الطلب.'
                 });
             }
@@ -777,8 +777,8 @@
             if (spinner) spinner.classList.add('d-none');
             Swal.fire({
                 icon: 'error',
-                title: 'خطأ في الاتصال',
-                text: 'تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً.'
+                title: '{{ __('Connection Error') }}',
+                text: '{{ __('Unable to connect to server, please try again later.') }}'
             });
         });
     });

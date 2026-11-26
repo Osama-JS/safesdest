@@ -72,7 +72,7 @@
                     <div class="d-flex gap-1 overflow-auto whatsapp-filters-bar pb-1">
                         <button type="button" class="btn btn-xs btn-primary rounded-pill flex-shrink-0 active filter-btn" data-filter="all">الكل</button>
                         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill flex-shrink-0 filter-btn" data-filter="unread">غير المقروء</button>
-                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill flex-shrink-0 filter-btn" data-filter="customers">العملاء</button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill flex-shrink-0 filter-btn" data-filter="customers">{{ __('Customers') }}</button>
                         <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill flex-shrink-0 filter-btn" data-filter="drivers">السائقين</button>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
                     <div class="alert alert-danger py-2 px-3 small mt-3 mb-0 d-none" id="wa-modal-tpl-error"></div>
                 </div>
                 <div class="modal-footer border-top py-2 px-3 bg-light d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-sm btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="button" class="btn btn-sm btn-success d-flex align-items-center" id="wa-modal-tpl-send-btn">
                         <i class="ti ti-send me-1"></i> إرسال القالب الآن
                     </button>

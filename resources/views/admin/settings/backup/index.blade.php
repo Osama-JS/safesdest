@@ -433,7 +433,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إغلاق</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('Close') }}</button>
                         <button type="submit" class="btn btn-warning">
                             <i class="ti ti-check me-1"></i>
                             حفظ الإعدادات

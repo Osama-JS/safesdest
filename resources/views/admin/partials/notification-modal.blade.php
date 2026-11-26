@@ -229,9 +229,9 @@ window.showNotificationAlert = function(type, message) {
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             icon: type === 'error' ? 'error' : 'success',
-            title: type === 'error' ? 'خطأ' : 'نجاح',
+            title: type === 'error' ? '{{ __("Error") }}' : '{{ __("Success") }}',
             text: message,
-            confirmButtonText: 'حسناً',
+            confirmButtonText: '{{ __("OK") }}',
             timer: 3000
         });
     } else {

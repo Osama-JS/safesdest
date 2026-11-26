@@ -441,7 +441,7 @@
             <!-- Filter Pills -->
             <div class="wa-filter-tabs">
                 <div class="wa-filter-pill {{ $filter === 'all' ? 'active' : '' }}" data-filter="all">الكل</div>
-                <div class="wa-filter-pill {{ $filter === 'customers' ? 'active' : '' }}" data-filter="customers">العملاء</div>
+                <div class="wa-filter-pill {{ $filter === 'customers' ? 'active' : '' }}" data-filter="customers">{{ __('Customers') }}</div>
                 <div class="wa-filter-pill {{ $filter === 'drivers' ? 'active' : '' }}" data-filter="drivers">السائقين</div>
                 <div class="wa-filter-pill {{ $filter === 'unread' ? 'active' : '' }}" data-filter="unread">
                     غير مقروءة @if($stats['unread_messages'] > 0) <span class="badge bg-danger rounded-pill ms-1">{{ $stats['unread_messages'] }}</span> @endif
@@ -681,7 +681,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-success d-flex align-items-center" id="new-chat-submit-btn">
                         <i class="ti ti-send me-1"></i> إرسال وبدء المحادثة
                     </button>
@@ -731,7 +731,7 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                     <button type="submit" class="btn btn-primary d-flex align-items-center" id="submit-template-btn">
                         <i class="ti ti-send me-1"></i> إرسال القالب الآن
                     </button>
@@ -1293,7 +1293,7 @@ $(document).ready(function() {
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonText: 'إرسال قالب معتمد',
-                        cancelButtonText: 'إلغاء',
+                        cancelButtonText: '{{ __("Cancel") }}',
                         customClass: {
                             confirmButton: 'btn btn-primary me-3',
                             cancelButton: 'btn btn-label-secondary'

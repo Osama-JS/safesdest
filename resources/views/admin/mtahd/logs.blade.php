@@ -534,10 +534,10 @@
 
                     $('#logDetailsModal').modal('show');
                 } else {
-                    Swal.fire({ icon: 'error', title: 'خطأ', text: 'تعذر جلب تفاصيل السجل' });
+                    Swal.fire({ icon: 'error', title: '{{ __('Error') }}', text: '{{ __('Unable to fetch log details') }}' });
                 }
             }).fail(function () {
-                Swal.fire({ icon: 'error', title: 'خطأ', text: 'حدث خطأ أثناء الاتصال بالسيرفر' });
+                Swal.fire({ icon: 'error', title: '{{ __('Error') }}', text: '{{ __('An error occurred while connecting to server') }}' });
             });
         });
 
@@ -545,7 +545,7 @@
         $('#btn_copy_request').on('click', function () {
             const text = $('#modal_request_payload').text();
             navigator.clipboard.writeText(text);
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ حمولة الطلب', showConfirmButton: false, timer: 1500 });
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: '{{ __('Request payload copied') }}', showConfirmButton: false, timer: 1500 });
         });
 
         $('#btn_copy_response').on('click', function () {
@@ -577,7 +577,7 @@
                     Swal.fire({ icon: 'error', title: 'فشل الاستعلام', text: res.error || 'تعذر الاستعلام عن الصفقة' });
                 }
             }).fail(function () {
-                Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال بمنصة متعهد' });
+                Swal.fire({ icon: 'error', title: '{{ __('Error') }}', text: 'فشل الاتصال بمنصة متعهد' });
             });
         });
 
@@ -591,7 +591,7 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'نعم، قم بتحرير الضمان',
-                cancelButtonText: 'إلغاء',
+                cancelButtonText: '{{ __('Cancel') }}',
                 customClass: { confirmButton: 'btn btn-success me-2', cancelButton: 'btn btn-label-secondary' },
                 buttonsStyling: false
             }).then((result) => {
@@ -606,7 +606,7 @@
                             Swal.fire({ icon: 'error', title: 'فشل التحرير', text: res.error || 'تعذر تحرير الضمان' });
                         }
                     }).fail(function () {
-                        Swal.fire({ icon: 'error', title: 'خطأ', text: 'حدث خطأ أثناء الاتصال' });
+                        Swal.fire({ icon: 'error', title: '{{ __('Error') }}', text: 'حدث خطأ أثناء الاتصال' });
                     });
                 }
             });
@@ -643,7 +643,7 @@
                             Swal.fire({ icon: 'error', title: 'فشل الإلغاء', text: res.error || 'تعذر إلغاء الصفقة' });
                         }
                     }).fail(function () {
-                        Swal.fire({ icon: 'error', title: 'خطأ', text: 'حدث خطأ أثناء الاتصال' });
+                        Swal.fire({ icon: 'error', title: '{{ __('Error') }}', text: 'حدث خطأ أثناء الاتصال' });
                     });
                 }
             });

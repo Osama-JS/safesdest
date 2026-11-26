@@ -242,7 +242,7 @@
                     locale: {
                         format: 'YYYY-MM-DD',
                         applyLabel: 'تطبيق',
-                        cancelLabel: 'إلغاء',
+                        cancelLabel: '{{ __("Cancel") }}',
                         customRangeLabel: 'فترة مخصصة'
                     },
                     ranges: {

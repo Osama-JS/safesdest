@@ -228,7 +228,7 @@
                 <tr>
                     <th style="width: 5%;">#</th>
                     <th style="width: 15%;">رقم الحركة / التسلسل</th>
-                    <th style="width: 15%;">رقم المهمة</th>
+                    <th style="width: 15%;">{{ __('Task Number') }}</th>
                     <th style="width: 15%;">رقم التوصيل</th>
                     <th style="width: 35%;">الوصف والبيان</th>
                     <th style="width: 15%; text-align: left;">المبلغ (ر.س)</th>

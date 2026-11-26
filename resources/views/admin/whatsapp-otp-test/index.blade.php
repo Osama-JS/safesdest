@@ -307,7 +307,7 @@
     async function sendOtp() {
         const phone = document.getElementById('phone-input').value.trim();
         if (!phone || phone.length < 8) {
-            Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال رقم هاتف صحيح', confirmButtonText: 'حسناً' });
+            Swal.fire({ icon: 'warning', title: '{{ __("Notice") }}', text: 'الرجاء إدخال رقم هاتف صحيح', confirmButtonText: '{{ __("OK") }}' });
             return;
         }
 

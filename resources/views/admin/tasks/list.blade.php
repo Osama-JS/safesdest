@@ -1264,7 +1264,7 @@
                 </div>
                 <div class="modal-footer py-2 bg-light d-flex justify-content-between align-items-center">
                     <button type="button" class="btn btn-label-secondary" data-bs-dismiss="modal">
-                        {{ __('Cancel') }} }}
+                        {{ __('Cancel') }}
                     </button>
                     <button type="button" class="btn btn-success" id="btnConfirmBroadcastTaskWhatsapp" style="background-color: #198754;" disabled>
                         <i class="ti ti-brand-whatsapp me-1 fs-5"></i>
@@ -1326,7 +1326,7 @@
                 const modal = new bootstrap.Modal(document.getElementById('investmentConflictsModal'));
                 modal.show();
 
-                fetch('{{ route("tasks.investment_conflicts.data') }}')
+                fetch('{{ route('tasks.investment_conflicts.data') }}')
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 1) {
@@ -1373,14 +1373,14 @@
                     },
                     showCancelButton: true,
                     confirmButtonText: 'تأكيد وإصلاح',
-                    cancelButtonText: '{{ __('Cancel') }} }}',
+                    cancelButtonText: '{{ __('Cancel') }}',
                     showLoaderOnConfirm: true,
                     preConfirm: (password) => {
                         if (!password) {
                             Swal.showValidationMessage('يرجى إدخال كلمة المرور');
                             return false;
                         }
-                        return fetch('{{ route("tasks.investment_conflicts.fix') }}', {
+                        return fetch('{{ route('tasks.investment_conflicts.fix') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1556,7 +1556,7 @@
 
                 <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between align-items-center">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="ti ti-x me-1"></i> {{ __('Cancel') }} }}
+                        <i class="ti ti-x me-1"></i> {{ __('Cancel') }}
                     </button>
                     <button type="button" class="btn btn-primary px-4 fw-bold shadow" id="btnSubmitTasksToGoTech" disabled>
                         <i class="ti ti-send me-1 fs-5"></i>
@@ -1622,7 +1622,7 @@
                 btnSubmit.disabled = true;
                 updateTotals();
 
-                fetch('{{ route("tasks.gotech.eligible') }}', {
+                fetch('{{ route('tasks.gotech.eligible') }}', {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -2003,7 +2003,7 @@
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: '<i class="ti ti-send me-1"></i> نعم، إرسال الآن',
-                    cancelButtonText: '{{ __('Cancel') }} }}',
+                    cancelButtonText: '{{ __('Cancel') }}',
                     customClass: {
                         confirmButton: 'btn btn-primary me-3',
                         cancelButton: 'btn btn-outline-secondary'
@@ -2014,7 +2014,7 @@
                         btnSubmit.disabled = true;
                         btnSubmitText.textContent = 'جاري الإرسال والمعالجة...';
 
-                        fetch('{{ route("tasks.gotech.batch_submit') }}', {
+                        fetch('{{ route('tasks.gotech.batch_submit') }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

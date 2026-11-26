@@ -422,7 +422,7 @@
 
             </div>
             <div class="modal-footer" style="background: #f0f7ff; border-top: 1.5px solid #dbeafe;">
-                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">{{ __('Cancel') }} }}</button>
+                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">{{ __('Cancel') }}</button>
                 <button type="submit" class="btn btn-primary fw-bold" id="btnSubmitWithdrawal">
                     <i class="ti ti-send me-1"></i> {{ __('تأكيد وإرسال الطلب') }}
                 </button>
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateExportUrl() {
         const params = $('#walletFilterForm').serialize();
-        const exportBase = '{{ route("admin.my-wallet.export') }}';
+        const exportBase = '{{ route('admin.my-wallet.export') }}';
         $('#btnExportExcel').attr('href', exportBase + (params ? '?' + params : ''));
     }
 
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let url = targetUrl;
         if (!url) {
             const formParams = $('#walletFilterForm').serialize();
-            url = '{{ route("admin.my-wallet.index') }}' + (formParams ? '?' + formParams : '');
+            url = '{{ route('admin.my-wallet.index') }}' + (formParams ? '?' + formParams : '');
         } else {
             try {
                 const urlObj = new URL(url, window.location.origin);
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#filter_from').val('');
         $('#filter_to').val('');
         $('#filter_search').val('');
-        fetchTransactions('{{ route("admin.my-wallet.index') }}');
+        fetchTransactions('{{ route('admin.my-wallet.index') }}');
     });
 
     // الترقيم التفاعلي لجدول الحركات

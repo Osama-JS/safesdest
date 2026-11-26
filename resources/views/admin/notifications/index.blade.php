@@ -446,7 +446,7 @@
                 icon: isDanger ? 'warning' : 'question',
                 showCancelButton: true,
                 confirmButtonText: confirmText,
-                cancelButtonText: '{{ __('Cancel') }} }}',
+                cancelButtonText: '{{ __('Cancel') }}',
                 customClass: {
                     confirmButton: isDanger ? 'btn btn-danger me-2' : 'btn btn-primary me-2',
                     cancelButton: 'btn btn-label-secondary'

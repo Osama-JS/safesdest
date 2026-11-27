@@ -154,8 +154,39 @@ class UserWalletsController extends Controller
       $credit = (float) (clone $queryInPeriod)
         ->where('transaction_type', 'credit')
         ->sum('amount');
+      $grossCredit = $credit;
 
-      // Debit (Withdrawals) - ONLY within date range
+      // الخصم العكسي للعمولات الملغاة / المستردة
+      $reversedDebit = (float) (clone $queryInPeriod)
+        ->where('transaction_type', 'debit')
+        ->where(function ($q) {
+          $q->whereNotNull('task_id')
+            ->orWhere('description', 'LIKE', 'خصم عكسي%');
+        })
+        ->sum('amount');
+
+      // صافي العمولات المستحقة الفعلية (المكتسب مطروحاً منه الملغي)
+      $netCommissions = max(0.00, $grossCredit - $reversedDebit);
+
+      // إعادة مضاربة الأرباح إلى محفظة الاستثمار
+      $reinvestDebit = (float) (clone $queryInPeriod)
+        ->where('transaction_type', 'debit')
+        ->where(function ($q) {
+          $q->where('description', 'LIKE', '%reinvestment%')
+            ->orWhere('description', 'LIKE', '%إعادة مضاربة الأرباح%');
+        })
+        ->sum('amount');
+
+      // المسحوبات النقدية الفعلية (تحويلات بنكية وطلبات صرف بدون الخصومات العكسية وبدون إعادة الاستثمار)
+      $actualWithdrawalsDebit = (float) (clone $queryInPeriod)
+        ->where('transaction_type', 'debit')
+        ->whereNull('task_id')
+        ->where('description', 'NOT LIKE', 'خصم عكسي%')
+        ->where('description', 'NOT LIKE', '%reinvestment%')
+        ->where('description', 'NOT LIKE', '%إعادة مضاربة الأرباح%')
+        ->sum('amount');
+
+      // Debit (Total Withdrawals & Deductions) - ONLY within date range
       $debit = (float) (clone $queryInPeriod)
         ->where('transaction_type', 'debit')
         ->sum('amount');
@@ -172,6 +203,11 @@ class UserWalletsController extends Controller
         'balance' => $balance,
         'credit' => $credit,
         'debit' => $debit,
+        'grossCredit' => $grossCredit,
+        'reversedDebit' => $reversedDebit,
+        'netCommissions' => $netCommissions,
+        'actualWithdrawalsDebit' => $actualWithdrawalsDebit,
+        'reinvestDebit' => $reinvestDebit,
         'lastTransaction' => $wallet->last_transaction,
         'from_date' => $fromDate,
         'to_date' => $toDate,
@@ -265,7 +301,29 @@ class UserWalletsController extends Controller
       }
 
       if (!empty($type) && $type != 'all') {
-        $query->where('transaction_type', $type);
+        if ($type === 'credit') {
+          $query->where('transaction_type', 'credit');
+        } elseif ($type === 'debit') {
+          $query->where('transaction_type', 'debit');
+        } elseif ($type === 'reversal') {
+          $query->where('transaction_type', 'debit')
+            ->where(function ($q) {
+              $q->whereNotNull('task_id')
+                ->orWhere('description', 'LIKE', 'خصم عكسي%');
+            });
+        } elseif ($type === 'actual_withdrawal') {
+          $query->where('transaction_type', 'debit')
+            ->whereNull('task_id')
+            ->where('description', 'NOT LIKE', 'خصم عكسي%')
+            ->where('description', 'NOT LIKE', '%reinvestment%')
+            ->where('description', 'NOT LIKE', '%إعادة مضاربة الأرباح%');
+        } elseif ($type === 'reinvestment') {
+          $query->where('transaction_type', 'debit')
+            ->where(function ($q) {
+              $q->where('description', 'LIKE', '%reinvestment%')
+                ->orWhere('description', 'LIKE', '%إعادة مضاربة الأرباح%');
+            });
+        }
       }
 
       $totalFiltered = $query->count();
@@ -277,11 +335,45 @@ class UserWalletsController extends Controller
 
       $data = [];
       foreach ($transactions as $transaction) {
+        $category = 'deposit';
+        $categoryLabel = __('Deposit');
+        $categoryBadge = 'bg-label-success';
+
+        if ($transaction->transaction_type === 'credit') {
+          if (!empty($transaction->task_id)) {
+            $category = 'commission';
+            $categoryLabel = __('Commission');
+            $categoryBadge = 'bg-label-success';
+          } else {
+            $category = 'manual_credit';
+            $categoryLabel = __('Manual Deposit');
+            $categoryBadge = 'bg-label-success';
+          }
+        } else {
+          // Debit
+          if (!empty($transaction->task_id) || Str::startsWith($transaction->description, 'خصم عكسي')) {
+            $category = 'reversal';
+            $categoryLabel = __('Commission Reversal');
+            $categoryBadge = 'bg-label-warning';
+          } elseif (Str::contains($transaction->description, ['reinvestment', 'إعادة مضاربة الأرباح'])) {
+            $category = 'reinvestment';
+            $categoryLabel = __('Reinvestment');
+            $categoryBadge = 'bg-label-info';
+          } else {
+            $category = 'actual_withdrawal';
+            $categoryLabel = __('Cash Withdrawal');
+            $categoryBadge = 'bg-label-danger';
+          }
+        }
+
         $nestedData = [];
         $nestedData['id'] = $transaction->id;
         $nestedData['sequence'] = $transaction->sequence;
         $nestedData['amount'] = number_format($transaction->amount, 2);
         $nestedData['transaction_type'] = $transaction->transaction_type;
+        $nestedData['category'] = $category;
+        $nestedData['category_label'] = $categoryLabel;
+        $nestedData['category_badge'] = $categoryBadge;
         $nestedData['description'] = $transaction->description;
         $nestedData['task_id'] = $transaction->task_id ?? '';
         $nestedData['user'] = $transaction->task_id ? ($transaction->task?->user?->name ?? 'Task User Not Found') : ($transaction->user?->name ?? 'System');

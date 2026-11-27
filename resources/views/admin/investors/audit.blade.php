@@ -110,6 +110,87 @@
             padding: 1rem 1.5rem;
             background-color: #fbfbfe;
         }
+
+        /* Modern Commission Audit Filter Toolbar */
+        .comm-audit-filter-panel {
+            background-color: #ffffff;
+            border-bottom: 2px solid rgba(115, 103, 240, 0.12);
+            padding: 1.25rem 1.5rem;
+        }
+        .comm-filter-label {
+            color: #383854;
+            font-weight: 700;
+            font-size: 0.8125rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+        }
+        .comm-filter-control {
+            border: 1.5px solid #e2e2ec;
+            background-color: #ffffff;
+            color: #383854;
+            font-weight: 500;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+        .comm-filter-control:focus {
+            border-color: #7367f0;
+            box-shadow: 0 0 0 0.2rem rgba(115, 103, 240, 0.15);
+            background-color: #ffffff;
+        }
+        .comm-date-range-card {
+            background-color: #f8f8fd;
+            border: 1.5px solid #e3e1fc;
+            border-radius: 0.65rem;
+            padding: 0.35rem 0.6rem;
+            transition: all 0.2s ease;
+        }
+        .comm-date-range-card:focus-within {
+            border-color: #7367f0;
+            box-shadow: 0 0 0 0.2rem rgba(115, 103, 240, 0.12);
+            background-color: #ffffff;
+        }
+        .comm-date-item {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff;
+            border: 1px solid #e8e8f4;
+            border-radius: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            transition: border-color 0.2s ease;
+        }
+        .comm-date-item:focus-within {
+            border-color: #7367f0;
+        }
+        .comm-date-input {
+            border: none;
+            background: transparent;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #383854;
+            outline: none;
+            width: 100%;
+            padding: 0.2rem 0.25rem;
+        }
+        .comm-date-input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        .comm-date-input::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(42%) sepia(85%) saturate(1450%) hue-rotate(222deg) brightness(97%) contrast(93%);
+            opacity: 0.9;
+            transition: transform 0.15s ease;
+        }
+        .comm-date-input::-webkit-calendar-picker-indicator:hover {
+            transform: scale(1.15);
+        }
+        .comm-summary-bar {
+            background-color: #f8f8fd;
+            border: 1px solid #e8e8f7;
+            border-radius: 0.5rem;
+            padding: 0.65rem 1rem;
+        }
     </style>
 @endsection
 
@@ -614,58 +695,96 @@
         </div>
 
         {{-- Filter Bar for Commission Audit --}}
-        <div class="card-body filter-toolbar py-2">
-            <div class="row g-2 align-items-center">
+        <div class="card-body comm-audit-filter-panel">
+            <div class="row g-3 align-items-end">
                 {{-- Search --}}
-                <div class="col-lg-2 col-md-4 col-sm-6">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                    <label class="comm-filter-label">
+                        <i class="ti ti-search text-primary me-1 fs-5"></i>{{ __('Search') }}
+                    </label>
                     <div class="input-group input-group-merge">
-                        <span class="input-group-text"><i class="ti ti-search text-primary"></i></span>
-                        <input type="text" id="commAuditSearchInput" class="form-control" placeholder="{{ __('Search by Task #, Investor, or Customer...') }}">
+                        <span class="input-group-text bg-white border-end-0 comm-filter-control pe-1">
+                            <i class="ti ti-search text-primary"></i>
+                        </span>
+                        <input type="text" id="commAuditSearchInput" class="form-control border-start-0 comm-filter-control ps-1" placeholder="{{ __('Search by Task #, Investor, or Customer...') }}">
                     </div>
                 </div>
+
                 {{-- Filter by Discrepancy Type --}}
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <select id="commAuditStatusFilter" class="form-select">
-                        <option value="discrepant" selected>{{ __('Show Discrepancies Only') }} (<span id="commFilterDiscrepantBadge">{{ $commissionAudit['summary']['discrepant_count'] }}</span>)</option>
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+                    <label class="comm-filter-label">
+                        <i class="ti ti-filter text-primary me-1 fs-5"></i>{{ __('Discrepancy Status') }}
+                    </label>
+                    <select id="commAuditStatusFilter" class="form-select comm-filter-control">
+                        <option value="discrepant" selected>{{ __('Show Discrepancies Only (> 3 SAR)') }} (<span id="commFilterDiscrepantBadge">{{ $commissionAudit['summary']['discrepant_count'] }}</span>)</option>
                         <option value="all">{{ __('Show All Tasks') }} (<span id="commFilterTotalBadge">{{ $commissionAudit['summary']['total_audited'] }}</span>)</option>
                         <option value="overpaid">{{ __('Overpaid (Actual > Contract)') }} (<span id="commFilterOverpaidBadge">{{ $commissionAudit['summary']['overpaid_count'] }}</span>)</option>
                         <option value="underpaid">{{ __('Underpaid (Actual < Contract)') }} (<span id="commFilterUnderpaidBadge">{{ $commissionAudit['summary']['underpaid_count'] }}</span>)</option>
                         <option value="uncredited">{{ __('Uncredited Commission') }} (<span id="commFilterUncreditedBadge">{{ $commissionAudit['summary']['uncredited_count'] }}</span>)</option>
-                        <option value="matched">{{ __('100% Matched') }} (<span id="commFilterMatchedBadge">{{ $commissionAudit['summary']['matched_count'] }}</span>)</option>
+                        <option value="matched">{{ __('Matched (Diff <= 3 SAR)') }} (<span id="commFilterMatchedBadge">{{ $commissionAudit['summary']['matched_count'] }}</span>)</option>
                     </select>
                 </div>
+
                 {{-- Investor Filter --}}
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <select id="commAuditInvestorFilter" class="form-select">
+                <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+                    <label class="comm-filter-label">
+                        <i class="ti ti-user-check text-primary me-1 fs-5"></i>{{ __('Investor') }}
+                    </label>
+                    <select id="commAuditInvestorFilter" class="form-select comm-filter-control">
                         <option value="">-- {{ __('All Investors') }} --</option>
                         @foreach($investorsData as $inv)
                             <option value="{{ $inv['name'] }}">{{ $inv['name'] }}</option>
                         @endforeach
                     </select>
                 </div>
+
                 {{-- Date Timeline Filter (From / To) --}}
-                <div class="col-lg-3 col-md-6 col-sm-12">
-                    <div class="input-group input-group-merge">
-                        <span class="input-group-text bg-light text-muted small px-2 py-1">{{ __('From Date') }}</span>
-                        <input type="date" id="commAuditDateFrom" class="form-control" value="{{ $commDateFrom }}" title="{{ __('From Date') }}">
-                        <span class="input-group-text bg-light text-muted small px-2 py-1">{{ __('To Date') }}</span>
-                        <input type="date" id="commAuditDateTo" class="form-control" value="{{ $commDateTo }}" title="{{ __('To Date') }}">
-                        <button type="button" class="btn btn-outline-secondary px-2" id="btnCommAuditResetDates" title="{{ __('Default (Last Month)') }}">
-                            <i class="ti ti-rotate-clockwise"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary px-2" id="btnCommAuditAllTime" title="{{ __('All Time') }}">
-                            <i class="ti ti-infinity"></i>
-                        </button>
+                <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="comm-filter-label mb-0">
+                            <i class="ti ti-calendar-stats text-primary me-1 fs-5"></i>{{ __('Timeline Filter') }}
+                        </label>
+                        <div class="d-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-xs btn-label-primary rounded-pill px-2 py-0 fw-semibold" id="btnCommAuditResetDates" title="{{ __('Default (Last Month)') }}">
+                                <i class="ti ti-history me-1" style="font-size: 11px;"></i>{{ __('Last Month') }}
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0 fw-semibold" id="btnCommAuditAllTime" title="{{ __('All Time') }}">
+                                <i class="ti ti-infinity me-1" style="font-size: 11px;"></i>{{ __('All Time') }}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="comm-date-range-card">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="comm-date-item flex-grow-1">
+                                <span class="badge bg-label-primary text-primary px-2 py-1 me-1 fw-bold" style="font-size: 10px;">{{ __('From') }}</span>
+                                <input type="date" id="commAuditDateFrom" class="comm-date-input" value="{{ $commDateFrom }}">
+                            </div>
+                            <div class="text-primary d-flex align-items-center justify-content-center px-1">
+                                <i class="ti ti-arrows-left-right fs-5"></i>
+                            </div>
+                            <div class="comm-date-item flex-grow-1">
+                                <span class="badge bg-label-primary text-primary px-2 py-1 me-1 fw-bold" style="font-size: 10px;">{{ __('To') }}</span>
+                                <input type="date" id="commAuditDateTo" class="comm-date-input" value="{{ $commDateTo }}">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {{-- Batch Action & Counter --}}
-                <div class="col-lg-3 col-md-6 col-sm-12 text-end d-flex align-items-center justify-content-end gap-2 flex-wrap">
+            </div>
+
+            {{-- Actions & Selection Status Bar --}}
+            <div class="comm-summary-bar d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                <div>
                     @can('settle_investors_audit_commission')
-                        <button type="button" id="btnBatchSettleComm" class="btn btn-sm btn-primary d-none" onclick="openBatchSettleCommModal()">
+                        <button type="button" id="btnBatchSettleComm" class="btn btn-sm btn-primary d-none shadow-sm" onclick="openBatchSettleCommModal()">
                             <i class="ti ti-checks me-1"></i> {{ __('Settle Selected Commissions') }} (<span id="selectedCommCount">0</span>)
                         </button>
                     @endcan
-                    <small class="text-dark">{{ __('Showing') }} <strong id="visibleCommAuditCount">0</strong> {{ __('of') }} <span id="totalCommAuditCount">0</span></small>
+                </div>
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="badge bg-label-primary border border-primary border-opacity-25 py-2 px-3 fw-bold text-dark" style="font-size: 12px;">
+                        <i class="ti ti-list-check text-primary me-1 fs-6"></i>
+                        {{ __('Showing') }} <strong id="visibleCommAuditCount" class="text-primary mx-1">0</strong> {{ __('of') }} <strong id="totalCommAuditCount" class="text-dark mx-1">0</strong> {{ __('tasks') }}
+                    </span>
                 </div>
             </div>
         </div>
@@ -2596,11 +2715,23 @@
         }
         const commDateFrom = document.getElementById('commAuditDateFrom');
         if (commDateFrom) {
-            commDateFrom.addEventListener('change', () => loadCommissionAudit(1));
+            commDateFrom.addEventListener('change', function() {
+                document.getElementById('btnCommAuditResetDates')?.classList.remove('btn-label-primary');
+                document.getElementById('btnCommAuditResetDates')?.classList.add('btn-outline-primary');
+                document.getElementById('btnCommAuditAllTime')?.classList.remove('btn-label-primary');
+                document.getElementById('btnCommAuditAllTime')?.classList.add('btn-outline-primary');
+                loadCommissionAudit(1);
+            });
         }
         const commDateTo = document.getElementById('commAuditDateTo');
         if (commDateTo) {
-            commDateTo.addEventListener('change', () => loadCommissionAudit(1));
+            commDateTo.addEventListener('change', function() {
+                document.getElementById('btnCommAuditResetDates')?.classList.remove('btn-label-primary');
+                document.getElementById('btnCommAuditResetDates')?.classList.add('btn-outline-primary');
+                document.getElementById('btnCommAuditAllTime')?.classList.remove('btn-label-primary');
+                document.getElementById('btnCommAuditAllTime')?.classList.add('btn-outline-primary');
+                loadCommissionAudit(1);
+            });
         }
         const btnResetDates = document.getElementById('btnCommAuditResetDates');
         if (btnResetDates) {
@@ -2612,6 +2743,15 @@
                 const fromStr = lastMonth.toISOString().split('T')[0];
                 if (commDateFrom) commDateFrom.value = fromStr;
                 if (commDateTo) commDateTo.value = toStr;
+
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-label-primary');
+                const btnAll = document.getElementById('btnCommAuditAllTime');
+                if (btnAll) {
+                    btnAll.classList.remove('btn-label-primary');
+                    btnAll.classList.add('btn-outline-primary');
+                }
+
                 loadCommissionAudit(1);
             });
         }
@@ -2620,6 +2760,15 @@
             btnAllTime.addEventListener('click', function() {
                 if (commDateFrom) commDateFrom.value = '';
                 if (commDateTo) commDateTo.value = '';
+
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-label-primary');
+                const btnReset = document.getElementById('btnCommAuditResetDates');
+                if (btnReset) {
+                    btnReset.classList.remove('btn-label-primary');
+                    btnReset.classList.add('btn-outline-primary');
+                }
+
                 loadCommissionAudit(1);
             });
         }

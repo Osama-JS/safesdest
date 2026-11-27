@@ -271,16 +271,15 @@ class Task extends Model
 
   /**
    * Scope: المهام المتاحة للدفع من محفظة مستثمر
-   * (غير مقفلة، غير مدفوعة من مستثمر، وغير مطروحة أو ممولة في Go-Tech)
+   * (مكتملة ومقفلة، غير مدفوعة من مستثمر، وغير مطروحة أو ممولة في Go-Tech)
    */
   public function scopeAvailableForInvestorPayment($query)
   {
     return $query
       ->where('investor_payment_status', 'none')
       ->whereNull('investor_id')
-      ->where('closed', false)
-      ->whereNotIn('status', ['pending', 'in_progress', 'advertised', 'canceld', 'canceled', 'cancelled', 'refund', 'refound', 'refunded'])
-      ->where('payment_status', 'waiting')
+      ->where('closed', true)
+      ->where('status', 'completed')
       ->where(function ($q) {
           $q->whereNull('gotech_status')
             ->orWhereNotIn('gotech_status', ['available', 'pending_funding', 'funded']);

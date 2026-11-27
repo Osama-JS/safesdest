@@ -89,15 +89,16 @@
     <!-- Wallet Statistics -->
     <div class="row g-6 mb-6">
         <div class="col-sm-6 col-xl-3">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
                             <span class="text-heading">{{ __('Current Balance') }}</span>
                             <div class="d-flex align-items-center my-1">
-                                <h4 class="mb-0 me-2">{{ number_format($balance, 2) }}</h4>
+                                <h4 class="mb-0 me-2 {{ $balance >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($balance, 2) }}</h4>
                                 <small class="text-muted">{{ __('SAR') }}</small>
                             </div>
+                            <small class="text-muted">{{ __('Ledger balance') }}</small>
                         </div>
                         <div class="avatar">
                             <span class="avatar-initial rounded bg-label-{{ $balance >= 0 ? 'success' : 'danger' }}">
@@ -108,8 +109,75 @@
                 </div>
             </div>
         </div>
+        @if($isInvestor)
         <div class="col-sm-6 col-xl-3">
-            <div class="card">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Net Earned Commissions') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-success">{{ number_format($netCommissions, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted d-block text-truncate" title="{{ __('Gross Commissions') }}: {{ number_format($grossCredit, 2) }} | {{ __('Commission Reversals') }}: {{ number_format($reversedDebit, 2) }}">
+                                {{ __('Gross') }}: {{ number_format($grossCredit, 2) }} | {{ __('Reversed') }}: -{{ number_format($reversedDebit, 2) }}
+                            </small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-success">
+                                <i class="ti ti-trending-up ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Actual Cash Withdrawals') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-danger">{{ number_format($actualWithdrawalsDebit, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted">{{ __('Bank transfers & payout requests') }}</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-danger">
+                                <i class="ti ti-arrow-down-right ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Commission Reversals') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-warning">{{ number_format($reversedDebit, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted">{{ __('Cancelled / refunded task commissions') }}</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-warning">
+                                <i class="ti ti-rotate-2 ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -129,7 +197,7 @@
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -149,7 +217,7 @@
             </div>
         </div>
         <div class="col-sm-6 col-xl-3">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -168,13 +236,14 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 
     @if($isInvestor)
     <!-- Investor-specific wallet stats -->
     <div class="row g-6 mb-6">
-        <div class="col-sm-6 col-xl-4">
-            <div class="card border border-success">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border border-success">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -202,8 +271,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-4">
-            <div class="card border border-warning">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border border-warning">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -229,9 +298,30 @@
                 </div>
             </div>
         </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100 border border-info">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading fw-medium">{{ __('Reinvested Profits') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2 text-info">{{ number_format($reinvestDebit, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                            <small class="text-muted">{{ __('Profits transferred to investment wallet') }}</small>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-refresh ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         @if($activeContract)
-        <div class="col-sm-6 col-xl-4">
-            <div class="card">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-start justify-content-between">
                         <div class="content-left">
@@ -246,8 +336,29 @@
                             </small>
                         </div>
                         <div class="avatar">
-                            <span class="avatar-initial rounded bg-label-info">
+                            <span class="avatar-initial rounded bg-label-primary">
                                 <i class="ti ti-file-invoice ti-26px"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="col-sm-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="content-left">
+                            <span class="text-heading">{{ __('Debt Ceiling') }}</span>
+                            <div class="d-flex align-items-center my-1">
+                                <h4 class="mb-0 me-2">{{ number_format($wallet->debt_ceiling, 2) }}</h4>
+                                <small class="text-muted">{{ __('SAR') }}</small>
+                            </div>
+                        </div>
+                        <div class="avatar">
+                            <span class="avatar-initial rounded bg-label-info">
+                                <i class="ti ti-shield-check ti-26px"></i>
                             </span>
                         </div>
                     </div>

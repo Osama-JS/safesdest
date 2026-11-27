@@ -216,14 +216,17 @@ class InvestorAuditController extends Controller
 
         // Filter
         $filtered = array_filter($tasks, function($item) use ($search, $statusFilter, $investorFilter) {
-            $isDiscrepant = in_array($item['status'], ['overpaid', 'underpaid', 'uncredited']);
+            $absDiff = abs($item['diff']);
+            $isDiscrepant = in_array($item['status'], ['overpaid', 'underpaid', 'uncredited']) && $absDiff > 3.00;
 
             if ($statusFilter === 'discrepant' && !$isDiscrepant) {
                 return false;
             } elseif ($statusFilter === 'matched' && $item['status'] !== 'matched') {
                 return false;
-            } elseif (in_array($statusFilter, ['overpaid', 'underpaid', 'uncredited']) && $item['status'] !== $statusFilter) {
-                return false;
+            } elseif (in_array($statusFilter, ['overpaid', 'underpaid', 'uncredited'])) {
+                if ($item['status'] !== $statusFilter || $absDiff <= 3.00) {
+                    return false;
+                }
             }
 
             if ($investorFilter !== '' && $item['investor_name'] !== $investorFilter) {
@@ -376,7 +379,24 @@ class InvestorAuditController extends Controller
                 $tx->performed_by = $currentUser->id;
                 $tx->save();
 
-                $logMessage = "تم تعديل التمويل من " . number_format($oldAmount, 2) . " إلى " . number_format($newAmount, 2) . " ر.س بواسطة {$currentUser->name}" . ($notes ? " - {$notes}" : '');
+                // التحقق من وجود حركات استرداد/تسوية (Credit) لنفس المهمة ومطابقتها
+                $creditTxs = InvestorWalletTransaction::where('task_id', $taskId)
+                    ->where('transaction_type', 'credit')
+                    ->get();
+                $creditSyncText = '';
+                if ($creditTxs->count() > 0) {
+                    $primaryCredit = $creditTxs->first();
+                    $oldCredit = floatval($creditTxs->sum('amount'));
+                    $primaryCredit->amount = $newAmount;
+                    $primaryCredit->save();
+
+                    for ($i = 1; $i < $creditTxs->count(); $i++) {
+                        $creditTxs[$i]->delete();
+                    }
+                    $creditSyncText = " وتمت مطابقة حركة استرداد رأس المال لتصبح " . number_format($newAmount, 2) . " ر.س (السابق: " . number_format($oldCredit, 2) . " ر.س).";
+                }
+
+                $logMessage = "تم تعديل التمويل من " . number_format($oldAmount, 2) . " إلى " . number_format($newAmount, 2) . " ر.س بواسطة {$currentUser->name}" . ($notes ? " - {$notes}" : '') . $creditSyncText;
 
                 // 1. Task History Log
                 Task_History::create([
@@ -389,7 +409,7 @@ class InvestorAuditController extends Controller
                 // 2. Activity Log
                 ActivityLog::create([
                     'user_id' => $currentUser->id,
-                    'action' => 'تعديل تمويل',
+                    'action' => 'تعديل تمويل ومطابقة',
                     'table_name' => 'investor_wallet_transactions',
                     'record_id' => (string) $tx->id,
                     'old_values' => ['amount' => $oldAmount],
@@ -410,7 +430,7 @@ class InvestorAuditController extends Controller
 
                 return response()->json([
                     'status' => 1,
-                    'success' => "تم تعديل مبلغ التمويل للمهمة #{$taskId} إلى " . number_format($newAmount, 2) . " ر.س بنجاح. {$effectText}",
+                    'success' => "تم تعديل مبلغ التمويل للمهمة #{$taskId} إلى " . number_format($newAmount, 2) . " ر.س بنجاح. {$effectText}{$creditSyncText}",
                 ]);
             }
 
@@ -1863,10 +1883,10 @@ class InvestorAuditController extends Controller
                 $statusBadge = 'bg-label-secondary';
                 $statusLabel = 'لا توجد عمولة للمهمة';
                 $noPlatformCommCount++;
-            } elseif (abs($diff) <= 0.05) {
+            } elseif (abs($diff) <= 3.00) {
                 $status = 'matched';
                 $statusBadge = 'bg-label-success';
-                $statusLabel = 'مطابقة تماماً';
+                $statusLabel = abs($diff) > 0.05 ? 'مطابقة (فارق طفيف ' . number_format(abs($diff), 2) . ' ر.س)' : 'مطابقة تماماً';
                 $matchedCount++;
             } elseif ($actualNet > $expectedComm) {
                 $status = 'overpaid';

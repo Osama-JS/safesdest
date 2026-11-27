@@ -49,8 +49,8 @@ class InvestorPaymentService
             if (in_array($task->gotech_status, ['pending_funding', 'funded'])) {
                 throw new \Exception(__('لا يمكن دفع هذه المهمة لأنها مطروحة أو ممولة بالفعل عبر منصة Go-Tech.'));
             }
-            if ($task->closed) {
-                throw new \Exception(__('Cannot pay on a closed task'));
+            if (!$task->closed || $task->status !== 'completed') {
+                throw new \Exception(__('Cannot pay on an incomplete or unclosed task'));
             }
 
             $taskPrice = (float) $task->total_price;

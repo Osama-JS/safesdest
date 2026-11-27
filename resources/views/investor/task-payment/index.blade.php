@@ -115,8 +115,6 @@
                 </div>
                 <div class="d-flex flex-column align-items-end gap-1">
                   <span class="badge bg-label-primary rounded-pill">{{ number_format($task->total_price, 2) }} {{ __('SAR') }}</span>
-                  <span class="badge bg-label-info rounded-pill">{{ __('Status') }}: {{ __($task->status) }}</span>
-                  <span class="badge bg-label-success rounded-pill">{{ __('Payment Status') }}: {{ __($task->payment_status) }}</span>
                 </div>
               </div>
 

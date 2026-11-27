@@ -64,7 +64,11 @@ $(function () {
           render: function (data, type, full, meta) {
             var colorClass = full.transaction_type === 'credit' ? 'text-success' : 'text-danger';
             var sign = full.transaction_type === 'credit' ? '+' : '-';
-            return `<span class="fw-medium ${colorClass}">${sign}${full.amount} SAR</span>`;
+            var badge = '';
+            if (full.category_badge && full.category_label) {
+              badge = `<div class="mt-1"><span class="badge ${full.category_badge} rounded-pill" style="font-size: 0.72rem; padding: 0.25rem 0.5rem;">${full.category_label}</span></div>`;
+            }
+            return `<div class="d-inline-flex flex-column align-items-start"><span class="fw-bold ${colorClass}">${sign}${full.amount} <small>SAR</small></span>${badge}</div>`;
           }
         },
         {
@@ -160,9 +164,12 @@ $(function () {
         </label>`,
         `<label class='me-2'>
         <select id='statusFilter' class='form-select d-inline-block w-auto ms-2 mt-5'>
-          <option value="all">All</option>
-          <option value="credit">Credit</option>
-          <option value="debit">Debit</option>
+          <option value="all">كافة العمليات (All)</option>
+          <option value="credit">إيداع / عمولات (+)</option>
+          <option value="actual_withdrawal">مسحوبات نقدية تحويلات (-)</option>
+          <option value="reversal">خصم عكسي (مهام ملغاة) (-)</option>
+          <option value="reinvestment">إعادة استثمار أرباح (-)</option>
+          <option value="debit">جميع الخصومات (-)</option>
         </select>
       </label>`,
         ` <label class="me-2">

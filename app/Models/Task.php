@@ -285,7 +285,11 @@ class Task extends Model
             ->orWhereNotIn('gotech_status', ['available', 'pending_funding', 'funded']);
       })
       ->whereHas('customer', function ($q) {
-          $q->where('allow_investment', true);
+          $q->where('allow_investment', true)
+            ->where(function ($sub) {
+                $sub->whereNull('investment_start_date')
+                    ->orWhereRaw('DATE(tasks.created_at) >= customers.investment_start_date');
+            });
       });
   }
 
@@ -309,7 +313,11 @@ class Task extends Model
             ->orWhereNotIn('gotech_status', ['available', 'pending_funding', 'funded']);
       })
       ->whereHas('customer', function ($q) {
-          $q->where('allow_investment', true);
+          $q->where('allow_investment', true)
+            ->where(function ($sub) {
+                $sub->whereNull('investment_start_date')
+                    ->orWhereRaw('DATE(tasks.created_at) >= customers.investment_start_date');
+            });
       });
   }
 

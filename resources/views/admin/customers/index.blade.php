@@ -307,7 +307,7 @@
                                                          <small class="text-muted">{{ __('Enables B2B specific features, warehouses and multiple end-clients.') }}</small>
                                                      </div>
 
-                                                     <div class="col-md-12 mb-4">
+                                                     <div class="col-md-6 mb-4">
                                                          <div class="form-check form-switch card-p">
                                                              <input class="form-check-input" type="checkbox" name="allow_investment" id="customer-allow-investment" value="1">
                                                              <label class="form-check-label fw-bold" for="customer-allow-investment">
@@ -315,6 +315,13 @@
                                                              </label>
                                                          </div>
                                                          <small class="text-muted">{{ __('When enabled, this customer\'s eligible tasks will be visible to investors for funding.') }}</small>
+                                                     </div>
+                                                     <div class="col-md-6 mb-4" id="investment-start-date-wrapper">
+                                                         <label class="form-label fw-bold" for="customer-investment-start-date">
+                                                             <i class="ti ti-calendar me-1 text-primary"></i>{{ __('Investment Start Date') }} (تاريخ بدء إتاحة الاستثمار)
+                                                         </label>
+                                                         <input type="date" name="investment_start_date" class="form-control" id="customer-investment-start-date">
+                                                         <small class="text-muted">عرض المهام المنشأة في هذا التاريخ فما بعد فقط (اتركه فارغاً لعرض الكل)</small>
                                                      </div>
 
 

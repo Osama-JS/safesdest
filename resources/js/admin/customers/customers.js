@@ -161,7 +161,9 @@ $(function () {
             }
 
             var broker = full.broker ? '<span class=" badge bg-label-primary ">Customs Clearance Agent</span>' : '';
-            var investmentBadge = full.allow_investment ? '<span class="badge bg-label-success ms-1"><i class="ti ti-chart-arrows me-1"></i>متاح للاستثمار</span>' : '';
+            var investmentBadge = full.allow_investment 
+              ? `<span class="badge bg-label-success ms-1"><i class="ti ti-chart-arrows me-1"></i>متاح للاستثمار${full.investment_start_date ? ` (من ${full.investment_start_date})` : ''}</span>` 
+              : '';
             return `
               <div class="d-flex align-items-center">
                 <div class="avatar-wrapper me-3">
@@ -255,7 +257,7 @@ $(function () {
                     ${!full.can_commission ? '' : `<li><a href="javascript:;" class="dropdown-item manage-commissions" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-percentage me-2"></i>${__('Manage Commissions')}</a></li>`}
                     <li><a href="javascript:;" class="dropdown-item status-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.status}"><i class="ti ti-switch-horizontal me-2"></i>${__('Change Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item status-broker-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.broker}"><i class="ti ti-switch-horizontal me-2"></i> ${__('Change Broker Status')}</a></li>
-                    <li><a href="javascript:;" class="dropdown-item status-investment-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.allow_investment}"><i class="ti ti-chart-arrows me-2"></i> ${__('Change Investment Status')}</a></li>
+                    <li><a href="javascript:;" class="dropdown-item status-investment-record" data-id="${full.id}" data-name="${full.name}" data-status="${full.allow_investment}" data-start-date="${full.investment_start_date || ''}"><i class="ti ti-chart-arrows me-2"></i> ${__('Change Investment Status')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item wallet-record" data-id="${full.id}" data-name="${full.name}" ><i class="ti ti-wallet me-2"></i>${__('Create Wallet')}</a></li>
                     <li><a href="javascript:;" class="dropdown-item signature-record" data-id="${full.id}" data-name="${full.name}"><i class="ti ti-signature me-2"></i>${__('Manage Signature')}</a></li>
                   </ul>
@@ -380,6 +382,12 @@ $(function () {
       $('#customer-tags').val(data.tagsIds).trigger('change');
       $('#customer-is-company').prop('checked', data.is_company == 1);
       $('#customer-allow-investment').prop('checked', data.allow_investment == 1 || data.allow_investment === true);
+      $('#customer-investment-start-date').val(data.investment_start_date_formatted || data.investment_start_date || '');
+      if (data.allow_investment == 1 || data.allow_investment === true) {
+        $('#investment-start-date-wrapper').show();
+      } else {
+        $('#investment-start-date-wrapper').hide();
+      }
       if (data.img !== null) {
         $('.preview-image').attr('src', data.img);
       }
@@ -468,13 +476,22 @@ $(function () {
     const id = $(this).data('id');
     const name = $(this).data('name');
     const status = $(this).data('status');
+    const startDate = $(this).data('start-date') || '';
 
     const fields = `
       <input type="hidden" name="id" value="${id}">
-      <select class="form-select" name="status">
-        <option value="1" ${status ? 'selected' : ''}>متاح للاستثمار (تظهر مهامه للمستثمرين)</option>
-        <option value="0" ${!status ? 'selected' : ''}>غير متاح للاستثمار (محظورة من صفحات الاستثمار)</option>
-      </select>
+      <div class="mb-3">
+        <label class="form-label fw-bold">حالة إتاحة الاستثمار</label>
+        <select class="form-select" name="status" id="quick-inv-status">
+          <option value="1" ${status ? 'selected' : ''}>متاح للاستثمار (تظهر مهامه للمستثمرين)</option>
+          <option value="0" ${!status ? 'selected' : ''}>غير متاح للاستثمار (محظورة من صفحات الاستثمار)</option>
+        </select>
+      </div>
+      <div class="mb-3" id="quick-inv-date-wrapper" style="${status ? '' : 'display:none;'}">
+        <label class="form-label fw-bold">تاريخ بدء إتاحة المهام للاستثمار</label>
+        <input type="date" class="form-control" name="investment_start_date" id="quick-inv-date" value="${startDate}">
+        <small class="text-muted">عرض المهام المنشأة من هذا التاريخ فما بعد فقط (اتركه فارغاً لعرض الكل)</small>
+      </div>
     `;
 
     showFormModal({
@@ -485,6 +502,22 @@ $(function () {
       method: 'POST',
       dataTable: dt_data
     });
+  });
+
+  $(document).on('change', '#quick-inv-status', function() {
+    if ($(this).val() === '1') {
+      $('#quick-inv-date-wrapper').slideDown();
+    } else {
+      $('#quick-inv-date-wrapper').slideUp();
+    }
+  });
+
+  $(document).on('change', '#customer-allow-investment', function () {
+    if ($(this).is(':checked')) {
+      $('#investment-start-date-wrapper').slideDown();
+    } else {
+      $('#investment-start-date-wrapper').slideUp();
+    }
   });
 
   $(document).on('click', '.wallet-record', function () {
@@ -517,6 +550,8 @@ $(function () {
     $('#customer-task-number-start').val('');
     $('#customer-task-number-next').val('');
     $('#customer-general-task-notes').val('');
+    $('#customer-investment-start-date').val('');
+    $('#investment-start-date-wrapper').hide();
   });
 
   // Handle send notification button click for customers

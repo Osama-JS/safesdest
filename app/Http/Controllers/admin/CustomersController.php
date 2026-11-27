@@ -109,6 +109,7 @@ class CustomersController extends Controller
               'email'      => $customer->email,
               'broker'     => $customer->is_customs_clearance_agent,
               'allow_investment' => (bool)$customer->allow_investment,
+              'investment_start_date' => $customer->investment_start_date ? $customer->investment_start_date->format('Y-m-d') : null,
               'phone'      => $customer->phone_code . $customer->phone,
               'image'      => $customer->image ? url($customer->image) : null,
               'tags'       => $customer->tags->pluck('tag.name')->implode(', '),
@@ -216,7 +217,11 @@ class CustomersController extends Controller
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('You do not have permission to do actions to this record')]);
             }
             $allow = filter_var($req->status, FILTER_VALIDATE_BOOLEAN);
-            $done = Customer::find($req->id)->update(['allow_investment' => $allow]);
+            $updateData = ['allow_investment' => $allow];
+            if ($req->has('investment_start_date')) {
+                $updateData['investment_start_date'] = ($allow && $req->filled('investment_start_date')) ? $req->investment_start_date : null;
+            }
+            $done = Customer::find($req->id)->update($updateData);
 
             if (!$done) {
                 return response()->json(['status' => 2, 'type' => 'error', 'message' => __('Error to Change Customer Investment Status')]);
@@ -232,6 +237,7 @@ class CustomersController extends Controller
         $data = Customer::findOrFail($id);
         $data->img = $data->image ? url($data->image) : null;
         $data->tagsIds = $data->tags()->pluck('tag_id');
+        $data->investment_start_date_formatted = $data->investment_start_date ? $data->investment_start_date->format('Y-m-d') : '';
         $fields = Form_Field::where('form_template_id', $data->form_template_id)->get();
 
         $data->fields =  $fields;
@@ -487,6 +493,7 @@ class CustomersController extends Controller
               'iban_number' => $req->iban_number ? str_replace(' ', '', $req->iban_number) : null,
               'is_company' => $req->has('is_company') ? 1 : 0,
               'allow_investment' => $req->has('allow_investment') ? (bool) $req->allow_investment : false,
+              'investment_start_date' => ($req->has('allow_investment') && $req->filled('investment_start_date')) ? $req->investment_start_date : null,
               // Task numbering
               'task_number_start' => $req->task_number_start ? (int) $req->task_number_start : null,
               'general_task_notes' => $req->general_task_notes,

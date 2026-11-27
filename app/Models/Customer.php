@@ -57,6 +57,7 @@ class Customer extends Authenticatable
       'otp_code',
       'otp_expires_at',
       'allow_investment',
+      'investment_start_date',
     ];
 
     protected $casts = [
@@ -64,6 +65,7 @@ class Customer extends Authenticatable
       'is_customs_clearance_agent' => 'boolean',
       'is_guest' => 'boolean',
       'allow_investment' => 'boolean',
+      'investment_start_date' => 'date',
       'otp_expires_at' => 'datetime',
       'task_number_start' => 'integer',
       'task_number_next' => 'integer',
